@@ -91,40 +91,40 @@ const getCategory = (post) => {
         {/* ================= SIDE ================= */}
         <div class="hero-right">
 
-          {side.map(post => {
-            const cat = getCategory(post);
+     {side.map((p) => {
+  const cat = getCategory(p);
 
-            return (
-              <div
-                class="hero-side card"
-                data-link={`/${post.slug}`}
-              >
+  return (
+    <div
+      class="hero-side card"
+      data-link={`/${p.slug}`}
+    >
 
-                <img
-                  src={post.featuredImage?.node?.sourceUrl}
-                  alt={post.title}
-                />
+      <img
+        src={p.featuredImage?.node?.sourceUrl}
+        alt={p.title}
+      />
 
-                <div class="card-content small">
+      <div class="card-content small">
 
-                  {cat && (
-                    <a
-                      href={cat.href}
-                      class="card-meta small"
-                    >
-                      {cat.label}
-                    </a>
-                  )}
+        {cat && (
+          <a
+            href={cat.href}
+            class="card-meta small"
+          >
+            {cat.label}
+          </a>
+        )}
 
-                  <h3 class="card-title-md">
-                    {post.title}
-                  </h3>
+        <h3 class="card-title-md">
+          {p.title}
+        </h3>
 
-                </div>
+      </div>
 
-              </div>
-            );
-          })}
+    </div>
+  );
+})}
 
         </div>
 
