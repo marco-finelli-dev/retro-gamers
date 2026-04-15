@@ -1,86 +1,16 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Hero from '../components/home/Hero.astro';
-import Card from '../components/Card.astro';
-import '../styles/components/hero.css';
-import '../styles/pages/home.css';
-import Latest from '../components/home/Latest.astro';
-import Reviews from '../components/home/Reviews.astro';
-import Specials from '../components/home/Specials.astro';
-import Memories from '../components/home/Memories.astro';
-import Hardware from '../components/home/Hardware.astro';
-import { fetchAPI } from '../lib/api';
+import { getArticles } from '../lib/sanity';
 
-// =========================
-// HERO + RECENT POSTS
-// =========================
-
-const data = await fetchAPI(`
-{
-  posts(first: 8, where: { orderby: { field: DATE, order: DESC } }) {
-    nodes {
-      title
-      slug
-      excerpt
-      featuredImage {
-        node { sourceUrl }
-      }
-      categories {
-        nodes { name }
-      }
-    }
-  }
-}
-`);
-
-const posts = data.posts.nodes;
-
-const heroPosts = posts.slice(0, 4);
-const recensioni = posts.slice(4, 8);
+const posts = await getArticles();
 ---
 
 <BaseLayout title="Retro Gamers">
+  <h1>Retro Gamers</h1>
 
-  <!-- HERO -->
-  <section class="home-hero">
-    <div class="container">
-      <Hero />
+  {posts.map(post => (
+    <div>
+      <h2>{post.title}</h2>
     </div>
-  </section>
-
-  <!-- MEMORIES -->
-<section class="home-memories">
-  <div class="container">
-    <Memories />
-  </div>
-</section>
-
-  <!-- REVIEWS -->
-  <section class="home-reviews">
-    <div class="container">
-      <Reviews />
-    </div>
-    </section>
-
-  <!-- SPECIALS -->
-  <section class="home-specials">
-    <div class="container">
-      <Specials />
-    </div>
-  </section>
-
-  <!-- HARDWARE -->
-  <section class="home-hardware">
-    <div class="container">
-      <Hardware posts={posts} />
-    </div>
-    </section>
-
-  <!-- LATEST -->
-  <section class="home-latest">
-    <div class="container">
-      <Latest />
-    </div>
-  </section>
-
+  ))}
 </BaseLayout>
