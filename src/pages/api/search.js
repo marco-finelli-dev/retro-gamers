@@ -8,7 +8,8 @@ export async function GET({ url }) {
   
     const safeQuery = query.replace(/"/g, '\\"');
   
-    const res = await fetch(import.meta.env.PUBLIC_WP_API, {
+    const res = await fetch(
+      'https://wordpress-1605036-6332980.cloudwaysapps.com/graphql', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

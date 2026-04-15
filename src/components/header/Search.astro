@@ -32,46 +32,50 @@ function highlight(text, query) {
   return text.replace(regex, '<span class="highlight">$1</span>');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+(() => {
 
   const searchWrapper = document.querySelector('.search-wrapper');
   const searchToggle = document.querySelector('.search-toggle');
   const searchBar = document.querySelector('.search-bar');
   const searchClose = document.querySelector('.search-close');
-  const searchInput = searchBar.querySelector('input');
-  const resultsBox = searchBar.querySelector('.search-results'); // 🔥 FIX
   const overlay = document.querySelector('.search-overlay');
+
+  // 🛡️ sicurezza (evita crash build/SSR)
+  if (!searchWrapper || !searchBar) return;
+
+  const searchInput = searchBar.querySelector('input');
+  const resultsBox = searchBar.querySelector('.search-results');
 
   let debounce;
 
   function openSearch() {
     searchBar.classList.add('active');
-    overlay.classList.add('active');
+    overlay?.classList.add('active');
     document.body.classList.add('no-scroll');
 
     resultsBox.classList.remove('active');
-    resultsBox.innerHTML = '<div class="hover-bg"></div>'; // 🔥 reset corretto
+    resultsBox.innerHTML = '<div class="hover-bg"></div>';
 
-    searchInput.focus();
+    searchInput?.focus();
   }
 
   function closeSearch() {
     searchBar.classList.remove('active');
-    overlay.classList.remove('active');
+    overlay?.classList.remove('active');
     document.body.classList.remove('no-scroll');
 
     resultsBox.classList.remove('active');
-    resultsBox.innerHTML = '<div class="hover-bg"></div>'; // 🔥 reset
-    searchInput.value = '';
+    resultsBox.innerHTML = '<div class="hover-bg"></div>';
+    if (searchInput) searchInput.value = '';
   }
 
-  searchToggle.addEventListener('click', (e) => {
+  searchToggle?.addEventListener('click', (e) => {
     e.stopPropagation();
     openSearch();
   });
 
-  searchClose.addEventListener('click', closeSearch);
-  overlay.addEventListener('click', closeSearch);
+  searchClose?.addEventListener('click', closeSearch);
+  overlay?.addEventListener('click', closeSearch);
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeSearch();
@@ -83,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  searchInput.addEventListener('input', () => {
+  searchInput?.addEventListener('input', () => {
 
     const query = searchInput.value.trim();
     clearTimeout(debounce);
@@ -99,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/search?q=' + encodeURIComponent(query));
       const data = await res.json();
 
-      let html = '<div class="hover-bg"></div>'; // 🔥 SEMPRE PRESENTE
+      let html = '<div class="hover-bg"></div>';
 
       if (!data.length) {
         html += `<div class="search-item">Nessun risultato</div>`;
@@ -128,26 +132,25 @@ document.addEventListener('DOMContentLoaded', () => {
       resultsBox.innerHTML = html;
       resultsBox.classList.add('active');
 
-      // 🔥 INIT HOVER (COME REVIEWS)
+      // hover effect
       const items = resultsBox.querySelectorAll('.search-item');
       const bg = resultsBox.querySelector('.hover-bg');
 
-items.forEach(item => {
-  item.addEventListener('mouseenter', () => {
+      items.forEach(item => {
+        item.addEventListener('mouseenter', () => {
 
-    const rect = item.getBoundingClientRect();
-    const parentRect = resultsBox.getBoundingClientRect();
+          const rect = item.getBoundingClientRect();
+          const parentRect = resultsBox.getBoundingClientRect();
 
-    const paddingY = 6;
+          const paddingY = 6;
+          const offset = rect.top - parentRect.top + resultsBox.scrollTop;
 
-    const offset = rect.top - parentRect.top + resultsBox.scrollTop;
+          bg.style.transform = `translateY(${offset + paddingY}px)`;
+          bg.style.height = `${rect.height - paddingY * 2}px`;
+          bg.style.opacity = 1;
 
-    bg.style.transform = `translateY(${offset + paddingY}px)`;
-    bg.style.height = `${rect.height - paddingY * 2}px`;
-    bg.style.opacity = 1;
-
-  });
-});
+        });
+      });
 
       resultsBox.addEventListener('mouseleave', () => {
         bg.style.opacity = 0;
@@ -156,5 +159,5 @@ items.forEach(item => {
     }, 250);
   });
 
-});
+})();
 </script>

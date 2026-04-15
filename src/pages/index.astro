@@ -1,9 +1,56 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/home/Hero.astro';
+import Card from '../components/Card.astro';
+import '../styles/components/hero.css';
+import '../styles/pages/home.css';
 import Latest from '../components/home/Latest.astro';
+import Reviews from '../components/home/Reviews.astro';
+import Specials from '../components/home/Specials.astro';
+import Memories from '../components/home/Memories.astro';
+import Hardware from '../components/home/Hardware.astro';
+import { fetchAPI } from '../lib/api';
 ---
 <BaseLayout>
-  <Hero />
-  <Latest />
+  <!-- HERO -->
+  <section class="home-hero">
+    <div class="container">
+      <Hero />
+    </div>
+  </section>
+
+  <!-- MEMORIES -->
+<section class="home-memories">
+  <div class="container">
+    <Memories />
+  </div>
+</section>
+
+  <!-- REVIEWS -->
+  <section class="home-reviews">
+    <div class="container">
+      <Reviews />
+    </div>
+    </section>
+
+  <!-- SPECIALS -->
+  <section class="home-specials">
+    <div class="container">
+      <Specials />
+    </div>
+  </section>
+
+  <!-- HARDWARE -->
+  <section class="home-hardware">
+    <div class="container">
+       <Hardware />
+    </div>
+    </section>
+
+  <!-- LATEST -->
+  <section class="home-latest">
+    <div class="container">
+      <Latest />
+    </div>
+  </section>
 </BaseLayout>
