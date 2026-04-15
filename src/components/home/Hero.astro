@@ -56,42 +56,37 @@ const getCategory = (post) => {
       <div class="hero-grid">
 
         {/* ================= MAIN ================= */}
-        {main && (() => {
-          const cat = getCategory(main);
-          const excerpt = getExcerpt(main);
+     {main && (
+  <div class="hero-main card" data-link={`/${main.slug}`}>
 
-          return (
-            <div class="hero-main card" data-link={`/${main.slug}`}>
+    <img
+      src={main.featuredImage?.node?.sourceUrl}
+      alt={main.title}
+    />
 
-              <img
-                src={main.featuredImage?.node?.sourceUrl}
-                alt={main.title}
-              />
+    <div class="card-content">
 
-              <div class="card-content">
+      {getCategory(main) && (
+        <a href={getCategory(main).href} class="card-meta">
+          {getCategory(main).label}
+        </a>
+      )}
 
-                {cat && (
-                  <a href={cat.href} class="card-meta">
-                    {cat.label}
-                  </a>
-                )}
+      <h1 class="card-title-xl">
+        {main.title}
+      </h1>
 
-                <h1 class="card-title-xl">
-                  {main.title}
-                </h1>
+      {getExcerpt(main) && (
+        <p
+          class="card-excerpt"
+          set:html={getExcerpt(main)}
+        />
+      )}
 
-                {excerpt && (
-                  <p
-                    class="card-excerpt"
-                    set:html={excerpt}
-                  />
-                )}
+    </div>
 
-              </div>
-
-            </div>
-          );
-        })()}
+  </div>
+)}
 
         {/* ================= SIDE ================= */}
         <div class="hero-right">
