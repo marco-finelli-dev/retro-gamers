@@ -1,26 +1,43 @@
 ---
 const { post, showMeta = false } = Astro.props;
 
-const title = post.title ?? '';
-const slug = post.slug ?? '';
-const image = post.featuredImage?.node?.sourceUrl || '/placeholder-retro.png';
+// 🛡️ sicurezza: evita crash in build
+if (!post) {
+  throw new Error('Card component requires a post prop');
+}
 
-// 👉 categoria (per link dinamico + label)
-const category = post.categories?.nodes?.[0] ?? null;
+/* ========================
+   DATA
+======================== */
+
+const title = post?.title ?? '';
+const slug = post?.slug ?? '';
+const image = post?.featuredImage?.node?.sourceUrl || '/placeholder-retro.png';
+
+/* ========================
+   CATEGORY
+======================== */
+
+const category = post?.categories?.nodes?.[0] ?? null;
 const categorySlug = category?.slug ?? 'recensioni';
 const categoryName = category?.name ?? '';
 
-// 👉 meta recensione
+/* ========================
+   META
+======================== */
+
 const piattaforma = post?.platforms?.nodes?.map(t => t.name).join(', ');
 const sviluppatore = post?.developers?.nodes?.map(t => t.name).join(', ');
 const anno = post?.datiRecensione?.releaseYear;
 
-// 👉 excerpt UNICO (campo custom)
+/* ========================
+   EXCERPT
+======================== */
+
 const excerpt =
   post?.riassuntoBreve ||
   post?.datiRecensione?.riassuntoBreve ||
   '';
-  console.log(post);
 ---
 
 <div class="card">
@@ -28,14 +45,19 @@ const excerpt =
   <!-- IMMAGINE -->
   <a href={`/${categorySlug}/${slug}/`} class="card__image">
     <div class="screen">
-      <img class="game" src={image} alt={title} loading="lazy" />
+      <img
+        class="game"
+        src={image}
+        alt={title}
+        loading="lazy"
+      />
     </div>
   </a>
 
-  <!-- 🔹 CATEGORIA (solo NON recensioni) -->
+  <!-- 🔹 CATEGORIA -->
   {!showMeta && categoryName && (
     <div class="card__category">
-      <a href={`/categoria/${categorySlug}/`}>
+      <a href={`/${categorySlug}/`}>
         {categoryName}
       </a>
     </div>
@@ -44,6 +66,7 @@ const excerpt =
   <!-- 🔹 META RECENSIONE -->
   {showMeta && (
     <div class="meta">
+
       {piattaforma && (
         <a href={`/piattaforma/${piattaforma.toLowerCase()}/`}>
           {piattaforma}
@@ -67,6 +90,7 @@ const excerpt =
           </a>
         </>
       )}
+
     </div>
   )}
 
@@ -79,7 +103,10 @@ const excerpt =
 
   <!-- EXCERPT -->
   {excerpt && (
-  <div class="excerpt" set:html={excerpt} />
-)}
+    <div
+      class="excerpt"
+      set:html={excerpt}
+    />
+  )}
 
 </div>
