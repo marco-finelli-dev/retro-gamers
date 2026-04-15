@@ -3,32 +3,39 @@ import { fetchAPI } from '../../lib/api';
 import '../../styles/components/latest.css';
 import Meta from '../ui/Meta.astro';
 
-const data = await fetchAPI(`
-{
-  posts(first: 6, where: { orderby: { field: DATE, order: DESC } }) {
-    nodes {
-      title
-      slug
-      excerpt
-      content
-      datiRecensione {
-        riassuntoBreve
-      }
-      categories {
-        nodes {
-          name
-          uri
+let posts = [];
+
+try {
+  const data = await fetchAPI(`
+  {
+    posts(first: 6, where: { orderby: { field: DATE, order: DESC } }) {
+      nodes {
+        title
+        slug
+        excerpt
+        content
+        datiRecensione {
+          riassuntoBreve
         }
-      }
-      featuredImage {
-        node { sourceUrl }
+        categories {
+          nodes {
+            name
+            uri
+          }
+        }
+        featuredImage {
+          node { sourceUrl }
+        }
       }
     }
   }
-}
-`);
+  `);
 
-const posts = data.posts.nodes;
+  posts = data?.posts?.nodes || [];
+
+} catch (e) {
+  console.error('Latest fetch error:', e);
+}
 
 /* ========================
    EXCERPT SYSTEM
@@ -62,41 +69,39 @@ const getExcerpt = (post) => {
       </div>
 
       <div class="latest-grid">
-        {posts.map(post => {
 
-          const category = post.categories.nodes[0];
+        {posts.map((post) => {
+          const category = post.categories?.nodes?.[0] || null;
 
           return (
             <article class="latest-item">
 
-              <!-- CARD -->
+              {/* CARD */}
               <div class="card card--media">
 
-                <!-- immagine cliccabile -->
                 <a href={`/${post.slug}`} class="card-link">
                   <img
-                    src={post.featuredImage?.node?.sourceUrl}
-                    alt={post.title}
+                    src={post.featuredImage?.node?.sourceUrl || ''}
+                    alt={post.title || ''}
                   />
                 </a>
 
-                <!-- badge categoria -->
-           {category && (
-  <Meta
-    variant="overlay"
-    items={[
-      {
-        label: category.name,
-        href: category.uri,
-        class: 'meta-badge'
-      }
-    ]}
-  />
-)}
+                {category && (
+                  <Meta
+                    variant="overlay"
+                    items={[
+                      {
+                        label: category.name,
+                        href: category.uri,
+                        class: 'meta-badge'
+                      }
+                    ]}
+                  />
+                )}
 
               </div>
 
-              <!-- CONTENUTO -->
+              {/* CONTENUTO */}
               <div class="latest-content">
 
                 <h3 class="latest-title">
@@ -114,6 +119,7 @@ const getExcerpt = (post) => {
             </article>
           );
         })}
+
       </div>
 
     </div>

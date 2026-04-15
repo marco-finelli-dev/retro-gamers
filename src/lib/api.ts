@@ -12,7 +12,6 @@ export async function fetchAPI(query: string, variables = {}) {
 
   const json = await res.json();
 
-  // 👇 QUESTO È IL FIX
   if (json.errors) {
     console.error('GraphQL errors:', json.errors);
 
@@ -22,8 +21,4 @@ export async function fetchAPI(query: string, variables = {}) {
   }
 
   return json.data;
-}
-if (!post) {
-  console.warn(`Post non trovato per slug: ${slug}`);
-  throw new Response(null, { status: 404 });
 }

@@ -1,9 +1,8 @@
 ---
-const { post, showMeta = false } = Astro.props;
+const { post = null, showMeta = false } = Astro.props;
 
-// 🛡️ sicurezza: evita crash in build
 if (!post) {
-  throw new Error('Card component requires a post prop');
+  return null;
 }
 
 /* ========================
@@ -42,7 +41,6 @@ const excerpt =
 
 <div class="card">
 
-  <!-- IMMAGINE -->
   <a href={`/${categorySlug}/${slug}/`} class="card__image">
     <div class="screen">
       <img
@@ -54,7 +52,6 @@ const excerpt =
     </div>
   </a>
 
-  <!-- 🔹 CATEGORIA -->
   {!showMeta && categoryName && (
     <div class="card__category">
       <a href={`/${categorySlug}/`}>
@@ -63,7 +60,6 @@ const excerpt =
     </div>
   )}
 
-  <!-- 🔹 META RECENSIONE -->
   {showMeta && (
     <div class="meta">
 
@@ -94,19 +90,14 @@ const excerpt =
     </div>
   )}
 
-  <!-- TITOLO -->
   <h2 class="card__title">
     <a href={`/${categorySlug}/${slug}/`}>
       {title}
     </a>
   </h2>
 
-  <!-- EXCERPT -->
   {excerpt && (
-    <div
-      class="excerpt"
-      set:html={excerpt}
-    />
+    <div class="excerpt" set:html={excerpt} />
   )}
 
 </div>

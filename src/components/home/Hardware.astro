@@ -1,7 +1,4 @@
 ---
-import { fetchAPI } from '../../lib/api';
-import Meta from '../ui/Meta.astro';
-
 import '../../styles/components/meta.css';
 import '../../styles/components/hardware.css';
 
@@ -20,26 +17,23 @@ const hardware = (Astro.props.posts ?? []).slice(0, 4);
       <div class="hardware-track">
 
         {hardware.map((post) => (
-        <div class="hardware-item">
+          <div class="hardware-item">
 
-  <a href={`/${post.slug}`} class="hardware-card">
+            <a href={`/${post.slug}`} class="hardware-card">
 
-    <img
-      src={post.featuredImage?.node?.sourceUrl}
-      alt={post.title}
-      loading="lazy"
-    />
+              <img
+                src={post.featuredImage?.node?.sourceUrl || ''}
+                alt={post.title || ''}
+                loading="lazy"
+              />
 
-    <Meta post={post} />
+            </a>
 
-  </a>
+            <div class="hardware-content">
+              <h3>{post.title}</h3>
+            </div>
 
-  <div class="hardware-content">
-    <h3>{post.title}</h3>
-  </div>
-
-</div>
-
+          </div>
         ))}
 
       </div>
