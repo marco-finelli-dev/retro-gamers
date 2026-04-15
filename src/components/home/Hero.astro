@@ -23,10 +23,14 @@ const data = await fetchAPI(`
 }
 `);
 
-const posts = data.posts.nodes;
+const posts = data?.posts?.nodes || [];
 
 const [main, ...rest] = posts;
 const side = rest.slice(0, 3);
+
+if (!posts.length) {
+  console.warn('No posts found');
+}
 
 /* ========================
    HELPERS
