@@ -1,32 +1,41 @@
 ---
 import { fetchAPI } from '../../lib/api';
 import '../../styles/components/header/news-menu.css';
-const newsData = await fetchAPI(`
-{
-  posts(
-    first: 5,
-    where: {
-      categoryName: "news",
-      orderby: { field: DATE, order: DESC }
-    }
-  ) {
-    nodes {
-      title
-      slug
-      featuredImage {
-        node {
-          sourceUrl
-        }
+
+let posts = [];
+
+try {
+  const data = await fetchAPI(`
+  {
+    posts(
+      first: 5,
+      where: {
+        categoryName: "news",
+        orderby: { field: DATE, order: DESC }
       }
-      categories {
-        nodes {
-          name
+    ) {
+      nodes {
+        title
+        slug
+        featuredImage {
+          node {
+            sourceUrl
+          }
+        }
+        categories {
+          nodes {
+            name
+          }
         }
       }
     }
   }
+  `);
+
+  posts = data?.posts?.nodes || [];
+} catch (e) {
+  console.error('NewsMenu fetch error', e);
 }
-`);
 ---
 
 <div class="nav-item news-dropdown">
@@ -34,20 +43,20 @@ const newsData = await fetchAPI(`
   <div class="news-dropdown-menu">
     <div class="hover-bg"></div>
 
-    {newsData.posts.nodes.map(post => (
-      <a href={`/news/${post.slug}`} class="news-item">
+    {posts.map((p) => (
+      <a href={`/news/${p.slug}`} class="news-item">
 
         <div class="news-thumb">
-          <img src={post.featuredImage?.node?.sourceUrl} />
+          <img src={p.featuredImage?.node?.sourceUrl} alt={p.title} />
         </div>
 
         <div class="news-content">
           <div class="news-meta">
-            {post.categories.nodes[0]?.name}
+            {p.categories?.nodes?.[0]?.name}
           </div>
 
           <div class="news-title">
-            {post.title}
+            {p.title}
           </div>
         </div>
 

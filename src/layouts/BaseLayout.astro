@@ -4,25 +4,39 @@ import '../styles/components/hero.css';
 import '../styles/components/card.css';
 import '../styles/components/header/header.css';
 import '../styles/components/reviews.css';
+
 import Header from '../components/Header.astro';
 ---
 
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <title>Retro Gamers</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <title>Retro Gamers</title>
+
+    <!-- FONT -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
   </head>
+
   <body>
 
+    <!-- HEADER -->
     <Header />
 
+    <!-- MAIN -->
     <main>
       <slot />
     </main>
-<script src="/scripts/card-effects.js" defer></script>
+
+    <!-- SCRIPTS -->
+    <script src="/scripts/card-effects.js" defer></script>
+
   </body>
 </html>

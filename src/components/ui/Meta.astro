@@ -3,15 +3,17 @@ const {
   items = [],
   variant = 'inline'
 } = Astro.props;
+
 import '../../styles/components/meta.css';
 ---
 
 <div class={`meta meta--${variant}`}>
   {items.map((item, i) => (
-    <>
+    <span class="meta-item">
+
       {i > 0 && <span class="meta-separator">·</span>}
 
-      {item.href ? (
+      {item?.href ? (
         <a class={item.class} href={item.href}>
           {item.label}
         </a>
@@ -20,6 +22,7 @@ import '../../styles/components/meta.css';
           {item.label}
         </span>
       )}
-    </>
+
+    </span>
   ))}
 </div>

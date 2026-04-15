@@ -73,50 +73,60 @@ const posts = [...top, ...must, ...good].slice(0, 5);
   <div class="reviews-dropdown-menu">
   <div class="hover-bg"></div>
 
-    {posts.map(post => {
-      const platform = post.categories.nodes.find(c => c.slug !== 'recensioni');
+{posts.map((post) => {
+  const categories = post.categories?.nodes || [];
 
-      const score = post.score;
-      const platformName = post.platforms?.nodes?.[0]?.name || platform?.name;
-      const developer = post.developers?.nodes?.[0]?.name;
-      const year = post.datiRecensione?.releaseYear;
+  const platform = categories.find(c => c.slug !== 'recensioni');
 
-      return (
-        <a href={`/recensioni/${post.slug}`} class="reviews-item">
+  const score = post.score ?? 0;
 
-          <div class="reviews-thumb">
-            <img src={post.featuredImage?.node?.sourceUrl} alt={post.title} />
-          </div>
+  const platformName =
+    post.platforms?.nodes?.[0]?.name ||
+    platform?.name ||
+    '';
 
-          <div class="reviews-content">
-            <div class="reviews-meta">
-              {platformName}
-              {developer && ` · ${developer}`}
-              {year && ` · ${year}`}
-            </div>
+  const developer = post.developers?.nodes?.[0]?.name || '';
+  const year = post.datiRecensione?.releaseYear || '';
 
-            <div class="reviews-title">
-              {post.title}
-            </div>
-          </div>
+  return (
+    <a href={`/recensioni/${post.slug}`} class="reviews-item">
 
-          <div class={`reviews-score ${
-            score >= 9 ? 'is-top' :
-            score >= 7 ? 'is-mid' :
-            'is-low'
-          }`}>
+      <div class="reviews-thumb">
+        <img
+          src={post.featuredImage?.node?.sourceUrl || ''}
+          alt={post.title || ''}
+        />
+      </div>
 
-            <span class="reviews-score-value">{score}</span>
+      <div class="reviews-content">
+        <div class="reviews-meta">
+          {platformName}
+          {developer && ` · ${developer}`}
+          {year && ` · ${year}`}
+        </div>
 
-            {score >= 9.5 && <span class="reviews-badge gold">TOP</span>}
-            {score >= 9 && score < 9.5 && <span class="reviews-badge silver">MUST</span>}
-            {score >= 8.5 && score < 9 && <span class="reviews-badge bronze">GOOD</span>}
+        <div class="reviews-title">
+          {post.title}
+        </div>
+      </div>
 
-          </div>
+      <div class={`reviews-score ${
+        score >= 9 ? 'is-top' :
+        score >= 7 ? 'is-mid' :
+        'is-low'
+      }`}>
 
-        </a>
-      );
-    })}
+        <span class="reviews-score-value">{score}</span>
+
+        {score >= 9.5 && <span class="reviews-badge gold">TOP</span>}
+        {score >= 9 && score < 9.5 && <span class="reviews-badge silver">MUST</span>}
+        {score >= 8.5 && score < 9 && <span class="reviews-badge bronze">GOOD</span>}
+
+      </div>
+
+    </a>
+  );
+})}
 
   </div>
 
