@@ -1,0 +1,59 @@
+---
+import PlatformsMenu from './header/PlatformsMenu.astro';
+import ReviewsMenu from './header/ReviewsMenu.astro';
+import NewsMenu from './header/NewsMenu.astro';
+import Search from './header/Search.astro';
+---
+
+<header class="header">
+  <div class="header__container">
+
+    <!-- LOGO -->
+        <a href="/" class="header__logo">
+      <img src="https://retro-gamers.it/wp-content/uploads/2025/10/logo_retro_gamers-150x150.webp" class="header__logo-icon" />
+      <img src="https://retro-gamers.it/wp-content/uploads/2025/11/retro_gamers_title-1-2048x341.png" class="header__logo-text" />
+    </a>
+
+    <!-- NAV -->
+    <nav class="header__nav">
+
+      <!-- PIATTAFORME -->
+      <div class="nav-item has-dropdown">
+        <span class="nav-link">
+  <span class="nav-icon">☰</span>
+  <span>Piattaforme</span>
+</span>
+        <PlatformsMenu />
+      </div>
+
+      <!-- RECENSIONI -->
+      <div class="nav-item has-dropdown">
+        <span class="nav-link">
+  <span class="nav-icon">☰</span>
+  <span>Recensioni</span>
+</span>
+        <ReviewsMenu />
+      </div>
+
+      <!-- NEWS -->
+      <div class="nav-item has-dropdown">
+        <span class="nav-link">
+  <span class="nav-icon">☰</span>
+  <span>News</span>
+</span>
+        <NewsMenu />
+      </div>
+
+      <!-- LINK NORMALI -->
+      <a href="/speciali/" class="nav-link">Speciali</a>
+      <a href="/guide/" class="nav-link">Guide</a>
+      <a href="/interviste/" class="nav-link">Interviste</a>
+      <a href="/memories/" class="nav-link">Memories</a>
+
+      <!-- SEARCH -->
+      <Search />
+
+    </nav>
+
+  </div>
+</header>

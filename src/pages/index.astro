@@ -1,17 +1,86 @@
 ---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/home/Hero.astro';
+import Card from '../components/Card.astro';
+import '../styles/components/hero.css';
+import '../styles/pages/home.css';
+import Latest from '../components/home/Latest.astro';
+import Reviews from '../components/home/Reviews.astro';
+import Specials from '../components/home/Specials.astro';
+import Memories from '../components/home/Memories.astro';
+import Hardware from '../components/home/Hardware.astro';
+import { fetchAPI } from '../lib/api';
 
+// =========================
+// HERO + RECENT POSTS
+// =========================
+
+const data = await fetchAPI(`
+{
+  posts(first: 8, where: { orderby: { field: DATE, order: DESC } }) {
+    nodes {
+      title
+      slug
+      excerpt
+      featuredImage {
+        node { sourceUrl }
+      }
+      categories {
+        nodes { name }
+      }
+    }
+  }
+}
+`);
+
+const posts = data.posts.nodes;
+
+const heroPosts = posts.slice(0, 4);
+const recensioni = posts.slice(4, 8);
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<BaseLayout title="Retro Gamers">
+
+  <!-- HERO -->
+  <section class="home-hero">
+    <div class="container">
+      <Hero />
+    </div>
+  </section>
+
+  <!-- MEMORIES -->
+<section class="home-memories">
+  <div class="container">
+    <Memories />
+  </div>
+</section>
+
+  <!-- REVIEWS -->
+  <section class="home-reviews">
+    <div class="container">
+      <Reviews />
+    </div>
+    </section>
+
+  <!-- SPECIALS -->
+  <section class="home-specials">
+    <div class="container">
+      <Specials />
+    </div>
+  </section>
+
+  <!-- HARDWARE -->
+  <section class="home-hardware">
+    <div class="container">
+      <Hardware posts={posts} />
+    </div>
+    </section>
+
+  <!-- LATEST -->
+  <section class="home-latest">
+    <div class="container">
+      <Latest />
+    </div>
+  </section>
+
+</BaseLayout>

@@ -1,0 +1,160 @@
+---
+import '../../styles/components/header/search.css';
+---
+
+<div class="search-wrapper">
+
+  <div class="search-toggle">
+    <svg viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="7" stroke="white" stroke-width="2" fill="none"/>
+      <line x1="16" y1="16" x2="21" y2="21" stroke="white" stroke-width="2"/>
+    </svg>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" placeholder="Cerca nel sito..." />
+
+    <!-- 🔥 RESULTS -->
+    <div class="search-results">
+      <div class="hover-bg"></div>
+    </div>
+
+    <div class="search-close">✕</div>
+  </div>
+
+</div>
+
+<div class="search-overlay"></div>
+
+<script is:inline>
+function highlight(text, query) {
+  const regex = new RegExp(`(${query})`, 'gi');
+  return text.replace(regex, '<span class="highlight">$1</span>');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  const searchWrapper = document.querySelector('.search-wrapper');
+  const searchToggle = document.querySelector('.search-toggle');
+  const searchBar = document.querySelector('.search-bar');
+  const searchClose = document.querySelector('.search-close');
+  const searchInput = searchBar.querySelector('input');
+  const resultsBox = searchBar.querySelector('.search-results'); // 🔥 FIX
+  const overlay = document.querySelector('.search-overlay');
+
+  let debounce;
+
+  function openSearch() {
+    searchBar.classList.add('active');
+    overlay.classList.add('active');
+    document.body.classList.add('no-scroll');
+
+    resultsBox.classList.remove('active');
+    resultsBox.innerHTML = '<div class="hover-bg"></div>'; // 🔥 reset corretto
+
+    searchInput.focus();
+  }
+
+  function closeSearch() {
+    searchBar.classList.remove('active');
+    overlay.classList.remove('active');
+    document.body.classList.remove('no-scroll');
+
+    resultsBox.classList.remove('active');
+    resultsBox.innerHTML = '<div class="hover-bg"></div>'; // 🔥 reset
+    searchInput.value = '';
+  }
+
+  searchToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openSearch();
+  });
+
+  searchClose.addEventListener('click', closeSearch);
+  overlay.addEventListener('click', closeSearch);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSearch();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!searchWrapper.contains(e.target)) {
+      closeSearch();
+    }
+  });
+
+  searchInput.addEventListener('input', () => {
+
+    const query = searchInput.value.trim();
+    clearTimeout(debounce);
+
+    if (query.length < 2) {
+      resultsBox.classList.remove('active');
+      resultsBox.innerHTML = '<div class="hover-bg"></div>';
+      return;
+    }
+
+    debounce = setTimeout(async () => {
+
+      const res = await fetch('/api/search?q=' + encodeURIComponent(query));
+      const data = await res.json();
+
+      let html = '<div class="hover-bg"></div>'; // 🔥 SEMPRE PRESENTE
+
+      if (!data.length) {
+        html += `<div class="search-item">Nessun risultato</div>`;
+      } else {
+        html += data.map(post => `
+          <a href="/recensioni/${post.slug}" class="search-item">
+            
+            <div class="search-thumb">
+              <img src="${post.featuredImage?.node?.sourceUrl || ''}" />
+            </div>
+
+            <div class="search-content">
+              <div class="search-category">
+                ${post.categories?.nodes?.[0]?.name || ''}
+              </div>
+
+              <div class="search-title">
+                ${highlight(post.title, query)}
+              </div>
+            </div>
+
+          </a>
+        `).join('');
+      }
+
+      resultsBox.innerHTML = html;
+      resultsBox.classList.add('active');
+
+      // 🔥 INIT HOVER (COME REVIEWS)
+      const items = resultsBox.querySelectorAll('.search-item');
+      const bg = resultsBox.querySelector('.hover-bg');
+
+items.forEach(item => {
+  item.addEventListener('mouseenter', () => {
+
+    const rect = item.getBoundingClientRect();
+    const parentRect = resultsBox.getBoundingClientRect();
+
+    const paddingY = 6;
+
+    const offset = rect.top - parentRect.top + resultsBox.scrollTop;
+
+    bg.style.transform = `translateY(${offset + paddingY}px)`;
+    bg.style.height = `${rect.height - paddingY * 2}px`;
+    bg.style.opacity = 1;
+
+  });
+});
+
+      resultsBox.addEventListener('mouseleave', () => {
+        bg.style.opacity = 0;
+      });
+
+    }, 250);
+  });
+
+});
+</script>

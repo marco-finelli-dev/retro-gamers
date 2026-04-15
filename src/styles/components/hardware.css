@@ -1,0 +1,120 @@
+/* ========================================
+   HARDWARE GRID
+======================================== */
+
+.hardware-track {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-md);
+  }
+  
+  
+  /* ========================================
+     ITEM
+  ======================================== */
+  
+  .hardware-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  
+  /* ========================================
+     CARD (INDIPENDENTE DA .card)
+  ======================================== */
+  
+  .hardware-card {
+    position: relative;
+    display: block;
+  
+    width: 100%;
+    aspect-ratio: 3 / 2;
+  
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  
+    background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.02),
+    rgba(0,0,0,0.2)
+  );
+  
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  
+  
+  /* hover pulito (NO glow, NO CRT) */
+  .hardware-card:hover {
+    transform: scale(1.03);
+  
+    box-shadow:
+      0 12px 30px rgba(0,0,0,0.35);
+  }
+  
+  
+  /* ========================================
+     IMAGE
+  ======================================== */
+  
+  .hardware-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1);
+    transition: transform 0.4s ease;
+  }
+  
+  .hardware-card:hover img {
+    transform: scale(1.05);
+  }
+  
+  
+  /* ========================================
+     CONTENT (SOTTO LA CARD)
+  ======================================== */
+  
+  .hardware-content {
+    margin-top: 10px;
+    padding: 0 2px;
+  }
+  
+  .hardware-content h3 {
+    font-size: 15px;
+    line-height: 1.4;
+  
+    color: rgba(255,255,255,0.9);
+  
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  
+    transition: color 0.2s ease;
+  }
+  
+  .hardware-item:hover .hardware-content h3 {
+    color: #fff;
+  }
+  
+  
+  /* ========================================
+     RESPONSIVE
+  ======================================== */
+  
+  @media (max-width: 1200px) {
+    .hardware-track {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  
+  @media (max-width: 900px) {
+    .hardware-track {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 520px) {
+    .hardware-track {
+      grid-template-columns: 1fr;
+    }
+  }

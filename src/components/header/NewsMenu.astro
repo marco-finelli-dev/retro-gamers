@@ -1,0 +1,90 @@
+---
+import { fetchAPI } from '../../lib/api';
+import '../../styles/components/header/news-menu.css';
+const newsData = await fetchAPI(`
+{
+  posts(
+    first: 5,
+    where: {
+      categoryName: "news",
+      orderby: { field: DATE, order: DESC }
+    }
+  ) {
+    nodes {
+      title
+      slug
+      featuredImage {
+        node {
+          sourceUrl
+        }
+      }
+      categories {
+        nodes {
+          name
+        }
+      }
+    }
+  }
+}
+`);
+---
+
+<div class="nav-item news-dropdown">
+
+  <div class="news-dropdown-menu">
+    <div class="hover-bg"></div>
+
+    {newsData.posts.nodes.map(post => (
+      <a href={`/news/${post.slug}`} class="news-item">
+
+        <div class="news-thumb">
+          <img src={post.featuredImage?.node?.sourceUrl} />
+        </div>
+
+        <div class="news-content">
+          <div class="news-meta">
+            {post.categories.nodes[0]?.name}
+          </div>
+
+          <div class="news-title">
+            {post.title}
+          </div>
+        </div>
+
+      </a>
+    ))}
+
+  </div>
+
+</div>
+
+<script is:inline>
+document.addEventListener('DOMContentLoaded', () => {
+
+  document.querySelectorAll('.news-dropdown-menu').forEach(menu => {
+
+    const items = menu.querySelectorAll('.news-item');
+    const bg = menu.querySelector('.hover-bg');
+    if (!bg) return;
+
+    items.forEach(item => {
+      item.addEventListener('mouseenter', () => {
+
+        const rect = item.getBoundingClientRect();
+        const parentRect = menu.getBoundingClientRect();
+
+        const offset = rect.top - parentRect.top + 4;
+
+        bg.style.transform = `translateY(${offset}px)`;
+        bg.style.opacity = 1;
+      });
+    });
+
+    menu.addEventListener('mouseleave', () => {
+      bg.style.opacity = 0;
+    });
+
+  });
+
+});
+</script>

@@ -1,0 +1,283 @@
+/* ========================================
+   REVIEWS SECTION
+======================================== */
+
+.home-reviews {
+  margin: var(--space-xl) 0;
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ========================
+   GRID
+======================== */
+
+.reviews-grid {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr;
+  gap: var(--space-lg);
+  align-items: stretch;
+}
+
+.review-side {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: var(--space-sm);
+  height: 100%;
+}
+
+
+/* ========================
+   CARD
+======================== */
+
+.review-main,
+.review-card {
+  position: relative;
+  height: 100%;
+
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeUp 0.6s ease forwards;
+}
+
+/* stagger */
+.review-card:nth-child(1) { animation-delay: 0.1s; }
+.review-card:nth-child(2) { animation-delay: 0.2s; }
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ========================
+   IMAGE
+======================== */
+
+.review-main img,
+.review-card img {
+  will-change: transform;
+}
+
+
+/* ========================
+   META (overlay)
+======================== */
+
+.review-main .meta--overlay {
+  top: var(--space-md);
+  left: var(--space-md);
+}
+
+.review-card .meta--overlay {
+  top: var(--space-sm);
+  left: var(--space-sm);
+}
+
+
+/* ========================
+   CONTENT (NUOVO)
+======================== */
+
+.review-content {
+  position: absolute;
+  left: var(--space-md);
+  right: var(--space-md);
+  bottom: var(--space-md);
+
+  z-index: 2;
+}
+
+.review-content.small {
+  left: var(--space-sm);
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+}
+
+
+/* ========================
+   TYPO
+======================== */
+
+.review-main .card-title-lg {
+  line-height: 1.2;
+}
+
+.review-card .card-title-sm {
+  line-height: 1.3;
+}
+
+
+/* ========================
+   EXCERPT
+======================== */
+
+.review-main:hover .card-excerpt {
+  opacity: 1;
+}
+
+
+/* ========================
+   SECTION BOX
+======================== */
+
+.section-box.reviews {
+  background: linear-gradient(
+    180deg,
+    var(--color-blue-dark),
+    #3f3585
+  );
+
+  border: none;
+  box-shadow: none;
+}
+
+
+/* ========================
+   SCORE
+======================== */
+
+.review-score {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  display: grid;
+  place-items: center;
+
+  width: 52px;
+  height: 52px;
+
+  border-radius: 16px;
+
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(18px);
+
+  border: 1px solid rgba(255,255,255,0.25);
+
+  box-shadow:
+    0 8px 25px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.4);
+
+  overflow: hidden;
+  transition: transform 0.25s ease;
+}
+
+.card:hover .review-score {
+  transform: scale(1.06);
+}
+
+
+/* ========================
+   SCORE VALUE
+======================== */
+
+.review-score .value {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.score-top .value { color: #00ff88; }
+.score-must .value { color: #7effc7; }
+.score-low .value { color: #ffd166; }
+
+
+/* ========================
+   SHINE EFFECT
+======================== */
+
+.review-score::after {
+  content: "";
+  position: absolute;
+  inset: -150%;
+
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.4),
+    transparent
+  );
+
+  transform: rotate(25deg);
+  opacity: 0;
+}
+
+.card:hover .review-score::after {
+  opacity: 1;
+  animation: shine 1.2s ease;
+}
+
+@keyframes shine {
+  from {
+    transform: translate(-100%, -100%) rotate(25deg);
+  }
+  to {
+    transform: translate(100%, 100%) rotate(25deg);
+  }
+}
+
+.meta--overlay {
+  position: absolute;
+  z-index: 3;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* MAIN */
+.review-main .meta {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.review-main .card-title-lg {
+  font-size: 22px; /* più importante */
+}
+
+/* SIDE */
+.review-card .meta {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.review-card .card-title-sm {
+  font-size: 16px; /* 🔥 più grande di prima */
+  line-height: 1.25;
+}
+
+/* ========================
+   SIDE EXCERPT
+======================== */
+
+.review-card .card-excerpt.small {
+  font-size: 13px;
+  line-height: 1.4;
+
+  opacity: 0.75;
+
+  margin-top: 4px;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* 🔥 massimo 2 righe */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.review-card .card-title-sm {
+  margin-bottom: 2px;
+}
+
+@media (max-width: 768px) {
+
+  .reviews-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+}

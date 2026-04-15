@@ -1,0 +1,85 @@
+---
+const { post, showMeta = false } = Astro.props;
+
+const title = post.title ?? '';
+const slug = post.slug ?? '';
+const image = post.featuredImage?.node?.sourceUrl || '/placeholder-retro.png';
+
+// 👉 categoria (per link dinamico + label)
+const category = post.categories?.nodes?.[0] ?? null;
+const categorySlug = category?.slug ?? 'recensioni';
+const categoryName = category?.name ?? '';
+
+// 👉 meta recensione
+const piattaforma = post?.platforms?.nodes?.map(t => t.name).join(', ');
+const sviluppatore = post?.developers?.nodes?.map(t => t.name).join(', ');
+const anno = post?.datiRecensione?.releaseYear;
+
+// 👉 excerpt UNICO (campo custom)
+const excerpt =
+  post?.riassuntoBreve ||
+  post?.datiRecensione?.riassuntoBreve ||
+  '';
+  console.log(post);
+---
+
+<div class="card">
+
+  <!-- IMMAGINE -->
+  <a href={`/${categorySlug}/${slug}/`} class="card__image">
+    <div class="screen">
+      <img class="game" src={image} alt={title} loading="lazy" />
+    </div>
+  </a>
+
+  <!-- 🔹 CATEGORIA (solo NON recensioni) -->
+  {!showMeta && categoryName && (
+    <div class="card__category">
+      <a href={`/categoria/${categorySlug}/`}>
+        {categoryName}
+      </a>
+    </div>
+  )}
+
+  <!-- 🔹 META RECENSIONE -->
+  {showMeta && (
+    <div class="meta">
+      {piattaforma && (
+        <a href={`/piattaforma/${piattaforma.toLowerCase()}/`}>
+          {piattaforma}
+        </a>
+      )}
+
+      {sviluppatore && (
+        <>
+          {" • "}
+          <a href={`/sviluppatore/${sviluppatore.toLowerCase()}/`}>
+            {sviluppatore}
+          </a>
+        </>
+      )}
+
+      {anno && (
+        <>
+          {" • "}
+          <a href={`/anno/${anno}/`}>
+            {anno}
+          </a>
+        </>
+      )}
+    </div>
+  )}
+
+  <!-- TITOLO -->
+  <h2 class="card__title">
+    <a href={`/${categorySlug}/${slug}/`}>
+      {title}
+    </a>
+  </h2>
+
+  <!-- EXCERPT -->
+  {excerpt && (
+  <div class="excerpt" set:html={excerpt} />
+)}
+
+</div>

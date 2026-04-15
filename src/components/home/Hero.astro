@@ -1,0 +1,136 @@
+---
+import { fetchAPI } from '../../lib/api';
+import '../../styles/components/hero.css';
+
+const data = await fetchAPI(`
+{
+  posts(first: 5, where: { orderby: { field: DATE, order: DESC } }) {
+    nodes {
+      title
+      slug
+      excerpt
+      datiRecensione {
+        riassuntoBreve
+      }
+      categories {
+        nodes { name slug }
+      }
+      featuredImage {
+        node { sourceUrl }
+      }
+    }
+  }
+}
+`);
+
+const posts = data.posts.nodes;
+
+const [main, ...rest] = posts;
+const side = rest.slice(0, 3);
+
+/* ========================
+   HELPERS
+======================== */
+
+const getExcerpt = (post) =>
+  post?.datiRecensione?.riassuntoBreve ||
+  post?.excerpt ||
+  '';
+
+const getCategory = (post) => {
+  const cat = post.categories?.nodes?.[0];
+  return cat
+    ? { label: cat.name, href: `/${cat.slug}` }
+    : null;
+};
+---
+
+<section class="home-hero">
+  <div class="container">
+    <div class="section-box hero">
+
+      <div class="hero-grid">
+
+        {/* ================= MAIN ================= */}
+        {main && (() => {
+          const cat = getCategory(main);
+          const excerpt = getExcerpt(main);
+
+          return (
+            <div class="hero-main card" data-link={`/${main.slug}`}>
+
+              <img
+                src={main.featuredImage?.node?.sourceUrl}
+                alt={main.title}
+              />
+
+              <div class="card-content">
+
+                {cat && (
+                  <a href={cat.href} class="card-meta">
+                    {cat.label}
+                  </a>
+                )}
+
+                <h1 class="card-title-xl">
+                  {main.title}
+                </h1>
+
+                {excerpt && (
+                  <p
+                    class="card-excerpt"
+                    set:html={excerpt}
+                  />
+                )}
+
+              </div>
+
+            </div>
+          );
+        })()}
+
+        {/* ================= SIDE ================= */}
+        <div class="hero-right">
+
+          {side.map(post => {
+            const cat = getCategory(post);
+
+            return (
+              <div
+                class="hero-side card"
+                data-link={`/${post.slug}`}
+              >
+
+                <img
+                  src={post.featuredImage?.node?.sourceUrl}
+                  alt={post.title}
+                />
+
+                <div class="card-content small">
+
+                  {cat && (
+                    <a
+                      href={cat.href}
+                      class="card-meta small"
+                    >
+                      {cat.label}
+                    </a>
+                  )}
+
+                  <h3 class="card-title-md">
+                    {post.title}
+                  </h3>
+
+                </div>
+
+              </div>
+            );
+          })}
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>

@@ -1,0 +1,155 @@
+---
+import { fetchAPI } from '../../lib/api';
+import '../../styles/components/header/reviews-menu.css';
+
+const reviewsData = await fetchAPI(`
+{
+  posts(
+    first: 20,
+    where: { categoryName: "reviews" }
+  ) {
+    nodes {
+      title
+      slug
+      date
+      featuredImage {
+        node { sourceUrl }
+      }
+      categories {
+        nodes { name slug }
+      }
+      datiRecensione {
+        totale
+        releaseYear
+      }
+      developers {
+        nodes { name }
+      }
+      platforms {
+        nodes { name }
+      }
+    }
+  }
+}
+`);
+
+// 🔥 LOGICA IDENTICA
+const all = reviewsData.posts.nodes
+  .map(p => ({
+    ...p,
+    score: p.datiRecensione?.totale || 0
+  }))
+  .sort((a, b) => {
+    if (b.score === a.score) {
+      return new Date(b.date) - new Date(a.date);
+    }
+    return b.score - a.score;
+  });
+
+const topAll = all.filter(p => p.score >= 9.5);
+const mustAll = all.filter(p => p.score >= 9 && p.score < 9.5);
+const goodAll = all.filter(p => p.score >= 8.5 && p.score < 9);
+
+let top = topAll.slice(0, 2);
+let must = mustAll.slice(0, 2);
+let good = goodAll.slice(0, 1);
+
+if (must.length < 2) {
+  const missing = 2 - must.length;
+
+  const extraTop = topAll.slice(2, 2 + Math.ceil(missing / 2));
+  const extraGood = goodAll.slice(1, 1 + Math.floor(missing / 2));
+
+  top = [...top, ...extraTop];
+  good = [...good, ...extraGood];
+}
+
+const posts = [...top, ...must, ...good].slice(0, 5);
+---
+
+<div class="nav-item reviews-dropdown">
+
+  <!-- MENU -->
+  <div class="reviews-dropdown-menu">
+  <div class="hover-bg"></div>
+
+    {posts.map(post => {
+      const platform = post.categories.nodes.find(c => c.slug !== 'recensioni');
+
+      const score = post.score;
+      const platformName = post.platforms?.nodes?.[0]?.name || platform?.name;
+      const developer = post.developers?.nodes?.[0]?.name;
+      const year = post.datiRecensione?.releaseYear;
+
+      return (
+        <a href={`/recensioni/${post.slug}`} class="reviews-item">
+
+          <div class="reviews-thumb">
+            <img src={post.featuredImage?.node?.sourceUrl} alt={post.title} />
+          </div>
+
+          <div class="reviews-content">
+            <div class="reviews-meta">
+              {platformName}
+              {developer && ` · ${developer}`}
+              {year && ` · ${year}`}
+            </div>
+
+            <div class="reviews-title">
+              {post.title}
+            </div>
+          </div>
+
+          <div class={`reviews-score ${
+            score >= 9 ? 'is-top' :
+            score >= 7 ? 'is-mid' :
+            'is-low'
+          }`}>
+
+            <span class="reviews-score-value">{score}</span>
+
+            {score >= 9.5 && <span class="reviews-badge gold">TOP</span>}
+            {score >= 9 && score < 9.5 && <span class="reviews-badge silver">MUST</span>}
+            {score >= 8.5 && score < 9 && <span class="reviews-badge bronze">GOOD</span>}
+
+          </div>
+
+        </a>
+      );
+    })}
+
+  </div>
+
+</div>
+
+
+<script is:inline>
+document.addEventListener('DOMContentLoaded', () => {
+
+  document.querySelectorAll('.reviews-dropdown-menu').forEach(menu => {
+
+    const items = menu.querySelectorAll('.reviews-item');
+    const bg = menu.querySelector('.hover-bg');
+    if (!bg) return;
+
+    items.forEach(item => {
+      item.addEventListener('mouseenter', () => {
+
+        const rect = item.getBoundingClientRect();
+        const parentRect = menu.getBoundingClientRect();
+
+        const offset = rect.top - parentRect.top + (rect.height - bg.offsetHeight) / 2;
+        
+        bg.style.transform = `translateY(${offset}px)`;
+        bg.style.opacity = 1;
+      });
+    });
+
+    menu.addEventListener('mouseleave', () => {
+      bg.style.opacity = 0;
+    });
+
+  });
+
+});
+</script>

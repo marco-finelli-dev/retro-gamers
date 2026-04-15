@@ -1,0 +1,49 @@
+---
+import { fetchAPI } from '../../lib/api';
+import Meta from '../ui/Meta.astro';
+
+import '../../styles/components/meta.css';
+import '../../styles/components/hardware.css';
+
+// fallback temporaneo
+const hardware = (Astro.props.posts ?? []).slice(0, 4);
+---
+
+<section class="home-hardware">
+  <div class="container">
+    <div class="section-box hardware">
+
+      <div class="section-header">
+        <h2>Hardware</h2>
+      </div>
+
+      <div class="hardware-track">
+
+        {hardware.map((post) => (
+        <div class="hardware-item">
+
+  <a href={`/${post.slug}`} class="hardware-card">
+
+    <img
+      src={post.featuredImage?.node?.sourceUrl}
+      alt={post.title}
+      loading="lazy"
+    />
+
+    <Meta post={post} />
+
+  </a>
+
+  <div class="hardware-content">
+    <h3>{post.title}</h3>
+  </div>
+
+</div>
+
+        ))}
+
+      </div>
+
+    </div>
+  </div>
+</section>

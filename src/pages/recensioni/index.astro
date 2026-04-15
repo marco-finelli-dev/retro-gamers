@@ -1,0 +1,166 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Card from '../../components/Card.astro';
+import '../../styles/pages/recensioni.css';
+import { fetchAPI } from '../../lib/api';
+
+// PARAMETRI URL
+const piattaformaSlug = Astro.url.searchParams.get('piattaforma');
+const sviluppatoreSlug = Astro.url.searchParams.get('sviluppatore');
+const genereSlug = Astro.url.searchParams.get('genere');
+const annoSlug = Astro.url.searchParams.get('anno');
+
+// 🔥 QUERY
+const data = await fetchAPI(`
+{
+  posts(
+    first: 100
+    where: { categoryName: "reviews" }
+  ) {
+    nodes {
+      title
+      slug
+      excerpt
+
+      featuredImage {
+        node {
+          sourceUrl
+        }
+      }
+
+      datiRecensione {
+  releaseYear
+  riassuntoBreve
+}
+
+      platforms {
+        nodes { name slug }
+      }
+
+      developers {
+        nodes { name slug }
+      }
+
+      genres {
+        nodes { name slug }
+      }
+    }
+  }
+}
+`);
+
+// DATI
+const posts = data.posts.nodes;
+
+// 🔥 FILTRI DINAMICI
+const getUnique = (items) =>
+  [...new Map(items.map(i => [i.slug, i])).values()];
+
+const piattaforme = getUnique(posts.flatMap(p => p.platforms.nodes));
+const sviluppatori = getUnique(posts.flatMap(p => p.developers.nodes));
+const generi = getUnique(posts.flatMap(p => p.genres.nodes));
+
+// ✅ ANNI (FIX COMPLETO)
+const anni = [
+  ...new Set(
+    posts
+      .map(p => String(p.datiRecensione?.releaseYear))
+      .filter(Boolean)
+  )
+].sort((a, b) => b - a);
+
+// 🔥 FILTRO
+const filteredPosts = posts.filter(post => {
+
+  const matchPiattaforma = !piattaformaSlug ||
+    post.platforms.nodes.some(t => t.slug === piattaformaSlug);
+
+  const matchSviluppatore = !sviluppatoreSlug ||
+    post.developers.nodes.some(t => t.slug === sviluppatoreSlug);
+
+  const matchGenere = !genereSlug ||
+    post.genres.nodes.some(t => t.slug === genereSlug);
+
+  // ✅ FIX ANNO
+  const matchAnno = !annoSlug ||
+    String(post.datiRecensione?.releaseYear) === annoSlug;
+
+  return matchPiattaforma && matchSviluppatore && matchGenere && matchAnno;
+});
+---
+
+<BaseLayout title="Recensioni">
+  <main class="recensioni-page">
+
+    <div class="page">
+    
+    <h1 class="page-title">
+      <span>Recensioni</span>
+    </h1>
+
+    <!-- FILTRI -->
+    <div class="filters">
+      <h2>Filtra le recensioni</h2>
+
+      <form method="GET" class="filters-row">
+
+        <select name="piattaforma">
+          <option value="">Piattaforma</option>
+          {piattaforme.map(p => (
+            <option value={p.slug} selected={p.slug === piattaformaSlug}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        
+        <select name="sviluppatore">
+          <option value="">Sviluppatore</option>
+          {sviluppatori.map(s => (
+            <option value={s.slug} selected={s.slug === sviluppatoreSlug}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+
+        <select name="genere">
+          <option value="">Genere</option>
+          {generi.map(g => (
+            <option value={g.slug} selected={g.slug === genereSlug}>
+              {g.name}
+            </option>
+          ))}
+        </select>
+
+        {/* ✅ FIX ANNO */}
+        <select name="anno">
+          <option value="">Anno</option>
+          {anni.map(a => (
+            <option value={a} selected={a === annoSlug}>
+              {a}
+            </option>
+          ))}
+        </select>
+
+        <button type="submit">Filtra</button>
+
+      </form>
+    </div>
+
+    <!-- GRID -->
+    <div class="recensioni-container">
+      <div class="recensioni-grid">
+
+        {filteredPosts.map(post => (
+          <Card post={post} showMeta={true} />
+        ))}
+
+      </div>
+
+      {filteredPosts.length === 0 && (
+        <p class="no-results">Nessuna recensione trovata 😢</p>
+      )}
+    </div>
+
+  </div>
+</main>
+</BaseLayout>

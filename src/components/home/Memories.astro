@@ -1,0 +1,61 @@
+---
+import { fetchAPI } from '../../lib/api';
+import Meta from '../ui/Meta.astro';
+import '../../styles/components/meta.css';
+import '../../styles/components/memories.css';
+const data = await fetchAPI(`
+{
+  posts(first: 10, where: { categoryName: "reviews", orderby: { field: DATE, order: DESC } }) {
+    nodes {
+      title
+      slug
+      excerpt
+      featuredImage {
+        node { sourceUrl }
+      }
+    }
+  }
+}
+`);
+
+
+const posts = data.posts.nodes;
+
+const main = posts[0];
+const side = posts.slice(1, 3);
+---
+
+<section class="home-memories">
+  <div class="container">
+    <div class="section-box memories">
+
+      <div class="section-header">
+        <h2>Memories</h2>
+      </div>
+
+      <div class="memories-track">
+        {posts.map(post => (
+          <div class="memory-card" data-link={`/${post.slug}`}>
+
+            <div class="memory-inner card">
+
+              <div class="memory-media">
+                <img
+                  src={post.featuredImage?.node?.sourceUrl}
+                  alt={post.title}
+                />
+              </div>
+
+              <div class="card-content">
+                <h3>{post.title}</h3>
+              </div>
+
+            </div>
+
+          </div>
+        ))}
+      </div>
+
+    </div>
+  </div>
+</section>

@@ -1,0 +1,123 @@
+---
+import '../../styles/components/specials.css';
+import { fetchAPI } from '../../lib/api';
+import Meta from '../ui/Meta.astro';
+import '../../styles/components/meta.css';
+
+const data = await fetchAPI(`
+{
+  posts(first: 3, where: { orderby: { field: DATE, order: DESC } }) {
+    nodes {
+      title
+      slug
+      excerpt
+      datiRecensione {
+        riassuntoBreve
+      }
+      categories {
+        nodes { name slug }
+      }
+      featuredImage {
+        node { sourceUrl }
+      }
+    }
+  }
+}
+`);
+
+const posts = data.posts.nodes;
+
+const main = posts[0];
+const side = posts.slice(1, 3);
+
+// helper excerpt
+const getExcerpt = (post) =>
+  post?.datiRecensione?.riassuntoBreve ??
+  post?.excerpt ??
+  '';
+---
+
+<section class="home-specials">
+  <div class="container">
+
+    <div class="section-box">
+
+      <div class="section-header">
+        <h2>Speciali</h2>
+      </div>
+
+      <div class="specials-grid">
+
+        {/* ================= MAIN ================= */}
+        {main && (
+          <div class="specials-main card" data-link={`/${main.slug}`}>
+
+  <img
+    src={main.featuredImage?.node?.sourceUrl}
+    alt={main.title}
+  />
+
+
+  <div class="specials-content">
+
+    {main.categories.nodes[0] && (
+      <a
+        href={`/${main.categories.nodes[0].slug}`}
+        class="specials-meta"
+      >
+        {main.categories.nodes[0].name}
+      </a>
+    )}
+
+    <h3>{main.title}</h3>
+
+    {getExcerpt(main) && (
+      <p class="specials-excerpt">
+        {getExcerpt(main)}
+      </p>
+    )}
+
+  </div>
+
+</div>
+        )}
+
+        {/* ================= SIDE ================= */}
+        <div class="specials-side">
+
+          {side.map(post => (
+            <div class="specials-card card" data-link={`/${post.slug}`}>
+
+  <img
+    src={post.featuredImage?.node?.sourceUrl}
+    alt={post.title}
+  />
+
+  <div class="overlay"></div>
+
+  <div class="specials-content">
+
+    {post.categories.nodes[0] && (
+      <a
+        href={`/${post.categories.nodes[0].slug}`}
+        class="specials-meta-side"
+      >
+        {post.categories.nodes[0].name}
+      </a>
+    )}
+
+    <h4>{post.title}</h4>
+
+  </div>
+
+</div>
+          ))}
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</section>

@@ -1,0 +1,22 @@
+---
+import { fetchAPI } from '../../lib/api';
+
+const { slug } = Astro.params;
+
+const data = await fetchAPI(`
+{
+  recensioni(where: { name: "${slug}" }) {
+    nodes {
+      title
+      content
+    }
+  }
+}
+`);
+
+const post = data.recensioni.nodes[0];
+---
+
+<h1>{post.title}</h1>
+
+<div set:html={post.content} />

@@ -1,0 +1,121 @@
+---
+import { fetchAPI } from '../../lib/api';
+import '../../styles/components/latest.css';
+import Meta from '../ui/Meta.astro';
+
+const data = await fetchAPI(`
+{
+  posts(first: 6, where: { orderby: { field: DATE, order: DESC } }) {
+    nodes {
+      title
+      slug
+      excerpt
+      content
+      datiRecensione {
+        riassuntoBreve
+      }
+      categories {
+        nodes {
+          name
+          uri
+        }
+      }
+      featuredImage {
+        node { sourceUrl }
+      }
+    }
+  }
+}
+`);
+
+const posts = data.posts.nodes;
+
+/* ========================
+   EXCERPT SYSTEM
+======================== */
+
+const stripHTML = (html = '') =>
+  html.replace(/<[^>]*>?/gm, '').trim();
+
+const truncate = (text, length = 140) =>
+  text.length > length ? text.slice(0, length) + '…' : text;
+
+const getExcerpt = (post) => {
+  if (post?.datiRecensione?.riassuntoBreve) {
+    return post.datiRecensione.riassuntoBreve;
+  }
+
+  const wpExcerpt = stripHTML(post?.excerpt || '');
+  if (wpExcerpt) return wpExcerpt;
+
+  const fallback = stripHTML(post?.content || '');
+  return truncate(fallback, 140);
+};
+---
+
+<section class="latest">
+  <div class="container">
+    <div class="section-box">
+
+      <div class="section-header">
+        <h2>Ultimi articoli</h2>
+      </div>
+
+      <div class="latest-grid">
+        {posts.map(post => {
+
+          const category = post.categories.nodes[0];
+
+          return (
+            <article class="latest-item">
+
+              <!-- CARD -->
+              <div class="card card--media">
+
+                <!-- immagine cliccabile -->
+                <a href={`/${post.slug}`} class="card-link">
+                  <img
+                    src={post.featuredImage?.node?.sourceUrl}
+                    alt={post.title}
+                  />
+                </a>
+
+                <!-- badge categoria -->
+           {category && (
+  <Meta
+    variant="overlay"
+    items={[
+      {
+        label: category.name,
+        href: category.uri,
+        class: 'meta-badge'
+      }
+    ]}
+  />
+)}
+
+              </div>
+
+              <!-- CONTENUTO -->
+              <div class="latest-content">
+
+                <h3 class="latest-title">
+                  <a href={`/${post.slug}`}>
+                    {post.title}
+                  </a>
+                </h3>
+
+                <p class="latest-excerpt">
+                  {getExcerpt(post)}
+                </p>
+
+              </div>
+
+            </article>
+          );
+        })}
+      </div>
+
+    </div>
+  </div>
+</section>

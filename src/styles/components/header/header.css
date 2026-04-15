@@ -1,0 +1,161 @@
+/* ========================
+   HEADER BASE
+======================== */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--color-blue-dark);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
+/* container */
+.header__container {
+  display: flex;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ========================
+   LOGO
+======================== */
+
+.header__logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header__logo-icon {
+  height: 48px;
+  width: auto;
+  margin-top: -8px;
+}
+
+.header__logo-text {
+  height: 38px;
+  width: auto;
+}
+
+/* ========================
+   NAV
+======================== */
+
+.header__nav {
+  display: flex;
+  margin-left: auto;
+  gap: 6px; /* 🔥 spacing uniforme */
+}
+
+/* ========================
+   NAV ITEM
+======================== */
+
+.nav-item {
+  position: relative;
+  display: block;
+}
+
+/* ========================
+   NAV LINK
+======================== */
+
+.nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 18px 14px;
+  color: white;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 18px;
+  z-index: 1;
+}
+
+/* icona */
+.nav-icon {
+  font-size: 22px;
+  margin-top: -2px;
+  margin-right: 6px;
+  opacity: 0.9;
+}
+
+/* ========================
+   HOVER (FIX + MIGLIORATO)
+======================== */
+
+/* 🔥 funziona su TUTTI i link */
+.nav-link::before {
+  content: "";
+  position: absolute;
+
+  left: 6px;
+  right: 6px;
+  top: 6px;
+  bottom: 6px;
+
+  border-radius: 12px;
+
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0.02)
+  );
+
+  /* 👇 MOLTO più leggero del menu */
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.15),
+    0 4px 10px rgba(0,0,0,0.18);
+
+  opacity: 0;
+
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+
+  transform: scale(0.96);
+
+  pointer-events: none;
+}
+
+/* hover universale */
+.nav-link:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* micro movimento */
+.nav-link:hover {
+  transform: translateY(-1px);
+}
+
+/* ========================
+   DROPDOWN BASE
+======================== */
+
+/* tutti i menu dentro nav-item */
+.nav-item > *:not(.nav-link) {
+  position: absolute;
+  top: 100%;
+  left: 0;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transform: translateY(8px);
+
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+
+  z-index: 2000;
+}
+
+/* apertura */
+.nav-item:hover > *:not(.nav-link) {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}

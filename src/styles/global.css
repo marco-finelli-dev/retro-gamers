@@ -1,0 +1,197 @@
+/* =========================
+   🎮 DESIGN SYSTEM
+========================= */
+
+:root {
+  /* BACKGROUND */
+  --color-bg: #0F0F0F;
+  --color-surface: #000000;
+
+  /* TEXT */
+  --color-text: #FFFFFF;
+  --color-text-muted: #ADADAD;
+
+  /* PRIMARY */
+  --color-primary: #9AE29B;
+  --color-primary-dark: #5CAB5E;
+
+  /* ACCENTS */
+  --color-yellow: #C9D487;
+  --color-blue: #7C71DA;
+  --color-blue-dark: #50459b;
+  --color-purple: #A057A3;
+  --color-red: #9F4E44;
+  --color-pink: #CB7E75;
+  --color-azure: #6abfc6;
+
+  /* UI */
+  --color-border: #262626;
+
+  /* TYPOGRAPHY */
+  --font-base: 'Roboto', system-ui, sans-serif;
+
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 32px;
+  --text-3xl: 48px;
+
+  /* SPACING */
+  --space-xs: 6px;
+  --space-sm: 10px;
+  --space-md: 20px;
+  --space-lg: 40px;
+  --space-xl: 60px;
+
+  /* RADIUS */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+
+  /* TRANSITIONS */
+  --transition-fast: 0.2s ease;
+
+  /* LAYOUT */
+  --layout-wide: 1200px;
+
+  /* CRT */
+  --crt-brightness-off: 0.6;
+  --crt-brightness-on: 1.2;
+  --crt-contrast-off: 0.9;
+  --crt-contrast-on: 1.2;
+  --crt-saturate-off: 0.8;
+  --crt-saturate-on: 1.2;
+  --crt-noise-duration: 0.55s;
+  --crt-noise-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --layout-wide: 1200px;
+
+  /* SPACING */
+  --space-xs: 6px;
+  --space-sm: 10px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+
+  /* RADIUS */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+
+  /* TYPO */
+  --text-sm: 13px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+
+  /* COLORS */
+  --color-overlay-strong: rgba(0,0,0,0.9);
+  --color-overlay-mid: rgba(0,0,0,0.5);
+  --color-overlay-light: rgba(0,0,0,0.2);
+
+}
+
+/* =========================
+   🔧 RESET
+========================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+
+/* =========================
+   🖼 MEDIA
+========================= */
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+
+/* =========================
+   ✍️ BASE TYPOGRAPHY
+========================= */
+
+body {
+  background: var(--color-blue);
+  color: var(--color-text);
+  font-family: var(--font-base);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-weight: 500;
+}
+
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl); }
+
+p {
+  margin: 0;
+  color: inherit;
+}
+
+
+/* =========================
+   🔗 LINKS
+========================= */
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: var(--transition-fast);
+}
+
+
+/* =========================
+   📦 LAYOUT
+========================= */
+
+.container {
+  width: 100%;
+  max-width: var(--layout-wide);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-md);
+  padding-right: var(--space-md);
+}
+
+
+/* =========================
+   📦 SECTION BOX
+========================= */
+
+.section-box {
+  background: #151515;
+  padding: 42px;
+  border-radius: 16px;
+
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+
+  color: var(--color-text); /* 🔥 FIX IMPORTANTISSIMO */
+}
+
+
+/* =========================
+   🎯 UTILITIES
+========================= */
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+

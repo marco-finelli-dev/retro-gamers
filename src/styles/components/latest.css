@@ -1,0 +1,97 @@
+/* ========================================
+   LATEST SECTION
+======================================== */
+
+.latest {
+  margin: var(--space-lg) 0;
+}
+
+
+/* ========================
+   GRID
+======================== */
+
+.latest-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  align-items: start;
+}
+
+
+/* ========================
+   ITEM
+======================== */
+
+.latest-item {
+  display: block;
+  color: inherit;
+}
+
+
+/* ========================
+   CONTENT
+======================== */
+
+.latest-content {
+  margin-top: var(--space-xs);
+  padding: 0 var(--space-xs);
+}
+
+
+/* ========================
+   TITLE
+======================== */
+
+.latest-title {
+  font-size: var(--text-lg);
+  line-height: 1.25;
+  margin: 4px 0;
+}
+
+
+/* ========================
+   EXCERPT
+======================== */
+
+.latest-excerpt {
+  font-size: var(--text-sm);
+  opacity: 0.75;
+  line-height: 1.45;
+
+  margin: 0;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+
+/* ========================
+   META POSITION (IMPORTANT)
+======================== */
+
+.latest .meta--overlay {
+  top: var(--space-sm);
+  right: var(--space-sm);
+  left: auto;
+  bottom: auto;
+}
+
+
+/* ========================
+   RESPONSIVE
+======================== */
+
+@media (max-width: 1024px) {
+  .latest-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .latest-grid {
+    grid-template-columns: 1fr;
+  }
+}

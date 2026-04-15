@@ -1,0 +1,24 @@
+---
+import { getArticles } from '../lib/sanity'
+import { PortableText } from '@portabletext/react'
+
+const articles = await getArticles()
+---
+<head>
+  <meta charset="UTF-8" />
+</head>
+<h1>Test articoli</h1>
+
+{articles.map(article => (
+  <div style="margin-bottom: 40px;">
+    <h2>{article.title}</h2>
+
+    {article.image && (
+      <img src={article.image} width="300" />
+    )}
+
+    <p>{article.category?.title}</p>
+
+    <PortableText value={article.body} client:load />
+  </div>
+))}

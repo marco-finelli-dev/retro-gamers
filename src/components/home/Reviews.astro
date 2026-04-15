@@ -1,0 +1,154 @@
+---
+import { fetchAPI } from '../../lib/api';
+import '../../styles/components/reviews.css';
+import Meta from '../ui/Meta.astro';
+import '../../styles/components/meta.css';
+
+const data = await fetchAPI(`
+{
+  posts(first: 3, where: { categoryName: "reviews", orderby: { field: DATE, order: DESC } }) {
+    nodes {
+      title
+      slug
+      excerpt
+      categories { nodes { name, slug } }
+      featuredImage { node { sourceUrl } }
+      datiRecensione {
+        totale
+        releaseYear
+        riassuntoBreve
+      }
+      developers { nodes { name } }
+      platforms { nodes { name } }
+    }
+  }
+}
+`);
+
+const posts = data.posts.nodes.map(p => ({
+  ...p,
+  score: p.datiRecensione?.totale || 0
+}));
+
+const main = posts[0];
+const side = posts.slice(1, 3);
+
+// =========================
+// HELPERS
+// =========================
+
+const getMeta = (post) => {
+  return [
+    post.platforms?.nodes?.[0] && {
+      label: post.platforms.nodes[0].name,
+      href: `/platform/${post.platforms.nodes[0].name.toLowerCase()}`
+    },
+    post.developers?.nodes?.[0] && {
+      label: post.developers.nodes[0].name,
+      href: `/developer/${post.developers.nodes[0].name.toLowerCase()}`
+    },
+    post.datiRecensione?.releaseYear && {
+      label: post.datiRecensione.releaseYear,
+      href: `/year/${post.datiRecensione.releaseYear}`
+    }
+  ].filter(Boolean);
+};
+
+const getScoreClass = (score) => {
+  if (score >= 9) return "score-top";
+  if (score >= 7) return "score-must";
+  return "score-low";
+};
+
+const cleanText = (html) =>
+  html?.replace(/<[^>]+>/g, '').replace(/\[…\]/g, '').trim();
+
+const getExcerpt = (post) =>
+  cleanText(
+    post?.datiRecensione?.riassuntoBreve ||
+    post?.excerpt ||
+    ''
+  );
+
+const mainExcerpt = getExcerpt(main);
+---
+
+<section class="home-reviews">
+  <div class="container">
+    <div class="section-box reviews">
+
+      <div class="section-header">
+        <h2>Recensioni</h2>
+      </div>
+
+      <div class="reviews-grid">
+
+        {/* ================= MAIN ================= */}
+        {main && (
+          <div class="review-main card" data-link={`/${main.slug}`}>
+
+            <img
+              src={main.featuredImage?.node?.sourceUrl}
+              alt={main.title}
+            />
+
+            <div class={`review-score ${getScoreClass(main.score)}`}>
+              <span class="value">{main.score}</span>
+            </div>
+
+            <div class="card-content">
+
+              <Meta items={getMeta(main)} />
+
+              <h3 class="card-title-lg">
+                {main.title}
+              </h3>
+
+              {mainExcerpt && (
+                <p class="card-excerpt">
+                  {mainExcerpt}
+                </p>
+              )}
+
+            </div>
+
+          </div>
+        )}
+
+        {/* ================= SIDE ================= */}
+        <div class="review-side">
+          {side.map(post => (
+            <div class="review-card card" data-link={`/${post.slug}`}>
+
+              <img
+                src={post.featuredImage?.node?.sourceUrl}
+                alt={post.title}
+              />
+
+              <div class={`review-score ${getScoreClass(post.score)}`}>
+                <span class="value">{post.score}</span>
+              </div>
+
+         <div class="card-content small">
+
+  <Meta items={getMeta(post)} />
+
+  <h4 class="card-title-sm">{post.title}</h4>
+
+  {getExcerpt(post) && (
+    <p class="card-excerpt small">
+      {getExcerpt(post)}
+    </p>
+  )}
+
+</div>
+
+            </div>
+          ))}
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</section>

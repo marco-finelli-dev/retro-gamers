@@ -1,0 +1,473 @@
+/* ========================================
+   SPECIALS SECTION
+======================================== */
+
+.home-specials {
+  margin: var(--space-xl) 0;
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ========================
+   GRID
+======================== */
+
+.specials-grid {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr;
+  gap: var(--space-lg);
+  align-items: stretch; /* 🔥 chiave */
+}
+
+.specials-side {
+  display: grid;
+  grid-template-rows: repeat(2, 1fr);
+  gap: var(--space-sm);
+  height: 100%;
+}
+
+
+/* ========================
+   CARD
+======================== */
+
+.specials-main,
+.specials-card {
+  position: relative;
+  display: block;
+
+  border-radius: var(--radius-md);
+  overflow: hidden;
+
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeUp 0.6s ease forwards;
+
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+  will-change: transform;
+}
+
+/* 👉 SOLO le side mantengono ratio */
+.specials-card {
+  aspect-ratio: 16 / 9;
+}
+
+/* 👉 MAIN libera (si allunga) */
+.specials-main {
+  height: 100%;
+}
+
+/* stagger */
+.specials-card:nth-child(1) { animation-delay: 0.1s; }
+.specials-card:nth-child(2) { animation-delay: 0.2s; }
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ========================
+   HOVER
+======================== */
+
+.specials-main:hover,
+.specials-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+}
+
+
+/* ========================
+   IMAGE
+======================== */
+
+.specials-main img,
+.specials-card img {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  transform: scale(1.04);
+  transition: transform 0.5s ease;
+
+  will-change: transform;
+}
+
+.specials-main:hover img,
+.specials-card:hover img {
+  transform: scale(1.08);
+}
+
+
+/* ========================
+   OVERLAY
+======================== */
+
+.specials-overlay,
+.specials-card .overlay {
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.75),
+    rgba(0,0,0,0.35),
+    transparent
+  );
+
+  z-index: 1; /* 🔥 sotto il testo */
+}
+
+
+/* ========================
+   CONTENT
+======================== */
+
+.specials-content {
+  position: absolute;
+  left: var(--space-md);
+  right: var(--space-md);
+  bottom: var(--space-md);
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  z-index: 2;
+}
+
+.specials-card .specials-content {
+  left: var(--space-sm);
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+}
+
+
+/* ========================
+   META
+======================== */
+
+.specials-meta,
+.specials-meta-side {
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-yellow);
+  opacity: 0.85;
+
+  margin-bottom: 1px;
+}
+
+.specials-meta {
+  font-size: 13px;
+}
+
+.specials-meta-side {
+  font-size: 11px;
+}
+
+
+/* ========================
+   TITLES
+======================== */
+
+.specials-main h3 {
+  font-size: var(--text-2xl);
+  line-height: 1.2;
+  margin: 0;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.specials-card h4 {
+  font-size: 16px;
+  line-height: 1.25;
+  margin: 0;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+
+/* ========================
+   EXCERPT
+======================== */
+
+.specials-excerpt {
+  font-size: var(--text-lg);
+  line-height: 1.45;
+
+  color: rgba(255,255,255,0.75);
+
+  margin-top: 4px;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  opacity: 0.85;
+  transition: opacity 0.25s ease;
+}
+
+.specials-main:hover .specials-excerpt {
+  opacity: 1;
+}
+
+/* ========================================
+   SPECIALS SECTION
+======================================== */
+
+.home-specials {
+  margin: var(--space-xl) 0;
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ========================
+   GRID
+======================== */
+
+.specials-grid {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr;
+  gap: var(--space-lg);
+  align-items: stretch; /* 🔥 chiave */
+}
+
+.specials-side {
+  display: grid;
+  grid-template-rows: repeat(2, 1fr);
+  gap: var(--space-sm);
+  height: 100%;
+}
+
+
+/* ========================
+   CARD
+======================== */
+
+.specials-main,
+.specials-card {
+  position: relative;
+  display: block;
+
+  border-radius: var(--radius-md);
+  overflow: hidden;
+
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeUp 0.6s ease forwards;
+
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+  will-change: transform;
+}
+
+/* 👉 SOLO le side mantengono ratio */
+.specials-card {
+  aspect-ratio: 16 / 9;
+}
+
+/* 👉 MAIN libera (si allunga) */
+.specials-main {
+  height: 100%;
+}
+
+/* stagger */
+.specials-card:nth-child(1) { animation-delay: 0.1s; }
+.specials-card:nth-child(2) { animation-delay: 0.2s; }
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ========================
+   HOVER
+======================== */
+
+.specials-main:hover,
+.specials-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+}
+
+
+/* ========================
+   IMAGE
+======================== */
+
+.specials-main img,
+.specials-card img {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  transform: scale(1.04);
+  transition: transform 0.5s ease;
+
+  will-change: transform;
+}
+
+.specials-main:hover img,
+.specials-card:hover img {
+  transform: scale(1.08);
+}
+
+
+/* ========================
+   OVERLAY
+======================== */
+
+.specials-overlay,
+.specials-card .overlay {
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.75),
+    rgba(0,0,0,0.35),
+    transparent
+  );
+
+  z-index: 1; /* 🔥 sotto il testo */
+}
+
+
+/* ========================
+   CONTENT
+======================== */
+
+.specials-content {
+  position: absolute;
+  left: var(--space-md);
+  right: var(--space-md);
+  bottom: var(--space-md);
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  z-index: 2;
+}
+
+.specials-card .specials-content {
+  left: var(--space-sm);
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+}
+
+
+/* ========================
+   META
+======================== */
+
+.specials-meta,
+.specials-meta-side {
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-yellow);
+  opacity: 0.85;
+
+  margin-bottom: 1px;
+}
+
+.specials-meta {
+  font-size: 13px;
+}
+
+.specials-meta-side {
+  font-size: 11px;
+}
+
+
+/* ========================
+   TITLES
+======================== */
+
+.specials-main h3 {
+  font-size: var(--text-2xl);
+  line-height: 1.2;
+  margin: 0;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.specials-card h4 {
+  font-size: 16px;
+  line-height: 1.25;
+  margin: 0;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+
+/* ========================
+   EXCERPT
+======================== */
+
+.specials-excerpt {
+  font-size: var(--text-lg);
+  line-height: 1.45;
+
+  color: rgba(255,255,255,0.75);
+
+  margin-top: 4px;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  opacity: 0.85;
+  transition: opacity 0.25s ease;
+}
+
+.specials-main:hover .specials-excerpt {
+  opacity: 1;
+}
+
+.specials-main::after,
+.specials-card::after {
+  z-index: 1; /* 👈 invece di stare sopra */
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+
+  .specials-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+}

@@ -1,0 +1,410 @@
+---
+import { fetchAPI } from '../../lib/api';
+import '../../styles/components/header/platforms.css';
+
+// 🔥 FETCH DIRETTO
+const data = await fetchAPI(`
+{
+  platforms(first: 100) {
+    nodes {
+      id
+      name
+      slug
+      parentId
+      specifichePiattaforma {
+        logoMenu {
+          node {
+            sourceUrl
+          }
+        }
+      }
+    }
+  }
+}
+`);
+
+const terms = data?.platforms?.nodes || [];
+
+// 🌳 COSTRUZIONE ALBERO
+const map = {};
+terms.forEach(t => {
+  map[t.id] = { ...t, children: [] };
+});
+
+const tree = [];
+terms.forEach(t => {
+  if (!t.parentId) {
+    tree.push(map[t.id]);
+  } else if (map[t.parentId]) {
+    map[t.parentId].children.push(map[t.id]);
+  }
+});
+
+// 🛡️ copia sicura
+const safeTree = [...tree];
+
+// 🔥 LOGHI SCURI
+const darkLogos = ['sega', 'commodore', 'nec', 'sony', 'snk'];
+
+const isDarkLogo = (name = '') =>
+  darkLogos.some(n => name.toLowerCase().includes(n));
+
+// 🎯 porta "Altri sistemi" in fondo
+const altriIndex = safeTree.findIndex(t =>
+  t?.slug === 'altri-sistemi' ||
+  t?.name?.toLowerCase().includes('altri')
+);
+
+if (altriIndex !== -1) {
+  const [altri] = safeTree.splice(altriIndex, 1);
+  safeTree.push(altri);
+}
+---
+
+<div class="mega platforms-mega">
+
+  <div class="mega-menu">
+
+    <!-- COLONNA 1 -->
+    <div class="col col-1">
+      <div class="hover-bg"></div>
+      <div class="active-bar"></div>
+
+      {safeTree.map((p, i) => (
+        <div class="item" data-id={`p-${i}`}>
+
+          <div class={`menu-icon ${isDarkLogo(p.name) ? 'light-bg' : ''}`}>
+            {p?.specifichePiattaforma?.logoMenu?.node?.sourceUrl && (
+              <img src={p.specifichePiattaforma.logoMenu.node.sourceUrl} alt={p.name} />
+            )}
+          </div>
+
+          <span>{p.name}</span>
+
+        </div>
+      ))}
+    </div>
+
+    <!-- COLONNA 2 -->
+    <div class="col col-2">
+      <div class="hover-bg"></div>
+      <div class="active-bar"></div>
+
+      {safeTree.map((p, i) => (
+        <div class="panel level-2" data-parent={`p-${i}`}>
+
+          {(p.children || []).map((child, j) => (
+            (child.children?.length > 0) ? (
+
+              <div class="subitem" data-id={`p-${i}-c-${j}`}>
+
+                <div class={`menu-icon ${isDarkLogo(child.name) ? 'light-bg' : ''}`}>
+                  {child?.specifichePiattaforma?.logoMenu?.node?.sourceUrl && (
+                    <img src={child.specifichePiattaforma.logoMenu.node.sourceUrl} alt={child.name} />
+                  )}
+                </div>
+
+                <span>{child.name}</span>
+
+              </div>
+
+            ) : (
+
+              <a
+                href={`/piattaforme/${child.slug}/`}
+                class="subitem no-children"
+                data-id={`p-${i}-c-${j}`}
+              >
+
+                <div class={`menu-icon ${isDarkLogo(child.name) ? 'light-bg' : ''}`}>
+                  {child?.specifichePiattaforma?.logoMenu?.node?.sourceUrl && (
+                    <img src={child.specifichePiattaforma.logoMenu.node.sourceUrl} alt={child.name} />
+                  )}
+                </div>
+
+                <span>{child.name}</span>
+
+              </a>
+
+            )
+          ))}
+
+        </div>
+      ))}
+    </div>
+
+    <!-- COLONNA 3 -->
+    <div class="col col-3">
+      <div class="hover-bg"></div>
+
+      {safeTree.map((p, i) =>
+        (p.children || []).map((child, j) =>
+          (child.children?.length > 0) && (
+            <div class="panel level-3" data-parent={`p-${i}-c-${j}`}>
+
+              {child.children.map(sub => (
+                <a href={`/piattaforme/${sub.slug}/`} class="submenu-link">
+
+                  <div class={`menu-icon ${isDarkLogo(sub.name) ? 'light-bg' : ''}`}>
+                    {sub?.specifichePiattaforma?.logoMenu?.node?.sourceUrl && (
+                      <img src={sub.specifichePiattaforma.logoMenu.node.sourceUrl} alt={sub.name} />
+                    )}
+                  </div>
+
+                  <span>{sub.name}</span>
+
+                </a>
+              ))}
+
+            </div>
+          )
+        )
+      )}
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  /* ========================
+     MOUSE TRACK (globale)
+  ======================== */
+
+  let lastMouse = { x: 0, y: 0 };
+
+  document.addEventListener('mousemove', (e) => {
+    lastMouse = { x: e.clientX, y: e.clientY };
+  });
+
+  function movingTowards(rect) {
+    const buffer = 80;
+
+    return (
+      lastMouse.x > rect.left &&
+      lastMouse.x < rect.right + buffer &&
+      lastMouse.y > rect.top - buffer &&
+      lastMouse.y < rect.bottom + buffer
+    );
+  }
+
+  /* ========================
+     LOOP MEGA MENU
+  ======================== */
+
+  document.querySelectorAll('.platforms-mega').forEach(mega => {
+
+    const items = mega.querySelectorAll('.item');
+    const subitems = mega.querySelectorAll('.subitem');
+    const submenuLinks = mega.querySelectorAll('.submenu-link');
+
+    const panelsLvl2 = mega.querySelectorAll('.level-2');
+    const panelsLvl3 = mega.querySelectorAll('.level-3');
+
+    const col1 = mega.querySelector('.col-1');
+    const col2 = mega.querySelector('.col-2');
+    const col3 = mega.querySelector('.col-3');
+
+    const megaMenu = mega.querySelector('.mega-menu');
+
+    const hover1 = mega.querySelector('.col-1 .hover-bg');
+    const hover2 = mega.querySelector('.col-2 .hover-bg');
+    const hover3 = mega.querySelector('.col-3 .hover-bg');
+
+    const bar1 = mega.querySelector('.col-1 .active-bar');
+    const bar2 = mega.querySelector('.col-2 .active-bar');
+
+    let timeout;
+    let enterTimeout;
+
+    /* ========================
+       RESET
+    ======================== */
+
+    function resetAll() {
+      items.forEach(i => i.classList.remove('active'));
+      subitems.forEach(s => s.classList.remove('active'));
+      panelsLvl2.forEach(p => p.classList.remove('active'));
+      panelsLvl3.forEach(p => p.classList.remove('active'));
+
+      col2.classList.remove('visible');
+      col3.classList.remove('visible');
+
+      hover1.style.opacity = 0;
+      hover2.style.opacity = 0;
+      hover3.style.opacity = 0;
+
+      bar1.style.opacity = 0;
+      bar2.style.opacity = 0;
+    }
+
+    /* ========================
+       LEVEL 1
+    ======================== */
+
+    items.forEach(item => {
+      item.addEventListener('mouseenter', () => {
+
+        clearTimeout(timeout);
+        clearTimeout(enterTimeout);
+
+        const delay = movingTowards(col2.getBoundingClientRect()) ? 140 : 40;
+
+        enterTimeout = setTimeout(() => {
+
+          const id = item.dataset.id;
+          if (!id) return;
+
+          // reset soft
+          items.forEach(i => i.classList.remove('active'));
+          panelsLvl2.forEach(p => p.classList.remove('active'));
+          panelsLvl3.forEach(p => p.classList.remove('active'));
+
+          col3.classList.remove('visible');
+          hover3.style.opacity = 0;
+          bar2.style.opacity = 0;
+
+          item.classList.add('active');
+
+          const rect = item.getBoundingClientRect();
+          const menuRect = megaMenu.getBoundingClientRect();
+          const col1Rect = col1.getBoundingClientRect();
+
+          const globalOffset = rect.top - menuRect.top;
+          const localOffset = rect.top - col1Rect.top;
+
+          requestAnimationFrame(() => {
+            hover1.style.transform = `translateY(${localOffset}px)`;
+            hover1.style.opacity = 1;
+
+            bar1.style.transform = `translateY(${localOffset + 16}px)`;
+            bar1.style.opacity = 1;
+          });
+
+          const maxOffset = megaMenu.offsetHeight - col2.offsetHeight;
+          const safeOffset = Math.max(0, Math.min(globalOffset, maxOffset));
+
+          col2.style.top = safeOffset + 'px';
+          col3.style.top = safeOffset + 'px';
+
+          const panel = mega.querySelector(`.level-2[data-parent="${id}"]`);
+
+          if (panel) {
+            panel.classList.add('active');
+            col2.classList.add('visible');
+          } else {
+            col2.classList.remove('visible');
+          }
+
+          hover2.style.opacity = 0;
+
+        }, delay);
+      });
+    });
+
+    /* ========================
+       LEVEL 2
+    ======================== */
+
+    subitems.forEach(sub => {
+      sub.addEventListener('mouseenter', () => {
+
+        clearTimeout(timeout);
+        clearTimeout(enterTimeout);
+
+        const delay = movingTowards(col3.getBoundingClientRect()) ? 140 : 40;
+
+        enterTimeout = setTimeout(() => {
+
+          const id = sub.dataset.id;
+          if (!id) return;
+
+          // reset livello 3 SEMPRE
+          panelsLvl3.forEach(p => p.classList.remove('active'));
+          col3.classList.remove('visible');
+          hover3.style.opacity = 0;
+          bar2.style.opacity = 0;
+
+          subitems.forEach(s => s.classList.remove('active'));
+          sub.classList.add('active');
+
+          const rect = sub.getBoundingClientRect();
+          const menuRect = megaMenu.getBoundingClientRect();
+          const col2Rect = col2.getBoundingClientRect();
+
+          const globalOffset = rect.top - menuRect.top;
+          const localOffset = rect.top - col2Rect.top;
+
+          requestAnimationFrame(() => {
+            hover2.style.transform = `translateY(${localOffset}px)`;
+            hover2.style.opacity = 1;
+          });
+
+          const maxOffset = megaMenu.offsetHeight - col3.offsetHeight;
+          const safeOffset = Math.max(0, Math.min(globalOffset, maxOffset));
+
+          col3.style.top = safeOffset + 'px';
+
+          // 👉 SOLO SE HA FIGLI
+          if (!sub.classList.contains('no-children')) {
+
+            const panel = mega.querySelector(`.level-3[data-parent="${id}"]`);
+
+            if (panel) {
+              panel.classList.add('active');
+              col3.classList.add('visible');
+
+              requestAnimationFrame(() => {
+                bar2.style.transform = `translateY(${localOffset + 16}px)`;
+                bar2.style.opacity = 1;
+              });
+            }
+          }
+
+        }, delay);
+      });
+    });
+
+    /* ========================
+       LEVEL 3
+    ======================== */
+
+    submenuLinks.forEach(link => {
+      link.addEventListener('mouseenter', () => {
+
+        const rect = link.getBoundingClientRect();
+        const col3Rect = col3.getBoundingClientRect();
+        const offset = rect.top - col3Rect.top;
+
+        requestAnimationFrame(() => {
+          hover3.style.transform = `translateY(${offset}px)`;
+          hover3.style.opacity = 1;
+        });
+
+      });
+    });
+
+    /* ========================
+       HOVER CONTROL
+    ======================== */
+
+    mega.addEventListener('mouseleave', () => {
+      timeout = setTimeout(resetAll, 120);
+    });
+
+    mega.addEventListener('mouseenter', () => {
+      clearTimeout(timeout);
+    });
+
+    [col2, col3].forEach(col => {
+      col.addEventListener('mouseenter', () => clearTimeout(timeout));
+      col.addEventListener('mouseleave', () => {
+        timeout = setTimeout(resetAll, 120);
+      });
+    });
+
+  });
+
+});
+</script>

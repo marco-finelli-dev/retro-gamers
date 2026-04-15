@@ -1,0 +1,25 @@
+---
+const {
+  items = [],
+  variant = 'inline'
+} = Astro.props;
+import '../../styles/components/meta.css';
+---
+
+<div class={`meta meta--${variant}`}>
+  {items.map((item, i) => (
+    <>
+      {i > 0 && <span class="meta-separator">·</span>}
+
+      {item.href ? (
+        <a class={item.class} href={item.href}>
+          {item.label}
+        </a>
+      ) : (
+        <span class={item.class}>
+          {item.label}
+        </span>
+      )}
+    </>
+  ))}
+</div>
