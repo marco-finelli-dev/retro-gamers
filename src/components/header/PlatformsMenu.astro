@@ -1,55 +1,46 @@
 ---
-import { fetchAPI } from '../../lib/api';
+import { client } from '../../lib/sanity';
 import '../../styles/components/header/platforms.css';
 
-// 🔥 FETCH DIRETTO
-const data = await fetchAPI(`
-{
-  platforms(first: 100) {
-    nodes {
-      id
-      name
-      slug
-      parentId
-      specifichePiattaforma {
-        logoMenu {
-          node {
-            sourceUrl
-          }
-        }
-      }
-    }
-  }
+// =========================
+// FETCH
+// =========================
+
+const terms = await client.fetch(`
+*[_type == "platform" && defined(slug.current)] | order(name asc){
+  _id,
+  name,
+  "slug": slug.current,
+  "parentId": parent->_id
 }
-`);
+`) || [];
 
-const terms = data?.platforms?.nodes || [];
+// =========================
+// TREE
+// =========================
 
-// 🌳 COSTRUZIONE ALBERO
 const map = {};
+
 terms.forEach(t => {
-  map[t.id] = { ...t, children: [] };
+  map[t._id] = { ...t, children: [] };
 });
 
 const tree = [];
+
 terms.forEach(t => {
   if (!t.parentId) {
-    tree.push(map[t.id]);
+    tree.push(map[t._id]);
   } else if (map[t.parentId]) {
-    map[t.parentId].children.push(map[t.id]);
+    map[t.parentId].children.push(map[t._id]);
   }
 });
 
-// 🛡️ copia sicura
+// =========================
+// ORDER FIX (ALTRI IN FONDO)
+// =========================
+
 const safeTree = [...tree];
 
-// 🔥 LOGHI SCURI
-const darkLogos = ['sega', 'commodore', 'nec', 'sony', 'snk'];
-
-const isDarkLogo = (name = '') =>
-  darkLogos.some(n => name.toLowerCase().includes(n));
-
-// 🎯 porta "Altri sistemi" in fondo
 const altriIndex = safeTree.findIndex(t =>
   t?.slug === 'altri-sistemi' ||
   t?.name?.toLowerCase().includes('altri')
@@ -71,18 +62,11 @@ if (altriIndex !== -1) {
       <div class="active-bar"></div>
 
       {safeTree.map((p, i) => (
-        <div class="item" data-id={`p-${i}`}>
-
-          <div class={`menu-icon ${isDarkLogo(p.name) ? 'light-bg' : ''}`}>
-            {p?.specifichePiattaforma?.logoMenu?.node?.sourceUrl && (
-              <img src={p.specifichePiattaforma.logoMenu.node.sourceUrl} alt={p.name} />
-            )}
-          </div>
-
+        <div class="item" data-id={`p-${i}`} key={p._id}>
           <span>{p.name}</span>
-
         </div>
       ))}
+
     </div>
 
     <!-- COLONNA 2 -->
@@ -91,21 +75,13 @@ if (altriIndex !== -1) {
       <div class="active-bar"></div>
 
       {safeTree.map((p, i) => (
-        <div class="panel level-2" data-parent={`p-${i}`}>
+        <div class="panel level-2" data-parent={`p-${i}`} key={`lvl2-${p._id}`}>
 
           {(p.children || []).map((child, j) => (
-            (child.children?.length > 0) ? (
+            child.children?.length ? (
 
-              <div class="subitem" data-id={`p-${i}-c-${j}`}>
-
-                <div class={`menu-icon ${isDarkLogo(child.name) ? 'light-bg' : ''}`}>
-                  {child?.specifichePiattaforma?.logoMenu?.node?.sourceUrl && (
-                    <img src={child.specifichePiattaforma.logoMenu.node.sourceUrl} alt={child.name} />
-                  )}
-                </div>
-
+              <div class="subitem" data-id={`p-${i}-c-${j}`} key={child._id}>
                 <span>{child.name}</span>
-
               </div>
 
             ) : (
@@ -114,16 +90,9 @@ if (altriIndex !== -1) {
                 href={`/piattaforme/${child.slug}/`}
                 class="subitem no-children"
                 data-id={`p-${i}-c-${j}`}
+                key={child._id}
               >
-
-                <div class={`menu-icon ${isDarkLogo(child.name) ? 'light-bg' : ''}`}>
-                  {child?.specifichePiattaforma?.logoMenu?.node?.sourceUrl && (
-                    <img src={child.specifichePiattaforma.logoMenu.node.sourceUrl} alt={child.name} />
-                  )}
-                </div>
-
                 <span>{child.name}</span>
-
               </a>
 
             )
@@ -131,6 +100,7 @@ if (altriIndex !== -1) {
 
         </div>
       ))}
+
     </div>
 
     <!-- COLONNA 3 -->
@@ -139,20 +109,20 @@ if (altriIndex !== -1) {
 
       {safeTree.map((p, i) =>
         (p.children || []).map((child, j) =>
-          (child.children?.length > 0) && (
-            <div class="panel level-3" data-parent={`p-${i}-c-${j}`}>
+          child.children?.length && (
+            <div
+              class="panel level-3"
+              data-parent={`p-${i}-c-${j}`}
+              key={`lvl3-${child._id}`}
+            >
 
               {child.children.map(sub => (
-                <a href={`/piattaforme/${sub.slug}/`} class="submenu-link">
-
-                  <div class={`menu-icon ${isDarkLogo(sub.name) ? 'light-bg' : ''}`}>
-                    {sub?.specifichePiattaforma?.logoMenu?.node?.sourceUrl && (
-                      <img src={sub.specifichePiattaforma.logoMenu.node.sourceUrl} alt={sub.name} />
-                    )}
-                  </div>
-
+                <a
+                  href={`/piattaforme/${sub.slug}/`}
+                  class="submenu-link"
+                  key={sub._id}
+                >
                   <span>{sub.name}</span>
-
                 </a>
               ))}
 
@@ -160,6 +130,7 @@ if (altriIndex !== -1) {
           )
         )
       )}
+
     </div>
 
   </div>

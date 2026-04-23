@@ -14,7 +14,6 @@ import '../../styles/components/header/search.css';
   <div class="search-bar">
     <input type="text" placeholder="Cerca nel sito..." />
 
-    <!-- 🔥 RESULTS -->
     <div class="search-results">
       <div class="hover-bg"></div>
     </div>
@@ -27,136 +26,224 @@ import '../../styles/components/header/search.css';
 <div class="search-overlay"></div>
 
 <script is:inline>
-function highlight(text, query) {
-  const regex = new RegExp(`(${query})`, 'gi');
-  return text.replace(regex, '<span class="highlight">$1</span>');
-}
-
 (() => {
 
-  const searchWrapper = document.querySelector('.search-wrapper');
-  const searchToggle = document.querySelector('.search-toggle');
-  const searchBar = document.querySelector('.search-bar');
-  const searchClose = document.querySelector('.search-close');
+  /* ========================
+     HELPERS
+  ======================== */
+
+  function normalize(str = '') {
+    return str
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function scoreItem(item, query) {
+    const q = normalize(query);
+
+    const title = normalize(item.title || '');
+    const extra = normalize(item.searchableText || '');
+
+    if (title === q) return 100;
+    if (title.startsWith(q)) return 90;
+    if (title.includes(q)) return 75;
+    if (extra.includes(q)) return 50;
+
+    return 0;
+  }
+
+  function escapeHTML(str = '') {
+    return str.replace(/[&<>"']/g, m => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[m]));
+  }
+
+  function highlight(text, query) {
+    const safe = escapeHTML(text);
+    const q = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return safe.replace(new RegExp(`(${q})`, 'gi'),
+      '<span class="highlight">$1</span>'
+    );
+  }
+
+  /* ========================
+     ELEMENTI
+  ======================== */
+
+  const wrapper = document.querySelector('.search-wrapper');
+  if (!wrapper) return;
+
+  const toggle = wrapper.querySelector('.search-toggle');
+  const bar = wrapper.querySelector('.search-bar');
+  const closeBtn = wrapper.querySelector('.search-close');
+  const input = wrapper.querySelector('input');
+  const results = wrapper.querySelector('.search-results');
   const overlay = document.querySelector('.search-overlay');
 
-  // 🛡️ sicurezza (evita crash build/SSR)
-  if (!searchWrapper || !searchBar) return;
-
-  const searchInput = searchBar.querySelector('input');
-  const resultsBox = searchBar.querySelector('.search-results');
-
   let debounce;
+  let cache = null;
 
-  function openSearch() {
-    searchBar.classList.add('active');
+  /* ========================
+     UI CONTROL
+  ======================== */
+
+  function reset() {
+    results.classList.remove('active');
+    results.innerHTML = '<div class="hover-bg"></div>';
+  }
+
+  function open() {
+    bar.classList.add('active');
     overlay?.classList.add('active');
     document.body.classList.add('no-scroll');
-
-    resultsBox.classList.remove('active');
-    resultsBox.innerHTML = '<div class="hover-bg"></div>';
-
-    searchInput?.focus();
+    input.focus();
   }
 
-  function closeSearch() {
-    searchBar.classList.remove('active');
+  function close() {
+    bar.classList.remove('active');
     overlay?.classList.remove('active');
     document.body.classList.remove('no-scroll');
-
-    resultsBox.classList.remove('active');
-    resultsBox.innerHTML = '<div class="hover-bg"></div>';
-    if (searchInput) searchInput.value = '';
+    input.value = '';
+    reset();
   }
 
-  searchToggle?.addEventListener('click', (e) => {
+  toggle?.addEventListener('click', e => {
     e.stopPropagation();
-    openSearch();
+    open();
   });
 
-  searchClose?.addEventListener('click', closeSearch);
-  overlay?.addEventListener('click', closeSearch);
+  closeBtn?.addEventListener('click', close);
+  overlay?.addEventListener('click', close);
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeSearch();
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') close();
   });
 
-  document.addEventListener('click', (e) => {
-    if (!searchWrapper.contains(e.target)) {
-      closeSearch();
-    }
+  document.addEventListener('click', e => {
+    if (!wrapper.contains(e.target)) close();
   });
 
-  searchInput?.addEventListener('input', () => {
+  /* ========================
+     SEARCH
+  ======================== */
 
-    const query = searchInput.value.trim();
+  input?.addEventListener('input', () => {
+
+    const query = input.value.trim();
     clearTimeout(debounce);
 
     if (query.length < 2) {
-      resultsBox.classList.remove('active');
-      resultsBox.innerHTML = '<div class="hover-bg"></div>';
+      reset();
       return;
     }
 
     debounce = setTimeout(async () => {
 
-      const res = await fetch('/api/search?q=' + encodeURIComponent(query));
-      const data = await res.json();
+      try {
 
-      let html = '<div class="hover-bg"></div>';
+        if (!cache) {
+          const res = await fetch('/api/search');
+          cache = await res.json();
+        }
 
-      if (!data.length) {
-        html += `<div class="search-item">Nessun risultato</div>`;
-      } else {
-        html += data.map(post => `
-          <a href="/recensioni/${post.slug}" class="search-item">
-            
-            <div class="search-thumb">
-              <img src="${post.featuredImage?.node?.sourceUrl || ''}" />
-            </div>
+        /* ========================
+           BUILD INDEX
+        ======================== */
 
-            <div class="search-content">
-              <div class="search-category">
-                ${post.categories?.nodes?.[0]?.name || ''}
-              </div>
+        const all = [
 
-              <div class="search-title">
-                ${highlight(post.title, query)}
-              </div>
-            </div>
+          ...cache.articles.map(a => ({
+            ...a,
+            type: 'article',
+            searchableText: `
+              ${a.title || ''}
+              ${a.excerpt || ''}
+              ${(a.categories || []).map(c => c.name).join(' ')}
+              ${(a.platforms || []).map(p => p.name).join(' ')}
+            `
+          })),
 
-          </a>
-        `).join('');
+          ...cache.platforms.map(p => ({
+            title: p.name,
+            slug: p.slug,
+            type: 'platform',
+            searchableText: p.name
+          })),
+
+          ...cache.taxonomies.map(t => ({
+            title: t.name,
+            slug: t.slug,
+            type: 'taxonomy',
+            searchableText: t.name
+          }))
+        ];
+
+        /* ========================
+           RANKING
+        ======================== */
+
+        const ranked = all
+          .map(item => ({
+            ...item,
+            score: scoreItem(item, query)
+          }))
+          .filter(i => i.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 6);
+
+        /* ========================
+           RENDER
+        ======================== */
+
+        let html = '<div class="hover-bg"></div>';
+
+        if (!ranked.length) {
+          html += `<div class="search-item">Nessun risultato</div>`;
+        } else {
+
+          html += ranked.map(post => {
+
+            const image = post.featuredImage?.asset?.url || '';
+
+            let url = '/';
+            if (post.type === 'article') url = `/articoli/${post.slug}/`;
+            if (post.type === 'platform') url = `/piattaforme/${post.slug}/`;
+            if (post.type === 'taxonomy') url = `/tassonomie/${post.slug}/`;
+
+            return `
+              <a href="${url}" class="search-item">
+
+                <div class="search-thumb">
+                  ${image ? `<img src="${image}" alt="">` : ''}
+                </div>
+
+                <div class="search-content">
+                  <div class="search-category">${post.type}</div>
+
+                  <div class="search-title">
+                    ${highlight(post.title || '', query)}
+                  </div>
+                </div>
+
+              </a>
+            `;
+          }).join('');
+        }
+
+        results.innerHTML = html;
+        results.classList.add('active');
+
+      } catch (err) {
+        console.error('Search error:', err);
+        reset();
       }
 
-      resultsBox.innerHTML = html;
-      resultsBox.classList.add('active');
-
-      // hover effect
-      const items = resultsBox.querySelectorAll('.search-item');
-      const bg = resultsBox.querySelector('.hover-bg');
-
-      items.forEach(item => {
-        item.addEventListener('mouseenter', () => {
-
-          const rect = item.getBoundingClientRect();
-          const parentRect = resultsBox.getBoundingClientRect();
-
-          const paddingY = 6;
-          const offset = rect.top - parentRect.top + resultsBox.scrollTop;
-
-          bg.style.transform = `translateY(${offset + paddingY}px)`;
-          bg.style.height = `${rect.height - paddingY * 2}px`;
-          bg.style.opacity = 1;
-
-        });
-      });
-
-      resultsBox.addEventListener('mouseleave', () => {
-        bg.style.opacity = 0;
-      });
-
-    }, 250);
+    }, 200);
   });
 
 })();

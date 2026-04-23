@@ -1,45 +1,35 @@
-export async function GET({ url }) {
+import { client } from '../../lib/sanity';
 
-    const query = url.searchParams.get('q');
-  
-    if (!query) {
-      return new Response(JSON.stringify([]));
-    }
-  
-    const safeQuery = query.replace(/"/g, '\\"');
-  
-    const res = await fetch(
-      'https://wordpress-1605036-6332980.cloudwaysapps.com/graphql', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        query: `
-        {
-          posts(where: { search: "${safeQuery}" }, first: 10) {
-            nodes {
-              title
-              slug
-              featuredImage {
-                node {
-                  sourceUrl
-                }
-              }
-              categories {
-                nodes {
-                  name
-                  slug
-                }
-              }
-            }
-          }
+export async function GET() {
+
+  const data = await client.fetch(`
+    {
+      "articles": *[_type == "article"]{
+        title,
+        excerpt,
+        "slug": slug.current,
+        featuredImage { asset->{ url } },
+        categories[]->{
+          name
+        },
+        platforms[]->{
+          name
         }
-        `
-      })
-    });
-  
-    const json = await res.json();
-  
-    return new Response(JSON.stringify(json.data.posts.nodes));
-  }
+      },
+
+      "platforms": *[_type == "platform"]{
+        name,
+        "slug": slug.current
+      },
+
+      "taxonomies": *[_type == "taxonomy"]{
+        name,
+        "slug": slug.current
+      }
+    }
+  `);
+
+  return new Response(JSON.stringify(data), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+}

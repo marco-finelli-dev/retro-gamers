@@ -1,104 +1,21 @@
-/* ========================================
-   HOME — SOLO STRUTTURA (usa il global)
-======================================== */
-
-/* ========================
-   SEZIONI
-======================== */
-
-.home-section {
-  padding: var(--space-lg) 0;
-}
-
-.home-section--compact {
-  padding: 0;
-}
-
-/* ========================
-   HEADER SEZIONE
-======================== */
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-md);
-}
-
-.section-title {
+.home-section:first-of-type .section-box {
   position: relative;
-  display: inline-block;
+  z-index: 1;
 }
 
-.section-title::after {
+.home-section:first-of-type::before {
   content: "";
   position: absolute;
+  top: -80px;
   left: 0;
-  bottom: -6px;
+  right: 0;
+  height: 120px;
 
-  width: 40px;
-  height: 3px;
+  background: linear-gradient(
+    to bottom,
+    rgba(8,8,12,0.9),
+    rgba(8,8,12,0)
+  );
 
-  background: var(--color-primary);
-  border-radius: 2px;
-}
-
-/* ========================
-   GRID
-======================== */
-
-.grid {
-  display: grid;
-  gap: var(--space-md);
-}
-
-.grid-2 { grid-template-columns: repeat(2, 1fr); }
-.grid-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-4 { grid-template-columns: repeat(4, 1fr); }
-
-/* ========================
-   SPECIALI LAYOUT
-======================== */
-
-.speciali-layout {
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: var(--space-lg);
-}
-
-.speciali-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-md);
-  align-content: center;
-}
-
-/* ========================
-   RESPONSIVE
-======================== */
-
-@media (max-width: 900px) {
-
-  .grid-3 { grid-template-columns: repeat(2, 1fr); }
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
-
-  .speciali-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 600px) {
-
-  .grid-2,
-  .grid-3,
-  .grid-4,
-  .speciali-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-sm);
-  }
+  pointer-events: none;
 }

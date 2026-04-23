@@ -1,41 +1,7 @@
 ---
-import { fetchAPI } from '../../lib/api';
 import '../../styles/components/header/news-menu.css';
 
-let posts = [];
-
-try {
-  const data = await fetchAPI(`
-  {
-    posts(
-      first: 5,
-      where: {
-        categoryName: "news",
-        orderby: { field: DATE, order: DESC }
-      }
-    ) {
-      nodes {
-        title
-        slug
-        featuredImage {
-          node {
-            sourceUrl
-          }
-        }
-        categories {
-          nodes {
-            name
-          }
-        }
-      }
-    }
-  }
-  `);
-
-  posts = data?.posts?.nodes || [];
-} catch (e) {
-  console.error('NewsMenu fetch error', e);
-}
+const { posts = [] } = Astro.props;
 ---
 
 <div class="nav-item news-dropdown">
@@ -43,38 +9,49 @@ try {
   <div class="news-dropdown-menu">
     <div class="hover-bg"></div>
 
-    {posts.map((p) => (
-      <a href={`/news/${p.slug}`} class="news-item">
+    {posts.map((p) => {
 
-        <div class="news-thumb">
-          <img src={p.featuredImage?.node?.sourceUrl} alt={p.title} />
-        </div>
+      const image = p.featuredImage?.asset?.url;
+      const category = p.categories?.[0]?.name || '';
 
-        <div class="news-content">
-          <div class="news-meta">
-            {p.categories?.nodes?.[0]?.name}
+      return (
+        <a href={`/news/${p.slug}`} class="news-item">
+
+          <div class="news-thumb">
+            {image && (
+              <img src={image} alt={p.title || ''} />
+            )}
           </div>
 
-          <div class="news-title">
-            {p.title}
-          </div>
-        </div>
+          <div class="news-content">
 
-      </a>
-    ))}
+            <div class="news-meta">
+              {category}
+            </div>
+
+            <div class="news-title">
+              {p.title}
+            </div>
+
+          </div>
+
+        </a>
+      );
+    })}
 
   </div>
 
 </div>
 
 <script is:inline>
-document.addEventListener('DOMContentLoaded', () => {
+(() => {
 
   document.querySelectorAll('.news-dropdown-menu').forEach(menu => {
 
     const items = menu.querySelectorAll('.news-item');
     const bg = menu.querySelector('.hover-bg');
-    if (!bg) return;
+
+    if (!bg || items.length === 0) return;
 
     items.forEach(item => {
       item.addEventListener('mouseenter', () => {
@@ -84,8 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const offset = rect.top - parentRect.top + 4;
 
-        bg.style.transform = `translateY(${offset}px)`;
-        bg.style.opacity = 1;
+        requestAnimationFrame(() => {
+          bg.style.transform = `translateY(${offset}px)`;
+          bg.style.opacity = 1;
+        });
       });
     });
 
@@ -95,5 +74,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   });
 
-});
+})();
 </script>

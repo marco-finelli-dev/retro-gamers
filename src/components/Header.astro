@@ -3,65 +3,68 @@ import PlatformsMenu from './header/PlatformsMenu.astro';
 import ReviewsMenu from './header/ReviewsMenu.astro';
 import NewsMenu from './header/NewsMenu.astro';
 import Search from './header/Search.astro';
+
+// 👉 ricevi dati dal layout
+const { reviews = [], news = [] } = Astro.props;
 ---
 
 <header class="header">
   <div class="header__container">
 
     <!-- LOGO -->
-    <a href="/" class="header__logo">
+    <a href="/" class="header__logo" aria-label="Homepage Retro Gamers">
       <img
-        src="https://retro-gamers.it/wp-content/uploads/2025/10/logo_retro_gamers-150x150.webp"
-        class="header__logo-icon"
-        alt="Retro Gamers"
-      />
-      <img
-        src="https://retro-gamers.it/wp-content/uploads/2025/11/retro_gamers_title-1-2048x341.png"
+        src="/retro-gamer-header-logo.webp"
         class="header__logo-text"
         alt="Retro Gamers"
+        loading="eager"
       />
     </a>
 
     <!-- NAV -->
-    <nav class="header__nav">
+    <nav class="header__nav" aria-label="Navigazione principale">
 
       <!-- PIATTAFORME -->
       <div class="nav-item has-dropdown">
-        <span class="nav-link">
+        <button class="nav-link" aria-haspopup="true" aria-expanded="false">
           <span class="nav-icon">☰</span>
           <span>Piattaforme</span>
-        </span>
+        </button>
         <PlatformsMenu />
       </div>
 
-  <!-- RECENSIONI -->
-<div class="nav-item has-dropdown">
-  <span class="nav-link">
-    <span class="nav-icon">☰</span>
-    <span>Recensioni</span>
-  </span>
-  <ReviewsMenu />
-</div>
+      <!-- RECENSIONI -->
+      <div class="nav-item has-dropdown">
+        <button class="nav-link" aria-haspopup="true" aria-expanded="false">
+          <span class="nav-icon">☰</span>
+          <span>Recensioni</span>
+        </button>
+
+        {/* 🔥 ORA PASSI I DATI */}
+        <ReviewsMenu posts={reviews} />
+      </div>
 
       <!-- NEWS -->
       <div class="nav-item has-dropdown">
-        <span class="nav-link">
+        <button class="nav-link" aria-haspopup="true" aria-expanded="false">
           <span class="nav-icon">☰</span>
           <span>News</span>
-        </span>
-        <NewsMenu /> 
+        </button>
+      <NewsMenu posts={news} />
       </div>
 
-      <!-- LINK -->
+      <!-- LINK DIRETTI -->
       <a href="/speciali/" class="nav-link">Speciali</a>
       <a href="/guide/" class="nav-link">Guide</a>
       <a href="/interviste/" class="nav-link">Interviste</a>
       <a href="/memories/" class="nav-link">Memories</a>
 
-      <!-- SEARCH -->
-      <Search /> 
-
     </nav>
+
+    <!-- SEARCH -->
+    <div class="header__right">
+      <Search />
+    </div>
 
   </div>
 </header>

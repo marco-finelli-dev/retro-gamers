@@ -1,51 +1,36 @@
 ---
-import { fetchAPI } from '../../lib/api';
 import '../../styles/components/hero.css';
 
-const data = await fetchAPI(`
-{
-  posts(first: 5, where: { orderby: { field: DATE, order: DESC } }) {
-    nodes {
-      title
-      slug
-      excerpt
-      datiRecensione {
-        riassuntoBreve
-      }
-      categories {
-        nodes { name slug }
-      }
-      featuredImage {
-        node { sourceUrl }
-      }
-    }
-  }
-}
-`);
+const { posts = [] } = Astro.props;
 
-const posts = data?.posts?.nodes || [];
-
-const [main, ...rest] = posts;
+// SPLIT
+const [main, ...rest] = posts || [];
 const side = rest.slice(0, 3);
 
-if (!posts.length) {
-  console.warn('No posts found');
-}
-
-/* ========================
-   HELPERS
-======================== */
+// HELPERS
 
 const getExcerpt = (post) =>
-  post?.datiRecensione?.riassuntoBreve ||
-  post?.excerpt ||
-  '';
+  post?.excerpt || '';
 
 const getCategory = (post) => {
-  const cat = post.categories?.nodes?.[0];
+  const cat = post?.categories?.[0];
   return cat
     ? { label: cat.name, href: `/${cat.slug}` }
     : null;
+};
+
+const getTypeLabel = (type) => {
+  const map = {
+    review: 'Recensione',
+    article: 'Articolo',
+    guide: 'Guida',
+    interview: 'Intervista',
+    news: 'News',
+    feature: 'Speciale',
+    memories: 'Memories'
+  };
+
+  return map[type] || type;
 };
 ---
 
@@ -55,77 +40,76 @@ const getCategory = (post) => {
 
       <div class="hero-grid">
 
-        {/* ================= MAIN ================= */}
-     {main && (
-  <div class="hero-main card" data-link={`/${main.slug}`}>
+        {/* MAIN */}
+        {main && (
+          <div class="hero-main card" data-link={`/${main.slug}`}>
 
-    <img
-      src={main.featuredImage?.node?.sourceUrl}
-      alt={main.title}
-    />
+            {main.featuredImage?.asset?.url && (
+              <img
+                src={main.featuredImage.asset.url}
+                alt={main.title}
+              />
+            )}
 
-    <div class="card-content">
+            <div class="card-content">
 
-      {getCategory(main) && (
-        <a href={getCategory(main).href} class="card-meta">
-          {getCategory(main).label}
-        </a>
-      )}
+              <span class={`card-type ${main.type}`}>
+                {getTypeLabel(main.type)}
+              </span>
 
-      <h1 class="card-title-xl">
-        {main.title}
-      </h1>
+              {getCategory(main) && (
+                <a href={getCategory(main).href} class="card-meta">
+                  {getCategory(main).label}
+                </a>
+              )}
 
-      {getExcerpt(main) && (
-        <p
-          class="card-excerpt"
-          set:html={getExcerpt(main)}
-        />
-      )}
+              <h1 class="card-title-xl">{main.title}</h1>
 
-    </div>
+              {getExcerpt(main) && (
+                <p class="card-excerpt">
+                  {getExcerpt(main)}
+                </p>
+              )}
 
-  </div>
-)}
+            </div>
 
-        {/* ================= SIDE ================= */}
-        <div class="hero-right">
-
-     {side.map((p) => {
-  const cat = getCategory(p);
-
-  return (
-    <div
-      class="hero-side card"
-      data-link={`/${p.slug}`}
-    >
-
-      <img
-        src={p.featuredImage?.node?.sourceUrl}
-        alt={p.title}
-      />
-
-      <div class="card-content small">
-
-        {cat && (
-          <a
-            href={cat.href}
-            class="card-meta small"
-          >
-            {cat.label}
-          </a>
+          </div>
         )}
 
-        <h3 class="card-title-md">
-          {p.title}
-        </h3>
+        {/* SIDE */}
+        <div class="hero-right">
+          {side.map((p) => {
+            const cat = getCategory(p);
 
-      </div>
+            return (
+              <div class="hero-side card" data-link={`/${p.slug}`}>
 
-    </div>
-  );
-})}
+                {p.featuredImage?.asset?.url && (
+                  <img
+                    src={p.featuredImage.asset.url}
+                    alt={p.title}
+                  />
+                )}
 
+                <div class="card-content small">
+
+                  <span class={`card-type small ${p.type}`}>
+                    {getTypeLabel(p.type)}
+                  </span>
+
+                  {cat && (
+                    <a href={cat.href} class="card-meta small">
+                      {cat.label}
+                    </a>
+                  )}
+
+                  <h3 class="card-title-md">{p.title}</h3>
+
+                </div>
+
+              </div>
+            );
+          })}
         </div>
 
       </div>

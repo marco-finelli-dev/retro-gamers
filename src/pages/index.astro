@@ -1,56 +1,57 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/home/Hero.astro';
-import Card from '../components/Card.astro';
 import '../styles/components/hero.css';
 import '../styles/pages/home.css';
+
 import Latest from '../components/home/Latest.astro';
 import Reviews from '../components/home/Reviews.astro';
 import Specials from '../components/home/Specials.astro';
 import Memories from '../components/home/Memories.astro';
 import Hardware from '../components/home/Hardware.astro';
-import { fetchAPI } from '../lib/api';
+
+import { getAllPosts, groupPosts } from '../lib/posts';
+
+const allPosts = await getAllPosts();
+const { reviews, specials, memories, latest } = groupPosts(allPosts);
 ---
+
 <BaseLayout>
-  <!-- HERO -->
+
   <section class="home-hero">
     <div class="container">
-      <Hero />
+      <Hero posts={allPosts} />
     </div>
   </section>
 
-  <!-- MEMORIES -->
-<section class="home-memories">
-  <div class="container">
-    <Memories />
-  </div>
-</section>
+  <section class="home-memories">
+    <div class="container">
+      <Memories posts={memories} />
+    </div>
+  </section>
 
-  <!-- REVIEWS -->
   <section class="home-reviews">
     <div class="container">
-      <Reviews />
+      <Reviews posts={reviews} />
     </div>
-    </section>
+  </section>
 
-  <!-- SPECIALS -->
   <section class="home-specials">
     <div class="container">
-      <Specials />
+      <Specials posts={specials} />
     </div>
   </section>
 
-  <!-- HARDWARE -->
   <section class="home-hardware">
     <div class="container">
-       <Hardware />
-    </div>
-    </section>
-
-  <!-- LATEST -->
-  <section class="home-latest">
-    <div class="container">
-      <Latest />
+      <Hardware />
     </div>
   </section>
+
+  <section class="home-latest">
+    <div class="container">
+      <Latest posts={latest} />
+    </div>
+  </section>
+
 </BaseLayout>

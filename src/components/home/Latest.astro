@@ -1,41 +1,8 @@
 ---
-import { fetchAPI } from '../../lib/api';
 import '../../styles/components/latest.css';
 import Meta from '../ui/Meta.astro';
 
-let posts = [];
-
-try {
-  const data = await fetchAPI(`
-  {
-    posts(first: 6, where: { orderby: { field: DATE, order: DESC } }) {
-      nodes {
-        title
-        slug
-        excerpt
-        content
-        datiRecensione {
-          riassuntoBreve
-        }
-        categories {
-          nodes {
-            name
-            uri
-          }
-        }
-        featuredImage {
-          node { sourceUrl }
-        }
-      }
-    }
-  }
-  `);
-
-  posts = data?.posts?.nodes || [];
-
-} catch (e) {
-  console.error('Latest fetch error:', e);
-}
+const { posts = [] } = Astro.props;
 
 /* ========================
    EXCERPT SYSTEM
@@ -48,15 +15,9 @@ const truncate = (text, length = 140) =>
   text.length > length ? text.slice(0, length) + '…' : text;
 
 const getExcerpt = (post) => {
-  if (post?.datiRecensione?.riassuntoBreve) {
-    return post.datiRecensione.riassuntoBreve;
-  }
-
-  const wpExcerpt = stripHTML(post?.excerpt || '');
-  if (wpExcerpt) return wpExcerpt;
-
-  const fallback = stripHTML(post?.content || '');
-  return truncate(fallback, 140);
+  const clean = stripHTML(post?.excerpt || '');
+  if (clean) return truncate(clean, 140);
+  return '';
 };
 ---
 
@@ -71,7 +32,7 @@ const getExcerpt = (post) => {
       <div class="latest-grid">
 
         {posts.map((post) => {
-          const category = post.categories?.nodes?.[0] || null;
+          const category = post.categories?.[0] || null;
 
           return (
             <article class="latest-item">
@@ -80,10 +41,12 @@ const getExcerpt = (post) => {
               <div class="card card--media">
 
                 <a href={`/${post.slug}`} class="card-link">
-                  <img
-                    src={post.featuredImage?.node?.sourceUrl || ''}
-                    alt={post.title || ''}
-                  />
+                  {post.featuredImage?.asset?.url && (
+                    <img
+                      src={post.featuredImage.asset.url}
+                      alt={post.title || ''}
+                    />
+                  )}
                 </a>
 
                 {category && (
@@ -92,7 +55,7 @@ const getExcerpt = (post) => {
                     items={[
                       {
                         label: category.name,
-                        href: category.uri,
+                        href: `/categoria/${category.slug}`,
                         class: 'meta-badge'
                       }
                     ]}
@@ -110,9 +73,11 @@ const getExcerpt = (post) => {
                   </a>
                 </h3>
 
-                <p class="latest-excerpt">
-                  {getExcerpt(post)}
-                </p>
+                {getExcerpt(post) && (
+                  <p class="latest-excerpt">
+                    {getExcerpt(post)}
+                  </p>
+                )}
 
               </div>
 

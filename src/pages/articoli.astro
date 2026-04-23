@@ -1,0 +1,52 @@
+---
+import { createClient } from '@sanity/client';
+
+const client = createClient({
+  projectId: 'TUO_PROJECT_ID',
+  dataset: 'production',
+  apiVersion: '2024-01-01',
+  useCdn: true
+});
+
+export async function getStaticPaths() {
+  const query = `*[_type == "article"]{
+    "slug": slug.current
+  }`;
+
+  const posts = await client.fetch(query);
+
+  return posts.map(post => ({
+    params: { slug: post.slug }
+  }));
+}
+
+const { slug } = Astro.params;
+
+const query = `*[_type == "article" && slug.current == $slug][0]{
+  title,
+  mainImage{
+    asset->{
+      url
+    }
+  },
+  body
+}`;
+
+const post = await client.fetch(query, { slug });
+---
+
+<html>
+  <body>
+
+    <h1>{post.title}</h1>
+
+    {post.mainImage?.asset?.url && (
+      <img src={post.mainImage.asset.url} alt={post.title} />
+    )}
+
+    <div>
+      {post.body && JSON.stringify(post.body)}
+    </div>
+
+  </body>
+</html>

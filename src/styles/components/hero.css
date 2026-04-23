@@ -1,22 +1,55 @@
 /* ========================================
-   HERO SECTION
+   HERO SECTION (UPGRADE)
 ======================================== */
 
 .home-hero {
   margin: var(--space-xl) 0;
   position: relative;
   z-index: 1;
+
+  background: transparent;
+
+  overflow: hidden;
 }
+
+/* GRID RETRO SOFT */
+.home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    linear-gradient(rgba(34,240,255,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,85,247,0.08) 1px, transparent 1px);
+
+  background-size: 80px 80px;
+  opacity: 0.05;
+
+  pointer-events: none;
+}
+
+/* GLOW CENTRALE */
+.home-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+
+
+  pointer-events: none;
+}
+
+
+/* ========================================
+   CONTAINER
+======================================== */
 
 .section-box.hero {
   min-height: 520px;
   padding: var(--space-xl);
   display: flex;
-}
-
-/* reset effetto tilt */
-.hero .card {
-  transform: none !important;
+  position: relative;
+  z-index: 2;
 }
 
 
@@ -54,6 +87,8 @@
   position: relative;
   border-radius: var(--radius-md);
   overflow: hidden;
+
+  background: #000;
 }
 
 .hero-main {
@@ -79,6 +114,34 @@
   object-fit: cover;
 
   z-index: 0;
+
+  transform: scale(1.02);
+  transition: transform 0.6s ease;
+}
+
+.hero-main:hover img,
+.hero-side:hover img {
+  transform: scale(1.06);
+}
+
+
+/* ========================================
+   OVERLAY CINEMATICO
+======================================== */
+
+.hero .card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.95) 0%,
+    rgba(0,0,0,0.6) 40%,
+    transparent 80%
+  );
 }
 
 
@@ -110,13 +173,17 @@
 ======================================== */
 
 .hero-main .card-title-xl {
+  font-family: var(--font-display);
+
   font-size: clamp(22px, 2.4vw, 34px);
   line-height: 1.2;
   font-weight: 600;
 
+  letter-spacing: 0.5px;
+
   text-shadow:
     0 6px 25px rgba(0,0,0,0.9),
-    0 0 10px rgba(255,255,255,0.08);
+    0 0 10px rgba(34,240,255,0.15);
 }
 
 .hero-side .card-title-md {
@@ -130,34 +197,15 @@
 .hero-main .card-excerpt {
   margin-top: 6px;
 
+  color: var(--color-text-soft);
+
   text-shadow:
     0 2px 10px rgba(0,0,0,0.7);
 }
 
 
 /* ========================================
-   OVERLAY
-======================================== */
-
-.hero .card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-
-  background: linear-gradient(
-    to top,
-    rgba(0,0,0,0.98),
-    rgba(0,0,0,0.85),
-    rgba(0,0,0,0.5),
-    transparent
-  );
-}
-
-
-/* ========================================
-   📱 TABLET
+   TABLET
 ======================================== */
 
 @media (max-width: 1024px) {
@@ -176,7 +224,7 @@
 
 
 /* ========================================
-   📱 MOBILE
+   MOBILE
 ======================================== */
 
 @media (max-width: 768px) {
@@ -213,8 +261,12 @@
   }
 }
 
-@media (max-width: 768px) {
 
+/* ========================================
+   EXTRA FIX GRID ALTRE SEZIONI
+======================================== */
+
+@media (max-width: 768px) {
   .latest-grid,
   .reviews-grid,
   .specials-grid {
@@ -222,5 +274,4 @@
     flex-direction: column;
     gap: var(--space-md);
   }
-
 }

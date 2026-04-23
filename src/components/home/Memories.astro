@@ -1,29 +1,7 @@
 ---
-import { fetchAPI } from '../../lib/api';
 import '../../styles/components/memories.css';
 
-let posts = [];
-
-try {
-  const data = await fetchAPI(`
-  {
-    posts(first: 10, where: { categoryName: "reviews", orderby: { field: DATE, order: DESC } }) {
-      nodes {
-        title
-        slug
-        featuredImage {
-          node { sourceUrl }
-        }
-      }
-    }
-  }
-  `);
-
-  posts = data?.posts?.nodes || [];
-
-} catch (e) {
-  console.error('Memories fetch error:', e);
-}
+const { posts = [] } = Astro.props;
 ---
 
 <section class="home-memories">
@@ -42,10 +20,12 @@ try {
             <div class="memory-inner card">
 
               <div class="memory-media">
-                <img
-                  src={post.featuredImage?.node?.sourceUrl || ''}
-                  alt={post.title || ''}
-                />
+                {post.featuredImage?.asset?.url && (
+                  <img
+                    src={post.featuredImage.asset.url}
+                    alt={post.title || ''}
+                  />
+                )}
               </div>
 
               <div class="card-content">

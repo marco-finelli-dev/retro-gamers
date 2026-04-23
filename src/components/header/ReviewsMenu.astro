@@ -1,47 +1,20 @@
 ---
-import { fetchAPI } from '../../lib/api';
 import '../../styles/components/header/reviews-menu.css';
 
-const reviewsData = await fetchAPI(`
-{
-  posts(
-    first: 20,
-    where: { categoryName: "reviews" }
-  ) {
-    nodes {
-      title
-      slug
-      date
-      featuredImage {
-        node { sourceUrl }
-      }
-      categories {
-        nodes { name slug }
-      }
-      datiRecensione {
-        totale
-        releaseYear
-      }
-      developers {
-        nodes { name }
-      }
-      platforms {
-        nodes { name }
-      }
-    }
-  }
-}
-`);
+const { posts = [] } = Astro.props;
 
-// 🔥 LOGICA IDENTICA
-const all = reviewsData.posts.nodes
+// =========================
+// LOGICA
+// =========================
+
+const all = posts
   .map(p => ({
     ...p,
-    score: p.datiRecensione?.totale || 0
+    score: p?.score ?? 0
   }))
   .sort((a, b) => {
     if (b.score === a.score) {
-      return new Date(b.date) - new Date(a.date);
+      return new Date(b.publishedAt) - new Date(a.publishedAt);
     }
     return b.score - a.score;
   });
@@ -64,83 +37,87 @@ if (must.length < 2) {
   good = [...good, ...extraGood];
 }
 
-const posts = [...top, ...must, ...good].slice(0, 5);
+const finalPosts = [...top, ...must, ...good].slice(0, 5);
 ---
 
 <div class="nav-item reviews-dropdown">
 
-  <!-- MENU -->
   <div class="reviews-dropdown-menu">
-  <div class="hover-bg"></div>
+    <div class="hover-bg"></div>
 
-{posts.map((post) => {
-  const categories = post.categories?.nodes || [];
+    {finalPosts.map((post) => {
 
-  const platform = categories.find(c => c.slug !== 'recensioni');
+      const score = post.score ?? 0;
 
-  const score = post.score ?? 0;
+      const platformName =
+        post.platforms?.[0]?.name || '';
 
-  const platformName =
-    post.platforms?.nodes?.[0]?.name ||
-    platform?.name ||
-    '';
+      const developer =
+        post.developers?.[0]?.name || '';
 
-  const developer = post.developers?.nodes?.[0]?.name || '';
-  const year = post.datiRecensione?.releaseYear || '';
+      const year =
+        post.gameInfo?.releaseYear || '';
 
-  return (
-    <a href={`/recensioni/${post.slug}`} class="reviews-item">
+      const image =
+        post.featuredImage?.asset?.url;
 
-      <div class="reviews-thumb">
-        <img
-          src={post.featuredImage?.node?.sourceUrl || ''}
-          alt={post.title || ''}
-        />
-      </div>
+      return (
+        <a href={`/recensioni/${post.slug}`} class="reviews-item">
 
-      <div class="reviews-content">
-        <div class="reviews-meta">
-          {platformName}
-          {developer && ` · ${developer}`}
-          {year && ` · ${year}`}
-        </div>
+          {/* IMAGE */}
+          <div class="reviews-thumb">
+            {image && (
+              <img src={image} alt={post.title || ''} />
+            )}
+          </div>
 
-        <div class="reviews-title">
-          {post.title}
-        </div>
-      </div>
+          {/* CONTENT */}
+          <div class="reviews-content">
 
-      <div class={`reviews-score ${
-        score >= 9 ? 'is-top' :
-        score >= 7 ? 'is-mid' :
-        'is-low'
-      }`}>
+            <div class="reviews-meta">
+              {platformName}
+              {developer && ` · ${developer}`}
+              {year && ` · ${year}`}
+            </div>
 
-        <span class="reviews-score-value">{score}</span>
+            <div class="reviews-title">
+              {post.title}
+            </div>
 
-        {score >= 9.5 && <span class="reviews-badge gold">TOP</span>}
-        {score >= 9 && score < 9.5 && <span class="reviews-badge silver">MUST</span>}
-        {score >= 8.5 && score < 9 && <span class="reviews-badge bronze">GOOD</span>}
+          </div>
 
-      </div>
+          {/* SCORE */}
+          <div class={`reviews-score ${
+            score >= 9 ? 'is-top' :
+            score >= 7 ? 'is-mid' :
+            'is-low'
+          }`}>
 
-    </a>
-  );
-})}
+            <span class="reviews-score-value">{score}</span>
+
+            {score >= 9.5 && <span class="reviews-badge gold">TOP</span>}
+            {score >= 9 && score < 9.5 && <span class="reviews-badge silver">MUST</span>}
+            {score >= 8.5 && score < 9 && <span class="reviews-badge bronze">GOOD</span>}
+
+          </div>
+
+        </a>
+      );
+    })}
 
   </div>
 
 </div>
 
-
 <script is:inline>
-document.addEventListener('DOMContentLoaded', () => {
+(() => {
 
   document.querySelectorAll('.reviews-dropdown-menu').forEach(menu => {
 
     const items = menu.querySelectorAll('.reviews-item');
     const bg = menu.querySelector('.hover-bg');
-    if (!bg) return;
+
+    if (!bg || items.length === 0) return;
 
     items.forEach(item => {
       item.addEventListener('mouseenter', () => {
@@ -148,10 +125,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const rect = item.getBoundingClientRect();
         const parentRect = menu.getBoundingClientRect();
 
-        const offset = rect.top - parentRect.top + (rect.height - bg.offsetHeight) / 2;
-        
-        bg.style.transform = `translateY(${offset}px)`;
-        bg.style.opacity = 1;
+        const offset =
+          rect.top - parentRect.top +
+          (rect.height - bg.offsetHeight) / 2;
+
+        requestAnimationFrame(() => {
+          bg.style.transform = `translateY(${offset}px)`;
+          bg.style.opacity = 1;
+        });
       });
     });
 
@@ -161,5 +142,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   });
 
-});
+})();
 </script>

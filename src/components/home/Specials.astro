@@ -1,57 +1,25 @@
 ---
 import '../../styles/components/specials.css';
-import { fetchAPI } from '../../lib/api';
-import Meta from '../ui/Meta.astro';
 import '../../styles/components/meta.css';
 
-let posts = [];
-
-try {
-  const data = await fetchAPI(`
-  {
-    posts(first: 3, where: { orderby: { field: DATE, order: DESC } }) {
-      nodes {
-        title
-        slug
-        excerpt
-        datiRecensione {
-          riassuntoBreve
-        }
-        categories {
-          nodes { name slug }
-        }
-        featuredImage {
-          node { sourceUrl }
-        }
-      }
-    }
-  }
-  `);
-
-  posts = data?.posts?.nodes || [];
-
-} catch (e) {
-  console.error('Specials fetch error:', e);
-}
+const { posts = [] } = Astro.props;
 
 // =========================
-// DATA SAFE
+// DATA
 // =========================
 
-const main = posts?.[0] || null;
-const side = posts?.slice(1, 3) || [];
+const main = posts[0] || null;
+const side = posts.slice(1, 3);
 
 // =========================
 // HELPERS
 // =========================
 
 const getExcerpt = (post) =>
-  post?.datiRecensione?.riassuntoBreve ??
-  post?.excerpt ??
-  '';
+  post?.excerpt || '';
 
 const getCategory = (post) =>
-  post?.categories?.nodes?.[0] || null;
+  post?.categories?.[0] || null;
 ---
 
 <section class="home-specials">
@@ -65,20 +33,24 @@ const getCategory = (post) =>
 
       <div class="specials-grid">
 
-        {/* ================= MAIN ================= */}
+        {/* MAIN */}
         {main && (
           <div class="specials-main card" data-link={`/${main.slug}`}>
 
-            <img
-              src={main.featuredImage?.node?.sourceUrl || ''}
-              alt={main.title || ''}
-            />
+            {main.featuredImage?.asset?.url && (
+              <img
+                src={main.featuredImage.asset.url}
+                alt={main.title || ''}
+              />
+            )}
+
+            <div class="specials-overlay"></div>
 
             <div class="specials-content">
 
               {getCategory(main) && (
                 <a
-                  href={`/${getCategory(main).slug}`}
+                  href={`/categoria/${getCategory(main).slug}`}
                   class="specials-meta"
                 >
                   {getCategory(main).name}
@@ -98,7 +70,7 @@ const getCategory = (post) =>
           </div>
         )}
 
-        {/* ================= SIDE ================= */}
+        {/* SIDE */}
         <div class="specials-side">
 
           {side.map((post) => {
@@ -107,10 +79,12 @@ const getCategory = (post) =>
             return (
               <div class="specials-card card" data-link={`/${post.slug}`}>
 
-                <img
-                  src={post.featuredImage?.node?.sourceUrl || ''}
-                  alt={post.title || ''}
-                />
+                {post.featuredImage?.asset?.url && (
+                  <img
+                    src={post.featuredImage.asset.url}
+                    alt={post.title || ''}
+                  />
+                )}
 
                 <div class="overlay"></div>
 
@@ -118,7 +92,7 @@ const getCategory = (post) =>
 
                   {category && (
                     <a
-                      href={`/${category.slug}`}
+                      href={`/categoria/${category.slug}`}
                       class="specials-meta-side"
                     >
                       {category.name}
