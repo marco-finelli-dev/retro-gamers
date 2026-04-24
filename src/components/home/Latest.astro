@@ -1,7 +1,7 @@
 ---
 import '../../styles/components/latest.css';
 import Meta from '../ui/Meta.astro';
-
+import { getPostUrl } from '../../lib/routes';
 const { posts = [] } = Astro.props;
 
 /* ========================
@@ -40,7 +40,7 @@ const getExcerpt = (post) => {
               {/* CARD */}
               <div class="card card--media">
 
-                <a href={`/${post.slug}`} class="card-link">
+                <a href={getPostUrl(post)} class="card-link">
                   {post.featuredImage?.asset?.url && (
                     <img
                       src={post.featuredImage.asset.url}
@@ -55,7 +55,7 @@ const getExcerpt = (post) => {
                     items={[
                       {
                         label: category.name,
-                        href: `/categoria/${category.slug}`,
+                        href: `/categorie/${category.slug}`,
                         class: 'meta-badge'
                       }
                     ]}
@@ -68,7 +68,7 @@ const getExcerpt = (post) => {
               <div class="latest-content">
 
                 <h3 class="latest-title">
-                  <a href={`/${post.slug}`}>
+                  <a href={getPostUrl(post)}>
                     {post.title}
                   </a>
                 </h3>

@@ -1,7 +1,7 @@
 ---
 import '../../styles/components/specials.css';
 import '../../styles/components/meta.css';
-
+import { getPostUrl } from '../../lib/routes';
 const { posts = [] } = Astro.props;
 
 // =========================
@@ -35,7 +35,7 @@ const getCategory = (post) =>
 
         {/* MAIN */}
         {main && (
-          <div class="specials-main card" data-link={`/${main.slug}`}>
+       <a href={getPostUrl(main)} class="specials-main card">
 
             {main.featuredImage?.asset?.url && (
               <img
@@ -50,7 +50,7 @@ const getCategory = (post) =>
 
               {getCategory(main) && (
                 <a
-                  href={`/categoria/${getCategory(main).slug}`}
+                  href={`/categorie/${category.slug}/`}
                   class="specials-meta"
                 >
                   {getCategory(main).name}
@@ -67,7 +67,7 @@ const getCategory = (post) =>
 
             </div>
 
-          </div>
+          </a>
         )}
 
         {/* SIDE */}
@@ -77,7 +77,7 @@ const getCategory = (post) =>
             const category = getCategory(post);
 
             return (
-              <div class="specials-card card" data-link={`/${post.slug}`}>
+             <a href={getPostUrl(post)} class="specials-card card">
 
                 {post.featuredImage?.asset?.url && (
                   <img
@@ -103,7 +103,7 @@ const getCategory = (post) =>
 
                 </div>
 
-              </div>
+              </a>
             );
           })}
 

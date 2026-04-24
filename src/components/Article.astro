@@ -1,0 +1,233 @@
+---
+const { post } = Astro.props;
+import '../styles/article.css';
+---
+
+{!post && <h1>Post non trovato</h1>}
+
+{post && (
+<main class="article">
+
+  <!-- HERO (SENZA IMMAGINE) -->
+  <section class="hero">
+
+    <div class="hero-inner">
+
+      {post.categories?.length > 0 && (
+        <div class="categories">
+          {post.categories.map(c => <span>{c.name}</span>)}
+        </div>
+      )}
+
+      <h1>{post.title}</h1>
+
+      {post.subtitle && (
+        <p class="subtitle">{post.subtitle}</p>
+      )}
+
+    </div>
+
+  </section>
+
+
+  <!-- LAYOUT -->
+  <div class="article-grid">
+
+    <!-- CONTENUTO -->
+
+    <article class="content">
+
+      {post.content?.map(block => {
+
+        // 📝 TESTO
+   if (block._type === 'block') {
+
+  const text = block.children?.map(child => {
+
+    let el = child.text;
+
+    // 🔗 LINK
+    if (child.marks?.length > 0 && block.markDefs) {
+
+      child.marks.forEach(mark => {
+
+        const def = block.markDefs.find(d => d._key === mark);
+
+        // 🌍 LINK ESTERNO
+        if (def?.href) {
+          el = (
+            <a href={def.href} target="_blank" rel="noopener">
+              {el}
+            </a>
+          );
+        }
+
+        // 🧠 LINK INTERNO (ARTICOLO)
+        if (def?._type === 'internalLink') {
+          const slug = def.reference?.slug?.current;
+          if (slug) {
+            el = <a href={`/articoli/${slug}`}>{el}</a>;
+          }
+        }
+
+        // 🏷️ TASSONOMIA
+        if (def?._type === 'taxonomyLink') {
+          const slug = def.reference?.slug?.current;
+          if (slug) {
+            el = <a href={`/tag/${slug}`}>{el}</a>;
+          }
+        }
+
+      });
+    }
+
+    // 🎨 FORMATTAZIONE
+    if (child.marks?.includes('strong')) el = <strong>{el}</strong>;
+    if (child.marks?.includes('em')) el = <em>{el}</em>;
+
+    return el;
+  });
+
+  if (block.style === 'h2') return <h2>{text}</h2>;
+  if (block.style === 'h3') return <h3>{text}</h3>;
+  if (block.style === 'blockquote') return <blockquote>{text}</blockquote>;
+
+  return <p>{text}</p>;
+}
+
+
+        // 🖼️ IMMAGINE
+    // 🖼️ IMMAGINE
+if (block._type === 'image') {
+  return (
+    <figure class={block.isWide ? 'wide' : ''}>
+      <img src={block.asset?.url} alt={block.alt || ''} />
+      {block.caption && <figcaption>{block.caption}</figcaption>}
+    </figure>
+  );
+}
+
+
+        // 🧩 IMAGE ROW
+        if (block._type === 'imageRow') {
+          return (
+            <div class="image-row">
+              {block.images?.map(img => (
+                <figure>
+                  <img src={img.image?.asset?.url} alt={img.alt || ''} />
+                  {img.caption && <figcaption>{img.caption}</figcaption>}
+                </figure>
+              ))}
+            </div>
+          );
+        }
+
+
+        // 🎬 VIDEO
+        if (block._type === 'video') {
+
+          let videoId = '';
+
+          if (block.url?.includes('youtu.be')) {
+            videoId = block.url.split('/').pop();
+          } else {
+            videoId = block.url?.split('v=')[1]?.split('&')[0];
+          }
+
+          return (
+            <div class="video">
+              <iframe
+                src={`https://www.youtube.com/embed/${videoId}`}
+                allowfullscreen
+              ></iframe>
+            </div>
+          );
+        }
+
+
+        // 📦 ASIDE BOX
+        if (block._type === 'asideBox') {
+          return (
+            <div class={`aside-box ${block.tone || 'info'}`}>
+              {block.title && <h4>{block.title}</h4>}
+
+              {block.content?.map(inner => {
+                if (inner._type === 'block') {
+                  return (
+                    <p>
+                      {inner.children?.map(c => c.text)}
+                    </p>
+                  );
+                }
+
+                if (inner._type === 'image') {
+                  return (
+                    <img src={inner.asset?.url} alt={inner.alt || ''} />
+                  );
+                }
+
+                return null;
+              })}
+            </div>
+          );
+        }
+
+        return null;
+      })}
+
+    </article>
+
+
+    <!-- SIDEBAR (PRONTA PER QUERY FUTURE) -->
+    <aside class="sidebar">
+
+      {/* COVER */}
+      {post.gameInfo?.cover?.asset?.url && (
+        <img
+          src={post.gameInfo.cover.asset.url}
+          class="cover"
+          alt=""
+        />
+      )}
+
+      {/* RATING */}
+      {post.rating && (
+  <div class="rating">
+
+    <span class="label">Voto</span>
+
+    <div class="score">
+      {post.rating.overall || '-'}
+    </div>
+
+    <div class="details">
+      <div>Grafica: {post.rating.grafica}</div>
+      <div>Sonoro: {post.rating.sonoro}</div>
+      <div>Gameplay: {post.rating.giocabilita}</div>
+      <div>Longevità: {post.rating.longevita}</div>
+    </div>
+
+    {post.rating.summary && (
+      <p class="summary">{post.rating.summary}</p>
+    )}
+
+  </div>
+)}
+
+      {/* 🚀 SPAZIO FUTURO */}
+      <div class="widget">
+        <h4>Articoli correlati</h4>
+        <p>(qui arriveranno query Sanity)</p>
+      </div>
+
+      <div class="widget">
+        <h4>Altri dalla stessa serie</h4>
+        <p>(query editorialSeries)</p>
+      </div>
+
+    </aside>
+
+  </div>
+
+</main>
+)}

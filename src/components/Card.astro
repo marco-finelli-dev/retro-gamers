@@ -1,47 +1,43 @@
 ---
 const { post = null, showMeta = false } = Astro.props;
 
-if (!post) {
-  return null;
-}
+if (!post) return;
 
 /* ========================
    DATA
 ======================== */
 
-const title = post?.title ?? '';
-const slug = post?.slug ?? '';
-const image = post?.featuredImage?.node?.sourceUrl || '/placeholder-retro.png';
+const title = post.title || '';
+const slug = post.slug || '';
+const image = post.featuredImage?.asset?.url || '/placeholder-retro.png';
 
 /* ========================
    CATEGORY
 ======================== */
 
-const category = post?.categories?.nodes?.[0] ?? null;
-const categorySlug = category?.slug ?? 'recensioni';
-const categoryName = category?.name ?? '';
+const category = post.categories?.[0] || null;
+const categoryName = category?.name || '';
+const categorySlug = category?.slug || '';
 
 /* ========================
    META
 ======================== */
 
-const piattaforma = post?.platforms?.nodes?.map(t => t.name).join(', ');
-const sviluppatore = post?.developers?.nodes?.map(t => t.name).join(', ');
-const anno = post?.datiRecensione?.releaseYear;
+const piattaforme = post.platforms?.map(p => p.name).join(', ');
+const sviluppatori = post.developers?.map(d => d.name).join(', ');
+const anno = post.gameInfo?.releaseYear;
 
 /* ========================
    EXCERPT
 ======================== */
 
-const excerpt =
-  post?.riassuntoBreve ||
-  post?.datiRecensione?.riassuntoBreve ||
-  '';
+const excerpt = post.excerpt || '';
 ---
 
 <div class="card">
 
-  <a href={`/${categorySlug}/${slug}/`} class="card__image">
+  <!-- IMAGE -->
+  <a href={`/articoli/${slug}/`} class="card__image">
     <div class="screen">
       <img
         class="game"
@@ -52,52 +48,48 @@ const excerpt =
     </div>
   </a>
 
+  <!-- CATEGORY -->
   {!showMeta && categoryName && (
     <div class="card__category">
-      <a href={`/${categorySlug}/`}>
-        {categoryName}
-      </a>
+      {categoryName}
     </div>
   )}
 
+  <!-- META -->
   {showMeta && (
     <div class="meta">
 
-      {piattaforma && (
-        <a href={`/piattaforma/${piattaforma.toLowerCase()}/`}>
-          {piattaforma}
-        </a>
+      {piattaforme && (
+        <span>{piattaforme}</span>
       )}
 
-      {sviluppatore && (
+      {sviluppatori && (
         <>
           {" • "}
-          <a href={`/sviluppatore/${sviluppatore.toLowerCase()}/`}>
-            {sviluppatore}
-          </a>
+          <span>{sviluppatori}</span>
         </>
       )}
 
       {anno && (
         <>
           {" • "}
-          <a href={`/anno/${anno}/`}>
-            {anno}
-          </a>
+          <span>{anno}</span>
         </>
       )}
 
     </div>
   )}
 
+  <!-- TITLE -->
   <h2 class="card__title">
-    <a href={`/${categorySlug}/${slug}/`}>
+    <a href={`/articoli/${slug}/`}>
       {title}
     </a>
   </h2>
 
+  <!-- EXCERPT -->
   {excerpt && (
-    <div class="excerpt" set:html={excerpt} />
+    <p class="excerpt">{excerpt}</p>
   )}
 
 </div>

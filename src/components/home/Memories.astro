@@ -1,6 +1,6 @@
 ---
 import '../../styles/components/memories.css';
-
+import { getPostUrl } from '../../lib/routes';
 const { posts = [] } = Astro.props;
 ---
 
@@ -15,24 +15,26 @@ const { posts = [] } = Astro.props;
       <div class="memories-track">
 
         {posts.map((post) => (
-          <div class="memory-card" data-link={`/${post.slug}`}>
+        <a href={getPostUrl(post)} class="memory-card">
 
-            <div class="memory-inner card">
+  <div class="memory-inner card">
 
-              <div class="memory-media">
-                {post.featuredImage?.asset?.url && (
-                  <img
-                    src={post.featuredImage.asset.url}
-                    alt={post.title || ''}
-                  />
-                )}
-              </div>
+    <div class="memory-media">
+      {post.featuredImage?.asset?.url && (
+        <img
+          src={post.featuredImage.asset.url}
+          alt={post.title || ''}
+        />
+      )}
+    </div>
 
-              <div class="card-content">
-                <h3>{post.title}</h3>
-              </div>
+    <div class="card-content">
+      <h3>{post.title}</h3>
+    </div>
 
-            </div>
+  </div>
+
+</a>
 
           </div>
         ))}

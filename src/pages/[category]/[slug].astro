@@ -1,0 +1,126 @@
+---
+import Layout from '../../layouts/BaseLayout.astro';
+import Article from '../../components/Article.astro';
+import { client } from '../../lib/sanity';
+
+const { slug } = Astro.params;
+
+const post = await client.fetch(`
+*[
+  slug.current == $slug
+][0]{
+  _type,
+  title,
+  subtitle,
+  excerpt,
+  "slug": slug.current,
+  publishedAt,
+
+  featuredImage {
+    asset->{ url }
+  },
+
+  categories[]->{
+    name,
+    "slug": slug.current
+  },
+
+  platforms[]->{
+    name
+  },
+
+  gameInfo {
+    releaseYear,
+    cover {
+      asset->{ url }
+    }
+  },
+
+  rating,
+
+  content[]{
+  ...,
+
+  // 🔗 SUPPORTO LINK (QUESTO È IL PEZZO NUOVO)
+  markDefs[]{
+    ...,
+    _type == "internalLink" => {
+      ...,
+      reference->{
+        slug,
+        type
+      }
+    },
+    _type == "taxonomyLink" => {
+      ...,
+      reference->{
+        slug
+      }
+    }
+  },
+
+  // 🖼️ immagini normali
+  _type == "image" => {
+    ...,
+    asset->{ url }
+  },
+
+  // 🧩 gallery (imageRow)
+  _type == "imageRow" => {
+    ...,
+    images[]{
+      ...,
+      image{
+        asset->{ url }
+      }
+    }
+  },
+
+  // 📦 aside (con immagini dentro)
+  _type == "asideBox" => {
+    ...,
+    content[]{
+      ...,
+
+      // 🔗 anche qui servono i link!
+      markDefs[]{
+        ...,
+        _type == "internalLink" => {
+          ...,
+          reference->{
+            slug,
+            type
+          }
+        },
+        _type == "taxonomyLink" => {
+          ...,
+          reference->{
+            slug
+          }
+        }
+      },
+
+      _type == "image" => {
+        ...,
+        asset->{ url }
+      }
+    }
+  },
+
+  // 🎬 video
+  _type == "video" => {
+    url
+  }
+}
+
+}
+`, { slug });
+
+if (!post) {
+  return Astro.redirect('/');
+}
+---
+
+<Layout>
+  <Article post={post} />
+</Layout>

@@ -1,6 +1,6 @@
 ---
 import '../../styles/components/header/news-menu.css';
-
+import { getPostUrl } from '../../lib/routes';
 const { posts = [] } = Astro.props;
 ---
 
@@ -15,7 +15,7 @@ const { posts = [] } = Astro.props;
       const category = p.categories?.[0]?.name || '';
 
       return (
-        <a href={`/news/${p.slug}`} class="news-item">
+      <a href={getPostUrl(p)} class="news-item">
 
           <div class="news-thumb">
             {image && (

@@ -1,6 +1,6 @@
 ---
 import '../../styles/components/header/reviews-menu.css';
-
+import { getPostUrl } from '../../lib/routes';
 const { posts = [] } = Astro.props;
 
 // =========================
@@ -48,6 +48,7 @@ const finalPosts = [...top, ...must, ...good].slice(0, 5);
     {finalPosts.map((post) => {
 
       const score = post.score ?? 0;
+      const formattedScore = Number(score).toFixed(1);
 
       const platformName =
         post.platforms?.[0]?.name || '';
@@ -62,7 +63,7 @@ const finalPosts = [...top, ...must, ...good].slice(0, 5);
         post.featuredImage?.asset?.url;
 
       return (
-        <a href={`/recensioni/${post.slug}`} class="reviews-item">
+     <a href={getPostUrl(post)} class="reviews-item">
 
           {/* IMAGE */}
           <div class="reviews-thumb">
@@ -93,7 +94,7 @@ const finalPosts = [...top, ...must, ...good].slice(0, 5);
             'is-low'
           }`}>
 
-            <span class="reviews-score-value">{score}</span>
+            <span class="reviews-score-value">{formattedScore}</span>
 
             {score >= 9.5 && <span class="reviews-badge gold">TOP</span>}
             {score >= 9 && score < 9.5 && <span class="reviews-badge silver">MUST</span>}

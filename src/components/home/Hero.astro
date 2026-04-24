@@ -1,5 +1,6 @@
 ---
 import '../../styles/components/hero.css';
+import { getPostUrl } from '../../lib/routes';
 
 const { posts = [] } = Astro.props;
 
@@ -8,15 +9,11 @@ const [main, ...rest] = posts || [];
 const side = rest.slice(0, 3);
 
 // HELPERS
-
-const getExcerpt = (post) =>
-  post?.excerpt || '';
+const getExcerpt = (post) => post?.excerpt || '';
 
 const getCategory = (post) => {
   const cat = post?.categories?.[0];
-  return cat
-    ? { label: cat.name, href: `/${cat.slug}` }
-    : null;
+  return cat ? cat.name : '';
 };
 
 const getTypeLabel = (type) => {
@@ -42,38 +39,31 @@ const getTypeLabel = (type) => {
 
         {/* MAIN */}
         {main && (
-          <div class="hero-main card" data-link={`/${main.slug}`}>
+          <a href={getPostUrl(main)} class="hero-main card">
 
             {main.featuredImage?.asset?.url && (
-              <img
-                src={main.featuredImage.asset.url}
-                alt={main.title}
-              />
+              <img src={main.featuredImage.asset.url} alt={main.title} />
             )}
 
             <div class="card-content">
-
               <span class={`card-type ${main.type}`}>
                 {getTypeLabel(main.type)}
               </span>
 
               {getCategory(main) && (
-                <a href={getCategory(main).href} class="card-meta">
-                  {getCategory(main).label}
-                </a>
+                <span class="card-meta">
+                  {getCategory(main)}
+                </span>
               )}
 
               <h1 class="card-title-xl">{main.title}</h1>
 
               {getExcerpt(main) && (
-                <p class="card-excerpt">
-                  {getExcerpt(main)}
-                </p>
+                <p class="card-excerpt">{getExcerpt(main)}</p>
               )}
-
             </div>
 
-          </div>
+          </a>
         )}
 
         {/* SIDE */}
@@ -82,32 +72,27 @@ const getTypeLabel = (type) => {
             const cat = getCategory(p);
 
             return (
-              <div class="hero-side card" data-link={`/${p.slug}`}>
+            <a href={getPostUrl(p)} class="hero-side card">
 
                 {p.featuredImage?.asset?.url && (
-                  <img
-                    src={p.featuredImage.asset.url}
-                    alt={p.title}
-                  />
+                  <img src={p.featuredImage.asset.url} alt={p.title} />
                 )}
 
                 <div class="card-content small">
-
                   <span class={`card-type small ${p.type}`}>
                     {getTypeLabel(p.type)}
                   </span>
 
                   {cat && (
-                    <a href={cat.href} class="card-meta small">
-                      {cat.label}
-                    </a>
+                    <span class="card-meta small">
+                      {cat}
+                    </span>
                   )}
 
                   <h3 class="card-title-md">{p.title}</h3>
-
                 </div>
 
-              </div>
+              </a>
             );
           })}
         </div>

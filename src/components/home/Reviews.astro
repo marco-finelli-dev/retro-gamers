@@ -3,7 +3,7 @@ import '../../styles/components/reviews.css';
 import Meta from '../ui/Meta.astro';
 import '../../styles/components/meta.css';
 import { urlFor } from '../../lib/image';
-
+import { getPostUrl } from '../../lib/routes';
 const { posts = [] } = Astro.props;
 
 const main = posts[0] || null;
@@ -31,6 +31,14 @@ const getMeta = (post) => [
 
 ].filter(Boolean);
 
+const getScore = (post) => post.rating?.overall ?? post.score ?? 0;
+
+
+const formatScore = (score) => {
+  if (score === null || score === undefined) return '-';
+  return Number(score).toFixed(1);
+};
+
 const getScoreClass = (score) => {
   if (score >= 9) return "score-top";
   if (score >= 7) return "score-must";
@@ -53,7 +61,7 @@ const getExcerpt = (post) =>
 
         {/* MAIN */}
         {main && (
-          <div class="review-main card" data-link={`/${main.slug}`}>
+          <div class="review-main card" data-link={getPostUrl(main)}>
 
             {main.featuredImage && (
               <img
@@ -62,9 +70,9 @@ const getExcerpt = (post) =>
               />
             )}
 
-            <div class={`review-score ${getScoreClass(main.score)}`}>
-              <span class="value">{main.score}</span>
-            </div>
+         <div class={`review-score ${getScoreClass(getScore(main))}`}>
+  <span class="value">{formatScore(getScore(main))}</span>
+</div>
 
             <div class="card-content">
 
@@ -83,7 +91,7 @@ const getExcerpt = (post) =>
         {/* SIDE */}
         <div class="review-side">
           {side.map(post => (
-            <div class="review-card card" data-link={`/${post.slug}`}>
+           <div class="review-card card" data-link={getPostUrl(post)}>
 
               {post.featuredImage && (
                 <img
@@ -92,9 +100,9 @@ const getExcerpt = (post) =>
                 />
               )}
 
-              <div class={`review-score ${getScoreClass(post.score)}`}>
-                <span class="value">{post.score}</span>
-              </div>
+            <div class={`review-score ${getScoreClass(getScore(post))}`}>
+  <span class="value">{formatScore(getScore(post))}</span>
+</div>
 
               <div class="card-content small">
 

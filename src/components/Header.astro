@@ -3,6 +3,7 @@ import PlatformsMenu from './header/PlatformsMenu.astro';
 import ReviewsMenu from './header/ReviewsMenu.astro';
 import NewsMenu from './header/NewsMenu.astro';
 import Search from './header/Search.astro';
+import { getArchiveUrl } from '../lib/routes';
 
 // 👉 ricevi dati dal layout
 const { reviews = [], news = [] } = Astro.props;
@@ -54,10 +55,10 @@ const { reviews = [], news = [] } = Astro.props;
       </div>
 
       <!-- LINK DIRETTI -->
-      <a href="/speciali/" class="nav-link">Speciali</a>
-      <a href="/guide/" class="nav-link">Guide</a>
-      <a href="/interviste/" class="nav-link">Interviste</a>
-      <a href="/memories/" class="nav-link">Memories</a>
+       <a href={getArchiveUrl('feature')} class="nav-link">Speciali</a>
+       <a href={getArchiveUrl('guide')} class="nav-link">Guide</a>
+       <a href={getArchiveUrl('interview')} class="nav-link">Interviste</a>
+       <a href={getArchiveUrl('memories')} class="nav-link">Memories</a>
 
     </nav>
 
