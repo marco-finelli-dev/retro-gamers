@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/pages/platforms.css';
+import { client } from '../../lib/sanity';
+
+const terms = await client.fetch(`
+*[_type == "platform" && defined(slug.current)] | order(name asc){
+  _id,
+  name,
+  "slug": slug.current,
+  "parentId": parent->_id
+}
+`) || [];
+
+/* TREE */
+const map = {};
+terms.forEach(t => map[t._id] = { ...t, children: [] });
+
+const tree = [];
+terms.forEach(t => {
+  if (!t.parentId) tree.push(map[t._id]);
+  else if (map[t.parentId]) map[t.parentId].children.push(map[t._id]);
+});
+---
+
+<BaseLayout>
+
+  <section class="platforms-page">
+    <div class="container">
+
+      <h1>Piattaforme</h1>
+
+      <div class="platforms-grid">
+
+        {tree.map(group => (
+          <div class="platform-block">
+
+            <h2 class="platform-title">{group.name}</h2>
+
+            <div class="platform-cards">
+              {group.children?.map(p => (
+                <a href={`/piattaforme/${p.slug}/`} class="platform-card">
+                  <div class="platform-card-inner">
+                    <span>{p.name}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+
+          </div>
+        ))}
+
+      </div>
+
+    </div>
+  </section>
+
+</BaseLayout>

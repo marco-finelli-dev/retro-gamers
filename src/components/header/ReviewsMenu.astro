@@ -1,5 +1,5 @@
 ---
-import '../../styles/components/header/reviews-menu.css';
+import '../../styles/components/header/dropdown.css';
 import { getPostUrl } from '../../lib/routes';
 const { posts = [] } = Astro.props;
 
@@ -39,109 +39,67 @@ if (must.length < 2) {
 
 const finalPosts = [...top, ...must, ...good].slice(0, 5);
 ---
+<div class="dropdown-wrapper">
+<div class="dropdown-menu">
 
-<div class="nav-item reviews-dropdown">
+  {finalPosts.map((post) => {
 
-  <div class="reviews-dropdown-menu">
-    <div class="hover-bg"></div>
+    const score = post.score ?? 0;
+    const formattedScore = Number(score).toFixed(1);
 
-    {finalPosts.map((post) => {
+    const platformName = post.platforms?.[0]?.name || '';
+    const developer = post.developers?.[0]?.name || '';
+    const year = post.gameInfo?.releaseYear || '';
 
-      const score = post.score ?? 0;
-      const formattedScore = Number(score).toFixed(1);
+    const image = post.featuredImage?.asset?.url;
 
-      const platformName =
-        post.platforms?.[0]?.name || '';
+    return (
+      <a href={getPostUrl(post)} class="dropdown-item">
 
-      const developer =
-        post.developers?.[0]?.name || '';
+        {/* IMAGE */}
+        <div class="dropdown-thumb">
+          {image && (
+            <img src={image} alt={post.title || ''} />
+          )}
+        </div>
 
-      const year =
-        post.gameInfo?.releaseYear || '';
+        {/* CONTENT */}
+        <div class="dropdown-content">
 
-      const image =
-        post.featuredImage?.asset?.url;
-
-      return (
-     <a href={getPostUrl(post)} class="reviews-item">
-
-          {/* IMAGE */}
-          <div class="reviews-thumb">
-            {image && (
-              <img src={image} alt={post.title || ''} />
-            )}
+          <div class="dropdown-meta">
+            {platformName}
+            {developer && ` · ${developer}`}
+            {year && ` · ${year}`}
           </div>
 
-          {/* CONTENT */}
-          <div class="reviews-content">
-
-            <div class="reviews-meta">
-              {platformName}
-              {developer && ` · ${developer}`}
-              {year && ` · ${year}`}
-            </div>
-
-            <div class="reviews-title">
-              {post.title}
-            </div>
-
+          <div class="dropdown-title">
+            {post.title}
           </div>
 
-          {/* SCORE */}
-          <div class={`reviews-score ${
-            score >= 9 ? 'is-top' :
-            score >= 7 ? 'is-mid' :
-            'is-low'
-          }`}>
+        </div>
 
-            <span class="reviews-score-value">{formattedScore}</span>
+        {/* SCORE */}
+        <div class={`reviews-score ${
+          score >= 9 ? 'is-top' :
+          score >= 7 ? 'is-mid' :
+          'is-low'
+        }`}>
 
-            {score >= 9.5 && <span class="reviews-badge gold">TOP</span>}
-            {score >= 9 && score < 9.5 && <span class="reviews-badge silver">MUST</span>}
-            {score >= 8.5 && score < 9 && <span class="reviews-badge bronze">GOOD</span>}
+          <span class="reviews-score-value">{formattedScore}</span>
 
-          </div>
+          {score >= 9.5 && <span class="reviews-badge gold">TOP</span>}
+          {score >= 9 && score < 9.5 && <span class="reviews-badge silver">MUST</span>}
+          {score >= 8.5 && score < 9 && <span class="reviews-badge bronze">GOOD</span>}
 
-        </a>
-      );
-    })}
+        </div>
 
-  </div>
+      </a>
+    );
+  })}
+
+  <a href="/recensioni/" class="dropdown-more">
+    Vedi tutte le recensioni →
+  </a>
 
 </div>
-
-<script is:inline>
-(() => {
-
-  document.querySelectorAll('.reviews-dropdown-menu').forEach(menu => {
-
-    const items = menu.querySelectorAll('.reviews-item');
-    const bg = menu.querySelector('.hover-bg');
-
-    if (!bg || items.length === 0) return;
-
-    items.forEach(item => {
-      item.addEventListener('mouseenter', () => {
-
-        const rect = item.getBoundingClientRect();
-        const parentRect = menu.getBoundingClientRect();
-
-        const offset =
-          rect.top - parentRect.top +
-          (rect.height - bg.offsetHeight) / 2;
-
-        requestAnimationFrame(() => {
-          bg.style.transform = `translateY(${offset}px)`;
-          bg.style.opacity = 1;
-        });
-      });
-    });
-
-    menu.addEventListener('mouseleave', () => {
-      bg.style.opacity = 0;
-    });
-
-  });
-
-})();
-</script>
+</div>

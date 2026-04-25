@@ -1,267 +1,211 @@
-/* ========================
-   HEADER
-======================== */
+/* ========================================
+   HEADER (GLASS PREMIUM)
+======================================== */
 
 .header {
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 100;
 
-  background: rgba(8, 8, 12, 0.72);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
 
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(10, 18, 28, 0.6);
+
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 
   box-shadow:
-    0 8px 24px rgba(0,0,0,0.35),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+    inset 0 1px rgba(255,255,255,0.05),
+    0 10px 30px rgba(0,0,0,0.6);
 }
 
-/* 🔥 linea neon sopra (ultra sottile) */
+/* riflesso leggero (statico, elegante) */
 .header::before {
   content: "";
   position: absolute;
-  inset: 0 0 auto 0;
-  height: 1px;
-
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(34,240,255,0.7),
-    rgba(168,85,247,0.6),
-    transparent
-  );
-
-  opacity: 0.5;
-}
-
-
-/* ========================
-   CONTAINER
-======================== */
-
-.header__container {
-  display: flex;
-  align-items: center;
-
-  max-width: 1200px;
-  margin: 0 auto;
-
-  padding: 12px 20px;
-}
-
-
-/* ========================
-   LOGO
-======================== */
-
-.header__logo {
-  display: flex;
-  align-items: center;
-}
-
-.header__logo img {
-  height: 40px;
-}
-
-
-/* ========================
-   NAV (centrata)
-======================== */
-
-.header__nav {
-  display: flex;
-  align-items: center;
-
-  gap: 14px;
-
-  margin: 0 auto; /* 👈 CENTRO VERO */
-}
-
-
-/* ========================
-   RIGHT (search)
-======================== */
-
-.header__right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-
-/* ========================
-   NAV ITEM
-======================== */
-
-.nav-item {
-  position: relative;
-}
-
-/* ponte invisibile dropdown */
-.nav-item::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -8px;
-  height: 8px;
-}
-
-
-/* ========================
-   NAV LINK
-======================== */
-
-.nav-link {
-  all: unset;
-
-  display: flex;
-  align-items: center;
-
-  cursor: pointer;
-  position: relative;
-
-  padding: 12px 14px;
-  border-radius: 14px;
-
-  font-family: var(--font-base);
-  font-weight: 500;
-  font-size: 15.5px;
-  letter-spacing: 0.4px;
-
-  color: rgba(255,255,255,0.78);
-
-  border: 1px solid transparent;
-
-  transition:
-    color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.nav-link span:last-child {
-  opacity: 0.9;
-}
-
-
-/* ========================
-   HOVER
-======================== */
-
-.nav-link:hover {
-  color: var(--color-primary);
-
-  background: rgba(34,240,255,0.05);
-
-  border-color: rgba(34,240,255,0.2);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.12),
-    0 0 10px rgba(34,240,255,0.12);
-}
-
-
-/* ========================
-   ACTIVE
-======================== */
-
-.nav-link.active {
-  color: var(--color-primary);
-
-  background: rgba(34,240,255,0.07);
-
-  border-color: rgba(34,240,255,0.3);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.18),
-    0 0 12px rgba(34,240,255,0.18);
-}
-
-
-/* ========================
-   GLASS REFLECTION (soft)
-======================== */
-
-.nav-link::after {
-  content: "";
-  position: absolute;
   inset: 0;
-  border-radius: 14px;
 
   background: linear-gradient(
     120deg,
-    rgba(255,255,255,0.10),
-    transparent 55%
+    rgba(255,255,255,0.08),
+    rgba(255,255,255,0.02) 40%,
+    transparent 60%
   );
 
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+}
+
+/* ========================================
+   INNER
+======================================== */
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 14px 20px;
+}
+
+/* ========================================
+   LOGO
+======================================== */
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo img {
+  height: 38px;
+  display: block;
+}
+
+/* ========================================
+   NAV
+======================================== */
+
+.nav-desktop {
+  display: flex;
+  align-items: center;
+  gap: clamp(24px, 4vw, 48px);
+
+  position: relative;
+  z-index: 10;
+}
+
+/* ========================================
+   LINK
+======================================== */
+
+.nav-link {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+
+  color: rgba(255,255,255,0.65);
+
+  position: relative;
+  text-decoration: none;
+
+  transition:
+    color 0.2s ease,
+    text-shadow 0.2s ease;
+}
+
+/* hover */
+.nav-link:hover {
+  color: #22f0ff;
+  text-shadow: 0 0 8px rgba(34,240,255,0.4);
+}
+
+/* underline */
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+
+  width: 0;
+  height: 2px;
+
+  background: #22f0ff;
+
+  transition: width 0.25s ease;
 }
 
 .nav-link:hover::after {
-  opacity: 0.45;
+  width: 100%;
 }
 
-
-/* ========================
-   ICON
-======================== */
-
-.nav-icon {
-  font-size: 16px;
-  margin-right: 8px;
-  opacity: 0.6;
-
-  transition: opacity 0.2s ease;
+/* active */
+.nav-link.active {
+  color: #22f0ff;
 }
 
-.nav-link:hover .nav-icon,
-.nav-link.active .nav-icon {
-  opacity: 0.95;
+.nav-link.active::after {
+  width: 100%;
 }
 
-
-/* ========================
+/* ========================================
    DROPDOWN
-======================== */
-
-.nav-item > *:not(.nav-link) {
-  position: absolute;
-  top: 100%;
-  left: 0;
-
-  width: max-content;
-  min-width: 220px;
-
-  opacity: 0;
-  pointer-events: none;
-
-  transform: translateY(0);
-
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-
-  z-index: 2000;
-}
-
-.nav-item:hover > *:not(.nav-link) {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
+======================================== */
 
 .nav-item {
-  position: static;
+  position: relative;
+  z-index: 20;
 }
 
+/* zona anti-flicker */
 .nav-item::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -20px;
-  height: 20px;
+  top: 100%;
+  height: 40px;
+}
+
+/* dropdown base */
+.nav-item .dropdown {
+  position: absolute;
+  top: calc(100% + 16px);
+  left: 0;
+
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+
+  pointer-events: none;
+
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+
+  z-index: 5;
+}
+
+/* apertura (hover + JS intent) */
+.nav-item:hover .dropdown,
+.nav-item.intent-active .dropdown {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* micro delay chiusura */
+.nav-item:not(:hover) .dropdown {
+  transition-delay: 0.08s;
+}
+
+/* ========================================
+   SEARCH
+======================================== */
+
+.search-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: rgba(255,255,255,0.6);
+
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.search-btn:hover {
+  color: #22f0ff;
+  transform: scale(1.1);
+}
+
+.search-btn:active {
+  transform: scale(0.9);
 }

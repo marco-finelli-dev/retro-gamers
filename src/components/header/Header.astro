@@ -1,0 +1,54 @@
+---
+import Search from './Search.astro';
+import ReviewsMenu from './ReviewsMenu.astro';
+import NewsMenu from './NewsMenu.astro';
+
+import '../../styles/components/header/header.css';
+
+const { reviews = [], news = [] } = Astro.props;
+---
+
+<header class="header">
+
+  <div class="header-inner">
+
+    <!-- LOGO -->
+    <a href="/" class="logo">
+      <img src="/images/retro-gamer-header-logo.webp" alt="Retro Gamers" />
+    </a>
+
+    <!-- NAV -->
+    <nav class="nav-desktop">
+
+      <!-- RECENSIONI -->
+      <div class="nav-item has-dropdown">
+        <a href="/recensioni/" class="nav-link">Recensioni</a>
+        <div class="dropdown">
+          <ReviewsMenu posts={reviews} />
+        </div>
+      </div>
+
+      <!-- NEWS -->
+      <div class="nav-item has-dropdown">
+        <a href="/news/" class="nav-link">News</a>
+        <div class="dropdown">
+          <NewsMenu posts={news} />
+        </div>
+      </div>
+
+      <!-- LINK NORMALI -->
+      <a href="/speciali/" class="nav-link">Speciali</a>
+      <a href="/guide/" class="nav-link">Guide</a>
+      <a href="/memories/" class="nav-link">Memories</a>
+      <a href="/piattaforme/" class="nav-link">Piattaforme</a>
+
+    </nav>
+
+    <!-- SEARCH -->
+    <div class="header-actions">
+      <Search />
+    </div>
+
+  </div>
+
+</header>

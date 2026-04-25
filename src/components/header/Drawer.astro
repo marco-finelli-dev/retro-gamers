@@ -1,0 +1,16 @@
+---
+const { id, title } = Astro.props;
+---
+
+<div class="drawer" id={`${id}-drawer`}>
+
+  <div class="drawer-header">
+    <h3>{title}</h3>
+    <button data-close>✕</button>
+  </div>
+
+  <div class="drawer-content">
+    <slot />
+  </div>
+
+</div>

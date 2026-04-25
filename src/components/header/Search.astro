@@ -97,20 +97,32 @@ import '../../styles/components/header/search.css';
     results.innerHTML = '<div class="hover-bg"></div>';
   }
 
-  function open() {
-    bar.classList.add('active');
-    overlay?.classList.add('active');
-    document.body.classList.add('no-scroll');
-    input.focus();
-  }
+function open() {
+  if (document.body.classList.contains('no-scroll')) return;
 
-  function close() {
-    bar.classList.remove('active');
-    overlay?.classList.remove('active');
-    document.body.classList.remove('no-scroll');
-    input.value = '';
-    reset();
-  }
+  const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+  document.body.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+  document.body.classList.add('no-scroll');
+
+  bar.classList.add('active');
+  overlay?.classList.add('active');
+
+  input.focus();
+}
+
+function close() {
+  if (!document.body.classList.contains('no-scroll')) return;
+
+  bar.classList.remove('active');
+  overlay?.classList.remove('active');
+
+  document.body.classList.remove('no-scroll');
+  document.body.style.removeProperty('--scrollbar-width');
+
+  input.value = '';
+  reset();
+}
 
   toggle?.addEventListener('click', e => {
     e.stopPropagation();
@@ -247,4 +259,9 @@ import '../../styles/components/header/search.css';
   });
 
 })();
+
+window.addEventListener('load', () => {
+  document.body.classList.remove('no-scroll');
+  document.body.style.removeProperty('--scrollbar-width');
+});
 </script>

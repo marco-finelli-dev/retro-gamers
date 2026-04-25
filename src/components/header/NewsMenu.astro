@@ -1,78 +1,44 @@
 ---
-import '../../styles/components/header/news-menu.css';
+import '../../styles/components/header/dropdown.css';
 import { getPostUrl } from '../../lib/routes';
 const { posts = [] } = Astro.props;
 ---
+<div class="dropdown-wrapper">
+<div class="dropdown-menu">
 
-<div class="nav-item news-dropdown">
+  {posts.slice(0, 5).map((p) => {
 
-  <div class="news-dropdown-menu">
-    <div class="hover-bg"></div>
+    const image = p.featuredImage?.asset?.url;
+    const category = p.categories?.[0]?.name || '';
 
-    {posts.map((p) => {
+    return (
+      <a href={getPostUrl(p)} class="dropdown-item">
 
-      const image = p.featuredImage?.asset?.url;
-      const category = p.categories?.[0]?.name || '';
+        <div class="dropdown-thumb">
+          {image && (
+            <img src={image} alt={p.title || ''} />
+          )}
+        </div>
 
-      return (
-      <a href={getPostUrl(p)} class="news-item">
+        <div class="dropdown-content">
 
-          <div class="news-thumb">
-            {image && (
-              <img src={image} alt={p.title || ''} />
-            )}
+          <div class="dropdown-meta">
+            {category}
           </div>
 
-          <div class="news-content">
-
-            <div class="news-meta">
-              {category}
-            </div>
-
-            <div class="news-title">
-              {p.title}
-            </div>
-
+          <div class="dropdown-title">
+            {p.title}
           </div>
 
-        </a>
-      );
-    })}
+        </div>
 
-  </div>
+      </a>
+    );
+  })}
+
+  <a href="/news/" class="dropdown-more">
+    Vedi tutte le news →
+  </a>
 
 </div>
-
-<script is:inline>
-(() => {
-
-  document.querySelectorAll('.news-dropdown-menu').forEach(menu => {
-
-    const items = menu.querySelectorAll('.news-item');
-    const bg = menu.querySelector('.hover-bg');
-
-    if (!bg || items.length === 0) return;
-
-    items.forEach(item => {
-      item.addEventListener('mouseenter', () => {
-
-        const rect = item.getBoundingClientRect();
-        const parentRect = menu.getBoundingClientRect();
-
-        const offset = rect.top - parentRect.top + 4;
-
-        requestAnimationFrame(() => {
-          bg.style.transform = `translateY(${offset}px)`;
-          bg.style.opacity = 1;
-        });
-      });
-    });
-
-    menu.addEventListener('mouseleave', () => {
-      bg.style.opacity = 0;
-    });
-
-  });
-
-})();
-</script>
+</div>
