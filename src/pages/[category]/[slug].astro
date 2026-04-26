@@ -1,22 +1,86 @@
 ---
 import Layout from '../../layouts/BaseLayout.astro';
-import Article from '../../components/Article.astro';
-import { client } from '../../lib/sanity';
+import ArticlePage from '../../components/article/ArticlePage.astro';
 
-const { slug } = Astro.params;
+import { client } from '../../lib/sanity';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+const { category, slug } = Astro.params;
+
+const categoryToType = {
+  recensioni: 'review',
+  news: 'news',
+  speciali: 'feature',
+  guide: 'guide',
+  memories: 'memories',
+  interviste: 'interview',
+  hardware: 'hardware',
+  articoli: 'article'
+};
+
+const expectedType = categoryToType[category];
+
+if (!expectedType) {
+  return Astro.redirect('/');
+}
+
+/* ========================
+   READING TIME
+======================== */
+
+function getPlainTextFromContent(content = []) {
+  return content
+    .flatMap((block) => {
+      if (block._type === 'block') {
+        return block.children?.map((child) => child.text || '') || [];
+      }
+
+      if (block._type === 'asideBox') {
+        return block.content
+          ?.filter((inner) => inner._type === 'block')
+          .flatMap((inner) =>
+            inner.children?.map((child) => child.text || '') || []
+          ) || [];
+      }
+
+      return [];
+    })
+    .join(' ');
+}
+
+function getReadingTime(content = []) {
+  const text = getPlainTextFromContent(content);
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+
+  return Math.max(1, Math.ceil(words / 220));
+}
 
 const post = await client.fetch(`
 *[
-  slug.current == $slug
+  _type == "article" &&
+  slug.current == $slug &&
+  type == $expectedType
 ][0]{
+  _id,
   _type,
+  type,
+
   title,
   subtitle,
   excerpt,
+  seoTitle,
+
   "slug": slug.current,
   publishedAt,
+  viewsBase,
+
+  author->{
+    name,
+    "slug": slug.current
+  },
 
   featuredImage {
+    alt,
     asset->{ url }
   },
 
@@ -26,12 +90,55 @@ const post = await client.fetch(`
   },
 
   platforms[]->{
-    name
+    name,
+    "slug": slug.current
+  },
+
+  genres[]->{
+    name,
+    "slug": slug.current
+  },
+
+  developers[]->{
+    name,
+    "slug": slug.current
+  },
+
+  publishers[]->{
+    name,
+    "slug": slug.current
+  },
+
+  manufacturer[]->{
+    name,
+    "slug": slug.current
+  },
+
+  modes[]->{
+    name,
+    "slug": slug.current
+  },
+
+  series[]->{
+    name,
+    "slug": slug.current
+  },
+
+  editorialSeries[]->{
+    name,
+    "slug": slug.current
+  },
+
+  relatedSeries[]->{
+    name,
+    "slug": slug.current
   },
 
   gameInfo {
     releaseYear,
+    mediaFormat,
     cover {
+      alt,
       asset->{ url }
     }
   },
@@ -39,88 +146,98 @@ const post = await client.fetch(`
   rating,
 
   content[]{
-  ...,
-
-  // 🔗 SUPPORTO LINK (QUESTO È IL PEZZO NUOVO)
-  markDefs[]{
     ...,
-    _type == "internalLink" => {
-      ...,
-      reference->{
-        slug,
-        type
-      }
-    },
-    _type == "taxonomyLink" => {
-      ...,
-      reference->{
-        slug
-      }
-    }
-  },
 
-  // 🖼️ immagini normali
-  _type == "image" => {
-    ...,
-    asset->{ url }
-  },
-
-  // 🧩 gallery (imageRow)
-  _type == "imageRow" => {
-    ...,
-    images[]{
-      ...,
-      image{
-        asset->{ url }
-      }
-    }
-  },
-
-  // 📦 aside (con immagini dentro)
-  _type == "asideBox" => {
-    ...,
-    content[]{
+    markDefs[]{
       ...,
 
-      // 🔗 anche qui servono i link!
-      markDefs[]{
+      _type == "internalLink" => {
         ...,
-        _type == "internalLink" => {
-          ...,
-          reference->{
-            slug,
-            type
-          }
-        },
-        _type == "taxonomyLink" => {
-          ...,
-          reference->{
-            slug
-          }
+        reference->{
+          type,
+          "slug": slug.current
         }
       },
 
-      _type == "image" => {
+      _type == "taxonomyLink" => {
         ...,
-        asset->{ url }
+        reference->{
+          "slug": slug.current
+        }
       }
-    }
-  },
+    },
 
-  // 🎬 video
-  _type == "video" => {
-    url
+    _type == "image" => {
+      ...,
+      asset->{ url }
+    },
+
+    _type == "imageRow" => {
+      ...,
+      images[]{
+        ...,
+        image{
+          asset->{ url }
+        }
+      }
+    },
+
+    _type == "asideBox" => {
+      ...,
+      content[]{
+        ...,
+
+        markDefs[]{
+          ...,
+
+          _type == "internalLink" => {
+            ...,
+            reference->{
+              type,
+              "slug": slug.current
+            }
+          },
+
+          _type == "taxonomyLink" => {
+            ...,
+            reference->{
+              "slug": slug.current
+            }
+          }
+        },
+
+        _type == "image" => {
+          ...,
+          asset->{ url }
+        }
+      }
+    },
+
+    _type == "video" => {
+      url
+    }
   }
 }
-
-}
-`, { slug });
+`, {
+  slug,
+  expectedType
+});
 
 if (!post) {
   return Astro.redirect('/');
 }
+
+const readingTime = getReadingTime(post.content);
+
+const hydratedPost = {
+  ...post,
+  readingTime
+};
+
+const allPosts = await getAllPosts();
+const { reviews, news } = groupPosts(allPosts);
 ---
 
-<Layout>
-  <Article post={post} />
+<Layout reviews={reviews} news={news}>
+  <ArticlePage post={hydratedPost} />
 </Layout>

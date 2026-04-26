@@ -249,10 +249,19 @@ export function groupPosts(posts: Post[] = []) {
   }));
 
   return {
-    reviews: normalized.filter((p) => p.type === 'review'),
-    specials: normalized.filter((p) => p.type === 'feature'),
-    memories: normalized.filter((p) => p.type === 'memories'),
-    news: normalized.filter((p) => p.type === 'news'),
+    reviews: normalized.filter(p => p.type === 'review'),
+    specials: normalized.filter(p => p.type === 'feature'),
+    memories: normalized.filter(p => p.type === 'memories'),
+    news: normalized.filter(p => p.type === 'news'),
+    guides: normalized.filter(p => p.type === 'guide'),
+    hardware: normalized.filter(p => p.type === 'hardware'),
+  
+    archive: normalized
+      .filter(p =>
+        ['feature', 'memories', 'review', 'guide'].includes(p.type || '')
+      )
+      .slice(0, 4),
+  
     latest: normalized.slice(0, 6)
   };
 }

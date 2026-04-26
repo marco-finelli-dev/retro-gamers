@@ -1,0 +1,60 @@
+/* ========================================
+   ARTICLE PAGE — BASE LAYOUT
+======================================== */
+
+@import './article-hero.css';
+@import './article-content.css';
+@import './article-sidebar.css';
+@import './review.css';
+
+.article-page {
+  position: relative;
+  z-index: 1;
+
+  width: 100%;
+  max-width: var(--layout-wide);
+
+  margin: 0 auto;
+  padding: 42px var(--space-md) 56px;
+
+  color: var(--color-text);
+}
+
+.article-page__body {
+  display: grid;
+  grid-template-columns: minmax(0, 760px) 320px;
+  gap: 44px;
+  align-items: start;
+
+  margin-top: 34px;
+}
+
+.article-page__content {
+  min-width: 0;
+}
+
+.article-page__sidebar {
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .article-page__body {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .article-page__sidebar {
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .article-page {
+    padding-top: 28px;
+    padding-bottom: 42px;
+  }
+
+  .article-page__body {
+    margin-top: 24px;
+  }
+}

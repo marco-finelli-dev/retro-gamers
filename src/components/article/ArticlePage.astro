@@ -1,0 +1,39 @@
+---
+import ArticleHero from './ArticleHero.astro';
+import ArticleContent from './ArticleContent.astro';
+import ArticleSidebar from './ArticleSidebar.astro';
+import ReviewSidebar from './ReviewSidebar.astro';
+import ArticleFinalRating from './ArticleFinalRating.astro';
+
+import '../../styles/article/article.css';
+
+const { post } = Astro.props;
+
+const isReview = post?.type === 'review';
+---
+
+<main class={`article-page ${isReview ? 'is-review' : ''}`}>
+
+  <ArticleHero post={post} />
+
+  <div class="article-page__body">
+
+    <article class="article-page__content">
+      <ArticleContent content={post.content} />
+
+      {isReview && post.rating && (
+        <ArticleFinalRating rating={post.rating} />
+      )}
+    </article>
+
+    <aside class="article-page__sidebar">
+      {isReview ? (
+        <ReviewSidebar post={post} />
+      ) : (
+        <ArticleSidebar post={post} />
+      )}
+    </aside>
+
+  </div>
+
+</main>

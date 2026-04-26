@@ -1,40 +1,88 @@
 ---
-import '../../styles/components/meta.css';
 import '../../styles/components/hardware.css';
+import { urlFor } from '../../lib/image';
+import { getPostUrl } from '../../lib/routes';
 
-const hardware = (Astro.props.posts ?? []).slice(0, 4);
+const { posts = [] } = Astro.props;
+
+const items = posts.slice(0, 3);
+
+const getImage = (post, width = 640) => {
+  if (!post?.featuredImage) return '/placeholder-retro.png';
+  return urlFor(post.featuredImage).width(width).url();
+};
+
+const getExcerpt = (post) =>
+  post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
 ---
 
-<div class="section-box hardware">
+<section class="section-box hardware-strip">
 
-  <div class="section-header">
-    <h2>Hardware</h2>
+  <div class="hardware-strip__header">
+
+    <div>
+      <span>Gear & accessori</span>
+      <h2>Hardware</h2>
+      <p>Console, controller, FPGA, accessori e oggetti retro da tenere d’occhio.</p>
+    </div>
+
+    <a href="/hardware/" class="hardware-strip__link">
+      Tutto l’hardware
+    </a>
+
   </div>
 
-  <div class="hardware-track">
+  {items.length > 0 ? (
 
-    {hardware.map((post) => (
-      <div class="hardware-item">
+    <div class="hardware-strip__grid">
 
-        <a href={`/articoli/${post.slug}/`} class="hardware-card">
+      {items.map((post) => (
+        <a href={getPostUrl(post)} class="hardware-card">
 
-          {post.featuredImage?.asset?.url && (
+          <div class="hardware-card__image">
             <img
-              src={post.featuredImage.asset.url}
-              alt={post.title || ''}
+              src={getImage(post, 640)}
+              alt={post.featuredImage?.alt || post.title}
               loading="lazy"
             />
-          )}
+          </div>
+
+          <div class="hardware-card__content">
+            <span>Hardware</span>
+            <h3>{post.title}</h3>
+
+            {getExcerpt(post) && (
+              <p>{getExcerpt(post)}</p>
+            )}
+
+            <small>Leggi l’articolo →</small>
+          </div>
 
         </a>
+      ))}
 
-        <div class="hardware-content">
-          <h3>{post.title}</h3>
-        </div>
+    </div>
 
+  ) : (
+
+    <div class="hardware-empty">
+
+      <div class="hardware-empty__content">
+        <span>Prossimamente</span>
+        <h3>Hardware, accessori e nuove uscite retro</h3>
+        <p>
+          Qui raccoglieremo console, controller, FPGA, mini sistemi, scaler video
+          e prodotti interessanti per chi vive il retro-gaming anche fuori dallo schermo.
+        </p>
       </div>
-    ))}
 
-  </div>
+      <div class="hardware-empty__badge">
+        <strong>RG</strong>
+        <small>GEAR</small>
+      </div>
 
-</div>
+    </div>
+
+  )}
+
+</section>

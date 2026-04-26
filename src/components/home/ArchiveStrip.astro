@@ -1,0 +1,74 @@
+---
+import '../../styles/components/archive-strip.css';
+import { urlFor } from '../../lib/image';
+import { getPostUrl } from '../../lib/routes';
+
+const { posts = [] } = Astro.props;
+
+const items = posts.slice(0, 4);
+
+const getImage = (post, width = 520) => {
+  if (!post?.featuredImage) return '/placeholder-retro.png';
+  return urlFor(post.featuredImage).width(width).url();
+};
+
+const getExcerpt = (post) =>
+  post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
+
+const getCategory = (post) => {
+  const labels = {
+    review: 'Recensione',
+    feature: 'Speciale',
+    memories: 'Memories',
+    guide: 'Guida',
+    news: 'News',
+    hardware: 'Hardware'
+  };
+
+  return labels[post?.type] || post?.categories?.[0]?.name || 'Archivio';
+};
+---
+
+<section class="section-box archive-strip">
+
+  <div class="archive-strip__header">
+
+    <div>
+      <h2>Dal nostro archivio</h2>
+      <p>Storie, giochi e macchine da riscoprire senza fretta.</p>
+    </div>
+
+    <a href="/archivio/" class="archive-strip__link">
+      Esplora l’archivio
+    </a>
+
+  </div>
+
+  <div class="archive-strip__grid">
+
+    {items.map((post) => (
+      <a href={getPostUrl(post)} class="archive-card">
+
+        <div class="archive-card__image">
+          <img
+            src={getImage(post, 520)}
+            alt={post.featuredImage?.alt || post.title}
+            loading="lazy"
+          />
+        </div>
+
+        <div class="archive-card__content">
+          <span>{getCategory(post)}</span>
+          <h3>{post.title}</h3>
+
+          {getExcerpt(post) && (
+            <p>{getExcerpt(post)}</p>
+          )}
+        </div>
+
+      </a>
+    ))}
+
+  </div>
+
+</section>

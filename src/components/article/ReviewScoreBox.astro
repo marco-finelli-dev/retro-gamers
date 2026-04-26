@@ -1,0 +1,40 @@
+---
+const { rating, compact = false } = Astro.props;
+
+const score = rating?.overall;
+const formattedScore =
+  score !== undefined && score !== null ? Number(score).toFixed(1) : '-';
+
+const label =
+  Number(score) >= 9.5 ? 'Top' :
+  Number(score) >= 9 ? 'Must' :
+  Number(score) >= 8 ? 'Good' :
+  'Voto';
+
+const rows = [
+  { label: 'Grafica', value: rating?.grafica },
+  { label: 'Sonoro', value: rating?.sonoro },
+  { label: 'Gameplay', value: rating?.giocabilita },
+  { label: 'Longevità', value: rating?.longevita }
+].filter((row) => row.value !== undefined && row.value !== null);
+---
+
+<div class={`review-score-box ${compact ? 'is-compact' : ''}`}>
+
+  <div class="review-score-box__main">
+    <span>{formattedScore}</span>
+    <small>{label}</small>
+  </div>
+
+  {rows.length > 0 && (
+    <div class="review-score-box__details">
+      {rows.map((row) => (
+        <div class="review-score-row">
+          <span>{row.label}</span>
+          <strong>{Number(row.value).toFixed(1)}</strong>
+        </div>
+      ))}
+    </div>
+  )}
+
+</div>

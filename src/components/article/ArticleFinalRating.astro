@@ -1,0 +1,33 @@
+---
+const { rating } = Astro.props;
+
+const score = rating?.overall;
+const formattedScore =
+  score !== undefined && score !== null ? Number(score).toFixed(1) : '-';
+
+const label =
+  Number(score) >= 9.5 ? 'Top' :
+  Number(score) >= 9 ? 'Must' :
+  Number(score) >= 8 ? 'Good' :
+  'Voto';
+---
+
+<section class="article-final-rating">
+
+  <div class="article-final-rating__content">
+
+    <div class="article-final-rating__badge">
+      <span>{formattedScore}</span>
+      <small>{label}</small>
+    </div>
+
+    <span>Verdetto</span>
+    <h2>Il giudizio finale</h2>
+
+    {rating?.summary && (
+      <p>{rating.summary}</p>
+    )}
+
+  </div>
+
+</section>

@@ -1,0 +1,65 @@
+---
+const { post } = Astro.props;
+
+const image =
+  post.featuredImage?.asset?.url ||
+  post.gameInfo?.cover?.asset?.url ||
+  '';
+
+const typeLabels = {
+  review: 'Recensione',
+  news: 'News',
+  feature: 'Speciale',
+  guide: 'Guida',
+  memories: 'Memories',
+  interview: 'Intervista',
+  hardware: 'Hardware',
+  article: 'Articolo'
+};
+
+const infoRows = [
+  {
+    label: 'Sezione',
+    value: typeLabels[post.type] || 'Articolo'
+  },
+  {
+    label: 'Pubblicato',
+    value: post.publishedAt
+      ? new Date(post.publishedAt).toLocaleDateString('it-IT')
+      : null
+  },
+  {
+    label: 'Autore',
+    value: post.author?.name
+  },
+  {
+    label: 'Categoria',
+    value: post.categories?.map((item) => item.name).join(', ')
+  }
+].filter((row) => row.value);
+---
+
+<div class="article-sidebar">
+
+  {image && (
+    <figure class="article-sidebar__image">
+      <img src={image} alt={post.featuredImage?.alt || post.title || ''} />
+    </figure>
+  )}
+
+  {infoRows.length > 0 && (
+    <section class="article-sidebar__panel">
+      <h2>Dettagli</h2>
+
+      <dl class="article-info-list">
+        {infoRows.map((row) => (
+          <div>
+            <dt>{row.label}</dt>
+            <dd>{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )}
+
+</div>

@@ -20,6 +20,9 @@ export function getPostUrl(post) {
     case 'news':
       return `/news/${slug}/`;
 
+    case 'hardware':
+      return `/hardware/${slug}/`;
+
     case 'article':
     default:
       return `/articoli/${slug}/`;
@@ -45,6 +48,9 @@ export function getArchiveUrl(type) {
 
     case 'news':
       return '/news/';
+
+    case 'hardware':
+      return '/hardware/';
 
     default:
       return '/articoli/';

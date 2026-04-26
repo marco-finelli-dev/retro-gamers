@@ -1,0 +1,92 @@
+---
+import { getArchiveUrl } from '../../lib/routes';
+
+const { post } = Astro.props;
+
+const typeLabels = {
+  review: 'Recensione',
+  news: 'News',
+  feature: 'Speciale',
+  guide: 'Guida',
+  memories: 'Memories',
+  interview: 'Intervista',
+  hardware: 'Hardware',
+  article: 'Articolo'
+};
+
+const typeLabel = typeLabels[post.type] || 'Articolo';
+
+const platform = post.platforms?.[0]?.name || '';
+const year = post.gameInfo?.releaseYear || '';
+
+const publishedDate = post.publishedAt
+  ? new Date(post.publishedAt).toLocaleDateString('it-IT', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+  : '';
+
+const authorName = post.author?.name || '';
+
+const readingTime =
+  post.readingTime ||
+  post.readingTimeMinutes ||
+  post.tempoLettura ||
+  null;
+
+const views =
+  post.viewsBase !== undefined && post.viewsBase !== null
+    ? post.viewsBase
+    : null;
+
+const metaItems = [
+  platform,
+  year
+].filter(Boolean);
+
+const infoItems = [
+  publishedDate,
+  authorName ? `Di ${authorName}` : '',
+  readingTime ? `Tempo di lettura: ${readingTime} min.` : '',
+  views !== null ? `${views} visualizzazioni` : ''
+].filter(Boolean);
+---
+
+<section class="article-hero">
+
+  <div class="article-hero__top">
+
+    <a href={getArchiveUrl(post.type)} class="article-hero__eyebrow">
+      {typeLabel}
+    </a>
+
+    {metaItems.length > 0 && (
+      <div class="article-hero__meta">
+        {metaItems.map((item) => (
+          <span>{item}</span>
+        ))}
+      </div>
+    )}
+
+  </div>
+
+  <div class="article-hero__content">
+
+    <h1>{post.title}</h1>
+
+    {(post.subtitle || post.excerpt) && (
+      <p>{post.subtitle || post.excerpt}</p>
+    )}
+
+    {infoItems.length > 0 && (
+      <div class="article-hero__info">
+        {infoItems.map((item) => (
+          <span>{item}</span>
+        ))}
+      </div>
+    )}
+
+  </div>
+
+</section>

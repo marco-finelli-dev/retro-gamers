@@ -1,0 +1,68 @@
+---
+import ReviewScoreBox from './ReviewScoreBox.astro';
+
+const { post } = Astro.props;
+
+const cover = post.gameInfo?.cover?.asset?.url || '';
+
+const coverAlt =
+  post.gameInfo?.cover?.alt ||
+  `${post.title} cover` ||
+  '';
+
+const infoRows = [
+  {
+    label: 'Piattaforma',
+    value: post.platforms?.map((item) => item.name).join(', ')
+  },
+  {
+    label: 'Sviluppatore',
+    value: post.developers?.map((item) => item.name).join(', ')
+  },
+  {
+    label: 'Publisher',
+    value: post.publishers?.map((item) => item.name).join(', ')
+  },
+  {
+    label: 'Anno',
+    value: post.gameInfo?.releaseYear
+  },
+  {
+    label: 'Genere',
+    value: post.genres?.map((item) => item.name).join(' · ')
+  },
+  {
+    label: 'Modalità',
+    value: post.modes?.map((item) => item.name).join(' · ')
+  }
+].filter((row) => row.value);
+---
+
+<div class={`review-sidebar ${!cover ? 'has-no-cover' : ''}`}>
+
+  {cover && (
+    <figure class="review-sidebar__cover">
+      <img src={cover} alt={coverAlt} />
+    </figure>
+  )}
+
+  {post.rating && (
+    <ReviewScoreBox rating={post.rating} compact />
+  )}
+
+  {infoRows.length > 0 && (
+    <section class="review-sidebar__panel">
+      <h2>Scheda gioco</h2>
+
+      <dl class="review-info-list">
+        {infoRows.map((row) => (
+          <div>
+            <dt>{row.label}</dt>
+            <dd>{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )}
+
+</div>

@@ -1,0 +1,284 @@
+---
+import { getPostUrl } from '../../lib/routes';
+
+const { content = [] } = Astro.props;
+
+function escapeHTML(str = '') {
+  return String(str).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
+}
+
+function getInternalUrl(reference) {
+  if (!reference?.slug) return '#';
+
+  return getPostUrl({
+    type: reference.type || 'article',
+    slug: reference.slug
+  });
+}
+
+function renderTextChild(child, markDefs = []) {
+  let output = escapeHTML(child.text || '');
+
+  if (!child.marks?.length) return output;
+
+  child.marks.forEach((mark) => {
+    const def = markDefs.find((d) => d._key === mark);
+
+    if (mark === 'strong') {
+      output = `<strong>${output}</strong>`;
+      return;
+    }
+
+    if (mark === 'em') {
+      output = `<em>${output}</em>`;
+      return;
+    }
+
+    if (mark === 'code') {
+      output = `<code>${output}</code>`;
+      return;
+    }
+
+    if (def?.href) {
+      output = `
+        <a href="${escapeHTML(def.href)}" target="_blank" rel="noopener noreferrer">
+          ${output}
+        </a>
+      `;
+      return;
+    }
+
+    if (def?._type === 'internalLink') {
+      output = `
+        <a href="${escapeHTML(getInternalUrl(def.reference))}">
+          ${output}
+        </a>
+      `;
+      return;
+    }
+
+    if (def?._type === 'taxonomyLink') {
+      const slug = def.reference?.slug;
+
+      if (slug) {
+        output = `
+          <a href="/tag/${escapeHTML(slug)}/">
+            ${output}
+          </a>
+        `;
+      }
+    }
+  });
+
+  return output;
+}
+
+function renderBlockChildren(block) {
+  return block.children
+    ?.map((child) => renderTextChild(child, block.markDefs || []))
+    .join('') || '';
+}
+
+function getVideoId(url = '') {
+  if (url.includes('youtu.be')) {
+    return url.split('/').pop()?.split('?')[0];
+  }
+
+  return url.split('v=')[1]?.split('&')[0];
+}
+
+/*
+  Gallery principale:
+  2 → 2
+  3 → 3
+  4 → 4
+  5 → 3 + 2
+  6 → 3 + 3
+  7 → 4 + 3
+  8 → 4 + 4
+*/
+function chunkBalanced(images = []) {
+  const total = images.length;
+
+  if (total <= 4) return [images];
+
+  if (total === 5) {
+    return [
+      images.slice(0, 3),
+      images.slice(3)
+    ];
+  }
+
+  if (total === 6) {
+    return [
+      images.slice(0, 3),
+      images.slice(3)
+    ];
+  }
+
+  if (total === 7) {
+    return [
+      images.slice(0, 4),
+      images.slice(4)
+    ];
+  }
+
+  if (total === 8) {
+    return [
+      images.slice(0, 4),
+      images.slice(4)
+    ];
+  }
+
+  const rows = [];
+  let index = 0;
+  let remaining = total;
+
+  while (remaining > 0) {
+    let take = 4;
+
+    if (remaining === 5 || remaining === 6) {
+      take = 3;
+    }
+
+    rows.push(images.slice(index, index + take));
+
+    index += take;
+    remaining -= take;
+  }
+
+  return rows;
+}
+---
+
+<div class="article-content">
+
+  {content?.map((block) => {
+
+    if (block._type === 'block') {
+      const html = renderBlockChildren(block);
+
+      if (block.style === 'h2') {
+        return <h2 set:html={html} />;
+      }
+
+      if (block.style === 'h3') {
+        return <h3 set:html={html} />;
+      }
+
+      if (block.style === 'blockquote') {
+        return <blockquote set:html={html} />;
+      }
+
+      return <p set:html={html} />;
+    }
+
+    if (block._type === 'image') {
+      return (
+        <figure class={`article-figure ${block.isWide ? 'is-wide' : ''}`}>
+          <img src={block.asset?.url} alt={block.alt || ''} />
+
+          {block.caption && (
+            <figcaption>{block.caption}</figcaption>
+          )}
+        </figure>
+      );
+    }
+
+    if (block._type === 'imageRow') {
+      const rows = chunkBalanced(block.images || []);
+
+      return (
+        <div class="article-image-gallery">
+          {rows.map((row) => (
+            <div
+              class={`article-image-row article-image-row--${row.length}`}
+              style={`--image-count: ${row.length};`}
+            >
+              {row.map((img) => (
+                <figure>
+                  <img src={img.image?.asset?.url} alt={img.alt || ''} />
+
+                  {img.caption && (
+                    <figcaption>{img.caption}</figcaption>
+                  )}
+                </figure>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (block._type === 'video') {
+      const videoId = getVideoId(block.url);
+
+      if (!videoId) return null;
+
+      return (
+        <div class="article-video">
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            title="Video incorporato"
+            allowfullscreen
+          />
+        </div>
+      );
+    }
+
+    if (block._type === 'asideBox') {
+      const asideImages = block.content?.filter((inner) => inner._type === 'image') || [];
+      const asideTextBlocks = block.content?.filter((inner) => inner._type !== 'image') || [];
+      const asideRows = chunkBalanced(asideImages);
+
+      return (
+        <aside class={`article-aside-box ${block.tone || 'info'}`}>
+
+          {block.title && (
+            <h4>{block.title}</h4>
+          )}
+
+          {asideTextBlocks.map((inner) => {
+            if (inner._type === 'block') {
+              const html = renderBlockChildren(inner);
+              return <p set:html={html} />;
+            }
+
+            return null;
+          })}
+
+          {asideImages.length > 0 && (
+            <div class={`article-aside-gallery ${asideImages.length === 1 ? 'is-single' : ''}`}>
+              {asideRows.map((row) => (
+                <div
+                  class={`article-aside-row article-aside-row--${row.length}`}
+                  style={`--aside-image-count: ${row.length};`}
+                >
+                  {row.map((inner) => (
+                    <figure>
+                      <img src={inner.asset?.url} alt={inner.alt || ''} />
+
+                      {inner.caption && (
+                        <figcaption>{inner.caption}</figcaption>
+                      )}
+                    </figure>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+
+        </aside>
+      );
+    }
+
+    return null;
+  })}
+
+</div>
