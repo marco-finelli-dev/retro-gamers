@@ -2,50 +2,78 @@
 import Search from './Search.astro';
 import ReviewsMenu from './ReviewsMenu.astro';
 import NewsMenu from './NewsMenu.astro';
+import PlatformsMenu from './PlatformsMenu.astro';
 
 import '../../styles/components/header/header.css';
 
 const { reviews = [], news = [] } = Astro.props;
 ---
 
-<header class="header">
+<header class="site-header">
 
-  <div class="header-inner">
+  <div class="site-header__inner">
 
     <!-- LOGO -->
-    <a href="/" class="logo">
-      <img src="/images/retro-gamer-header-logo.webp" alt="Retro Gamers" />
+    <a href="/" class="site-header__logo" aria-label="Vai alla home di Retro Gamers">
+      <img
+        src="/images/retro-gamer-header-logo.webp"
+        alt="Retro Gamers"
+        width="160"
+        height="48"
+      />
     </a>
 
-    <!-- NAV -->
-    <nav class="nav-desktop">
+    <!-- NAV DESKTOP -->
+    <nav class="site-header__nav" aria-label="Navigazione principale">
 
       <!-- RECENSIONI -->
-      <div class="nav-item has-dropdown">
-        <a href="/recensioni/" class="nav-link">Recensioni</a>
-        <div class="dropdown">
+      <div class="site-header__nav-item has-dropdown">
+        <a href="/recensioni/" class="site-header__nav-link">
+          Recensioni
+        </a>
+
+        <div class="site-header__dropdown">
           <ReviewsMenu posts={reviews} />
         </div>
       </div>
 
       <!-- NEWS -->
-      <div class="nav-item has-dropdown">
-        <a href="/news/" class="nav-link">News</a>
-        <div class="dropdown">
+      <div class="site-header__nav-item has-dropdown">
+        <a href="/news/" class="site-header__nav-link">
+          News
+        </a>
+
+        <div class="site-header__dropdown">
           <NewsMenu posts={news} />
         </div>
       </div>
 
-      <!-- LINK NORMALI -->
-      <a href="/speciali/" class="nav-link">Speciali</a>
-      <a href="/guide/" class="nav-link">Guide</a>
-      <a href="/memories/" class="nav-link">Memories</a>
-      <a href="/piattaforme/" class="nav-link">Piattaforme</a>
+      <a href="/speciali/" class="site-header__nav-link">
+        Speciali
+      </a>
+
+      <a href="/guide/" class="site-header__nav-link">
+        Guide
+      </a>
+
+      <a href="/memories/" class="site-header__nav-link">
+        Memories
+      </a>
+
+     <div class="site-header__nav-item has-dropdown">
+  <a href="/piattaforme/" class="site-header__nav-link">
+    Piattaforme
+  </a>
+
+  <div class="site-header__dropdown">
+    <PlatformsMenu />
+  </div>
+</div>
 
     </nav>
 
-    <!-- SEARCH -->
-    <div class="header-actions">
+    <!-- ACTIONS -->
+    <div class="site-header__actions">
       <Search />
     </div>
 

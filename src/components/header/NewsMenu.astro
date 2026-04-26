@@ -1,44 +1,51 @@
 ---
 import '../../styles/components/header/dropdown.css';
 import { getPostUrl } from '../../lib/routes';
+
 const { posts = [] } = Astro.props;
+
+const finalPosts = posts.slice(0, 5);
 ---
-<div class="dropdown-wrapper">
-<div class="dropdown-menu">
 
-  {posts.slice(0, 5).map((p) => {
+<div class="rg-dropdown rg-dropdown--news">
 
-    const image = p.featuredImage?.asset?.url;
-    const category = p.categories?.[0]?.name || '';
+  <div class="rg-dropdown__panel">
 
-    return (
-      <a href={getPostUrl(p)} class="dropdown-item">
+    {finalPosts.map((post) => {
+      const image = post.featuredImage?.asset?.url;
+      const category = post.categories?.[0]?.name || post.type || '';
 
-        <div class="dropdown-thumb">
-          {image && (
-            <img src={image} alt={p.title || ''} />
-          )}
-        </div>
+      return (
+        <a href={getPostUrl(post)} class="rg-dropdown__item rg-dropdown__item--news">
 
-        <div class="dropdown-content">
-
-          <div class="dropdown-meta">
-            {category}
+          <div class="rg-dropdown__thumb">
+            {image && (
+              <img src={image} alt={post.title || ''} loading="lazy" />
+            )}
           </div>
 
-          <div class="dropdown-title">
-            {p.title}
+          <div class="rg-dropdown__content">
+
+            {category && (
+              <div class="rg-dropdown__meta">
+                {category}
+              </div>
+            )}
+
+            <div class="rg-dropdown__title">
+              {post.title}
+            </div>
+
           </div>
 
-        </div>
+        </a>
+      );
+    })}
 
-      </a>
-    );
-  })}
+    <a href="/news/" class="rg-dropdown__more">
+      Vedi tutte le news <span>→</span>
+    </a>
 
-  <a href="/news/" class="dropdown-more">
-    Vedi tutte le news →
-  </a>
+  </div>
 
-</div>
 </div>

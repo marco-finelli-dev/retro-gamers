@@ -9,7 +9,7 @@
 
 
 /* ========================================
-   HOME ATMOSPHERE
+   HOME SECTIONS BASE
 ======================================== */
 
 .home-hero,
@@ -19,6 +19,11 @@
   position: relative;
   z-index: 1;
 }
+
+
+/* ========================================
+   HOME ATMOSPHERE
+======================================== */
 
 /* glow morbido dietro la fascia alta della home */
 .home-hero::before {
@@ -44,93 +49,109 @@
   pointer-events: none;
 }
 
-/* griglia prospettica “Mega Drive” tra hero e contenuto */
+/*
+  Reticolo home controllato.
+  Non è una griglia prospettica tra sezioni: è una firma ambientale dietro la fascia hero.
+*/
 .home-hero::after {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: -92px;
+  top: 92px;
   z-index: -1;
 
   width: min(1180px, 96vw);
-  height: 260px;
+  height: 520px;
 
-  transform:
-    translateX(-50%)
-    perspective(680px)
-    rotateX(62deg);
-
-  transform-origin: bottom center;
+  transform: translateX(-50%);
 
   background-image:
-    linear-gradient(rgba(34,240,255,0.16) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(168,85,247,0.14) 1px, transparent 1px);
+    linear-gradient(rgba(34,240,255,0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,85,247,0.105) 1px, transparent 1px);
 
-  background-size: 72px 34px;
+  background-size: 72px 72px;
 
-  opacity: 0.18;
+  opacity: 0.28;
 
   mask-image:
-    linear-gradient(
-      to top,
-      rgba(0,0,0,0.82),
-      rgba(0,0,0,0.35) 48%,
-      transparent 88%
+    radial-gradient(
+      ellipse at 50% 34%,
+      rgba(0,0,0,0.86),
+      rgba(0,0,0,0.36) 48%,
+      transparent 76%
     );
 
   pointer-events: none;
 }
 
-/* leggerissima profondità tra una sezione e l’altra */
+.home-hero .container {
+  position: relative;
+  z-index: 1;
+}
+
+/* profondità morbida tra sezioni, senza rettangoli visibili */
 .home-reviews::before,
 .home-editorial::before,
 .home-latest::before {
   content: "";
   position: absolute;
   left: 50%;
-  top: -28px;
+  top: -70px;
   z-index: -1;
 
-  width: min(1080px, 94vw);
-  height: 220px;
+  width: min(920px, 86vw);
+  height: 260px;
 
   transform: translateX(-50%);
 
   background:
-    radial-gradient(circle at 30% 48%, rgba(34,240,255,0.045), transparent 62%),
-    radial-gradient(circle at 70% 52%, rgba(168,85,247,0.035), transparent 64%);
+    radial-gradient(
+      ellipse at 36% 50%,
+      rgba(34,240,255,0.050),
+      rgba(34,240,255,0.020) 34%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse at 64% 50%,
+      rgba(168,85,247,0.045),
+      rgba(168,85,247,0.018) 36%,
+      transparent 74%
+    );
+
+  filter: blur(18px);
+  opacity: 0.9;
 
   pointer-events: none;
 }
 
 /* ========================================
-   HOME SECTIONS
+   HOME SPACING
 ======================================== */
 
 .home-hero {
-  position: relative;
-  z-index: 1;
-
-  padding: 48px 0 34px;
+  padding: 48px 0 36px;
 }
 
 .home-reviews,
 .home-editorial,
 .home-latest {
-  position: relative;
-  z-index: 1;
-
-  padding: 34px 0;
+  padding: 38px 0;
 }
 
-/* più aria dopo la hero */
+/* ritmo subito dopo la hero */
 .home-hero + .home-reviews {
-  padding-top: 34px;
+  padding-top: 38px;
 }
+
 
 /* ========================================
    SECTION HEADERS
 ======================================== */
+
+/*
+  Header generici rimasti per componenti vecchi o secondari.
+  I nuovi blocchi premium usano header isolati nei rispettivi CSS.
+*/
 
 .section-header {
   display: flex;
@@ -179,19 +200,18 @@
 
 @media (max-width: 768px) {
   .home-hero {
-    padding: 28px 0 24px;
+    padding: 28px 0 28px;
+  }
+
+  .home-reviews,
+  .home-editorial,
+  .home-latest {
+    padding: 26px 0;
   }
 
   .home-hero + .home-reviews {
-    padding-top: 24px;
+    padding-top: 26px;
   }
-
-
-  .home-reviews,
-.home-editorial,
-.home-latest {
-  padding: 24px 0;
-}
 
   .home-hero::before {
     top: -90px;
@@ -200,10 +220,10 @@
   }
 
   .home-hero::after {
-    bottom: -68px;
-    height: 190px;
-    background-size: 54px 28px;
-    opacity: 0.13;
+    top: 74px;
+    height: 360px;
+    background-size: 54px 54px;
+    opacity: 0.18;
   }
 
   .section-header {
@@ -214,4 +234,3 @@
     font-size: 20px;
   }
 }
-

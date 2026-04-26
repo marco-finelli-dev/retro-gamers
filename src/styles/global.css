@@ -138,43 +138,38 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: -2;
+  z-index: 0;
 
-  background-image:
-    linear-gradient(rgba(34,240,255,0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(168,85,247,0.04) 1px, transparent 1px);
+  background:
+    linear-gradient(rgba(34,240,255,0.040) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,85,247,0.036) 1px, transparent 1px),
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      rgba(34,240,255,0.030) 42%,
+      rgba(168,85,247,0.026) 58%,
+      transparent 100%
+    );
 
-  background-size: 76px 76px;
+  background-size:
+    76px 76px,
+    76px 76px,
+    100% 100%;
 
   mask-image:
-    radial-gradient(circle at 50% 16%, rgba(0,0,0,0.95), transparent 72%);
+    radial-gradient(
+      ellipse at 50% 18%,
+      rgba(0,0,0,0.92),
+      rgba(0,0,0,0.42) 46%,
+      transparent 78%
+    );
 
   pointer-events: none;
 }
 
-/* Linea orizzonte neon */
-body::after {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 220px;
-  height: 1px;
-  z-index: -1;
-
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(34,240,255,0.34),
-    rgba(168,85,247,0.28),
-    transparent
-  );
-
-  box-shadow:
-    0 0 22px rgba(34,240,255,0.2),
-    0 0 38px rgba(168,85,247,0.14);
-
-  pointer-events: none;
+body > * {
+  position: relative;
+  z-index: 1;
 }
 
 body.no-scroll {
@@ -305,7 +300,7 @@ a:hover {
       transparent 34%
     );
 
-  opacity: 0.55;
+  opacity: 0.24;
   pointer-events: none;
 }
 
