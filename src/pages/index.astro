@@ -4,9 +4,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/home/Hero.astro';
 import Latest from '../components/home/Latest.astro';
 import Reviews from '../components/home/Reviews.astro';
-import Specials from '../components/home/Specials.astro';
-import Memories from '../components/home/Memories.astro';
-import Hardware from '../components/home/Hardware.astro';
+import EditorialHub from '../components/home/EditorialHub.astro';
 
 import '../styles/pages/home.css';
 
@@ -30,23 +28,15 @@ const { reviews, specials, memories, latest, news } = groupPosts(allPosts);
     </div>
   </section>
 
-  <section class="home-memories">
-    <div class="container">
-      <Memories posts={memories} />
-    </div>
-  </section>
-
-  <section class="home-specials">
-    <div class="container">
-      <Specials posts={specials} />
-    </div>
-  </section>
-
-  <section class="home-hardware">
-    <div class="container">
-      <Hardware posts={latest} />
-    </div>
-  </section>
+<section class="home-editorial">
+  <div class="container">
+    <EditorialHub
+      specials={specials}
+      memories={memories}
+      latest={latest}
+    />
+  </div>
+</section>
 
   <section class="home-latest">
     <div class="container">

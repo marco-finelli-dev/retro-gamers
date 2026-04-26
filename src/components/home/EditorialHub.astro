@@ -1,0 +1,205 @@
+---
+import '../../styles/components/editorial-hub.css';
+import { urlFor } from '../../lib/image';
+import { getPostUrl } from '../../lib/routes';
+
+const {
+  specials = [],
+  memories = [],
+  latest = []
+} = Astro.props;
+
+const specialItems = specials.slice(0, 3);
+const mainMemory = memories[0] || null;
+
+const guideItems = latest
+  .filter((post) => post.type === 'guide')
+  .slice(0, 3);
+
+const platformItems = [
+  {
+    label: '16 Bit',
+    href: '/piattaforme/',
+    code: '16'
+  },
+  {
+    label: '8 Bit',
+    href: '/piattaforme/',
+    code: '8'
+  },
+  {
+    label: 'Arcade',
+    href: '/piattaforme/',
+    code: 'AR'
+  },
+  {
+    label: 'Computer',
+    href: '/piattaforme/',
+    code: 'PC'
+  }
+];
+
+const getImage = (post, width = 520) => {
+  if (!post?.featuredImage) return '/placeholder-retro.png';
+  return urlFor(post.featuredImage).width(width).url();
+};
+
+const getExcerpt = (post) =>
+  post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
+
+const getCategory = (post) =>
+  post?.categories?.[0]?.name || post?.type || '';
+---
+
+<div class="section-box editorial-hub">
+
+  <div class="editorial-hub__grid">
+
+    <!-- SPECIALI -->
+    <section class="editorial-panel editorial-panel--specials">
+
+      <div class="editorial-panel__header">
+        <h2>Speciali</h2>
+
+        <a href="/speciali/" class="editorial-panel__link">
+          Tutti gli speciali
+        </a>
+      </div>
+
+      <div class="editorial-list">
+        {specialItems.map((post) => (
+          <a href={getPostUrl(post)} class="editorial-list-card">
+
+            <div class="editorial-list-card__image">
+              <img
+                src={getImage(post, 260)}
+                alt={post.featuredImage?.alt || post.title}
+                loading="lazy"
+              />
+            </div>
+
+            <div class="editorial-list-card__content">
+              <span>{getCategory(post)}</span>
+              <h3>{post.title}</h3>
+
+              {getExcerpt(post) && (
+                <p>{getExcerpt(post)}</p>
+              )}
+            </div>
+
+          </a>
+        ))}
+      </div>
+
+    </section>
+
+
+    <!-- MEMORIES -->
+    <section class="editorial-panel editorial-panel--memories">
+
+      <div class="editorial-panel__header">
+        <h2>Memories</h2>
+
+        <a href="/memories/" class="editorial-panel__link">
+          Tutte le memories
+        </a>
+      </div>
+
+      {mainMemory && (
+        <a href={getPostUrl(mainMemory)} class="memory-feature">
+
+          <div class="memory-feature__image">
+            <img
+              src={getImage(mainMemory, 640)}
+              alt={mainMemory.featuredImage?.alt || mainMemory.title}
+              loading="lazy"
+            />
+          </div>
+
+          <div class="memory-feature__content">
+            <span>{getCategory(mainMemory)}</span>
+            <h3>{mainMemory.title}</h3>
+
+            {getExcerpt(mainMemory) && (
+              <p>{getExcerpt(mainMemory)}</p>
+            )}
+          </div>
+
+        </a>
+      )}
+
+    </section>
+
+
+    <!-- ASIDE -->
+    <aside class="editorial-aside">
+
+      <section class="editorial-panel editorial-panel--guides">
+
+        <div class="editorial-panel__header">
+          <h2>Guide rapide</h2>
+        </div>
+
+        <div class="quick-guides">
+
+          {guideItems.length > 0 ? (
+            guideItems.map((post) => (
+              <a href={getPostUrl(post)} class="quick-guide">
+                <span aria-hidden="true">RG</span>
+                <strong>{post.title}</strong>
+              </a>
+            ))
+          ) : (
+            <>
+              <a href="/guide/" class="quick-guide">
+  <span aria-hidden="true">01</span>
+  <strong>Come iniziare a collezionare</strong>
+</a>
+
+<a href="/guide/" class="quick-guide">
+  <span aria-hidden="true">02</span>
+  <strong>Emulazione: la guida completa</strong>
+</a>
+
+<a href="/guide/" class="quick-guide">
+  <span aria-hidden="true">03</span>
+  <strong>RGB: guida ai cavi e al segnale</strong>
+</a>
+            </>
+          )}
+
+        </div>
+
+        <a href="/guide/" class="editorial-panel__footer-link">
+          Tutte le guide
+        </a>
+
+      </section>
+
+
+      <section class="editorial-panel editorial-panel--platforms">
+
+        <div class="editorial-panel__header">
+          <h2>Piattaforme</h2>
+        </div>
+
+        <div class="platform-shortcuts">
+          {platformItems.map((item) => (
+            <a href={item.href} class="platform-shortcut">
+              <span>{item.code}</span>
+              <strong>{item.label}</strong>
+            </a>
+          ))}
+        </div>
+
+        <a href="/piattaforme/" class="editorial-panel__footer-link">
+          Tutte le piattaforme
+        </a>
+
+      </section>
+
+    </aside>
+
+  </div>
+
+</div>
