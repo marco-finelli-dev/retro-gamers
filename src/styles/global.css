@@ -20,9 +20,9 @@
   /* ======================
      BRAND CORE
   ====================== */
-  --color-primary: #22F0FF;      /* neon cyan */
-  --color-secondary: #A855F7;    /* neon purple */
-  --color-accent: #FFD93D;       /* highlight */
+  --color-primary: #22F0FF;
+  --color-secondary: #A855F7;
+  --color-accent: #FFD93D;
 
   /* ======================
      UI
@@ -78,10 +78,8 @@
      LAYOUT
   ====================== */
   --layout-wide: 1200px;
-
   --header-gap: 8px;
 }
-
 
 
 /* =========================
@@ -94,40 +92,32 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
 }
 
-
-/* =========================
-   🖼 MEDIA
-========================= */
-
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
+html {
+  background: var(--color-bg);
 }
 
 
 /* =========================
-   ✍️ BASE TYPOGRAPHY
+   ✍️ BASE
 ========================= */
 
 body {
+  position: relative;
+  min-height: 100vh;
+
   background:
-  radial-gradient(
-   circle at 50% -20%,
-   rgba(34,240,255,0.08),
-   transparent 60%
- ),
- linear-gradient(
-   to bottom,
-   #050507,
-   #07070A
- );
- background-attachment: fixed;
+    radial-gradient(circle at 18% -8%, rgba(34,240,255,0.13), transparent 32%),
+    radial-gradient(circle at 88% 6%, rgba(168,85,247,0.12), transparent 34%),
+    radial-gradient(circle at 50% 110%, rgba(255,217,61,0.035), transparent 34%),
+    linear-gradient(to bottom, #050507 0%, #07070A 46%, #050507 100%);
+
+  background-attachment: fixed;
 
   color: var(--color-text);
   font-family: var(--font-base);
@@ -138,32 +128,99 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-body.no-scroll {
 
-   overflow: hidden;
- 
-   padding-right: var(--scrollbar-width, 0px);
- 
- }
+/* =========================
+   🌌 GLOBAL ATMOSPHERE
+========================= */
+
+/* Reticolo globale elegante */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+
+  background-image:
+    linear-gradient(rgba(34,240,255,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,85,247,0.04) 1px, transparent 1px);
+
+  background-size: 76px 76px;
+
+  mask-image:
+    radial-gradient(circle at 50% 16%, rgba(0,0,0,0.95), transparent 72%);
+
+  pointer-events: none;
+}
+
+/* Linea orizzonte neon */
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 220px;
+  height: 1px;
+  z-index: -1;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(34,240,255,0.34),
+    rgba(168,85,247,0.28),
+    transparent
+  );
+
+  box-shadow:
+    0 0 22px rgba(34,240,255,0.2),
+    0 0 38px rgba(168,85,247,0.14);
+
+  pointer-events: none;
+}
+
+body.no-scroll {
+  overflow: hidden;
+  padding-right: var(--scrollbar-width, 0px);
+}
 
 
 /* =========================
-   HEADINGS (🔥 IMPORTANT)
+   🖼 MEDIA
 ========================= */
 
-h1, h2 {
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+
+/* =========================
+   🔤 TYPOGRAPHY
+========================= */
+
+h1,
+h2 {
   font-family: var(--font-display);
   letter-spacing: 0.5px;
 }
 
-h3, h4 {
+h3,
+h4 {
   font-family: var(--font-base);
   font-weight: 500;
 }
 
-h1 { font-size: var(--text-3xl); }
-h2 { font-size: var(--text-2xl); }
-h3 { font-size: var(--text-xl); }
+h1 {
+  font-size: var(--text-3xl);
+}
+
+h2 {
+  font-size: var(--text-2xl);
+}
+
+h3 {
+  font-size: var(--text-xl);
+}
 
 p {
   margin: 0;
@@ -204,35 +261,97 @@ a:hover {
 
 
 /* =========================
-   📦 SECTION BOX
+   🧊 SECTION BOX BASE
 ========================= */
 
 .section-box {
   position: relative;
-
-  background: linear-gradient(
-    180deg,
-    var(--color-surface),
-    var(--color-surface-2)
-  );
+  overflow: hidden;
 
   padding: 32px;
   border-radius: var(--radius-lg);
 
+  background:
+    linear-gradient(
+      180deg,
+      rgba(15,15,20,0.68),
+      rgba(10,10,16,0.86)
+    );
+
   border: 1px solid var(--color-border);
 
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 
   box-shadow:
-    0 10px 30px rgba(0,0,0,0.5),
-    inset 0 0 0 1px rgba(255,255,255,0.02);
+    0 18px 55px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+
+  transition:
+    box-shadow var(--transition-smooth),
+    border-color var(--transition-fast),
+    transform var(--transition-smooth);
 }
 
-/* glow leggero opzionale */
+.section-box::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,0.055),
+      transparent 34%
+    );
+
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .section-box:hover {
+  border-color: rgba(34,240,255,0.16);
+
   box-shadow:
-    0 12px 35px rgba(0,0,0,0.6),
-    var(--glow-soft);
+    0 22px 65px rgba(0,0,0,0.62),
+    0 0 22px rgba(34,240,255,0.07),
+    inset 0 1px 0 rgba(255,255,255,0.045);
+}
+
+
+/* =========================
+   🃏 CARD BASE INTERACTION
+========================= */
+
+.card {
+  cursor: pointer;
+}
+
+.card h1,
+.card h2,
+.card h3,
+.card h4,
+.card .card-title-xl,
+.card .card-title-lg,
+.card .card-title-md,
+.card .card-title-sm {
+  transition:
+    color 0.22s ease,
+    text-shadow 0.22s ease;
+}
+
+.card:hover h1,
+.card:hover h2,
+.card:hover h3,
+.card:hover h4,
+.card:hover .card-title-xl,
+.card:hover .card-title-lg,
+.card:hover .card-title-md,
+.card:hover .card-title-sm {
+  color: var(--color-primary);
+  text-shadow:
+    0 0 14px rgba(34,240,255,0.28),
+    0 6px 24px rgba(0,0,0,0.9);
 }
 
 
@@ -254,7 +373,7 @@ a:hover {
 
 
 /* =========================
-   🎮 SELECTION (extra figo)
+   🎮 SELECTION
 ========================= */
 
 ::selection {

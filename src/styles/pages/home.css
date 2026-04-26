@@ -1,21 +1,168 @@
-.home-section:first-of-type .section-box {
+/* ========================================
+   HOME PAGE
+======================================== */
+
+/*
+  Questo file contiene SOLO regole specifiche della home.
+  Niente body, niente reset, niente regole globali.
+*/
+
+
+/* ========================================
+   HOME ATMOSPHERE
+======================================== */
+
+.home-hero,
+.home-reviews,
+.home-memories,
+.home-specials,
+.home-hardware,
+.home-latest {
   position: relative;
   z-index: 1;
 }
 
-.home-section:first-of-type::before {
+/* glow morbido dietro la fascia alta della home */
+.home-hero::before {
   content: "";
   position: absolute;
-  top: -80px;
-  left: 0;
-  right: 0;
-  height: 120px;
+  left: 50%;
+  top: -120px;
+  z-index: -1;
 
-  background: linear-gradient(
-    to bottom,
-    rgba(8,8,12,0.9),
-    rgba(8,8,12,0)
-  );
+  width: min(880px, 92vw);
+  height: 420px;
+
+  transform: translateX(-50%);
+
+  background:
+    radial-gradient(circle at 35% 42%, rgba(34,240,255,0.12), transparent 42%),
+    radial-gradient(circle at 65% 36%, rgba(168,85,247,0.12), transparent 46%);
+
+  filter: blur(8px);
+  opacity: 0.9;
 
   pointer-events: none;
+}
+
+/* leggerissima profondità tra una sezione e l’altra */
+.home-reviews::before,
+.home-specials::before,
+.home-latest::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -18px;
+  z-index: -1;
+
+  width: min(980px, 92vw);
+  height: 180px;
+
+  transform: translateX(-50%);
+
+  background:
+    radial-gradient(circle at 50% 50%, rgba(34,240,255,0.045), transparent 68%);
+
+  pointer-events: none;
+}
+
+
+/* ========================================
+   HOME SECTIONS
+======================================== */
+
+.home-hero {
+  padding: 56px 0 44px;
+}
+
+.home-reviews,
+.home-memories,
+.home-specials,
+.home-hardware,
+.home-latest {
+  padding: 34px 0;
+}
+
+/* più aria dopo la hero */
+.home-hero + .home-reviews,
+.home-hero + .home-memories {
+  padding-top: 48px;
+}
+
+
+/* ========================================
+   SECTION HEADERS
+======================================== */
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+
+  margin-bottom: 22px;
+}
+
+.section-header h2 {
+  position: relative;
+
+  margin: 0;
+
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 700;
+
+  color: #fff;
+
+  text-shadow: 0 0 14px rgba(34,240,255,0.22);
+}
+
+.section-header h2::before {
+  content: "▸";
+  margin-right: 8px;
+
+  color: var(--color-primary);
+  text-shadow: var(--glow-primary);
+}
+
+.section-header a {
+  font-size: var(--text-sm);
+  color: var(--color-text-soft);
+}
+
+.section-header a:hover {
+  color: var(--color-primary);
+}
+
+
+/* ========================================
+   HOME RESPONSIVE
+======================================== */
+
+@media (max-width: 768px) {
+  .home-hero {
+    padding: 32px 0 28px;
+  }
+
+  .home-reviews,
+  .home-memories,
+  .home-specials,
+  .home-hardware,
+  .home-latest {
+    padding: 24px 0;
+  }
+
+  .home-hero::before {
+    top: -90px;
+    height: 320px;
+    opacity: 0.75;
+  }
+
+  .section-header {
+    margin-bottom: 18px;
+  }
+
+  .section-header h2 {
+    font-size: 20px;
+  }
 }

@@ -4,11 +4,9 @@ import { getPostUrl } from '../../lib/routes';
 
 const { posts = [] } = Astro.props;
 
-// SPLIT
 const [main, ...rest] = posts || [];
 const side = rest.slice(0, 3);
 
-// HELPERS
 const getExcerpt = (post) => post?.excerpt || '';
 
 const getCategory = (post) => {
@@ -32,12 +30,12 @@ const getTypeLabel = (type) => {
 ---
 
 <section class="home-hero">
+
   <div class="container">
     <div class="section-box hero">
 
       <div class="hero-grid">
 
-        {/* MAIN */}
         {main && (
           <a href={getPostUrl(main)} class="hero-main card">
 
@@ -46,48 +44,55 @@ const getTypeLabel = (type) => {
             )}
 
             <div class="card-content">
-              <span class={`card-type ${main.type}`}>
-                {getTypeLabel(main.type)}
-              </span>
-
-              {getCategory(main) && (
-                <span class="card-meta">
-                  {getCategory(main)}
+              <div class="hero-meta-row">
+                <span class={`card-type ${main.type}`}>
+                  {getTypeLabel(main.type)}
                 </span>
-              )}
+
+                {getCategory(main) && (
+                  <span class="card-meta">
+                    {getCategory(main)}
+                  </span>
+                )}
+              </div>
 
               <h1 class="card-title-xl">{main.title}</h1>
 
               {getExcerpt(main) && (
                 <p class="card-excerpt">{getExcerpt(main)}</p>
               )}
+
+              <span class="hero-read-more">
+                Leggi l’articolo
+              </span>
             </div>
 
           </a>
         )}
 
-        {/* SIDE */}
         <div class="hero-right">
           {side.map((p) => {
             const cat = getCategory(p);
 
             return (
-            <a href={getPostUrl(p)} class="hero-side card">
+              <a href={getPostUrl(p)} class="hero-side card">
 
                 {p.featuredImage?.asset?.url && (
                   <img src={p.featuredImage.asset.url} alt={p.title} />
                 )}
 
                 <div class="card-content small">
-                  <span class={`card-type small ${p.type}`}>
-                    {getTypeLabel(p.type)}
-                  </span>
-
-                  {cat && (
-                    <span class="card-meta small">
-                      {cat}
+                  <div class="hero-meta-row small">
+                    <span class={`card-type small ${p.type}`}>
+                      {getTypeLabel(p.type)}
                     </span>
-                  )}
+
+                    {cat && (
+                      <span class="card-meta small">
+                        {cat}
+                      </span>
+                    )}
+                  </div>
 
                   <h3 class="card-title-md">{p.title}</h3>
                 </div>

@@ -1,5 +1,5 @@
 /* ========================================
-   REVIEWS SECTION
+   REVIEWS SECTION — PREMIUM
 ======================================== */
 
 .home-reviews {
@@ -8,10 +8,85 @@
   z-index: 1;
 }
 
+/* ========================================
+   SECTION BOX
+======================================== */
 
-/* ========================
+.section-box.reviews {
+  position: relative;
+  overflow: hidden;
+
+  background:
+    linear-gradient(180deg, rgba(15,15,20,0.72), rgba(10,10,16,0.95)),
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.08), transparent 40%),
+    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.10), transparent 45%);
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.section-box.reviews::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(34,240,255,0.12),
+      transparent 20%,
+      transparent 80%,
+      rgba(168,85,247,0.12)
+    );
+
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.section-box.reviews > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ========================================
+   SECTION HEADER
+======================================== */
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 22px;
+}
+
+.section-header h2 {
+  margin: 0;
+
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+
+  color: #fff;
+
+  text-shadow:
+    0 0 10px rgba(34,240,255,0.25);
+}
+
+.section-header h2::before {
+  content: "▸";
+  margin-right: 8px;
+
+  color: var(--color-primary);
+  text-shadow: var(--glow-primary);
+}
+
+/* ========================================
    GRID
-======================== */
+======================================== */
 
 .reviews-grid {
   display: grid;
@@ -27,24 +102,55 @@
   height: 100%;
 }
 
-
-/* ========================
-   CARD
-======================== */
+/* ========================================
+   CARDS
+======================================== */
 
 .review-main,
 .review-card {
   position: relative;
   height: 100%;
 
+  border-radius: 18px;
+  overflow: hidden;
+
+  background: #000;
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  box-shadow:
+    0 15px 40px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+
   opacity: 0;
   transform: translateY(10px);
+
   animation: fadeUp 0.6s ease forwards;
+
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
 }
 
-/* stagger */
-.review-card:nth-child(1) { animation-delay: 0.1s; }
-.review-card:nth-child(2) { animation-delay: 0.2s; }
+.review-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.review-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.review-main:hover,
+.review-card:hover {
+  transform: translateY(-4px);
+
+  border-color: rgba(34,240,255,0.3);
+
+  box-shadow:
+    0 25px 60px rgba(0,0,0,0.6),
+    0 0 20px rgba(34,240,255,0.12);
+}
 
 @keyframes fadeUp {
   to {
@@ -53,20 +159,112 @@
   }
 }
 
-
-/* ========================
-   IMAGE
-======================== */
+/* ========================================
+   IMAGES
+======================================== */
 
 .review-main img,
 .review-card img {
-  will-change: transform;
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  z-index: 0;
+
+  filter: contrast(1.05) saturate(1.05);
+
+  transition:
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.3s ease;
 }
 
+.review-main:hover img,
+.review-card:hover img {
+  transform: scale(1.06);
+  filter: contrast(1.1) saturate(1.15);
+}
 
-/* ========================
-   META (overlay)
-======================== */
+/* ========================================
+   OVERLAY
+======================================== */
+
+.review-main::before,
+.review-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+
+  background:
+    linear-gradient(
+      to top,
+      rgba(0,0,0,0.95) 0%,
+      rgba(0,0,0,0.62) 45%,
+      transparent 80%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(0,0,0,0.42),
+      transparent 60%
+    );
+
+  pointer-events: none;
+}
+
+.review-main::after,
+.review-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+
+  background-image:
+    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px);
+
+  background-size: 100% 4px;
+  opacity: 0.14;
+  mix-blend-mode: overlay;
+
+  pointer-events: none;
+}
+
+/* ========================================
+   CONTENT
+======================================== */
+
+.review-main .card-content,
+.review-card .card-content {
+  position: absolute;
+  z-index: 2;
+}
+
+.review-main .card-content {
+  left: var(--space-md);
+  right: var(--space-md);
+  bottom: var(--space-md);
+}
+
+.review-card .card-content.small {
+  left: var(--space-sm);
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+}
+
+/* ========================================
+   META
+======================================== */
+
+.meta--overlay {
+  position: absolute;
+  z-index: 3;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 
 .review-main .meta--overlay {
   top: var(--space-md);
@@ -78,118 +276,144 @@
   left: var(--space-sm);
 }
 
-
-/* ========================
-   CONTENT (NUOVO)
-======================== */
-
-.review-content {
-  position: absolute;
-  left: var(--space-md);
-  right: var(--space-md);
-  bottom: var(--space-md);
-
-  z-index: 2;
+.review-main .meta {
+  font-size: 14px;
+  opacity: 0.85;
 }
 
-.review-content.small {
-  left: var(--space-sm);
-  right: var(--space-sm);
-  bottom: var(--space-sm);
+.review-card .meta {
+  font-size: 11px;
+  opacity: 0.75;
 }
 
-
-/* ========================
-   TYPO
-======================== */
+/* ========================================
+   TYPOGRAPHY
+======================================== */
 
 .review-main .card-title-lg {
-  line-height: 1.2;
+  margin: 0;
+
+  font-size: 24px;
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+
+  text-shadow:
+    0 6px 24px rgba(0,0,0,0.9),
+    0 0 12px rgba(34,240,255,0.12);
 }
 
 .review-card .card-title-sm {
-  line-height: 1.3;
+  margin: 0 0 2px;
+
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 650;
+
+  text-shadow:
+    0 4px 16px rgba(0,0,0,0.85);
 }
 
-
-/* ========================
+/* ========================================
    EXCERPT
-======================== */
+======================================== */
 
-.review-main:hover .card-excerpt {
-  opacity: 1;
+.review-main .card-excerpt {
+  margin-top: 8px;
+
+  font-size: 14px;
+  line-height: 1.45;
+
+  color: rgba(255,255,255,0.72);
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
+.review-card .card-excerpt.small {
+  margin-top: 4px;
 
-/* ========================
-   SECTION BOX
-======================== */
+  font-size: 13px;
+  line-height: 1.4;
 
-.section-box.reviews {
-  background: linear-gradient(
-    180deg,
-    var(--color-blue-dark),
-    #3f3585
-  );
+  color: rgba(255,255,255,0.72);
 
-  border: none;
-  box-shadow: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-
-/* ========================
+/* ========================================
    SCORE
-======================== */
+======================================== */
 
 .review-score {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+
+  width: 56px;
+  height: 56px;
+
+  border-radius: 18px;
 
   display: grid;
   place-items: center;
 
-  width: 52px;
-  height: 52px;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent),
+    rgba(15,15,20,0.85);
 
-  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(18px);
-
-  border: 1px solid rgba(255,255,255,0.25);
+  border: 1px solid rgba(255,255,255,0.15);
 
   box-shadow:
-    0 8px 25px rgba(0,0,0,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.4);
+    0 10px 30px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.2);
 
   overflow: hidden;
-  transition: transform 0.25s ease;
+
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .card:hover .review-score {
-  transform: scale(1.06);
+  transform: scale(1.08);
+
+  box-shadow:
+    0 15px 40px rgba(0,0,0,0.7),
+    0 0 15px rgba(34,240,255,0.2);
 }
-
-
-/* ========================
-   SCORE VALUE
-======================== */
 
 .review-score .value {
   font-size: var(--text-lg);
-  font-weight: 700;
+  font-weight: 800;
+  line-height: 1;
 }
 
-.score-top .value { color: #00ff88; }
-.score-must .value { color: #7effc7; }
-.score-low .value { color: #ffd166; }
+.score-top .value {
+  color: var(--color-primary);
+  text-shadow: 0 0 10px rgba(34,240,255,0.45);
+}
 
+.score-must .value {
+  color: #7effc7;
+  text-shadow: 0 0 8px rgba(126,255,199,0.28);
+}
 
-/* ========================
-   SHINE EFFECT
-======================== */
+.score-low .value {
+  color: #ffd166;
+  text-shadow: 0 0 8px rgba(255,209,102,0.25);
+}
 
+/* shine */
 .review-score::after {
   content: "";
   position: absolute;
@@ -198,7 +422,7 @@
   background: linear-gradient(
     120deg,
     transparent,
-    rgba(255,255,255,0.4),
+    rgba(255,255,255,0.38),
     transparent
   );
 
@@ -208,71 +432,27 @@
 
 .card:hover .review-score::after {
   opacity: 1;
-  animation: shine 1.2s ease;
+  animation: scoreShine 1.1s ease;
 }
 
-@keyframes shine {
+@keyframes scoreShine {
   from {
     transform: translate(-100%, -100%) rotate(25deg);
   }
+
   to {
     transform: translate(100%, 100%) rotate(25deg);
   }
 }
 
-.meta--overlay {
-  position: absolute;
-  z-index: 3;
-
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* MAIN */
-.review-main .meta {
-  font-size: 14px;
-  opacity: 0.8;
-}
-
-.review-main .card-title-lg {
-  font-size: 22px; /* più importante */
-}
-
-/* SIDE */
-.review-card .meta {
-  font-size: 11px;
-  opacity: 0.7;
-}
-
-.review-card .card-title-sm {
-  font-size: 16px; /* 🔥 più grande di prima */
-  line-height: 1.25;
-}
-
-/* ========================
-   SIDE EXCERPT
-======================== */
-
-.review-card .card-excerpt.small {
-  font-size: 13px;
-  line-height: 1.4;
-
-  opacity: 0.75;
-
-  margin-top: 4px;
-
-  display: -webkit-box;
-  -webkit-line-clamp: 2; /* 🔥 massimo 2 righe */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.review-card .card-title-sm {
-  margin-bottom: 2px;
-}
+/* ========================================
+   MOBILE
+======================================== */
 
 @media (max-width: 768px) {
+  .home-reviews {
+    margin: var(--space-lg) 0;
+  }
 
   .reviews-grid {
     display: flex;
@@ -280,4 +460,26 @@
     gap: var(--space-md);
   }
 
+  .review-main {
+    min-height: 320px;
+  }
+
+  .review-card {
+    min-height: 220px;
+  }
+
+  .review-main .card-title-lg {
+    font-size: 22px;
+  }
+
+  .review-score {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+  }
+}
+
+.review-main,
+.review-card {
+  cursor: pointer;
 }
