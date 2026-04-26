@@ -1,172 +1,220 @@
 /* ========================
-   🎮 CARD — CRT FINAL
+   CARD — BASE CLEAN
 ======================== */
+
+/*
+  Questo file contiene SOLO regole base per card generiche.
+  Niente effetti CRT globali.
+  Niente regole hero.
+  Niente layout specifici di sezione.
+*/
 
 .card {
   position: relative;
   display: block;
-  transform: translateZ(0);
+
   border-radius: var(--radius-md);
   overflow: hidden;
-  isolation: isolate;
 
-  background: #000;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(20,20,27,0.88),
+      rgba(10,10,15,0.96)
+    );
+
+  border: 1px solid rgba(255,255,255,0.08);
 
   box-shadow:
-    0 20px 60px rgba(0,0,0,0.5);
+    0 16px 42px rgba(0,0,0,0.42),
+    inset 0 1px 0 rgba(255,255,255,0.035);
 
   transition:
-    transform 0.35s ease,
-    box-shadow 0.35s ease;
+    transform var(--transition-smooth),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-smooth);
+}
+
+.card:hover {
+  transform: translateY(-3px);
+
+  border-color: rgba(34,240,255,0.22);
+
+  box-shadow:
+    0 24px 58px rgba(0,0,0,0.56),
+    0 0 24px rgba(34,240,255,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.045);
 }
 
 
 /* ========================
-   🖼 IMAGE
+   ARTICLE CARD
 ======================== */
 
-.card img {
+.article-card {
+  padding-bottom: 18px;
+}
+
+.article-card .card__image {
+  position: relative;
+  display: block;
+
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+
+  background: #000;
+}
+
+.article-card .screen {
   position: absolute;
   inset: 0;
-
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-
-  transform: scale(1.04) scaleY(0.97);
-  transition: transform 0.5s ease;
-
-  filter: brightness(0.92) contrast(1.05);
+  overflow: hidden;
 }
 
+.article-card img {
+  width: 100%;
+  height: 100%;
 
-/* ========================
-   🌑 OVERLAY (TESTO)
-======================== */
+  object-fit: cover;
 
-.card::before {
+  transform: scale(1.02);
+
+  filter:
+    brightness(0.9)
+    contrast(1.04)
+    saturate(1.04);
+
+  transition:
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    filter var(--transition-smooth);
+}
+
+.article-card:hover img {
+  transform: scale(1.07);
+
+  filter:
+    brightness(1.04)
+    contrast(1.06)
+    saturate(1.12);
+}
+
+.article-card .card__image::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
-  pointer-events: none;
 
   background:
     linear-gradient(
       to top,
-      rgba(0,0,0,0.92),
-      rgba(0,0,0,0.65),
-      rgba(0,0,0,0.25),
-      transparent
+      rgba(0,0,0,0.48),
+      transparent 58%
+    ),
+    radial-gradient(
+      circle at 22% 0%,
+      rgba(34,240,255,0.16),
+      transparent 36%
     );
-}
 
-
-/* ========================
-   💎 VETRO CRT REALE
-======================== */
-
-.card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  will-change: opacity;
-  z-index: 1;
   pointer-events: none;
-  border-radius: inherit;
-
-  background:
-    radial-gradient(
-      ellipse at 30% 10%,
-      rgba(255,255,255,0.12),
-      transparent 45%
-    ),
-    radial-gradient(
-      ellipse at center,
-      rgba(255,255,255,0.04),
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse at center,
-      transparent 45%,
-      rgba(0,0,0,0.25) 75%,
-      rgba(0,0,0,0.45) 100%
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,0.06) 0px,
-      rgba(255,255,255,0.06) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-
-  opacity: 0.5;
 }
 
 
 /* ========================
-   ✨ HOVER (ACCENSIONE)
+   ARTICLE META
 ======================== */
 
-.card:hover {
-  transform: none;
-
-  box-shadow:
-    0 30px 80px rgba(0,0,0,0.7),
-    0 0 60px rgba(124,113,218,0.22),
-    0 0 120px rgba(124,113,218,0.1);
+.article-card .card__category,
+.article-card .meta {
+  margin: 14px 16px 0;
 }
 
-.card:hover img {
-  transform: scale(1.06) scaleY(0.97);
+.article-card .card__category {
+  display: inline-flex;
+  align-items: center;
 
-  filter:
-    brightness(1.1)
-    contrast(1.08)
-    saturate(1.1);
+  width: fit-content;
 
-  animation: crt-power-on 0.45s ease;
+  padding: 4px 9px;
+  border-radius: 999px;
+
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+
+  color: var(--color-primary);
+
+  background: rgba(34,240,255,0.08);
+  border: 1px solid rgba(34,240,255,0.22);
+
+  box-shadow: 0 0 14px rgba(34,240,255,0.10);
 }
 
-.card:hover::after {
-  opacity: 0.7;
+.article-card .meta {
+  font-size: 12px;
+  line-height: 1.4;
+
+  color: var(--color-text-muted);
 }
 
 
 /* ========================
-   ⚡ CRT ANIMATIONS
+   ARTICLE TEXT
 ======================== */
 
-@keyframes crt-power-on {
-  0% {
-    transform: scaleY(0.08);
-    filter: brightness(2);
-    opacity: 0.3;
-  }
-  40% {
-    transform: scaleY(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: scaleY(1);
-    filter: brightness(1);
-  }
+.article-card .card__title {
+  margin: 12px 16px 0;
+
+  font-family: var(--font-base);
+  font-size: 18px;
+  line-height: 1.22;
+  font-weight: 700;
+
+  letter-spacing: -0.25px;
 }
 
-@keyframes crt-flicker {
-  0%,100% { opacity: 0.98; }
-  50% { opacity: 1; }
+.article-card .card__title a {
+  color: #fff;
+
+  transition:
+    color var(--transition-fast),
+    text-shadow var(--transition-fast);
 }
 
-@keyframes scanlines-move {
-  from { background-position: 0 0; }
-  to { background-position: 0 8px; }
+.article-card:hover .card__title a {
+  color: var(--color-primary);
+
+  text-shadow:
+    0 0 14px rgba(34,240,255,0.24),
+    0 6px 22px rgba(0,0,0,0.75);
+}
+
+.article-card .excerpt {
+  margin: 9px 16px 0;
+
+  font-size: 14px;
+  line-height: 1.5;
+
+  color: var(--color-text-soft);
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 
 /* ========================
-   🧠 CONTENT
+   HERO CARD CONTENT HELPERS
 ======================== */
+
+/*
+  Queste classi sono usate dalla hero.
+  Restano qui solo come helper tipografici leggeri.
+  Il layout della hero rimane in hero.css.
+*/
 
 .card-content {
   position: absolute;
@@ -185,28 +233,18 @@
   right: var(--space-sm);
 }
 
-
-/* ========================
-   🏷 META
-======================== */
-
 .card-meta {
   font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.8px;
 
-  color: var(--color-yellow);
+  color: var(--color-accent);
   text-shadow: 0 2px 6px rgba(0,0,0,0.7);
 }
 
 .card-meta.small {
   font-size: 11px;
 }
-
-
-/* ========================
-   🔠 TITLES
-======================== */
 
 .card-title-xl {
   font-size: clamp(22px, 2.4vw, 34px);
@@ -223,16 +261,11 @@
   text-shadow: 0 2px 10px rgba(0,0,0,0.8);
 }
 
-
-/* ========================
-   📝 EXCERPT
-======================== */
-
 .card-excerpt {
+  margin-top: 8px;
+
   font-size: var(--text-lg);
   color: rgba(255,255,255,0.88);
-
-  margin-top: 8px;
 
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -244,18 +277,9 @@
 
 
 /* ========================
-   📐 VARIANTS
+   VARIANTS
 ======================== */
 
 .card--media {
   aspect-ratio: 16 / 9;
-}
-
-.review-main,
-.review-card {
-  aspect-ratio: 4 / 3;
-}
-
-.hero-main {
-  height: 520px;
 }

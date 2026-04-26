@@ -1,129 +1,33 @@
 ---
 import '../../styles/components/reviews.css';
-import Meta from '../ui/Meta.astro';
-import '../../styles/components/meta.css';
-import { urlFor } from '../../lib/image';
-import { getPostUrl } from '../../lib/routes';
+import ReviewCard from '../cards/ReviewCard.astro';
+
 const { posts = [] } = Astro.props;
 
-const main = posts[0] || null;
-const side = posts.slice(1, 3);
-
-// =========================
-// HELPERS
-// =========================
-
-const getMeta = (post) => [
-  post.platforms?.[0] && {
-    label: post.platforms[0].name,
-    href: `/piattaforme/${post.platforms[0].slug}`
-  },
-
-  post.developers?.[0] && {
-    label: post.developers[0].name,
-    href: `/sviluppatori/${post.developers[0].slug}`
-  },
-
-  post.gameInfo?.releaseYear && {
-    label: post.gameInfo.releaseYear,
-    href: `/anno/${post.gameInfo.releaseYear}`
-  }
-
-].filter(Boolean);
-
-const getScore = (post) => post.rating?.overall ?? post.score ?? 0;
-
-
-const formatScore = (score) => {
-  if (score === null || score === undefined) return '-';
-  return Number(score).toFixed(1);
-};
-
-const getScoreClass = (score) => {
-  if (score >= 9) return "score-top";
-  if (score >= 7) return "score-must";
-  return "score-low";
-};
-
-const getExcerpt = (post) =>
-  post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
+const reviews = posts.slice(0, 5);
 ---
 
-<section class="home-reviews">
-  <div class="container">
-    <div class="section-box reviews">
+<div class="section-box rg-reviews">
 
-      <div class="section-header">
-        <h2>Recensioni</h2>
-      </div>
+  <div class="rg-reviews__header">
 
-      <div class="reviews-grid">
-
-        {/* MAIN */}
-        {main && (
-          <div class="review-main card" data-link={getPostUrl(main)}>
-
-            {main.featuredImage && (
-              <img
-                src={urlFor(main.featuredImage).width(800).url()}
-                alt={main.title}
-              />
-            )}
-
-         <div class={`review-score ${getScoreClass(getScore(main))}`}>
-  <span class="value">{formatScore(getScore(main))}</span>
-</div>
-
-            <div class="card-content">
-
-              <Meta items={getMeta(main)} />
-
-              <h3 class="card-title-lg">{main.title}</h3>
-
-              {getExcerpt(main) && (
-                <p class="card-excerpt">{getExcerpt(main)}</p>
-              )}
-
-            </div>
-          </div>
-        )}
-
-        {/* SIDE */}
-        <div class="review-side">
-          {side.map(post => (
-           <div class="review-card card" data-link={getPostUrl(post)}>
-
-              {post.featuredImage && (
-                <img
-                  src={urlFor(post.featuredImage).width(400).url()}
-                  alt={post.title}
-                />
-              )}
-
-            <div class={`review-score ${getScoreClass(getScore(post))}`}>
-  <span class="value">{formatScore(getScore(post))}</span>
-</div>
-
-              <div class="card-content small">
-
-                <Meta items={getMeta(post)} />
-
-                <h4 class="card-title-sm">{post.title}</h4>
-
-                {getExcerpt(post) && (
-                  <p class="card-excerpt small">
-                    {getExcerpt(post)}
-                  </p>
-                )}
-
-              </div>
-
-            </div>
-          ))}
-        </div>
-
-      </div>
-
+    <div class="rg-reviews__title">
+      <h2>Recensioni</h2>
+      <p>Le ultime prove dal mondo console, arcade e home computer.</p>
     </div>
+
+    <a href="/recensioni/" class="rg-reviews__link">
+      Vedi tutte
+    </a>
+
   </div>
-</section>
+
+  <div class="rg-reviews__rail" aria-label="Ultime recensioni">
+
+    {reviews.map((post) => (
+      <ReviewCard post={post} />
+    ))}
+
+  </div>
+
+</div>

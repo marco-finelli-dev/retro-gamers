@@ -1,40 +1,28 @@
 ---
 import '../styles/global.css';
 
-/* component styles */
-import '../styles/components/header/header.css';
-import '../styles/components/reviews.css';
-import '../styles/components/card.css';
-import '../styles/components/hero.css';
-
-/* data */
-import { getAllPosts, groupPosts } from '../lib/posts';
-
-const allPosts = await getAllPosts();
-const { reviews, specials, memories, latest, news } = groupPosts(allPosts);
-
-/* components */
 import Header from '../components/header/Header.astro';
+
+const { reviews = [], news = [] } = Astro.props;
 ---
 
 <html lang="it">
   <head>
-
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Retro Gamers</title>
 
-    <!-- FONT (scegline UNA famiglia, non due) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
   </head>
 
   <body>
-
     <Header reviews={reviews} news={news} />
 
     <main>
@@ -42,8 +30,6 @@ import Header from '../components/header/Header.astro';
     </main>
 
     <script src="/scripts/ui.js" defer></script>
-    <script src="/scripts/card-effects.js" defer></script>
     <script src="/scripts/dropdown.js" defer></script>
-
   </body>
 </html>

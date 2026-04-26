@@ -1,22 +1,22 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Hero from '../components/home/Hero.astro';
-import '../styles/components/hero.css';
-import '../styles/pages/home.css';
 
+import Hero from '../components/home/Hero.astro';
 import Latest from '../components/home/Latest.astro';
 import Reviews from '../components/home/Reviews.astro';
 import Specials from '../components/home/Specials.astro';
 import Memories from '../components/home/Memories.astro';
 import Hardware from '../components/home/Hardware.astro';
 
+import '../styles/pages/home.css';
+
 import { getAllPosts, groupPosts } from '../lib/posts';
 
 const allPosts = await getAllPosts();
-const { reviews, specials, memories, latest } = groupPosts(allPosts);
+const { reviews, specials, memories, latest, news } = groupPosts(allPosts);
 ---
 
-<BaseLayout>
+<BaseLayout reviews={reviews} news={news}>
 
   <section class="home-hero">
     <div class="container">
@@ -44,7 +44,7 @@ const { reviews, specials, memories, latest } = groupPosts(allPosts);
 
   <section class="home-hardware">
     <div class="container">
-      <Hardware />
+      <Hardware posts={latest} />
     </div>
   </section>
 

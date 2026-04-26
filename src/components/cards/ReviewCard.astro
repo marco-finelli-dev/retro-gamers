@@ -1,0 +1,140 @@
+---
+import { urlFor } from '../../lib/image';
+import { getPostUrl } from '../../lib/routes';
+
+const { post } = Astro.props;
+
+if (!post) return;
+
+const getScore = (post) => post.rating?.overall ?? post.score ?? 0;
+
+const formatScore = (score) => {
+  if (score === null || score === undefined) return '-';
+  return Number(score).toFixed(1);
+};
+
+const getScoreClass = (score) => {
+  if (score >= 9) return 'is-top';
+  if (score >= 7) return 'is-good';
+  return 'is-low';
+};
+
+const getImage = (post, width = 520) => {
+  if (!post?.featuredImage) return '/placeholder-retro.png';
+  return urlFor(post.featuredImage).width(width).url();
+};
+
+const compactMode = (name = '') => {
+  const normalized = name.toLowerCase();
+
+  if (normalized.includes('giocatore singolo')) return 'Single';
+  if (normalized.includes('single player')) return 'Single';
+  if (normalized.includes('multigiocatore')) return 'Multi';
+  if (normalized.includes('multiplayer')) return 'Multi';
+  if (normalized.includes('cooperativa')) return 'Co-op';
+  if (normalized.includes('co-op')) return 'Co-op';
+
+  return name;
+};
+
+const formatMedia = (value = '') => {
+  const map = {
+    cartridge: 'CART',
+    floppy: 'FLOPPY',
+    tape: 'TAPE',
+    cdrom: 'CD-ROM',
+    gdrom: 'GD-ROM',
+    hucard: 'HuCard',
+    arcade_pcb: 'PCB',
+    digital: 'DIGITAL',
+    other: 'OTHER'
+  };
+
+  return map[value] || value;
+};
+
+const platform = post.platforms?.[0]?.name || '';
+const developer = post.developers?.[0]?.name || '';
+const year = post.gameInfo?.releaseYear || '';
+
+const genres = post.genres?.map((genre) => genre.name).filter(Boolean) || [];
+const mode = post.modes?.[0]?.name || '';
+
+const genreLabel = genres.slice(0, 2).join(' · ');
+
+const platformBadge =
+  post.platforms?.[0]?.badgeLabel ||
+  post.platforms?.[0]?.platformType?.toUpperCase() ||
+  '';
+
+const mediaFormat =
+  formatMedia(post.gameInfo?.mediaFormat) ||
+  post.platforms?.[0]?.platformType?.toUpperCase() ||
+  'SYSTEM';
+
+const score = getScore(post);
+
+const metaItems = [
+  platform,
+  developer,
+  year
+].filter(Boolean);
+
+const badges = [
+  genreLabel && {
+    label: genreLabel,
+    title: genres.join(' · ')
+  },
+
+  mode && {
+    label: compactMode(mode),
+    title: mode
+  }
+].filter(Boolean);
+---
+
+<a href={getPostUrl(post)} class="rg-review-card">
+
+  {metaItems.length > 0 && (
+    <div class="rg-review-card__meta">
+      {metaItems.join(' · ')}
+    </div>
+  )}
+
+  <div class="rg-review-card__image">
+    <img
+      src={getImage(post)}
+      alt={post.featuredImage?.alt || post.title}
+      loading="lazy"
+    />
+  </div>
+
+  <div class="rg-review-card__body">
+    <h3>{post.title}</h3>
+
+    {badges.length > 0 && (
+      <div class="rg-review-card__badges">
+        {badges.slice(0, 2).map((badge) => (
+          <span title={badge.title}>{badge.label}</span>
+        ))}
+      </div>
+    )}
+  </div>
+
+  <div class="rg-review-card__footer">
+
+    <div class={`rg-score ${getScoreClass(score)}`}>
+      <span>{formatScore(score)}</span>
+      <small>top</small>
+    </div>
+
+    {platformBadge && (
+      <div class="rg-platform-badge" title={`${platform} · ${mediaFormat}`}>
+        <span>{platformBadge}</span>
+        <small>{mediaFormat}</small>
+      </div>
+    )}
+
+  </div>
+
+</a>

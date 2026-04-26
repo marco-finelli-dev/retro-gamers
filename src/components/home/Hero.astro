@@ -29,81 +29,76 @@ const getTypeLabel = (type) => {
 };
 ---
 
-<section class="home-hero">
+<div class="section-box hero">
 
-  <div class="container">
-    <div class="section-box hero">
+  <div class="hero-grid">
 
-      <div class="hero-grid">
+    {main && (
+      <a href={getPostUrl(main)} class="hero-main card">
 
-        {main && (
-          <a href={getPostUrl(main)} class="hero-main card">
+        {main.featuredImage?.asset?.url && (
+          <img src={main.featuredImage.asset.url} alt={main.title} />
+        )}
 
-            {main.featuredImage?.asset?.url && (
-              <img src={main.featuredImage.asset.url} alt={main.title} />
+        <div class="card-content">
+          <div class="hero-meta-row">
+            <span class={`card-type ${main.type}`}>
+              {getTypeLabel(main.type)}
+            </span>
+
+            {getCategory(main) && (
+              <span class="card-meta">
+                {getCategory(main)}
+              </span>
+            )}
+          </div>
+
+          <h1 class="card-title-xl">{main.title}</h1>
+
+          {getExcerpt(main) && (
+            <p class="card-excerpt">{getExcerpt(main)}</p>
+          )}
+
+          <span class="hero-read-more">
+            Leggi l’articolo
+          </span>
+        </div>
+
+      </a>
+    )}
+
+    <div class="hero-right">
+      {side.map((p) => {
+        const cat = getCategory(p);
+
+        return (
+          <a href={getPostUrl(p)} class="hero-side card">
+
+            {p.featuredImage?.asset?.url && (
+              <img src={p.featuredImage.asset.url} alt={p.title} />
             )}
 
-            <div class="card-content">
-              <div class="hero-meta-row">
-                <span class={`card-type ${main.type}`}>
-                  {getTypeLabel(main.type)}
+            <div class="card-content small">
+              <div class="hero-meta-row small">
+                <span class={`card-type small ${p.type}`}>
+                  {getTypeLabel(p.type)}
                 </span>
 
-                {getCategory(main) && (
-                  <span class="card-meta">
-                    {getCategory(main)}
+                {cat && (
+                  <span class="card-meta small">
+                    {cat}
                   </span>
                 )}
               </div>
 
-              <h1 class="card-title-xl">{main.title}</h1>
-
-              {getExcerpt(main) && (
-                <p class="card-excerpt">{getExcerpt(main)}</p>
-              )}
-
-              <span class="hero-read-more">
-                Leggi l’articolo
-              </span>
+              <h3 class="card-title-md">{p.title}</h3>
             </div>
 
           </a>
-        )}
-
-        <div class="hero-right">
-          {side.map((p) => {
-            const cat = getCategory(p);
-
-            return (
-              <a href={getPostUrl(p)} class="hero-side card">
-
-                {p.featuredImage?.asset?.url && (
-                  <img src={p.featuredImage.asset.url} alt={p.title} />
-                )}
-
-                <div class="card-content small">
-                  <div class="hero-meta-row small">
-                    <span class={`card-type small ${p.type}`}>
-                      {getTypeLabel(p.type)}
-                    </span>
-
-                    {cat && (
-                      <span class="card-meta small">
-                        {cat}
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 class="card-title-md">{p.title}</h3>
-                </div>
-
-              </a>
-            );
-          })}
-        </div>
-
-      </div>
-
+        );
+      })}
     </div>
+
   </div>
-</section>
+
+</div>
