@@ -167,33 +167,100 @@ function close() {
            BUILD INDEX
         ======================== */
 
-        const all = [
+       const articleLabels = {
+  review: 'Recensione',
+  article: 'Articolo',
+  guide: 'Guida',
+  interview: 'Intervista',
+  news: 'News',
+  feature: 'Speciale',
+  memories: 'Memories'
+};
 
-          ...cache.articles.map(a => ({
-            ...a,
-            type: 'article',
-            searchableText: `
-              ${a.title || ''}
-              ${a.excerpt || ''}
-              ${(a.categories || []).map(c => c.name).join(' ')}
-              ${(a.platforms || []).map(p => p.name).join(' ')}
-            `
-          })),
+const taxonomyLabels = {
+  genre: 'Genere',
+  developer: 'Sviluppatore',
+  publisher: 'Publisher',
+  manufacturer: 'Produttore',
+  mode: 'Modalità',
+  series: 'Serie',
+  editorialSeries: 'Serie editoriale'
+};
 
-          ...cache.platforms.map(p => ({
-            title: p.name,
-            slug: p.slug,
-            type: 'platform',
-            searchableText: p.name
-          })),
+const platformLabels = {
+  console: 'Console',
+  computer: 'Computer',
+  arcade: 'Arcade'
+};
 
-          ...cache.taxonomies.map(t => ({
-            title: t.name,
-            slug: t.slug,
-            type: 'taxonomy',
-            searchableText: t.name
-          }))
-        ];
+const getTaxonomyType = (taxonomy) => {
+  const types = taxonomy.type || [];
+  return Array.isArray(types) ? types[0] : types;
+};
+
+const all = [
+
+  ...cache.articles.map(a => ({
+    ...a,
+    kind: 'article',
+    label: articleLabels[a.type] || 'Articolo',
+    url: `/articoli/${a.slug}/`,
+    image: a.featuredImage?.asset?.url || '',
+    eyebrow: [
+      articleLabels[a.type] || 'Articolo',
+      a.platforms?.[0]?.name,
+      a.gameInfo?.releaseYear
+    ].filter(Boolean).join(' · '),
+    searchableText: `
+      ${a.title || ''}
+      ${a.excerpt || ''}
+      ${a.type || ''}
+      ${(a.categories || []).map(c => c.name).join(' ')}
+      ${(a.platforms || []).map(p => p.name).join(' ')}
+      ${(a.genres || []).map(g => g.name).join(' ')}
+      ${(a.developers || []).map(d => d.name).join(' ')}
+      ${a.gameInfo?.releaseYear || ''}
+    `
+  })),
+
+  ...cache.platforms.map(p => ({
+    title: p.name,
+    slug: p.slug,
+    kind: 'platform',
+    label: platformLabels[p.platformType] || 'Piattaforma',
+    url: `/piattaforme/${p.slug}/`,
+    image: p.cover?.asset?.url || '',
+    eyebrow: [
+      platformLabels[p.platformType] || 'Piattaforma',
+      p.manufacturer?.name,
+      p.specs?.year
+    ].filter(Boolean).join(' · '),
+    searchableText: `
+      ${p.name || ''}
+      ${p.platformType || ''}
+      ${p.manufacturer?.name || ''}
+      ${p.specs?.year || ''}
+    `
+  })),
+
+  ...cache.taxonomies.map(t => {
+    const taxonomyType = getTaxonomyType(t);
+
+    return {
+      title: t.name,
+      slug: t.slug,
+      kind: 'taxonomy',
+      label: taxonomyLabels[taxonomyType] || 'Archivio',
+      url: `/tassonomie/${t.slug}/`,
+      image: t.logo?.asset?.url || '',
+      eyebrow: taxonomyLabels[taxonomyType] || 'Archivio',
+      searchableText: `
+        ${t.name || ''}
+        ${taxonomyType || ''}
+      `
+    };
+  })
+];
 
         /* ========================
            RANKING
@@ -215,36 +282,40 @@ function close() {
         let html = '<div class="hover-bg"></div>';
 
         if (!ranked.length) {
-          html += `<div class="search-item">Nessun risultato</div>`;
+          html += `
+  <div class="search-empty">
+    <strong>Nessun risultato</strong>
+    <span>Prova con un gioco, una piattaforma, un genere o uno sviluppatore.</span>
+  </div>
+`;
         } else {
 
-          html += ranked.map(post => {
+         html += ranked.map(post => {
 
-            const image = post.featuredImage?.asset?.url || '';
+  const image = post.image || '';
+  const title = post.title || '';
+  const eyebrow = post.eyebrow || post.label || '';
 
-            let url = '/';
-            if (post.type === 'article') url = `/articoli/${post.slug}/`;
-            if (post.type === 'platform') url = `/piattaforme/${post.slug}/`;
-            if (post.type === 'taxonomy') url = `/tassonomie/${post.slug}/`;
+  return `
+    <a href="${post.url}" class="search-item">
 
-            return `
-              <a href="${url}" class="search-item">
+      <div class="search-thumb ${image ? '' : 'is-empty'}">
+        ${image ? `<img src="${image}" alt="">` : `<span>${escapeHTML(post.label?.slice(0, 2) || 'RG')}</span>`}
+      </div>
 
-                <div class="search-thumb">
-                  ${image ? `<img src="${image}" alt="">` : ''}
-                </div>
+      <div class="search-content">
+        <div class="search-category">
+          ${escapeHTML(eyebrow)}
+        </div>
 
-                <div class="search-content">
-                  <div class="search-category">${post.type}</div>
+        <div class="search-title">
+          ${highlight(title, query)}
+        </div>
+      </div>
 
-                  <div class="search-title">
-                    ${highlight(post.title || '', query)}
-                  </div>
-                </div>
-
-              </a>
-            `;
-          }).join('');
+    </a>
+  `;
+}).join('');
         }
 
         results.innerHTML = html;
