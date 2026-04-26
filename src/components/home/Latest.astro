@@ -1,8 +1,10 @@
 ---
 import '../../styles/components/latest.css';
-import Meta from '../ui/Meta.astro';
 import { getPostUrl } from '../../lib/routes';
+
 const { posts = [] } = Astro.props;
+
+const latest = posts.slice(0, 5);
 
 /* ========================
    EXCERPT SYSTEM
@@ -11,82 +13,83 @@ const { posts = [] } = Astro.props;
 const stripHTML = (html = '') =>
   html.replace(/<[^>]*>?/gm, '').trim();
 
-const truncate = (text, length = 140) =>
+const truncate = (text, length = 110) =>
   text.length > length ? text.slice(0, length) + '…' : text;
 
 const getExcerpt = (post) => {
   const clean = stripHTML(post?.excerpt || '');
-  if (clean) return truncate(clean, 140);
+  if (clean) return truncate(clean, 110);
   return '';
 };
+
+const getTypeLabel = (type = '') => {
+  const map = {
+    review: 'Recensione',
+    article: 'Articolo',
+    guide: 'Guida',
+    interview: 'Intervista',
+    news: 'News',
+    feature: 'Speciale',
+    memories: 'Memories'
+  };
+
+  return map[type] || type || 'Articolo';
+};
+
+const getCategory = (post) =>
+  post.categories?.[0]?.name || getTypeLabel(post.type);
+
+const getImage = (post) =>
+  post.featuredImage?.asset?.url || '/placeholder-retro.png';
 ---
 
-<section class="latest">
-  <div class="container">
-    <div class="section-box">
+<div class="section-box rg-latest">
 
-      <div class="section-header">
-        <h2>Ultimi articoli</h2>
-      </div>
-
-      <div class="latest-grid">
-
-        {posts.map((post) => {
-          const category = post.categories?.[0] || null;
-
-          return (
-            <article class="latest-item">
-
-              {/* CARD */}
-              <div class="card card--media">
-
-                <a href={getPostUrl(post)} class="card-link">
-                  {post.featuredImage?.asset?.url && (
-                    <img
-                      src={post.featuredImage.asset.url}
-                      alt={post.title || ''}
-                    />
-                  )}
-                </a>
-
-                {category && (
-                  <Meta
-                    variant="overlay"
-                    items={[
-                      {
-                        label: category.name,
-                        href: `/categorie/${category.slug}`,
-                        class: 'meta-badge'
-                      }
-                    ]}
-                  />
-                )}
-
-              </div>
-
-              {/* CONTENUTO */}
-              <div class="latest-content">
-
-                <h3 class="latest-title">
-                  <a href={getPostUrl(post)}>
-                    {post.title}
-                  </a>
-                </h3>
-
-                {getExcerpt(post) && (
-                  <p class="latest-excerpt">
-                    {getExcerpt(post)}
-                  </p>
-                )}
-
-              </div>
-
-            </article>
-          );
-        })}
-
-      </div>
-
+  <div class="rg-latest__header">
+    <div>
+      <h2>Ultimi articoli</h2>
+      <p>News, hardware, storie e approfondimenti dal mondo retro.</p>
     </div>
+
+    <a href="/news/" class="rg-latest__link">
+      Vedi tutte le news
+    </a>
   </div>
-</section>
+
+  <div class="rg-latest__grid">
+
+    {latest.map((post) => (
+      <article class="rg-latest-card">
+
+        <a href={getPostUrl(post)} class="rg-latest-card__image">
+          <img
+            src={getImage(post)}
+            alt={post.featuredImage?.alt || post.title || ''}
+            loading="lazy"
+          />
+        </a>
+
+        <div class="rg-latest-card__content">
+
+          <span class="rg-latest-card__type">
+            {getCategory(post)}
+          </span>
+
+          <h3>
+            <a href={getPostUrl(post)}>
+              {post.title}
+            </a>
+          </h3>
+
+          {getExcerpt(post) && (
+            <p>{getExcerpt(post)}</p>
+          )}
+
+        </div>
+
+      </article>
+    ))}
+
+  </div>
+
+</div>

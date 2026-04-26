@@ -7,7 +7,8 @@ const { posts = [] } = Astro.props;
 const [main, ...rest] = posts || [];
 const side = rest.slice(0, 3);
 
-const getExcerpt = (post) => post?.excerpt || '';
+const getExcerpt = (post) =>
+  post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
 
 const getCategory = (post) => {
   const cat = post?.categories?.[0];
@@ -25,73 +26,92 @@ const getTypeLabel = (type) => {
     memories: 'Memories'
   };
 
-  return map[type] || type;
+  return map[type] || type || 'Articolo';
 };
 ---
 
-<div class="section-box hero">
+<div class="section-box rg-hero">
 
-  <div class="hero-grid">
+  <div class="rg-hero__ambient" aria-hidden="true"></div>
+
+<div class="rg-hero__top">
+  <div class="rg-hero__signal">
+    <span>In evidenza</span>
+    <strong>Retro-Gamers Magazine</strong>
+  </div>
+
+  <p>
+    Arcade, console, home computer e memorie digitali.
+  </p>
+</div>
+
+  <div class="rg-hero__grid">
 
     {main && (
-      <a href={getPostUrl(main)} class="hero-main card">
+      <a href={getPostUrl(main)} class="rg-hero-main">
 
         {main.featuredImage?.asset?.url && (
-          <img src={main.featuredImage.asset.url} alt={main.title} />
+          <img
+            src={main.featuredImage.asset.url}
+            alt={main.featuredImage?.alt || main.title}
+            loading="eager"
+          />
         )}
 
-        <div class="card-content">
-          <div class="hero-meta-row">
-            <span class={`card-type ${main.type}`}>
-              {getTypeLabel(main.type)}
-            </span>
+        <div class="rg-hero-main__chrome" aria-hidden="true"></div>
+
+        <div class="rg-hero-main__content">
+
+          <div class="rg-hero__meta">
+            <span>{getTypeLabel(main.type)}</span>
 
             {getCategory(main) && (
-              <span class="card-meta">
-                {getCategory(main)}
-              </span>
+              <small>{getCategory(main)}</small>
             )}
           </div>
 
-          <h1 class="card-title-xl">{main.title}</h1>
+          <h2>{main.title}</h2>
 
           {getExcerpt(main) && (
-            <p class="card-excerpt">{getExcerpt(main)}</p>
+            <p>{getExcerpt(main)}</p>
           )}
 
-          <span class="hero-read-more">
+          <span class="rg-hero__cta">
             Leggi l’articolo
           </span>
+
         </div>
 
       </a>
     )}
 
-    <div class="hero-right">
-      {side.map((p) => {
-        const cat = getCategory(p);
+    <div class="rg-hero-side-list">
+      {side.map((post) => {
+        const cat = getCategory(post);
 
         return (
-          <a href={getPostUrl(p)} class="hero-side card">
+          <a href={getPostUrl(post)} class="rg-hero-side-card">
 
-            {p.featuredImage?.asset?.url && (
-              <img src={p.featuredImage.asset.url} alt={p.title} />
+            {post.featuredImage?.asset?.url && (
+              <img
+                src={post.featuredImage.asset.url}
+                alt={post.featuredImage?.alt || post.title}
+                loading="lazy"
+              />
             )}
 
-            <div class="card-content small">
-              <div class="hero-meta-row small">
-                <span class={`card-type small ${p.type}`}>
-                  {getTypeLabel(p.type)}
-                </span>
+            <div class="rg-hero-side-card__content">
+
+              <div class="rg-hero__meta small">
+                <span>{getTypeLabel(post.type)}</span>
 
                 {cat && (
-                  <span class="card-meta small">
-                    {cat}
-                  </span>
+                  <small>{cat}</small>
                 )}
               </div>
 
-              <h3 class="card-title-md">{p.title}</h3>
+              <h3>{post.title}</h3>
+
             </div>
 
           </a>
