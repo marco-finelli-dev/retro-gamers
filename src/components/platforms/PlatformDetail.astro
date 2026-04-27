@@ -1,0 +1,182 @@
+---
+import '../../styles/components/platforms.css';
+import { urlFor } from '../../lib/image';
+
+import {
+  platformTypeLabels,
+  getManufacturerUrl,
+  getPlatformTypeUrl
+} from '../../lib/platforms';
+
+const { platform } = Astro.props;
+
+const typeLabel = platformTypeLabels[platform.platformType] || 'Piattaforma';
+
+const getLogo = (platform) => {
+  if (!platform?.logo) return '';
+  return urlFor(platform.logo).width(900).quality(86).auto('format').url();
+};
+
+const getCover = (platform) => {
+  if (!platform?.cover) return '';
+  return urlFor(platform.cover).width(1400).quality(78).auto('format').url();
+};
+
+const getManufacturerLogo = (platform) => {
+  if (!platform?.manufacturer?.logo) return '';
+  return urlFor(platform.manufacturer.logo).width(700).quality(86).auto('format').url();
+};
+
+const logo = getLogo(platform);
+const cover = getCover(platform);
+const manufacturerLogo = getManufacturerLogo(platform);
+
+/*
+  Qui lasciamo fuori "Supporti", perché lo mostriamo già nei badge superiori.
+*/
+const specs = [
+  { label: 'Anno', value: platform.specs?.year },
+  { label: 'CPU', value: platform.specs?.cpu },
+  { label: 'RAM', value: platform.specs?.ram },
+  { label: 'Grafica', value: platform.specs?.gpu },
+  { label: 'Audio', value: platform.specs?.audio },
+  { label: 'Risoluzione', value: platform.specs?.resolution }
+].filter((item) => item.value);
+---
+
+<div class="platforms-page">
+  <div class="container">
+
+    <section class={`platform-detail-card platform-detail-card--${platform.platformType}`}>
+
+      <div class="platform-detail-card__media">
+
+        {(manufacturerLogo || logo) && (
+          <div class="platform-brand-badge">
+
+            {manufacturerLogo && (
+              <div class="platform-brand-badge__manufacturer">
+                <span>Produttore</span>
+                <img
+                  src={manufacturerLogo}
+                  alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
+                  loading="eager"
+                />
+              </div>
+            )}
+
+            {logo && (
+              <div class="platform-brand-badge__platform">
+                <span>Piattaforma</span>
+                <img
+                  src={logo}
+                  alt={platform.logo?.alt || platform.name}
+                  loading="eager"
+                />
+              </div>
+            )}
+
+          </div>
+        )}
+
+        <div class="platform-detail-card__visual">
+
+          {cover ? (
+            <img
+              src={cover}
+              alt={platform.cover?.alt || platform.name}
+              class="platform-detail-card__cover"
+              loading="eager"
+            />
+          ) : (
+            <div class="platform-detail-card__fallback">
+
+              {logo && (
+                <img
+                  src={logo}
+                  alt={platform.logo?.alt || platform.name}
+                  class="platform-detail-card__fallback-logo"
+                  loading="eager"
+                />
+              )}
+
+              {manufacturerLogo && (
+                <img
+                  src={manufacturerLogo}
+                  alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
+                  class="platform-detail-card__fallback-manufacturer"
+                  loading="lazy"
+                />
+              )}
+
+            </div>
+          )}
+
+        </div>
+
+      </div>
+
+      <div class="platform-detail-card__content">
+
+        <div class="platform-detail-card__meta">
+          <a href={getPlatformTypeUrl(platform.platformType)}>
+            {typeLabel}
+          </a>
+
+          {platform.manufacturer?.slug && (
+            <>
+              <span>·</span>
+              <a href={getManufacturerUrl(platform.platformType, platform.manufacturer.slug)}>
+                {platform.manufacturer.name}
+              </a>
+            </>
+          )}
+        </div>
+
+        <h1>{platform.name}</h1>
+
+        <p>
+          Scheda tecnica e archivio dedicato a {platform.name},
+          {platform.manufacturer?.name
+            ? ` piattaforma ${typeLabel.toLowerCase()} prodotta da ${platform.manufacturer.name}.`
+            : ` piattaforma ${typeLabel.toLowerCase()}.`}
+        </p>
+
+        <div class="platform-detail-card__chips">
+
+          {platform.badgeLabel && (
+            <span>{platform.badgeLabel}</span>
+          )}
+
+          {platform.specs?.media && (
+            <span>{platform.specs.media}</span>
+          )}
+
+        </div>
+
+        {specs.length > 0 && (
+          <section class="platform-detail-specs">
+
+            <div class="platform-detail-specs__header">
+              <span>Scheda tecnica</span>
+              <h2>{platform.name}</h2>
+            </div>
+
+            <div class="platform-detail-specs__grid">
+              {specs.map((item) => (
+                <div class="platform-detail-spec">
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                </div>
+              ))}
+            </div>
+
+          </section>
+        )}
+
+      </div>
+
+    </section>
+
+  </div>
+</div>
