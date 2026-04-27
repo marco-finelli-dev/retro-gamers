@@ -1,0 +1,329 @@
+---
+import '../../styles/components/archive-page.css';
+import ArchiveCard from './ArchiveCard.astro';
+
+const {
+  title = 'Archivio',
+  eyebrow = 'Retro-Gamers',
+  description = '',
+  posts = [],
+  showFilters = true,
+  emptyTitle = 'Nessun contenuto trovato',
+  emptyText = 'Torna presto: questa sezione verrà aggiornata con nuovi contenuti.'
+} = Astro.props;
+
+const total = posts.length;
+
+const typeLabels = {
+  review: 'Recensioni',
+  news: 'News',
+  feature: 'Speciali',
+  guide: 'Guide',
+  interview: 'Interviste',
+  memories: 'Memories',
+  hardware: 'Hardware',
+  article: 'Articoli'
+};
+
+const productLabels = {
+  book: 'Libri',
+  hardware: 'Hardware',
+  accessory: 'Accessori',
+  software: 'Software',
+  gadget: 'Gadget',
+  service: 'Servizi',
+  other: 'Altro'
+};
+
+const uniqueBy = (items = [], key = 'slug') => {
+  const seen = new Set();
+
+  return items.filter((item) => {
+    const value = item?.[key];
+    if (!value) return false;
+    if (seen.has(value)) return false;
+
+    seen.add(value);
+    return true;
+  });
+};
+
+const platforms = uniqueBy(
+  posts.flatMap((post) => post.platforms || [])
+).sort((a, b) => a.name.localeCompare(b.name));
+
+const categories = uniqueBy(
+  posts.flatMap((post) => post.categories || [])
+).sort((a, b) => a.name.localeCompare(b.name));
+
+const genres = uniqueBy(
+  posts.flatMap((post) => post.genres || [])
+).sort((a, b) => a.name.localeCompare(b.name));
+
+const years = [...new Set(
+  posts
+    .map((post) => post.gameInfo?.releaseYear)
+    .filter(Boolean)
+)].sort((a, b) => Number(b) - Number(a));
+
+const types = [...new Set(
+  posts
+    .map((post) => post.type)
+    .filter(Boolean)
+)].sort();
+
+const productTypes = [...new Set(
+  posts
+    .map((post) => post.monetization?.productType)
+    .filter(Boolean)
+)].sort();
+
+const hasFilters =
+  platforms.length > 0 ||
+  categories.length > 0 ||
+  genres.length > 0 ||
+  years.length > 0 ||
+  types.length > 1 ||
+  productTypes.length > 0;
+---
+
+<div class="archive-page">
+  <div class="container">
+
+    <section class="archive-hero">
+      <div class="archive-hero__inner">
+
+        <div class="archive-hero__content">
+          <span>{eyebrow}</span>
+          <h1>{title}</h1>
+
+          {description && (
+            <p>{description}</p>
+          )}
+
+          {total > 0 && (
+            <small class="archive-hero__count">
+              {total} contenuti disponibili
+            </small>
+          )}
+        </div>
+
+      </div>
+    </section>
+
+    {showFilters && hasFilters && posts.length > 0 && (
+      <section class="archive-filters" data-archive-filters>
+
+        <div class="archive-filters__bar">
+
+          <div class="archive-filters__intro">
+            <span>Filtra archivio</span>
+            <strong>Trova subito quello che cerchi</strong>
+          </div>
+
+          <div class="archive-filters__grid">
+
+            {types.length > 1 && (
+              <label class="archive-filter">
+                <span>Tipo</span>
+                <select data-filter="type">
+                  <option value="">Tutti</option>
+                  {types.map((type) => (
+                    <option value={type}>{typeLabels[type] || type}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {platforms.length > 0 && (
+              <label class="archive-filter">
+                <span>Piattaforma</span>
+                <select data-filter="platform">
+                  <option value="">Tutte</option>
+                  {platforms.map((platform) => (
+                    <option value={platform.slug}>{platform.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {categories.length > 0 && (
+              <label class="archive-filter">
+                <span>Categoria</span>
+                <select data-filter="category">
+                  <option value="">Tutte</option>
+                  {categories.map((category) => (
+                    <option value={category.slug}>{category.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {genres.length > 0 && (
+              <label class="archive-filter">
+                <span>Genere</span>
+                <select data-filter="genre">
+                  <option value="">Tutti</option>
+                  {genres.map((genre) => (
+                    <option value={genre.slug}>{genre.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {years.length > 0 && (
+              <label class="archive-filter">
+                <span>Anno</span>
+                <select data-filter="year">
+                  <option value="">Tutti</option>
+                  {years.map((year) => (
+                    <option value={year}>{year}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {productTypes.length > 0 && (
+              <label class="archive-filter">
+                <span>Prodotto</span>
+                <select data-filter="product">
+                  <option value="">Tutti</option>
+                  {productTypes.map((product) => (
+                    <option value={product}>{productLabels[product] || product}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+          </div>
+
+          <div class="archive-filters__actions">
+            <button type="button" class="archive-filters__submit" data-filter-submit>
+              Cerca
+            </button>
+
+            <button type="button" class="archive-filters__reset" data-filter-reset>
+              Reset
+            </button>
+          </div>
+
+          <div class="archive-filters__result">
+            <span data-filter-count>{posts.length}</span>
+            <small>contenuti<br />visualizzati</small>
+          </div>
+
+        </div>
+
+      </section>
+    )}
+
+    {posts.length > 0 ? (
+
+      <section class="archive-grid" aria-label={title} data-archive-grid>
+        {posts.map((post) => {
+          const platformSlugs = post.platforms?.map((item) => item.slug).filter(Boolean) || [];
+          const categorySlugs = post.categories?.map((item) => item.slug).filter(Boolean) || [];
+          const genreSlugs = post.genres?.map((item) => item.slug).filter(Boolean) || [];
+          const year = post.gameInfo?.releaseYear || '';
+          const productType = post.monetization?.productType || '';
+
+          return (
+            <article
+              data-archive-item
+              data-type={post.type || ''}
+              data-platforms={platformSlugs.join('|')}
+              data-categories={categorySlugs.join('|')}
+              data-genres={genreSlugs.join('|')}
+              data-year={year}
+              data-product={productType}
+            >
+              <ArchiveCard post={post} />
+            </article>
+          );
+        })}
+      </section>
+
+    ) : (
+
+      <section class="archive-empty">
+        <span>RG</span>
+        <h2>{emptyTitle}</h2>
+        <p>{emptyText}</p>
+      </section>
+
+    )}
+
+    <section class="archive-empty archive-empty--filtered" data-filter-empty hidden>
+      <span>RG</span>
+      <h2>Nessun risultato</h2>
+      <p>Prova a cambiare o azzerare i filtri selezionati.</p>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  const root = document.querySelector('[data-archive-filters]');
+  const grid = document.querySelector('[data-archive-grid]');
+  const empty = document.querySelector('[data-filter-empty]');
+  const count = document.querySelector('[data-filter-count]');
+
+  if (root && grid) {
+    const controls = Array.from(root.querySelectorAll('[data-filter]'));
+    const items = Array.from(grid.querySelectorAll('[data-archive-item]'));
+    const reset = root.querySelector('[data-filter-reset]');
+    const submit = root.querySelector('[data-filter-submit]');
+
+    const includesToken = (list, value) => {
+      if (!value) return true;
+      if (!list) return false;
+
+      return list.split('|').includes(value);
+    };
+
+    const applyFilters = () => {
+      const filters = Object.fromEntries(
+        controls.map((control) => [control.dataset.filter, control.value])
+      );
+
+      let visible = 0;
+
+      items.forEach((item) => {
+        const matches =
+          (!filters.type || item.dataset.type === filters.type) &&
+          includesToken(item.dataset.platforms, filters.platform) &&
+          includesToken(item.dataset.categories, filters.category) &&
+          includesToken(item.dataset.genres, filters.genre) &&
+          (!filters.year || item.dataset.year === filters.year) &&
+          (!filters.product || item.dataset.product === filters.product);
+
+        item.hidden = !matches;
+
+        if (matches) visible += 1;
+      });
+
+      if (count) count.textContent = String(visible);
+      if (empty) empty.hidden = visible > 0;
+      grid.hidden = visible === 0;
+    };
+
+    submit?.addEventListener('click', applyFilters);
+
+    controls.forEach((control) => {
+      control.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          applyFilters();
+        }
+      });
+    });
+
+    reset?.addEventListener('click', () => {
+      controls.forEach((control) => {
+        control.value = '';
+      });
+
+      applyFilters();
+    });
+  }
+</script>
