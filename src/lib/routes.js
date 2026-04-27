@@ -1,5 +1,7 @@
 export function getPostUrl(post) {
-  const slug = post.slug;
+  const slug = post?.slug;
+
+  if (!slug) return '/';
 
   switch (post.type) {
     case 'review':

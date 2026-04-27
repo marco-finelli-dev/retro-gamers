@@ -6,15 +6,12 @@ import { getPostUrl } from '../../lib/routes';
 const {
   specials = [],
   memories = [],
-  latest = []
+  guides = []
 } = Astro.props;
 
 const specialItems = specials.slice(0, 3);
 const mainMemory = memories[0] || null;
-
-const guideItems = latest
-  .filter((post) => post.type === 'guide')
-  .slice(0, 3);
+const guideItems = guides.slice(0, 3);
 
 const platformItems = [
   {

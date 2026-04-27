@@ -9,7 +9,12 @@ const items = posts.slice(0, 4);
 
 const getImage = (post, width = 520) => {
   if (!post?.featuredImage) return '/placeholder-retro.png';
-  return urlFor(post.featuredImage).width(width).url();
+
+  return urlFor(post.featuredImage)
+    .width(width)
+    .quality(72)
+    .auto('format')
+    .url();
 };
 
 const getExcerpt = (post) =>
@@ -21,6 +26,8 @@ const getCategory = (post) => {
     feature: 'Speciale',
     memories: 'Memories',
     guide: 'Guida',
+    interview: 'Intervista',
+    article: 'Articolo',
     news: 'News',
     hardware: 'Hardware'
   };

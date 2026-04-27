@@ -13,14 +13,17 @@ import '../styles/pages/home.css';
 import { getAllPosts, groupPosts } from '../lib/posts';
 
 const allPosts = await getAllPosts();
+
 const {
+  hero,
   reviews,
   specials,
   memories,
   latest,
   news,
   hardware,
-  archive
+  archive,
+  guides
 } = groupPosts(allPosts);
 ---
 
@@ -28,7 +31,7 @@ const {
 
   <section class="home-hero">
     <div class="container">
-      <Hero posts={allPosts} />
+      <Hero posts={hero} />
     </div>
   </section>
 
@@ -38,27 +41,27 @@ const {
     </div>
   </section>
 
-<section class="home-editorial">
-  <div class="container">
+  <section class="home-editorial">
+    <div class="container">
     <EditorialHub
-      specials={specials}
-      memories={memories}
-      latest={latest}
-    />
-  </div>
-</section>
+       specials={specials}
+       memories={memories}
+       guides={guides}
+/>
+    </div>
+  </section>
 
-<section class="home-archive">
-  <div class="container">
-    <ArchiveStrip posts={archive} />
-  </div>
-</section>
+  <section class="home-archive">
+    <div class="container">
+      <ArchiveStrip posts={archive} />
+    </div>
+  </section>
 
-<section class="home-hardware">
-  <div class="container">
-    <Hardware posts={hardware} />
-  </div>
-</section>
+  <section class="home-hardware">
+    <div class="container">
+      <Hardware posts={hardware} />
+    </div>
+  </section>
 
   <section class="home-latest">
     <div class="container">

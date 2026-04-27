@@ -21,7 +21,12 @@ const getScoreClass = (score) => {
 
 const getImage = (post, width = 520) => {
   if (!post?.featuredImage) return '/placeholder-retro.png';
-  return urlFor(post.featuredImage).width(width).url();
+
+  return urlFor(post.featuredImage)
+    .width(width)
+    .quality(72)
+    .auto('format')
+    .url();
 };
 
 const compactMode = (name = '') => {
@@ -103,7 +108,7 @@ const badges = [
 
   <div class="rg-review-card__image">
     <img
-      src={getImage(post)}
+      src={getImage(post, 520)}
       alt={post.featuredImage?.alt || post.title}
       loading="lazy"
     />
@@ -125,7 +130,7 @@ const badges = [
 
     <div class={`rg-score ${getScoreClass(score)}`}>
       <span>{formatScore(score)}</span>
-      <small>top</small>
+      <small>{score >= 9 ? 'top' : 'voto'}</small>
     </div>
 
     {platformBadge && (

@@ -9,11 +9,42 @@ const items = posts.slice(0, 3);
 
 const getImage = (post, width = 640) => {
   if (!post?.featuredImage) return '/placeholder-retro.png';
-  return urlFor(post.featuredImage).width(width).url();
+
+  return urlFor(post.featuredImage)
+    .width(width)
+    .quality(74)
+    .auto('format')
+    .url();
 };
 
 const getExcerpt = (post) =>
   post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
+
+const getProductLabel = (post) => {
+  const productType = post?.monetization?.productType;
+
+  const map = {
+    book: 'Libro',
+    hardware: 'Hardware',
+    accessory: 'Accessorio',
+    software: 'Software',
+    gadget: 'Gadget',
+    service: 'Servizio',
+    other: 'Consigliato'
+  };
+
+  if (post?.type === 'hardware') return 'Hardware';
+
+  return map[productType] || 'Consigliato';
+};
+
+const getCta = (post) => {
+  if (post?.monetization?.isAffiliate) {
+    return post.monetization.affiliateLabel || 'Scopri di più';
+  }
+
+  return 'Leggi l’articolo';
+};
 ---
 
 <section class="section-box hardware-strip">
@@ -21,9 +52,9 @@ const getExcerpt = (post) =>
   <div class="hardware-strip__header">
 
     <div>
-      <span>Gear & accessori</span>
+      <span>Gear, libri & accessori</span>
       <h2>Hardware</h2>
-      <p>Console, controller, FPGA, accessori e oggetti retro da tenere d’occhio.</p>
+      <p>Console, controller, FPGA, libri, accessori e oggetti retro da tenere d’occhio.</p>
     </div>
 
     <a href="/hardware/" class="hardware-strip__link">
@@ -36,30 +67,43 @@ const getExcerpt = (post) =>
 
     <div class="hardware-strip__grid">
 
-      {items.map((post) => (
-        <a href={getPostUrl(post)} class="hardware-card">
+      {items.map((post) => {
+        const isAffiliate = post?.monetization?.isAffiliate;
+        const productLabel = getProductLabel(post);
 
-          <div class="hardware-card__image">
-            <img
-              src={getImage(post, 640)}
-              alt={post.featuredImage?.alt || post.title}
-              loading="lazy"
-            />
-          </div>
+        return (
+          <a href={getPostUrl(post)} class="hardware-card">
 
-          <div class="hardware-card__content">
-            <span>Hardware</span>
-            <h3>{post.title}</h3>
+            <div class="hardware-card__image">
+              <img
+                src={getImage(post, 640)}
+                alt={post.featuredImage?.alt || post.title}
+                loading="lazy"
+              />
+            </div>
 
-            {getExcerpt(post) && (
-              <p>{getExcerpt(post)}</p>
-            )}
+            <div class="hardware-card__content">
+              <span>{productLabel}</span>
+              <h3>{post.title}</h3>
 
-            <small>Leggi l’articolo →</small>
-          </div>
+              {getExcerpt(post) && (
+                <p>{getExcerpt(post)}</p>
+              )}
 
-        </a>
-      ))}
+              <small>
+                {getCta(post)} →
+              </small>
+
+              {isAffiliate && post.monetization?.priceLabel && (
+                <em class="hardware-card__price">
+                  {post.monetization.priceLabel}
+                </em>
+              )}
+            </div>
+
+          </a>
+        );
+      })}
 
     </div>
 
@@ -71,8 +115,8 @@ const getExcerpt = (post) =>
         <span>Prossimamente</span>
         <h3>Hardware, accessori e nuove uscite retro</h3>
         <p>
-          Qui raccoglieremo console, controller, FPGA, mini sistemi, scaler video
-          e prodotti interessanti per chi vive il retro-gaming anche fuori dallo schermo.
+          Qui raccoglieremo console, controller, FPGA, mini sistemi, scaler video,
+          libri e prodotti interessanti per chi vive il retro-gaming anche fuori dallo schermo.
         </p>
       </div>
 
