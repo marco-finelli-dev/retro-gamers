@@ -1,0 +1,91 @@
+---
+import { urlFor } from '../../lib/image';
+import { getPostUrl } from '../../lib/routes';
+
+const { post } = Astro.props;
+
+const getImage = (post, width = 620) => {
+  if (!post?.featuredImage) return '/placeholder-retro.png';
+
+  return urlFor(post.featuredImage)
+    .width(width)
+    .quality(74)
+    .auto('format')
+    .url();
+};
+
+const getTypeLabel = (type = '') => {
+  const map = {
+    review: 'Recensione',
+    article: 'Articolo',
+    guide: 'Guida',
+    interview: 'Intervista',
+    news: 'News',
+    feature: 'Speciale',
+    memories: 'Memories',
+    hardware: 'Hardware'
+  };
+
+  return map[type] || type || 'Articolo';
+};
+
+const getCategory = (post) =>
+  post?.categories?.[0]?.name || getTypeLabel(post?.type);
+
+const getExcerpt = (post) =>
+  post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
+
+const date = post?.publishedAt
+  ? new Date(post.publishedAt).toLocaleDateString('it-IT', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
+  : '';
+
+const score = post?.rating?.overall;
+---
+
+<a href={getPostUrl(post)} class="archive-card">
+
+  <div class="archive-card__image">
+    <img
+      src={getImage(post, 620)}
+      alt={post.featuredImage?.alt || post.title}
+      loading="lazy"
+    />
+
+    {score && (
+      <div class="archive-card__score">
+        {Number(score).toFixed(1)}
+      </div>
+    )}
+  </div>
+
+  <div class="archive-card__content">
+
+    <div class="archive-card__meta">
+      <span>{getCategory(post)}</span>
+
+      {date && (
+        <small>{date}</small>
+      )}
+    </div>
+
+    <h2>{post.title}</h2>
+
+    {getExcerpt(post) && (
+      <p>{getExcerpt(post)}</p>
+    )}
+
+    <div class="archive-card__footer">
+      <span>{getTypeLabel(post.type)}</span>
+
+      {post.platforms?.[0]?.name && (
+        <small>{post.platforms[0].name}</small>
+      )}
+    </div>
+
+  </div>
+
+</a>

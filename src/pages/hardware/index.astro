@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArchivePage from '../../components/archive/ArchivePage.astro';
+
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const posts = grouped.all.filter((post) =>
+  post.type === 'hardware' ||
+  post.monetization?.isAffiliate
+);
+---
+
+<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+  <ArchivePage
+    title="Hardware"
+    eyebrow="Gear, libri e accessori"
+    description="Console, computer, periferiche, libri, accessori e prodotti interessanti per retrogamer e collezionisti."
+    posts={posts}
+  />
+</BaseLayout>

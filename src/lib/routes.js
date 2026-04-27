@@ -37,7 +37,7 @@ export function getArchiveUrl(type) {
       return '/recensioni/';
 
     case 'guide':
-      return '/guide/';
+      return `/guide/${slug}/`;
 
     case 'feature':
       return '/speciali/';

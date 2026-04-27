@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArchivePage from '../../components/archive/ArchivePage.astro';
+
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const posts = grouped.all.filter((post) => post.type === 'memories');
+---
+
+<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+  <ArchivePage
+    title="Memories"
+    eyebrow="Ricordi digitali"
+    description="Esperienze, ricordi e frammenti di vita passati davanti a monitor, cabinati e televisori a tubo catodico."
+    posts={posts}
+  />
+</BaseLayout>

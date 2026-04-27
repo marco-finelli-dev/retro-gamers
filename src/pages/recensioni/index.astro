@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArchivePage from '../../components/archive/ArchivePage.astro';
+
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+const allPosts = await getAllPosts();
+const { allReviews, news } = groupPosts(allPosts);
+---
+
+<BaseLayout reviews={allReviews} news={news}>
+  <ArchivePage
+    title="Recensioni"
+    eyebrow="Giochi alla prova"
+    description="Le nostre prove dal mondo arcade, console e home computer: voti, impressioni, memoria storica e rigiocabilità."
+    posts={allReviews}
+  />
+</BaseLayout>

@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArchivePage from '../../components/archive/ArchivePage.astro';
+
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const posts = grouped.all.filter((post) => post.type === 'feature');
+---
+
+<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+  <ArchivePage
+    title="Speciali"
+    eyebrow="Approfondimenti"
+    description="Storie, retrospettive e contenuti editoriali lunghi dal mondo videoludico e informatico."
+    posts={posts}
+  />
+</BaseLayout>

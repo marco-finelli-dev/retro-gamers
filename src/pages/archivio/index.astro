@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArchivePage from '../../components/archive/ArchivePage.astro';
+
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+---
+
+<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+  <ArchivePage
+    title="Archivio"
+    eyebrow="Tutti i contenuti"
+    description="Tutto quello che abbiamo pubblicato su Retro-Gamers: recensioni, news, speciali, memories, guide, hardware e interviste."
+    posts={grouped.all}
+  />
+</BaseLayout>
