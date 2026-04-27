@@ -1,0 +1,69 @@
+---
+import '../../styles/components/platforms.css';
+import PlatformCard from './PlatformCard.astro';
+
+import {
+  platformTypeLabels,
+  platformTypeDescriptions,
+  groupPlatformsByManufacturer,
+  getManufacturerUrl
+} from '../../lib/platforms';
+
+const { type, platforms = [] } = Astro.props;
+
+const groups = groupPlatformsByManufacturer(platforms);
+
+const title = platformTypeLabels[type] || 'Piattaforme';
+const description = platformTypeDescriptions[type] || '';
+---
+
+<div class="platforms-page">
+  <div class="container">
+
+    <section class="platforms-hero">
+      <div class="platforms-hero__inner">
+        <span>Piattaforme</span>
+        <h1>{title}</h1>
+        <p>{description}</p>
+      </div>
+    </section>
+
+    {groups.length > 0 ? (
+      <section class="manufacturer-list">
+
+        {groups.map((group) => (
+          <section class="manufacturer-block">
+
+            <div class="manufacturer-block__header">
+
+              <div>
+                <span>{title}</span>
+                <h2>{group.manufacturer?.name}</h2>
+              </div>
+
+              <a href={getManufacturerUrl(type, group.manufacturer?.slug)}>
+                Vedi produttore →
+              </a>
+
+            </div>
+
+            <div class="platform-grid">
+              {group.platforms.map((platform) => (
+                <PlatformCard platform={platform} />
+              ))}
+            </div>
+
+          </section>
+        ))}
+
+      </section>
+    ) : (
+      <section class="platform-empty">
+        <span>RG</span>
+        <h2>Nessuna piattaforma</h2>
+        <p>Questa sezione verrà popolata presto.</p>
+      </section>
+    )}
+
+  </div>
+</div>

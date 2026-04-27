@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import PlatformDetail from '../../../../components/platforms/PlatformDetail.astro';
+
+import { getAllPosts, groupPosts } from '../../../../lib/posts';
+import {
+  getAllPlatforms,
+  getPlatformByPath,
+  getPlatformTypeFromParam
+} from '../../../../lib/platforms';
+
+export async function getStaticPaths() {
+  const platforms = await getAllPlatforms();
+
+  return platforms
+    .filter((platform) =>
+      platform.platformType &&
+      platform.manufacturer?.slug &&
+      platform.slug
+    )
+    .map((platform) => ({
+      params: {
+        type: platform.platformType,
+        manufacturer: platform.manufacturer.slug,
+        platform: platform.slug
+      }
+    }));
+}
+
+const { type, manufacturer, platform } = Astro.params;
+
+const platformType = getPlatformTypeFromParam(type);
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const platformData = await getPlatformByPath(
+  platformType,
+  manufacturer,
+  platform
+);
+
+if (!platformData) {
+  return Astro.redirect('/piattaforme/');
+}
+---
+
+<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+  <PlatformDetail platform={platformData} />
+</BaseLayout>

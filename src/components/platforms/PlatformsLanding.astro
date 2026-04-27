@@ -1,0 +1,69 @@
+---
+import '../../styles/components/platforms.css';
+import {
+  platformTypeLabels,
+  platformTypeDescriptions,
+  getPlatformTypeUrl
+} from '../../lib/platforms';
+
+const { platforms = [] } = Astro.props;
+
+const types = [
+  {
+    type: 'arcade',
+    code: 'AR'
+  },
+  {
+    type: 'computer',
+    code: 'PC'
+  },
+  {
+    type: 'console',
+    code: 'TV'
+  }
+];
+
+const countByType = (type) =>
+  platforms.filter((platform) => platform.platformType === type).length;
+---
+
+<div class="platforms-page">
+  <div class="container">
+
+    <section class="platforms-hero">
+      <div class="platforms-hero__inner">
+        <span>Piattaforme</span>
+        <h1>Macchine, sistemi e board</h1>
+        <p>
+          Console, home computer e sistemi arcade organizzati per produttore,
+          generazione e caratteristiche tecniche.
+        </p>
+      </div>
+    </section>
+
+    <section class="platform-type-grid">
+
+      {types.map((item) => {
+        const count = countByType(item.type);
+
+        return (
+          <a href={getPlatformTypeUrl(item.type)} class={`platform-type-card platform-type-card--${item.type}`}>
+
+            <div class="platform-type-card__code">
+              {item.code}
+            </div>
+
+            <div class="platform-type-card__content">
+              <span>{count} piattaforme</span>
+              <h2>{platformTypeLabels[item.type]}</h2>
+              <p>{platformTypeDescriptions[item.type]}</p>
+            </div>
+
+          </a>
+        );
+      })}
+
+    </section>
+
+  </div>
+</div>

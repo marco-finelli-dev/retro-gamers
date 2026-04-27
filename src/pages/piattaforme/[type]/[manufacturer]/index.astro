@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import ManufacturerPage from '../../../../components/platforms/ManufacturerPage.astro';
+
+import { getAllPosts, groupPosts } from '../../../../lib/posts';
+import {
+  getAllPlatforms,
+  getPlatformsByTypeAndManufacturer,
+  getPlatformTypeFromParam
+} from '../../../../lib/platforms';
+
+export async function getStaticPaths() {
+  const platforms = await getAllPlatforms();
+
+  const paths = new Map();
+
+  for (const platform of platforms) {
+    if (!platform.platformType || !platform.manufacturer?.slug) continue;
+
+    const key = `${platform.platformType}/${platform.manufacturer.slug}`;
+
+    if (!paths.has(key)) {
+      paths.set(key, {
+        params: {
+          type: platform.platformType,
+          manufacturer: platform.manufacturer.slug
+        },
+        props: {
+          manufacturer: platform.manufacturer
+        }
+      });
+    }
+  }
+
+  return Array.from(paths.values());
+}
+
+const { type, manufacturer } = Astro.params;
+const { manufacturer: manufacturerData } = Astro.props;
+
+const platformType = getPlatformTypeFromParam(type);
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const platforms = await getPlatformsByTypeAndManufacturer(
+  platformType,
+  manufacturer
+);
+---
+
+<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+  <ManufacturerPage
+    type={platformType}
+    manufacturer={manufacturerData}
+    platforms={platforms}
+  />
+</BaseLayout>

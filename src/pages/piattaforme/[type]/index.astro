@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PlatformTypePage from '../../../components/platforms/PlatformTypePage.astro';
+
+import { getAllPosts, groupPosts } from '../../../lib/posts';
+import { getPlatformsByType } from '../../../lib/platforms';
+
+export async function getStaticPaths() {
+  return [
+    { params: { type: 'arcade' } },
+    { params: { type: 'computer' } },
+    { params: { type: 'console' } }
+  ];
+}
+
+const { type } = Astro.params;
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const platforms = await getPlatformsByType(type);
+---
+
+<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+  <PlatformTypePage
+    type={type}
+    platforms={platforms}
+  />
+</BaseLayout>

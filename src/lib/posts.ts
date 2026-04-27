@@ -20,13 +20,23 @@ export type PlatformRef = {
   slug: string;
   platformType?: 'console' | 'computer' | 'arcade';
   badgeLabel?: string;
+
+  logo?: {
+    asset?: {
+      url?: string;
+    };
+    alt?: string;
+  };
+
   manufacturer?: TaxonomyRef;
+
   cover?: {
     asset?: {
       url?: string;
     };
     alt?: string;
   };
+
   specs?: {
     year?: number;
     releaseYear?: number;
@@ -143,25 +153,33 @@ export async function getAllPosts(): Promise<Post[]> {
         }
       },
 
-      platforms[]->{
-        name,
-        "slug": slug.current,
-        platformType,
-        badgeLabel,
-        manufacturer->{
-          name,
-          "slug": slug.current,
-          logo {
-            asset->{ url },
-            alt
-          }
-        },
-        cover {
-          asset->{ url },
-          alt
-        },
-        specs
-      },
+  platforms[]->{
+  name,
+  "slug": slug.current,
+  platformType,
+  badgeLabel,
+
+  logo {
+    asset->{ url },
+    alt
+  },
+
+  manufacturer->{
+    name,
+    "slug": slug.current,
+    logo {
+      asset->{ url },
+      alt
+    }
+  },
+
+  cover {
+    asset->{ url },
+    alt
+  },
+
+  specs
+},
 
       genres[]->{
         name,
@@ -384,14 +402,14 @@ export function groupPosts(posts: Post[] = []) {
     ARCHIVE STRIP:
     blocco editoriale misto, ma senza ripetere hero/reviews/specials/memories.
   */
-  const archive = takeUnused(
-    normalized.filter((post) =>
-      ['feature', 'memories', 'review', 'guide', 'article'].includes(post.type || '')
-    ),
-    usedIds,
-    4,
-    { requireImage: true }
-  );
+    const archive = takeUnused(
+      normalized.filter((post) =>
+        ['feature', 'memories', 'review', 'guide', 'interview', 'article'].includes(post.type || '')
+      ),
+      usedIds,
+      4,
+      { requireImage: true }
+    );
 
   /*
     HARDWARE:

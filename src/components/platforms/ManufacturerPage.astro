@@ -1,0 +1,71 @@
+---
+import '../../styles/components/platforms.css';
+import PlatformCard from './PlatformCard.astro';
+
+import {
+  platformTypeLabels,
+  getPlatformTypeUrl
+} from '../../lib/platforms';
+
+const {
+  type,
+  manufacturer,
+  platforms = []
+} = Astro.props;
+
+const title = manufacturer?.name || 'Produttore';
+const typeLabel = platformTypeLabels[type] || 'Piattaforme';
+---
+
+<div class="platforms-page">
+  <div class="container">
+
+    <section class="platforms-hero platforms-hero--manufacturer">
+      <div class="platforms-hero__inner">
+
+        <div class="platforms-hero__content">
+
+          <span>{typeLabel}</span>
+
+          {manufacturer?.logo?.asset?.url && (
+            <div class="platforms-hero__manufacturer-logo">
+              <img
+                src={manufacturer.logo.asset.url}
+                alt={manufacturer.logo.alt || title}
+                loading="eager"
+              />
+            </div>
+          )}
+
+          <h1>{title}</h1>
+
+          <p>
+            Tutte le piattaforme {typeLabel.toLowerCase()} associate a {title}
+            presenti nell’archivio Retro-Gamers.
+          </p>
+
+          <a href={getPlatformTypeUrl(type)} class="platforms-back-link">
+            ← Torna a {typeLabel}
+          </a>
+
+        </div>
+
+      </div>
+    </section>
+
+    {platforms.length > 0 ? (
+      <section class="platform-grid">
+        {platforms.map((platform) => (
+          <PlatformCard platform={platform} />
+        ))}
+      </section>
+    ) : (
+      <section class="platform-empty">
+        <span>RG</span>
+        <h2>Nessuna piattaforma</h2>
+        <p>Questo produttore non ha ancora piattaforme collegate.</p>
+      </section>
+    )}
+
+  </div>
+</div>

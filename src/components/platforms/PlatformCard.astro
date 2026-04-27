@@ -1,0 +1,100 @@
+---
+import { urlFor } from '../../lib/image';
+import { getPlatformUrl } from '../../lib/platforms';
+
+const { platform } = Astro.props;
+
+const getLogo = (platform) => {
+  if (!platform?.logo) return '';
+  return urlFor(platform.logo).width(520).quality(80).auto('format').url();
+};
+
+const getCover = (platform) => {
+  if (!platform?.cover) return '';
+  return urlFor(platform.cover).width(900).quality(76).auto('format').url();
+};
+
+const getManufacturerLogo = (platform) => {
+  if (!platform?.manufacturer?.logo) return '';
+  return urlFor(platform.manufacturer.logo).width(360).quality(80).auto('format').url();
+};
+
+const typeLabels = {
+  console: 'Console',
+  computer: 'Computer',
+  arcade: 'Arcade'
+};
+
+const cover = getCover(platform);
+const logo = getLogo(platform);
+const manufacturerLogo = getManufacturerLogo(platform);
+---
+
+<a href={getPlatformUrl(platform)} class={`platform-card platform-card--${platform.platformType}`}>
+
+  <div class="platform-card__visual">
+
+    {cover ? (
+      <img
+        src={cover}
+        alt={platform.cover?.alt || platform.name}
+        class="platform-card__cover"
+        loading="lazy"
+      />
+    ) : (
+      <div class="platform-card__fallback">
+        {logo && (
+          <img
+            src={logo}
+            alt={platform.logo?.alt || platform.name}
+            class="platform-card__logo"
+            loading="lazy"
+          />
+        )}
+
+        {manufacturerLogo && (
+          <img
+            src={manufacturerLogo}
+            alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
+            class="platform-card__manufacturer-logo"
+            loading="lazy"
+          />
+        )}
+      </div>
+    )}
+
+    {cover && logo && (
+      <div class="platform-card__logo-badge">
+        <img
+          src={logo}
+          alt={platform.logo?.alt || platform.name}
+          loading="lazy"
+        />
+      </div>
+    )}
+
+  </div>
+
+  <div class="platform-card__body">
+
+    <div class="platform-card__meta">
+      <span>{typeLabels[platform.platformType] || platform.platformType}</span>
+
+      {platform.specs?.year && (
+        <small>{platform.specs.year}</small>
+      )}
+    </div>
+
+    <h2>{platform.name}</h2>
+
+    <div class="platform-card__footer">
+      <span>{platform.manufacturer?.name || 'Produttore sconosciuto'}</span>
+
+      {platform.badgeLabel && (
+        <small>{platform.badgeLabel}</small>
+      )}
+    </div>
+
+  </div>
+
+</a>
