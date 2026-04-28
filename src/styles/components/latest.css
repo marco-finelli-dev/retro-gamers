@@ -325,6 +325,8 @@
 .rg-latest-card h3 {
   margin: 0;
 
+  min-height: calc(15px * 1.25 * 2);
+
   font-family: var(--font-base);
   font-size: 15px;
   line-height: 1.25;
@@ -335,7 +337,7 @@
   color: rgba(255,255,255,0.94);
 
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -355,20 +357,22 @@
 .rg-latest-card p {
   margin-top: 9px;
 
+  min-height: calc(12px * 1.45 * 2);
+
   font-size: 12px;
   line-height: 1.45;
 
   color: rgba(255,255,255,0.58);
 
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 
 /* ========================================
-   RESPONSIVE
+   LATEST — RESPONSIVE
 ======================================== */
 
 @media (max-width: 1100px) {
@@ -379,11 +383,12 @@
 
 @media (max-width: 768px) {
   .rg-latest {
-    padding: 22px 16px;
+    padding: 22px 0;
   }
 
   .rg-latest__header {
     align-items: flex-start;
+    padding: 0 16px;
   }
 
   .rg-latest h2 {
@@ -400,20 +405,76 @@
 
   .rg-latest__grid {
     display: flex;
-    gap: 12px;
-
-    margin-left: -2px;
-    margin-right: -2px;
-    padding: 2px 2px 8px;
-
+    gap: 14px;
+  
+    margin: 0;
+    padding: 2px 16px 18px;
+  
     overflow-x: auto;
+    overflow-y: hidden;
+  
     scroll-snap-type: x mandatory;
+    scroll-padding-left: 16px;
+  
+    -webkit-overflow-scrolling: touch;
+  
+    scrollbar-width: none;
+  }
+  
+  .rg-latest__grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rg-latest__grid::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.045);
+    border-radius: 999px;
+  }
+
+  .rg-latest__grid::-webkit-scrollbar-thumb {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(34,240,255,0.50),
+        rgba(168,85,247,0.42)
+      );
+
+    border-radius: 999px;
   }
 
   .rg-latest-card {
-    flex: 0 0 72%;
+    flex: 0 0 74vw;
+    max-width: 300px;
     min-height: 285px;
-
+  
     scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 768px), (hover: none) {
+  .rg-latest-card:hover {
+    transform: none;
+    border-color: rgba(255,255,255,0.09);
+
+    box-shadow:
+      0 16px 38px rgba(0,0,0,0.40),
+      inset 0 1px 0 rgba(255,255,255,0.045);
+  }
+
+  .rg-latest-card:hover::before {
+    opacity: 0.32;
+  }
+
+  .rg-latest-card:hover .rg-latest-card__image img {
+    transform: scale(1.02);
+
+    filter:
+      brightness(0.88)
+      contrast(1.06)
+      saturate(1.04);
+  }
+
+  .rg-latest-card:hover h3 {
+    color: rgba(255,255,255,0.94);
+    text-shadow: none;
   }
 }

@@ -1,0 +1,92 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+import { getAllPosts, groupPosts } from '../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Chi siamo"
+  description="Retro-Gamers.it è un progetto editoriale indipendente dedicato al retro-gaming, agli home computer, alle console e alla cultura digitale."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/chi-siamo/"
+>
+  <main class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Retro-Gamers</span>
+        <h1>Chi siamo</h1>
+        <p>
+          Un progetto editoriale dedicato alla memoria videoludica, agli home computer,
+          alle console e alla cultura retro.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <h2>Un archivio per chi ama il passato digitale</h2>
+
+        <p>
+          Retro-Gamers.it nasce come spazio editoriale indipendente dedicato al mondo
+          del retro-gaming, degli home computer, delle console storiche, dei sistemi
+          arcade e della cultura videoludica che ha segnato intere generazioni.
+        </p>
+
+        <p>
+          Il sito raccoglie recensioni, approfondimenti, speciali, guide, ricordi e
+          contenuti pensati per raccontare non solo i giochi, ma anche il contesto,
+          le macchine, le storie e le sensazioni legate a un’epoca irripetibile.
+        </p>
+
+        <h2>Non solo nostalgia</h2>
+
+        <p>
+          La nostalgia è il punto di partenza, ma non l’unico obiettivo. Retro-Gamers.it
+          vuole osservare il passato con uno sguardo attuale: capire perché certi giochi
+          funzionano ancora, cosa rende speciale una macchina, quali idee tecniche e
+          creative hanno resistito al tempo.
+        </p>
+
+        <p>
+          Ogni contenuto cerca di unire passione, memoria personale e attenzione
+          editoriale, senza trasformare il retrogaming in un semplice esercizio di
+          collezionismo o rimpianto.
+        </p>
+
+        <h2>Un progetto indipendente</h2>
+
+        <p>
+          Retro-Gamers.it è un progetto indipendente curato da Marco Finelli. Non è una
+          testata giornalistica registrata e non rappresenta una società, un editore o
+          un’organizzazione commerciale.
+        </p>
+
+        <p>
+          I contenuti pubblicati riflettono una linea editoriale personale e indipendente,
+          costruita attorno alla passione per videogiochi, computer, console, arcade e
+          cultura digitale.
+        </p>
+
+        <h2>Trasparenza</h2>
+
+        <p>
+          Alcuni articoli possono contenere link affiliati verso piattaforme esterne.
+          Quando presenti, tali link possono generare una piccola commissione per
+          Retro-Gamers.it, senza costi aggiuntivi per chi acquista.
+        </p>
+
+        <p>
+          Le collaborazioni, le segnalazioni e gli eventuali contenuti sponsorizzati
+          saranno sempre indicati in modo chiaro.
+        </p>
+
+      </article>
+
+    </div>
+  </main>
+</BaseLayout>

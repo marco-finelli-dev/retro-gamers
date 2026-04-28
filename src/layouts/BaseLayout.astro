@@ -2,10 +2,79 @@
 import '../styles/global.css';
 
 import Header from '../components/header/Header.astro';
-
 import Footer from '../components/Footer.astro';
+import ConsentAnalytics from '../components/common/ConsentAnalytics.astro';
+import CookieConsent from '../components/common/CookieConsent.astro';
 
-const { reviews = [], news = [] } = Astro.props;
+import '../styles/pages/legal.css';
+import '../styles/components/cookie-consent.css';
+
+const {
+  reviews = [],
+  news = [],
+
+  title = 'Retro-Gamers.it',
+  description = 'Retro-Gamers.it: recensioni, news, speciali, guide e approfondimenti dal mondo retro-gaming, console, arcade e home computer.',
+  image = '/og-image.jpg',
+  canonical = Astro.url.href,
+  type = 'website',
+  publishedAt = null,
+  updatedAt = null,
+  noindex = false
+} = Astro.props;
+
+const siteName = 'Retro-Gamers.it';
+const siteUrl = 'https://www.retro-gamers.it';
+
+const pageTitle =
+  title === siteName
+    ? siteName
+    : `${title} | ${siteName}`;
+
+const pageDescription = description;
+
+const absoluteImage = image?.startsWith('http')
+  ? image
+  : `${siteUrl}${image}`;
+
+const canonicalUrl = canonical?.startsWith('http')
+  ? canonical
+  : `${siteUrl}${canonical}`;
+
+const jsonLd =
+  type === 'article'
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: title,
+        description: pageDescription,
+        image: absoluteImage ? [absoluteImage] : undefined,
+        datePublished: publishedAt || undefined,
+        dateModified: updatedAt || publishedAt || undefined,
+        author: {
+          '@type': 'Person',
+          name: 'Marco Finelli'
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: siteName,
+          logo: {
+            '@type': 'ImageObject',
+            url: `${siteUrl}/logo.png`
+          }
+        },
+        mainEntityOfPage: {
+          '@type': 'WebPage',
+          '@id': canonicalUrl
+        }
+      }
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: siteName,
+        url: siteUrl,
+        description: pageDescription
+      };
 ---
 
 <html lang="it">
@@ -13,7 +82,42 @@ const { reviews = [], news = [] } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Retro Gamers</title>
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+
+    {noindex && (
+      <meta name="robots" content="noindex, nofollow" />
+    )}
+
+    <link rel="canonical" href={canonicalUrl} />
+
+    <meta property="og:locale" content="it_IT" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:type" content={type === 'article' ? 'article' : 'website'} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={absoluteImage} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content={absoluteImage} />
+
+    {type === 'article' && publishedAt && (
+      <meta property="article:published_time" content={publishedAt} />
+    )}
+
+    {type === 'article' && updatedAt && (
+      <meta property="article:modified_time" content={updatedAt} />
+    )}
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+   <link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -35,6 +139,8 @@ const { reviews = [], news = [] } = Astro.props;
     <script src="/scripts/dropdown.js" defer></script>
 
     <Footer />
-    
+
+    <ConsentAnalytics />
+    <CookieConsent />
   </body>
 </html>

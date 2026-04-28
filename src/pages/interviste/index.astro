@@ -10,7 +10,14 @@ const grouped = groupPosts(allPosts);
 const posts = grouped.all.filter((post) => post.type === 'interview');
 ---
 
-<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Interviste"
+  description="Interviste, conversazioni e testimonianze dal mondo retro-gaming, tra sviluppatori, appassionati, collezionisti e protagonisti della scena."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/interviste/"
+>
   <ArchivePage
     title="Interviste"
     eyebrow="Voci e protagonisti"

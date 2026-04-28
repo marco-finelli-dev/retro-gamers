@@ -19,15 +19,13 @@ const getManufacturerLogo = (platform) => {
   return urlFor(platform.manufacturer.logo).width(360).quality(80).auto('format').url();
 };
 
-const typeLabels = {
-  console: 'Console',
-  computer: 'Computer',
-  arcade: 'Arcade'
-};
-
 const cover = getCover(platform);
 const logo = getLogo(platform);
 const manufacturerLogo = getManufacturerLogo(platform);
+
+const manufacturerName = platform.manufacturer?.name || 'Produttore sconosciuto';
+const year = platform.specs?.year || '';
+const badge = platform.badgeLabel || '';
 ---
 
 <a href={getPlatformUrl(platform)} class={`platform-card platform-card--${platform.platformType}`}>
@@ -55,7 +53,7 @@ const manufacturerLogo = getManufacturerLogo(platform);
         {manufacturerLogo && (
           <img
             src={manufacturerLogo}
-            alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
+            alt={platform.manufacturer?.logo?.alt || manufacturerName}
             class="platform-card__manufacturer-logo"
             loading="lazy"
           />
@@ -63,37 +61,26 @@ const manufacturerLogo = getManufacturerLogo(platform);
       </div>
     )}
 
-    {cover && logo && (
-      <div class="platform-card__logo-badge">
-        <img
-          src={logo}
-          alt={platform.logo?.alt || platform.name}
-          loading="lazy"
-        />
-      </div>
-    )}
-
   </div>
 
   <div class="platform-card__body">
 
-    <div class="platform-card__meta">
-      <span>{typeLabels[platform.platformType] || platform.platformType}</span>
-
-      {platform.specs?.year && (
-        <small>{platform.specs.year}</small>
-      )}
+    <div class="platform-card__main">
+      <span>{manufacturerName}</span>
+      <h2>{platform.name}</h2>
     </div>
 
-    <h2>{platform.name}</h2>
+    {(year || badge) && (
+      <div class="platform-card__facts">
+        {year && (
+          <span>{year}</span>
+        )}
 
-    <div class="platform-card__footer">
-      <span>{platform.manufacturer?.name || 'Produttore sconosciuto'}</span>
-
-      {platform.badgeLabel && (
-        <small>{platform.badgeLabel}</small>
-      )}
-    </div>
+        {badge && (
+          <span>{badge}</span>
+        )}
+      </div>
+    )}
 
   </div>
 

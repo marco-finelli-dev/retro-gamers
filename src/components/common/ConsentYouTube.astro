@@ -1,0 +1,150 @@
+---
+const {
+  url = '',
+  title = 'Video YouTube'
+} = Astro.props;
+
+const getYouTubeId = (value = '') => {
+  if (!value) return '';
+
+  try {
+    const parsed = new URL(value);
+
+    if (parsed.hostname.includes('youtu.be')) {
+      return parsed.pathname.replace('/', '');
+    }
+
+    if (parsed.hostname.includes('youtube.com')) {
+      return parsed.searchParams.get('v') || '';
+    }
+  } catch {
+    return '';
+  }
+
+  return '';
+};
+
+const videoId = getYouTubeId(url);
+---
+
+{videoId && (
+  <div
+    class="consent-youtube"
+    data-consent-youtube
+    data-youtube-id={videoId}
+    data-youtube-title={title}
+  >
+    <div class="consent-youtube__placeholder" data-youtube-placeholder>
+      <span>Contenuto YouTube</span>
+
+      <h3>{title}</h3>
+
+      <p>
+        Questo video è incorporato da YouTube. Per visualizzarlo devi accettare
+        i contenuti di terze parti.
+      </p>
+
+      <button type="button" data-youtube-accept>
+        Accetta e guarda il video
+      </button>
+
+      <a href="/cookie-policy/">
+        Leggi la Cookie Policy
+      </a>
+    </div>
+  </div>
+)}
+
+<script is:inline>
+  (() => {
+    const STORAGE_KEY = 'retro-gamers-cookie-consent';
+
+    const getStoredConsent = () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const saveThirdPartyConsent = () => {
+      const current = getStoredConsent() || {
+        necessary: true,
+        analytics: false,
+        thirdParty: false
+      };
+
+      const next = {
+        ...current,
+        necessary: true,
+        thirdParty: true,
+        updatedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+
+      window.dispatchEvent(
+        new CustomEvent('retro-gamers:cookie-consent', {
+          detail: next
+        })
+      );
+
+      return next;
+    };
+
+    const renderVideo = (wrapper) => {
+      if (!wrapper || wrapper.dataset.youtubeLoaded === 'true') return;
+
+      const videoId = wrapper.dataset.youtubeId;
+      const title = wrapper.dataset.youtubeTitle || 'Video YouTube';
+
+      if (!videoId) return;
+
+      const iframe = document.createElement('iframe');
+
+      iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}`;
+      iframe.title = title;
+      iframe.loading = 'lazy';
+      iframe.allow =
+        'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.allowFullscreen = true;
+
+      wrapper.innerHTML = '';
+      wrapper.appendChild(iframe);
+      wrapper.dataset.youtubeLoaded = 'true';
+      wrapper.classList.add('is-loaded');
+    };
+
+    const applyConsent = (consent) => {
+      if (!consent?.thirdParty) return;
+
+      document.querySelectorAll('[data-consent-youtube]').forEach((wrapper) => {
+        renderVideo(wrapper);
+      });
+    };
+
+    const init = () => {
+      document.querySelectorAll('[data-consent-youtube]').forEach((wrapper) => {
+        const button = wrapper.querySelector('[data-youtube-accept]');
+
+        button?.addEventListener('click', () => {
+          const consent = saveThirdPartyConsent();
+          applyConsent(consent);
+        });
+      });
+
+      applyConsent(getStoredConsent());
+
+      window.addEventListener('retro-gamers:cookie-consent', (event) => {
+        applyConsent(event.detail);
+      });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>

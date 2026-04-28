@@ -10,7 +10,14 @@ const grouped = groupPosts(allPosts);
 const posts = grouped.all.filter((post) => post.type === 'feature');
 ---
 
-<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Speciali"
+  description="Approfondimenti, retrospettive e storie dal mondo videoludico e informatico."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/speciali/"
+>
   <ArchivePage
     title="Speciali"
     eyebrow="Approfondimenti"

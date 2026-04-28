@@ -1,5 +1,10 @@
 ---
-const { post } = Astro.props;
+import { getPostUrl } from '../../lib/routes';
+
+const {
+  post,
+  relatedPosts = []
+} = Astro.props;
 
 const image =
   post.featuredImage?.asset?.url ||
@@ -17,26 +22,64 @@ const typeLabels = {
   article: 'Articolo'
 };
 
-const infoRows = [
-  {
-    label: 'Sezione',
-    value: typeLabels[post.type] || 'Articolo'
+const archiveLinks = {
+  news: {
+    label: 'Tutte le news',
+    href: '/news/'
   },
-  {
-    label: 'Pubblicato',
-    value: post.publishedAt
-      ? new Date(post.publishedAt).toLocaleDateString('it-IT')
-      : null
+  feature: {
+    label: 'Tutti gli speciali',
+    href: '/speciali/'
   },
-  {
-    label: 'Autore',
-    value: post.author?.name
+  guide: {
+    label: 'Tutte le guide',
+    href: '/guide/'
   },
-  {
-    label: 'Categoria',
-    value: post.categories?.map((item) => item.name).join(', ')
+  memories: {
+    label: 'Tutte le memories',
+    href: '/memories/'
+  },
+  hardware: {
+    label: 'Tutto l’hardware',
+    href: '/hardware/'
+  },
+  article: {
+    label: 'Tutti gli articoli',
+    href: '/articoli/'
+  },
+  interview: {
+    label: 'Tutte le interviste',
+    href: '/interviste/'
   }
-].filter((row) => row.value);
+};
+
+const archiveLink =
+  archiveLinks[post.type] ||
+  {
+    label: 'Esplora archivio',
+    href: '/articoli/'
+  };
+
+const sidebarRelated = relatedPosts
+  .filter((item) => item?._id !== post?._id)
+  .slice(0, 5);
+
+const sidebarTags = [
+  ...(post.platforms || []),
+  ...(post.categories || []),
+  ...(post.genres || []),
+  ...(post.developers || [])
+]
+  .filter((item) => item?.name)
+  .slice(0, 6);
+
+const getImage = (item) =>
+  item.featuredImage?.asset?.url ||
+  item.gameInfo?.cover?.asset?.url ||
+  '/placeholder-retro.png';
+
+const getTypeLabel = (item) =>
+  typeLabels[item.type] || 'Articolo';
 ---
 
 <div class="article-sidebar">
@@ -47,19 +90,49 @@ const infoRows = [
     </figure>
   )}
 
-  {infoRows.length > 0 && (
-    <section class="article-sidebar__panel">
-      <h2>Dettagli</h2>
+  <div class="article-sidebar__sticky">
 
-      <dl class="article-info-list">
-        {infoRows.map((row) => (
-          <div>
-            <dt>{row.label}</dt>
-            <dd>{row.value}</dd>
-          </div>
+    {sidebarRelated.length > 0 && (
+      <section class="article-sidebar__panel article-sidebar__panel--related">
+        <h2>Articoli correlati</h2>
+
+        <div class="article-sidebar-related">
+          {sidebarRelated.map((item) => (
+            <a href={getPostUrl(item)} class="article-sidebar-related__card">
+
+              <span class="article-sidebar-related__image">
+                <img
+                  src={getImage(item)}
+                  alt={item.featuredImage?.alt || item.title}
+                  loading="lazy"
+                />
+              </span>
+
+              <span class="article-sidebar-related__content">
+                <small>{getTypeLabel(item)}</small>
+                <strong>{item.title}</strong>
+              </span>
+
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section class="article-sidebar__panel article-sidebar__panel--explore">
+      <h2>Esplora</h2>
+
+      <div class="article-sidebar-explore">
+        <a href={archiveLink.href}>
+          {archiveLink.label}
+        </a>
+
+        {sidebarTags.map((item) => (
+          <span>{item.name}</span>
         ))}
-      </dl>
+      </div>
     </section>
-  )}
+
+  </div>
 
 </div>

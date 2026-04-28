@@ -1,0 +1,200 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+import { getAllPosts, groupPosts } from '../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+---
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Privacy Policy"
+  description="Informazioni sul trattamento dei dati personali degli utenti che visitano Retro-Gamers.it."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/privacy-policy/"
+>
+  <main class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Privacy</span>
+        <h1>Privacy Policy</h1>
+        <p>
+          Informazioni sul trattamento dei dati personali degli utenti che visitano
+          Retro-Gamers.it.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <p class="legal-updated">
+          Ultimo aggiornamento: 28 aprile 2026
+        </p>
+
+        <h2>1. Titolare del trattamento</h2>
+
+        <p>
+          Il titolare del trattamento dei dati personali è Marco Finelli,
+          responsabile del progetto editoriale Retro-Gamers.it.
+        </p>
+
+        <p>
+          Per qualsiasi richiesta relativa alla privacy è possibile scrivere a:
+          <a href="mailto:guybrush@retro-gamers.it">guybrush@retro-gamers.it</a>.
+        </p>
+
+        <h2>2. Quali dati trattiamo</h2>
+
+        <p>
+          Durante la navigazione su Retro-Gamers.it possono essere trattati dati
+          tecnici e di navigazione, come indirizzo IP, informazioni sul browser,
+          dispositivo utilizzato, pagine visitate, data e ora dell’accesso e dati
+          tecnici necessari al funzionamento del sito.
+        </p>
+
+        <p>
+          Il sito non dispone attualmente di form di contatto, newsletter, account
+          utente o aree riservate. Non vengono quindi raccolti direttamente dati
+          personali tramite moduli compilati dall’utente.
+        </p>
+
+        <h2>3. Finalità del trattamento</h2>
+
+        <p>
+          I dati possono essere trattati per le seguenti finalità:
+        </p>
+
+        <ul>
+          <li>consentire il corretto funzionamento tecnico del sito;</li>
+          <li>garantire sicurezza, manutenzione e prevenzione di abusi;</li>
+          <li>misurare le visite e comprendere l’utilizzo dei contenuti;</li>
+          <li>mostrare contenuti incorporati da piattaforme esterne, come YouTube;</li>
+          <li>gestire link esterni e link affiliati verso piattaforme terze.</li>
+        </ul>
+
+        <h2>4. Base giuridica</h2>
+
+        <p>
+          I trattamenti tecnici necessari al funzionamento del sito si basano sul
+          legittimo interesse del titolare a mantenere il sito sicuro, accessibile
+          e funzionante.
+        </p>
+
+        <p>
+          I trattamenti legati a strumenti di analisi non essenziali e contenuti di
+          terze parti, come Google Analytics o video YouTube incorporati, vengono
+          effettuati solo previo consenso dell’utente, quando richiesto dalla
+          normativa applicabile.
+        </p>
+
+        <h2>5. Servizi di hosting e infrastruttura</h2>
+
+        <p>
+          Retro-Gamers.it è ospitato tramite Vercel. Vercel può trattare dati
+          tecnici necessari alla distribuzione, sicurezza e funzionamento del sito.
+        </p>
+
+        <p>
+          Il sito può utilizzare Vercel Web Analytics per ottenere statistiche
+          aggregate sulle visite. Secondo la documentazione di Vercel, Web Analytics
+          non utilizza cookie di terze parti e identifica le visite tramite un hash
+          generato dalla richiesta, con sessioni scartate dopo 24 ore.
+        </p>
+
+        <h2>6. Google Analytics</h2>
+
+        <p>
+          Retro-Gamers.it può utilizzare Google Analytics per raccogliere statistiche
+          sull’utilizzo del sito. Google Analytics può comportare il trattamento di
+          dati di navigazione e l’uso di cookie o tecnologie simili.
+        </p>
+
+        <p>
+          Google Analytics viene caricato solo dopo il consenso dell’utente alla
+          categoria “Analytics”, tramite il sistema di gestione del consenso presente
+          sul sito.
+        </p>
+
+        <h2>7. Contenuti incorporati da YouTube</h2>
+
+        <p>
+          Alcuni articoli possono includere video incorporati da YouTube. La
+          visualizzazione di tali contenuti può comportare il trasferimento di dati
+          verso Google/YouTube e l’utilizzo di cookie o tecnologie simili da parte
+          di terze parti.
+        </p>
+
+        <p>
+          Quando possibile, Retro-Gamers.it utilizza modalità di incorporamento più
+          attente alla privacy, come il dominio youtube-nocookie.com. In ogni caso,
+          i video incorporati vengono caricati solo dopo il consenso dell’utente ai
+          contenuti di terze parti.
+        </p>
+
+        <h2>8. Link affiliati Amazon, eBay e altri programmi</h2>
+
+        <p>
+          Alcuni articoli possono contenere link affiliati verso Amazon, eBay o altri
+          siti esterni. Se l’utente effettua un acquisto tramite tali link,
+          Retro-Gamers.it può ricevere una piccola commissione, senza costi aggiuntivi
+          per l’utente.
+        </p>
+
+        <p>
+          Cliccando su un link affiliato, l’utente lascia Retro-Gamers.it e accede a
+          un sito di terze parti. Da quel momento il trattamento dei dati personali
+          è regolato dalle privacy policy e cookie policy del sito di destinazione.
+        </p>
+
+        <h2>9. Social network e link esterni</h2>
+
+        <p>
+          Il sito contiene link verso profili social di Retro-Gamers.it, come
+          Facebook, Instagram e X. Tali link portano a piattaforme esterne, che
+          trattano i dati secondo le proprie informative.
+        </p>
+
+        <h2>10. Conservazione dei dati</h2>
+
+        <p>
+          I dati tecnici e di navigazione vengono conservati per il tempo necessario
+          alle finalità per cui sono raccolti, inclusi sicurezza, manutenzione,
+          statistiche aggregate e obblighi tecnici o legali.
+        </p>
+
+        <p>
+          Le preferenze relative al consenso cookie possono essere conservate nel
+          browser dell’utente per evitare di riproporre continuamente il banner.
+        </p>
+
+        <h2>11. Diritti dell’utente</h2>
+
+        <p>
+          Nei limiti previsti dal Regolamento UE 2016/679, l’utente può richiedere
+          accesso, rettifica, cancellazione, limitazione, opposizione al trattamento
+          e portabilità dei dati personali.
+        </p>
+
+        <p>
+          Per esercitare i propri diritti è possibile scrivere a:
+          <a href="mailto:guybrush@retro-gamers.it">guybrush@retro-gamers.it</a>.
+        </p>
+
+        <p>
+          L’utente ha inoltre diritto di proporre reclamo all’Autorità Garante per
+          la protezione dei dati personali.
+        </p>
+
+        <h2>12. Modifiche alla presente informativa</h2>
+
+        <p>
+          La presente Privacy Policy può essere aggiornata nel tempo, anche in
+          funzione di modifiche tecniche, normative o editoriali del sito.
+        </p>
+
+      </article>
+
+    </div>
+  </main>
+</BaseLayout>

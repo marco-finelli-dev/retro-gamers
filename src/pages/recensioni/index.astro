@@ -8,7 +8,15 @@ const allPosts = await getAllPosts();
 const { allReviews, news } = groupPosts(allPosts);
 ---
 
-<BaseLayout reviews={allReviews} news={news}>
+<BaseLayout
+  reviews={allReviews}
+  news={news}
+  title="Recensioni"
+  description="Recensioni di giochi retro per console, arcade e home computer: prove, voti, impressioni e memoria storica."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/recensioni/"
+>
+
   <ArchivePage
     title="Recensioni"
     eyebrow="Giochi alla prova"

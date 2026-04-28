@@ -1,6 +1,6 @@
 ---
 import { getPostUrl } from '../../lib/routes';
-
+import ConsentYouTube from '../common/ConsentYouTube.astro';
 const { content = [] } = Astro.props;
 
 function escapeHTML(str = '') {
@@ -20,6 +20,22 @@ function getInternalUrl(reference) {
     type: reference.type || 'article',
     slug: reference.slug
   });
+}
+
+function isAffiliateUrl(url = '') {
+  return /amazon\.|amzn\.to|ebay\.|rover\.ebay/i.test(url);
+}
+
+function getExternalRel(url = '') {
+  return isAffiliateUrl(url)
+    ? 'sponsored nofollow noopener noreferrer'
+    : 'noopener noreferrer';
+}
+
+function getExternalClass(url = '') {
+  return isAffiliateUrl(url)
+    ? 'article-affiliate-link'
+    : '';
 }
 
 function renderTextChild(child, markDefs = []) {
@@ -46,8 +62,16 @@ function renderTextChild(child, markDefs = []) {
     }
 
     if (def?.href) {
+      const rel = getExternalRel(def.href);
+      const className = getExternalClass(def.href);
+
       output = `
-        <a href="${escapeHTML(def.href)}" target="_blank" rel="noopener noreferrer">
+        <a
+          href="${escapeHTML(def.href)}"
+          target="_blank"
+          rel="${rel}"
+          class="${className}"
+        >
           ${output}
         </a>
       `;
@@ -83,14 +107,6 @@ function renderBlockChildren(block) {
   return block.children
     ?.map((child) => renderTextChild(child, block.markDefs || []))
     .join('') || '';
-}
-
-function getVideoId(url = '') {
-  if (url.includes('youtu.be')) {
-    return url.split('/').pop()?.split('?')[0];
-  }
-
-  return url.split('v=')[1]?.split('&')[0];
 }
 
 /*
@@ -216,21 +232,14 @@ function chunkBalanced(images = []) {
       );
     }
 
-    if (block._type === 'video') {
-      const videoId = getVideoId(block.url);
-
-      if (!videoId) return null;
-
-      return (
-        <div class="article-video">
-          <iframe
-            src={`https://www.youtube.com/embed/${videoId}`}
-            title="Video incorporato"
-            allowfullscreen
-          />
-        </div>
-      );
-    }
+   if (block._type === 'video') {
+  return (
+    <ConsentYouTube
+      url={block.url}
+      title={block.title || 'Video YouTube'}
+    />
+  );
+}
 
     if (block._type === 'asideBox') {
       const asideImages = block.content?.filter((inner) => inner._type === 'image') || [];

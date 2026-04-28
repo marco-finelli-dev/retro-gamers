@@ -4,10 +4,13 @@ import ArticleContent from './ArticleContent.astro';
 import ArticleSidebar from './ArticleSidebar.astro';
 import ReviewSidebar from './ReviewSidebar.astro';
 import ArticleFinalRating from './ArticleFinalRating.astro';
-
+import ArticleAffiliateBox from './ArticleAffiliateBox.astro';
 import '../../styles/article/article.css';
 
-const { post } = Astro.props;
+const {
+  post,
+  relatedPosts = []
+} = Astro.props;
 
 const isReview = post?.type === 'review';
 ---
@@ -19,6 +22,20 @@ const isReview = post?.type === 'review';
   <div class="article-page__body">
 
     <article class="article-page__content">
+    
+    {post.monetization?.isAffiliate && (
+  <aside class="affiliate-disclosure">
+    <span>Trasparenza</span>
+
+    <p>
+      Questo articolo può contenere link affiliati. Se acquisti tramite questi collegamenti,
+      Retro-Gamers.it può ricevere una piccola commissione, senza costi aggiuntivi per te.
+    </p>
+  </aside>
+)}
+
+      <ArticleAffiliateBox post={post} />
+      
       <ArticleContent content={post.content} />
 
       {isReview && post.rating && (
@@ -28,9 +45,9 @@ const isReview = post?.type === 'review';
 
     <aside class="article-page__sidebar">
       {isReview ? (
-        <ReviewSidebar post={post} />
+        <ReviewSidebar post={post} relatedPosts={relatedPosts} />
       ) : (
-        <ArticleSidebar post={post} />
+        <ArticleSidebar post={post} relatedPosts={relatedPosts} />
       )}
     </aside>
 

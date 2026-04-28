@@ -1,0 +1,82 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+import { getAllPosts, groupPosts } from '../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+---
+
+<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+  <main class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Collaborazioni</span>
+        <h1>Collaborazioni</h1>
+        <p>
+          Proposte editoriali, segnalazioni, prodotti da recensire e progetti legati
+          al mondo retro-gaming.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <h2>Collaborare con Retro-Gamers.it</h2>
+
+        <p>
+          Retro-Gamers.it è aperto a collaborazioni editoriali, segnalazioni di
+          progetti, prodotti, eventi, libri, hardware, software, iniziative indipendenti
+          e contenuti legati al mondo retro-gaming.
+        </p>
+
+        <p>
+          Sono particolarmente interessanti proposte legate a console storiche, home
+          computer, arcade, nuove produzioni per sistemi retro, libri, accessori,
+          periferiche, emulatori, restauri, modding e preservazione videoludica.
+        </p>
+
+        <h2>Recensioni e segnalazioni</h2>
+
+        <p>
+          È possibile proporre giochi, hardware, libri, accessori o progetti da
+          segnalare o recensire. L’eventuale invio di materiale non garantisce
+          automaticamente la pubblicazione di un articolo.
+        </p>
+
+        <p>
+          Retro-Gamers.it mantiene piena indipendenza editoriale: opinioni, valutazioni
+          e contenuti pubblicati non sono acquistabili né modificabili da soggetti
+          esterni.
+        </p>
+
+        <h2>Affiliazioni e partnership</h2>
+
+        <p>
+          Il sito può utilizzare link affiliati verso piattaforme esterne, come Amazon
+          o eBay. Eventuali collaborazioni commerciali, partnership o contenuti
+          sponsorizzati saranno valutati solo se coerenti con il progetto editoriale.
+        </p>
+
+        <p>
+          Ogni contenuto sponsorizzato o collaborazione rilevante verrà indicato in
+          modo chiaro, per garantire trasparenza verso i lettori.
+        </p>
+
+        <h2>Come proporre una collaborazione</h2>
+
+        <p>
+          Per proporre una collaborazione puoi scrivere a:
+          <a href="mailto:guybrush@retro-gamers.it">guybrush@retro-gamers.it</a>.
+        </p>
+
+        <p>
+          Nel messaggio è utile indicare una descrizione del progetto, eventuali link,
+          immagini, materiali disponibili e il tipo di collaborazione proposta.
+        </p>
+
+      </article>
+
+    </div>
+  </main>
+</BaseLayout>

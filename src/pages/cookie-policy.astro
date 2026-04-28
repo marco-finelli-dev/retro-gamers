@@ -1,0 +1,142 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+import { getAllPosts, groupPosts } from '../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Cookie Policy"
+  description="Informazioni sui cookie e sulle tecnologie simili utilizzate da Retro-Gamers.it."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/cookie-policy/"
+>
+  <main class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Cookie</span>
+        <h1>Cookie Policy</h1>
+        <p>
+          Informazioni sui cookie e sulle tecnologie simili utilizzate da
+          Retro-Gamers.it.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <p class="legal-updated">
+          Ultimo aggiornamento: 28 aprile 2026
+        </p>
+
+        <h2>1. Cosa sono i cookie</h2>
+
+        <p>
+          I cookie sono piccoli file di testo che i siti possono salvare sul browser
+          dell’utente. Tecnologie simili possono essere usate per finalità tecniche,
+          statistiche o per integrare servizi di terze parti.
+        </p>
+
+        <h2>2. Tipologie di strumenti utilizzati</h2>
+
+        <p>
+          Retro-Gamers.it può utilizzare le seguenti categorie di cookie o strumenti
+          simili:
+        </p>
+
+        <ul>
+          <li>
+            <strong>Necessari:</strong> servono al funzionamento tecnico del sito e
+            alla memorizzazione delle preferenze di consenso.
+          </li>
+          <li>
+            <strong>Analytics:</strong> aiutano a comprendere l’utilizzo del sito e
+            le performance dei contenuti.
+          </li>
+          <li>
+            <strong>Contenuti di terze parti:</strong> permettono di visualizzare
+            contenuti incorporati, come video YouTube.
+          </li>
+          <li>
+            <strong>Link esterni e affiliazioni:</strong> rimandano a siti di terze
+            parti, come Amazon o eBay, che possono utilizzare propri cookie e sistemi
+            di tracciamento.
+          </li>
+        </ul>
+
+        <h2>3. Cookie necessari</h2>
+
+        <p>
+          I cookie o strumenti necessari consentono il corretto funzionamento del
+          sito e non richiedono il consenso dell’utente. Possono includere, ad
+          esempio, la memorizzazione delle preferenze espresse nel banner cookie.
+        </p>
+
+        <h2>4. Analytics</h2>
+
+        <p>
+          Retro-Gamers.it può utilizzare strumenti di analytics per misurare le
+          visite e comprendere quali contenuti vengono consultati.
+        </p>
+
+        <p>
+          Google Analytics viene caricato solo dopo il consenso dell’utente alla
+          categoria “Analytics”.
+        </p>
+
+        <p>
+          Vercel Web Analytics può essere utilizzato per statistiche aggregate e,
+          secondo la documentazione di Vercel, non usa cookie di terze parti.
+        </p>
+
+        <h2>5. YouTube e contenuti incorporati</h2>
+
+        <p>
+          Alcune pagine possono includere video YouTube. Prima del consenso, tali
+          contenuti possono essere sostituiti da un placeholder informativo.
+        </p>
+
+        <p>
+          Il video viene caricato solo se l’utente accetta la categoria “Contenuti
+          di terze parti” o sceglie espressamente di visualizzare quel contenuto.
+        </p>
+
+        <h2>6. Link affiliati</h2>
+
+        <p>
+          Alcuni link verso Amazon, eBay o altri siti esterni possono essere link
+          affiliati. Cliccando su questi link l’utente accede a piattaforme esterne,
+          che possono utilizzare cookie e strumenti di tracciamento secondo le proprie
+          informative.
+        </p>
+
+        <h2>7. Gestione del consenso</h2>
+
+        <p>
+          L’utente può accettare, rifiutare o personalizzare le preferenze relative
+          alle categorie non necessarie. Le preferenze possono essere modificate in
+          qualsiasi momento tramite il link o pulsante di gestione cookie presente
+          sul sito.
+        </p>
+
+        <h2>8. Titolare del trattamento</h2>
+
+        <p>
+          Il titolare del trattamento è Marco Finelli, responsabile del progetto
+          editoriale Retro-Gamers.it.
+        </p>
+
+        <p>
+          Email di contatto:
+          <a href="mailto:guybrush@retro-gamers.it">guybrush@retro-gamers.it</a>.
+        </p>
+
+      </article>
+
+    </div>
+  </main>
+</BaseLayout>

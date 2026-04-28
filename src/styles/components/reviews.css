@@ -633,7 +633,7 @@
 }
 
 /* ========================================
-   TABLET
+   REVIEWS — RESPONSIVE
 ======================================== */
 
 @media (max-width: 1024px) {
@@ -642,9 +642,12 @@
     gap: 14px;
 
     overflow-x: auto;
-    padding-bottom: 6px;
+    overflow-y: hidden;
+
+    padding-bottom: 8px;
 
     scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
   }
 
   .rg-review-card {
@@ -652,27 +655,18 @@
     height: 335px;
 
     scroll-snap-align: start;
+    scroll-snap-stop: always;
   }
 }
 
-
-/* ========================================
-   MOBILE
-======================================== */
-
 @media (max-width: 768px) {
   .rg-reviews {
-    padding: 22px 16px;
-  }
-
-  .rg-reviews::after {
-    left: 16px;
-    right: 16px;
-    top: 68px;
+    padding: 22px 0;
   }
 
   .rg-reviews__header {
     align-items: flex-start;
+    padding: 0 16px;
   }
 
   .rg-reviews h2 {
@@ -689,25 +683,86 @@
 
   .rg-reviews__rail {
     display: flex;
-    gap: 12px;
-
-    margin-left: -2px;
-    margin-right: -2px;
-    padding: 2px 2px 8px;
-
+    gap: 14px;
+  
+    margin: 0;
+    padding: 2px 16px 18px;
+  
     overflow-x: auto;
+    overflow-y: hidden;
+  
     scroll-snap-type: x mandatory;
+    scroll-padding-left: 16px;
+  
+    -webkit-overflow-scrolling: touch;
+  
+    scrollbar-width: none;
+  }
+  
+  .rg-reviews__rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rg-reviews__rail::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.045);
+    border-radius: 999px;
+  }
+
+  .rg-reviews__rail::-webkit-scrollbar-thumb {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(34,240,255,0.50),
+        rgba(168,85,247,0.42)
+      );
+
+    border-radius: 999px;
   }
 
   .rg-review-card {
-    flex: 0 0 72%;
+    flex: 0 0 74vw;
+    max-width: 300px;
     height: 335px;
-
+  
     scroll-snap-align: start;
   }
 
   .rg-review-card__body h3 {
     min-height: calc(15px * 1.22 * 2);
     font-size: 15px;
+  }
+}
+
+@media (max-width: 768px), (hover: none) {
+  .rg-review-card:hover {
+    transform: none;
+    border-color: rgba(255,255,255,0.09);
+
+    box-shadow:
+      0 16px 38px rgba(0,0,0,0.42),
+      inset 0 1px 0 rgba(255,255,255,0.045);
+  }
+
+  .rg-review-card:hover::before {
+    opacity: 0.34;
+  }
+
+  .rg-review-card:hover .rg-review-card__image img {
+    transform: scale(1.02);
+
+    filter:
+      brightness(0.9)
+      contrast(1.06)
+      saturate(1.05);
+  }
+
+  .rg-review-card:hover h3 {
+    color: rgba(255,255,255,0.94);
+    text-shadow: 0 5px 20px rgba(0,0,0,0.8);
+  }
+
+  .rg-review-card:hover .rg-score,
+  .rg-review-card:hover .rg-platform-badge {
+    transform: none;
   }
 }

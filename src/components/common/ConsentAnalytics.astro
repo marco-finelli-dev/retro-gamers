@@ -1,0 +1,61 @@
+---
+const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID;
+---
+
+{GA_ID && (
+  <script is:inline define:vars={{ GA_ID }}>
+    (() => {
+      const loadGoogleAnalytics = () => {
+        if (!GA_ID) return;
+        if (window.__retroGamersGaLoaded) return;
+
+        window.__retroGamersGaLoaded = true;
+
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+
+        document.head.appendChild(script);
+
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+          window.dataLayer.push(arguments);
+        }
+
+        window.gtag = gtag;
+
+        gtag('js', new Date());
+
+        gtag('config', GA_ID, {
+          anonymize_ip: true
+        });
+      };
+
+      const applyConsent = (consent) => {
+        if (consent?.analytics) {
+          loadGoogleAnalytics();
+        }
+      };
+
+      const getStoredConsent = () => {
+        try {
+          const stored = localStorage.getItem('retro-gamers-cookie-consent');
+          return stored ? JSON.parse(stored) : null;
+        } catch {
+          return null;
+        }
+      };
+
+      window.addEventListener('retro-gamers:cookie-consent', (event) => {
+        applyConsent(event.detail);
+      });
+
+      const storedConsent = getStoredConsent();
+
+      if (storedConsent) {
+        applyConsent(storedConsent);
+      }
+    })();
+  </script>
+)}

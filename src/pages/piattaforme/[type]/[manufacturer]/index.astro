@@ -47,12 +47,20 @@ const platforms = await getPlatformsByTypeAndManufacturer(
   platformType,
   manufacturer
 );
+
+const resolvedManufacturer =
+  manufacturerData ||
+  platforms[0]?.manufacturer ||
+  {
+    name: 'Produttore',
+    slug: manufacturer
+  };
 ---
 
 <BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
   <ManufacturerPage
     type={platformType}
-    manufacturer={manufacturerData}
+    manufacturer={resolvedManufacturer}
     platforms={platforms}
   />
 </BaseLayout>

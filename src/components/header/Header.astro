@@ -3,7 +3,7 @@ import Search from './Search.astro';
 import ReviewsMenu from './ReviewsMenu.astro';
 import NewsMenu from './NewsMenu.astro';
 import PlatformsMenu from './PlatformsMenu.astro';
-
+import MobileMenu from './MobileMenu.astro';
 import '../../styles/components/header/header.css';
 
 const { reviews = [], news = [] } = Astro.props;
@@ -28,9 +28,13 @@ const { reviews = [], news = [] } = Astro.props;
 
       <!-- RECENSIONI -->
       <div class="site-header__nav-item has-dropdown">
-        <a href="/recensioni/" class="site-header__nav-link">
-          Recensioni
-        </a>
+<button
+  type="button"
+  class="site-header__nav-link site-header__nav-button"
+  aria-haspopup="true"
+>
+  Recensioni
+</button>
 
         <div class="site-header__dropdown">
           <ReviewsMenu posts={reviews} />
@@ -39,9 +43,13 @@ const { reviews = [], news = [] } = Astro.props;
 
       <!-- NEWS -->
       <div class="site-header__nav-item has-dropdown">
-        <a href="/news/" class="site-header__nav-link">
-          News
-        </a>
+   <button
+  type="button"
+  class="site-header__nav-link site-header__nav-button"
+  aria-haspopup="true"
+>
+  News
+</button>
 
         <div class="site-header__dropdown">
           <NewsMenu posts={news} />
@@ -61,9 +69,13 @@ const { reviews = [], news = [] } = Astro.props;
       </a>
 
      <div class="site-header__nav-item has-dropdown">
-  <a href="/piattaforme/" class="site-header__nav-link">
-    Piattaforme
-  </a>
+<button
+  type="button"
+  class="site-header__nav-link site-header__nav-button"
+  aria-haspopup="true"
+>
+  Piattaforme
+</button>
 
   <div class="site-header__dropdown">
     <PlatformsMenu />
@@ -73,10 +85,40 @@ const { reviews = [], news = [] } = Astro.props;
     </nav>
 
     <!-- ACTIONS -->
-    <div class="site-header__actions">
-      <Search />
-    </div>
+  <div class="site-header__actions">
+  <Search />
+
+  <button
+    type="button"
+    class="mobile-menu-toggle"
+    aria-label="Apri menu"
+    aria-controls="mobile-menu"
+    aria-expanded="false"
+    data-mobile-menu-toggle
+  >
+    <svg
+      class="mobile-menu-toggle__icon mobile-menu-toggle__icon--open"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path d="M4 7H20" />
+      <path d="M4 12H20" />
+      <path d="M4 17H20" />
+    </svg>
+
+    <svg
+      class="mobile-menu-toggle__icon mobile-menu-toggle__icon--close"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path d="M6 6L18 18" />
+      <path d="M18 6L6 18" />
+    </svg>
+  </button>
+</div>
 
   </div>
 
 </header>
+
+<MobileMenu />

@@ -1,0 +1,69 @@
+---
+const { post } = Astro.props;
+
+const monetization = post?.monetization || {};
+
+const affiliateUrl = monetization.affiliateUrl || '';
+const affiliateLabel = monetization.affiliateLabel || 'Vai all’offerta';
+const priceLabel = monetization.priceLabel || '';
+const disclaimer =
+  monetization.disclaimer ||
+  'Link affiliato: se acquisti tramite questo collegamento, Retro-Gamers.it può ricevere una piccola commissione senza costi aggiuntivi per te.';
+
+const productTypeLabels = {
+  book: 'Libro',
+  hardware: 'Hardware',
+  accessory: 'Accessorio',
+  software: 'Software',
+  gadget: 'Gadget',
+  service: 'Servizio',
+  other: 'Consigliato'
+};
+
+const productType =
+  productTypeLabels[monetization.productType] || 'Consigliato';
+
+const isVisible =
+  monetization.isAffiliate &&
+  affiliateUrl;
+---
+
+{isVisible && (
+  <aside class="affiliate-box">
+
+    <div class="affiliate-box__content">
+      <span>{productType}</span>
+
+      <h2>
+        Prodotto consigliato
+      </h2>
+
+    
+        <p>
+  Una proposta collegata al tema dell’articolo, utile per approfondire o rivivere l’esperienza originale.
+</p>
+    
+
+      {priceLabel && (
+        <strong class="affiliate-box__price">
+          {priceLabel}
+        </strong>
+      )}
+
+      <small>
+        {disclaimer}
+      </small>
+    </div>
+
+    <div class="affiliate-box__action">
+      <a
+        href={affiliateUrl}
+        target="_blank"
+        rel="sponsored nofollow noopener noreferrer"
+      >
+        {affiliateLabel}
+      </a>
+    </div>
+
+  </aside>
+)}

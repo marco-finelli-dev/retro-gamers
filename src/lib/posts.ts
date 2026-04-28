@@ -468,3 +468,91 @@ export function groupPosts(posts: Post[] = []) {
     affiliate: normalized.filter((post) => post.monetization?.isAffiliate)
   };
 }
+
+export function getRelatedPosts(
+  currentPost: Post,
+  posts: Post[] = [],
+  limit = 3
+): Post[] {
+  if (!currentPost?._id) return [];
+
+  const currentPlatformSlugs = new Set(
+    currentPost.platforms?.map((item) => item.slug).filter(Boolean)
+  );
+
+  const currentCategorySlugs = new Set(
+    currentPost.categories?.map((item) => item.slug).filter(Boolean)
+  );
+
+  const currentGenreSlugs = new Set(
+    currentPost.genres?.map((item) => item.slug).filter(Boolean)
+  );
+
+  const currentDeveloperSlugs = new Set(
+    currentPost.developers?.map((item) => item.slug).filter(Boolean)
+  );
+
+  const scorePost = (post: Post) => {
+    let score = 0;
+
+    if (!post?._id || post._id === currentPost._id) return -999;
+
+    if (post.type === currentPost.type) score += 5;
+
+    if (
+      post.platforms?.some((item) =>
+        currentPlatformSlugs.has(item.slug)
+      )
+    ) {
+      score += 4;
+    }
+
+    if (
+      post.categories?.some((item) =>
+        currentCategorySlugs.has(item.slug)
+      )
+    ) {
+      score += 3;
+    }
+
+    if (
+      post.genres?.some((item) =>
+        currentGenreSlugs.has(item.slug)
+      )
+    ) {
+      score += 2;
+    }
+
+    if (
+      post.developers?.some((item) =>
+        currentDeveloperSlugs.has(item.slug)
+      )
+    ) {
+      score += 2;
+    }
+
+    if (post.featuredImage?.asset?.url) score += 1;
+
+    return score;
+  };
+
+  return posts
+    .filter((post) => post?._id && post._id !== currentPost._id)
+    .map((post) => ({
+      post,
+      relatedScore: scorePost(post)
+    }))
+    .filter((item) => item.relatedScore > 0)
+    .sort((a, b) => {
+      if (b.relatedScore !== a.relatedScore) {
+        return b.relatedScore - a.relatedScore;
+      }
+
+      return (
+        new Date(b.post.publishedAt || 0).getTime() -
+        new Date(a.post.publishedAt || 0).getTime()
+      );
+    })
+    .slice(0, limit)
+    .map((item) => item.post);
+}

@@ -300,209 +300,287 @@
   
   
   /* ========================================
-     PLATFORM GRID / CARD
-  ======================================== */
-  
-  .platform-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px;
-  }
-  
-  .platform-card {
-    position: relative;
-    overflow: hidden;
-  
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  
-    border-radius: 24px;
-  
-    background:
-      linear-gradient(180deg, rgba(18,18,26,0.74), rgba(7,7,11,0.96));
-  
-    border: 1px solid rgba(255,255,255,0.085);
-  
-    box-shadow:
-      0 18px 44px rgba(0,0,0,0.42),
-      inset 0 1px 0 rgba(255,255,255,0.045);
-  
-    transition:
-      transform var(--transition-smooth),
-      border-color var(--transition-fast),
-      box-shadow var(--transition-smooth);
-  }
-  
-  .platform-card:hover {
-    transform: translateY(-4px);
-  
-    border-color: rgba(34,240,255,0.24);
-  
-    box-shadow:
-      0 24px 58px rgba(0,0,0,0.56),
-      0 0 22px rgba(34,240,255,0.10),
-      inset 0 1px 0 rgba(255,255,255,0.06);
-  }
-  
-  .platform-card__visual {
-    position: relative;
-    overflow: hidden;
-  
-    display: grid;
-    place-items: center;
-  
-    aspect-ratio: 16 / 10;
-    background: #050507;
-  }
-  
-  .platform-card__cover {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  
-    filter:
-      brightness(0.90)
-      contrast(1.05)
-      saturate(1.05);
-  
-    transition:
-      transform 0.68s cubic-bezier(0.22, 1, 0.36, 1),
-      filter var(--transition-smooth);
-  }
-  
-  .platform-card:hover .platform-card__cover {
-    transform: scale(1.07);
-  
-    filter:
-      brightness(1.02)
-      contrast(1.08)
-      saturate(1.12);
-  }
-  
-  .platform-card__fallback {
-    display: grid;
-    place-items: center;
-    gap: 18px;
-  
-    width: 100%;
-    height: 100%;
-    padding: 30px;
-  
-    background:
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.12), transparent 42%),
-      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.12), transparent 46%),
-      linear-gradient(180deg, rgba(12,12,18,0.96), rgba(5,5,8,1));
-  }
-  
-  .platform-card__logo {
-    max-width: 76%;
-    max-height: 90px;
-    object-fit: contain;
-  
-    filter:
-      drop-shadow(0 0 16px rgba(34,240,255,0.18));
-  }
-  
-  .platform-card__manufacturer-logo {
-    max-width: 38%;
-    max-height: 46px;
-    object-fit: contain;
-  
-    opacity: 0.82;
-  
-    filter:
-      drop-shadow(0 0 12px rgba(34,240,255,0.10));
-  }
-  
-  .platform-card__logo-badge {
-    position: absolute;
-    left: 14px;
-    bottom: 14px;
-    z-index: 2;
-  
-    display: grid;
-    place-items: center;
-  
-    min-width: 112px;
-    max-width: 180px;
-    height: 52px;
-    padding: 9px 14px;
-  
-    border-radius: 16px;
-  
-    background:
-      linear-gradient(180deg, rgba(15,18,28,0.86), rgba(4,6,12,0.96)),
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.20), transparent 48%),
-      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.14), transparent 52%);
-  
-    border: 1px solid rgba(34,240,255,0.20);
-  
-    box-shadow:
-      0 14px 28px rgba(0,0,0,0.42),
-      0 0 18px rgba(34,240,255,0.10),
-      inset 0 1px 0 rgba(255,255,255,0.10);
-  }
-  
-  .platform-card__logo-badge img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  
-    filter:
-      drop-shadow(0 0 8px rgba(255,255,255,0.20))
-      drop-shadow(0 2px 4px rgba(0,0,0,0.26));
-  }
-  
-  .platform-card__body {
-    padding: 17px;
-  }
-  
-  .platform-card__meta,
-  .platform-card__footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  
-  .platform-card__meta {
-    margin-bottom: 10px;
-  }
-  
-  .platform-card__meta span,
-  .platform-card__footer span {
-    font-size: 10px;
-    line-height: 1;
-    font-weight: 850;
-  
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-  
-    color: var(--color-primary);
-  }
-  
-  .platform-card__meta small,
-  .platform-card__footer small {
-    font-size: 11px;
-    line-height: 1;
-    font-weight: 850;
-  
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-  
-    color: var(--color-accent);
-  }
-  
-  .platform-card h2 {
-    margin: 0 0 16px;
-  
-    font-size: 21px;
-    line-height: 1.12;
-    font-weight: 820;
-  
-    color: rgba(255,255,255,0.94);
-  }
+   PLATFORM GRID / CARD
+======================================== */
+
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.platform-card {
+  position: relative;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  border-radius: 24px;
+
+  background:
+    linear-gradient(180deg, rgba(18,18,26,0.74), rgba(7,7,11,0.96));
+
+  border: 1px solid rgba(255,255,255,0.085);
+
+  box-shadow:
+    0 18px 44px rgba(0,0,0,0.42),
+    inset 0 1px 0 rgba(255,255,255,0.045);
+
+  transition:
+    transform var(--transition-smooth),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-smooth);
+}
+
+.platform-card:hover {
+  transform: translateY(-4px);
+
+  border-color: rgba(34,240,255,0.24);
+
+  box-shadow:
+    0 24px 58px rgba(0,0,0,0.56),
+    0 0 22px rgba(34,240,255,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+
+/* ========================================
+   PLATFORM CARD VISUAL
+======================================== */
+
+.platform-card__visual {
+  position: relative;
+  overflow: hidden;
+
+  display: grid;
+  place-items: center;
+
+  aspect-ratio: 16 / 8.8;
+
+  background:
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.075), transparent 40%),
+    #050507;
+}
+
+.platform-card__visual::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+
+  background:
+    radial-gradient(
+      circle at 14% 10%,
+      rgba(34,240,255,0.18),
+      rgba(34,240,255,0.070) 24%,
+      transparent 54%
+    ),
+    radial-gradient(
+      circle at 0% 0%,
+      rgba(255,255,255,0.055),
+      transparent 34%
+    );
+
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.platform-card__cover,
+.platform-card__fallback {
+  position: relative;
+  z-index: 1;
+}
+
+.platform-card__visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(34,240,255,0.10),
+      transparent 38%
+    );
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: opacity var(--transition-fast);
+}
+
+.platform-card:hover .platform-card__visual::after {
+  opacity: 1;
+}
+
+.platform-card__cover {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+  padding: 22px 24px 8px;
+
+  filter:
+    brightness(0.92)
+    contrast(1.05)
+    saturate(1.05);
+
+  transition:
+    transform 0.68s cubic-bezier(0.22, 1, 0.36, 1),
+    filter var(--transition-smooth);
+}
+
+.platform-card:hover .platform-card__cover {
+  transform: scale(1.045);
+
+  filter:
+    brightness(1.02)
+    contrast(1.08)
+    saturate(1.12);
+}
+
+.platform-card__fallback {
+  display: grid;
+  place-items: center;
+  gap: 18px;
+
+  width: 100%;
+  height: 100%;
+  padding: 30px;
+
+  background:
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.12), transparent 42%),
+    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.12), transparent 46%),
+    linear-gradient(180deg, rgba(12,12,18,0.96), rgba(5,5,8,1));
+}
+
+.platform-card__logo {
+  max-width: 76%;
+  max-height: 90px;
+  object-fit: contain;
+
+  filter:
+    drop-shadow(0 0 16px rgba(34,240,255,0.18));
+}
+
+.platform-card__manufacturer-logo {
+  max-width: 38%;
+  max-height: 46px;
+  object-fit: contain;
+
+  opacity: 0.82;
+
+  filter:
+    drop-shadow(0 0 12px rgba(34,240,255,0.10));
+}
+
+
+/* ========================================
+   PLATFORM CARD BODY
+======================================== */
+
+.platform-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: end;
+  gap: 16px;
+
+  min-height: 104px;
+  padding: 16px 18px 18px;
+}
+
+.platform-card__main span {
+  display: block;
+  margin-bottom: 8px;
+
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 850;
+
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+
+  color: var(--color-primary);
+}
+
+.platform-card__main h2 {
+  margin: 0;
+
+  font-family: var(--font-base);
+  font-size: 22px;
+  line-height: 1.08;
+  font-weight: 800;
+
+  color: rgba(255,255,255,0.94);
+
+  transition:
+    color var(--transition-fast),
+    text-shadow var(--transition-fast);
+}
+
+.platform-card:hover .platform-card__main h2 {
+  color: var(--color-primary);
+  text-shadow: 0 0 13px rgba(34,240,255,0.20);
+}
+
+.platform-card__facts {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 8px;
+
+  white-space: nowrap;
+}
+
+.platform-card__facts span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 30px;
+  padding: 0 10px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 850;
+
+  text-transform: uppercase;
+  letter-spacing: 0.65px;
+
+  color: var(--color-primary);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(16,22,32,0.88),
+      rgba(5,7,14,0.98)
+    ),
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.16), transparent 48%);
+
+  border: 1px solid rgba(34,240,255,0.22);
+
+  box-shadow:
+    0 10px 22px rgba(0,0,0,0.24),
+    0 0 14px rgba(34,240,255,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.platform-card__facts span:first-child {
+  color: var(--color-accent);
+
+  border-color: rgba(255,217,61,0.22);
+
+  box-shadow:
+    0 10px 22px rgba(0,0,0,0.24),
+    0 0 14px rgba(255,217,61,0.07),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
   
   
   /* ========================================
@@ -572,40 +650,6 @@
   /* ========================================
      MANUFACTURER DETAIL
   ======================================== */
-  
-  .platforms-hero__manufacturer-logo {
-    display: grid;
-    place-items: center;
-  
-    width: fit-content;
-    max-width: 300px;
-    min-height: 82px;
-    margin-bottom: 18px;
-    padding: 16px 22px;
-  
-    border-radius: 22px;
-  
-    background:
-      linear-gradient(180deg, rgba(15,18,28,0.86), rgba(4,6,12,0.96)),
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.18), transparent 46%),
-      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.14), transparent 50%);
-  
-    border: 1px solid rgba(34,240,255,0.18);
-  
-    box-shadow:
-      0 18px 42px rgba(0,0,0,0.34),
-      inset 0 1px 0 rgba(255,255,255,0.10);
-  }
-  
-  .platforms-hero__manufacturer-logo img {
-    max-width: 250px;
-    max-height: 64px;
-    object-fit: contain;
-  
-    filter:
-      drop-shadow(0 0 8px rgba(255,255,255,0.18))
-      drop-shadow(0 2px 4px rgba(0,0,0,0.22));
-  }
   
   .platforms-back-link {
     display: inline-flex;
@@ -1058,4 +1102,15 @@
         font-size: 15px;
         line-height: 1.7;
       }
-  }
+
+        .platform-card__body {
+          grid-template-columns: 1fr;
+          align-items: start;
+          min-height: 0;
+        }
+      
+        .platform-card__facts {
+          justify-content: flex-start;
+          flex-wrap: wrap;
+        }
+      }

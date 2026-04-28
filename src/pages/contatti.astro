@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+import { getAllPosts, groupPosts } from '../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+---
+
+<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+  <main class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Contatti</span>
+        <h1>Contatti</h1>
+        <p>
+          Per segnalazioni, richieste, collaborazioni o informazioni editoriali.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <h2>Scrivici</h2>
+
+        <p>
+          Per contattare Retro-Gamers.it puoi scrivere all’indirizzo:
+          <a href="mailto:guybrush@retro-gamers.it">guybrush@retro-gamers.it</a>.
+        </p>
+
+        <p>
+          Puoi usare questo indirizzo per segnalare errori, proporre argomenti,
+          inviare suggerimenti, richiedere informazioni su contenuti pubblicati o
+          proporre collaborazioni.
+        </p>
+
+        <h2>Social</h2>
+
+        <p>
+          Retro-Gamers.it è presente anche sui social network. Puoi seguirci per
+          aggiornamenti, nuovi articoli, discussioni e contenuti legati al mondo
+          retro-gaming.
+        </p>
+
+        <ul>
+          <li>
+            Facebook:
+            <a href="https://www.facebook.com/profile.php?id=100063648424822" target="_blank" rel="noopener noreferrer">
+              Retro-Gamers.it
+            </a>
+          </li>
+          <li>
+            Instagram:
+            <a href="https://www.instagram.com/retro_gamers.it/" target="_blank" rel="noopener noreferrer">
+              @retro_gamers.it
+            </a>
+          </li>
+          <li>
+            X:
+            <a href="https://x.com/RetroGamers13" target="_blank" rel="noopener noreferrer">
+              @RetroGamers13
+            </a>
+          </li>
+        </ul>
+
+        <h2>Privacy</h2>
+
+        <p>
+          Le comunicazioni inviate via email saranno utilizzate esclusivamente per
+          rispondere alla richiesta ricevuta. Per maggiori informazioni consulta la
+          <a href="/privacy-policy/">Privacy Policy</a>.
+        </p>
+
+      </article>
+
+    </div>
+  </main>
+</BaseLayout>

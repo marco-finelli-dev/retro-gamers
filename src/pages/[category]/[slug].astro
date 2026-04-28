@@ -3,7 +3,7 @@ import Layout from '../../layouts/BaseLayout.astro';
 import ArticlePage from '../../components/article/ArticlePage.astro';
 
 import { client } from '../../lib/sanity';
-import { getAllPosts, groupPosts } from '../../lib/posts';
+import { getAllPosts, groupPosts, getRelatedPosts } from '../../lib/posts';
 
 const { category, slug } = Astro.params;
 
@@ -152,6 +152,16 @@ const post = await client.fetch(`
 
   rating,
 
+  monetization {
+  isAffiliate,
+  productType,
+  affiliateUrl,
+  affiliateLabel,
+  priceLabel,
+  disclaimer,
+  priority
+},
+
   content[]{
     ...,
 
@@ -242,9 +252,38 @@ const hydratedPost = {
 };
 
 const allPosts = await getAllPosts();
-const { reviews, news } = groupPosts(allPosts);
+const grouped = groupPosts(allPosts);
+
+const relatedPosts = getRelatedPosts(hydratedPost, grouped.all, 3);
+const siteUrl = 'https://www.retro-gamers.it';
+
+const pageTitle =
+  post.seoTitle ||
+  post.title;
+
+const pageDescription =
+  post.excerpt ||
+  post.subtitle ||
+  'Recensioni, news, speciali e guide dal mondo retro-gaming.';
+
+const pageImage =
+  post.featuredImage?.asset?.url ||
+  post.gameInfo?.cover?.asset?.url ||
+  '/og-image.jpg';
+
+const canonicalUrl =
+  `${siteUrl}/${category}/${slug}/`;
 ---
 
-<Layout reviews={reviews} news={news}>
-  <ArticlePage post={hydratedPost} />
+<Layout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title={pageTitle}
+  description={pageDescription}
+  image={pageImage}
+  canonical={canonicalUrl}
+  type="article"
+  publishedAt={post.publishedAt}
+>
+  <ArticlePage post={hydratedPost} relatedPosts={relatedPosts} />
 </Layout>

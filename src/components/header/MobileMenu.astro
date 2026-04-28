@@ -1,0 +1,59 @@
+---
+const mainLinks = [
+  { label: 'Recensioni', href: '/recensioni/' },
+  { label: 'News', href: '/news/' },
+  { label: 'Speciali', href: '/speciali/' },
+  { label: 'Guide', href: '/guide/' },
+  { label: 'Memories', href: '/memories/' },
+  { label: 'Interviste', href: '/interviste/' },
+  { label: 'Hardware', href: '/hardware/' }
+];
+
+const platformLinks = [
+  { label: 'Tutte le piattaforme', href: '/piattaforme/' },
+  { label: 'Console', href: '/piattaforme/console/' },
+  { label: 'Computer', href: '/piattaforme/computer/' },
+  { label: 'Arcade', href: '/piattaforme/arcade/' }
+];
+---
+
+<div class="mobile-menu" id="mobile-menu" aria-hidden="true" data-mobile-menu>
+  <div class="mobile-menu__backdrop" data-mobile-menu-close></div>
+
+  <nav class="mobile-menu__panel" aria-label="Menu mobile">
+
+    <div class="mobile-menu__header">
+      <span>Menu</span>
+
+      <button
+        type="button"
+        class="mobile-menu__close"
+        aria-label="Chiudi menu"
+        data-mobile-menu-close
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="mobile-menu__section">
+      <span>Scopri</span>
+
+      <div class="mobile-menu__links">
+        {mainLinks.map((item) => (
+          <a href={item.href}>{item.label}</a>
+        ))}
+      </div>
+    </div>
+
+    <div class="mobile-menu__section">
+      <span>Piattaforme</span>
+
+      <div class="mobile-menu__links">
+        {platformLinks.map((item) => (
+          <a href={item.href}>{item.label}</a>
+        ))}
+      </div>
+    </div>
+
+  </nav>
+</div>

@@ -1,0 +1,248 @@
+---
+---
+
+<div class="cookie-consent" data-cookie-consent hidden>
+  <div class="cookie-consent__panel">
+
+    <div class="cookie-consent__content">
+      <span class="cookie-consent__eyebrow">Privacy</span>
+
+      <h2>Preferenze cookie</h2>
+
+      <p>
+        Usiamo cookie tecnici necessari al funzionamento del sito e, solo con il tuo consenso,
+        strumenti di analisi e contenuti incorporati da servizi di terze parti.
+      </p>
+
+      <p>
+        Puoi accettare tutto, rifiutare le categorie non necessarie o personalizzare
+        le tue preferenze.
+      </p>
+    </div>
+
+    <div class="cookie-consent__preferences" data-cookie-preferences hidden>
+
+      <label class="cookie-consent__option is-disabled">
+        <span>
+          <strong>Necessari</strong>
+          <small>Servono al funzionamento del sito e non possono essere disattivati.</small>
+        </span>
+
+        <input type="checkbox" checked disabled />
+      </label>
+
+      <label class="cookie-consent__option">
+        <span>
+          <strong>Analytics</strong>
+          <small>Ci aiutano a capire quali contenuti vengono letti e come migliorare il sito.</small>
+        </span>
+
+        <input type="checkbox" data-cookie-category="analytics" />
+      </label>
+
+      <label class="cookie-consent__option">
+        <span>
+          <strong>Contenuti di terze parti</strong>
+          <small>Permettono di visualizzare embed come video YouTube.</small>
+        </span>
+
+        <input type="checkbox" data-cookie-category="thirdParty" />
+      </label>
+
+    </div>
+
+    <div class="cookie-consent__actions">
+      <button type="button" class="cookie-consent__button cookie-consent__button--ghost" data-cookie-reject>
+        Rifiuta
+      </button>
+
+      <button type="button" class="cookie-consent__button cookie-consent__button--ghost" data-cookie-customize>
+        Personalizza
+      </button>
+
+      <button type="button" class="cookie-consent__button cookie-consent__button--primary" data-cookie-accept>
+        Accetta tutto
+      </button>
+
+      <button type="button" class="cookie-consent__button cookie-consent__button--primary" data-cookie-save hidden>
+        Salva preferenze
+      </button>
+    </div>
+
+    <a href="/cookie-policy/" class="cookie-consent__link">
+      Leggi la Cookie Policy
+    </a>
+
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const STORAGE_KEY = 'retro-gamers-cookie-consent';
+
+    const defaultConsent = {
+      necessary: true,
+      analytics: false,
+      thirdParty: false,
+      updatedAt: null
+    };
+
+    const getStoredConsent = () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const saveConsent = (consent) => {
+      const value = {
+        ...defaultConsent,
+        ...consent,
+        necessary: true,
+        updatedAt: new Date().toISOString()
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+
+      window.dispatchEvent(
+        new CustomEvent('retro-gamers:cookie-consent', {
+          detail: value
+        })
+      );
+
+      return value;
+    };
+
+    const openPreferences = () => {
+      const banner = document.querySelector('[data-cookie-consent]');
+      const preferences = document.querySelector('[data-cookie-preferences]');
+      const customizeButton = document.querySelector('[data-cookie-customize]');
+      const acceptButton = document.querySelector('[data-cookie-accept]');
+      const saveButton = document.querySelector('[data-cookie-save]');
+
+      if (!banner) return;
+
+      banner.hidden = false;
+
+      requestAnimationFrame(() => {
+        banner.classList.add('is-visible');
+      });
+
+      if (preferences) preferences.hidden = false;
+      if (customizeButton) customizeButton.hidden = true;
+      if (acceptButton) acceptButton.hidden = true;
+      if (saveButton) saveButton.hidden = false;
+
+      const consent = getStoredConsent() || defaultConsent;
+
+      document.querySelectorAll('[data-cookie-category]').forEach((input) => {
+        input.checked = Boolean(consent[input.dataset.cookieCategory]);
+      });
+    };
+
+    const exposeApi = () => {
+      window.RetroGamersConsent = {
+        get: () => getStoredConsent() || defaultConsent,
+        open: openPreferences,
+        save: saveConsent
+      };
+    };
+
+    const init = () => {
+      exposeApi();
+
+      const banner = document.querySelector('[data-cookie-consent]');
+      if (!banner) return;
+
+      const preferences = banner.querySelector('[data-cookie-preferences]');
+      const acceptButton = banner.querySelector('[data-cookie-accept]');
+      const rejectButton = banner.querySelector('[data-cookie-reject]');
+      const customizeButton = banner.querySelector('[data-cookie-customize]');
+      const saveButton = banner.querySelector('[data-cookie-save]');
+
+      const closeBanner = () => {
+        banner.classList.remove('is-visible');
+
+        setTimeout(() => {
+          banner.hidden = true;
+        }, 220);
+      };
+
+      const getCustomConsent = () => {
+        const consent = {
+          necessary: true,
+          analytics: false,
+          thirdParty: false
+        };
+
+        banner.querySelectorAll('[data-cookie-category]').forEach((input) => {
+          consent[input.dataset.cookieCategory] = input.checked;
+        });
+
+        return consent;
+      };
+
+      document.querySelectorAll('[data-open-cookie-preferences]').forEach((button) => {
+        button.addEventListener('click', () => {
+          window.RetroGamersConsent?.open();
+        });
+      });
+
+      acceptButton?.addEventListener('click', () => {
+        saveConsent({
+          analytics: true,
+          thirdParty: true
+        });
+
+        closeBanner();
+      });
+
+      rejectButton?.addEventListener('click', () => {
+        saveConsent({
+          analytics: false,
+          thirdParty: false
+        });
+
+        closeBanner();
+      });
+
+    customizeButton?.addEventListener('click', () => {
+  if (preferences) preferences.hidden = false;
+  customizeButton.hidden = true;
+  if (acceptButton) acceptButton.hidden = true;
+  if (saveButton) saveButton.hidden = false;
+});
+
+      saveButton?.addEventListener('click', () => {
+        saveConsent(getCustomConsent());
+        closeBanner();
+      });
+
+      const storedConsent = getStoredConsent();
+
+      if (storedConsent) {
+        window.dispatchEvent(
+          new CustomEvent('retro-gamers:cookie-consent', {
+            detail: storedConsent
+          })
+        );
+
+        return;
+      }
+
+      banner.hidden = false;
+
+      requestAnimationFrame(() => {
+        banner.classList.add('is-visible');
+      });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>

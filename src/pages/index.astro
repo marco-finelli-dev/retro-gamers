@@ -27,7 +27,14 @@ const {
 } = groupPosts(allPosts);
 ---
 
-<BaseLayout reviews={reviews} news={news}>
+<BaseLayout
+  reviews={reviews}
+  news={news}
+  title="Retro-Gamers.it"
+  description="Recensioni, news, speciali, guide e approfondimenti dal mondo retro-gaming, console, arcade e home computer."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/"
+>
 
   <section class="home-hero">
     <div class="container">
@@ -43,11 +50,11 @@ const {
 
   <section class="home-editorial">
     <div class="container">
-    <EditorialHub
-       specials={specials}
-       memories={memories}
-       guides={guides}
-/>
+      <EditorialHub
+        specials={specials}
+        memories={memories}
+        guides={guides}
+      />
     </div>
   </section>
 
