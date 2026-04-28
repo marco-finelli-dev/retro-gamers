@@ -338,7 +338,7 @@
 
 .rg-review-card__body h3 {
   margin: 0;
-
+  min-height: calc(15px * 1.22 * 2);
   font-family: var(--font-base);
   font-size: 15px;
   line-height: 1.22;
@@ -376,19 +376,22 @@
 
 .rg-review-card__badges {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 6px;
 
+  min-height: 22px;
+  max-height: 48px;
   margin-top: 10px;
 
   min-width: 0;
+  overflow: hidden;
 }
 
 .rg-review-card__badges span {
   display: inline-flex;
   align-items: center;
 
-  max-width: 132px;
+  max-width: 126px;
 
   padding: 4px 8px;
   border-radius: 999px;
@@ -418,6 +421,13 @@
 }
 
 .rg-review-card__badges span:nth-child(2) {
+  color: rgba(34,240,255,0.88);
+
+  background: rgba(34,240,255,0.055);
+  border-color: rgba(34,240,255,0.15);
+}
+
+.rg-review-card__badges span:nth-child(3) {
   color: rgba(255,255,255,0.78);
 
   background: rgba(168,85,247,0.075);
@@ -697,6 +707,7 @@
   }
 
   .rg-review-card__body h3 {
+    min-height: calc(15px * 1.22 * 2);
     font-size: 15px;
   }
 }

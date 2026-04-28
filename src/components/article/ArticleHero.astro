@@ -16,8 +16,26 @@ const typeLabels = {
 
 const typeLabel = typeLabels[post.type] || 'Articolo';
 
-const platform = post.platforms?.[0]?.name || '';
+const platforms =
+  post.platforms?.map((platform) => {
+    const manufacturer = platform.manufacturer?.name || '';
+    const name = platform.name || '';
+
+    return [manufacturer, name].filter(Boolean).join(' ');
+  }).filter(Boolean) || [];
+
+const developer =
+  post.developers?.[0]?.name ||
+  post.publishers?.[0]?.name ||
+  '';
+
 const year = post.gameInfo?.releaseYear || '';
+
+const metaItems = [
+  developer,
+  ...platforms,
+  year
+].filter(Boolean);
 
 const publishedDate = post.publishedAt
   ? new Date(post.publishedAt).toLocaleDateString('it-IT', {
@@ -39,11 +57,6 @@ const views =
   post.viewsBase !== undefined && post.viewsBase !== null
     ? post.viewsBase
     : null;
-
-const metaItems = [
-  platform,
-  year
-].filter(Boolean);
 
 const infoItems = [
   publishedDate,

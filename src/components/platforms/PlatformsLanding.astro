@@ -11,15 +11,15 @@ const { platforms = [] } = Astro.props;
 const types = [
   {
     type: 'arcade',
-    code: 'AR'
+    icon: '/images/icons/arcade-icon.png'
   },
   {
     type: 'computer',
-    code: 'PC'
+    icon: '/images/icons/computer-icon.png'
   },
   {
     type: 'console',
-    code: 'TV'
+    icon: '/images/icons/console-icon.png'
   }
 ];
 
@@ -49,8 +49,12 @@ const countByType = (type) =>
         return (
           <a href={getPlatformTypeUrl(item.type)} class={`platform-type-card platform-type-card--${item.type}`}>
 
-            <div class="platform-type-card__code">
-              {item.code}
+            <div class="platform-type-card__icon" aria-hidden="true">
+              <img
+                src={item.icon}
+                alt=""
+                loading="lazy"
+              />
             </div>
 
             <div class="platform-type-card__content">

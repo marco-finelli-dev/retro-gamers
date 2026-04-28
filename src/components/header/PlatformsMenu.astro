@@ -6,19 +6,19 @@ const items = [
     title: 'Console',
     label: 'Sistemi da salotto',
     href: '/piattaforme/console/',
-    code: 'TV'
+    icon: '/images/icons/console-icon.png'
   },
   {
     title: 'Computer',
     label: 'Home computer',
     href: '/piattaforme/computer/',
-    code: 'PC'
+    icon: '/images/icons/computer-icon.png'
   },
   {
     title: 'Arcade',
     label: 'Cabinet e board',
     href: '/piattaforme/arcade/',
-    code: 'AR'
+    icon: '/images/icons/arcade-icon.png'
   }
 ];
 ---
@@ -32,9 +32,9 @@ const items = [
       {items.map((item) => (
         <a href={item.href} class="rg-platform-link">
 
-          <span class="rg-platform-link__icon">
-            {item.code}
-          </span>
+         <span class="rg-platform-link__icon" aria-hidden="true">
+  <img src={item.icon} alt="" loading="lazy" />
+</span>
 
           <span class="rg-platform-link__text">
             <strong>{item.title}</strong>

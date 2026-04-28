@@ -89,10 +89,17 @@ const post = await client.fetch(`
     "slug": slug.current
   },
 
-  platforms[]->{
+ platforms[]->{
+  name,
+  "slug": slug.current,
+  platformType,
+  badgeLabel,
+
+  manufacturer->{
     name,
     "slug": slug.current
-  },
+  }
+},
 
   genres[]->{
     name,

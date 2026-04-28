@@ -3,9 +3,7 @@ import '../../styles/components/platforms.css';
 import { urlFor } from '../../lib/image';
 
 import {
-  platformTypeLabels,
-  getManufacturerUrl,
-  getPlatformTypeUrl
+  platformTypeLabels
 } from '../../lib/platforms';
 
 const { platform } = Astro.props;
@@ -31,148 +29,136 @@ const logo = getLogo(platform);
 const cover = getCover(platform);
 const manufacturerLogo = getManufacturerLogo(platform);
 
-/*
-  Qui lasciamo fuori "Supporti", perché lo mostriamo già nei badge superiori.
-*/
+const chips = [
+  typeLabel,
+  platform.badgeLabel,
+  platform.specs?.media
+].filter(Boolean);
+
 const specs = [
-  { label: 'Anno', value: platform.specs?.year },
+  { label: 'Anno di uscita', value: platform.specs?.year },
   { label: 'CPU', value: platform.specs?.cpu },
   { label: 'RAM', value: platform.specs?.ram },
   { label: 'Grafica', value: platform.specs?.gpu },
   { label: 'Audio', value: platform.specs?.audio },
   { label: 'Risoluzione', value: platform.specs?.resolution }
 ].filter((item) => item.value);
+
+const historyParagraphs = platform.history
+  ? platform.history.split('\n').filter(Boolean)
+  : [];
 ---
 
 <div class="platforms-page">
   <div class="container">
 
-    <section class={`platform-detail-card platform-detail-card--${platform.platformType}`}>
+    <section class={`platform-sheet platform-sheet--${platform.platformType}`}>
 
-      <div class="platform-detail-card__media">
+      <div class="platform-sheet__grid">
 
-        {(manufacturerLogo || logo) && (
-          <div class="platform-brand-badge">
+        <div class="platform-sheet__left">
 
-            {manufacturerLogo && (
-              <div class="platform-brand-badge__manufacturer">
-                <span>Produttore</span>
-                <img
-                  src={manufacturerLogo}
-                  alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
-                  loading="eager"
-                />
-              </div>
-            )}
+          <div class="platform-sheet__visual">
 
-            {logo && (
-              <div class="platform-brand-badge__platform">
-                <span>Piattaforma</span>
-                <img
-                  src={logo}
-                  alt={platform.logo?.alt || platform.name}
-                  loading="eager"
-                />
+            {cover ? (
+              <img
+                src={cover}
+                alt={platform.cover?.alt || platform.name}
+                class="platform-sheet__cover"
+                loading="eager"
+              />
+            ) : (
+              <div class="platform-sheet__fallback">
+
+                {logo && (
+                  <img
+                    src={logo}
+                    alt={platform.logo?.alt || platform.name}
+                    loading="eager"
+                  />
+                )}
+
               </div>
             )}
 
           </div>
-        )}
 
-        <div class="platform-detail-card__visual">
+          {chips.length > 0 && (
+            <div class="platform-sheet__chips">
+              {chips.map((chip) => (
+                <span>{chip}</span>
+              ))}
+            </div>
+          )}
 
-          {cover ? (
-            <img
-              src={cover}
-              alt={platform.cover?.alt || platform.name}
-              class="platform-detail-card__cover"
-              loading="eager"
-            />
-          ) : (
-            <div class="platform-detail-card__fallback">
+          {specs.length > 0 && (
+            <section class="platform-sheet__specs">
 
-              {logo && (
-                <img
-                  src={logo}
-                  alt={platform.logo?.alt || platform.name}
-                  class="platform-detail-card__fallback-logo"
-                  loading="eager"
-                />
-              )}
+              <div class="platform-sheet__section-title">
+                <span>Scheda tecnica</span>
+              </div>
+
+              <div class="platform-spec-table">
+                {specs.map((item) => (
+                  <div class="platform-spec-row">
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
+                ))}
+              </div>
+
+            </section>
+          )}
+
+        </div>
+
+        <div class="platform-sheet__right">
+
+          {(manufacturerLogo || logo) && (
+            <div class="platform-sheet__brand">
 
               {manufacturerLogo && (
                 <img
                   src={manufacturerLogo}
                   alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
-                  class="platform-detail-card__fallback-manufacturer"
-                  loading="lazy"
+                  class="platform-sheet__manufacturer-logo"
+                  loading="eager"
+                />
+              )}
+
+              {manufacturerLogo && logo && (
+                <span class="platform-sheet__brand-separator" aria-hidden="true"></span>
+              )}
+
+              {logo && (
+                <img
+                  src={logo}
+                  alt={platform.logo?.alt || platform.name}
+                  class="platform-sheet__platform-logo"
+                  loading="eager"
                 />
               )}
 
             </div>
           )}
 
-        </div>
+          {historyParagraphs.length > 0 && (
+            <section class="platform-sheet__history">
 
-      </div>
+              <div class="platform-sheet__section-title">
+                <span>La storia</span>
+              </div>
 
-      <div class="platform-detail-card__content">
+              <div class="platform-sheet__history-text">
+                {historyParagraphs.map((paragraph) => (
+                  <p>{paragraph}</p>
+                ))}
+              </div>
 
-        <div class="platform-detail-card__meta">
-          <a href={getPlatformTypeUrl(platform.platformType)}>
-            {typeLabel}
-          </a>
-
-          {platform.manufacturer?.slug && (
-            <>
-              <span>·</span>
-              <a href={getManufacturerUrl(platform.platformType, platform.manufacturer.slug)}>
-                {platform.manufacturer.name}
-              </a>
-            </>
-          )}
-        </div>
-
-        <h1>{platform.name}</h1>
-
-        <p>
-          Scheda tecnica e archivio dedicato a {platform.name},
-          {platform.manufacturer?.name
-            ? ` piattaforma ${typeLabel.toLowerCase()} prodotta da ${platform.manufacturer.name}.`
-            : ` piattaforma ${typeLabel.toLowerCase()}.`}
-        </p>
-
-        <div class="platform-detail-card__chips">
-
-          {platform.badgeLabel && (
-            <span>{platform.badgeLabel}</span>
-          )}
-
-          {platform.specs?.media && (
-            <span>{platform.specs.media}</span>
+            </section>
           )}
 
         </div>
-
-        {specs.length > 0 && (
-          <section class="platform-detail-specs">
-
-            <div class="platform-detail-specs__header">
-              <span>Scheda tecnica</span>
-              <h2>{platform.name}</h2>
-            </div>
-
-            <div class="platform-detail-specs__grid">
-              {specs.map((item) => (
-                <div class="platform-detail-spec">
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                </div>
-              ))}
-            </div>
-
-          </section>
-        )}
 
       </div>
 

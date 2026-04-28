@@ -46,23 +46,27 @@ const infoRows = [
     </figure>
   )}
 
-  {post.rating && (
-    <ReviewScoreBox rating={post.rating} compact />
-  )}
+  <div class="review-sidebar__sticky">
 
-  {infoRows.length > 0 && (
-    <section class="review-sidebar__panel">
-      <h2>Scheda gioco</h2>
+    {post.rating && (
+      <ReviewScoreBox rating={post.rating} compact />
+    )}
 
-      <dl class="review-info-list">
-        {infoRows.map((row) => (
-          <div>
-            <dt>{row.label}</dt>
-            <dd>{row.value}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  )}
+    {infoRows.length > 0 && (
+      <section class="review-sidebar__panel">
+        <h2>Scheda gioco</h2>
+
+        <dl class="review-info-list">
+          {infoRows.map((row) => (
+            <div>
+              <dt>{row.label}</dt>
+              <dd>{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    )}
+
+  </div>
 
 </div>

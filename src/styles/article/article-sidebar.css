@@ -3,15 +3,37 @@
 ======================================== */
 
 .article-page__sidebar {
-    position: sticky;
-    top: 112px;
-  }
+  min-width: 0;
+}
   
-  .article-sidebar,
-  .review-sidebar {
-    display: grid;
-    gap: 16px;
-  }
+.review-sidebar__sticky {
+  position: sticky;
+  top: clamp(120px, 16vh, 170px);
+
+  display: grid;
+  gap: 16px;
+}
+
+.article-sidebar,
+.review-sidebar {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.review-sidebar {
+  height: 100%;
+}
+
+.review-sidebar__sticky {
+  position: sticky;
+  top: clamp(120px, 16vh, 170px);
+
+  display: grid;
+  gap: 16px;
+
+  align-self: start;
+}
   
   
   /* ========================================
@@ -229,12 +251,21 @@
   @media (max-width: 1024px) {
     .article-page__sidebar {
       position: static;
+      align-self: auto;
+    }
+  
+    .review-sidebar {
+      height: auto;
+    }
+  
+    .review-sidebar__sticky {
+      position: static;
     }
   
     .review-sidebar:not(.has-no-cover) {
-        grid-template-columns: 180px minmax(0, 1fr);
-        align-items: start;
-      }
+      grid-template-columns: 180px minmax(0, 1fr);
+      align-items: start;
+    }
   
     .review-sidebar__cover {
       grid-row: span 3;
@@ -249,5 +280,9 @@
     .review-sidebar__cover {
       grid-row: auto;
       max-width: 220px;
+    }
+  
+    .review-sidebar__sticky {
+      position: static;
     }
   }

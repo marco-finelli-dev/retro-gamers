@@ -11,6 +11,7 @@ const {
 
 const specialItems = specials.slice(0, 3);
 const mainMemory = memories[0] || null;
+const memoryItems = memories.slice(1, 3);
 const guideItems = guides.slice(0, 3);
 
 const platformItems = [
@@ -18,20 +19,26 @@ const platformItems = [
     label: 'Console',
     description: 'Sistemi da salotto',
     href: '/piattaforme/console/',
-    code: 'TV'
+    icon: '/images/icons/console-icon.png'
   },
   {
     label: 'Computer',
     description: 'Home computer',
     href: '/piattaforme/computer/',
-    code: 'PC'
+    icon: '/images/icons/computer-icon.png'
   },
   {
     label: 'Arcade',
     description: 'Cabinet e board',
     href: '/piattaforme/arcade/',
-    code: 'AR'
+    icon: '/images/icons/arcade-icon.png'
   }
+];
+
+const fallbackGuides = [
+  'Come iniziare a collezionare',
+  'Emulazione: la guida completa',
+  'RGB: guida ai cavi e al segnale'
 ];
 
 const getImage = (post, width = 520) => {
@@ -123,6 +130,29 @@ const getCategory = (post) =>
         </a>
       )}
 
+      {memoryItems.length > 0 && (
+        <div class="memory-mini-list">
+          {memoryItems.map((post) => (
+            <a href={getPostUrl(post)} class="memory-mini-card">
+
+              <div class="memory-mini-card__image">
+                <img
+                  src={getImage(post, 220)}
+                  alt={post.featuredImage?.alt || post.title}
+                  loading="lazy"
+                />
+              </div>
+
+              <div class="memory-mini-card__content">
+                <span>{getCategory(post)}</span>
+                <strong>{post.title}</strong>
+              </div>
+
+            </a>
+          ))}
+        </div>
+      )}
+
     </section>
 
 
@@ -141,27 +171,35 @@ const getCategory = (post) =>
           {guideItems.length > 0 ? (
             guideItems.map((post) => (
               <a href={getPostUrl(post)} class="quick-guide">
-                <span aria-hidden="true">RG</span>
+
+                <span class="quick-guide__icon" aria-hidden="true">
+                  <img
+                    src="/images/icons/retro-gamers-section-logo.png"
+                    alt=""
+                    loading="lazy"
+                  />
+                </span>
+
                 <strong>{post.title}</strong>
+
               </a>
             ))
           ) : (
-            <>
+            fallbackGuides.map((title) => (
               <a href="/guide/" class="quick-guide">
-                <span aria-hidden="true">01</span>
-                <strong>Come iniziare a collezionare</strong>
-              </a>
 
-              <a href="/guide/" class="quick-guide">
-                <span aria-hidden="true">02</span>
-                <strong>Emulazione: la guida completa</strong>
-              </a>
+                <span class="quick-guide__icon" aria-hidden="true">
+                  <img
+                    src="/images/icons/retro-gamers-section-logo.png"
+                    alt=""
+                    loading="lazy"
+                  />
+                </span>
 
-              <a href="/guide/" class="quick-guide">
-                <span aria-hidden="true">03</span>
-                <strong>RGB: guida ai cavi e al segnale</strong>
+                <strong>{title}</strong>
+
               </a>
-            </>
+            ))
           )}
 
         </div>
@@ -184,8 +222,8 @@ const getCategory = (post) =>
           {platformItems.map((item) => (
             <a href={item.href} class="platform-shortcut">
 
-              <span class="platform-shortcut__code">
-                {item.code}
+              <span class="platform-shortcut__icon" aria-hidden="true">
+                <img src={item.icon} alt="" loading="lazy" />
               </span>
 
               <span class="platform-shortcut__text">

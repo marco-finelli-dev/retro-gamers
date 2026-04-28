@@ -65,6 +65,11 @@ const year = post.gameInfo?.releaseYear || '';
 const genres = post.genres?.map((genre) => genre.name).filter(Boolean) || [];
 const mode = post.modes?.[0]?.name || '';
 
+const genreBadges = genres.slice(0, 2).map((genre) => ({
+  label: genre,
+  title: genre
+}));
+
 const genreLabel = genres.slice(0, 2).join(' · ');
 
 const platformBadge =
@@ -86,10 +91,7 @@ const metaItems = [
 ].filter(Boolean);
 
 const badges = [
-  genreLabel && {
-    label: genreLabel,
-    title: genres.join(' · ')
-  },
+  ...genreBadges,
 
   mode && {
     label: compactMode(mode),
@@ -116,14 +118,13 @@ const badges = [
 
   <div class="rg-review-card__body">
     <h3>{post.title}</h3>
-
-    {badges.length > 0 && (
-      <div class="rg-review-card__badges">
-        {badges.slice(0, 2).map((badge) => (
-          <span title={badge.title}>{badge.label}</span>
-        ))}
-      </div>
-    )}
+{badges.length > 0 && (
+  <div class="rg-review-card__badges">
+    {badges.slice(0, 3).map((badge) => (
+      <span title={badge.title}>{badge.label}</span>
+    ))}
+  </div>
+)}
   </div>
 
   <div class="rg-review-card__footer">

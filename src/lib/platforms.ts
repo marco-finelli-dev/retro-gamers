@@ -23,6 +23,8 @@ export type Platform = {
     alt?: string;
   };
 
+  history?: string;
+
   manufacturer?: {
     name: string;
     slug: string;
@@ -70,6 +72,7 @@ export async function getAllPlatforms(): Promise<Platform[]> {
       "slug": slug.current,
       platformType,
       badgeLabel,
+      history,
 
       logo {
         asset->{ url },
@@ -110,6 +113,7 @@ export async function getPlatformsByType(type: PlatformType): Promise<Platform[]
       "slug": slug.current,
       platformType,
       badgeLabel,
+      history,
 
       logo {
         asset->{ url },
@@ -197,6 +201,7 @@ export async function getPlatformsByTypeAndManufacturer(
         "slug": slug.current,
         platformType,
         badgeLabel,
+        history,
   
         logo {
           asset->{ url },
@@ -245,6 +250,7 @@ export async function getPlatformsByTypeAndManufacturer(
         "slug": slug.current,
         platformType,
         badgeLabel,
+        history,
   
         logo {
           asset->{ url },

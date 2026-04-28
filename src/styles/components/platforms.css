@@ -5,7 +5,6 @@
 .platforms-page {
     position: relative;
     z-index: 1;
-  
     padding: 58px 0 64px;
   }
   
@@ -26,11 +25,7 @@
     border-radius: 26px;
   
     background:
-      linear-gradient(
-        180deg,
-        rgba(15,15,22,0.76),
-        rgba(8,8,12,0.96)
-      ),
+      linear-gradient(180deg, rgba(15,15,22,0.76), rgba(8,8,12,0.96)),
       radial-gradient(circle at 0% 0%, rgba(34,240,255,0.10), transparent 34%),
       radial-gradient(circle at 100% 100%, rgba(168,85,247,0.12), transparent 42%);
   
@@ -52,7 +47,6 @@
   
     background-size: 54px 54px;
     opacity: 0.18;
-  
     pointer-events: none;
   }
   
@@ -126,11 +120,7 @@
     border-radius: 26px;
   
     background:
-      linear-gradient(
-        180deg,
-        rgba(18,18,26,0.74),
-        rgba(7,7,11,0.96)
-      );
+      linear-gradient(180deg, rgba(18,18,26,0.74), rgba(7,7,11,0.96));
   
     border: 1px solid rgba(255,255,255,0.085);
   
@@ -168,7 +158,7 @@
     pointer-events: none;
   }
   
-  .platform-type-card__code {
+  .platform-type-card__icon {
     position: absolute;
     top: 22px;
     right: 22px;
@@ -181,26 +171,30 @@
     height: 58px;
     border-radius: 18px;
   
-    font-family: var(--font-display);
-    font-size: 22px;
-    line-height: 1;
-    font-weight: 900;
-  
-    color: var(--color-primary);
-  
     background:
       linear-gradient(
         180deg,
-        rgba(10,10,16,0.86),
-        rgba(4,4,8,0.98)
-      );
+        rgba(16,22,32,0.88),
+        rgba(5,7,14,0.98)
+      ),
+      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.18), transparent 48%),
+      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.12), transparent 52%);
   
-    border: 1px solid rgba(34,240,255,0.30);
+    border: 1px solid rgba(34,240,255,0.22);
   
     box-shadow:
       0 12px 26px rgba(0,0,0,0.44),
       0 0 16px rgba(34,240,255,0.12),
       inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+  
+  .platform-type-card__icon img {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+  
+    filter:
+      drop-shadow(0 0 10px rgba(34,240,255,0.28));
   }
   
   .platform-type-card__content {
@@ -326,11 +320,7 @@
     border-radius: 24px;
   
     background:
-      linear-gradient(
-        180deg,
-        rgba(18,18,26,0.74),
-        rgba(7,7,11,0.96)
-      );
+      linear-gradient(180deg, rgba(18,18,26,0.74), rgba(7,7,11,0.96));
   
     border: 1px solid rgba(255,255,255,0.085);
   
@@ -442,11 +432,7 @@
     border-radius: 16px;
   
     background:
-      linear-gradient(
-        180deg,
-        rgba(15,18,28,0.86),
-        rgba(4,6,12,0.96)
-      ),
+      linear-gradient(180deg, rgba(15,18,28,0.86), rgba(4,6,12,0.96)),
       radial-gradient(circle at 0% 0%, rgba(34,240,255,0.20), transparent 48%),
       radial-gradient(circle at 100% 100%, rgba(168,85,247,0.14), transparent 52%);
   
@@ -530,11 +516,7 @@
     text-align: center;
   
     background:
-      linear-gradient(
-        180deg,
-        rgba(15,15,22,0.72),
-        rgba(8,8,12,0.95)
-      );
+      linear-gradient(180deg, rgba(15,15,22,0.72), rgba(8,8,12,0.95));
   
     border: 1px solid rgba(255,255,255,0.08);
   
@@ -604,11 +586,7 @@
     border-radius: 22px;
   
     background:
-      linear-gradient(
-        180deg,
-        rgba(15,18,28,0.86),
-        rgba(4,6,12,0.96)
-      ),
+      linear-gradient(180deg, rgba(15,18,28,0.86), rgba(4,6,12,0.96)),
       radial-gradient(circle at 0% 0%, rgba(34,240,255,0.18), transparent 46%),
       radial-gradient(circle at 100% 100%, rgba(168,85,247,0.14), transparent 50%);
   
@@ -645,28 +623,19 @@
   }
   
   
-  /* ========================================
-     PLATFORM DETAIL CARD
-  ======================================== */
-  
-  .platform-detail-card {
+/* ========================================
+   PLATFORM SHEET
+======================================== */
+
+.platform-sheet {
     position: relative;
     overflow: hidden;
   
-    display: grid;
-    grid-template-columns: minmax(0, 0.92fr) minmax(380px, 0.78fr);
-    gap: 24px;
-  
-    padding: 24px;
-    margin-bottom: 32px;
+    padding: 26px;
     border-radius: 30px;
   
     background:
-      linear-gradient(
-        180deg,
-        rgba(15,15,22,0.78),
-        rgba(8,8,12,0.98)
-      ),
+      linear-gradient(180deg, rgba(15,15,22,0.78), rgba(8,8,12,0.98)),
       radial-gradient(circle at 0% 0%, rgba(34,240,255,0.08), transparent 38%),
       radial-gradient(circle at 100% 0%, rgba(168,85,247,0.10), transparent 42%);
   
@@ -677,7 +646,7 @@
       inset 0 1px 0 rgba(255,255,255,0.045);
   }
   
-  .platform-detail-card::before {
+  .platform-sheet::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -692,114 +661,44 @@
     pointer-events: none;
   }
   
-  .platform-detail-card > * {
+  .platform-sheet > * {
     position: relative;
     z-index: 1;
   }
   
-  .platform-detail-card__media {
+  .platform-sheet__grid {
     display: grid;
-    grid-template-rows: auto 1fr;
-    gap: 16px;
+    grid-template-columns: minmax(0, 0.94fr) minmax(360px, 0.76fr);
+    gap: 26px;
+    align-items: start;
+  }
+  
+  .platform-sheet__left,
+  .platform-sheet__right {
     min-width: 0;
   }
   
-  .platform-brand-badge {
-    position: relative;
-    overflow: hidden;
-  
+  .platform-sheet__left {
     display: grid;
-    gap: 14px;
-  
-    min-height: 168px;
-    padding: 22px 26px;
-  
-    border-radius: 26px;
-  
-    background:
-      linear-gradient(
-        180deg,
-        rgba(17,21,32,0.92),
-        rgba(5,7,14,0.98)
-      ),
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.22), transparent 42%),
-      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.18), transparent 48%);
-  
-    border: 1px solid rgba(34,240,255,0.22);
-  
-    box-shadow:
-      0 18px 42px rgba(0,0,0,0.38),
-      0 0 24px rgba(34,240,255,0.10),
-      inset 0 1px 0 rgba(255,255,255,0.11);
+    gap: 18px;
   }
   
-  .platform-brand-badge::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-  
-    background:
-      linear-gradient(90deg, rgba(255,255,255,0.060), transparent 46%),
-      linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px);
-  
-    background-size: auto, 100% 8px;
-    opacity: 0.70;
-  
-    pointer-events: none;
-  }
-  
-  .platform-brand-badge > * {
-    position: relative;
-    z-index: 1;
-  }
-  
-  .platform-brand-badge__manufacturer,
-  .platform-brand-badge__platform {
+  .platform-sheet__right {
     display: grid;
-    align-content: center;
-    gap: 8px;
+    gap: 22px;
   }
   
-  .platform-brand-badge span {
-    font-size: 9px;
-    line-height: 1;
-    font-weight: 850;
   
-    text-transform: uppercase;
-    letter-spacing: 0.85px;
+  /* VISUAL */
   
-    color: rgba(255,255,255,0.50);
-  }
-  
-  .platform-brand-badge img {
-    display: block;
-    width: auto;
-    object-fit: contain;
-    justify-self: start;
-  
-    filter:
-      drop-shadow(0 0 10px rgba(255,255,255,0.24))
-      drop-shadow(0 2px 5px rgba(0,0,0,0.32));
-  }
-  
-  .platform-brand-badge__manufacturer img {
-    max-width: 230px;
-    max-height: 58px;
-  }
-  
-  .platform-brand-badge__platform img {
-    max-width: min(100%, 430px);
-    max-height: 82px;
-  }
-  
-  .platform-detail-card__visual {
+  .platform-sheet__visual {
     position: relative;
     overflow: hidden;
   
     display: grid;
     place-items: center;
   
-    min-height: 360px;
+    min-height: 390px;
     border-radius: 26px;
   
     background:
@@ -807,40 +706,37 @@
       linear-gradient(180deg, rgba(5,5,8,1), rgba(10,10,16,1));
   
     border: 1px solid rgba(255,255,255,0.065);
+  
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      0 18px 44px rgba(0,0,0,0.30);
   }
   
-  .platform-detail-card__cover {
+  .platform-sheet__cover {
     width: 100%;
     height: 100%;
   
     object-fit: contain;
-  
-    padding: 22px;
+    padding: 24px;
   
     filter:
-      brightness(0.94)
+      brightness(0.96)
       contrast(1.06)
       saturate(1.05);
   }
   
-  .platform-detail-card__fallback {
+  .platform-sheet__fallback {
     display: grid;
     place-items: center;
-    gap: 22px;
   
     width: 100%;
     height: 100%;
     min-height: 360px;
     padding: 42px;
-  
-    background:
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.14), transparent 42%),
-      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.13), transparent 46%),
-      linear-gradient(180deg, rgba(12,12,18,0.98), rgba(5,5,8,1));
   }
   
-  .platform-detail-card__fallback-logo {
-    max-width: 76%;
+  .platform-sheet__fallback img {
+    max-width: 80%;
     max-height: 130px;
     object-fit: contain;
   
@@ -849,29 +745,147 @@
       drop-shadow(0 0 22px rgba(34,240,255,0.16));
   }
   
-  .platform-detail-card__fallback-manufacturer {
-    max-width: 220px;
-    max-height: 58px;
+  
+  /* BRAND */
+  
+  .platform-sheet__brand {
+    position: relative;
+    overflow: hidden;
+  
+    display: grid;
+    place-items: center;
+    gap: 14px;
+  
+    min-height: 230px;
+    padding: 30px 28px;
+  
+    border-radius: 26px;
+  
+    background:
+      linear-gradient(180deg, rgba(16,20,30,0.88), rgba(5,7,14,0.98)),
+      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.18), transparent 44%),
+      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.14), transparent 48%);
+  
+    border: 1px solid rgba(34,240,255,0.18);
+  
+    box-shadow:
+      0 18px 42px rgba(0,0,0,0.34),
+      0 0 24px rgba(34,240,255,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.09);
+  }
+  
+  .platform-sheet__brand::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+  
+    background:
+      linear-gradient(90deg, rgba(255,255,255,0.050), transparent 46%),
+      linear-gradient(rgba(255,255,255,0.020) 1px, transparent 1px);
+  
+    background-size: auto, 100% 8px;
+    opacity: 0.68;
+  
+    pointer-events: none;
+  }
+  
+  .platform-sheet__brand img {
+    position: relative;
+    z-index: 1;
+  
+    width: auto;
     object-fit: contain;
   
-    opacity: 0.82;
+    filter:
+      drop-shadow(0 0 10px rgba(255,255,255,0.20))
+      drop-shadow(0 2px 5px rgba(0,0,0,0.32));
   }
   
-  .platform-detail-card__content {
+  .platform-sheet__manufacturer-logo {
+    max-width: min(82%, 360px);
+    max-height: 78px;
+  }
+  
+  .platform-sheet__platform-logo {
+    max-width: min(94%, 540px);
+    max-height: 104px;
+  }
+  
+  .platform-sheet__brand-separator {
+    position: relative;
+    z-index: 1;
+  
+    display: block;
+  
+    width: 74px;
+    height: 1px;
+  
+    background:
+      linear-gradient(
+        90deg,
+        transparent,
+        rgba(34,240,255,0.70),
+        transparent
+      );
+  
+    box-shadow:
+      0 0 12px rgba(34,240,255,0.34);
+  }
+  
+  
+  /* CHIPS */
+  
+  .platform-sheet__chips {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .platform-sheet__chips span {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
   
-    min-width: 0;
-    padding: 10px 4px;
+    min-height: 38px;
+    padding: 0 15px;
+  
+    border-radius: 16px;
+  
+    font-family: var(--font-display);
+    font-size: 13px;
+    line-height: 1;
+    font-weight: 900;
+  
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  
+    color: var(--color-primary);
+  
+    background:
+      linear-gradient(180deg, rgba(16,22,32,0.88), rgba(5,7,14,0.98)),
+      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.18), transparent 48%),
+      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.12), transparent 52%);
+  
+    border: 1px solid rgba(34,240,255,0.22);
+  
+    box-shadow:
+      0 10px 22px rgba(0,0,0,0.28),
+      0 0 14px rgba(34,240,255,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.09);
+  
+    text-shadow:
+      0 0 11px rgba(34,240,255,0.30);
   }
   
-  .platform-detail-card__meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
   
-    margin-bottom: 18px;
+  /* SECTION TITLES */
+  
+  .platform-sheet__section-title {
+    margin-bottom: 14px;
+  }
+  
+  .platform-sheet__section-title span {
+    display: inline-flex;
   
     font-size: 11px;
     line-height: 1;
@@ -880,213 +894,73 @@
     text-transform: uppercase;
     letter-spacing: 0.9px;
   
-    color: rgba(255,255,255,0.46);
-  }
-  
-  .platform-detail-card__meta a {
     color: var(--color-primary);
   }
   
-  .platform-detail-card h1 {
-    margin: 0;
   
-    max-width: 100%;
+  /* SPECS */
   
-    font-family: var(--font-display);
-    font-size: clamp(34px, 4.1vw, 56px);
-    line-height: 0.95;
-    font-weight: 900;
-  
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  
-    overflow-wrap: anywhere;
-  
-    color: rgba(255,255,255,0.96);
-  
-    text-shadow:
-      0 0 18px rgba(34,240,255,0.16),
-      0 8px 28px rgba(0,0,0,0.82);
+  .platform-sheet__specs {
+    position: relative;
   }
   
-  .platform-detail-card p {
-    margin: 18px 0 0;
-  
-    font-size: 16px;
-    line-height: 1.65;
-  
-    color: rgba(255,255,255,0.66);
-  }
-  
-  .platform-detail-card__chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  
-    margin-top: 22px;
-  }
-  
-  .platform-detail-card__chips span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  
-    min-height: 44px;
-    padding: 0 18px;
-  
-    border-radius: 18px;
-  
-    font-family: var(--font-display);
-    font-size: 15px;
-    line-height: 1;
-    font-weight: 900;
-  
-    text-transform: uppercase;
-    letter-spacing: 0.9px;
-  
-    color: var(--color-primary);
-  
-    background:
-      linear-gradient(
-        180deg,
-        rgba(16,22,32,0.88),
-        rgba(5,7,14,0.98)
-      ),
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.22), transparent 48%),
-      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.14), transparent 52%);
-  
-    border: 1px solid rgba(34,240,255,0.24);
-  
-    box-shadow:
-      0 12px 28px rgba(0,0,0,0.34),
-      0 0 18px rgba(34,240,255,0.10),
-      inset 0 1px 0 rgba(255,255,255,0.10);
-  
-    text-shadow:
-      0 0 12px rgba(34,240,255,0.36);
-  }
-  
-  
-  /* ========================================
-     DETAIL SPECS
-  ======================================== */
-  
-  .platform-detail-specs {
-    margin-top: 26px;
-    padding-top: 24px;
-  
-    border-top: 1px solid rgba(255,255,255,0.075);
-  }
-  
-  .platform-detail-specs__header {
-    margin-bottom: 14px;
-  }
-  
-  .platform-detail-specs__header span {
-    display: inline-flex;
-    margin-bottom: 7px;
-  
-    font-size: 10px;
-    line-height: 1;
-    font-weight: 850;
-  
-    text-transform: uppercase;
-    letter-spacing: 0.9px;
-  
-    color: var(--color-primary);
-  }
-  
-  .platform-detail-specs__header h2 {
-    margin: 0;
-  
-    font-family: var(--font-display);
-    font-size: 25px;
-    line-height: 1;
-    font-weight: 900;
-  
-    text-transform: uppercase;
-  
-    color: rgba(255,255,255,0.92);
-  }
-  
-  .platform-detail-specs__grid {
+  .platform-spec-table {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+  
+    border-top: 1px solid rgba(255,255,255,0.09);
   }
   
-  .platform-detail-spec {
-    position: relative;
-    overflow: hidden;
+  .platform-spec-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 0.46fr) minmax(0, 1fr);
+    gap: 18px;
   
-    min-height: 80px;
-    padding: 14px 15px;
-    border-radius: 18px;
+    padding: 13px 0;
   
-    background:
-      linear-gradient(
-        180deg,
-        rgba(16,18,28,0.76),
-        rgba(5,6,12,0.94)
-      ),
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.08), transparent 46%),
-      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.08), transparent 50%);
-  
-    border: 1px solid rgba(255,255,255,0.08);
-  
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.045),
-      0 10px 24px rgba(0,0,0,0.24);
+    border-bottom: 1px solid rgba(255,255,255,0.075);
   }
   
-  .platform-detail-spec::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-  
-    background:
-      linear-gradient(90deg, rgba(34,240,255,0.055), transparent 42%);
-  
-    opacity: 0;
-    transition: opacity var(--transition-fast);
-  
-    pointer-events: none;
-  }
-  
-  .platform-detail-spec:hover::before {
-    opacity: 1;
-  }
-  
-  .platform-detail-spec span {
-    position: relative;
-    z-index: 1;
-  
-    display: block;
-    margin-bottom: 8px;
-  
-    font-size: 9px;
-    line-height: 1;
+  .platform-spec-row span {
+    font-size: 11px;
+    line-height: 1.25;
     font-weight: 850;
   
     text-transform: uppercase;
     letter-spacing: 0.8px;
   
-    color: rgba(255,255,255,0.44);
+    color: rgba(255,255,255,0.42);
   }
   
-  .platform-detail-spec strong {
-    position: relative;
-    z-index: 1;
-  
-    display: block;
-  
+  .platform-spec-row strong {
     font-size: 15px;
-    line-height: 1.35;
-    font-weight: 820;
+    line-height: 1.3;
+    font-weight: 800;
   
     color: rgba(255,255,255,0.92);
   }
   
+  
+  /* HISTORY */
+  
+  .platform-sheet__history {
+    position: relative;
+  
+    padding-top: 22px;
+    border-top: 1px solid rgba(255,255,255,0.085);
+  }
+  
+  .platform-sheet__history-text p {
+    margin: 0;
+  
+    font-size: 16px;
+    line-height: 1.75;
+  
+    color: rgba(255,255,255,0.66);
+  }
+  
+  .platform-sheet__history-text p + p {
+    margin-top: 13px;
+  }
   
   /* ========================================
      RESPONSIVE
@@ -1098,11 +972,15 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   
-    .platform-detail-card {
+    .platform-sheet__grid {
       grid-template-columns: 1fr;
     }
   
-    .platform-detail-card__visual {
+    .platform-sheet__right {
+      justify-content: flex-start;
+    }
+  
+    .platform-sheet__visual {
       min-height: 340px;
     }
   }
@@ -1131,53 +1009,53 @@
       flex-direction: column;
     }
   
-    .platform-detail-card {
-      padding: 16px;
-      border-radius: 24px;
-    }
-  
-    .platform-brand-badge {
-      min-height: 150px;
-      padding: 18px 20px;
-      border-radius: 22px;
-    }
-  
-    .platform-brand-badge__manufacturer img {
-      max-width: 190px;
-      max-height: 52px;
-    }
-  
-    .platform-brand-badge__platform img {
-      max-width: 100%;
-      max-height: 72px;
-    }
-  
-    .platform-detail-card__visual,
-    .platform-detail-card__fallback {
-      min-height: 270px;
-      border-radius: 22px;
-    }
-  
-    .platform-detail-card__cover {
-      padding: 16px;
-    }
-  
-    .platform-detail-card h1 {
-      font-size: clamp(32px, 12vw, 48px);
-    }
-  
-    .platform-detail-card p {
-      font-size: 15px;
-    }
-  
-    .platform-detail-card__chips span {
-      min-height: 40px;
-      padding: 0 15px;
-  
-      font-size: 13px;
-    }
-  
-    .platform-detail-specs__grid {
-      grid-template-columns: 1fr;
-    }
+    .platform-sheet {
+        padding: 16px;
+        border-radius: 24px;
+      }
+      
+      .platform-sheet__left,
+      .platform-sheet__right {
+        gap: 16px;
+      }
+      
+      .platform-sheet__brand {
+        min-height: 180px;
+        padding: 22px 18px;
+        border-radius: 22px;
+      }
+      
+      .platform-sheet__manufacturer-logo {
+        max-height: 56px;
+      }
+      
+      .platform-sheet__platform-logo {
+        max-height: 72px;
+      }
+      
+      .platform-sheet__visual,
+      .platform-sheet__fallback {
+        min-height: 270px;
+        border-radius: 22px;
+      }
+      
+      .platform-sheet__cover {
+        padding: 16px;
+      }
+      
+      .platform-sheet__chips span {
+        min-height: 36px;
+        padding: 0 13px;
+        font-size: 12px;
+      }
+      
+      .platform-spec-row {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+      
+      .platform-sheet__history-text p {
+        font-size: 15px;
+        line-height: 1.7;
+      }
   }
