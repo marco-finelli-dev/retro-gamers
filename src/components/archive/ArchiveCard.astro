@@ -4,12 +4,14 @@ import { getPostUrl } from '../../lib/routes';
 
 const { post } = Astro.props;
 
-const getImage = (post, width = 620) => {
-  if (!post?.featuredImage) return '/placeholder-retro.png';
+const getImage = (post, width = 520, height = 325) => {
+  if (!post?.featuredImage?.asset) return '/placeholder-retro.png';
 
   return urlFor(post.featuredImage)
     .width(width)
-    .quality(74)
+    .height(height)
+    .fit('crop')
+    .quality(72)
     .auto('format')
     .url();
 };
@@ -50,9 +52,12 @@ const score = post?.rating?.overall;
 
   <div class="archive-card__image">
     <img
-      src={getImage(post, 620)}
+      src={getImage(post, 520, 325)}
       alt={post.featuredImage?.alt || post.title}
+      width="520"
+      height="325"
       loading="lazy"
+      decoding="async"
     />
 
     {score && (

@@ -198,13 +198,42 @@ const getTaxonomyType = (taxonomy) => {
   return Array.isArray(types) ? types[0] : types;
 };
 
+const getArticleUrl = (article) => {
+  const routes = {
+    review: 'recensioni',
+    news: 'news',
+    feature: 'speciali',
+    guide: 'guide',
+    memories: 'memories',
+    interview: 'interviste',
+    hardware: 'hardware',
+    article: 'articoli'
+  };
+
+  const section = routes[article.type] || 'articoli';
+
+  return `/${section}/${article.slug}/`;
+};
+
+const getPlatformUrl = (platform) => {
+  if (
+    !platform?.platformType ||
+    !platform?.manufacturer?.slug ||
+    !platform?.slug
+  ) {
+    return '/piattaforme/';
+  }
+
+  return `/piattaforme/${platform.platformType}/${platform.manufacturer.slug}/${platform.slug}/`;
+};
+
 const all = [
 
   ...cache.articles.map(a => ({
     ...a,
     kind: 'article',
     label: articleLabels[a.type] || 'Articolo',
-    url: `/articoli/${a.slug}/`,
+    url: getArticleUrl(a),
     image: a.featuredImage?.asset?.url || '',
     eyebrow: [
       articleLabels[a.type] || 'Articolo',
@@ -228,7 +257,7 @@ const all = [
     slug: p.slug,
     kind: 'platform',
     label: platformLabels[p.platformType] || 'Piattaforma',
-    url: `/piattaforme/${p.slug}/`,
+    url: getPlatformUrl(p),
     image: p.cover?.asset?.url || '',
     eyebrow: [
       platformLabels[p.platformType] || 'Piattaforma',
@@ -242,24 +271,6 @@ const all = [
       ${p.specs?.year || ''}
     `
   })),
-
-  ...cache.taxonomies.map(t => {
-    const taxonomyType = getTaxonomyType(t);
-
-    return {
-      title: t.name,
-      slug: t.slug,
-      kind: 'taxonomy',
-      label: taxonomyLabels[taxonomyType] || 'Archivio',
-      url: `/tassonomie/${t.slug}/`,
-      image: t.logo?.asset?.url || '',
-      eyebrow: taxonomyLabels[taxonomyType] || 'Archivio',
-      searchableText: `
-        ${t.name || ''}
-        ${taxonomyType || ''}
-      `
-    };
-  })
 ];
 
         /* ========================

@@ -45,7 +45,14 @@ const publishedDate = post.publishedAt
     })
   : '';
 
-const authorName = post.author?.name || '';
+const authorDisplayName =
+  post.author?.displayName === 'nickname' && post.author?.nickname
+    ? post.author.nickname
+    : post.author?.name || '';
+
+const authorUrl = post.author?.slug
+  ? `/autori/${post.author.slug}/`
+  : '';
 
 const readingTime =
   post.readingTime ||
@@ -53,16 +60,9 @@ const readingTime =
   post.tempoLettura ||
   null;
 
-const views =
-  post.viewsBase !== undefined && post.viewsBase !== null
-    ? post.viewsBase
-    : null;
-
 const infoItems = [
   publishedDate,
-  authorName ? `Di ${authorName}` : '',
   readingTime ? `Tempo di lettura: ${readingTime} min.` : '',
-  views !== null ? `${views} visualizzazioni` : ''
 ].filter(Boolean);
 ---
 
@@ -92,11 +92,25 @@ const infoItems = [
       <p>{post.subtitle || post.excerpt}</p>
     )}
 
-    {infoItems.length > 0 && (
+    {(authorDisplayName || infoItems.length > 0) && (
       <div class="article-hero__info">
+
+        {authorDisplayName && (
+          authorUrl ? (
+            <a href={authorUrl}>
+              Di {authorDisplayName}
+            </a>
+          ) : (
+            <span>
+              Di {authorDisplayName}
+            </span>
+          )
+        )}
+
         {infoItems.map((item) => (
           <span>{item}</span>
         ))}
+
       </div>
     )}
 

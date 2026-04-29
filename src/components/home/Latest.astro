@@ -41,11 +41,13 @@ const getTypeLabel = (type = '') => {
 const getCategory = (post) =>
   post.categories?.[0]?.name || getTypeLabel(post.type);
 
-const getImage = (post, width = 520) => {
-  if (!post?.featuredImage) return '/placeholder-retro.png';
+const getImage = (post, width = 420, height = 263) => {
+  if (!post?.featuredImage?.asset) return '/placeholder-retro.png';
 
   return urlFor(post.featuredImage)
     .width(width)
+    .height(height)
+    .fit('crop')
     .quality(72)
     .auto('format')
     .url();
@@ -72,9 +74,12 @@ const getImage = (post, width = 520) => {
 
         <a href={getPostUrl(post)} class="rg-latest-card__image">
           <img
-            src={getImage(post, 520)}
+            src={getImage(post, 420, 263)}
             alt={post.featuredImage?.alt || post.title || ''}
+            width="420"
+            height="263"
             loading="lazy"
+            decoding="async"
           />
         </a>
 

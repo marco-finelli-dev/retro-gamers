@@ -31,13 +31,19 @@ const getTypeLabel = (type) => {
   return map[type] || type || 'Articolo';
 };
 
-const getImage = (post, width = 960) => {
-  if (!post?.featuredImage) return '';
-  return urlFor(post.featuredImage)
+const getImage = (image, width = 960, height = null) => {
+  if (!image?.asset) return '';
+
+  let builder = urlFor(image)
     .width(width)
     .quality(74)
-    .auto('format')
-    .url();
+    .auto('format');
+
+  if (height) {
+    builder = builder.height(height).fit('crop');
+  }
+
+  return builder.url();
 };
 ---
 
@@ -61,12 +67,15 @@ const getImage = (post, width = 960) => {
     {main && (
       <a href={getPostUrl(main)} class="rg-hero-main">
 
-        {main.featuredImage?.asset?.url && (
+        {main.featuredImage?.asset && (
           <img
-            src={getImage(main, 1100)}
+            src={getImage(main.featuredImage, 1200, 720)}
             alt={main.featuredImage?.alt || main.title}
+            width="1200"
+            height="720"
             loading="eager"
             fetchpriority="high"
+            decoding="async"
           />
         )}
 
@@ -104,11 +113,14 @@ const getImage = (post, width = 960) => {
         return (
           <a href={getPostUrl(post)} class="rg-hero-side-card">
 
-            {post.featuredImage?.asset?.url && (
+            {post.featuredImage?.asset && (
               <img
-                src={getImage(post, 520)}
+                src={getImage(post.featuredImage, 520, 292)}
                 alt={post.featuredImage?.alt || post.title}
+                width="520"
+                height="292"
                 loading="lazy"
+                decoding="async"
               />
             )}
 

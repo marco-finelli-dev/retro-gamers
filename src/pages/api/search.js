@@ -54,8 +54,9 @@ export async function GET() {
         "slug": slug.current,
         platformType,
         manufacturer->{
-          name
-        },
+        name,
+        "slug": slug.current
+      },
         cover {
           asset->{ url }
         },

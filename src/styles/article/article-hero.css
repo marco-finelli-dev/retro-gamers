@@ -199,18 +199,35 @@
   color: rgba(255,255,255,0.48);
 }
 
-.article-hero__info span {
+.article-hero__info > * {
   display: inline-flex;
   align-items: center;
 }
 
-.article-hero__info span + span::before {
+.article-hero__info > * + *::before {
   content: "–";
-  margin: 0 10px;
+
+  margin-left: 10px;
+  margin-right: 10px;
 
   color: rgba(255,255,255,0.30);
 }
 
+.article-hero__info a {
+  color: inherit;
+  text-decoration: none;
+
+  transition:
+    color var(--transition-fast),
+    text-shadow var(--transition-fast);
+}
+
+.article-hero__info a:hover {
+  color: var(--color-primary);
+
+  text-shadow:
+    0 0 10px rgba(34,240,255,0.22);
+}
 
 /* ========================================
    RESPONSIVE

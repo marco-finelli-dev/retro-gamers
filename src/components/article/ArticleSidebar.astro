@@ -1,15 +1,11 @@
 ---
 import { getPostUrl } from '../../lib/routes';
+import { urlFor } from '../../lib/image';
 
 const {
   post,
   relatedPosts = []
 } = Astro.props;
-
-const image =
-  post.featuredImage?.asset?.url ||
-  post.gameInfo?.cover?.asset?.url ||
-  '';
 
 const typeLabels = {
   review: 'Recensione',
@@ -73,10 +69,45 @@ const sidebarTags = [
   .filter((item) => item?.name)
   .slice(0, 6);
 
-const getImage = (item) =>
-  item.featuredImage?.asset?.url ||
-  item.gameInfo?.cover?.asset?.url ||
-  '/placeholder-retro.png';
+const getMainImage = (post) => {
+  const source =
+    post.featuredImage?.asset
+      ? post.featuredImage
+      : post.gameInfo?.cover?.asset
+        ? post.gameInfo.cover
+        : null;
+
+  if (!source) return '';
+
+  return urlFor(source)
+    .width(520)
+    .height(390)
+    .fit('crop')
+    .quality(74)
+    .auto('format')
+    .url();
+};
+
+const getRelatedImage = (item) => {
+  const source =
+    item.featuredImage?.asset
+      ? item.featuredImage
+      : item.gameInfo?.cover?.asset
+        ? item.gameInfo.cover
+        : null;
+
+  if (!source) return '/placeholder-retro.png';
+
+  return urlFor(source)
+    .width(180)
+    .height(120)
+    .fit('crop')
+    .quality(70)
+    .auto('format')
+    .url();
+};
+
+const image = getMainImage(post);
 
 const getTypeLabel = (item) =>
   typeLabels[item.type] || 'Articolo';
@@ -86,7 +117,14 @@ const getTypeLabel = (item) =>
 
   {image && (
     <figure class="article-sidebar__image">
-      <img src={image} alt={post.featuredImage?.alt || post.title || ''} />
+      <img
+        src={image}
+        alt={post.featuredImage?.alt || post.gameInfo?.cover?.alt || post.title || ''}
+        width="520"
+        height="390"
+        loading="lazy"
+        decoding="async"
+      />
     </figure>
   )}
 
@@ -102,9 +140,12 @@ const getTypeLabel = (item) =>
 
               <span class="article-sidebar-related__image">
                 <img
-                  src={getImage(item)}
-                  alt={item.featuredImage?.alt || item.title}
+                  src={getRelatedImage(item)}
+                  alt={item.featuredImage?.alt || item.gameInfo?.cover?.alt || item.title}
+                  width="180"
+                  height="120"
                   loading="lazy"
+                  decoding="async"
                 />
               </span>
 

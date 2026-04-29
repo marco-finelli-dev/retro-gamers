@@ -1,9 +1,18 @@
 ---
 import ReviewScoreBox from './ReviewScoreBox.astro';
+import { urlFor } from '../../lib/image';
 
 const { post } = Astro.props;
 
-const cover = post.gameInfo?.cover?.asset?.url || '';
+const cover = post.gameInfo?.cover?.asset
+  ? urlFor(post.gameInfo.cover)
+      .width(420)
+      .height(560)
+      .fit('crop')
+      .quality(74)
+      .auto('format')
+      .url()
+  : '';
 
 const coverAlt =
   post.gameInfo?.cover?.alt ||
@@ -42,7 +51,14 @@ const infoRows = [
 
   {cover && (
     <figure class="review-sidebar__cover">
-      <img src={cover} alt={coverAlt} />
+      <img
+        src={cover}
+        alt={coverAlt}
+        width="420"
+        height="560"
+        loading="lazy"
+        decoding="async"
+      />
     </figure>
   )}
 

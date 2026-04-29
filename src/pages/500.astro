@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+import { getAllPosts, groupPosts } from '../lib/posts';
+
+let grouped = {
+  allReviews: [],
+  allNews: []
+};
+
+try {
+  const allPosts = await getAllPosts();
+  grouped = groupPosts(allPosts);
+} catch {
+  grouped = {
+    allReviews: [],
+    allNews: []
+  };
+}
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Errore del server"
+  description="Si è verificato un errore temporaneo su Retro-Gamers.it."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/500/"
+  noindex={true}
+>
+  <main class="error-page">
+
+    <section class="error-card">
+
+      <span class="error-card__code">500</span>
+
+      <h1>Qualcosa è andato storto</h1>
+
+      <p>
+        Il sito ha incontrato un errore temporaneo. Probabilmente un caricamento non è
+        andato a buon fine o una risorsa non è disponibile in questo momento.
+      </p>
+
+      <div class="error-card__actions">
+        <a href="/">Torna alla home</a>
+        <a href="/news/">Leggi le news</a>
+      </div>
+
+    </section>
+
+  </main>
+</BaseLayout>

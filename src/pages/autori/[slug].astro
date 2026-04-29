@@ -1,0 +1,301 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArchiveCard from '../../components/archive/ArchiveCard.astro';
+
+import { client } from '../../lib/sanity';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+const { slug } = Astro.params;
+
+const author = await client.fetch(`
+  *[
+    _type == "author" &&
+    slug.current == $slug
+  ][0]{
+    _id,
+    name,
+    nickname,
+    displayName,
+    "slug": slug.current,
+    bio,
+    role,
+    website,
+    twitter,
+    youtube,
+    twitch,
+    showContactButton,
+
+    image {
+      alt,
+      asset->{ url }
+    },
+
+    cover {
+      alt,
+      asset->{ url }
+    }
+  }
+`, { slug });
+
+if (!author) {
+  return Astro.rewrite('/404');
+}
+
+const displayName =
+  author.displayName === 'nickname' && author.nickname
+    ? author.nickname
+    : author.name;
+
+const roleLabels = {
+  editor: 'Redattore',
+  contributor: 'Collaboratore',
+  guest: 'Ospite'
+};
+
+const roleLabel = roleLabels[author.role] || 'Autore';
+
+const posts = await client.fetch(`
+  *[
+    _type == "article" &&
+    defined(slug.current) &&
+    author._ref == $authorId &&
+    !(_id in path("drafts.**"))
+  ] | order(coalesce(publishedAt, _createdAt) desc) {
+    _id,
+    title,
+    excerpt,
+    subtitle,
+    type,
+    publishedAt,
+    "slug": slug.current,
+
+    featuredImage {
+      alt,
+      asset->{ url }
+    },
+
+    categories[]->{
+      name,
+      "slug": slug.current
+    },
+
+    platforms[]->{
+      name,
+      "slug": slug.current
+    },
+
+    gameInfo {
+      releaseYear,
+      cover {
+        alt,
+        asset->{ url }
+      }
+    },
+
+    rating {
+      overall
+    }
+  }
+`, { authorId: author._id });
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const pageTitle = `Articoli di ${displayName}`;
+
+const pageDescription =
+  author.bio ||
+  `${displayName} su Retro-Gamers.it: articoli, recensioni, guide e contenuti dal mondo retro-gaming.`;
+
+const pageImage =
+  author.cover?.asset?.url ||
+  author.image?.asset?.url ||
+  '/og-image.jpg';
+
+const socials = [
+  author.website && {
+    label: 'Sito web',
+    url: author.website
+  },
+  author.twitter && {
+    label: 'X',
+    url: author.twitter
+  },
+  author.youtube && {
+    label: 'YouTube',
+    url: author.youtube
+  },
+  author.twitch && {
+    label: 'Twitch',
+    url: author.twitch
+  }
+].filter(Boolean);
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title={pageTitle}
+  description={pageDescription}
+  image={pageImage}
+  canonical={`https://www.retro-gamers.it/autori/${slug}/`}
+>
+
+  <main class="author-page">
+
+    <section class="author-hero">
+
+      {author.cover?.asset?.url && (
+        <div class="author-hero__cover">
+          <img
+            src={author.cover.asset.url}
+            alt={author.cover.alt || displayName}
+            width="1600"
+            height="600"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+      )}
+
+      <div class="author-hero__profile">
+
+        {author.image?.asset?.url && (
+          <figure class="author-hero__avatar">
+            <img
+              src={author.image.asset.url}
+              alt={author.image.alt || displayName}
+              width="160"
+              height="160"
+              loading="eager"
+              decoding="async"
+            />
+          </figure>
+        )}
+
+   <div class="author-hero__content">
+  <h1>{displayName}</h1>
+
+  {author.nickname && author.displayName !== 'nickname' && (
+    <p class="author-hero__nickname">
+      aka {author.nickname}
+    </p>
+  )}
+
+  <div class="author-hero__badges">
+    <span>{roleLabel}</span>
+
+    {socials.map((item) => (
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {item.label}
+      </a>
+    ))}
+  </div>
+</div>
+
+      </div>
+
+    </section>
+
+    <section class="author-layout">
+
+      <article class="author-bio">
+        <span>Bio</span>
+
+        <h2>Profilo autore</h2>
+
+        {author.bio ? (
+          <p>{author.bio}</p>
+        ) : (
+          <p>
+            Autore di Retro-Gamers.it.
+          </p>
+        )}
+      </article>
+
+      <aside class="author-stats">
+        <h2>Attività</h2>
+
+        <dl>
+          <div>
+            <dt>Articoli</dt>
+            <dd>{posts.length}</dd>
+          </div>
+
+          <div>
+            <dt>Ruolo</dt>
+            <dd>{roleLabel}</dd>
+          </div>
+        </dl>
+      </aside>
+
+    </section>
+
+    <section class="author-posts">
+
+      <div class="author-posts__header">
+        <span>Archivio</span>
+        <h2>Articoli pubblicati</h2>
+      </div>
+
+     {posts.length > 0 ? (
+  <>
+    <div class="author-posts__grid" data-author-posts-grid>
+      {posts.map((post, index) => (
+        <div
+          class="author-posts__item"
+          data-author-post-item
+          hidden={index >= 12}
+        >
+          <ArchiveCard post={post} />
+        </div>
+      ))}
+    </div>
+
+    {posts.length > 12 && (
+      <div class="author-posts__more">
+        <button type="button" data-author-posts-more>
+          Mostra altri articoli
+        </button>
+      </div>
+    )}
+  </>
+) : (
+  <p class="author-posts__empty">
+    Nessun articolo pubblicato.
+  </p>
+)}
+
+    </section>
+
+  </main>
+
+<script is:inline>
+  (() => {
+    const button = document.querySelector('[data-author-posts-more]');
+    const items = Array.from(document.querySelectorAll('[data-author-post-item]'));
+
+    if (!button || items.length === 0) return;
+
+    let visible = 12;
+    const step = 6;
+
+    button.addEventListener('click', () => {
+      visible += step;
+
+      items.forEach((item, index) => {
+        item.hidden = index >= visible;
+      });
+
+      if (visible >= items.length) {
+        button.hidden = true;
+      }
+    });
+  })();
+</script>
+
+</BaseLayout>

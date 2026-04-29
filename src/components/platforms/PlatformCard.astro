@@ -5,18 +5,33 @@ import { getPlatformUrl } from '../../lib/platforms';
 const { platform } = Astro.props;
 
 const getLogo = (platform) => {
-  if (!platform?.logo) return '';
-  return urlFor(platform.logo).width(520).quality(80).auto('format').url();
+  if (!platform?.logo?.asset) return '';
+
+  return urlFor(platform.logo)
+    .width(520)
+    .quality(80)
+    .auto('format')
+    .url();
 };
 
 const getCover = (platform) => {
-  if (!platform?.cover) return '';
-  return urlFor(platform.cover).width(900).quality(76).auto('format').url();
+  if (!platform?.cover?.asset) return '';
+
+  return urlFor(platform.cover)
+    .width(900)
+    .quality(76)
+    .auto('format')
+    .url();
 };
 
 const getManufacturerLogo = (platform) => {
-  if (!platform?.manufacturer?.logo) return '';
-  return urlFor(platform.manufacturer.logo).width(360).quality(80).auto('format').url();
+  if (!platform?.manufacturer?.logo?.asset) return '';
+
+  return urlFor(platform.manufacturer.logo)
+    .width(360)
+    .quality(80)
+    .auto('format')
+    .url();
 };
 
 const cover = getCover(platform);
@@ -34,29 +49,38 @@ const badge = platform.badgeLabel || '';
 
     {cover ? (
       <img
-        src={cover}
-        alt={platform.cover?.alt || platform.name}
-        class="platform-card__cover"
-        loading="lazy"
-      />
+  src={cover}
+  alt={platform.cover?.alt || platform.name}
+  class="platform-card__cover"
+  width="900"
+  height="560"
+  loading="lazy"
+  decoding="async"
+/>
     ) : (
       <div class="platform-card__fallback">
         {logo && (
           <img
-            src={logo}
-            alt={platform.logo?.alt || platform.name}
-            class="platform-card__logo"
-            loading="lazy"
-          />
+  src={logo}
+  alt={platform.logo?.alt || platform.name}
+  class="platform-card__logo"
+  width="520"
+  height="220"
+  loading="lazy"
+  decoding="async"
+/>
         )}
 
         {manufacturerLogo && (
           <img
-            src={manufacturerLogo}
-            alt={platform.manufacturer?.logo?.alt || manufacturerName}
-            class="platform-card__manufacturer-logo"
-            loading="lazy"
-          />
+  src={manufacturerLogo}
+  alt={platform.manufacturer?.logo?.alt || manufacturerName}
+  class="platform-card__manufacturer-logo"
+  width="360"
+  height="160"
+  loading="lazy"
+  decoding="async"
+/>
         )}
       </div>
     )}

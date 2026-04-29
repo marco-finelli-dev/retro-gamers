@@ -21,7 +21,7 @@ const categoryToType = {
 const expectedType = categoryToType[category];
 
 if (!expectedType) {
-  return Astro.redirect('/');
+  return Astro.rewrite('/404');
 }
 
 /* ========================
@@ -72,12 +72,13 @@ const post = await client.fetch(`
 
   "slug": slug.current,
   publishedAt,
-  viewsBase,
 
-  author->{
-    name,
-    "slug": slug.current
-  },
+ author->{
+  name,
+  nickname,
+  displayName,
+  "slug": slug.current
+},
 
   featuredImage {
     alt,
@@ -241,7 +242,7 @@ const post = await client.fetch(`
 });
 
 if (!post) {
-  return Astro.redirect('/');
+  return Astro.rewrite('/404');
 }
 
 const readingTime = getReadingTime(post.content);
