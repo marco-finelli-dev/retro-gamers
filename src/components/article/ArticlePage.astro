@@ -5,11 +5,13 @@ import ArticleSidebar from './ArticleSidebar.astro';
 import ReviewSidebar from './ReviewSidebar.astro';
 import ArticleFinalRating from './ArticleFinalRating.astro';
 import ArticleAffiliateBox from './ArticleAffiliateBox.astro';
+import ArticleSeriesBox from './ArticleSeriesBox.astro';
 import '../../styles/article/article.css';
 
 const {
   post,
-  relatedPosts = []
+  relatedPosts = [],
+  seriesPosts = []
 } = Astro.props;
 
 const isReview = post?.type === 'review';
@@ -22,25 +24,32 @@ const isReview = post?.type === 'review';
   <div class="article-page__body">
 
     <article class="article-page__content">
-    
-    {post.monetization?.isAffiliate && (
-  <aside class="affiliate-disclosure">
-    <span>Trasparenza</span>
 
-    <p>
-      Questo articolo può contenere link affiliati. Se acquisti tramite questi collegamenti,
-      Retro-Gamers.it può ricevere una piccola commissione, senza costi aggiuntivi per te.
-    </p>
-  </aside>
-)}
+      {post.monetization?.isAffiliate && (
+        <aside class="affiliate-disclosure">
+          <span>Trasparenza</span>
+
+          <p>
+            Questo articolo può contenere link affiliati. Se acquisti tramite questi collegamenti,
+            Retro-Gamers.it può ricevere una piccola commissione, senza costi aggiuntivi per te.
+          </p>
+        </aside>
+      )}
 
       <ArticleAffiliateBox post={post} />
-      
+
       <ArticleContent content={post.content} />
+
+<ArticleSeriesBox post={post} seriesPosts={seriesPosts} />
+
+{isReview && post.rating && (
+  <ArticleFinalRating rating={post.rating} />
+)}
 
       {isReview && post.rating && (
         <ArticleFinalRating rating={post.rating} />
       )}
+
     </article>
 
     <aside class="article-page__sidebar">

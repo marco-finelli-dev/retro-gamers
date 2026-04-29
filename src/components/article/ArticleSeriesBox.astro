@@ -1,0 +1,68 @@
+---
+import { getPostUrl } from '../../lib/routes';
+
+const {
+  post,
+  seriesPosts = []
+} = Astro.props;
+
+const series = post.editorialSeries?.[0];
+
+const items = seriesPosts
+  .filter((item) => item?._id)
+  .sort((a, b) => {
+    const orderA = a.seriesOrder || 999;
+    const orderB = b.seriesOrder || 999;
+
+    if (orderA === orderB) {
+      return new Date(a.publishedAt || 0) - new Date(b.publishedAt || 0);
+    }
+
+    return orderA - orderB;
+  });
+
+const shouldRender =
+  series &&
+  items.length > 1;
+---
+
+{shouldRender && (
+  <aside class="article-series-box">
+
+    <div class="article-series-box__header">
+      <span>Serie editoriale</span>
+      <h2>{series.name}</h2>
+    </div>
+
+    <div class="article-series-box__list">
+      {items.map((item, index) => {
+        const isCurrent = item._id === post._id;
+
+        const label =
+          item.seriesLabel ||
+          (item.seriesOrder ? `Parte ${item.seriesOrder}` : `Parte ${index + 1}`);
+
+        return (
+          isCurrent ? (
+            <div class="article-series-box__item is-current">
+              <span>{label}</span>
+
+              <strong>{item.title}</strong>
+
+              <small>Stai leggendo</small>
+            </div>
+          ) : (
+            <a href={getPostUrl(item)} class="article-series-box__item">
+              <span>{label}</span>
+
+              <strong>{item.title}</strong>
+
+              <small>Leggi</small>
+            </a>
+          )
+        );
+      })}
+    </div>
+
+  </aside>
+)}

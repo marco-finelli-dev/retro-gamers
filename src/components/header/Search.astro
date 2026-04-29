@@ -242,7 +242,18 @@ const all = [
     kind: 'article',
     label: articleLabels[a.type] || 'Articolo',
     url: getArticleUrl(a),
-    image: optimizeImageUrl(a.featuredImage?.asset?.url || '', 180, 120),
+    image: optimizeImageUrl(
+  a.featuredImage?.asset?.url ||
+  a.featuredImage?.url ||
+  a.gameInfo?.cover?.asset?.url ||
+  a.gameInfo?.cover?.url ||
+  a.cover?.asset?.url ||
+  a.cover?.url ||
+  '',
+  180,
+  120
+),
+
     eyebrow: [
       articleLabels[a.type] || 'Articolo',
       a.platforms?.[0]?.name,
@@ -266,7 +277,15 @@ const all = [
     kind: 'platform',
     label: platformLabels[p.platformType] || 'Piattaforma',
     url: getPlatformUrl(p),
-   image: optimizeImageUrl(p.cover?.asset?.url || '', 180, 120),
+image: optimizeImageUrl(
+  p.cover?.asset?.url ||
+  p.cover?.url ||
+  p.featuredImage?.asset?.url ||
+  p.featuredImage?.url ||
+  '',
+  180,
+  120
+),
     eyebrow: [
       platformLabels[p.platformType] || 'Piattaforma',
       p.manufacturer?.name,

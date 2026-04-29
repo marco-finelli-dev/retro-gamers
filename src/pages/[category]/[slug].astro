@@ -70,8 +70,10 @@ const post = await client.fetch(`
   excerpt,
   seoTitle,
 
-  "slug": slug.current,
+    "slug": slug.current,
   publishedAt,
+  seriesOrder,
+  seriesLabel,
 
  author->{
   name,
@@ -132,15 +134,11 @@ const post = await client.fetch(`
     "slug": slug.current
   },
 
-  editorialSeries[]->{
-    name,
-    "slug": slug.current
-  },
-
-  relatedSeries[]->{
-    name,
-    "slug": slug.current
-  },
+editorialSeries[]->{
+  _id,
+  name,
+  "slug": slug.current
+},
 
   gameInfo {
     releaseYear,
@@ -200,7 +198,7 @@ const post = await client.fetch(`
       }
     },
 
-    _type == "asideBox" => {
+        _type == "asideBox" => {
       ...,
       content[]{
         ...,
@@ -227,6 +225,16 @@ const post = await client.fetch(`
         _type == "image" => {
           ...,
           asset->{ url }
+        },
+
+        _type == "imageRow" => {
+          ...,
+          images[]{
+            ...,
+            image{
+              asset->{ url }
+            }
+          }
         }
       }
     },
@@ -251,6 +259,28 @@ const hydratedPost = {
   ...post,
   readingTime
 };
+
+const seriesId = hydratedPost.editorialSeries?.[0]?._id || null;
+
+const seriesPosts = seriesId
+  ? await client.fetch(`
+    *[
+      _type == "article" &&
+      defined(slug.current) &&
+      !(_id in path("drafts.**")) &&
+      references($seriesId)
+    ] | order(coalesce(seriesOrder, 999) asc, coalesce(publishedAt, _createdAt) asc) {
+      _id,
+      type,
+      title,
+      subtitle,
+      "slug": slug.current,
+      publishedAt,
+      seriesOrder,
+      seriesLabel
+    }
+  `, { seriesId })
+  : [];
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
@@ -286,5 +316,11 @@ const canonicalUrl =
   type="article"
   publishedAt={post.publishedAt}
 >
-  <ArticlePage post={hydratedPost} relatedPosts={relatedPosts} />
+
+ <ArticlePage
+  post={hydratedPost}
+  relatedPosts={relatedPosts}
+  seriesPosts={seriesPosts}
+/>
+
 </Layout>

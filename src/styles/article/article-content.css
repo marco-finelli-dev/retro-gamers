@@ -155,6 +155,8 @@
 }
 
 .article-figure img {
+  display: block;
+
   width: 100%;
   height: auto;
 
@@ -212,8 +214,10 @@
 }
 
 .article-image-row img {
+  display: block;
+
   width: 100%;
-  height: 100%;
+  height: auto;
 
   aspect-ratio: 4 / 3;
   object-fit: cover;
@@ -286,6 +290,8 @@
 .article-aside-box {
   position: relative;
   overflow: hidden;
+
+  max-width: 100%;
 
   margin: 2.4rem 0;
   padding: 22px 24px;
@@ -371,35 +377,84 @@
 
 
 /* ========================================
+   ASIDE SINGLE FIGURE
+======================================== */
+
+.article-aside-figure {
+  margin: 18px 0 0;
+}
+
+.article-aside-figure img {
+  display: block;
+
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+
+  border-radius: 14px;
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  box-shadow:
+    0 14px 34px rgba(0,0,0,0.34),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.article-aside-figure figcaption {
+  margin-top: 8px;
+
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+
+  color: rgba(255,255,255,0.50);
+}
+
+
+/* ========================================
    ASIDE BOX GALLERY
 ======================================== */
 
 .article-aside-gallery {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 
-  margin-top: 16px;
+  width: 100%;
+  max-width: 100%;
+
+  margin: 18px 0 0;
 }
 
 .article-aside-row {
   display: grid;
   grid-template-columns: repeat(var(--aside-image-count), minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
+
+  width: 100%;
+  max-width: 100%;
 }
 
 .article-aside-row figure {
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
   min-width: 0;
+  max-width: 100%;
+  margin: 0;
 }
 
 .article-aside-row img {
+  display: block;
+
   width: 100%;
-  height: 100%;
+  max-width: 100%;
+  height: auto;
 
   aspect-ratio: 4 / 3;
   object-fit: cover;
 
-  border-radius: 13px;
+  border-radius: 14px;
 
   border: 1px solid rgba(255,255,255,0.08);
 
@@ -414,21 +469,29 @@
 }
 
 .article-aside-row figcaption {
-  margin-top: 7px;
+  display: block;
 
-  font-size: 11px;
+  width: 100%;
+  max-width: 100%;
+
+  margin: 0;
+  padding: 0 4px 2px;
+
+  font-size: 12px;
   line-height: 1.35;
   font-weight: 650;
 
   text-align: center;
   letter-spacing: 0.2px;
 
-  color: rgba(255,255,255,0.48);
+  color: rgba(255,255,255,0.56);
+
+  overflow: visible;
 }
 
-/* immagine singola nelle curiosità: compatta, non poster */
+/* immagine singola nelle curiosità */
 .article-aside-gallery.is-single {
-  max-width: 480px;
+  max-width: 520px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -438,9 +501,10 @@
 }
 
 .article-aside-gallery.is-single img {
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
+  aspect-ratio: auto;
+  object-fit: contain;
 }
+
 
 /* ========================================
    AFFILIATE DISCLOSURE
@@ -513,6 +577,7 @@
 
   color: rgba(255,255,255,0.68);
 }
+
 
 /* ========================================
    AFFILIATE BOX
@@ -701,28 +766,6 @@
   filter: brightness(1.04);
 }
 
-@media (max-width: 768px) {
-  .affiliate-box {
-    grid-template-columns: 1fr;
-    gap: 18px;
-
-    padding: 20px;
-    border-radius: 20px;
-  }
-
-  .affiliate-box__content h2 {
-    font-size: 21px;
-  }
-
-  .affiliate-box__action {
-    justify-content: stretch;
-  }
-
-  .affiliate-box__action a {
-    width: 100%;
-  }
-}
-
 .article-content a.article-affiliate-link {
   display: inline-flex;
   align-items: center;
@@ -807,6 +850,187 @@
     inset 0 1px 0 rgba(255,255,255,0.11);
 }
 
+
+/* ========================================
+   ARTICLE SERIES BOX
+======================================== */
+
+.article-series-box {
+  position: relative;
+  overflow: hidden;
+
+  margin: 42px 0 0;
+  padding: 24px;
+
+  border-radius: 22px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(15,15,22,0.78),
+      rgba(8,8,12,0.96)
+    ),
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.085), transparent 34%),
+    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.09), transparent 40%);
+
+  border: 1px solid rgba(255,255,255,0.09);
+
+  box-shadow:
+    0 18px 52px rgba(0,0,0,0.46),
+    inset 0 1px 0 rgba(255,255,255,0.045);
+}
+
+.article-series-box::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    linear-gradient(rgba(34,240,255,0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,85,247,0.022) 1px, transparent 1px);
+
+  background-size: 48px 48px;
+  opacity: 0.14;
+
+  mask-image:
+    linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 94%);
+
+  pointer-events: none;
+}
+
+.article-series-box > * {
+  position: relative;
+  z-index: 1;
+}
+
+.article-series-box__header {
+  margin-bottom: 18px;
+}
+
+.article-series-box__header span {
+  display: inline-flex;
+
+  margin-bottom: 10px;
+
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+
+  color: var(--color-primary);
+}
+
+.article-series-box__header h2 {
+  margin: 0;
+
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.08;
+  font-weight: 850;
+
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  color: rgba(255,255,255,0.94);
+
+  text-shadow:
+    0 0 14px rgba(34,240,255,0.12),
+    0 6px 22px rgba(0,0,0,0.78);
+}
+
+.article-series-box__list {
+  display: grid;
+  gap: 10px;
+}
+
+.article-series-box__item {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+
+  padding: 13px 14px;
+  border-radius: 16px;
+
+  color: inherit;
+  text-decoration: none;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(18,18,26,0.68),
+      rgba(7,7,11,0.90)
+    );
+
+  border: 1px solid rgba(255,255,255,0.075);
+
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.article-series-box__item:hover {
+  transform: translateY(-1px);
+
+  border-color: rgba(34,240,255,0.25);
+
+  box-shadow:
+    0 12px 28px rgba(0,0,0,0.34),
+    0 0 16px rgba(34,240,255,0.08);
+}
+
+.article-series-box__item.is-current {
+  border-color: rgba(34,240,255,0.28);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(34,240,255,0.09),
+      rgba(7,7,11,0.92)
+    );
+}
+
+.article-series-box__item span {
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+
+  text-transform: uppercase;
+  letter-spacing: 0.75px;
+
+  color: var(--color-primary);
+}
+
+.article-series-box__item strong {
+  min-width: 0;
+
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 750;
+
+  color: rgba(255,255,255,0.88);
+}
+
+.article-series-box__item small {
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 850;
+
+  text-transform: uppercase;
+  letter-spacing: 0.65px;
+
+  color: rgba(255,255,255,0.42);
+}
+
+.article-series-box__item:hover strong {
+  color: var(--color-primary);
+}
+
+
 /* ========================================
    RESPONSIVE
 ======================================== */
@@ -828,7 +1052,8 @@
   .article-image-row,
   .article-image-row--1,
   .article-image-row--2,
-  .article-image-row--3 {
+  .article-image-row--3,
+  .article-image-row--4 {
     grid-template-columns: 1fr;
   }
 
@@ -838,16 +1063,80 @@
     border-radius: 18px;
   }
 
-  .article-aside-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .article-aside-gallery {
+    gap: 16px;
+    margin-top: 16px;
   }
 
-  .article-aside-row--1 {
+  .article-aside-row,
+  .article-aside-row--1,
+  .article-aside-row--2,
+  .article-aside-row--3,
+  .article-aside-row--4 {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .article-aside-row figure {
+    gap: 7px;
+  }
+
+  .article-aside-row img {
+    aspect-ratio: auto;
+    object-fit: contain;
+
+    border-radius: 15px;
+  }
+
+  .article-aside-row figcaption {
+    padding: 0 2px 4px;
+
+    font-size: 12px;
+    line-height: 1.4;
+
+    color: rgba(255,255,255,0.58);
   }
 
   .article-aside-gallery.is-single {
     max-width: none;
+  }
+
+  .affiliate-box {
+    grid-template-columns: 1fr;
+    gap: 18px;
+
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .affiliate-box__content h2 {
+    font-size: 21px;
+  }
+
+  .affiliate-box__action {
+    justify-content: stretch;
+  }
+
+  .affiliate-box__action a {
+    width: 100%;
+  }
+
+  .article-series-box {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .article-series-box__header h2 {
+    font-size: 20px;
+  }
+
+  .article-series-box__item {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .article-series-box__item small {
+    display: none;
   }
 
   .article-figure img,

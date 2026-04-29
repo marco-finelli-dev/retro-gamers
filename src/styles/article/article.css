@@ -29,14 +29,18 @@
   margin-top: 34px;
 }
 
+.article-page__content,
 .article-page__sidebar {
   min-width: 0;
-  align-self: stretch;
 }
 
 .article-page__sidebar {
-  min-width: 0;
+  align-self: stretch;
 }
+
+/* ========================================
+   RESPONSIVE
+======================================== */
 
 @media (max-width: 1024px) {
   .article-page__body {
@@ -44,8 +48,19 @@
     gap: 30px;
   }
 
+  .article-page__content {
+    order: 1;
+  }
+
   .article-page__sidebar {
-    order: -1;
+    order: 2;
+  }
+
+  .article-sidebar,
+  .review-sidebar,
+  .article-sidebar__sticky,
+  .review-sidebar__sticky {
+    position: static;
   }
 }
 

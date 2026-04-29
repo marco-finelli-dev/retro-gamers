@@ -282,36 +282,57 @@ function chunkBalanced(images = []) {
       );
     }
 
-    if (block._type === 'asideBox') {
-      const asideImages = block.content?.filter((inner) => inner._type === 'image') || [];
-      const asideTextBlocks = block.content?.filter((inner) => inner._type !== 'image') || [];
-      const asideRows = chunkBalanced(asideImages);
+   if (block._type === 'asideBox') {
+  const asideContent = block.content || [];
 
-      return (
-        <aside class={`article-aside-box ${block.tone || 'info'}`}>
+  return (
+    <aside class={`article-aside-box ${block.tone || 'info'}`}>
 
-          {block.title && (
-            <h4>{block.title}</h4>
-          )}
+      {block.title && (
+        <h4>{block.title}</h4>
+      )}
 
-          {asideTextBlocks.map((inner) => {
-            if (inner._type === 'block') {
-              const html = renderBlockChildren(inner);
-              return <p set:html={html} />;
-            }
+      {asideContent.map((inner) => {
+        if (inner._type === 'block') {
+          const html = renderBlockChildren(inner);
+          return <p set:html={html} />;
+        }
 
-            return null;
-          })}
+        if (inner._type === 'image') {
+          const imageUrl = getImageUrl(inner, 720);
 
-          {asideImages.length > 0 && (
-            <div class={`article-aside-gallery ${asideImages.length === 1 ? 'is-single' : ''}`}>
-              {asideRows.map((row) => (
+          if (!imageUrl) return null;
+
+          return (
+            <figure class="article-aside-figure">
+              <img
+                src={imageUrl}
+                alt={inner.alt || ''}
+                width="720"
+                height="405"
+                loading="lazy"
+                decoding="async"
+              />
+
+              {inner.caption && (
+                <figcaption>{inner.caption}</figcaption>
+              )}
+            </figure>
+          );
+        }
+
+        if (inner._type === 'imageRow') {
+          const rows = chunkBalanced(inner.images || []);
+
+          return (
+            <div class="article-aside-gallery">
+              {rows.map((row) => (
                 <div
                   class={`article-aside-row article-aside-row--${row.length}`}
                   style={`--aside-image-count: ${row.length};`}
                 >
-                  {row.map((inner) => {
-                    const imageUrl = getImageUrl(inner, 520, 325);
+                  {row.map((img) => {
+                    const imageUrl = getImageUrl(img.image, 520, 325);
 
                     if (!imageUrl) return null;
 
@@ -319,15 +340,15 @@ function chunkBalanced(images = []) {
                       <figure>
                         <img
                           src={imageUrl}
-                          alt={inner.alt || ''}
+                          alt={img.alt || ''}
                           width="520"
                           height="325"
                           loading="lazy"
                           decoding="async"
                         />
 
-                        {inner.caption && (
-                          <figcaption>{inner.caption}</figcaption>
+                        {img.caption && (
+                          <figcaption>{img.caption}</figcaption>
                         )}
                       </figure>
                     );
@@ -335,11 +356,15 @@ function chunkBalanced(images = []) {
                 </div>
               ))}
             </div>
-          )}
+          );
+        }
 
-        </aside>
-      );
-    }
+        return null;
+      })}
+
+    </aside>
+  );
+}
 
     return null;
   })}

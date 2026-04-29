@@ -16,20 +16,29 @@ const typeLabels = {
 
 const typeLabel = typeLabels[post.type] || 'Articolo';
 
-const platforms =
-  post.platforms?.map((platform) => {
-    const manufacturer = platform.manufacturer?.name || '';
-    const name = platform.name || '';
+const isReview = post.type === 'review';
 
-    return [manufacturer, name].filter(Boolean).join(' ');
-  }).filter(Boolean) || [];
+const platforms =
+  isReview
+    ? post.platforms?.map((platform) => {
+        const manufacturer = platform.manufacturer?.name || '';
+        const name = platform.name || '';
+
+        return [manufacturer, name].filter(Boolean).join(' ');
+      }).filter(Boolean) || []
+    : [];
 
 const developer =
-  post.developers?.[0]?.name ||
-  post.publishers?.[0]?.name ||
-  '';
+  isReview
+    ? post.developers?.[0]?.name ||
+      post.publishers?.[0]?.name ||
+      ''
+    : '';
 
-const year = post.gameInfo?.releaseYear || '';
+const year =
+  isReview
+    ? post.gameInfo?.releaseYear || ''
+    : '';
 
 const metaItems = [
   developer,
