@@ -1,6 +1,7 @@
 ---
 import '../../styles/components/header/dropdown.css';
 import { getPostUrl } from '../../lib/routes';
+import { urlFor } from '../../lib/image';
 
 const { posts = [] } = Astro.props;
 
@@ -47,6 +48,18 @@ const getMeta = (post) => {
 
   return [platform, developer, year].filter(Boolean).join(' · ');
 };
+
+const getImage = (post) => {
+  if (!post?.featuredImage?.asset) return '';
+
+  return urlFor(post.featuredImage)
+    .width(180)
+    .height(120)
+    .fit('crop')
+    .quality(70)
+    .auto('format')
+    .url();
+};
 ---
 
 <div class="rg-dropdown rg-dropdown--reviews">
@@ -54,7 +67,7 @@ const getMeta = (post) => {
   <div class="rg-dropdown__panel">
 
     {finalPosts.map((post) => {
-      const image = post.featuredImage?.asset?.url;
+      const image = getImage(post);
       const score = post.score ?? 0;
 
       return (
@@ -62,7 +75,14 @@ const getMeta = (post) => {
 
           <div class="rg-dropdown__thumb">
             {image && (
-              <img src={image} alt={post.title || ''} loading="lazy" />
+              <img
+                src={image}
+                alt={post.title || ''}
+                width="180"
+                height="120"
+                loading="lazy"
+                decoding="async"
+              />
             )}
           </div>
 

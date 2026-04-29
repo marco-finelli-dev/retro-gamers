@@ -1,4 +1,7 @@
 ---
+import { urlFor } from '../lib/image';
+import { getPostUrl } from '../lib/routes';
+
 const { post = null, showMeta = false } = Astro.props;
 
 if (!post) return;
@@ -8,8 +11,21 @@ if (!post) return;
 ======================== */
 
 const title = post.title || '';
-const slug = post.slug || '';
-const image = post.featuredImage?.asset?.url || '/placeholder-retro.png';
+
+const getImage = (post) => {
+  if (!post?.featuredImage?.asset) return '/placeholder-retro.png';
+
+  return urlFor(post.featuredImage)
+    .width(520)
+    .height(325)
+    .fit('crop')
+    .quality(72)
+    .auto('format')
+    .url();
+};
+
+const image = getImage(post);
+const url = getPostUrl(post);
 
 /* ========================
    CATEGORY
@@ -17,14 +33,13 @@ const image = post.featuredImage?.asset?.url || '/placeholder-retro.png';
 
 const category = post.categories?.[0] || null;
 const categoryName = category?.name || '';
-const categorySlug = category?.slug || '';
 
 /* ========================
    META
 ======================== */
 
-const piattaforme = post.platforms?.map(p => p.name).join(', ');
-const sviluppatori = post.developers?.map(d => d.name).join(', ');
+const piattaforme = post.platforms?.map((p) => p.name).filter(Boolean).join(', ');
+const sviluppatori = post.developers?.map((d) => d.name).filter(Boolean).join(', ');
 const anno = post.gameInfo?.releaseYear;
 
 /* ========================
@@ -36,26 +51,26 @@ const excerpt = post.excerpt || '';
 
 <div class="card">
 
-  <!-- IMAGE -->
-  <a href={`/articoli/${slug}/`} class="card__image">
+  <a href={url} class="card__image">
     <div class="screen">
       <img
         class="game"
         src={image}
-        alt={title}
+        alt={post.featuredImage?.alt || title}
+        width="520"
+        height="325"
         loading="lazy"
+        decoding="async"
       />
     </div>
   </a>
 
-  <!-- CATEGORY -->
   {!showMeta && categoryName && (
     <div class="card__category">
       {categoryName}
     </div>
   )}
 
-  <!-- META -->
   {showMeta && (
     <div class="meta">
 
@@ -80,14 +95,12 @@ const excerpt = post.excerpt || '';
     </div>
   )}
 
-  <!-- TITLE -->
   <h2 class="card__title">
-    <a href={`/articoli/${slug}/`}>
+    <a href={url}>
       {title}
     </a>
   </h2>
 
-  <!-- EXCERPT -->
   {excerpt && (
     <p class="excerpt">{excerpt}</p>
   )}

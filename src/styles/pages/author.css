@@ -757,114 +757,143 @@
       inset 0 1px 0 rgba(255,255,255,0.11);
   }
 
-  /* ========================================
-     RESPONSIVE
-  ======================================== */
-  
-  @media (max-width: 1100px) {
-    .author-posts__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+ /* ========================================
+   RESPONSIVE
+======================================== */
+
+@media (max-width: 1100px) {
+  .author-posts__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  
-  @media (max-width: 900px) {
-    .author-layout {
-      grid-template-columns: 1fr;
-    }
-  
-    .author-stats dl {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+}
+
+@media (max-width: 900px) {
+  .author-layout {
+    grid-template-columns: 1fr;
   }
-  
-  @media (max-width: 768px) {
-    .author-page {
-      width: min(100% - 24px, 1180px);
-      gap: 24px;
-  
-      padding: 24px 0 42px;
-    }
-  
-    .author-hero {
-      border-radius: 24px;
-      min-height: 360px;
-    }
-  
-    .author-hero__cover {
-      height: auto;
-    }
-  
-    .author-hero__profile {
-        grid-template-columns: 86px minmax(0, 1fr);
-        gap: 15px;
-      
-        min-height: 360px;
-      
-        padding: 34px 18px 24px;
-        margin-top: 0;
-      }
-  
-      .author-hero__avatar {
-        width: 86px;
-        height: 86px;
-      
-        border-radius: 22px;
-      }
-  
-    .author-hero h1 {
-      font-size: clamp(32px, 10vw, 44px);
-      letter-spacing: -1px;
-    }
-  
-    .author-hero__nickname {
-      font-size: 13px;
-    }
-  
-    .author-bio,
-    .author-stats,
-    .author-posts {
-      border-radius: 22px;
-    }
-  
-    .author-bio,
-    .author-stats,
-    .author-posts {
-      padding: 20px;
-    }
-  
-    .author-bio h2,
-    .author-stats h2,
-    .author-posts__header h2 {
-      font-size: 20px;
-    }
-  
-    .author-bio p {
-      font-size: 15px;
-      line-height: 1.65;
-    }
-  
-    .author-posts__grid {
-      grid-template-columns: 1fr;
-    }
+
+  .author-stats dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  
-  @media (max-width: 520px) {
-    .author-hero__profile {
-        grid-template-columns: 1fr;
-        align-items: end;
-      
-        min-height: 380px;
-      
-        padding: 34px 18px 24px;
-        margin-top: 0;
-      }
-  
-      .author-hero__avatar {
-        width: 96px;
-        height: 96px;
-      }
-  
-    .author-stats dl {
-      grid-template-columns: 1fr;
-    }
+}
+
+@media (max-width: 768px) {
+  .author-page {
+    width: min(100% - 24px, 1180px);
+    gap: 24px;
+    padding: 24px 0 42px;
   }
+
+  .author-hero {
+    min-height: 380px;
+    border-radius: 24px;
+  }
+
+  .author-hero__cover {
+    height: auto;
+  }
+
+  .author-hero__profile {
+    grid-template-columns: 86px minmax(0, 1fr);
+    gap: 15px;
+
+    min-height: 380px;
+    padding: 34px 18px 24px;
+    margin-top: 0;
+  }
+
+  .author-hero__avatar {
+    width: 86px;
+    height: 86px;
+    border-radius: 22px;
+  }
+
+  .author-hero h1 {
+    font-size: clamp(32px, 10vw, 44px);
+    letter-spacing: -1px;
+  }
+
+  .author-hero__nickname {
+    font-size: 13px;
+  }
+
+  .author-bio,
+  .author-stats,
+  .author-posts {
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .author-bio h2,
+  .author-stats h2,
+  .author-posts__header h2 {
+    font-size: 20px;
+  }
+
+  .author-bio p {
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .author-posts__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .author-hero {
+    min-height: 430px;
+  }
+
+  .author-hero__profile {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    gap: 0;
+
+    min-height: 430px;
+    padding: 24px 18px 26px;
+    margin-top: 0;
+  }
+
+  .author-hero__avatar {
+    position: absolute;
+    top: 24px;
+    right: 22px;
+
+    width: 70px;
+    height: 70px;
+    border-radius: 17px;
+  }
+
+  .author-hero__content {
+    width: 100%;
+    padding: 0;
+  }
+
+  .author-hero h1 {
+    max-width: calc(100% - 12px);
+  
+    font-size: clamp(32px, 10.4vw, 42px);
+    line-height: 1;
+    letter-spacing: -0.9px;
+  }
+
+  .author-hero__badges {
+    margin-top: 16px;
+  }
+
+  .author-hero__badges span,
+  .author-hero__badges a {
+    min-height: 34px;
+    padding: 0 13px;
+    font-size: 10px;
+  }
+
+  .author-stats dl {
+    grid-template-columns: 1fr;
+  }
+}

@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveCard from '../../components/archive/ArchiveCard.astro';
 
 import { client } from '../../lib/sanity';
+import { urlFor } from '../../lib/image';
 import { getAllPosts, groupPosts } from '../../lib/posts';
 
 const { slug } = Astro.params;
@@ -53,6 +54,26 @@ const roleLabels = {
 };
 
 const roleLabel = roleLabels[author.role] || 'Autore';
+
+const authorCover = author.cover?.asset
+  ? urlFor(author.cover)
+      .width(1600)
+      .height(600)
+      .fit('crop')
+      .quality(76)
+      .auto('format')
+      .url()
+  : '';
+
+const authorAvatar = author.image?.asset
+  ? urlFor(author.image)
+      .width(320)
+      .height(320)
+      .fit('crop')
+      .quality(78)
+      .auto('format')
+      .url()
+  : '';
 
 const posts = await client.fetch(`
   *[
@@ -108,8 +129,8 @@ const pageDescription =
   `${displayName} su Retro-Gamers.it: articoli, recensioni, guide e contenuti dal mondo retro-gaming.`;
 
 const pageImage =
-  author.cover?.asset?.url ||
-  author.image?.asset?.url ||
+  authorCover ||
+  authorAvatar ||
   '/og-image.jpg';
 
 const socials = [
@@ -145,33 +166,34 @@ const socials = [
 
     <section class="author-hero">
 
-      {author.cover?.asset?.url && (
-        <div class="author-hero__cover">
-          <img
-            src={author.cover.asset.url}
-            alt={author.cover.alt || displayName}
-            width="1600"
-            height="600"
-            loading="eager"
-            decoding="async"
-          />
-        </div>
-      )}
+    {authorCover && (
+  <div class="author-hero__cover">
+    <img
+      src={authorCover}
+      alt={author.cover?.alt || displayName}
+      width="1600"
+      height="600"
+      loading="eager"
+      fetchpriority="high"
+      decoding="async"
+    />
+  </div>
+)}
 
       <div class="author-hero__profile">
 
-        {author.image?.asset?.url && (
-          <figure class="author-hero__avatar">
-            <img
-              src={author.image.asset.url}
-              alt={author.image.alt || displayName}
-              width="160"
-              height="160"
-              loading="eager"
-              decoding="async"
-            />
-          </figure>
-        )}
+        {authorAvatar && (
+  <figure class="author-hero__avatar">
+    <img
+      src={authorAvatar}
+      alt={author.image?.alt || displayName}
+      width="320"
+      height="320"
+      loading="eager"
+      decoding="async"
+    />
+  </figure>
+)}
 
    <div class="author-hero__content">
   <h1>{displayName}</h1>

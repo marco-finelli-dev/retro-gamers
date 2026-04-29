@@ -1,10 +1,23 @@
 ---
 import '../../styles/components/header/dropdown.css';
 import { getPostUrl } from '../../lib/routes';
+import { urlFor } from '../../lib/image';
 
 const { posts = [] } = Astro.props;
 
 const finalPosts = posts.slice(0, 5);
+
+const getImage = (post) => {
+  if (!post?.featuredImage?.asset) return '';
+
+  return urlFor(post.featuredImage)
+    .width(180)
+    .height(120)
+    .fit('crop')
+    .quality(70)
+    .auto('format')
+    .url();
+};
 ---
 
 <div class="rg-dropdown rg-dropdown--news">
@@ -12,7 +25,7 @@ const finalPosts = posts.slice(0, 5);
   <div class="rg-dropdown__panel">
 
     {finalPosts.map((post) => {
-      const image = post.featuredImage?.asset?.url;
+      const image = getImage(post);
       const category = post.categories?.[0]?.name || post.type || '';
 
       return (
@@ -20,7 +33,14 @@ const finalPosts = posts.slice(0, 5);
 
           <div class="rg-dropdown__thumb">
             {image && (
-              <img src={image} alt={post.title || ''} loading="lazy" />
+              <img
+                src={image}
+                alt={post.title || ''}
+                width="180"
+                height="120"
+                loading="lazy"
+                decoding="async"
+              />
             )}
           </div>
 

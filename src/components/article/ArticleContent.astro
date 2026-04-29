@@ -1,6 +1,8 @@
 ---
 import { getPostUrl } from '../../lib/routes';
+import { urlFor } from '../../lib/image';
 import ConsentYouTube from '../common/ConsentYouTube.astro';
+
 const { content = [] } = Astro.props;
 
 function escapeHTML(str = '') {
@@ -36,6 +38,21 @@ function getExternalClass(url = '') {
   return isAffiliateUrl(url)
     ? 'article-affiliate-link'
     : '';
+}
+
+function getImageUrl(image, width = 980, height = null) {
+  if (!image?.asset) return '';
+
+  let builder = urlFor(image)
+    .width(width)
+    .quality(76)
+    .auto('format');
+
+  if (height) {
+    builder = builder.height(height).fit('crop');
+  }
+
+  return builder.url();
 }
 
 function renderTextChild(child, markDefs = []) {
@@ -196,9 +213,20 @@ function chunkBalanced(images = []) {
     }
 
     if (block._type === 'image') {
+      const imageUrl = getImageUrl(block, block.isWide ? 1320 : 980);
+
+      if (!imageUrl) return null;
+
       return (
         <figure class={`article-figure ${block.isWide ? 'is-wide' : ''}`}>
-          <img src={block.asset?.url} alt={block.alt || ''} />
+          <img
+            src={imageUrl}
+            alt={block.alt || ''}
+            width={block.isWide ? '1320' : '980'}
+            height={block.isWide ? '742' : '552'}
+            loading="lazy"
+            decoding="async"
+          />
 
           {block.caption && (
             <figcaption>{block.caption}</figcaption>
@@ -217,29 +245,42 @@ function chunkBalanced(images = []) {
               class={`article-image-row article-image-row--${row.length}`}
               style={`--image-count: ${row.length};`}
             >
-              {row.map((img) => (
-                <figure>
-                  <img src={img.image?.asset?.url} alt={img.alt || ''} />
+              {row.map((img) => {
+                const imageUrl = getImageUrl(img.image, 520, 325);
 
-                  {img.caption && (
-                    <figcaption>{img.caption}</figcaption>
-                  )}
-                </figure>
-              ))}
+                if (!imageUrl) return null;
+
+                return (
+                  <figure>
+                    <img
+                      src={imageUrl}
+                      alt={img.alt || ''}
+                      width="520"
+                      height="325"
+                      loading="lazy"
+                      decoding="async"
+                    />
+
+                    {img.caption && (
+                      <figcaption>{img.caption}</figcaption>
+                    )}
+                  </figure>
+                );
+              })}
             </div>
           ))}
         </div>
       );
     }
 
-   if (block._type === 'video') {
-  return (
-    <ConsentYouTube
-      url={block.url}
-      title={block.title || 'Video YouTube'}
-    />
-  );
-}
+    if (block._type === 'video') {
+      return (
+        <ConsentYouTube
+          url={block.url}
+          title={block.title || 'Video YouTube'}
+        />
+      );
+    }
 
     if (block._type === 'asideBox') {
       const asideImages = block.content?.filter((inner) => inner._type === 'image') || [];
@@ -269,15 +310,28 @@ function chunkBalanced(images = []) {
                   class={`article-aside-row article-aside-row--${row.length}`}
                   style={`--aside-image-count: ${row.length};`}
                 >
-                  {row.map((inner) => (
-                    <figure>
-                      <img src={inner.asset?.url} alt={inner.alt || ''} />
+                  {row.map((inner) => {
+                    const imageUrl = getImageUrl(inner, 520, 325);
 
-                      {inner.caption && (
-                        <figcaption>{inner.caption}</figcaption>
-                      )}
-                    </figure>
-                  ))}
+                    if (!imageUrl) return null;
+
+                    return (
+                      <figure>
+                        <img
+                          src={imageUrl}
+                          alt={inner.alt || ''}
+                          width="520"
+                          height="325"
+                          loading="lazy"
+                          decoding="async"
+                        />
+
+                        {inner.caption && (
+                          <figcaption>{inner.caption}</figcaption>
+                        )}
+                      </figure>
+                    );
+                  })}
                 </div>
               ))}
             </div>

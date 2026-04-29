@@ -71,6 +71,14 @@ import '../../styles/components/header/search.css';
     );
   }
 
+  function optimizeImageUrl(url = '', width = 180, height = 120) {
+  if (!url) return '';
+
+  const separator = url.includes('?') ? '&' : '?';
+
+  return `${url}${separator}w=${width}&h=${height}&fit=crop&auto=format&q=70`;
+}
+
   /* ========================
      ELEMENTI
   ======================== */
@@ -234,7 +242,7 @@ const all = [
     kind: 'article',
     label: articleLabels[a.type] || 'Articolo',
     url: getArticleUrl(a),
-    image: a.featuredImage?.asset?.url || '',
+    image: optimizeImageUrl(a.featuredImage?.asset?.url || '', 180, 120),
     eyebrow: [
       articleLabels[a.type] || 'Articolo',
       a.platforms?.[0]?.name,
@@ -258,7 +266,7 @@ const all = [
     kind: 'platform',
     label: platformLabels[p.platformType] || 'Piattaforma',
     url: getPlatformUrl(p),
-    image: p.cover?.asset?.url || '',
+   image: optimizeImageUrl(p.cover?.asset?.url || '', 180, 120),
     eyebrow: [
       platformLabels[p.platformType] || 'Piattaforma',
       p.manufacturer?.name,
@@ -311,7 +319,7 @@ const all = [
     <a href="${post.url}" class="search-item">
 
       <div class="search-thumb ${image ? '' : 'is-empty'}">
-        ${image ? `<img src="${image}" alt="">` : `<span>${escapeHTML(post.label?.slice(0, 2) || 'RG')}</span>`}
+        ${image ? `<img src="${image}" alt="" width="180" height="120" loading="lazy" decoding="async">` : `<span>${escapeHTML(post.label?.slice(0, 2) || 'RG')}</span>`}
       </div>
 
       <div class="search-content">
