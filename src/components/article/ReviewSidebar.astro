@@ -22,7 +22,7 @@ const coverAlt =
 const mediaFormatLabels = {
   cartridge: 'Cartuccia',
   floppy: 'Floppy disk',
-  tape: 'Cassetta / Tape',
+  tape: 'Cassetta / tape',
   cdrom: 'CD-ROM',
   gdrom: 'GD-ROM',
   hucard: 'HuCard',
@@ -31,9 +31,15 @@ const mediaFormatLabels = {
   other: 'Altro'
 };
 
-const mediaFormat =
-  post.gameInfo?.mediaFormat
-    ? mediaFormatLabels[post.gameInfo.mediaFormat] || post.gameInfo.mediaFormat
+const rawMediaFormat = post.gameInfo?.mediaFormat;
+
+const mediaFormat = Array.isArray(rawMediaFormat)
+  ? rawMediaFormat
+      .map((format) => mediaFormatLabels[format] || format)
+      .filter(Boolean)
+      .join(', ')
+  : rawMediaFormat
+    ? mediaFormatLabels[rawMediaFormat] || rawMediaFormat
     : '';
 
 const infoRows = [
