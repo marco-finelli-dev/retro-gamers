@@ -1,0 +1,107 @@
+<div class="article-lightbox" data-article-lightbox hidden>
+  <button
+    class="article-lightbox__backdrop"
+    type="button"
+    data-lightbox-close
+    aria-label="Chiudi immagine"
+  ></button>
+
+  <div class="article-lightbox__stage">
+    <button
+      class="article-lightbox__close"
+      type="button"
+      data-lightbox-close
+      aria-label="Chiudi immagine"
+    >
+      ×
+    </button>
+
+    <img
+      src=""
+      alt=""
+      class="article-lightbox__image"
+      data-lightbox-image
+    />
+
+    <p class="article-lightbox__caption" data-lightbox-caption hidden></p>
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const lightbox = document.querySelector('[data-article-lightbox]');
+    if (!lightbox) return;
+
+    const image = lightbox.querySelector('[data-lightbox-image]');
+    const caption = lightbox.querySelector('[data-lightbox-caption]');
+    const closeButtons = lightbox.querySelectorAll('[data-lightbox-close]');
+
+    const candidates = document.querySelectorAll(`
+      .article-content .article-figure img,
+      .article-content .article-image-row img,
+      .article-content .article-aside-figure img,
+      .article-content .article-aside-row img
+    `);
+
+    if (!candidates.length) return;
+
+    const open = (img) => {
+      const fullSrc =
+        img.currentSrc ||
+        img.src;
+
+      const figure = img.closest('figure');
+      const figcaption = figure?.querySelector('figcaption')?.textContent?.trim();
+
+      image.src = fullSrc;
+      image.alt = img.alt || '';
+
+      if (figcaption) {
+        caption.textContent = figcaption;
+        caption.hidden = false;
+      } else {
+        caption.textContent = '';
+        caption.hidden = true;
+      }
+
+      lightbox.hidden = false;
+      document.documentElement.classList.add('has-lightbox-open');
+    };
+
+    const close = () => {
+      lightbox.hidden = true;
+      image.src = '';
+      image.alt = '';
+      caption.textContent = '';
+      caption.hidden = true;
+
+      document.documentElement.classList.remove('has-lightbox-open');
+    };
+
+    candidates.forEach((img) => {
+      img.classList.add('is-lightboxable');
+      img.setAttribute('tabindex', '0');
+      img.setAttribute('role', 'button');
+      img.setAttribute('aria-label', 'Apri immagine ingrandita');
+
+      img.addEventListener('click', () => open(img));
+
+      img.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          open(img);
+        }
+      });
+    });
+
+    closeButtons.forEach((button) => {
+      button.addEventListener('click', close);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !lightbox.hidden) {
+        close();
+      }
+    });
+  })();
+</script>

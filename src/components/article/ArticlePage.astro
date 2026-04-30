@@ -1,6 +1,7 @@
 ---
 import ArticleHero from './ArticleHero.astro';
 import ArticleContent from './ArticleContent.astro';
+import ArticleLightbox from './ArticleLightbox.astro';
 import ArticleSidebar from './ArticleSidebar.astro';
 import ReviewSidebar from './ReviewSidebar.astro';
 import ArticleFinalRating from './ArticleFinalRating.astro';
@@ -45,6 +46,8 @@ const isReview = post?.type === 'review';
 {isReview && post.rating && (
   <ArticleFinalRating rating={post.rating} />
 )}
+
+<ArticleLightbox />
 
     </article>
 
