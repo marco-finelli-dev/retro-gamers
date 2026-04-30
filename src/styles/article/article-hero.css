@@ -317,22 +317,35 @@
     background var(--transition-fast);
 }
 
-.article-hero .article-share__actions img {
+.article-hero .article-share__icon {
   display: block;
 
   width: 20px;
   height: 20px;
 
-  object-fit: contain;
-
   opacity: 0.82;
+  background: rgba(255,255,255,0.86);
 
-  filter: brightness(0) invert(1);
+  mask-image: var(--icon);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+
+  -webkit-mask-image: var(--icon);
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
 
   transition:
     opacity var(--transition-fast),
-    filter var(--transition-fast),
+    background var(--transition-fast),
     transform var(--transition-fast);
+}
+
+.article-hero .article-share__actions a:hover .article-share__icon {
+  opacity: 1;
+  background: var(--color-primary);
+  transform: scale(1.04);
 }
 
 .article-hero .article-share__actions a:hover {
@@ -352,22 +365,6 @@
     0 12px 28px rgba(0,0,0,0.32),
     inset 0 1px 0 rgba(255,255,255,0.060);
 }
-
-.article-hero .article-share__actions a:hover img {
-  opacity: 1;
-  transform: scale(1.04);
-
-  filter:
-    brightness(0)
-    saturate(100%)
-    invert(83%)
-    sepia(92%)
-    saturate(1402%)
-    hue-rotate(140deg)
-    brightness(105%)
-    contrast(106%);
-}
-
 
 /* ========================================
    ACCESSIBILITY
@@ -474,7 +471,7 @@
     height: 42px;
   }
 
-  .article-hero .article-share__actions img {
+  .article-hero .article-share__icon {
     width: 20px;
     height: 20px;
   }

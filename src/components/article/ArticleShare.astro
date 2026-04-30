@@ -57,8 +57,13 @@ const shareLinks = [
         aria-label={`Condividi su ${item.label}`}
         title={`Condividi su ${item.label}`}
       >
-        <img src={item.icon} alt="" aria-hidden="true" />
-        <span class="sr-only">{item.label}</span>
+    <span
+  class="article-share__icon"
+  style={`--icon: url('${item.icon}')`}
+  aria-hidden="true"
+></span>
+
+<span class="sr-only">{item.label}</span>
       </a>
     ))}
   </div>

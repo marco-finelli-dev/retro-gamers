@@ -20,11 +20,13 @@ const author = await client.fetch(`
     "slug": slug.current,
     bio,
     role,
+    email,
+    showEmail,
     website,
+    facebook,
     twitter,
     youtube,
     twitch,
-    showContactButton,
 
     image {
       alt,
@@ -134,21 +136,35 @@ const pageImage =
   '/og-image.jpg';
 
 const socials = [
+  author.showEmail && author.email && {
+    label: 'Email',
+    url: `mailto:${author.email}`,
+    icon: '/icons/social/mail.svg'
+  },
   author.website && {
     label: 'Sito web',
-    url: author.website
+    url: author.website,
+    icon: '/icons/social/link.svg'
+  },
+  author.facebook && {
+    label: 'Facebook',
+    url: author.facebook,
+    icon: '/icons/social/facebook.svg'
   },
   author.twitter && {
     label: 'X',
-    url: author.twitter
+    url: author.twitter,
+    icon: '/icons/social/x.svg'
   },
   author.youtube && {
     label: 'YouTube',
-    url: author.youtube
+    url: author.youtube,
+    icon: '/icons/social/youtube.svg'
   },
   author.twitch && {
     label: 'Twitch',
-    url: author.twitch
+    url: author.twitch,
+    icon: '/icons/social/twitch.svg'
   }
 ].filter(Boolean);
 ---
@@ -166,58 +182,76 @@ const socials = [
 
     <section class="author-hero">
 
-    {authorCover && (
-  <div class="author-hero__cover">
-    <img
-      src={authorCover}
-      alt={author.cover?.alt || displayName}
-      width="1600"
-      height="600"
-      loading="eager"
-      fetchpriority="high"
-      decoding="async"
-    />
-  </div>
-)}
+      {authorCover && (
+        <div class="author-hero__cover">
+          <img
+            src={authorCover}
+            alt={author.cover?.alt || displayName}
+            width="1600"
+            height="600"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </div>
+      )}
 
       <div class="author-hero__profile">
 
         {authorAvatar && (
-  <figure class="author-hero__avatar">
-    <img
-      src={authorAvatar}
-      alt={author.image?.alt || displayName}
-      width="320"
-      height="320"
-      loading="eager"
-      decoding="async"
-    />
-  </figure>
-)}
+          <figure class="author-hero__avatar">
+            <img
+              src={authorAvatar}
+              alt={author.image?.alt || displayName}
+              width="320"
+              height="320"
+              loading="eager"
+              decoding="async"
+            />
+          </figure>
+        )}
 
-   <div class="author-hero__content">
-  <h1>{displayName}</h1>
+        <div class="author-hero__content">
 
-  {author.nickname && author.displayName !== 'nickname' && (
-    <p class="author-hero__nickname">
-      aka {author.nickname}
-    </p>
-  )}
+          <h1>{displayName}</h1>
 
-  <div class="author-hero__badges">
-    <span>{roleLabel}</span>
+          {author.nickname && author.displayName !== 'nickname' && (
+            <p class="author-hero__nickname">
+              aka {author.nickname}
+            </p>
+          )}
 
-    {socials.map((item) => (
-      <a
-        href={item.url}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {item.label}
-      </a>
-    ))}
-  </div>
-</div>
+          <div class="author-hero__badges">
+            <span>{roleLabel}</span>
+          </div>
+
+          {socials.length > 0 && (
+            <div class="author-hero__socials" aria-label="Contatti autore">
+              {socials.map((item) => {
+                const isMail = item.url.startsWith('mailto:');
+
+                return (
+                  <a
+                    href={item.url}
+                    target={isMail ? undefined : '_blank'}
+                    rel={isMail ? undefined : 'noopener noreferrer'}
+                    aria-label={item.label}
+                    title={item.label}
+                  >
+                    <span
+                      class="author-hero__social-icon"
+                      style={`--icon: url('${item.icon}')`}
+                      aria-hidden="true"
+                    ></span>
+
+                    <span class="sr-only">{item.label}</span>
+                  </a>
+                );
+              })}
+            </div>
+          )}
+
+        </div>
 
       </div>
 
@@ -233,9 +267,7 @@ const socials = [
         {author.bio ? (
           <p>{author.bio}</p>
         ) : (
-          <p>
-            Autore di Retro-Gamers.it.
-          </p>
+          <p>Autore di Retro-Gamers.it.</p>
         )}
       </article>
 
@@ -264,60 +296,60 @@ const socials = [
         <h2>Articoli pubblicati</h2>
       </div>
 
-     {posts.length > 0 ? (
-  <>
-    <div class="author-posts__grid" data-author-posts-grid>
-      {posts.map((post, index) => (
-        <div
-          class="author-posts__item"
-          data-author-post-item
-          hidden={index >= 12}
-        >
-          <ArchiveCard post={post} />
-        </div>
-      ))}
-    </div>
+      {posts.length > 0 ? (
+        <>
+          <div class="author-posts__grid" data-author-posts-grid>
+            {posts.map((post, index) => (
+              <div
+                class="author-posts__item"
+                data-author-post-item
+                hidden={index >= 12}
+              >
+                <ArchiveCard post={post} />
+              </div>
+            ))}
+          </div>
 
-    {posts.length > 12 && (
-      <div class="author-posts__more">
-        <button type="button" data-author-posts-more>
-          Mostra altri articoli
-        </button>
-      </div>
-    )}
-  </>
-) : (
-  <p class="author-posts__empty">
-    Nessun articolo pubblicato.
-  </p>
-)}
+          {posts.length > 12 && (
+            <div class="author-posts__more">
+              <button type="button" data-author-posts-more>
+                Mostra altri articoli
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <p class="author-posts__empty">
+          Nessun articolo pubblicato.
+        </p>
+      )}
 
     </section>
 
   </main>
 
-<script is:inline>
-  (() => {
-    const button = document.querySelector('[data-author-posts-more]');
-    const items = Array.from(document.querySelectorAll('[data-author-post-item]'));
+  <script is:inline>
+    (() => {
+      const button = document.querySelector('[data-author-posts-more]');
+      const items = Array.from(document.querySelectorAll('[data-author-post-item]'));
 
-    if (!button || items.length === 0) return;
+      if (!button || items.length === 0) return;
 
-    let visible = 12;
-    const step = 6;
+      let visible = 12;
+      const step = 6;
 
-    button.addEventListener('click', () => {
-      visible += step;
+      button.addEventListener('click', () => {
+        visible += step;
 
-      items.forEach((item, index) => {
-        item.hidden = index >= visible;
+        items.forEach((item, index) => {
+          item.hidden = index >= visible;
+        });
+
+        if (visible >= items.length) {
+          button.hidden = true;
+        }
       });
-
-      if (visible >= items.length) {
-        button.hidden = true;
-      }
-    });
-  })();
-</script>
+    })();
+  </script>
 
 </BaseLayout>
