@@ -1,0 +1,65 @@
+---
+const { post } = Astro.props;
+
+const siteUrl = 'https://www.retro-gamers.it';
+
+const typeToPath = {
+  review: 'recensioni',
+  news: 'news',
+  feature: 'speciali',
+  guide: 'guide',
+  memories: 'memories',
+  interview: 'interviste',
+  hardware: 'hardware',
+  article: 'articoli'
+};
+
+const section = typeToPath[post.type] || 'articoli';
+const url = `${siteUrl}/${section}/${post.slug}/`;
+const title = post.seoTitle || post.title || 'Retro-Gamers.it';
+
+const encodedUrl = encodeURIComponent(url);
+const encodedTitle = encodeURIComponent(title);
+
+const shareLinks = [
+  {
+    label: 'Facebook',
+    icon: '/icons/social/facebook.svg',
+    href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`
+  },
+  {
+    label: 'X',
+    icon: '/icons/social/x.svg',
+    href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`
+  },
+  {
+    label: 'WhatsApp',
+    icon: '/icons/social/whatsapp.svg',
+    href: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`
+  },
+  {
+    label: 'Telegram',
+    icon: '/icons/social/telegram.svg',
+    href: `https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`
+  }
+];
+---
+
+<section class="article-share">
+  <span>Condividi</span>
+
+  <div class="article-share__actions">
+    {shareLinks.map((item) => (
+      <a
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Condividi su ${item.label}`}
+        title={`Condividi su ${item.label}`}
+      >
+        <img src={item.icon} alt="" aria-hidden="true" />
+        <span class="sr-only">{item.label}</span>
+      </a>
+    ))}
+  </div>
+</section>

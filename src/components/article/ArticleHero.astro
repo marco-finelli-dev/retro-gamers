@@ -1,5 +1,6 @@
 ---
 import { getArchiveUrl } from '../../lib/routes';
+import ArticleShare from './ArticleShare.astro';
 
 const { post } = Astro.props;
 
@@ -101,27 +102,33 @@ const infoItems = [
       <p>{post.subtitle || post.excerpt}</p>
     )}
 
-    {(authorDisplayName || infoItems.length > 0) && (
-      <div class="article-hero__info">
+   <div class="article-hero__footer">
 
-        {authorDisplayName && (
-          authorUrl ? (
-            <a href={authorUrl}>
-              Di {authorDisplayName}
-            </a>
-          ) : (
-            <span>
-              Di {authorDisplayName}
-            </span>
-          )
-        )}
+  {(authorDisplayName || infoItems.length > 0) && (
+    <div class="article-hero__info">
 
-        {infoItems.map((item) => (
-          <span>{item}</span>
-        ))}
+      {authorDisplayName && (
+        authorUrl ? (
+          <a href={authorUrl}>
+            Di {authorDisplayName}
+          </a>
+        ) : (
+          <span>
+            Di {authorDisplayName}
+          </span>
+        )
+      )}
 
-      </div>
-    )}
+      {infoItems.map((item) => (
+        <span>{item}</span>
+      ))}
+
+    </div>
+  )}
+
+  <ArticleShare post={post} compact />
+
+</div>
 
   </div>
 
