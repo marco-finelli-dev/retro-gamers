@@ -19,10 +19,31 @@ const coverAlt =
   `${post.title} cover` ||
   '';
 
+const mediaFormatLabels = {
+  cartridge: 'Cartuccia',
+  floppy: 'Floppy disk',
+  tape: 'Cassetta / Tape',
+  cdrom: 'CD-ROM',
+  gdrom: 'GD-ROM',
+  hucard: 'HuCard',
+  arcade_pcb: 'PCB arcade',
+  digital: 'Digitale',
+  other: 'Altro'
+};
+
+const mediaFormat =
+  post.gameInfo?.mediaFormat
+    ? mediaFormatLabels[post.gameInfo.mediaFormat] || post.gameInfo.mediaFormat
+    : '';
+
 const infoRows = [
   {
     label: 'Piattaforma',
     value: post.platforms?.map((item) => item.name).join(', ')
+  },
+  {
+    label: 'Formato',
+    value: mediaFormat
   },
   {
     label: 'Sviluppatore',
