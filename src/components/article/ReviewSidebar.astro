@@ -6,10 +6,8 @@ const { post } = Astro.props;
 
 const cover = post.gameInfo?.cover?.asset
   ? urlFor(post.gameInfo.cover)
-      .width(420)
-      .height(560)
-      .fit('crop')
-      .quality(74)
+      .width(720)
+      .quality(78)
       .auto('format')
       .url()
   : '';
@@ -81,8 +79,7 @@ const infoRows = [
       <img
         src={cover}
         alt={coverAlt}
-        width="420"
-        height="560"
+        width="720"
         loading="lazy"
         decoding="async"
       />
