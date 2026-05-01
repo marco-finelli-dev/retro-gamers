@@ -195,15 +195,24 @@
 
 
 /* ========================================
-   AUTHOR BADGES
+   AUTHOR ACTIONS
 ======================================== */
+
+.author-hero__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  margin-top: 18px;
+}
 
 .author-hero__badges {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 
-  margin-top: 18px;
+  margin: 0;
 }
 
 .author-hero__badges span {
@@ -211,11 +220,11 @@
   align-items: center;
   justify-content: center;
 
-  min-height: 32px;
-  padding: 0 12px;
+  min-height: 40px;
+  padding: 0 16px;
   border-radius: 999px;
 
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
   font-weight: 900;
 
@@ -243,7 +252,7 @@
   align-items: center;
   gap: 9px;
 
-  margin-top: 14px;
+  margin: 0;
 }
 
 .author-hero__socials a {
@@ -433,14 +442,58 @@
     0 6px 22px rgba(0,0,0,0.78);
 }
 
-.author-bio p {
+.author-bio__content {
   max-width: 780px;
-  margin: 18px 0 0;
+  margin-top: 18px;
 
   font-size: 16px;
   line-height: 1.7;
 
   color: rgba(255,255,255,0.66);
+}
+
+.author-bio__content p {
+  margin: 0 0 1.1em;
+}
+
+.author-bio__content p:last-child {
+  margin-bottom: 0;
+}
+
+.author-bio__content strong {
+  color: rgba(255,255,255,0.92);
+  font-weight: 780;
+}
+
+.author-bio__content em {
+  color: rgba(255,255,255,0.78);
+}
+
+.author-bio__content a {
+  color: var(--color-primary);
+  text-decoration: none;
+
+  background:
+    linear-gradient(
+      to right,
+      rgba(34,240,255,0.40),
+      rgba(34,240,255,0.40)
+    );
+
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+
+  transition:
+    color var(--transition-fast),
+    text-shadow var(--transition-fast),
+    background-size var(--transition-fast);
+}
+
+.author-bio__content a:hover {
+  color: #fff;
+  text-shadow: 0 0 12px rgba(34,240,255,0.25);
+  background-size: 100% 2px;
 }
 
 .author-stats {
@@ -879,7 +932,7 @@
     font-size: 20px;
   }
 
-  .author-bio p {
+  .author-bio__content {
     font-size: 15px;
     line-height: 1.65;
   }
@@ -930,13 +983,13 @@
     letter-spacing: -0.9px;
   }
 
-  .author-hero__badges {
+  .author-hero__actions {
     margin-top: 16px;
   }
 
   .author-hero__badges span {
-    min-height: 34px;
-    padding: 0 13px;
+    min-height: 38px;
+    padding: 0 14px;
     font-size: 10px;
   }
 

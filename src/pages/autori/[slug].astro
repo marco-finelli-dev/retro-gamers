@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveCard from '../../components/archive/ArchiveCard.astro';
-
+import { PortableText } from 'astro-portabletext';
 import { client } from '../../lib/sanity';
 import { urlFor } from '../../lib/image';
 import { getAllPosts, groupPosts } from '../../lib/posts';
@@ -221,35 +221,39 @@ const socials = [
             </p>
           )}
 
-          <div class="author-hero__badges">
-            <span>{roleLabel}</span>
-          </div>
+         <div class="author-hero__actions">
 
-          {socials.length > 0 && (
-            <div class="author-hero__socials" aria-label="Contatti autore">
-              {socials.map((item) => {
-                const isMail = item.url.startsWith('mailto:');
+  <div class="author-hero__badges">
+    <span>{roleLabel}</span>
+  </div>
 
-                return (
-                  <a
-                    href={item.url}
-                    target={isMail ? undefined : '_blank'}
-                    rel={isMail ? undefined : 'noopener noreferrer'}
-                    aria-label={item.label}
-                    title={item.label}
-                  >
-                    <span
-                      class="author-hero__social-icon"
-                      style={`--icon: url('${item.icon}')`}
-                      aria-hidden="true"
-                    ></span>
+  {socials.length > 0 && (
+    <div class="author-hero__socials" aria-label="Contatti autore">
+      {socials.map((item) => {
+        const isMail = item.url.startsWith('mailto:');
 
-                    <span class="sr-only">{item.label}</span>
-                  </a>
-                );
-              })}
-            </div>
-          )}
+        return (
+          <a
+            href={item.url}
+            target={isMail ? undefined : '_blank'}
+            rel={isMail ? undefined : 'noopener noreferrer'}
+            aria-label={item.label}
+            title={item.label}
+          >
+            <span
+              class="author-hero__social-icon"
+              style={`--icon: url('${item.icon}')`}
+              aria-hidden="true"
+            ></span>
+
+            <span class="sr-only">{item.label}</span>
+          </a>
+        );
+      })}
+    </div>
+  )}
+
+</div>
 
         </div>
 
@@ -264,11 +268,15 @@ const socials = [
 
         <h2>Profilo autore</h2>
 
-        {author.bio ? (
-          <p>{author.bio}</p>
-        ) : (
-          <p>Autore di Retro-Gamers.it.</p>
-        )}
+      {author.bio?.length > 0 ? (
+  <div class="author-bio__content">
+    <PortableText value={author.bio} />
+  </div>
+) : (
+  <div class="author-bio__content">
+    <p>Autore di Retro-Gamers.it.</p>
+  </div>
+)}
       </article>
 
       <aside class="author-stats">
