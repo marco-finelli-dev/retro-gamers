@@ -14,15 +14,59 @@ const all = posts
     ...p,
     score: p?.score ?? p?.rating?.overall ?? 0
   }))
+  .filter((post) => post?._id);
+
+const uniqueById = (items) => {
+  const seen = new Set();
+
+  return items.filter((item) => {
+    if (seen.has(item._id)) return false;
+
+    seen.add(item._id);
+    return true;
+  });
+};
+
+const recentPosts = [...all]
+  .sort(
+    (a, b) =>
+      new Date(b.publishedAt || 0).getTime() -
+      new Date(a.publishedAt || 0).getTime()
+  )
+  .slice(0, 2);
+
+const topPosts = [...all]
+  .filter((post) => !recentPosts.some((item) => item._id === post._id))
   .sort((a, b) => {
-    if (b.score === a.score) {
-      return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
+    if ((b.score || 0) === (a.score || 0)) {
+      return (
+        new Date(b.publishedAt || 0).getTime() -
+        new Date(a.publishedAt || 0).getTime()
+      );
     }
 
-    return b.score - a.score;
-  });
+    return (b.score || 0) - (a.score || 0);
+  })
+  .slice(0, 2);
 
-const finalPosts = all.slice(0, 5);
+const archiveCandidates = all.filter(
+  (post) =>
+    !recentPosts.some((item) => item._id === post._id) &&
+    !topPosts.some((item) => item._id === post._id)
+);
+
+const daySeed = Math.floor(Date.now() / 86_400_000);
+
+const archivePost =
+  archiveCandidates.length > 0
+    ? archiveCandidates[daySeed % archiveCandidates.length]
+    : null;
+
+const finalPosts = uniqueById([
+  ...recentPosts,
+  ...topPosts,
+  archivePost
+].filter(Boolean)).slice(0, 5);
 
 const formatScore = (score) =>
   score ? Number(score).toFixed(1) : '-';

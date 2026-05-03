@@ -384,12 +384,12 @@ export function groupPosts(posts: Post[] = []) {
     EDITORIAL HUB:
     Speciali e memories separati.
   */
-  const specials = takeUnused(
-    normalized.filter((post) => post.type === 'feature'),
-    usedIds,
-    4,
-    { requireImage: true }
-  );
+    const specials = takeUnused(
+      normalized.filter((post) => post.type === 'feature'),
+      usedIds,
+      5,
+      { requireImage: true }
+    );
 
   const memories = takeUnused(
     normalized.filter((post) => post.type === 'memories'),
@@ -403,8 +403,9 @@ export function groupPosts(posts: Post[] = []) {
     blocco editoriale misto, ma senza ripetere hero/reviews/specials/memories.
   */
     const archive = takeUnused(
+
       normalized.filter((post) =>
-        ['feature', 'memories', 'review', 'guide', 'interview', 'article'].includes(post.type || '')
+        ['review', 'memories', 'guide', 'interview', 'article', 'feature'].includes(post.type || '')
       ),
       usedIds,
       4,
