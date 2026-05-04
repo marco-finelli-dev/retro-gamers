@@ -8,32 +8,104 @@ const {
   description = '',
   posts = [],
   showFilters = true,
-  emptyTitle = 'Nessun contenuto trovato',
-  emptyText = 'Torna presto: questa sezione verrà aggiornata con nuovi contenuti.'
+  lang = 'it',
+  emptyTitle = null,
+  emptyText = null
 } = Astro.props;
+
+const isEnglish = lang === 'en';
+
+const ui = isEnglish
+  ? {
+      contentAvailableSingular: 'content available',
+      contentAvailablePlural: 'contents available',
+      filterArchive: 'Filter archive',
+      filterIntro: 'Find what you are looking for',
+      type: 'Type',
+      platform: 'Platform',
+      category: 'Category',
+      genre: 'Genre',
+      year: 'Year',
+      product: 'Product',
+      all: 'All',
+      allFemale: 'All',
+      search: 'Search',
+      reset: 'Reset',
+      visibleContents: 'contents<br />shown',
+      emptyTitle: 'No content found',
+      emptyText: 'Come back soon: this section will be updated with new content.',
+      noResults: 'No results',
+      noResultsText: 'Try changing or resetting the selected filters.',
+      typeLabels: {
+        review: 'Reviews',
+        news: 'News',
+        feature: 'Features',
+        guide: 'Guides',
+        interview: 'Interviews',
+        memories: 'Memories',
+        hardware: 'Hardware',
+        article: 'Articles'
+      },
+      productLabels: {
+        book: 'Books',
+        hardware: 'Hardware',
+        accessory: 'Accessories',
+        software: 'Software',
+        gadget: 'Gadgets',
+        service: 'Services',
+        other: 'Other'
+      }
+    }
+  : {
+      contentAvailableSingular: 'contenuto disponibile',
+      contentAvailablePlural: 'contenuti disponibili',
+      filterArchive: 'Filtra archivio',
+      filterIntro: 'Trova subito quello che cerchi',
+      type: 'Tipo',
+      platform: 'Piattaforma',
+      category: 'Categoria',
+      genre: 'Genere',
+      year: 'Anno',
+      product: 'Prodotto',
+      all: 'Tutti',
+      allFemale: 'Tutte',
+      search: 'Cerca',
+      reset: 'Reset',
+      visibleContents: 'contenuti<br />visualizzati',
+      emptyTitle: 'Nessun contenuto trovato',
+      emptyText: 'Torna presto: questa sezione verrà aggiornata con nuovi contenuti.',
+      noResults: 'Nessun risultato',
+      noResultsText: 'Prova a cambiare o azzerare i filtri selezionati.',
+      typeLabels: {
+        review: 'Recensioni',
+        news: 'News',
+        feature: 'Speciali',
+        guide: 'Guide',
+        interview: 'Interviste',
+        memories: 'Memories',
+        hardware: 'Hardware',
+        article: 'Articoli'
+      },
+      productLabels: {
+        book: 'Libri',
+        hardware: 'Hardware',
+        accessory: 'Accessori',
+        software: 'Software',
+        gadget: 'Gadget',
+        service: 'Servizi',
+        other: 'Altro'
+      }
+    };
 
 const total = posts.length;
 
-const typeLabels = {
-  review: 'Recensioni',
-  news: 'News',
-  feature: 'Speciali',
-  guide: 'Guide',
-  interview: 'Interviste',
-  memories: 'Memories',
-  hardware: 'Hardware',
-  article: 'Articoli'
-};
+const contentCountLabel =
+  total === 1
+    ? ui.contentAvailableSingular
+    : ui.contentAvailablePlural;
 
-const productLabels = {
-  book: 'Libri',
-  hardware: 'Hardware',
-  accessory: 'Accessori',
-  software: 'Software',
-  gadget: 'Gadget',
-  service: 'Servizi',
-  other: 'Altro'
-};
+const finalEmptyTitle = emptyTitle || ui.emptyTitle;
+const finalEmptyText = emptyText || ui.emptyText;
 
 const uniqueBy = (items = [], key = 'slug') => {
   const seen = new Set();
@@ -103,7 +175,7 @@ const hasFilters =
 
           {total > 0 && (
             <small class="archive-hero__count">
-              {total} contenuti disponibili
+              {total} {contentCountLabel}
             </small>
           )}
         </div>
@@ -117,19 +189,19 @@ const hasFilters =
         <div class="archive-filters__bar">
 
           <div class="archive-filters__intro">
-            <span>Filtra archivio</span>
-            <strong>Trova subito quello che cerchi</strong>
+            <span>{ui.filterArchive}</span>
+            <strong>{ui.filterIntro}</strong>
           </div>
 
           <div class="archive-filters__grid">
 
             {types.length > 1 && (
               <label class="archive-filter">
-                <span>Tipo</span>
+                <span>{ui.type}</span>
                 <select data-filter="type">
-                  <option value="">Tutti</option>
+                  <option value="">{ui.all}</option>
                   {types.map((type) => (
-                    <option value={type}>{typeLabels[type] || type}</option>
+                    <option value={type}>{ui.typeLabels[type] || type}</option>
                   ))}
                 </select>
               </label>
@@ -137,9 +209,9 @@ const hasFilters =
 
             {platforms.length > 0 && (
               <label class="archive-filter">
-                <span>Piattaforma</span>
+                <span>{ui.platform}</span>
                 <select data-filter="platform">
-                  <option value="">Tutte</option>
+                  <option value="">{isEnglish ? ui.all : ui.allFemale}</option>
                   {platforms.map((platform) => (
                     <option value={platform.slug}>{platform.name}</option>
                   ))}
@@ -149,9 +221,9 @@ const hasFilters =
 
             {categories.length > 0 && (
               <label class="archive-filter">
-                <span>Categoria</span>
+                <span>{ui.category}</span>
                 <select data-filter="category">
-                  <option value="">Tutte</option>
+                  <option value="">{isEnglish ? ui.all : ui.allFemale}</option>
                   {categories.map((category) => (
                     <option value={category.slug}>{category.name}</option>
                   ))}
@@ -161,9 +233,9 @@ const hasFilters =
 
             {genres.length > 0 && (
               <label class="archive-filter">
-                <span>Genere</span>
+                <span>{ui.genre}</span>
                 <select data-filter="genre">
-                  <option value="">Tutti</option>
+                  <option value="">{ui.all}</option>
                   {genres.map((genre) => (
                     <option value={genre.slug}>{genre.name}</option>
                   ))}
@@ -173,9 +245,9 @@ const hasFilters =
 
             {years.length > 0 && (
               <label class="archive-filter">
-                <span>Anno</span>
+                <span>{ui.year}</span>
                 <select data-filter="year">
-                  <option value="">Tutti</option>
+                  <option value="">{ui.all}</option>
                   {years.map((year) => (
                     <option value={year}>{year}</option>
                   ))}
@@ -185,11 +257,11 @@ const hasFilters =
 
             {productTypes.length > 0 && (
               <label class="archive-filter">
-                <span>Prodotto</span>
+                <span>{ui.product}</span>
                 <select data-filter="product">
-                  <option value="">Tutti</option>
+                  <option value="">{ui.all}</option>
                   {productTypes.map((product) => (
-                    <option value={product}>{productLabels[product] || product}</option>
+                    <option value={product}>{ui.productLabels[product] || product}</option>
                   ))}
                 </select>
               </label>
@@ -199,17 +271,17 @@ const hasFilters =
 
           <div class="archive-filters__actions">
             <button type="button" class="archive-filters__submit" data-filter-submit>
-              Cerca
+              {ui.search}
             </button>
 
             <button type="button" class="archive-filters__reset" data-filter-reset>
-              Reset
+              {ui.reset}
             </button>
           </div>
 
           <div class="archive-filters__result">
             <span data-filter-count>{posts.length}</span>
-            <small>contenuti<br />visualizzati</small>
+            <small set:html={ui.visibleContents} />
           </div>
 
         </div>
@@ -237,7 +309,7 @@ const hasFilters =
               data-year={year}
               data-product={productType}
             >
-              <ArchiveCard post={post} />
+              <ArchiveCard post={post} lang={lang} />
             </article>
           );
         })}
@@ -247,16 +319,16 @@ const hasFilters =
 
       <section class="archive-empty">
         <span>RG</span>
-        <h2>{emptyTitle}</h2>
-        <p>{emptyText}</p>
+        <h2>{finalEmptyTitle}</h2>
+        <p>{finalEmptyText}</p>
       </section>
 
     )}
 
     <section class="archive-empty archive-empty--filtered" data-filter-empty hidden>
       <span>RG</span>
-      <h2>Nessun risultato</h2>
-      <p>Prova a cambiare o azzerare i filtri selezionati.</p>
+      <h2>{ui.noResults}</h2>
+      <p>{ui.noResultsText}</p>
     </section>
 
   </div>

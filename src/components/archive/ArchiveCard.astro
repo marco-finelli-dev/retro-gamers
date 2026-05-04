@@ -2,7 +2,12 @@
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
 
-const { post } = Astro.props;
+const {
+  post,
+  lang = post?.language || 'it'
+} = Astro.props;
+
+const isEnglish = lang === 'en';
 
 const getImage = (post, width = 520, height = 325) => {
   if (!post?.featuredImage?.asset) return '/placeholder-retro.png';
@@ -17,28 +22,47 @@ const getImage = (post, width = 520, height = 325) => {
 };
 
 const getTypeLabel = (type = '') => {
-  const map = {
-    review: 'Recensione',
-    article: 'Articolo',
-    guide: 'Guida',
-    interview: 'Intervista',
-    news: 'News',
-    feature: 'Speciale',
-    memories: 'Memories',
-    hardware: 'Hardware'
-  };
+  const map = isEnglish
+    ? {
+        review: 'Review',
+        article: 'Article',
+        guide: 'Guide',
+        interview: 'Interview',
+        news: 'News',
+        feature: 'Feature',
+        memories: 'Memories',
+        hardware: 'Hardware'
+      }
+    : {
+        review: 'Recensione',
+        article: 'Articolo',
+        guide: 'Guida',
+        interview: 'Intervista',
+        news: 'News',
+        feature: 'Speciale',
+        memories: 'Memories',
+        hardware: 'Hardware'
+      };
 
-  return map[type] || type || 'Articolo';
+  return map[type] || type || (isEnglish ? 'Article' : 'Articolo');
 };
 
-const getCategory = (post) =>
-  post?.categories?.[0]?.name || getTypeLabel(post?.type);
+const getCategory = (post) => {
+  /*
+    Le categorie arrivano da Sanity e per ora sono in italiano.
+    Nelle pagine inglesi, se non abbiamo categorie tradotte,
+    meglio usare la label del tipo contenuto.
+  */
+  if (isEnglish) return getTypeLabel(post?.type);
+
+  return post?.categories?.[0]?.name || getTypeLabel(post?.type);
+};
 
 const getExcerpt = (post) =>
   post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
 
 const date = post?.publishedAt
-  ? new Date(post.publishedAt).toLocaleDateString('it-IT', {
+  ? new Date(post.publishedAt).toLocaleDateString(isEnglish ? 'en-US' : 'it-IT', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
