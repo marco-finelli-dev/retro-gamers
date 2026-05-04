@@ -3,58 +3,73 @@ export function getPostUrl(post) {
 
   if (!slug) return '/';
 
-  switch (post.type) {
-    case 'review':
-      return `/recensioni/${slug}/`;
+  const language = post?.language || 'it';
 
-    case 'guide':
-      return `/guide/${slug}/`;
+  const routes = {
+    it: {
+      review: 'recensioni',
+      guide: 'guide',
+      feature: 'speciali',
+      interview: 'interviste',
+      memories: 'memories',
+      news: 'news',
+      hardware: 'hardware',
+      article: 'articoli'
+    },
 
-    case 'feature':
-      return `/speciali/${slug}/`;
+    en: {
+      review: 'reviews',
+      guide: 'guides',
+      feature: 'features',
+      interview: 'interviews',
+      memories: 'memories',
+      news: 'news',
+      hardware: 'hardware',
+      article: 'articles'
+    }
+  };
 
-    case 'interview':
-      return `/interviste/${slug}/`;
+  const section =
+    routes[language]?.[post.type] ||
+    routes[language]?.article ||
+    'articoli';
 
-    case 'memories':
-      return `/memories/${slug}/`;
-
-    case 'news':
-      return `/news/${slug}/`;
-
-    case 'hardware':
-      return `/hardware/${slug}/`;
-
-    case 'article':
-    default:
-      return `/articoli/${slug}/`;
-  }
+  return language === 'en'
+    ? `/en/${section}/${slug}/`
+    : `/${section}/${slug}/`;
 }
 
-export function getArchiveUrl(type) {
-  switch (type) {
-    case 'review':
-      return '/recensioni/';
+export function getArchiveUrl(type, language = 'it') {
+  const routes = {
+    it: {
+      review: 'recensioni',
+      guide: 'guide',
+      feature: 'speciali',
+      interview: 'interviste',
+      memories: 'memories',
+      news: 'news',
+      hardware: 'hardware',
+      article: 'articoli'
+    },
 
-    case 'guide':
-      return `/guide/`;
+    en: {
+      review: 'reviews',
+      guide: 'guides',
+      feature: 'features',
+      interview: 'interviews',
+      memories: 'memories',
+      news: 'news',
+      hardware: 'hardware',
+      article: 'articles'
+    }
+  };
 
-    case 'feature':
-      return '/speciali/';
+  const section =
+    routes[language]?.[type] ||
+    routes[language]?.article ||
+    'articoli';
 
-    case 'interview':
-      return '/interviste/';
-
-    case 'memories':
-      return '/memories/';
-
-    case 'news':
-      return '/news/';
-
-    case 'hardware':
-      return '/hardware/';
-
-    default:
-      return '/articoli/';
-  }
+  return language === 'en'
+    ? `/en/${section}/`
+    : `/${section}/`;
 }

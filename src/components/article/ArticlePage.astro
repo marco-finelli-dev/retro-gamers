@@ -12,15 +12,41 @@ import '../../styles/article/article.css';
 const {
   post,
   relatedPosts = [],
-  seriesPosts = []
+  seriesPosts = [],
+  languageSwitch = null
 } = Astro.props;
 
 const isReview = post?.type === 'review';
+const currentLang = post?.language || 'it';
+
+const articlePageClass = [
+  'article-page',
+  isReview ? 'is-review' : ''
+].filter(Boolean).join(' ');
+
+const switchLabel =
+  currentLang === 'en'
+    ? 'Available also in Italian'
+    : 'Disponibile anche in inglese';
+
+const switchCta =
+  currentLang === 'en'
+    ? 'Leggi in italiano'
+    : 'Read in English';
 ---
 
-<main class={`article-page ${isReview ? 'is-review' : ''}`}>
+<main class={articlePageClass}>
 
   <ArticleHero post={post} />
+
+  {languageSwitch?.url && (
+    <div class="article-language-switch-wrap">
+      <a href={languageSwitch.url} class="article-language-switch">
+        <span>{switchLabel}</span>
+        <strong>{switchCta}</strong>
+      </a>
+    </div>
+  )}
 
   <div class="article-page__body">
 
@@ -41,13 +67,13 @@ const isReview = post?.type === 'review';
 
       <ArticleContent content={post.content} />
 
-<ArticleSeriesBox post={post} seriesPosts={seriesPosts} />
+      <ArticleSeriesBox post={post} seriesPosts={seriesPosts} />
 
-{isReview && post.rating && (
-  <ArticleFinalRating rating={post.rating} />
-)}
+      {isReview && post.rating && (
+        <ArticleFinalRating rating={post.rating} />
+      )}
 
-<ArticleLightbox />
+      <ArticleLightbox />
 
     </article>
 

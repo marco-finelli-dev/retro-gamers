@@ -69,6 +69,16 @@ export type Post = {
   publishedAt?: string;
   type?: string;
 
+  language?: 'it' | 'en';
+
+  translationOf?: {
+    _id: string;
+    title: string;
+    slug: string;
+    type?: string;
+    language?: 'it' | 'en';
+  };
+
   subtitle?: string;
   seoTitle?: string;
 
@@ -105,7 +115,7 @@ export type Post = {
 
   gameInfo?: {
     releaseYear?: number;
-    mediaFormat?: string;
+    mediaFormat?: string[] | string;
     cover?: {
       asset?: {
         url?: string;
@@ -138,6 +148,15 @@ export async function getAllPosts(): Promise<Post[]> {
       seoTitle,
       publishedAt,
       type,
+      language,
+
+      translationOf->{
+        _id,
+        title,
+        "slug": slug.current,
+        type,
+        language
+      },
 
       featuredImage {
         asset->{ url },
@@ -153,33 +172,33 @@ export async function getAllPosts(): Promise<Post[]> {
         }
       },
 
-  platforms[]->{
-  name,
-  "slug": slug.current,
-  platformType,
-  badgeLabel,
+      platforms[]->{
+        name,
+        "slug": slug.current,
+        platformType,
+        badgeLabel,
 
-  logo {
-    asset->{ url },
-    alt
-  },
+        logo {
+          asset->{ url },
+          alt
+        },
 
-  manufacturer->{
-    name,
-    "slug": slug.current,
-    logo {
-      asset->{ url },
-      alt
-    }
-  },
+        manufacturer->{
+          name,
+          "slug": slug.current,
+          logo {
+            asset->{ url },
+            alt
+          }
+        },
 
-  cover {
-    asset->{ url },
-    alt
-  },
+        cover {
+          asset->{ url },
+          alt
+        },
 
-  specs
-},
+        specs
+      },
 
       genres[]->{
         name,
@@ -345,16 +364,23 @@ export function groupPosts(posts: Post[] = []) {
   const normalized = uniqueById(posts)
     .map((post) => ({
       ...post,
+      language: post.language || 'it',
       score: post.rating?.overall ?? 0
     }));
 
+  /*
+    La home italiana deve restare italiana.
+    Gli articoli inglesi avranno sezioni dedicate sotto /en/.
+  */
+  const italianPosts = normalized.filter((post) => post.language !== 'en');
+
   const usedIds = new Set<string>();
 
-  const allWithImage = normalized.filter(hasImage);
+  const allWithImage = italianPosts.filter(hasImage);
 
   /*
     HERO:
-    prende gli ultimi contenuti con immagine.
+    prende gli ultimi contenuti italiani con immagine.
     Qui NON filtriamo per type, così la hero resta editoriale.
   */
   const hero = takeUnused(allWithImage, usedIds, 4, {
@@ -365,7 +391,7 @@ export function groupPosts(posts: Post[] = []) {
     RECENSIONI:
     dopo la hero, niente duplicati.
   */
-  const reviewsSource = normalized
+  const reviewsSource = italianPosts
     .filter((post) => post.type === 'review')
     .sort((a, b) => {
       const scoreDiff = (b.score || 0) - (a.score || 0);
@@ -384,15 +410,15 @@ export function groupPosts(posts: Post[] = []) {
     EDITORIAL HUB:
     Speciali e memories separati.
   */
-    const specials = takeUnused(
-      normalized.filter((post) => post.type === 'feature'),
-      usedIds,
-      5,
-      { requireImage: true }
-    );
+  const specials = takeUnused(
+    italianPosts.filter((post) => post.type === 'feature'),
+    usedIds,
+    5,
+    { requireImage: true }
+  );
 
   const memories = takeUnused(
-    normalized.filter((post) => post.type === 'memories'),
+    italianPosts.filter((post) => post.type === 'memories'),
     usedIds,
     3,
     { requireImage: true }
@@ -402,15 +428,14 @@ export function groupPosts(posts: Post[] = []) {
     ARCHIVE STRIP:
     blocco editoriale misto, ma senza ripetere hero/reviews/specials/memories.
   */
-    const archive = takeUnused(
-
-      normalized.filter((post) =>
-        ['review', 'memories', 'guide', 'interview', 'article', 'feature'].includes(post.type || '')
-      ),
-      usedIds,
-      4,
-      { requireImage: true }
-    );
+  const archive = takeUnused(
+    italianPosts.filter((post) =>
+      ['review', 'memories', 'guide', 'interview', 'article', 'feature'].includes(post.type || '')
+    ),
+    usedIds,
+    4,
+    { requireImage: true }
+  );
 
   /*
     HARDWARE:
@@ -419,8 +444,8 @@ export function groupPosts(posts: Post[] = []) {
     la sezione commerciale senza cambiare tipo editoriale.
   */
   const hardwareSource = uniqueById([
-    ...normalized.filter((post) => post.type === 'hardware'),
-    ...normalized.filter(isAffiliateHardwareArea)
+    ...italianPosts.filter((post) => post.type === 'hardware'),
+    ...italianPosts.filter(isAffiliateHardwareArea)
   ]);
 
   const hardware = takeUnused(hardwareSource, usedIds, 4, {
@@ -430,17 +455,15 @@ export function groupPosts(posts: Post[] = []) {
   /*
     NEWS:
     serve anche all'header/dropdown.
-    Qui non usiamo usedIds? Dipende.
-    Per header è meglio avere le news vere, anche se una è in hero.
-    Per sezioni home invece useremo latest separato.
+    Per header è meglio avere tutte le news italiane vere.
   */
-  const news = normalized.filter((post) => post.type === 'news');
+  const news = italianPosts.filter((post) => post.type === 'news');
 
   /*
     LATEST:
-    ultimi contenuti non ancora usati nella home.
+    ultimi contenuti italiani non ancora usati nella home.
   */
-  const latest = takeUnused(normalized, usedIds, 6, {
+  const latest = takeUnused(italianPosts, usedIds, 6, {
     requireImage: true
   });
 
@@ -451,7 +474,7 @@ export function groupPosts(posts: Post[] = []) {
     memories,
     news,
     guides: takeUnused(
-      normalized.filter((post) => post.type === 'guide'),
+      italianPosts.filter((post) => post.type === 'guide'),
       usedIds,
       3,
       { requireImage: false }
@@ -462,11 +485,18 @@ export function groupPosts(posts: Post[] = []) {
 
     /*
       Liste complete utili per header/layout o archivi.
+      Per ora sono italiane, perché il sito principale resta italiano.
     */
-    all: normalized,
-    allReviews: normalized.filter((post) => post.type === 'review'),
-    allNews: normalized.filter((post) => post.type === 'news'),
-    affiliate: normalized.filter((post) => post.monetization?.isAffiliate)
+    all: italianPosts,
+    allReviews: italianPosts.filter((post) => post.type === 'review'),
+    allNews: italianPosts.filter((post) => post.type === 'news'),
+    affiliate: italianPosts.filter((post) => post.monetization?.isAffiliate),
+
+    /*
+      Liste globali utili per la futura sezione inglese.
+    */
+    allLanguages: normalized,
+    english: normalized.filter((post) => post.language === 'en')
   };
 }
 
@@ -476,6 +506,8 @@ export function getRelatedPosts(
   limit = 3
 ): Post[] {
   if (!currentPost?._id) return [];
+
+  const currentLanguage = currentPost.language || 'it';
 
   const currentPlatformSlugs = new Set(
     currentPost.platforms?.map((item) => item.slug).filter(Boolean)
@@ -497,6 +529,12 @@ export function getRelatedPosts(
     let score = 0;
 
     if (!post?._id || post._id === currentPost._id) return -999;
+
+    /*
+      Articoli correlati nella stessa lingua.
+      Così un articolo inglese non pesca roba italiana e viceversa.
+    */
+    if ((post.language || 'it') !== currentLanguage) return -999;
 
     if (post.type === currentPost.type) score += 5;
 

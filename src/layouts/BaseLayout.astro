@@ -15,6 +15,9 @@ const {
   reviews = [],
   news = [],
 
+  lang = 'it',
+  alternateLanguages = [],
+
   title = 'Retro-Gamers.it',
   description = 'Retro-Gamers.it: recensioni, news, speciali, guide e approfondimenti dal mondo retro-gaming, console, arcade e home computer.',
   image = '/og-image.jpg',
@@ -43,11 +46,14 @@ const canonicalUrl = canonical?.startsWith('http')
   ? canonical
   : `${siteUrl}${canonical}`;
 
+const ogLocale = lang === 'en' ? 'en_US' : 'it_IT';
+
 const jsonLd =
   type === 'article'
     ? {
         '@context': 'https://schema.org',
         '@type': 'Article',
+        inLanguage: lang,
         headline: title,
         description: pageDescription,
         image: absoluteImage ? [absoluteImage] : undefined,
@@ -73,13 +79,14 @@ const jsonLd =
     : {
         '@context': 'https://schema.org',
         '@type': 'WebSite',
+        inLanguage: lang,
         name: siteName,
         url: siteUrl,
         description: pageDescription
       };
 ---
 
-<html lang="it">
+<html lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -93,7 +100,15 @@ const jsonLd =
 
     <link rel="canonical" href={canonicalUrl} />
 
-    <meta property="og:locale" content="it_IT" />
+    {alternateLanguages.map((item) => (
+      <link
+        rel="alternate"
+        hreflang={item.lang}
+        href={item.url}
+      />
+    ))}
+
+    <meta property="og:locale" content={ogLocale} />
     <meta property="og:site_name" content={siteName} />
     <meta property="og:type" content={type === 'article' ? 'article' : 'website'} />
     <meta property="og:title" content={pageTitle} />
@@ -116,22 +131,22 @@ const jsonLd =
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
-   <link rel="icon" href="/favicon.ico" sizes="any" />
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-  <link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-  rel="stylesheet"
-/>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
   </head>
 
   <body>
-    <Header reviews={reviews} news={news} />
+    <Header reviews={reviews} news={news} lang={lang} />
 
     <main>
       <slot />
@@ -140,7 +155,7 @@ const jsonLd =
     <script src="/scripts/ui.js" defer></script>
     <script src="/scripts/dropdown.js" defer></script>
 
-    <Footer />
+    <Footer lang={lang} />
 
     <ConsentAnalytics />
     <CookieConsent />

@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArchivePage from '../../../components/archive/ArchivePage.astro';
+
+import { getAllPosts, groupPosts } from '../../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const posts = grouped.english.filter((post) => post.type === 'feature');
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Features"
+  description="Long-form stories, retrospectives and editorial features from the world of retro gaming and home computing."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/en/features/"
+  lang="en"
+>
+  <ArchivePage
+    title="Features"
+    eyebrow="Editorial"
+    description="Long-form stories, retrospectives and deep dives from the world of retro gaming, arcade, consoles and home computers."
+    posts={posts}
+    showFilters={false}
+  />
+</BaseLayout>

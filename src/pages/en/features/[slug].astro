@@ -1,28 +1,17 @@
 ---
-import Layout from '../../layouts/BaseLayout.astro';
-import ArticlePage from '../../components/article/ArticlePage.astro';
+import Layout from '../../../layouts/BaseLayout.astro';
+import ArticlePage from '../../../components/article/ArticlePage.astro';
 
-import { client } from '../../lib/sanity';
-import { getAllPosts, groupPosts, getRelatedPosts } from '../../lib/posts';
+import { client } from '../../../lib/sanity';
+import { getAllPosts, groupPosts, getRelatedPosts } from '../../../lib/posts';
 
-const { category, slug } = Astro.params;
+/* ========================
+   PARAMS
+======================== */
 
-const categoryToType = {
-  recensioni: 'review',
-  news: 'news',
-  speciali: 'feature',
-  guide: 'guide',
-  memories: 'memories',
-  interviste: 'interview',
-  hardware: 'hardware',
-  articoli: 'article'
-};
+const { slug } = Astro.params;
 
-const expectedType = categoryToType[category];
-
-if (!expectedType) {
-  return Astro.rewrite('/404');
-}
+const expectedType = 'feature';
 
 /* ========================
    READING TIME
@@ -64,20 +53,12 @@ const post = await client.fetch(`
   _type == "article" &&
   slug.current == $slug &&
   type == $expectedType &&
-  coalesce(language, "it") == "it"
+  language == "en"
 ][0]{
   _id,
   _type,
   type,
   language,
-
-  translationOf->{
-    _id,
-    type,
-    title,
-    "slug": slug.current,
-    language
-  },
 
   title,
   subtitle,
@@ -88,6 +69,14 @@ const post = await client.fetch(`
   publishedAt,
   seriesOrder,
   seriesLabel,
+
+  translationOf->{
+    _id,
+    type,
+    title,
+    "slug": slug.current,
+    language
+  },
 
   author->{
     name,
@@ -269,37 +258,11 @@ if (!post) {
   return Astro.rewrite('/404');
 }
 
-/* ========================
-   ENGLISH TRANSLATION
-======================== */
-
-const englishTranslation = await client.fetch(`
-  *[
-    _type == "article" &&
-    defined(slug.current) &&
-    !(_id in path("drafts.**")) &&
-    language == "en" &&
-    translationOf._ref == $postId
-  ][0]{
-    _id,
-    type,
-    title,
-    "slug": slug.current,
-    language
-  }
-`, {
-  postId: post._id
-});
-
-/* ========================
-   HYDRATION
-======================== */
-
 const readingTime = getReadingTime(post.content);
 
 const hydratedPost = {
   ...post,
-  language: post.language || 'it',
+  language: post.language || 'en',
   readingTime
 };
 
@@ -315,7 +278,7 @@ const seriesPosts = seriesId
       _type == "article" &&
       defined(slug.current) &&
       !(_id in path("drafts.**")) &&
-      coalesce(language, "it") == "it" &&
+      language == "en" &&
       references($seriesId)
     ] | order(coalesce(seriesOrder, 999) asc, coalesce(publishedAt, _createdAt) asc) {
       _id,
@@ -338,7 +301,7 @@ const seriesPosts = seriesId
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
-const relatedPosts = getRelatedPosts(hydratedPost, grouped.all, 3);
+const relatedPosts = getRelatedPosts(hydratedPost, grouped.allLanguages, 3);
 
 const siteUrl = 'https://www.retro-gamers.it';
 
@@ -349,7 +312,7 @@ const pageTitle =
 const pageDescription =
   post.excerpt ||
   post.subtitle ||
-  'Recensioni, news, speciali e guide dal mondo retro-gaming.';
+  'Features, reviews and stories from the world of retro gaming.';
 
 const pageImage =
   post.featuredImage?.asset?.url ||
@@ -357,29 +320,35 @@ const pageImage =
   '/og-image.jpg';
 
 const canonicalUrl =
-  `${siteUrl}/${category}/${slug}/`;
+  `${siteUrl}/en/features/${slug}/`;
 
-const englishUrl =
-  englishTranslation?.slug && englishTranslation?.type === 'feature'
-    ? `${siteUrl}/en/features/${englishTranslation.slug}/`
-    : null;
+const italianUrl = post.translationOf?.slug
+  ? `${siteUrl}/speciali/${post.translationOf.slug}/`
+  : `${siteUrl}/`;
 
-const alternateLanguages = englishUrl
-  ? [
-      {
-        lang: 'it',
-        url: canonicalUrl
-      },
-      {
-        lang: 'en',
-        url: englishUrl
-      },
-      {
-        lang: 'x-default',
-        url: canonicalUrl
-      }
-    ]
-  : [];
+const alternateLanguages = [
+  {
+    lang: 'en',
+    url: canonicalUrl
+  },
+  ...(post.translationOf?.slug
+    ? [
+        {
+          lang: 'it',
+          url: italianUrl
+        },
+        {
+          lang: 'x-default',
+          url: italianUrl
+        }
+      ]
+    : [
+        {
+          lang: 'x-default',
+          url: canonicalUrl
+        }
+      ])
+];
 ---
 
 <Layout
@@ -391,19 +360,19 @@ const alternateLanguages = englishUrl
   canonical={canonicalUrl}
   type="article"
   publishedAt={post.publishedAt}
-  lang="it"
+  lang="en"
   alternateLanguages={alternateLanguages}
 >
 
-  <ArticlePage
-    post={hydratedPost}
-    relatedPosts={relatedPosts}
-    seriesPosts={seriesPosts}
-    languageSwitch={
-      englishUrl
-        ? { url: `/en/features/${englishTranslation.slug}/` }
-        : null
-    }
-  />
+<ArticlePage
+  post={hydratedPost}
+  relatedPosts={relatedPosts}
+  seriesPosts={seriesPosts}
+  languageSwitch={
+    post.translationOf?.slug
+      ? { url: `/speciali/${post.translationOf.slug}/` }
+      : null
+  }
+/>
 
 </Layout>
