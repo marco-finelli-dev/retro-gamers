@@ -1,13 +1,28 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArchivePage from '../../components/archive/ArchivePage.astro';
-
 import { getAllPosts, groupPosts } from '../../lib/posts';
+import { getPostUrl } from '../../lib/routes';
+import { urlFor } from '../../lib/image';
+import '../../styles/pages/en-home.css';
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
 const posts = grouped.english;
+const featured = posts[0] || null;
+const latest = posts.slice(1, 7);
+
+const getImage = (post, width = 860, height = 520) => {
+  if (!post?.featuredImage?.asset) return '/placeholder-retro.png';
+
+  return urlFor(post.featuredImage)
+    .width(width)
+    .height(height)
+    .fit('crop')
+    .quality(74)
+    .auto('format')
+    .url();
+};
 ---
 
 <BaseLayout
@@ -19,11 +34,89 @@ const posts = grouped.english;
   canonical="https://www.retro-gamers.it/en/"
   lang="en"
 >
-  <ArchivePage
-    title="Retro-Gamers International"
-    eyebrow="English edition"
-    description="Selected stories, features and retrospectives from the world of retro gaming, arcade, consoles and home computers."
-    posts={posts}
-    showFilters={false}
-  />
+  <section class="en-home">
+    <div class="container">
+
+      <div class="en-home__hero">
+        <span>English edition</span>
+
+        <h1>Retro-Gamers International</h1>
+
+        <p>
+          Selected stories, features and retrospectives from the world of retro gaming,
+          arcade, consoles and home computers — curated from Retro-Gamers.it for an
+          international audience.
+        </p>
+
+        <div class="en-home__actions">
+          <a href="/en/features/">Explore features</a>
+          <a href="/">Italian edition</a>
+        </div>
+      </div>
+
+      {featured && (
+        <a href={getPostUrl(featured)} class="en-home-featured">
+          <div class="en-home-featured__image">
+            <img
+              src={getImage(featured)}
+              alt={featured.featuredImage?.alt || featured.title}
+              width="860"
+              height="520"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+
+          <div class="en-home-featured__content">
+            <span>Featured story</span>
+            <h2>{featured.title}</h2>
+
+            {(featured.excerpt || featured.subtitle) && (
+              <p>{featured.excerpt || featured.subtitle}</p>
+            )}
+
+            {!featured && (
+  <div class="en-home__empty">
+    English articles are coming soon. In the meantime, you can explore the Italian edition of Retro-Gamers.it.
+  </div>
+)}
+
+            <strong>Read the article →</strong>
+          </div>
+        </a>
+      )}
+
+      {latest.length > 0 && (
+        <section class="en-home-latest">
+          <div class="en-home-latest__header">
+            <span>Latest</span>
+            <h2>More from the English edition</h2>
+          </div>
+
+          <div class="en-home-latest__grid">
+            {latest.map((post) => (
+              <a href={getPostUrl(post)} class="en-home-card">
+                <img
+                  src={getImage(post, 520, 325)}
+                  alt={post.featuredImage?.alt || post.title}
+                  width="520"
+                  height="325"
+                  loading="lazy"
+                  decoding="async"
+                />
+
+                <div>
+                  <h3>{post.title}</h3>
+                  {(post.excerpt || post.subtitle) && (
+                    <p>{post.excerpt || post.subtitle}</p>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+    </div>
+  </section>
 </BaseLayout>
