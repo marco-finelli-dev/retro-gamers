@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArchivePage from '../../../components/archive/ArchivePage.astro';
+
+import { getAllPosts, groupPosts } from '../../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const posts = grouped.english.filter((post) => post.type === 'hardware');
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Hardware"
+  description="Retro hardware articles from Retro-Gamers.it in English."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/en/hardware/"
+  lang="en"
+>
+  <ArchivePage
+    title="Hardware"
+    eyebrow="English edition"
+    description="Classic hardware, expansions, accessories and devices from the retro computing world."
+    posts={posts}
+    showFilters={false}
+  />
+</BaseLayout>

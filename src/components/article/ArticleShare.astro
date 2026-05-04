@@ -1,22 +1,19 @@
 ---
+import { getPostUrl } from '../../lib/routes';
+
 const { post } = Astro.props;
+
+const lang = post?.language || 'it';
 
 const siteUrl = 'https://www.retro-gamers.it';
 
-const typeToPath = {
-  review: 'recensioni',
-  news: 'news',
-  feature: 'speciali',
-  guide: 'guide',
-  memories: 'memories',
-  interview: 'interviste',
-  hardware: 'hardware',
-  article: 'articoli'
-};
+const path = getPostUrl(post);
+const url = `${siteUrl}${path}`;
 
-const section = typeToPath[post.type] || 'articoli';
-const url = `${siteUrl}/${section}/${post.slug}/`;
 const title = post.seoTitle || post.title || 'Retro-Gamers.it';
+
+const shareLabel = lang === 'en' ? 'Share' : 'Condividi';
+const shareOnLabel = lang === 'en' ? 'Share on' : 'Condividi su';
 
 const encodedUrl = encodeURIComponent(url);
 const encodedTitle = encodeURIComponent(title);
@@ -46,7 +43,7 @@ const shareLinks = [
 ---
 
 <section class="article-share">
-  <span>Condividi</span>
+  <span>{shareLabel}</span>
 
   <div class="article-share__actions">
     {shareLinks.map((item) => (
@@ -54,16 +51,16 @@ const shareLinks = [
         href={item.href}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={`Condividi su ${item.label}`}
-        title={`Condividi su ${item.label}`}
+        aria-label={`${shareOnLabel} ${item.label}`}
+        title={`${shareOnLabel} ${item.label}`}
       >
-    <span
-  class="article-share__icon"
-  style={`--icon: url('${item.icon}')`}
-  aria-hidden="true"
-></span>
+        <span
+          class="article-share__icon"
+          style={`--icon: url('${item.icon}')`}
+          aria-hidden="true"
+        ></span>
 
-<span class="sr-only">{item.label}</span>
+        <span class="sr-only">{item.label}</span>
       </a>
     ))}
   </div>

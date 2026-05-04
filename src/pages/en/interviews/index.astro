@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArchivePage from '../../../components/archive/ArchivePage.astro';
+
+import { getAllPosts, groupPosts } from '../../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const posts = grouped.english.filter((post) => post.type === 'interview');
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Interviews"
+  description="Interviews from Retro-Gamers.it in English."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/en/interviews/"
+  lang="en"
+>
+  <ArchivePage
+    title="Interviews"
+    eyebrow="English edition"
+    description="Interviews and conversations with people from the world of retro gaming and classic computing."
+    posts={posts}
+    showFilters={false}
+  />
+</BaseLayout>

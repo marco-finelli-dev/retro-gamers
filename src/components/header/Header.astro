@@ -6,7 +6,44 @@ import PlatformsMenu from './PlatformsMenu.astro';
 import MobileMenu from './MobileMenu.astro';
 import '../../styles/components/header/header.css';
 
-const { reviews = [], news = [] } = Astro.props;
+const {
+  reviews = [],
+  news = [],
+  lang = 'it'
+} = Astro.props;
+
+const isEnglish = lang === 'en';
+
+const labels = isEnglish
+  ? {
+      home: 'Go to Retro Gamers home',
+      navigation: 'Main navigation',
+      reviews: 'Reviews',
+      news: 'News',
+      features: 'Features',
+      guides: 'Guides',
+      memories: 'Memories',
+      platforms: 'Platforms',
+      openMenu: 'Open menu'
+    }
+  : {
+      home: 'Vai alla home di Retro Gamers',
+      navigation: 'Navigazione principale',
+      reviews: 'Recensioni',
+      news: 'News',
+      features: 'Speciali',
+      guides: 'Guide',
+      memories: 'Memories',
+      platforms: 'Piattaforme',
+      openMenu: 'Apri menu'
+    };
+
+const homeUrl = isEnglish ? '/en/' : '/';
+
+const languageSwitch = {
+  it: '/',
+  en: '/en/'
+};
 ---
 
 <header class="site-header">
@@ -14,7 +51,7 @@ const { reviews = [], news = [] } = Astro.props;
   <div class="site-header__inner">
 
     <!-- LOGO -->
-    <a href="/" class="site-header__logo" aria-label="Vai alla home di Retro Gamers">
+    <a href={homeUrl} class="site-header__logo" aria-label={labels.home}>
       <img
         src="/images/retro-gamer-header-logo.webp"
         alt="Retro Gamers"
@@ -24,101 +61,125 @@ const { reviews = [], news = [] } = Astro.props;
     </a>
 
     <!-- NAV DESKTOP -->
-    <nav class="site-header__nav" aria-label="Navigazione principale">
+    <nav class="site-header__nav" aria-label={labels.navigation}>
 
-      <!-- RECENSIONI -->
+      <!-- RECENSIONI / REVIEWS -->
       <div class="site-header__nav-item has-dropdown">
-<button
-  type="button"
-  class="site-header__nav-link site-header__nav-button"
-  aria-haspopup="true"
->
-  Recensioni
-</button>
+        <button
+          type="button"
+          class="site-header__nav-link site-header__nav-button"
+          aria-haspopup="true"
+        >
+          {labels.reviews}
+        </button>
 
         <div class="site-header__dropdown">
-          <ReviewsMenu posts={reviews} />
+          <ReviewsMenu posts={reviews} lang={lang} />
         </div>
       </div>
 
       <!-- NEWS -->
       <div class="site-header__nav-item has-dropdown">
-   <button
-  type="button"
-  class="site-header__nav-link site-header__nav-button"
-  aria-haspopup="true"
->
-  News
-</button>
+        <button
+          type="button"
+          class="site-header__nav-link site-header__nav-button"
+          aria-haspopup="true"
+        >
+          {labels.news}
+        </button>
 
         <div class="site-header__dropdown">
-          <NewsMenu posts={news} />
+          <NewsMenu posts={news} lang={lang} />
         </div>
       </div>
 
-      <a href="/speciali/" class="site-header__nav-link">
-        Speciali
+      <a href={isEnglish ? '/en/features/' : '/speciali/'} class="site-header__nav-link">
+        {labels.features}
       </a>
 
-      <a href="/guide/" class="site-header__nav-link">
-        Guide
+      <a href={isEnglish ? '/en/guides/' : '/guide/'} class="site-header__nav-link">
+        {labels.guides}
       </a>
 
-      <a href="/memories/" class="site-header__nav-link">
-        Memories
+      <a href={isEnglish ? '/en/memories/' : '/memories/'} class="site-header__nav-link">
+        {labels.memories}
       </a>
 
-     <div class="site-header__nav-item has-dropdown">
-<button
-  type="button"
-  class="site-header__nav-link site-header__nav-button"
-  aria-haspopup="true"
->
-  Piattaforme
-</button>
+      <div class="site-header__nav-item has-dropdown">
+        <button
+          type="button"
+          class="site-header__nav-link site-header__nav-button"
+          aria-haspopup="true"
+        >
+          {labels.platforms}
+        </button>
 
-  <div class="site-header__dropdown">
-    <PlatformsMenu />
-  </div>
-</div>
+        <div class="site-header__dropdown">
+          <PlatformsMenu lang={lang} />
+        </div>
+      </div>
 
     </nav>
 
     <!-- ACTIONS -->
-  <div class="site-header__actions">
-  <Search />
+    <div class="site-header__actions">
+      <div class="site-header__language" aria-label="Language">
+        <a
+          href={languageSwitch.it}
+          class:list={[
+            'site-header__language-link',
+            !isEnglish && 'is-active'
+          ]}
+        >
+          IT
+        </a>
 
-  <button
-    type="button"
-    class="mobile-menu-toggle"
-    aria-label="Apri menu"
-    aria-controls="mobile-menu"
-    aria-expanded="false"
-    data-mobile-menu-toggle
-  >
-    <svg
-      class="mobile-menu-toggle__icon mobile-menu-toggle__icon--open"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <path d="M4 7H20" />
-      <path d="M4 12H20" />
-      <path d="M4 17H20" />
-    </svg>
+        <span aria-hidden="true">/</span>
 
-    <svg
-      class="mobile-menu-toggle__icon mobile-menu-toggle__icon--close"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <path d="M6 6L18 18" />
-      <path d="M18 6L6 18" />
-    </svg>
-  </button>
-</div>
+        <a
+          href={languageSwitch.en}
+          class:list={[
+            'site-header__language-link',
+            isEnglish && 'is-active'
+          ]}
+        >
+          EN
+        </a>
+      </div>
+
+      <Search lang={lang} />
+
+      <button
+        type="button"
+        class="mobile-menu-toggle"
+        aria-label={labels.openMenu}
+        aria-controls="mobile-menu"
+        aria-expanded="false"
+        data-mobile-menu-toggle
+      >
+        <svg
+          class="mobile-menu-toggle__icon mobile-menu-toggle__icon--open"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M4 7H20" />
+          <path d="M4 12H20" />
+          <path d="M4 17H20" />
+        </svg>
+
+        <svg
+          class="mobile-menu-toggle__icon mobile-menu-toggle__icon--close"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M6 6L18 18" />
+          <path d="M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
 
   </div>
 
 </header>
 
-<MobileMenu />
+<MobileMenu lang={lang} />

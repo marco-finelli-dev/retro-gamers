@@ -1,5 +1,5 @@
 ---
-import { getPostUrl } from '../../lib/routes';
+import { getPostUrl, getArchiveUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 
 const {
@@ -7,54 +7,68 @@ const {
   relatedPosts = []
 } = Astro.props;
 
-const typeLabels = {
-  review: 'Recensione',
-  news: 'News',
-  feature: 'Speciale',
-  guide: 'Guida',
-  memories: 'Memories',
-  interview: 'Intervista',
-  hardware: 'Hardware',
-  article: 'Articolo'
-};
+const lang = post?.language || 'it';
 
-const archiveLinks = {
-  news: {
-    label: 'Tutte le news',
-    href: '/news/'
+const typeLabels = {
+  it: {
+    review: 'Recensione',
+    news: 'News',
+    feature: 'Speciale',
+    guide: 'Guida',
+    memories: 'Memories',
+    interview: 'Intervista',
+    hardware: 'Hardware',
+    article: 'Articolo'
   },
-  feature: {
-    label: 'Tutti gli speciali',
-    href: '/speciali/'
-  },
-  guide: {
-    label: 'Tutte le guide',
-    href: '/guide/'
-  },
-  memories: {
-    label: 'Tutte le memories',
-    href: '/memories/'
-  },
-  hardware: {
-    label: 'Tutto l’hardware',
-    href: '/hardware/'
-  },
-  article: {
-    label: 'Tutti gli articoli',
-    href: '/articoli/'
-  },
-  interview: {
-    label: 'Tutte le interviste',
-    href: '/interviste/'
+  en: {
+    review: 'Review',
+    news: 'News',
+    feature: 'Feature',
+    guide: 'Guide',
+    memories: 'Memories',
+    interview: 'Interview',
+    hardware: 'Hardware',
+    article: 'Article'
   }
 };
 
-const archiveLink =
-  archiveLinks[post.type] ||
-  {
-    label: 'Esplora archivio',
-    href: '/articoli/'
-  };
+const ui = {
+  it: {
+    related: 'Articoli correlati',
+    explore: 'Esplora',
+    archiveFallback: 'Esplora archivio',
+    archiveLabels: {
+      news: 'Tutte le news',
+      feature: 'Tutti gli speciali',
+      guide: 'Tutte le guide',
+      memories: 'Tutte le memories',
+      hardware: 'Tutto l’hardware',
+      article: 'Tutti gli articoli',
+      interview: 'Tutte le interviste'
+    }
+  },
+  en: {
+    related: 'Related articles',
+    explore: 'Explore',
+    archiveFallback: 'Explore archive',
+    archiveLabels: {
+      news: 'All news',
+      feature: 'All features',
+      guide: 'All guides',
+      memories: 'All memories',
+      hardware: 'All hardware',
+      article: 'All articles',
+      interview: 'All interviews'
+    }
+  }
+};
+
+const t = ui[lang] || ui.it;
+
+const archiveLink = {
+  label: t.archiveLabels[post.type] || t.archiveFallback,
+  href: getArchiveUrl(post.type, lang)
+};
 
 const sidebarRelated = relatedPosts
   .filter((item) => item?._id !== post?._id)
@@ -110,7 +124,9 @@ const getRelatedImage = (item) => {
 const image = getMainImage(post);
 
 const getTypeLabel = (item) =>
-  typeLabels[item.type] || 'Articolo';
+  typeLabels[lang]?.[item.type] ||
+  typeLabels.it[item.type] ||
+  'Article';
 ---
 
 <div class="article-sidebar">
@@ -132,7 +148,7 @@ const getTypeLabel = (item) =>
 
     {sidebarRelated.length > 0 && (
       <section class="article-sidebar__panel article-sidebar__panel--related">
-        <h2>Articoli correlati</h2>
+        <h2>{t.related}</h2>
 
         <div class="article-sidebar-related">
           {sidebarRelated.map((item) => (
@@ -161,7 +177,7 @@ const getTypeLabel = (item) =>
     )}
 
     <section class="article-sidebar__panel article-sidebar__panel--explore">
-      <h2>Esplora</h2>
+      <h2>{t.explore}</h2>
 
       <div class="article-sidebar-explore">
         <a href={archiveLink.href}>

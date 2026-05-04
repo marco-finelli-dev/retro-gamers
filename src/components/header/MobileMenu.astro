@@ -1,34 +1,73 @@
 ---
-const mainLinks = [
-  { label: 'Recensioni', href: '/recensioni/' },
-  { label: 'News', href: '/news/' },
-  { label: 'Speciali', href: '/speciali/' },
-  { label: 'Guide', href: '/guide/' },
-  { label: 'Memories', href: '/memories/' },
-  { label: 'Interviste', href: '/interviste/' },
-  { label: 'Hardware', href: '/hardware/' }
-];
+const { lang = 'it' } = Astro.props;
 
-const platformLinks = [
-  { label: 'Tutte le piattaforme', href: '/piattaforme/' },
-  { label: 'Console', href: '/piattaforme/console/' },
-  { label: 'Computer', href: '/piattaforme/computer/' },
-  { label: 'Arcade', href: '/piattaforme/arcade/' }
-];
+const isEnglish = lang === 'en';
+
+const ui = isEnglish
+  ? {
+      aria: 'Mobile menu',
+      menu: 'Menu',
+      close: 'Close menu',
+      discover: 'Discover',
+      platforms: 'Platforms',
+      language: 'Language'
+    }
+  : {
+      aria: 'Menu mobile',
+      menu: 'Menu',
+      close: 'Chiudi menu',
+      discover: 'Scopri',
+      platforms: 'Piattaforme',
+      language: 'Lingua'
+    };
+
+const mainLinks = isEnglish
+  ? [
+      { label: 'Reviews', href: '/en/reviews/' },
+      { label: 'News', href: '/en/news/' },
+      { label: 'Features', href: '/en/features/' },
+      { label: 'Guides', href: '/en/guides/' },
+      { label: 'Memories', href: '/en/memories/' },
+      { label: 'Interviews', href: '/en/interviews/' },
+      { label: 'Hardware', href: '/en/hardware/' }
+    ]
+  : [
+      { label: 'Recensioni', href: '/recensioni/' },
+      { label: 'News', href: '/news/' },
+      { label: 'Speciali', href: '/speciali/' },
+      { label: 'Guide', href: '/guide/' },
+      { label: 'Memories', href: '/memories/' },
+      { label: 'Interviste', href: '/interviste/' },
+      { label: 'Hardware', href: '/hardware/' }
+    ];
+
+const platformLinks = isEnglish
+  ? [
+      { label: 'All platforms', href: '/en/platforms/' },
+      { label: 'Consoles', href: '/en/platforms/consoles/' },
+      { label: 'Computers', href: '/en/platforms/computers/' },
+      { label: 'Arcade', href: '/en/platforms/arcade/' }
+    ]
+  : [
+      { label: 'Tutte le piattaforme', href: '/piattaforme/' },
+      { label: 'Console', href: '/piattaforme/console/' },
+      { label: 'Computer', href: '/piattaforme/computer/' },
+      { label: 'Arcade', href: '/piattaforme/arcade/' }
+    ];
 ---
 
 <div class="mobile-menu" id="mobile-menu" aria-hidden="true" data-mobile-menu>
   <div class="mobile-menu__backdrop" data-mobile-menu-close></div>
 
-  <nav class="mobile-menu__panel" aria-label="Menu mobile">
+  <nav class="mobile-menu__panel" aria-label={ui.aria}>
 
     <div class="mobile-menu__header">
-      <span>Menu</span>
+      <span>{ui.menu}</span>
 
       <button
         type="button"
         class="mobile-menu__close"
-        aria-label="Chiudi menu"
+        aria-label={ui.close}
         data-mobile-menu-close
       >
         ×
@@ -36,7 +75,33 @@ const platformLinks = [
     </div>
 
     <div class="mobile-menu__section">
-      <span>Scopri</span>
+      <span>{ui.language}</span>
+
+      <div class="mobile-menu__language">
+        <a
+          href="/"
+          class:list={[
+            'mobile-menu__language-link',
+            !isEnglish && 'is-active'
+          ]}
+        >
+          IT
+        </a>
+
+        <a
+          href="/en/"
+          class:list={[
+            'mobile-menu__language-link',
+            isEnglish && 'is-active'
+          ]}
+        >
+          EN
+        </a>
+      </div>
+    </div>
+
+    <div class="mobile-menu__section">
+      <span>{ui.discover}</span>
 
       <div class="mobile-menu__links">
         {mainLinks.map((item) => (
@@ -46,7 +111,7 @@ const platformLinks = [
     </div>
 
     <div class="mobile-menu__section">
-      <span>Piattaforme</span>
+      <span>{ui.platforms}</span>
 
       <div class="mobile-menu__links">
         {platformLinks.map((item) => (

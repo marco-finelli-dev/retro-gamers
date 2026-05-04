@@ -4,18 +4,39 @@ import ArticleShare from './ArticleShare.astro';
 
 const { post } = Astro.props;
 
+const lang = post?.language || 'it';
+
 const typeLabels = {
-  review: 'Recensione',
-  news: 'News',
-  feature: 'Speciale',
-  guide: 'Guida',
-  memories: 'Memories',
-  interview: 'Intervista',
-  hardware: 'Hardware',
-  article: 'Articolo'
+  it: {
+    review: 'Recensione',
+    news: 'News',
+    feature: 'Speciale',
+    guide: 'Guida',
+    memories: 'Memories',
+    interview: 'Intervista',
+    hardware: 'Hardware',
+    article: 'Articolo'
+  },
+  en: {
+    review: 'Review',
+    news: 'News',
+    feature: 'Feature',
+    guide: 'Guide',
+    memories: 'Memories',
+    interview: 'Interview',
+    hardware: 'Hardware',
+    article: 'Article'
+  }
 };
 
-const typeLabel = typeLabels[post.type] || 'Articolo';
+const typeLabel =
+  typeLabels[lang]?.[post.type] ||
+  typeLabels.it[post.type] ||
+  'Articolo';
+
+const byLabel = lang === 'en' ? 'By' : 'Di';
+const readingTimeLabel = lang === 'en' ? 'Reading time' : 'Tempo di lettura';
+const minuteLabel = lang === 'en' ? 'min.' : 'min.';
 
 const isReview = post.type === 'review';
 
@@ -48,7 +69,7 @@ const metaItems = [
 ].filter(Boolean);
 
 const publishedDate = post.publishedAt
-  ? new Date(post.publishedAt).toLocaleDateString('it-IT', {
+  ? new Date(post.publishedAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'it-IT', {
       day: 'numeric',
       month: 'long',
       year: 'numeric'
@@ -72,7 +93,7 @@ const readingTime =
 
 const infoItems = [
   publishedDate,
-  readingTime ? `Tempo di lettura: ${readingTime} min.` : '',
+  readingTime ? `${readingTimeLabel}: ${readingTime} ${minuteLabel}` : '',
 ].filter(Boolean);
 ---
 
@@ -80,7 +101,7 @@ const infoItems = [
 
   <div class="article-hero__top">
 
-    <a href={getArchiveUrl(post.type)} class="article-hero__eyebrow">
+    <a href={getArchiveUrl(post.type, lang)} class="article-hero__eyebrow">
       {typeLabel}
     </a>
 
@@ -102,33 +123,33 @@ const infoItems = [
       <p>{post.subtitle || post.excerpt}</p>
     )}
 
-   <div class="article-hero__footer">
+    <div class="article-hero__footer">
 
-  {(authorDisplayName || infoItems.length > 0) && (
-    <div class="article-hero__info">
+      {(authorDisplayName || infoItems.length > 0) && (
+        <div class="article-hero__info">
 
-      {authorDisplayName && (
-        authorUrl ? (
-          <a href={authorUrl}>
-            Di {authorDisplayName}
-          </a>
-        ) : (
-          <span>
-            Di {authorDisplayName}
-          </span>
-        )
+          {authorDisplayName && (
+            authorUrl ? (
+              <a href={authorUrl}>
+                {byLabel} {authorDisplayName}
+              </a>
+            ) : (
+              <span>
+                {byLabel} {authorDisplayName}
+              </span>
+            )
+          )}
+
+          {infoItems.map((item) => (
+            <span>{item}</span>
+          ))}
+
+        </div>
       )}
 
-      {infoItems.map((item) => (
-        <span>{item}</span>
-      ))}
+      <ArticleShare post={post} compact />
 
     </div>
-  )}
-
-  <ArticleShare post={post} compact />
-
-</div>
 
   </div>
 

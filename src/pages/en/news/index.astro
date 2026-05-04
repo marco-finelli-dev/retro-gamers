@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArchivePage from '../../../components/archive/ArchivePage.astro';
+
+import { getAllPosts, groupPosts } from '../../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const posts = grouped.english.filter((post) => post.type === 'news');
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="News"
+  description="Retro gaming news from Retro-Gamers.it in English."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/en/news/"
+  lang="en"
+>
+  <ArchivePage
+    title="News"
+    eyebrow="English edition"
+    description="News and updates from the world of retro gaming, classic consoles and home computers."
+    posts={posts}
+    showFilters={false}
+  />
+</BaseLayout>

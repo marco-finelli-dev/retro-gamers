@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArchivePage from '../../../components/archive/ArchivePage.astro';
+
+import { getAllPosts, groupPosts } from '../../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const posts = grouped.english.filter((post) => post.type === 'memories');
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Memories"
+  description="Personal memories and retro gaming stories from Retro-Gamers.it in English."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/en/memories/"
+  lang="en"
+>
+  <ArchivePage
+    title="Memories"
+    eyebrow="English edition"
+    description="Personal stories, memories and fragments of gaming life from the past."
+    posts={posts}
+    showFilters={false}
+  />
+</BaseLayout>
