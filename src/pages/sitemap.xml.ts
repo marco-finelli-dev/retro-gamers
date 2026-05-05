@@ -140,15 +140,19 @@ export async function GET() {
   ];
 
   const postPages = posts
-    .filter((post) => post?.slug && post?.type)
-    .map((post) => ({
+  .filter((post) => post?.slug && post?.type)
+  .map((post) => {
+    const lastmodSource = post.lastUpdated || post.publishedAt;
+
+    return {
       loc: absoluteUrl(getPostUrl(post)),
-      lastmod: post.publishedAt
-        ? new Date(post.publishedAt).toISOString()
+      lastmod: lastmodSource
+        ? new Date(lastmodSource).toISOString()
         : undefined,
       changefreq: post.type === 'news' ? 'monthly' : 'yearly',
       priority: post.type === 'review' ? '0.8' : '0.7'
-    }));
+    };
+  });
 
   const platformPages = platforms
     .filter((platform) => platform?.slug && platform?.platformType)

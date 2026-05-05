@@ -55,6 +55,7 @@ export type Monetization = {
   productType?: 'book' | 'hardware' | 'accessory' | 'software' | 'gadget' | 'service' | 'other';
   affiliateUrl?: string;
   affiliateLabel?: string;
+  affiliateDescription?: string;
   priceLabel?: string;
   disclaimer?: string;
   priority?: 'low' | 'medium' | 'high';
@@ -67,6 +68,7 @@ export type Post = {
   slug: string;
   excerpt?: string;
   publishedAt?: string;
+  lastUpdated?: string;
   type?: string;
 
   language?: 'it' | 'en';
@@ -146,7 +148,8 @@ export async function getAllPosts(): Promise<Post[]> {
       excerpt,
       subtitle,
       seoTitle,
-      publishedAt,
+     publishedAt,
+      lastUpdated,
       type,
       language,
 
@@ -277,6 +280,7 @@ export async function getAllPosts(): Promise<Post[]> {
         productType,
         affiliateUrl,
         affiliateLabel,
+        affiliateDescription,
         priceLabel,
         disclaimer,
         priority

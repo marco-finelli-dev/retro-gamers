@@ -68,13 +68,27 @@ const metaItems = [
   year
 ].filter(Boolean);
 
-const publishedDate = post.publishedAt
-  ? new Date(post.publishedAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'it-IT', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    })
-  : '';
+const dateLocale = lang === 'en' ? 'en-US' : 'it-IT';
+
+const formatDate = (date?: string) =>
+  date
+    ? new Date(date).toLocaleDateString(dateLocale, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      })
+    : '';
+
+const publishedDate = formatDate(post.publishedAt);
+const updatedDate = formatDate(post.lastUpdated);
+
+const showUpdated =
+  post.lastUpdated &&
+  (!post.publishedAt ||
+    new Date(post.lastUpdated).toDateString() !==
+      new Date(post.publishedAt).toDateString());
+
+const updatedLabel = lang === 'en' ? 'Updated on' : 'Aggiornato il';
 
 const authorDisplayName =
   post.author?.displayName === 'nickname' && post.author?.nickname
@@ -93,6 +107,7 @@ const readingTime =
 
 const infoItems = [
   publishedDate,
+  showUpdated && updatedDate ? `${updatedLabel} ${updatedDate}` : '',
   readingTime ? `${readingTimeLabel}: ${readingTime} ${minuteLabel}` : '',
 ].filter(Boolean);
 ---

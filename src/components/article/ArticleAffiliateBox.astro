@@ -6,6 +6,9 @@ const monetization = post?.monetization || {};
 const affiliateUrl = monetization.affiliateUrl || '';
 const affiliateLabel = monetization.affiliateLabel || 'Vai all’offerta';
 const priceLabel = monetization.priceLabel || '';
+const affiliateDescription =
+  monetization.affiliateDescription ||
+  'Una proposta collegata al tema dell’articolo, utile per approfondire o rivivere l’esperienza originale.';
 const disclaimer =
   monetization.disclaimer ||
   'Link affiliato: se acquisti tramite questo collegamento, Retro-Gamers.it può ricevere una piccola commissione senza costi aggiuntivi per te.';
@@ -39,9 +42,7 @@ const isVisible =
       </h2>
 
     
-        <p>
-  Una proposta collegata al tema dell’articolo, utile per approfondire o rivivere l’esperienza originale.
-</p>
+ <p>{affiliateDescription}</p>
     
 
       {priceLabel && (
