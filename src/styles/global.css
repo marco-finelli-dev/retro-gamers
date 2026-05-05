@@ -94,8 +94,11 @@
 
 html,
 body {
+  width: 100%;
+  max-width: 100%;
   margin: 0;
   padding: 0;
+  overflow-x: clip;
 }
 
 html {
@@ -172,6 +175,15 @@ body > * {
   z-index: 1;
 }
 
+main,
+section,
+article,
+aside,
+header,
+footer {
+  min-width: 0;
+}
+
 body.no-scroll {
   overflow: hidden;
   padding-right: var(--scrollbar-width, 0px);
@@ -182,9 +194,17 @@ body.no-scroll {
    🖼 MEDIA
 ========================= */
 
-img {
+img,
+picture,
+video,
+canvas,
+svg {
   display: block;
   max-width: 100%;
+}
+
+img,
+video {
   height: auto;
 }
 
