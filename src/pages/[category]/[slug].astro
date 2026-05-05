@@ -86,6 +86,7 @@ const post = await client.fetch(`
 
   "slug": slug.current,
   publishedAt,
+  lastUpdated,
   seriesOrder,
   seriesLabel,
 
@@ -166,14 +167,15 @@ const post = await client.fetch(`
   rating,
 
   monetization {
-    isAffiliate,
-    productType,
-    affiliateUrl,
-    affiliateLabel,
-    priceLabel,
-    disclaimer,
-    priority
-  },
+  isAffiliate,
+  productType,
+  affiliateUrl,
+  affiliateLabel,
+  affiliateDescription,
+  priceLabel,
+  disclaimer,
+  priority
+},
 
   content[]{
     ...,
@@ -391,6 +393,7 @@ const alternateLanguages = englishUrl
   canonical={canonicalUrl}
   type="article"
   publishedAt={post.publishedAt}
+  updatedAt={post.lastUpdated}
   lang="it"
   alternateLanguages={alternateLanguages}
 >
