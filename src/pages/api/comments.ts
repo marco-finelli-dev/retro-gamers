@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createClient } from '@sanity/client';
+import { Resend } from 'resend';
 
 export const prerender = false;
 
@@ -10,6 +11,14 @@ const sanityClient = createClient({
   token: import.meta.env.SANITY_WRITE_TOKEN,
   useCdn: false
 });
+
+const resend = import.meta.env.RESEND_API_KEY
+  ? new Resend(import.meta.env.RESEND_API_KEY)
+  : null;
+
+const notifyEmail = import.meta.env.COMMENTS_NOTIFY_EMAIL || '';
+
+const siteUrl = 'https://www.retro-gamers.it';
 
 function cleanText(value: FormDataEntryValue | null, maxLength = 2000) {
   return String(value || '')
@@ -49,6 +58,79 @@ function redirectWithStatus(articleUrl: string, status: 'ok' | 'error') {
       Location: `${safeUrl}?comment=${status}#comments`
     }
   });
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function absoluteArticleUrl(articleUrl = '/') {
+  if (articleUrl.startsWith('http')) return articleUrl;
+
+  return `${siteUrl}${articleUrl.startsWith('/') ? articleUrl : `/${articleUrl}`}`;
+}
+
+async function sendCommentNotification({
+  articleTitle,
+  articleUrl,
+  authorName,
+  authorEmail,
+  body,
+  language
+}: {
+  articleTitle: string;
+  articleUrl: string;
+  authorName: string;
+  authorEmail: string;
+  body: string;
+  language: 'it' | 'en';
+}) {
+  if (!resend || !notifyEmail) return;
+
+  const pageUrl = absoluteArticleUrl(articleUrl);
+  const preview = body.length > 500 ? `${body.slice(0, 500)}…` : body;
+
+  try {
+    await resend.emails.send({
+      from: 'Retro-Gamers <onboarding@resend.dev>',
+      to: notifyEmail,
+      subject: `Nuovo commento in attesa su Retro-Gamers`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
+          <h2>Nuovo commento in attesa</h2>
+
+          <p>
+            È arrivato un nuovo commento su <strong>${escapeHtml(articleTitle || 'Articolo Retro-Gamers')}</strong>.
+          </p>
+
+          <p>
+            <strong>Autore:</strong> ${escapeHtml(authorName)}<br>
+            <strong>Email:</strong> ${escapeHtml(authorEmail)}<br>
+            <strong>Lingua:</strong> ${escapeHtml(language.toUpperCase())}
+          </p>
+
+          <blockquote style="margin: 20px 0; padding: 14px 18px; border-left: 4px solid #22c8ff; background: #f4f7fb;">
+            ${escapeHtml(preview).replace(/\n/g, '<br>')}
+          </blockquote>
+
+          <p>
+            <a href="${escapeHtml(pageUrl)}" style="color: #0070f3;">Apri l’articolo</a>
+          </p>
+
+          <p style="font-size: 13px; color: #666;">
+            Vai su Sanity Studio → Commenti → In attesa per approvarlo o rifiutarlo.
+          </p>
+        </div>
+      `
+    });
+  } catch (error) {
+    console.error('Comment notification email error:', error);
+  }
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -107,6 +189,15 @@ export const POST: APIRoute = async ({ request }) => {
       createdAt: new Date().toISOString(),
       ipAddress: getClientIp(request),
       userAgent: request.headers.get('user-agent') || ''
+    });
+
+    await sendCommentNotification({
+      articleTitle,
+      articleUrl,
+      authorName,
+      authorEmail,
+      body,
+      language
     });
 
     return redirectWithStatus(articleUrl, 'ok');
