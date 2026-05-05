@@ -1,27 +1,62 @@
 ---
 const { post } = Astro.props;
 
+const lang = post?.language || 'it';
 const monetization = post?.monetization || {};
 
-const affiliateUrl = monetization.affiliateUrl || '';
-const affiliateLabel = monetization.affiliateLabel || 'Vai all’offerta';
-const priceLabel = monetization.priceLabel || '';
-const affiliateDescription =
-  monetization.affiliateDescription ||
-  'Una proposta collegata al tema dell’articolo, utile per approfondire o rivivere l’esperienza originale.';
+const labels = {
+  it: {
+    defaultAffiliateLabel: 'Vai all’offerta',
+    defaultDescription:
+      'Una proposta collegata al tema dell’articolo, utile per approfondire o rivivere l’esperienza originale.',
+    recommendedTitle: 'Prodotto consigliato',
+    productTypeLabels: {
+      book: 'Libro',
+      hardware: 'Hardware',
+      accessory: 'Accessorio',
+      software: 'Software',
+      gadget: 'Gadget',
+      service: 'Servizio',
+      other: 'Consigliato'
+    },
+    defaultProductType: 'Consigliato'
+  },
 
-const productTypeLabels = {
-  book: 'Libro',
-  hardware: 'Hardware',
-  accessory: 'Accessorio',
-  software: 'Software',
-  gadget: 'Gadget',
-  service: 'Servizio',
-  other: 'Consigliato'
+  en: {
+    defaultAffiliateLabel: 'View product',
+    defaultDescription:
+      'A suggested product related to the topic of this article, useful for further reading or completing your retro setup.',
+    recommendedTitle: 'Recommended product',
+    productTypeLabels: {
+      book: 'Book',
+      hardware: 'Hardware',
+      accessory: 'Accessory',
+      software: 'Software',
+      gadget: 'Gadget',
+      service: 'Service',
+      other: 'Recommended'
+    },
+    defaultProductType: 'Recommended'
+  }
 };
 
+const t = labels[lang] || labels.it;
+
+const affiliateUrl = monetization.affiliateUrl || '';
+
+const affiliateLabel =
+  monetization.affiliateLabel ||
+  t.defaultAffiliateLabel;
+
+const priceLabel = monetization.priceLabel || '';
+
+const affiliateDescription =
+  monetization.affiliateDescription ||
+  t.defaultDescription;
+
 const productType =
-  productTypeLabels[monetization.productType] || 'Consigliato';
+  t.productTypeLabels[monetization.productType] ||
+  t.defaultProductType;
 
 const isVisible =
   monetization.isAffiliate &&
@@ -35,7 +70,7 @@ const isVisible =
       <span>{productType}</span>
 
       <h2>
-        Prodotto consigliato
+        {t.recommendedTitle}
       </h2>
 
       <p>{affiliateDescription}</p>

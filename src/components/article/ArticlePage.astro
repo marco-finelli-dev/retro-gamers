@@ -54,16 +54,19 @@ const switchCta =
 
     <article class="article-page__content">
 
-      {post.monetization?.isAffiliate && (
-        <aside class="affiliate-disclosure">
-          <span>Trasparenza</span>
+     {post.monetization?.isAffiliate && (
+  <aside class="affiliate-disclosure">
+    <span>
+      {currentLang === 'en' ? 'Transparency' : 'Trasparenza'}
+    </span>
 
-          <p>
-            Questo articolo può contenere link affiliati. Se acquisti tramite questi collegamenti,
-            Retro-Gamers.it può ricevere una piccola commissione, senza costi aggiuntivi per te.
-          </p>
-        </aside>
-      )}
+    <p>
+      {currentLang === 'en'
+        ? 'This article may contain affiliate links. If you buy through these links, Retro-Gamers.it may receive a small commission, at no additional cost to you.'
+        : 'Questo articolo può contenere link affiliati. Se acquisti tramite questi collegamenti, Retro-Gamers.it può ricevere una piccola commissione, senza costi aggiuntivi per te.'}
+    </p>
+  </aside>
+)}
 
       <ArticleAffiliateBox post={post} />
 
