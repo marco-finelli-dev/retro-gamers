@@ -1,21 +1,40 @@
 ---
-const { rating, compact = false } = Astro.props;
+const { rating, compact = false, lang = 'it' } = Astro.props;
 
 const score = rating?.overall;
 const formattedScore =
   score !== undefined && score !== null ? Number(score).toFixed(1) : '-';
 
+const labels = {
+  it: {
+    fallbackScore: 'Voto',
+    graphics: 'Grafica',
+    sound: 'Sonoro',
+    gameplay: 'Gameplay',
+    longevity: 'Longevità'
+  },
+  en: {
+    fallbackScore: 'Score',
+    graphics: 'Graphics',
+    sound: 'Sound',
+    gameplay: 'Gameplay',
+    longevity: 'Longevity'
+  }
+};
+
+const t = labels[lang] || labels.it;
+
 const label =
   Number(score) >= 9.5 ? 'Top' :
   Number(score) >= 9 ? 'Must' :
   Number(score) >= 8 ? 'Good' :
-  'Voto';
+  t.fallbackScore;
 
 const rows = [
-  { label: 'Grafica', value: rating?.grafica },
-  { label: 'Sonoro', value: rating?.sonoro },
-  { label: 'Gameplay', value: rating?.giocabilita },
-  { label: 'Longevità', value: rating?.longevita }
+  { label: t.graphics, value: rating?.grafica },
+  { label: t.sound, value: rating?.sonoro },
+  { label: t.gameplay, value: rating?.giocabilita },
+  { label: t.longevity, value: rating?.longevita }
 ].filter((row) => row.value !== undefined && row.value !== null);
 ---
 

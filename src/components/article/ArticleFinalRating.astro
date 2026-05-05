@@ -1,15 +1,30 @@
 ---
-const { rating } = Astro.props;
+const { rating, lang = 'it' } = Astro.props;
 
 const score = rating?.overall;
 const formattedScore =
   score !== undefined && score !== null ? Number(score).toFixed(1) : '-';
 
+const labels = {
+  it: {
+    fallbackScore: 'Voto',
+    kicker: 'Verdetto',
+    title: 'Il giudizio finale'
+  },
+  en: {
+    fallbackScore: 'Score',
+    kicker: 'Verdict',
+    title: 'Final verdict'
+  }
+};
+
+const t = labels[lang] || labels.it;
+
 const label =
   Number(score) >= 9.5 ? 'Top' :
   Number(score) >= 9 ? 'Must' :
   Number(score) >= 8 ? 'Good' :
-  'Voto';
+  t.fallbackScore;
 ---
 
 <section class="article-final-rating">
@@ -21,8 +36,8 @@ const label =
       <small>{label}</small>
     </div>
 
-    <span>Verdetto</span>
-    <h2>Il giudizio finale</h2>
+    <span>{t.kicker}</span>
+    <h2>{t.title}</h2>
 
     {rating?.summary && (
       <p>{rating.summary}</p>

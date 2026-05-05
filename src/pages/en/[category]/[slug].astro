@@ -9,9 +9,37 @@ import { getAllPosts, groupPosts, getRelatedPosts } from '../../../lib/posts';
    PARAMS
 ======================== */
 
-const { slug } = Astro.params;
+const { category, slug } = Astro.params;
 
-const expectedType = 'feature';
+const categoryToType = {
+  reviews: 'review',
+  news: 'news',
+  features: 'feature',
+  guides: 'guide',
+  memories: 'memories',
+  interviews: 'interview',
+  hardware: 'hardware',
+  articles: 'article'
+};
+
+const typeToItalianCategory = {
+  review: 'recensioni',
+  news: 'news',
+  feature: 'speciali',
+  guide: 'guide',
+  memories: 'memories',
+  interview: 'interviste',
+  hardware: 'hardware',
+  article: 'articoli'
+};
+
+const expectedType = category
+  ? categoryToType[category]
+  : null;
+
+if (!expectedType) {
+  return Astro.rewrite('/404');
+}
 
 /* ========================
    READING TIME
@@ -344,11 +372,17 @@ const pageImage =
   '/og-image.jpg';
 
 const canonicalUrl =
-  `${siteUrl}/en/features/${slug}/`;
+  `${siteUrl}/en/${category}/${slug}/`;
 
-const italianUrl = post.translationOf?.slug
-  ? `${siteUrl}/speciali/${post.translationOf.slug}/`
-  : `${siteUrl}/`;
+const italianCategory =
+  post.translationOf?.type
+    ? typeToItalianCategory[post.translationOf.type]
+    : null;
+
+const italianUrl =
+  post.translationOf?.slug && italianCategory
+    ? `${siteUrl}/${italianCategory}/${post.translationOf.slug}/`
+    : `${siteUrl}/`;
 
 const alternateLanguages = [
   {
@@ -394,10 +428,10 @@ const alternateLanguages = [
   seriesPosts={seriesPosts}
   comments={comments}
   languageSwitch={
-    post.translationOf?.slug
-      ? { url: `/speciali/${post.translationOf.slug}/` }
-      : null
-  }
+  post.translationOf?.slug && italianCategory
+    ? { url: `/${italianCategory}/${post.translationOf.slug}/` }
+    : null
+}
 />
 
 </Layout>

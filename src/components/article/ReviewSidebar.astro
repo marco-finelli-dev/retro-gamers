@@ -4,6 +4,55 @@ import { urlFor } from '../../lib/image';
 
 const { post } = Astro.props;
 
+const lang = post?.language || 'it';
+
+const labels = {
+  it: {
+    gameCard: 'Scheda gioco',
+    platform: 'Piattaforma',
+    format: 'Formato',
+    developer: 'Sviluppatore',
+    publisher: 'Publisher',
+    year: 'Anno',
+    genre: 'Genere',
+    mode: 'Modalità',
+    mediaFormats: {
+      cartridge: 'Cartuccia',
+      floppy: 'Floppy disk',
+      tape: 'Cassetta / tape',
+      cdrom: 'CD-ROM',
+      gdrom: 'GD-ROM',
+      hucard: 'HuCard',
+      arcade_pcb: 'PCB arcade',
+      digital: 'Digitale',
+      other: 'Altro'
+    }
+  },
+  en: {
+    gameCard: 'Game info',
+    platform: 'Platform',
+    format: 'Format',
+    developer: 'Developer',
+    publisher: 'Publisher',
+    year: 'Year',
+    genre: 'Genre',
+    mode: 'Mode',
+    mediaFormats: {
+      cartridge: 'Cartridge',
+      floppy: 'Floppy disk',
+      tape: 'Cassette / tape',
+      cdrom: 'CD-ROM',
+      gdrom: 'GD-ROM',
+      hucard: 'HuCard',
+      arcade_pcb: 'Arcade PCB',
+      digital: 'Digital',
+      other: 'Other'
+    }
+  }
+};
+
+const t = labels[lang] || labels.it;
+
 const cover = post.gameInfo?.cover?.asset
   ? urlFor(post.gameInfo.cover)
       .width(720)
@@ -17,56 +66,44 @@ const coverAlt =
   `${post.title} cover` ||
   '';
 
-const mediaFormatLabels = {
-  cartridge: 'Cartuccia',
-  floppy: 'Floppy disk',
-  tape: 'Cassetta / tape',
-  cdrom: 'CD-ROM',
-  gdrom: 'GD-ROM',
-  hucard: 'HuCard',
-  arcade_pcb: 'PCB arcade',
-  digital: 'Digitale',
-  other: 'Altro'
-};
-
 const rawMediaFormat = post.gameInfo?.mediaFormat;
 
 const mediaFormat = Array.isArray(rawMediaFormat)
   ? rawMediaFormat
-      .map((format) => mediaFormatLabels[format] || format)
+      .map((format) => t.mediaFormats[format] || format)
       .filter(Boolean)
       .join(', ')
   : rawMediaFormat
-    ? mediaFormatLabels[rawMediaFormat] || rawMediaFormat
+    ? t.mediaFormats[rawMediaFormat] || rawMediaFormat
     : '';
 
 const infoRows = [
   {
-    label: 'Piattaforma',
+    label: t.platform,
     value: post.platforms?.map((item) => item.name).join(', ')
   },
   {
-    label: 'Formato',
+    label: t.format,
     value: mediaFormat
   },
   {
-    label: 'Sviluppatore',
+    label: t.developer,
     value: post.developers?.map((item) => item.name).join(', ')
   },
   {
-    label: 'Publisher',
+    label: t.publisher,
     value: post.publishers?.map((item) => item.name).join(', ')
   },
   {
-    label: 'Anno',
+    label: t.year,
     value: post.gameInfo?.releaseYear
   },
   {
-    label: 'Genere',
+    label: t.genre,
     value: post.genres?.map((item) => item.name).join(' · ')
   },
   {
-    label: 'Modalità',
+    label: t.mode,
     value: post.modes?.map((item) => item.name).join(' · ')
   }
 ].filter((row) => row.value);
@@ -89,12 +126,12 @@ const infoRows = [
   <div class="review-sidebar__sticky">
 
     {post.rating && (
-      <ReviewScoreBox rating={post.rating} compact />
+      <ReviewScoreBox rating={post.rating} compact lang={lang} />
     )}
 
     {infoRows.length > 0 && (
       <section class="review-sidebar__panel">
-        <h2>Scheda gioco</h2>
+        <h2>{t.gameCard}</h2>
 
         <dl class="review-info-list">
           {infoRows.map((row) => (

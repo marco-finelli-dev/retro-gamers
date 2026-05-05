@@ -385,9 +385,25 @@ const pageImage =
 const canonicalUrl =
   `${siteUrl}/${category}/${slug}/`;
 
+const englishTypeToCategory = {
+  feature: 'features',
+  review: 'reviews',
+  news: 'news',
+  guide: 'guides',
+  memories: 'memories',
+  interview: 'interviews',
+  hardware: 'hardware',
+  article: 'articles'
+};
+
+const englishCategory =
+  englishTranslation?.type
+    ? englishTypeToCategory[englishTranslation.type]
+    : null;
+
 const englishUrl =
-  englishTranslation?.slug && englishTranslation?.type === 'feature'
-    ? `${siteUrl}/en/features/${englishTranslation.slug}/`
+  englishTranslation?.slug && englishCategory
+    ? `${siteUrl}/en/${englishCategory}/${englishTranslation.slug}/`
     : null;
 
 const alternateLanguages = englishUrl
@@ -428,10 +444,10 @@ const alternateLanguages = englishUrl
   seriesPosts={seriesPosts}
   comments={comments}
   languageSwitch={
-    englishUrl
-      ? { url: `/en/features/${englishTranslation.slug}/` }
-      : null
-  }
+  englishUrl && englishCategory
+    ? { url: `/en/${englishCategory}/${englishTranslation.slug}/` }
+    : null
+}
 />
 
 </Layout>
