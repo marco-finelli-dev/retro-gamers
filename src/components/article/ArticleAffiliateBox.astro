@@ -9,9 +9,6 @@ const priceLabel = monetization.priceLabel || '';
 const affiliateDescription =
   monetization.affiliateDescription ||
   'Una proposta collegata al tema dell’articolo, utile per approfondire o rivivere l’esperienza originale.';
-const disclaimer =
-  monetization.disclaimer ||
-  'Link affiliato: se acquisti tramite questo collegamento, Retro-Gamers.it può ricevere una piccola commissione senza costi aggiuntivi per te.';
 
 const productTypeLabels = {
   book: 'Libro',
@@ -41,19 +38,13 @@ const isVisible =
         Prodotto consigliato
       </h2>
 
-    
- <p>{affiliateDescription}</p>
-    
+      <p>{affiliateDescription}</p>
 
       {priceLabel && (
         <strong class="affiliate-box__price">
           {priceLabel}
         </strong>
       )}
-
-      <small>
-        {disclaimer}
-      </small>
     </div>
 
     <div class="affiliate-box__action">

@@ -1,0 +1,169 @@
+---
+const { comments = [], post } = Astro.props;
+
+const lang = post?.language || 'it';
+
+const labels = {
+  it: {
+    title: 'Memorie dei lettori',
+    countSingular: 'commento',
+    countPlural: 'commenti',
+    intro: 'Hai un ricordo, una correzione o un aneddoto legato a questo articolo? Lascia un commento: verrà letto prima della pubblicazione.',
+    name: 'Nome',
+    email: 'Email, non pubblicata',
+    comment: 'Commento',
+    submit: 'Invia commento',
+    moderation: 'I commenti vengono moderati prima della pubblicazione. Usa un tono civile e resta in tema con l’articolo.',
+    empty: 'Non ci sono ancora commenti approvati. Puoi essere il primo a lasciare una memoria.',
+    editorReply: 'Risposta della redazione'
+  },
+  en: {
+    title: 'Reader Memories',
+    countSingular: 'comment',
+    countPlural: 'comments',
+    intro: 'Do you have a memory, correction or story related to this article? Leave a comment: it will be reviewed before publication.',
+    name: 'Name',
+    email: 'Email, not published',
+    comment: 'Comment',
+    submit: 'Submit comment',
+    moderation: 'Comments are reviewed before publication. Please keep the discussion respectful and on topic.',
+    empty: 'There are no approved comments yet. You can be the first to leave a memory.',
+    editorReply: 'Editorial reply'
+  }
+};
+
+const t = labels[lang] || labels.it;
+
+const commentStatus = Astro.url.searchParams.get('comment');
+
+const statusMessage =
+  commentStatus === 'ok'
+    ? lang === 'en'
+      ? 'Thanks! Your comment has been received and will appear after approval.'
+      : 'Grazie! Il tuo commento è stato ricevuto e apparirà dopo l’approvazione.'
+    : commentStatus === 'error'
+      ? lang === 'en'
+        ? 'Something went wrong while sending your comment. Please try again.'
+        : 'Qualcosa è andato storto durante l’invio del commento. Riprova.'
+      : '';
+
+const commentCount = comments.length;
+const countLabel =
+  commentCount === 1 ? t.countSingular : t.countPlural;
+
+const dateLocale = lang === 'en' ? 'en-US' : 'it-IT';
+
+const formatDate = (date?: string) =>
+  date
+    ? new Date(date).toLocaleDateString(dateLocale, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      })
+    : '';
+---
+
+<section class="article-comments" id="comments">
+
+  <div class="article-comments__header">
+    <div>
+      <span class="article-comments__kicker">
+        {commentCount} {countLabel}
+      </span>
+
+      <h2>{t.title}</h2>
+
+      <p>{t.intro}</p>
+
+      {statusMessage && (
+  <p class:list={[
+    'article-comments__status',
+    commentStatus === 'ok' && 'article-comments__status--ok',
+    commentStatus === 'error' && 'article-comments__status--error'
+  ]}>
+    {statusMessage}
+  </p>
+)}
+
+    </div>
+  </div>
+<details class="article-comments__composer">
+  <summary>
+    <span>{lang === 'en' ? 'Leave a comment' : 'Lascia un commento'}</span>
+  </summary>
+
+  <form class="article-comments__form" method="post" action="/api/comments">
+    <input type="hidden" name="articleId" value={post._id} />
+    <input type="hidden" name="articleTitle" value={post.title} />
+    <input type="hidden" name="language" value={lang} />
+    <input type="hidden" name="articleUrl" value={Astro.url.pathname} />
+
+    <div class="article-comments__honeypot" aria-hidden="true">
+      <label>
+        Website
+        <input type="text" name="website" tabindex="-1" autocomplete="off" />
+      </label>
+    </div>
+
+    <div class="article-comments__fields">
+      <label>
+        <span>{t.name}</span>
+        <input type="text" name="authorName" required maxlength="80" />
+      </label>
+
+      <label>
+        <span>{t.email}</span>
+        <input type="email" name="authorEmail" required maxlength="120" />
+      </label>
+    </div>
+
+    <label>
+      <span>{t.comment}</span>
+      <textarea name="body" required minlength="3" maxlength="2000" rows="6"></textarea>
+    </label>
+
+    <div class="article-comments__actions">
+      <small>{t.moderation}</small>
+      <button type="submit">{t.submit}</button>
+    </div>
+  </form>
+</details>
+
+  <div class="article-comments__list">
+    {comments.length > 0 ? (
+      comments.map((comment) => (
+        <article class:list={[
+          'article-comment',
+          comment.isHighlighted && 'article-comment--highlighted'
+        ]}>
+          <header class="article-comment__header">
+            <div class="article-comment__avatar" aria-hidden="true">
+              {comment.authorName?.charAt(0)?.toUpperCase() || 'R'}
+            </div>
+
+            <div>
+              <h3>{comment.authorName}</h3>
+              {comment.createdAt && (
+                <time datetime={comment.createdAt}>
+                  {formatDate(comment.createdAt)}
+                </time>
+              )}
+            </div>
+          </header>
+
+          <p>{comment.body}</p>
+
+          {comment.editorReply && (
+            <div class="article-comment__reply">
+              <strong>{t.editorReply}</strong>
+              <p>{comment.editorReply}</p>
+            </div>
+          )}
+        </article>
+      ))
+    ) : (
+      <p class="article-comments__empty">{t.empty}</p>
+    )}
+  </div>
+
+</section>

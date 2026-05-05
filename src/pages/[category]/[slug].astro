@@ -334,6 +334,28 @@ const seriesPosts = seriesId
   : [];
 
 /* ========================
+   COMMENTS
+======================== */
+
+const comments = await client.fetch(`
+  *[
+    _type == "comment" &&
+    article._ref == $postId &&
+    status == "approved"
+  ] | order(createdAt asc) {
+    _id,
+    authorName,
+    body,
+    createdAt,
+    isHighlighted,
+    editorReply,
+    language
+  }
+`, {
+  postId: post._id
+});
+
+/* ========================
    GLOBAL DATA
 ======================== */
 
@@ -398,15 +420,16 @@ const alternateLanguages = englishUrl
   alternateLanguages={alternateLanguages}
 >
 
-  <ArticlePage
-    post={hydratedPost}
-    relatedPosts={relatedPosts}
-    seriesPosts={seriesPosts}
-    languageSwitch={
-      englishUrl
-        ? { url: `/en/features/${englishTranslation.slug}/` }
-        : null
-    }
-  />
+<ArticlePage
+  post={hydratedPost}
+  relatedPosts={relatedPosts}
+  seriesPosts={seriesPosts}
+  comments={comments}
+  languageSwitch={
+    englishUrl
+      ? { url: `/en/features/${englishTranslation.slug}/` }
+      : null
+  }
+/>
 
 </Layout>

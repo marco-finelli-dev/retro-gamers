@@ -7,12 +7,14 @@ import ReviewSidebar from './ReviewSidebar.astro';
 import ArticleFinalRating from './ArticleFinalRating.astro';
 import ArticleAffiliateBox from './ArticleAffiliateBox.astro';
 import ArticleSeriesBox from './ArticleSeriesBox.astro';
+import ArticleComments from './ArticleComments.astro';
 import '../../styles/article/article.css';
 
 const {
   post,
   relatedPosts = [],
   seriesPosts = [],
+  comments = [],
   languageSwitch = null
 } = Astro.props;
 
@@ -77,7 +79,7 @@ const switchCta =
 
     </article>
 
-    <aside class="article-page__sidebar">
+       <aside class="article-page__sidebar">
       {isReview ? (
         <ReviewSidebar post={post} relatedPosts={relatedPosts} />
       ) : (
@@ -86,5 +88,7 @@ const switchCta =
     </aside>
 
   </div>
+
+  <ArticleComments post={post} comments={comments} />
 
 </main>
