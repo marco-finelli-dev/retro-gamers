@@ -294,6 +294,30 @@ const seriesPosts = seriesId
   `, { seriesId })
   : [];
 
+  /* ========================
+   COMMENTS
+======================== */
+
+const comments = await client.fetch(`
+  *[
+    _type == "comment" &&
+    article._ref == $postId &&
+    status == "approved" &&
+    language == "en"
+  ] | order(createdAt asc) {
+    _id,
+    authorName,
+    body,
+    createdAt,
+    isHighlighted,
+    editorReply,
+    likes,
+    dislikes
+  }
+`, {
+  postId: post._id
+});
+
 /* ========================
    GLOBAL DATA
 ======================== */
@@ -368,6 +392,7 @@ const alternateLanguages = [
   post={hydratedPost}
   relatedPosts={relatedPosts}
   seriesPosts={seriesPosts}
+  comments={comments}
   languageSwitch={
     post.translationOf?.slug
       ? { url: `/speciali/${post.translationOf.slug}/` }
