@@ -1,148 +1,194 @@
 ---
-import ReviewScoreBox from './ReviewScoreBox.astro';
+import { getPostUrl, getArchiveUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 
-const { post } = Astro.props;
+const {
+  post,
+  relatedPosts = []
+} = Astro.props;
 
 const lang = post?.language || 'it';
 
-const labels = {
+const typeLabels = {
   it: {
-    gameCard: 'Scheda gioco',
-    platform: 'Piattaforma',
-    format: 'Formato',
-    developer: 'Sviluppatore',
-    publisher: 'Publisher',
-    year: 'Anno',
-    genre: 'Genere',
-    mode: 'Modalità',
-    mediaFormats: {
-      cartridge: 'Cartuccia',
-      floppy: 'Floppy disk',
-      tape: 'Cassetta / tape',
-      cdrom: 'CD-ROM',
-      gdrom: 'GD-ROM',
-      hucard: 'HuCard',
-      arcade_pcb: 'PCB arcade',
-      digital: 'Digitale',
-      other: 'Altro'
+    review: 'Recensione',
+    news: 'News',
+    feature: 'Speciale',
+    guide: 'Guida',
+    memories: 'Memories',
+    interview: 'Intervista',
+    hardware: 'Hardware',
+    article: 'Articolo'
+  },
+  en: {
+    review: 'Review',
+    news: 'News',
+    feature: 'Feature',
+    guide: 'Guide',
+    memories: 'Memories',
+    interview: 'Interview',
+    hardware: 'Hardware',
+    article: 'Article'
+  }
+};
+
+const ui = {
+  it: {
+    related: 'Articoli correlati',
+    explore: 'Esplora',
+    archiveFallback: 'Esplora archivio',
+    archiveLabels: {
+      news: 'Tutte le news',
+      feature: 'Tutti gli speciali',
+      guide: 'Tutte le guide',
+      memories: 'Tutte le memories',
+      hardware: 'Tutto l’hardware',
+      article: 'Tutti gli articoli',
+      interview: 'Tutte le interviste'
     }
   },
   en: {
-    gameCard: 'Game info',
-    platform: 'Platform',
-    format: 'Format',
-    developer: 'Developer',
-    publisher: 'Publisher',
-    year: 'Year',
-    genre: 'Genre',
-    mode: 'Mode',
-    mediaFormats: {
-      cartridge: 'Cartridge',
-      floppy: 'Floppy disk',
-      tape: 'Cassette / tape',
-      cdrom: 'CD-ROM',
-      gdrom: 'GD-ROM',
-      hucard: 'HuCard',
-      arcade_pcb: 'Arcade PCB',
-      digital: 'Digital',
-      other: 'Other'
+    related: 'Related articles',
+    explore: 'Explore',
+    archiveFallback: 'Explore archive',
+    archiveLabels: {
+      news: 'All news',
+      feature: 'All features',
+      guide: 'All guides',
+      memories: 'All memories',
+      hardware: 'All hardware',
+      article: 'All articles',
+      interview: 'All interviews'
     }
   }
 };
 
-const t = labels[lang] || labels.it;
+const t = ui[lang] || ui.it;
 
-const cover = post.gameInfo?.cover?.asset
-  ? urlFor(post.gameInfo.cover)
-      .width(720)
-      .quality(78)
-      .auto('format')
-      .url()
-  : '';
+const archiveLink = {
+  label: t.archiveLabels[post.type] || t.archiveFallback,
+  href: getArchiveUrl(post.type, lang)
+};
 
-const coverAlt =
-  post.gameInfo?.cover?.alt ||
-  `${post.title} cover` ||
-  '';
+const sidebarRelated = relatedPosts
+  .filter((item) => item?._id !== post?._id)
+  .slice(0, 5);
 
-const rawMediaFormat = post.gameInfo?.mediaFormat;
+const sidebarTags = [
+  ...(post.platforms || []),
+  ...(post.categories || []),
+  ...(post.genres || []),
+  ...(post.developers || [])
+]
+  .filter((item) => item?.name)
+  .slice(0, 6);
 
-const mediaFormat = Array.isArray(rawMediaFormat)
-  ? rawMediaFormat
-      .map((format) => t.mediaFormats[format] || format)
-      .filter(Boolean)
-      .join(', ')
-  : rawMediaFormat
-    ? t.mediaFormats[rawMediaFormat] || rawMediaFormat
-    : '';
+const getMainImage = (post) => {
+  const source =
+    post.featuredImage?.asset
+      ? post.featuredImage
+      : post.gameInfo?.cover?.asset
+        ? post.gameInfo.cover
+        : null;
 
-const infoRows = [
-  {
-    label: t.platform,
-    value: post.platforms?.map((item) => item.name).join(', ')
-  },
-  {
-    label: t.format,
-    value: mediaFormat
-  },
-  {
-    label: t.developer,
-    value: post.developers?.map((item) => item.name).join(', ')
-  },
-  {
-    label: t.publisher,
-    value: post.publishers?.map((item) => item.name).join(', ')
-  },
-  {
-    label: t.year,
-    value: post.gameInfo?.releaseYear
-  },
-  {
-    label: t.genre,
-    value: post.genres?.map((item) => item.name).join(' · ')
-  },
-  {
-    label: t.mode,
-    value: post.modes?.map((item) => item.name).join(' · ')
-  }
-].filter((row) => row.value);
+  if (!source) return '';
+
+  return urlFor(source)
+    .width(520)
+    .height(390)
+    .fit('crop')
+    .quality(74)
+    .auto('format')
+    .url();
+};
+
+const getRelatedImage = (item) => {
+  const source =
+    item.featuredImage?.asset
+      ? item.featuredImage
+      : item.gameInfo?.cover?.asset
+        ? item.gameInfo.cover
+        : null;
+
+  if (!source) return '/placeholder-retro.png';
+
+  return urlFor(source)
+    .width(180)
+    .height(120)
+    .fit('crop')
+    .quality(70)
+    .auto('format')
+    .url();
+};
+
+const image = getMainImage(post);
+
+const getTypeLabel = (item) =>
+  typeLabels[lang]?.[item.type] ||
+  typeLabels.it[item.type] ||
+  'Article';
 ---
 
-<div class={`review-sidebar ${!cover ? 'has-no-cover' : ''}`}>
+<div class="article-sidebar">
 
-  {cover && (
-    <figure class="review-sidebar__cover">
+  {image && (
+    <figure class="article-sidebar__image">
       <img
-        src={cover}
-        alt={coverAlt}
-        width="720"
+        src={image}
+        alt={post.featuredImage?.alt || post.gameInfo?.cover?.alt || post.title || ''}
+        width="520"
+        height="390"
         loading="lazy"
         decoding="async"
       />
     </figure>
   )}
 
-  <div class="review-sidebar__sticky">
+  <div class="article-sidebar__sticky">
 
-    {post.rating && (
-      <ReviewScoreBox rating={post.rating} compact lang={lang} />
-    )}
+    {sidebarRelated.length > 0 && (
+      <section class="article-sidebar__panel article-sidebar__panel--related">
+        <h2>{t.related}</h2>
 
-    {infoRows.length > 0 && (
-      <section class="review-sidebar__panel">
-        <h2>{t.gameCard}</h2>
+        <div class="article-sidebar-related">
+          {sidebarRelated.map((item) => (
+            <a href={getPostUrl(item)} class="article-sidebar-related__card">
 
-        <dl class="review-info-list">
-          {infoRows.map((row) => (
-            <div>
-              <dt>{row.label}</dt>
-              <dd>{row.value}</dd>
-            </div>
+              <span class="article-sidebar-related__image">
+                <img
+                  src={getRelatedImage(item)}
+                  alt={item.featuredImage?.alt || item.gameInfo?.cover?.alt || item.title}
+                  width="180"
+                  height="120"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </span>
+
+              <span class="article-sidebar-related__content">
+                <small>{getTypeLabel(item)}</small>
+                <strong>{item.title}</strong>
+              </span>
+
+            </a>
           ))}
-        </dl>
+        </div>
       </section>
     )}
+
+    <section class="article-sidebar__panel article-sidebar__panel--explore">
+      <h2>{t.explore}</h2>
+
+      <div class="article-sidebar-explore">
+        <a href={archiveLink.href}>
+          {archiveLink.label}
+        </a>
+
+        {sidebarTags.map((item) => (
+          <span>{item.name}</span>
+        ))}
+      </div>
+    </section>
 
   </div>
 
