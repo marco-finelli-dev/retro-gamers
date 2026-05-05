@@ -5,6 +5,10 @@ import ArticlePage from '../../components/article/ArticlePage.astro';
 import { client } from '../../lib/sanity';
 import { getAllPosts, groupPosts, getRelatedPosts } from '../../lib/posts';
 
+/* ========================
+   PARAMS
+======================== */
+
 const { category, slug } = Astro.params;
 
 const categoryToType = {
@@ -18,7 +22,20 @@ const categoryToType = {
   articoli: 'article'
 };
 
-const expectedType = categoryToType[category];
+const englishTypeToCategory = {
+  feature: 'features',
+  review: 'reviews',
+  news: 'news',
+  guide: 'guides',
+  memories: 'memories',
+  interview: 'interviews',
+  hardware: 'hardware',
+  article: 'articles'
+};
+
+const expectedType = category
+  ? categoryToType[category]
+  : null;
 
 if (!expectedType) {
   return Astro.rewrite('/404');
@@ -104,6 +121,7 @@ const post = await client.fetch(`
 
   categories[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
@@ -115,43 +133,51 @@ const post = await client.fetch(`
 
     manufacturer->{
       name,
+      nameEn,
       "slug": slug.current
     }
   },
 
   genres[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   developers[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   publishers[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   manufacturer[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   modes[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   series[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   editorialSeries[]->{
     _id,
     name,
+    nameEn,
     "slug": slug.current
   },
 
@@ -167,15 +193,15 @@ const post = await client.fetch(`
   rating,
 
   monetization {
-  isAffiliate,
-  productType,
-  affiliateUrl,
-  affiliateLabel,
-  affiliateDescription,
-  priceLabel,
-  disclaimer,
-  priority
-},
+    isAffiliate,
+    productType,
+    affiliateUrl,
+    affiliateLabel,
+    affiliateDescription,
+    priceLabel,
+    disclaimer,
+    priority
+  },
 
   content[]{
     ...,
@@ -195,6 +221,8 @@ const post = await client.fetch(`
       _type == "taxonomyLink" => {
         ...,
         reference->{
+          name,
+          nameEn,
           "slug": slug.current
         }
       }
@@ -235,6 +263,8 @@ const post = await client.fetch(`
           _type == "taxonomyLink" => {
             ...,
             reference->{
+              name,
+              nameEn,
               "slug": slug.current
             }
           }
@@ -385,17 +415,6 @@ const pageImage =
 const canonicalUrl =
   `${siteUrl}/${category}/${slug}/`;
 
-const englishTypeToCategory = {
-  feature: 'features',
-  review: 'reviews',
-  news: 'news',
-  guide: 'guides',
-  memories: 'memories',
-  interview: 'interviews',
-  hardware: 'hardware',
-  article: 'articles'
-};
-
 const englishCategory =
   englishTranslation?.type
     ? englishTypeToCategory[englishTranslation.type]
@@ -438,16 +457,16 @@ const alternateLanguages = englishUrl
   alternateLanguages={alternateLanguages}
 >
 
-<ArticlePage
-  post={hydratedPost}
-  relatedPosts={relatedPosts}
-  seriesPosts={seriesPosts}
-  comments={comments}
-  languageSwitch={
-  englishUrl && englishCategory
-    ? { url: `/en/${englishCategory}/${englishTranslation.slug}/` }
-    : null
-}
-/>
+  <ArticlePage
+    post={hydratedPost}
+    relatedPosts={relatedPosts}
+    seriesPosts={seriesPosts}
+    comments={comments}
+    languageSwitch={
+      englishUrl && englishCategory
+        ? { url: `/en/${englishCategory}/${englishTranslation.slug}/` }
+        : null
+    }
+  />
 
 </Layout>

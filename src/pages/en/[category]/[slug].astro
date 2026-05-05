@@ -120,6 +120,7 @@ const post = await client.fetch(`
 
   categories[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
@@ -131,43 +132,51 @@ const post = await client.fetch(`
 
     manufacturer->{
       name,
+      nameEn,
       "slug": slug.current
     }
   },
 
   genres[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   developers[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   publishers[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   manufacturer[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   modes[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   series[]->{
     name,
+    nameEn,
     "slug": slug.current
   },
 
   editorialSeries[]->{
     _id,
     name,
+    nameEn,
     "slug": slug.current
   },
 
@@ -210,6 +219,8 @@ const post = await client.fetch(`
       _type == "taxonomyLink" => {
         ...,
         reference->{
+          name,
+          nameEn,
           "slug": slug.current
         }
       }
@@ -250,6 +261,8 @@ const post = await client.fetch(`
           _type == "taxonomyLink" => {
             ...,
             reference->{
+              name,
+              nameEn,
               "slug": slug.current
             }
           }
@@ -285,6 +298,10 @@ const post = await client.fetch(`
 if (!post) {
   return Astro.rewrite('/404');
 }
+
+/* ========================
+   HYDRATION
+======================== */
 
 const readingTime = getReadingTime(post.content);
 
@@ -322,7 +339,7 @@ const seriesPosts = seriesId
   `, { seriesId })
   : [];
 
-  /* ========================
+/* ========================
    COMMENTS
 ======================== */
 
@@ -389,7 +406,7 @@ const alternateLanguages = [
     lang: 'en',
     url: canonicalUrl
   },
-  ...(post.translationOf?.slug
+  ...(post.translationOf?.slug && italianCategory
     ? [
         {
           lang: 'it',
@@ -422,16 +439,16 @@ const alternateLanguages = [
   alternateLanguages={alternateLanguages}
 >
 
-<ArticlePage
-  post={hydratedPost}
-  relatedPosts={relatedPosts}
-  seriesPosts={seriesPosts}
-  comments={comments}
-  languageSwitch={
-  post.translationOf?.slug && italianCategory
-    ? { url: `/${italianCategory}/${post.translationOf.slug}/` }
-    : null
-}
-/>
+  <ArticlePage
+    post={hydratedPost}
+    relatedPosts={relatedPosts}
+    seriesPosts={seriesPosts}
+    comments={comments}
+    languageSwitch={
+      post.translationOf?.slug && italianCategory
+        ? { url: `/${italianCategory}/${post.translationOf.slug}/` }
+        : null
+    }
+  />
 
 </Layout>

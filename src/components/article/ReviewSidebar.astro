@@ -53,6 +53,11 @@ const labels = {
 
 const t = labels[lang] || labels.it;
 
+const getTaxonomyName = (item) =>
+  lang === 'en'
+    ? item.nameEn || item.name
+    : item.name;
+
 const cover = post.gameInfo?.cover?.asset
   ? urlFor(post.gameInfo.cover)
       .width(720)
@@ -88,11 +93,11 @@ const infoRows = [
   },
   {
     label: t.developer,
-    value: post.developers?.map((item) => item.name).join(', ')
+    value: post.developers?.map(getTaxonomyName).join(', ')
   },
   {
     label: t.publisher,
-    value: post.publishers?.map((item) => item.name).join(', ')
+    value: post.publishers?.map(getTaxonomyName).join(', ')
   },
   {
     label: t.year,
@@ -100,11 +105,11 @@ const infoRows = [
   },
   {
     label: t.genre,
-    value: post.genres?.map((item) => item.name).join(' · ')
+    value: post.genres?.map(getTaxonomyName).join(' · ')
   },
   {
     label: t.mode,
-    value: post.modes?.map((item) => item.name).join(' · ')
+    value: post.modes?.map(getTaxonomyName).join(' · ')
   }
 ].filter((row) => row.value);
 ---
