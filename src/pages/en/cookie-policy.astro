@@ -1,0 +1,141 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Cookie Policy"
+  description="Information about cookies and similar technologies used by Retro-Gamers.it."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/en/cookie-policy/"
+  lang="en"
+>
+  <main class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Cookie</span>
+        <h1>Cookie Policy</h1>
+        <p>
+          Information about cookies and similar technologies used by
+          Retro-Gamers.it.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <p class="legal-updated">
+          Last updated: April 28, 2026
+        </p>
+
+        <h2>1. What cookies are</h2>
+
+        <p>
+          Cookies are small text files that websites can store in the user’s browser.
+          Similar technologies may be used for technical purposes, statistics or to
+          integrate third-party services.
+        </p>
+
+        <h2>2. Types of tools used</h2>
+
+        <p>
+          Retro-Gamers.it may use the following categories of cookies or similar
+          tools:
+        </p>
+
+        <ul>
+          <li>
+            <strong>Necessary:</strong> required for the technical operation of the
+            website and for storing consent preferences.
+          </li>
+          <li>
+            <strong>Analytics:</strong> help us understand how the website is used
+            and how content performs.
+          </li>
+          <li>
+            <strong>Third-party content:</strong> allow embedded content, such as
+            YouTube videos, to be displayed.
+          </li>
+          <li>
+            <strong>External links and affiliate links:</strong> lead to third-party
+            websites, such as Amazon or eBay, which may use their own cookies and
+            tracking systems.
+          </li>
+        </ul>
+
+        <h2>3. Necessary cookies</h2>
+
+        <p>
+          Necessary cookies or tools allow the website to function correctly and do
+          not require the user’s consent. They may include, for example, storing the
+          preferences expressed through the cookie banner.
+        </p>
+
+        <h2>4. Analytics</h2>
+
+        <p>
+          Retro-Gamers.it may use analytics tools to measure visits and understand
+          which content is viewed.
+        </p>
+
+        <p>
+          Google Analytics is loaded only after the user has consented to the
+          “Analytics” category.
+        </p>
+
+        <p>
+          Vercel Web Analytics may be used for aggregate statistics and, according
+          to Vercel’s documentation, does not use third-party cookies.
+        </p>
+
+        <h2>5. YouTube and embedded content</h2>
+
+        <p>
+          Some pages may include YouTube videos. Before consent is given, this
+          content may be replaced by an informative placeholder.
+        </p>
+
+        <p>
+          The video is loaded only if the user accepts the “Third-party content”
+          category or explicitly chooses to display that content.
+        </p>
+
+        <h2>6. Affiliate links</h2>
+
+        <p>
+          Some links to Amazon, eBay or other external websites may be affiliate
+          links. By clicking these links, the user accesses external platforms,
+          which may use cookies and tracking tools according to their own policies.
+        </p>
+
+        <h2>7. Consent management</h2>
+
+        <p>
+          Users can accept, reject or customize preferences for non-necessary
+          categories. Preferences can be changed at any time through the cookie
+          management link or button available on the website.
+        </p>
+
+        <h2>8. Data controller</h2>
+
+        <p>
+          The data controller is Marco Finelli, responsible for the Retro-Gamers.it
+          editorial project.
+        </p>
+
+        <p>
+          Contact email:
+          <a href="mailto:guybrush@retro-gamers.it">guybrush@retro-gamers.it</a>.
+        </p>
+
+      </article>
+
+    </div>
+  </main>
+</BaseLayout>

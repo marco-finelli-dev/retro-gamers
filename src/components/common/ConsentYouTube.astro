@@ -1,8 +1,33 @@
 ---
 const {
   url = '',
-  title = 'Video YouTube'
+  title = 'YouTube video'
 } = Astro.props;
+
+const lang = Astro.url.pathname.startsWith('/en/') ? 'en' : 'it';
+
+const labels = {
+  it: {
+    eyebrow: 'Contenuto YouTube',
+    description:
+      'Questo video è incorporato da YouTube. Per visualizzarlo devi accettare i contenuti di terze parti.',
+    button: 'Accetta e guarda il video',
+    policy: 'Leggi la Cookie Policy',
+    policyUrl: '/cookie-policy/',
+    defaultTitle: 'Video YouTube'
+  },
+  en: {
+    eyebrow: 'YouTube content',
+    description:
+      'This video is embedded from YouTube. To watch it, you need to accept third-party content.',
+    button: 'Accept and watch the video',
+    policy: 'Read the Cookie Policy',
+    policyUrl: '/en/cookie-policy/',
+    defaultTitle: 'YouTube video'
+  }
+};
+
+const t = labels[lang] || labels.it;
 
 const getYouTubeId = (value = '') => {
   if (!value) return '';
@@ -25,6 +50,7 @@ const getYouTubeId = (value = '') => {
 };
 
 const videoId = getYouTubeId(url);
+const videoTitle = title || t.defaultTitle;
 ---
 
 {videoId && (
@@ -32,24 +58,21 @@ const videoId = getYouTubeId(url);
     class="consent-youtube"
     data-consent-youtube
     data-youtube-id={videoId}
-    data-youtube-title={title}
+    data-youtube-title={videoTitle}
   >
     <div class="consent-youtube__placeholder" data-youtube-placeholder>
-      <span>Contenuto YouTube</span>
+      <span>{t.eyebrow}</span>
 
-      <h3>{title}</h3>
+      <h3>{videoTitle}</h3>
 
-      <p>
-        Questo video è incorporato da YouTube. Per visualizzarlo devi accettare
-        i contenuti di terze parti.
-      </p>
+      <p>{t.description}</p>
 
       <button type="button" data-youtube-accept>
-        Accetta e guarda il video
+        {t.button}
       </button>
 
-      <a href="/cookie-policy/">
-        Leggi la Cookie Policy
+      <a href={t.policyUrl}>
+        {t.policy}
       </a>
     </div>
   </div>
@@ -97,7 +120,7 @@ const videoId = getYouTubeId(url);
       if (!wrapper || wrapper.dataset.youtubeLoaded === 'true') return;
 
       const videoId = wrapper.dataset.youtubeId;
-      const title = wrapper.dataset.youtubeTitle || 'Video YouTube';
+      const title = wrapper.dataset.youtubeTitle || 'YouTube video';
 
       if (!videoId) return;
 

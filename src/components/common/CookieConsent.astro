@@ -1,31 +1,78 @@
 ---
+const lang = Astro.url.pathname.startsWith('/en/') ? 'en' : 'it';
+
+const labels = {
+  it: {
+    eyebrow: 'Privacy',
+    title: 'Preferenze cookie',
+    intro:
+      'Usiamo cookie tecnici necessari al funzionamento del sito e, solo con il tuo consenso, strumenti di analisi e contenuti incorporati da servizi di terze parti.',
+    description:
+      'Puoi accettare tutto, rifiutare le categorie non necessarie o personalizzare le tue preferenze.',
+    necessaryTitle: 'Necessari',
+    necessaryText:
+      'Servono al funzionamento del sito e non possono essere disattivati.',
+    analyticsTitle: 'Analytics',
+    analyticsText:
+      'Ci aiutano a capire quali contenuti vengono letti e come migliorare il sito.',
+    thirdPartyTitle: 'Contenuti di terze parti',
+    thirdPartyText:
+      'Permettono di visualizzare contenuti incorporati, come video YouTube.',
+    reject: 'Rifiuta',
+    customize: 'Personalizza',
+    accept: 'Accetta tutto',
+    save: 'Salva preferenze',
+    policy: 'Leggi la Cookie Policy',
+    policyUrl: '/cookie-policy/'
+  },
+
+  en: {
+    eyebrow: 'Privacy',
+    title: 'Cookie preferences',
+    intro:
+      'We use technical cookies required for the website to work and, only with your consent, analytics tools and embedded content from third-party services.',
+    description:
+      'You can accept all cookies, reject non-essential categories or customize your preferences.',
+    necessaryTitle: 'Necessary',
+    necessaryText:
+      'Required for the website to function and cannot be disabled.',
+    analyticsTitle: 'Analytics',
+    analyticsText:
+      'They help us understand which content is read and how to improve the website.',
+    thirdPartyTitle: 'Third-party content',
+    thirdPartyText:
+      'They allow embedded content, such as YouTube videos, to be displayed.',
+    reject: 'Reject',
+    customize: 'Customize',
+    accept: 'Accept all',
+    save: 'Save preferences',
+    policy: 'Read the Cookie Policy',
+    policyUrl: '/en/cookie-policy/'
+  }
+};
+
+const t = labels[lang] || labels.it;
 ---
 
 <div class="cookie-consent" data-cookie-consent hidden>
   <div class="cookie-consent__panel">
 
     <div class="cookie-consent__content">
-      <span class="cookie-consent__eyebrow">Privacy</span>
+      <span class="cookie-consent__eyebrow">{t.eyebrow}</span>
 
-      <h2>Preferenze cookie</h2>
+      <h2>{t.title}</h2>
 
-      <p>
-        Usiamo cookie tecnici necessari al funzionamento del sito e, solo con il tuo consenso,
-        strumenti di analisi e contenuti incorporati da servizi di terze parti.
-      </p>
+      <p>{t.intro}</p>
 
-      <p>
-        Puoi accettare tutto, rifiutare le categorie non necessarie o personalizzare
-        le tue preferenze.
-      </p>
+      <p>{t.description}</p>
     </div>
 
     <div class="cookie-consent__preferences" data-cookie-preferences hidden>
 
       <label class="cookie-consent__option is-disabled">
         <span>
-          <strong>Necessari</strong>
-          <small>Servono al funzionamento del sito e non possono essere disattivati.</small>
+          <strong>{t.necessaryTitle}</strong>
+          <small>{t.necessaryText}</small>
         </span>
 
         <input type="checkbox" checked disabled />
@@ -33,8 +80,8 @@
 
       <label class="cookie-consent__option">
         <span>
-          <strong>Analytics</strong>
-          <small>Ci aiutano a capire quali contenuti vengono letti e come migliorare il sito.</small>
+          <strong>{t.analyticsTitle}</strong>
+          <small>{t.analyticsText}</small>
         </span>
 
         <input type="checkbox" data-cookie-category="analytics" />
@@ -42,8 +89,8 @@
 
       <label class="cookie-consent__option">
         <span>
-          <strong>Contenuti di terze parti</strong>
-          <small>Permettono di visualizzare embed come video YouTube.</small>
+          <strong>{t.thirdPartyTitle}</strong>
+          <small>{t.thirdPartyText}</small>
         </span>
 
         <input type="checkbox" data-cookie-category="thirdParty" />
@@ -53,24 +100,24 @@
 
     <div class="cookie-consent__actions">
       <button type="button" class="cookie-consent__button cookie-consent__button--ghost" data-cookie-reject>
-        Rifiuta
+        {t.reject}
       </button>
 
       <button type="button" class="cookie-consent__button cookie-consent__button--ghost" data-cookie-customize>
-        Personalizza
+        {t.customize}
       </button>
 
       <button type="button" class="cookie-consent__button cookie-consent__button--primary" data-cookie-accept>
-        Accetta tutto
+        {t.accept}
       </button>
 
       <button type="button" class="cookie-consent__button cookie-consent__button--primary" data-cookie-save hidden>
-        Salva preferenze
+        {t.save}
       </button>
     </div>
 
-    <a href="/cookie-policy/" class="cookie-consent__link">
-      Leggi la Cookie Policy
+    <a href={t.policyUrl} class="cookie-consent__link">
+      {t.policy}
     </a>
 
   </div>
@@ -208,12 +255,12 @@
         closeBanner();
       });
 
-    customizeButton?.addEventListener('click', () => {
-  if (preferences) preferences.hidden = false;
-  customizeButton.hidden = true;
-  if (acceptButton) acceptButton.hidden = true;
-  if (saveButton) saveButton.hidden = false;
-});
+      customizeButton?.addEventListener('click', () => {
+        if (preferences) preferences.hidden = false;
+        if (customizeButton) customizeButton.hidden = true;
+        if (acceptButton) acceptButton.hidden = true;
+        if (saveButton) saveButton.hidden = false;
+      });
 
       saveButton?.addEventListener('click', () => {
         saveConsent(getCustomConsent());

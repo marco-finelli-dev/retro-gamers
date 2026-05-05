@@ -1,0 +1,91 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Collaborations"
+  description="Editorial collaborations, submissions, review proposals and retro-gaming projects."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/en/collaborations/"
+  lang="en"
+>
+  <main class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Collaborations</span>
+        <h1>Collaborations</h1>
+        <p>
+          Editorial proposals, submissions, review items and projects related to the
+          world of retro gaming.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <h2>Collaborating with Retro-Gamers.it</h2>
+
+        <p>
+          Retro-Gamers.it is open to editorial collaborations, project submissions,
+          products, events, books, hardware, software, independent initiatives and
+          content related to the world of retro gaming.
+        </p>
+
+        <p>
+          We are especially interested in proposals related to historic consoles,
+          home computers, arcade systems, new productions for retro platforms, books,
+          accessories, peripherals, emulators, restorations, modding and video game
+          preservation.
+        </p>
+
+        <h2>Reviews and submissions</h2>
+
+        <p>
+          You can submit games, hardware, books, accessories or projects for possible
+          coverage or review. Sending material does not automatically guarantee that
+          an article will be published.
+        </p>
+
+        <p>
+          Retro-Gamers.it maintains full editorial independence: opinions, evaluations
+          and published content cannot be purchased or modified by external parties.
+        </p>
+
+        <h2>Affiliations and partnerships</h2>
+
+        <p>
+          The website may use affiliate links to external platforms, such as Amazon
+          or eBay. Commercial collaborations, partnerships or sponsored content will
+          be considered only if they are consistent with the editorial project.
+        </p>
+
+        <p>
+          Any sponsored content or relevant collaboration will always be clearly
+          identified, in order to ensure transparency for readers.
+        </p>
+
+        <h2>How to propose a collaboration</h2>
+
+        <p>
+          To propose a collaboration, you can write to:
+          <a href="mailto:guybrush@retro-gamers.it">guybrush@retro-gamers.it</a>.
+        </p>
+
+        <p>
+          In your message, please include a description of the project, any relevant
+          links, images, available materials and the type of collaboration you have
+          in mind.
+        </p>
+
+      </article>
+
+    </div>
+  </main>
+</BaseLayout>
