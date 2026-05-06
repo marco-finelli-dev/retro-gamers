@@ -15,10 +15,14 @@ const labels = {
     submit: 'Invia commento',
     moderation: 'I commenti vengono moderati prima della pubblicazione. Usa un tono civile e resta in tema con l’articolo.',
     empty: 'Non ci sono ancora commenti approvati. Puoi essere il primo a lasciare una memoria.',
-    editorReply: 'Risposta della redazione',
+    editorReply: 'Risposta dell’autore',
     leaveComment: 'Lascia un commento',
     like: 'Mi piace',
-    dislike: 'Non mi piace'
+    dislike: 'Non mi piace',
+    reply: 'Rispondi',
+    replyTo: 'Risposta a',
+    replyPlaceholder: 'Scrivi una risposta a',
+    cancelReply: 'Annulla risposta'
   },
   en: {
     title: 'Reader Memories',
@@ -31,10 +35,14 @@ const labels = {
     submit: 'Submit comment',
     moderation: 'Comments are reviewed before publication. Please keep the discussion respectful and on topic.',
     empty: 'There are no approved comments yet. You can be the first to leave a memory.',
-    editorReply: 'Editorial reply',
+    editorReply: 'Author reply',
     leaveComment: 'Leave a comment',
     like: 'Like',
-    dislike: 'Dislike'
+    dislike: 'Dislike',
+    reply: 'Reply',
+    replyTo: 'Reply to',
+    replyPlaceholder: 'Write a reply to',
+    cancelReply: 'Cancel reply'
   }
 };
 
@@ -67,6 +75,22 @@ const formatDate = (date?: string) =>
         year: 'numeric'
       })
     : '';
+
+const topLevelComments = comments.filter((comment) => !comment.parentComment?._id);
+
+const repliesByParentId = comments.reduce((acc, comment) => {
+  const parentId = comment.parentComment?._id;
+
+  if (!parentId) return acc;
+
+  if (!acc[parentId]) {
+    acc[parentId] = [];
+  }
+
+  acc[parentId].push(comment);
+
+  return acc;
+}, {});
 ---
 
 <section class="article-comments" id="comments">
@@ -103,6 +127,15 @@ const formatDate = (date?: string) =>
       <input type="hidden" name="articleTitle" value={post.title} />
       <input type="hidden" name="language" value={lang} />
       <input type="hidden" name="articleUrl" value={Astro.url.pathname} />
+      <input type="hidden" name="parentCommentId" value="" data-parent-comment-id />
+
+      <div class="article-comments__replying-to" data-replying-to hidden>
+        <span data-replying-to-text></span>
+
+        <button type="button" data-cancel-reply>
+          {t.cancelReply}
+        </button>
+      </div>
 
       <div class="article-comments__honeypot" aria-hidden="true">
         <label>
@@ -125,7 +158,14 @@ const formatDate = (date?: string) =>
 
       <label>
         <span>{t.comment}</span>
-        <textarea name="body" required minlength="3" maxlength="2000" rows="6"></textarea>
+        <textarea
+          name="body"
+          required
+          minlength="3"
+          maxlength="2000"
+          rows="6"
+          data-comment-textarea
+        ></textarea>
       </label>
 
       <div class="article-comments__actions">
@@ -136,10 +176,11 @@ const formatDate = (date?: string) =>
   </details>
 
   <div class="article-comments__list">
-    {comments.length > 0 ? (
-      comments.map((comment) => {
+    {topLevelComments.length > 0 ? (
+      topLevelComments.map((comment) => {
         const likes = comment.likes || 0;
         const dislikes = comment.dislikes || 0;
+        const readerReplies = repliesByParentId[comment._id] || [];
 
         return (
           <article
@@ -186,6 +227,17 @@ const formatDate = (date?: string) =>
                   <img src="/icons/comment-dislike.svg" alt="" aria-hidden="true" />
                   <span data-reaction-count="dislike">{dislikes}</span>
                 </button>
+
+                <button
+                  class="article-comment__reply-button"
+                  type="button"
+                  data-reply-to-comment={comment._id}
+                  data-reply-to-author={comment.authorName}
+                  data-reply-label={t.replyTo}
+                  data-reply-placeholder={t.replyPlaceholder}
+                >
+                  {t.reply}
+                </button>
               </div>
             </header>
 
@@ -195,6 +247,122 @@ const formatDate = (date?: string) =>
               <div class="article-comment__reply">
                 <strong>{t.editorReply}</strong>
                 <p>{comment.editorReply}</p>
+              </div>
+            )}
+
+            {comment.editorReplies?.length > 0 && (
+              <div class="article-comment__editor-replies">
+                {comment.editorReplies.map((reply) => (
+                  <div class="article-comment__editor-reply">
+                    <strong>
+                      {reply.authorName}
+                      {reply.authorRole && <span> · {reply.authorRole}</span>}
+                    </strong>
+
+                    <p>{reply.body}</p>
+
+                    {reply.createdAt && (
+                      <time datetime={reply.createdAt}>
+                        {formatDate(reply.createdAt)}
+                      </time>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {readerReplies.length > 0 && (
+              <div class="article-comment__reader-replies">
+                {readerReplies.map((reply) => {
+                  const replyLikes = reply.likes || 0;
+                  const replyDislikes = reply.dislikes || 0;
+
+                  return (
+                    <article
+                      class:list={[
+                        'article-comment',
+                        'article-comment--nested',
+                        reply.isHighlighted && 'article-comment--highlighted'
+                      ]}
+                      data-comment-id={reply._id}
+                    >
+                      <header class="article-comment__header">
+                        <div class="article-comment__avatar" aria-hidden="true">
+                          {reply.authorName?.charAt(0)?.toUpperCase() || 'R'}
+                        </div>
+
+                        <div class="article-comment__meta">
+                          <h3>{reply.authorName}</h3>
+
+                          {reply.createdAt && (
+                            <time datetime={reply.createdAt}>
+                              {formatDate(reply.createdAt)}
+                            </time>
+                          )}
+                        </div>
+
+                        <div class="article-comment__reactions" aria-label={lang === 'en' ? 'Comment reactions' : 'Reazioni al commento'}>
+                          <button
+                            class="comment-reaction comment-reaction--like"
+                            type="button"
+                            data-comment-reaction="like"
+                            aria-label={t.like}
+                            title={t.like}
+                          >
+                            <img src="/icons/comment-like.svg" alt="" aria-hidden="true" />
+                            <span data-reaction-count="like">{replyLikes}</span>
+                          </button>
+
+                          <button
+                            class="comment-reaction comment-reaction--dislike"
+                            type="button"
+                            data-comment-reaction="dislike"
+                            aria-label={t.dislike}
+                            title={t.dislike}
+                          >
+                            <img src="/icons/comment-dislike.svg" alt="" aria-hidden="true" />
+                            <span data-reaction-count="dislike">{replyDislikes}</span>
+                          </button>
+                        </div>
+                      </header>
+
+                      <p>
+                        <span class="article-comment__reply-context">
+                          {t.replyTo} {comment.authorName}
+                        </span>
+                        {reply.body}
+                      </p>
+
+                      {reply.editorReply && (
+                        <div class="article-comment__reply">
+                          <strong>{t.editorReply}</strong>
+                          <p>{reply.editorReply}</p>
+                        </div>
+                      )}
+
+                      {reply.editorReplies?.length > 0 && (
+                        <div class="article-comment__editor-replies">
+                          {reply.editorReplies.map((editorReply) => (
+                            <div class="article-comment__editor-reply">
+                              <strong>
+                                {editorReply.authorName}
+                                {editorReply.authorRole && <span> · {editorReply.authorRole}</span>}
+                              </strong>
+
+                              <p>{editorReply.body}</p>
+
+                              {editorReply.createdAt && (
+                                <time datetime={editorReply.createdAt}>
+                                  {formatDate(editorReply.createdAt)}
+                                </time>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
             )}
           </article>
@@ -223,87 +391,148 @@ const formatDate = (date?: string) =>
     localStorage.removeItem(`${STORAGE_PREFIX}${commentId}`);
   }
 
-  function updateActiveState(article, reaction) {
-    article
-      .querySelectorAll('[data-comment-reaction]')
-      .forEach((button) => {
-        button.classList.toggle(
-          'is-active',
-          button.dataset.commentReaction === reaction
-        );
-      });
-  }
+ function getOwnReactionButtons(article) {
+  return article.querySelectorAll(
+    ':scope > .article-comment__header [data-comment-reaction]'
+  );
+}
 
-  function changeCount(article, type, delta) {
-    const countElement = article.querySelector(`[data-reaction-count="${type}"]`);
-    if (!countElement) return;
+function updateActiveState(article, reaction) {
+  getOwnReactionButtons(article).forEach((button) => {
+    button.classList.toggle(
+      'is-active',
+      button.dataset.commentReaction === reaction
+    );
+  });
+}
 
-    const currentValue = Number(countElement.textContent || 0);
-    const nextValue = Math.max(0, currentValue + delta);
+function changeCount(article, type, delta) {
+  const countElement = article.querySelector(
+    `:scope > .article-comment__header [data-reaction-count="${type}"]`
+  );
 
-    countElement.textContent = String(nextValue);
-  }
+  if (!countElement) return;
+
+  const currentValue = Number(countElement.textContent || 0);
+  const nextValue = Math.max(0, currentValue + delta);
+
+  countElement.textContent = String(nextValue);
+}
 
   document.querySelectorAll('[data-comment-id]').forEach((article) => {
-    const commentId = article.dataset.commentId;
-    if (!commentId) return;
+  const commentId = article.dataset.commentId;
+  if (!commentId) return;
 
-    updateActiveState(article, getStoredReaction(commentId));
+  updateActiveState(article, getStoredReaction(commentId));
 
-    article
-      .querySelectorAll('[data-comment-reaction]')
-      .forEach((button) => {
-        button.addEventListener('click', async () => {
-          const reaction = button.dataset.commentReaction;
-          const previousReaction = getStoredReaction(commentId);
+  getOwnReactionButtons(article).forEach((button) => {
+    button.addEventListener('click', async () => {
+      const reaction = button.dataset.commentReaction;
+      const previousReaction = getStoredReaction(commentId);
 
-          if (!reaction) return;
-          if (button.disabled) return;
+      if (!reaction) return;
+      if (button.disabled) return;
 
-          const nextReaction =
-            previousReaction === reaction ? '' : reaction;
+      const nextReaction =
+        previousReaction === reaction ? '' : reaction;
 
-          article
-            .querySelectorAll('[data-comment-reaction]')
-            .forEach((item) => {
-              item.disabled = true;
-            });
-
-          try {
-            const response = await fetch('/api/comment-reaction', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                commentId,
-                reaction: nextReaction,
-                previousReaction
-              })
-            });
-
-            if (!response.ok) {
-              throw new Error('Reaction request failed');
-            }
-
-            if (previousReaction === 'like') changeCount(article, 'like', -1);
-            if (previousReaction === 'dislike') changeCount(article, 'dislike', -1);
-
-            if (nextReaction === 'like') changeCount(article, 'like', 1);
-            if (nextReaction === 'dislike') changeCount(article, 'dislike', 1);
-
-            setStoredReaction(commentId, nextReaction);
-            updateActiveState(article, nextReaction);
-          } catch (error) {
-            console.error(error);
-          } finally {
-            article
-              .querySelectorAll('[data-comment-reaction]')
-              .forEach((item) => {
-                item.disabled = false;
-              });
-          }
-        });
+      getOwnReactionButtons(article).forEach((item) => {
+        item.disabled = true;
       });
+
+      try {
+        const response = await fetch('/api/comment-reaction', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            commentId,
+            reaction: nextReaction,
+            previousReaction
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Reaction request failed');
+        }
+
+        if (previousReaction === 'like') changeCount(article, 'like', -1);
+        if (previousReaction === 'dislike') changeCount(article, 'dislike', -1);
+
+        if (nextReaction === 'like') changeCount(article, 'like', 1);
+        if (nextReaction === 'dislike') changeCount(article, 'dislike', 1);
+
+        setStoredReaction(commentId, nextReaction);
+        updateActiveState(article, nextReaction);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        getOwnReactionButtons(article).forEach((item) => {
+          item.disabled = false;
+        });
+      }
+    });
+  });
+});
+
+  document.querySelectorAll('[data-reply-to-comment]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const commentId = button.dataset.replyToComment;
+      const authorName = button.dataset.replyToAuthor || '';
+      const replyLabel = button.dataset.replyLabel || 'Risposta a';
+      const replyPlaceholder = button.dataset.replyPlaceholder || 'Scrivi una risposta a';
+
+      const form = document.querySelector('.article-comments__form');
+      const details = document.querySelector('.article-comments__composer');
+      const parentInput = document.querySelector('[data-parent-comment-id]');
+      const textarea = document.querySelector('[data-comment-textarea]');
+      const replyingTo = document.querySelector('[data-replying-to]');
+      const replyingToText = document.querySelector('[data-replying-to-text]');
+
+      if (!form || !parentInput) return;
+
+      parentInput.value = commentId || '';
+
+      if (replyingTo && replyingToText) {
+        replyingTo.hidden = false;
+        replyingToText.textContent = `${replyLabel} ${authorName}`;
+      }
+
+      if (details) {
+        details.open = true;
+      }
+
+      if (textarea) {
+        textarea.placeholder = authorName
+          ? `${replyPlaceholder} ${authorName}...`
+          : `${replyPlaceholder}...`;
+
+        textarea.focus();
+      }
+
+      form.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    });
+  });
+
+  document.querySelector('[data-cancel-reply]')?.addEventListener('click', () => {
+    const parentInput = document.querySelector('[data-parent-comment-id]');
+    const textarea = document.querySelector('[data-comment-textarea]');
+    const replyingTo = document.querySelector('[data-replying-to]');
+
+    if (parentInput) {
+      parentInput.value = '';
+    }
+
+    if (textarea) {
+      textarea.placeholder = '';
+    }
+
+    if (replyingTo) {
+      replyingTo.hidden = true;
+    }
   });
 </script>

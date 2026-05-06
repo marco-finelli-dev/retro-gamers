@@ -357,8 +357,19 @@ const comments = await client.fetch(`
     createdAt,
     isHighlighted,
     editorReply,
+    editorReplies[]{
+      authorName,
+      authorRole,
+      body,
+      createdAt
+    },
     likes,
-    dislikes
+    dislikes,
+    language,
+    parentComment->{
+      _id,
+      authorName
+    }
   }
 `, {
   postId: post._id

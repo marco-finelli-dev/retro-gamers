@@ -152,6 +152,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const articleId = cleanText(formData.get('articleId'), 120);
+    const parentCommentId = cleanText(formData.get('parentCommentId'), 120);
     const articleTitle = cleanText(formData.get('articleTitle'), 180);
     const language = cleanText(formData.get('language'), 2) === 'en'
       ? 'en'
@@ -186,6 +187,14 @@ export const POST: APIRoute = async ({ request }) => {
         _type: 'reference',
         _ref: articleId
       },
+      ...(parentCommentId
+        ? {
+            parentComment: {
+              _type: 'reference',
+              _ref: parentCommentId
+            }
+          }
+        : {}),
       articleTitle,
       language,
       authorName,
@@ -197,7 +206,6 @@ export const POST: APIRoute = async ({ request }) => {
       ipAddress: getClientIp(request),
       userAgent: request.headers.get('user-agent') || ''
     });
-
     await sendCommentNotification({
       articleTitle,
       articleUrl,
