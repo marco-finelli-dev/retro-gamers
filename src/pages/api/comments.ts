@@ -90,7 +90,21 @@ async function sendCommentNotification({
   body: string;
   language: 'it' | 'en';
 }) {
-  if (!resend || !notifyEmail) return;
+  console.log('Comment notification env', {
+    hasResendApiKey: Boolean(import.meta.env.RESEND_API_KEY),
+    hasResendClient: Boolean(resend),
+    hasNotifyEmail: Boolean(notifyEmail),
+    notifyEmailLength: notifyEmail.length
+  });
+
+  if (!resend || !notifyEmail) {
+    console.warn('Comment notification skipped', {
+      missingResendClient: !resend,
+      missingNotifyEmail: !notifyEmail
+    });
+
+    return;
+  }
 
   const pageUrl = absoluteArticleUrl(articleUrl);
   const preview = body.length > 500 ? `${body.slice(0, 500)}…` : body;
