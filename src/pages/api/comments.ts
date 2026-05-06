@@ -110,7 +110,7 @@ async function sendCommentNotification({
   const preview = body.length > 500 ? `${body.slice(0, 500)}…` : body;
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: 'Retro-Gamers <noreply@send.retro-gamers.it>',
       to: notifyEmail,
       subject: `Nuovo commento in attesa su Retro-Gamers`,
@@ -142,8 +142,10 @@ async function sendCommentNotification({
         </div>
       `
     });
+
+    console.log('Comment notification sent:', JSON.stringify(result, null, 2));
   } catch (error) {
-    console.error('Comment notification email error:', error);
+    console.error('Comment notification email error:', JSON.stringify(error, null, 2));
   }
 }
 
