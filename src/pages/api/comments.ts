@@ -16,7 +16,7 @@ const resend = import.meta.env.RESEND_API_KEY
   ? new Resend(import.meta.env.RESEND_API_KEY)
   : null;
 
-const notifyEmail = import.meta.env.COMMENTS_NOTIFY_EMAIL || '';
+const notifyEmail = String(import.meta.env.COMMENTS_NOTIFY_EMAIL || '').trim();
 
 const siteUrl = 'https://www.retro-gamers.it';
 
@@ -111,7 +111,7 @@ async function sendCommentNotification({
 
   try {
     const result = await resend.emails.send({
-      from: 'Retro-Gamers <noreply@send.retro-gamers.it>',
+      from: 'Retro-Gamers <noreply@retro-gamers.it>',
       to: notifyEmail,
       subject: `Nuovo commento in attesa su Retro-Gamers`,
       html: `
