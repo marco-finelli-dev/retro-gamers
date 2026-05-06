@@ -111,7 +111,7 @@ async function sendCommentNotification({
 
   try {
     await resend.emails.send({
-      from: 'Retro-Gamers <noreply@retro-gamers.it>',
+      from: 'Retro-Gamers <noreply@send.retro-gamers.it>',
       to: notifyEmail,
       subject: `Nuovo commento in attesa su Retro-Gamers`,
       html: `
