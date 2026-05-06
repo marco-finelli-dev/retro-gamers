@@ -90,13 +90,6 @@ async function sendCommentNotification({
   body: string;
   language: 'it' | 'en';
 }) {
-  console.log('Comment notification env', {
-    hasResendApiKey: Boolean(import.meta.env.RESEND_API_KEY),
-    hasResendClient: Boolean(resend),
-    hasNotifyEmail: Boolean(notifyEmail),
-    notifyEmailLength: notifyEmail.length
-  });
-
   if (!resend || !notifyEmail) {
     console.warn('Comment notification skipped', {
       missingResendClient: !resend,
@@ -110,10 +103,10 @@ async function sendCommentNotification({
   const preview = body.length > 500 ? `${body.slice(0, 500)}…` : body;
 
   try {
-    const result = await resend.emails.send({
+    await resend.emails.send({
       from: 'Retro-Gamers <noreply@retro-gamers.it>',
       to: notifyEmail,
-      subject: `Nuovo commento in attesa su Retro-Gamers`,
+      subject: `Nuovo commento su ${articleTitle || 'Retro-Gamers'}`,
       html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
           <h2>Nuovo commento in attesa</h2>
@@ -142,8 +135,6 @@ async function sendCommentNotification({
         </div>
       `
     });
-
-    console.log('Comment notification sent:', JSON.stringify(result, null, 2));
   } catch (error) {
     console.error('Comment notification email error:', JSON.stringify(error, null, 2));
   }
