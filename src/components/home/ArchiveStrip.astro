@@ -3,9 +3,21 @@ import '../../styles/components/archive-strip.css';
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
 
-const { posts = [] } = Astro.props;
+const { posts = [], lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
 
 const items = posts.slice(0, 4);
+
+const labels = {
+  title: isEn ? 'From our archive' : 'Dal nostro archivio',
+  description: isEn
+    ? 'Stories, games and machines worth rediscovering at your own pace.'
+    : 'Storie, giochi e macchine da riscoprire senza fretta.',
+  explore: isEn ? 'Explore the archive' : 'Esplora l’archivio',
+  href: isEn ? '/en/archive/' : '/archivio/',
+  fallbackCategory: isEn ? 'Archive' : 'Archivio'
+};
 
 const getImage = (post, width = 520, height = 325) => {
   if (!post?.featuredImage?.asset) return '/placeholder-retro.png';
@@ -23,64 +35,87 @@ const getExcerpt = (post) =>
   post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
 
 const getCategory = (post) => {
-  const labels = {
-    review: 'Recensione',
-    feature: 'Speciale',
-    memories: 'Memories',
-    guide: 'Guida',
-    interview: 'Intervista',
-    article: 'Articolo',
-    news: 'News',
-    hardware: 'Hardware'
-  };
+  const typeLabels = isEn
+    ? {
+        review: 'Review',
+        feature: 'Feature',
+        special: 'Feature',
+        memories: 'Memories',
+        memory: 'Memory',
+        guide: 'Guide',
+        interview: 'Interview',
+        article: 'Article',
+        news: 'News',
+        hardware: 'Hardware'
+      }
+    : {
+        review: 'Recensione',
+        feature: 'Speciale',
+        special: 'Speciale',
+        memories: 'Memories',
+        memory: 'Memory',
+        guide: 'Guida',
+        interview: 'Intervista',
+        article: 'Articolo',
+        news: 'News',
+        hardware: 'Hardware'
+      };
 
-  return labels[post?.type] || post?.categories?.[0]?.name || 'Archivio';
+  const category = post?.categories?.[0];
+
+  return (
+    typeLabels[post?.type] ||
+    (isEn ? category?.nameEn || category?.name : category?.name || category?.nameEn) ||
+    labels.fallbackCategory
+  );
 };
 ---
 
-<section class="section-box archive-strip">
+{items.length > 0 && (
+  <section class="section-box archive-strip">
 
-  <div class="archive-strip__header">
+    <div class="archive-strip__header">
 
-    <div>
-      <h2>Dal nostro archivio</h2>
-      <p>Storie, giochi e macchine da riscoprire senza fretta.</p>
+      <div>
+        <h2>{labels.title}</h2>
+        <p>{labels.description}</p>
+      </div>
+
+      <a href={labels.href} class="archive-strip__link">
+        {labels.explore}
+      </a>
+
     </div>
 
-    <a href="/archivio/" class="archive-strip__link">
-      Esplora l’archivio
-    </a>
+    <div class="archive-strip__grid">
 
-  </div>
+      {items.map((post) => (
+        <a href={getPostUrl(post)} class="archive-card">
 
-  <div class="archive-strip__grid">
+          <div class="archive-card__image">
+            <img
+              src={getImage(post, 520, 325)}
+              alt={post.featuredImage?.alt || post.title}
+              width="520"
+              height="325"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
 
-    {items.map((post) => (
-      <a href={getPostUrl(post)} class="archive-card">
+          <div class="archive-card__content">
+            <span>{getCategory(post)}</span>
+            <h3>{post.title}</h3>
 
-        <div class="archive-card__image">
-          <img
-            src={getImage(post, 520, 325)}
-            alt={post.featuredImage?.alt || post.title}
-            width="520"
-            height="325"
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
+            {getExcerpt(post) && (
+              <p>{getExcerpt(post)}</p>
+            )}
+          </div>
 
-        <div class="archive-card__content">
-          <span>{getCategory(post)}</span>
-          <h3>{post.title}</h3>
+        </a>
+      ))}
 
-          {getExcerpt(post) && (
-            <p>{getExcerpt(post)}</p>
-          )}
-        </div>
+    </div>
 
-      </a>
-    ))}
-
-  </div>
-
-</section>
+  </section>
+)}

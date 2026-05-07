@@ -3,9 +3,20 @@ import '../../styles/components/latest.css';
 import { getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 
-const { posts = [] } = Astro.props;
+const { posts = [], lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
 
 const latest = posts.slice(0, 5);
+
+const labels = {
+  title: isEn ? 'Latest articles' : 'Ultimi articoli',
+  description: isEn
+    ? 'News, hardware, stories and deep dives from the retro world.'
+    : 'News, hardware, storie e approfondimenti dal mondo retro.',
+  viewAll: isEn ? 'View all' : 'Vedi tutti',
+  href: isEn ? '/en/archive/' : '/articoli/'
+};
 
 /* ========================
    EXCERPT SYSTEM
@@ -24,22 +35,43 @@ const getExcerpt = (post) => {
 };
 
 const getTypeLabel = (type = '') => {
-  const map = {
-    review: 'Recensione',
-    article: 'Articolo',
-    guide: 'Guida',
-    interview: 'Intervista',
-    news: 'News',
-    feature: 'Speciale',
-    memories: 'Memories',
-    hardware: 'Hardware'
-  };
+  const map = isEn
+    ? {
+        review: 'Review',
+        article: 'Article',
+        guide: 'Guide',
+        interview: 'Interview',
+        news: 'News',
+        feature: 'Feature',
+        special: 'Feature',
+        memories: 'Memories',
+        memory: 'Memory',
+        hardware: 'Hardware'
+      }
+    : {
+        review: 'Recensione',
+        article: 'Articolo',
+        guide: 'Guida',
+        interview: 'Intervista',
+        news: 'News',
+        feature: 'Speciale',
+        special: 'Speciale',
+        memories: 'Memories',
+        memory: 'Memory',
+        hardware: 'Hardware'
+      };
 
-  return map[type] || type || 'Articolo';
+  return map[type] || type || (isEn ? 'Article' : 'Articolo');
 };
 
-const getCategory = (post) =>
-  post.categories?.[0]?.name || getTypeLabel(post.type);
+const getCategory = (post) => {
+  const category = post.categories?.[0];
+
+  return (
+    (isEn ? category?.nameEn || category?.name : category?.name || category?.nameEn) ||
+    getTypeLabel(post.type)
+  );
+};
 
 const getImage = (post, width = 420, height = 263) => {
   if (!post?.featuredImage?.asset) return '/placeholder-retro.png';
@@ -54,56 +86,58 @@ const getImage = (post, width = 420, height = 263) => {
 };
 ---
 
-<div class="section-box rg-latest">
+{latest.length > 0 && (
+  <div class="section-box rg-latest">
 
-  <div class="rg-latest__header">
-    <div>
-      <h2>Ultimi articoli</h2>
-      <p>News, hardware, storie e approfondimenti dal mondo retro.</p>
+    <div class="rg-latest__header">
+      <div>
+        <h2>{labels.title}</h2>
+        <p>{labels.description}</p>
+      </div>
+
+      <a href={labels.href} class="rg-latest__link">
+        {labels.viewAll}
+      </a>
     </div>
 
-    <a href="/articoli/" class="rg-latest__link">
-      Vedi tutti
-    </a>
-  </div>
+    <div class="rg-latest__grid">
 
-  <div class="rg-latest__grid">
+      {latest.map((post) => (
+        <article class="rg-latest-card">
 
-    {latest.map((post) => (
-      <article class="rg-latest-card">
+          <a href={getPostUrl(post)} class="rg-latest-card__image">
+            <img
+              src={getImage(post, 420, 263)}
+              alt={post.featuredImage?.alt || post.title || ''}
+              width="420"
+              height="263"
+              loading="lazy"
+              decoding="async"
+            />
+          </a>
 
-        <a href={getPostUrl(post)} class="rg-latest-card__image">
-          <img
-            src={getImage(post, 420, 263)}
-            alt={post.featuredImage?.alt || post.title || ''}
-            width="420"
-            height="263"
-            loading="lazy"
-            decoding="async"
-          />
-        </a>
+          <div class="rg-latest-card__content">
 
-        <div class="rg-latest-card__content">
+            <span class="rg-latest-card__type">
+              {getCategory(post)}
+            </span>
 
-          <span class="rg-latest-card__type">
-            {getCategory(post)}
-          </span>
+            <h3>
+              <a href={getPostUrl(post)}>
+                {post.title}
+              </a>
+            </h3>
 
-          <h3>
-            <a href={getPostUrl(post)}>
-              {post.title}
-            </a>
-          </h3>
+            {getExcerpt(post) && (
+              <p>{getExcerpt(post)}</p>
+            )}
 
-          {getExcerpt(post) && (
-            <p>{getExcerpt(post)}</p>
-          )}
+          </div>
 
-        </div>
+        </article>
+      ))}
 
-      </article>
-    ))}
+    </div>
 
   </div>
-
-</div>
+)}

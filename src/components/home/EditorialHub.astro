@@ -6,40 +6,88 @@ import { getPostUrl } from '../../lib/routes';
 const {
   specials = [],
   memories = [],
-  guides = []
+  guides = [],
+  lang = 'it'
 } = Astro.props;
+
+const isEn = lang === 'en';
+
+const labels = {
+  specials: isEn ? 'Features' : 'Speciali',
+  allSpecials: isEn ? 'All features' : 'Tutti gli speciali',
+  memories: 'Memories',
+  allMemories: isEn ? 'All memories' : 'Tutte le memories',
+  quickGuides: isEn ? 'Quick guides' : 'Guide rapide',
+  allGuides: isEn ? 'All guides' : 'Tutte le guide',
+  platforms: isEn ? 'Platforms' : 'Piattaforme',
+  allPlatforms: isEn ? 'All platforms' : 'Tutte le piattaforme'
+};
+
+const urls = {
+  specials: isEn ? '/en/features/' : '/speciali/',
+  memories: isEn ? '/en/memories/' : '/memories/',
+  guides: isEn ? '/en/guides/' : '/guide/',
+  platforms: isEn ? '/en/platforms/' : '/piattaforme/'
+};
 
 const specialItems = specials.slice(0, 5);
 const mainMemory = memories[0] || null;
 const memoryItems = memories.slice(1, 3);
 const guideItems = guides.slice(0, 3);
 
-const platformItems = [
-  {
-    label: 'Console',
-    description: 'Sistemi da salotto',
-    href: '/piattaforme/console/',
-    icon: '/images/icons/console-icon.png'
-  },
-  {
-    label: 'Computer',
-    description: 'Home computer',
-    href: '/piattaforme/computer/',
-    icon: '/images/icons/computer-icon.png'
-  },
-  {
-    label: 'Arcade',
-    description: 'Cabinet e board',
-    href: '/piattaforme/arcade/',
-    icon: '/images/icons/arcade-icon.png'
-  }
-];
+const platformItems = isEn
+  ? [
+      {
+        label: 'Consoles',
+        description: 'Home and handheld systems',
+        href: '/en/platforms/consoles/',
+        icon: '/images/icons/console-icon.png'
+      },
+      {
+        label: 'Computers',
+        description: 'Home computers',
+        href: '/en/platforms/computers/',
+        icon: '/images/icons/computer-icon.png'
+      },
+      {
+        label: 'Arcade',
+        description: 'Cabinets and boards',
+        href: '/en/platforms/arcade/',
+        icon: '/images/icons/arcade-icon.png'
+      }
+    ]
+  : [
+      {
+        label: 'Console',
+        description: 'Sistemi da salotto',
+        href: '/piattaforme/console/',
+        icon: '/images/icons/console-icon.png'
+      },
+      {
+        label: 'Computer',
+        description: 'Home computer',
+        href: '/piattaforme/computer/',
+        icon: '/images/icons/computer-icon.png'
+      },
+      {
+        label: 'Arcade',
+        description: 'Cabinet e board',
+        href: '/piattaforme/arcade/',
+        icon: '/images/icons/arcade-icon.png'
+      }
+    ];
 
-const fallbackGuides = [
-  'Come iniziare a collezionare',
-  'Emulazione: la guida completa',
-  'RGB: guida ai cavi e al segnale'
-];
+const fallbackGuides = isEn
+  ? [
+      'How to start collecting',
+      'Emulation: the complete guide',
+      'RGB: cables and signal guide'
+    ]
+  : [
+      'Come iniziare a collezionare',
+      'Emulazione: la guida completa',
+      'RGB: guida ai cavi e al segnale'
+    ];
 
 const getImage = (post, width = 420, height = 263) => {
   if (!post?.featuredImage?.asset) return '/placeholder-retro.png';
@@ -56,22 +104,28 @@ const getImage = (post, width = 420, height = 263) => {
 const getExcerpt = (post) =>
   post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
 
-const getCategory = (post) =>
-  post?.categories?.[0]?.name || post?.type || '';
+const getCategory = (post) => {
+  const cat = post?.categories?.[0];
+  if (!cat) return post?.type || '';
+
+  return isEn
+    ? cat.nameEn || cat.name || post?.type || ''
+    : cat.name || cat.nameEn || post?.type || '';
+};
 ---
 
 <div class="section-box editorial-hub">
 
   <div class="editorial-hub__grid">
 
-    <!-- SPECIALI -->
+    <!-- SPECIALI / FEATURES -->
     <section class="editorial-panel editorial-panel--specials">
 
       <div class="editorial-panel__header">
-        <h2>Speciali</h2>
+        <h2>{labels.specials}</h2>
 
-        <a href="/speciali/" class="editorial-panel__link">
-          Tutti gli speciali
+        <a href={urls.specials} class="editorial-panel__link">
+          {labels.allSpecials}
         </a>
       </div>
 
@@ -110,10 +164,10 @@ const getCategory = (post) =>
     <section class="editorial-panel editorial-panel--memories">
 
       <div class="editorial-panel__header">
-        <h2>Memories</h2>
+        <h2>{labels.memories}</h2>
 
-        <a href="/memories/" class="editorial-panel__link">
-          Tutte le memories
+        <a href={urls.memories} class="editorial-panel__link">
+          {labels.allMemories}
         </a>
       </div>
 
@@ -179,65 +233,65 @@ const getCategory = (post) =>
       <section class="editorial-panel editorial-panel--guides">
 
         <div class="editorial-panel__header">
-          <h2>Guide rapide</h2>
+          <h2>{labels.quickGuides}</h2>
         </div>
 
-        <div class="quick-guides">
+     <div class="quick-guides">
 
-          {guideItems.length > 0 ? (
-            guideItems.map((post) => (
-              <a href={getPostUrl(post)} class="quick-guide">
+  {guideItems.length > 0 ? (
+    guideItems.map((post) => (
+      <a href={getPostUrl(post)} class="quick-guide">
 
-                <span class="quick-guide__icon" aria-hidden="true">
-                  <img
-                    src="/images/icons/retro-gamers-section-logo.png"
-                    alt=""
-                    width="40"
-                    height="40"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </span>
+        <span class="quick-guide__icon" aria-hidden="true">
+          <img
+            src="/images/icons/retro-gamers-section-logo.png"
+            alt=""
+            width="40"
+            height="40"
+            loading="lazy"
+            decoding="async"
+          />
+        </span>
 
-                <strong>{post.title}</strong>
+        <strong>{post.title}</strong>
 
-              </a>
-            ))
-          ) : (
-            fallbackGuides.map((title) => (
-              <a href="/guide/" class="quick-guide">
+      </a>
+    ))
+  ) : (
+    !isEn && fallbackGuides.map((title) => (
+      <a href={urls.guides} class="quick-guide">
 
-                <span class="quick-guide__icon" aria-hidden="true">
-                  <img
-                    src="/images/icons/retro-gamers-section-logo.png"
-                    alt=""
-                    width="40"
-                    height="40"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </span>
+        <span class="quick-guide__icon" aria-hidden="true">
+          <img
+            src="/images/icons/retro-gamers-section-logo.png"
+            alt=""
+            width="40"
+            height="40"
+            loading="lazy"
+            decoding="async"
+          />
+        </span>
 
-                <strong>{title}</strong>
+        <strong>{title}</strong>
 
-              </a>
-            ))
-          )}
+      </a>
+    ))
+  )}
 
-        </div>
+</div>
 
-        <a href="/guide/" class="editorial-panel__footer-link">
-          Tutte le guide
+        <a href={urls.guides} class="editorial-panel__footer-link">
+          {labels.allGuides}
         </a>
 
       </section>
 
 
-      <!-- PIATTAFORME -->
+      <!-- PIATTAFORME / PLATFORMS -->
       <section class="editorial-panel editorial-panel--platforms">
 
         <div class="editorial-panel__header">
-          <h2>Piattaforme</h2>
+          <h2>{labels.platforms}</h2>
         </div>
 
         <div class="platform-shortcuts">
@@ -264,8 +318,8 @@ const getCategory = (post) =>
           ))}
         </div>
 
-        <a href="/piattaforme/" class="editorial-panel__footer-link">
-          Tutte le piattaforme
+        <a href={urls.platforms} class="editorial-panel__footer-link">
+          {labels.allPlatforms}
         </a>
 
       </section>

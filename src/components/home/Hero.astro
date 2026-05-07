@@ -3,7 +3,18 @@ import '../../styles/components/hero.css';
 import { getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 
-const { posts = [] } = Astro.props;
+const { posts = [], lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
+
+const labels = {
+  featured: isEn ? 'Featured' : 'In evidenza',
+  magazine: isEn ? 'Retro-Gamers International' : 'Retro-Gamers Magazine',
+  intro: isEn
+    ? 'Arcade, consoles, home computers and digital memories.'
+    : 'Arcade, console, home computer e memorie digitali.',
+  readArticle: isEn ? 'Read the article' : 'Leggi l’articolo'
+};
 
 const [main, ...rest] = posts || [];
 const side = rest.slice(0, 3);
@@ -13,22 +24,39 @@ const getExcerpt = (post) =>
 
 const getCategory = (post) => {
   const cat = post?.categories?.[0];
-  return cat ? cat.name : '';
+  if (!cat) return '';
+
+  return isEn
+    ? cat.nameEn || cat.name || ''
+    : cat.name || cat.nameEn || '';
 };
 
 const getTypeLabel = (type) => {
-  const map = {
-    review: 'Recensione',
-    article: 'Articolo',
-    guide: 'Guida',
-    interview: 'Intervista',
-    news: 'News',
-    feature: 'Speciale',
-    memories: 'Memories',
-    hardware: 'Hardware'
-  };
+  const map = isEn
+    ? {
+        review: 'Review',
+        article: 'Article',
+        guide: 'Guide',
+        interview: 'Interview',
+        news: 'News',
+        feature: 'Feature',
+        special: 'Feature',
+        memories: 'Memories',
+        hardware: 'Hardware'
+      }
+    : {
+        review: 'Recensione',
+        article: 'Articolo',
+        guide: 'Guida',
+        interview: 'Intervista',
+        news: 'News',
+        feature: 'Speciale',
+        special: 'Speciale',
+        memories: 'Memories',
+        hardware: 'Hardware'
+      };
 
-  return map[type] || type || 'Articolo';
+  return map[type] || type || (isEn ? 'Article' : 'Articolo');
 };
 
 const getImage = (image, width = 960, height = null) => {
@@ -53,13 +81,11 @@ const getImage = (image, width = 960, height = null) => {
 
   <div class="rg-hero__top">
     <div class="rg-hero__signal">
-      <span>In evidenza</span>
-      <strong>Retro-Gamers Magazine</strong>
+      <span>{labels.featured}</span>
+      <strong>{labels.magazine}</strong>
     </div>
 
-    <p>
-      Arcade, console, home computer e memorie digitali.
-    </p>
+    <p>{labels.intro}</p>
   </div>
 
   <div class="rg-hero__grid">
@@ -98,7 +124,7 @@ const getImage = (image, width = 960, height = null) => {
           )}
 
           <span class="rg-hero__cta">
-            Leggi l’articolo
+            {labels.readArticle}
           </span>
 
         </div>

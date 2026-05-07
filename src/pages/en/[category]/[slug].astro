@@ -382,6 +382,18 @@ const comments = await client.fetch(`
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
+const englishPosts = grouped.allLanguages.filter(
+  (post) => post.language === 'en'
+);
+
+const englishReviews = englishPosts.filter(
+  (post) => post.type === 'review'
+);
+
+const englishNews = englishPosts.filter(
+  (post) => post.type === 'news'
+);
+
 const relatedPosts = getRelatedPosts(hydratedPost, grouped.allLanguages, 3);
 
 const siteUrl = 'https://www.retro-gamers.it';

@@ -3,9 +3,30 @@ import '../../styles/components/hardware.css';
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
 
-const { posts = [] } = Astro.props;
+const { posts = [], lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
 
 const items = posts.slice(0, 3);
+
+const labels = {
+  eyebrow: isEn ? 'Gear, books & accessories' : 'Gear, libri & accessori',
+  title: 'Hardware',
+  description: isEn
+    ? 'Consoles, controllers, FPGA, books, accessories and retro gear worth keeping an eye on.'
+    : 'Console, controller, FPGA, libri, accessori e oggetti retro da tenere d’occhio.',
+  allHardware: isEn ? 'All hardware' : 'Tutto l’hardware',
+  href: isEn ? '/en/hardware/' : '/hardware/',
+  comingSoon: isEn ? 'Coming soon' : 'Prossimamente',
+  emptyTitle: isEn
+    ? 'Hardware, accessories and retro releases'
+    : 'Hardware, accessori e nuove uscite retro',
+  emptyText: isEn
+    ? 'Here we will collect consoles, controllers, FPGA boards, mini systems, video scalers, books and interesting products for retro-gaming enthusiasts.'
+    : 'Qui raccoglieremo console, controller, FPGA, mini sistemi, scaler video, libri e prodotti interessanti per chi vive il retro-gaming anche fuori dallo schermo.',
+  readArticle: isEn ? 'Read the article' : 'Leggi l’articolo',
+  learnMore: isEn ? 'Learn more' : 'Scopri di più'
+};
 
 const getImage = (post, width = 640, height = 400) => {
   if (!post?.featuredImage?.asset) return '/placeholder-retro.png';
@@ -25,27 +46,37 @@ const getExcerpt = (post) =>
 const getProductLabel = (post) => {
   const productType = post?.monetization?.productType;
 
-  const map = {
-    book: 'Libro',
-    hardware: 'Hardware',
-    accessory: 'Accessorio',
-    software: 'Software',
-    gadget: 'Gadget',
-    service: 'Servizio',
-    other: 'Consigliato'
-  };
+  const map = isEn
+    ? {
+        book: 'Book',
+        hardware: 'Hardware',
+        accessory: 'Accessory',
+        software: 'Software',
+        gadget: 'Gadget',
+        service: 'Service',
+        other: 'Recommended'
+      }
+    : {
+        book: 'Libro',
+        hardware: 'Hardware',
+        accessory: 'Accessorio',
+        software: 'Software',
+        gadget: 'Gadget',
+        service: 'Servizio',
+        other: 'Consigliato'
+      };
 
   if (post?.type === 'hardware') return 'Hardware';
 
-  return map[productType] || 'Consigliato';
+  return map[productType] || (isEn ? 'Recommended' : 'Consigliato');
 };
 
 const getCta = (post) => {
   if (post?.monetization?.isAffiliate) {
-    return post.monetization.affiliateLabel || 'Scopri di più';
+    return post.monetization.affiliateLabel || labels.learnMore;
   }
 
-  return 'Leggi l’articolo';
+  return labels.readArticle;
 };
 ---
 
@@ -54,13 +85,13 @@ const getCta = (post) => {
   <div class="hardware-strip__header">
 
     <div>
-      <span>Gear, libri & accessori</span>
-      <h2>Hardware</h2>
-      <p>Console, controller, FPGA, libri, accessori e oggetti retro da tenere d’occhio.</p>
+      <span>{labels.eyebrow}</span>
+      <h2>{labels.title}</h2>
+      <p>{labels.description}</p>
     </div>
 
-    <a href="/hardware/" class="hardware-strip__link">
-      Tutto l’hardware
+    <a href={labels.href} class="hardware-strip__link">
+      {labels.allHardware}
     </a>
 
   </div>
@@ -117,12 +148,9 @@ const getCta = (post) => {
     <div class="hardware-empty">
 
       <div class="hardware-empty__content">
-        <span>Prossimamente</span>
-        <h3>Hardware, accessori e nuove uscite retro</h3>
-        <p>
-          Qui raccoglieremo console, controller, FPGA, mini sistemi, scaler video,
-          libri e prodotti interessanti per chi vive il retro-gaming anche fuori dallo schermo.
-        </p>
+        <span>{labels.comingSoon}</span>
+        <h3>{labels.emptyTitle}</h3>
+        <p>{labels.emptyText}</p>
       </div>
 
       <div class="hardware-empty__badge">

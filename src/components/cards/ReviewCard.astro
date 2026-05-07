@@ -2,7 +2,9 @@
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
 
-const { post } = Astro.props;
+const { post, lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
 
 if (!post) return;
 
@@ -98,6 +100,12 @@ const badges = [
     title: mode
   }
 ].filter(Boolean);
+
+const scoreLabel = score >= 9
+  ? 'top'
+  : isEn
+    ? 'score'
+    : 'voto';
 ---
 
 <a href={getPostUrl(post)} class="rg-review-card">
@@ -108,33 +116,34 @@ const badges = [
     </div>
   )}
 
-<div class="rg-review-card__image">
-  <img
-    src={getImage(post, 520, 325)}
-    alt={post.featuredImage?.alt || post.title}
-    width="520"
-    height="325"
-    loading="lazy"
-    decoding="async"
-  />
-</div>
+  <div class="rg-review-card__image">
+    <img
+      src={getImage(post, 520, 325)}
+      alt={post.featuredImage?.alt || post.title}
+      width="520"
+      height="325"
+      loading="lazy"
+      decoding="async"
+    />
+  </div>
 
   <div class="rg-review-card__body">
     <h3>{post.title}</h3>
-{badges.length > 0 && (
-  <div class="rg-review-card__badges">
-    {badges.slice(0, 3).map((badge) => (
-      <span title={badge.title}>{badge.label}</span>
-    ))}
-  </div>
-)}
+
+    {badges.length > 0 && (
+      <div class="rg-review-card__badges">
+        {badges.slice(0, 3).map((badge) => (
+          <span title={badge.title}>{badge.label}</span>
+        ))}
+      </div>
+    )}
   </div>
 
   <div class="rg-review-card__footer">
 
     <div class={`rg-score ${getScoreClass(score)}`}>
       <span>{formatScore(score)}</span>
-      <small>{score >= 9 ? 'top' : 'voto'}</small>
+      <small>{scoreLabel}</small>
     </div>
 
     {platformBadge && (

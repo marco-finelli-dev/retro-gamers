@@ -2,7 +2,19 @@
 import '../../styles/components/reviews.css';
 import ReviewCard from '../cards/ReviewCard.astro';
 
-const { posts = [] } = Astro.props;
+const { posts = [], lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
+
+const labels = {
+  title: isEn ? 'Reviews' : 'Recensioni',
+  description: isEn
+    ? 'The latest reviews from consoles, arcade and home computers.'
+    : 'Le ultime prove dal mondo console, arcade e home computer.',
+  viewAll: isEn ? 'View all' : 'Vedi tutte',
+  aria: isEn ? 'Latest reviews' : 'Ultime recensioni',
+  href: isEn ? '/en/reviews/' : '/recensioni/'
+};
 
 const reviews = posts.slice(0, 5);
 ---
@@ -12,20 +24,20 @@ const reviews = posts.slice(0, 5);
   <div class="rg-reviews__header">
 
     <div class="rg-reviews__title">
-      <h2>Recensioni</h2>
-      <p>Le ultime prove dal mondo console, arcade e home computer.</p>
+      <h2>{labels.title}</h2>
+      <p>{labels.description}</p>
     </div>
 
-    <a href="/recensioni/" class="rg-reviews__link">
-      Vedi tutte
+    <a href={labels.href} class="rg-reviews__link">
+      {labels.viewAll}
     </a>
 
   </div>
 
-  <div class="rg-reviews__rail" aria-label="Ultime recensioni">
+  <div class="rg-reviews__rail" aria-label={labels.aria}>
 
     {reviews.map((post) => (
-      <ReviewCard post={post} />
+      <ReviewCard post={post} lang={lang} />
     ))}
 
   </div>

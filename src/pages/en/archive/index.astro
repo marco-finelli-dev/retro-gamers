@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArchivePage from '../../../components/archive/ArchivePage.astro';
+
+import { getAllPosts } from '../../../lib/posts';
+
+const allPosts = await getAllPosts();
+
+const englishPosts = allPosts
+  .filter((post) => post.language === 'en')
+  .sort((a, b) => {
+    return (
+      new Date(b.publishedAt || 0).getTime() -
+      new Date(a.publishedAt || 0).getTime()
+    );
+  });
+
+const englishReviews = englishPosts.filter((post) => post.type === 'review');
+const englishNews = englishPosts.filter((post) => post.type === 'news');
+---
+
+<BaseLayout
+  reviews={englishReviews}
+  news={englishNews}
+  title="Archive"
+  description="All English articles published on Retro-Gamers: reviews, news, features, memories, guides, hardware and interviews."
+  canonical="https://www.retro-gamers.it/en/archive/"
+  lang="en"
+>
+  <ArchivePage
+    title="Archive"
+    eyebrow="All contents"
+    description="Everything published in the English edition of Retro-Gamers: reviews, news, features, memories, guides, hardware and interviews."
+    posts={englishPosts}
+    showFilters={false}
+    lang="en"
+  />
+</BaseLayout>
