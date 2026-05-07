@@ -38,6 +38,7 @@ const compactMode = (name = '') => {
 
   if (normalized.includes('giocatore singolo')) return 'Single';
   if (normalized.includes('single player')) return 'Single';
+  if (normalized.includes('single-player')) return 'Single';
   if (normalized.includes('multigiocatore')) return 'Multi';
   if (normalized.includes('multiplayer')) return 'Multi';
   if (normalized.includes('cooperativa')) return 'Co-op';
@@ -66,8 +67,25 @@ const platform = post.platforms?.[0]?.name || '';
 const developer = post.developers?.[0]?.name || '';
 const year = post.gameInfo?.releaseYear || '';
 
-const genres = post.genres?.map((genre) => genre.name).filter(Boolean) || [];
-const mode = post.modes?.[0]?.name || '';
+const getTaxonomyLabel = (item) => {
+  if (!item) return '';
+
+  return isEn
+    ? item.nameEn || item.name
+    : item.name;
+};
+
+const genres =
+  post.genres
+    ?.map((genre) => getTaxonomyLabel(genre))
+    .filter(Boolean) || [];
+
+const modeItem = post.modes?.[0];
+
+const mode = getTaxonomyLabel(modeItem);
+const modeTitle = modeItem
+  ? getTaxonomyLabel(modeItem)
+  : '';
 
 const genreBadges = genres.slice(0, 2).map((genre) => ({
   label: genre,
@@ -79,8 +97,12 @@ const platformBadge =
   post.platforms?.[0]?.platformType?.toUpperCase() ||
   '';
 
+const rawMediaFormat = Array.isArray(post.gameInfo?.mediaFormat)
+  ? post.gameInfo.mediaFormat[0]
+  : post.gameInfo?.mediaFormat;
+
 const mediaFormat =
-  formatMedia(post.gameInfo?.mediaFormat) ||
+  formatMedia(rawMediaFormat) ||
   post.platforms?.[0]?.platformType?.toUpperCase() ||
   'SYSTEM';
 
@@ -95,10 +117,10 @@ const metaItems = [
 const badges = [
   ...genreBadges,
 
-  mode && {
-    label: compactMode(mode),
-    title: mode
-  }
+ mode && {
+  label: compactMode(mode),
+  title: modeTitle || mode
+}
 ].filter(Boolean);
 
 const scoreLabel = score >= 9
