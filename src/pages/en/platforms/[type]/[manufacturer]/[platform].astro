@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../../../../../layouts/BaseLayout.astro';
+import PlatformDetail from '../../../../../components/platforms/PlatformDetail.astro';
+
+import { getAllPosts, groupPosts } from '../../../../../lib/posts';
+import {
+  getAllPlatforms,
+  getPlatformByPath
+} from '../../../../../lib/platforms';
+
+const typeMap = {
+  arcade: 'arcade',
+  computers: 'computer',
+  consoles: 'console'
+};
+
+const typeSlugMap = {
+  arcade: 'arcade',
+  computer: 'computers',
+  console: 'consoles'
+};
+
+export async function getStaticPaths() {
+  const platforms = await getAllPlatforms();
+
+  return platforms
+    .filter((platform) =>
+      platform.platformType &&
+      platform.manufacturer?.slug &&
+      platform.slug
+    )
+    .map((platform) => ({
+      params: {
+        type: typeSlugMap[platform.platformType] || platform.platformType,
+        manufacturer: platform.manufacturer.slug,
+        platform: platform.slug
+      },
+      props: {
+        internalType: platform.platformType
+      }
+    }));
+}
+
+const { type, manufacturer, platform } = Astro.params;
+const { internalType: staticInternalType } = Astro.props;
+
+const platformType = staticInternalType || typeMap[type] || type;
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const englishReviews = allPosts.filter(
+  (post) => post.type === 'review' && post.language === 'en'
+);
+
+const englishNews = allPosts.filter(
+  (post) => post.type === 'news' && post.language === 'en'
+);
+
+const platformData = await getPlatformByPath(
+  platformType,
+  manufacturer,
+  platform
+);
+
+if (!platformData) {
+  return Astro.redirect('/en/platforms/');
+}
+
+const canonicalType = typeSlugMap[platformType] || type;
+
+const pageDescription =
+  platformData.history?.slice(0, 155) ||
+  `${platformData.name} platform profile on Retro-Gamers.it.`;
+---
+
+<BaseLayout
+  reviews={englishReviews}
+  news={englishNews}
+  lang="en"
+  title={platformData.name}
+  description={pageDescription}
+  image={platformData.cover?.asset?.url || platformData.logo?.asset?.url || '/og-image.jpg'}
+  canonical={`https://www.retro-gamers.it/en/platforms/${canonicalType}/${manufacturer}/${platform}/`}
+>
+  <PlatformDetail platform={platformData} lang="en" />
+</BaseLayout>

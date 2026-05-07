@@ -7,12 +7,20 @@ import { getAllPosts, groupPosts } from '../../../lib/posts';
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
+const englishReviews = allPosts.filter(
+  (post) => post.type === 'review' && post.language === 'en'
+);
+
+const englishNews = allPosts.filter(
+  (post) => post.type === 'news' && post.language === 'en'
+);
+
 const posts = grouped.english.filter((post) => post.type === 'guide');
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
+  reviews={englishReviews}
+  news={englishNews}
   title="Guides"
   description="Retro gaming guides from Retro-Gamers.it in English."
   image="/og-image.jpg"

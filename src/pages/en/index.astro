@@ -8,6 +8,14 @@ import '../../styles/pages/en-home.css';
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
+const englishReviews = allPosts.filter(
+  (post) => post.type === 'review' && post.language === 'en'
+);
+
+const englishNews = allPosts.filter(
+  (post) => post.type === 'news' && post.language === 'en'
+);
+
 const posts = grouped.english;
 const featured = posts[0] || null;
 const latest = posts.slice(1, 7);
@@ -26,8 +34,8 @@ const getImage = (post, width = 860, height = 520) => {
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
+  reviews={englishReviews}
+  news={englishNews}
   title="Retro-Gamers International"
   description="Selected stories, features and retrospectives from Retro-Gamers.it in English."
   image="/og-image.jpg"

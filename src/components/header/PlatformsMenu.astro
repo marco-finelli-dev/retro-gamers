@@ -1,26 +1,54 @@
 ---
 import '../../styles/components/header/dropdown.css';
 
-const items = [
-  {
-    title: 'Console',
-    label: 'Sistemi da salotto',
-    href: '/piattaforme/console/',
-    icon: '/images/icons/console-icon.png'
-  },
-  {
-    title: 'Computer',
-    label: 'Home computer',
-    href: '/piattaforme/computer/',
-    icon: '/images/icons/computer-icon.png'
-  },
-  {
-    title: 'Arcade',
-    label: 'Cabinet e board',
-    href: '/piattaforme/arcade/',
-    icon: '/images/icons/arcade-icon.png'
-  }
-];
+const { lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
+
+const items = isEn
+  ? [
+      {
+        title: 'Consoles',
+        label: 'Home systems',
+        href: '/en/platforms/consoles/',
+        icon: '/images/icons/console-icon.png'
+      },
+      {
+        title: 'Computers',
+        label: 'Home computers',
+        href: '/en/platforms/computers/',
+        icon: '/images/icons/computer-icon.png'
+      },
+      {
+        title: 'Arcade',
+        label: 'Cabinets and boards',
+        href: '/en/platforms/arcade/',
+        icon: '/images/icons/arcade-icon.png'
+      }
+    ]
+  : [
+      {
+        title: 'Console',
+        label: 'Sistemi da salotto',
+        href: '/piattaforme/console/',
+        icon: '/images/icons/console-icon.png'
+      },
+      {
+        title: 'Computer',
+        label: 'Home computer',
+        href: '/piattaforme/computer/',
+        icon: '/images/icons/computer-icon.png'
+      },
+      {
+        title: 'Arcade',
+        label: 'Cabinet e board',
+        href: '/piattaforme/arcade/',
+        icon: '/images/icons/arcade-icon.png'
+      }
+    ];
+
+const moreHref = isEn ? '/en/platforms/' : '/piattaforme/';
+const moreLabel = isEn ? 'All platforms' : 'Tutte le piattaforme';
 ---
 
 <div class="rg-dropdown rg-dropdown--platforms">
@@ -32,9 +60,9 @@ const items = [
       {items.map((item) => (
         <a href={item.href} class="rg-platform-link">
 
-         <span class="rg-platform-link__icon" aria-hidden="true">
-  <img src={item.icon} alt="" loading="lazy" />
-</span>
+          <span class="rg-platform-link__icon" aria-hidden="true">
+            <img src={item.icon} alt="" loading="lazy" />
+          </span>
 
           <span class="rg-platform-link__text">
             <strong>{item.title}</strong>
@@ -46,8 +74,8 @@ const items = [
 
     </div>
 
-    <a href="/piattaforme/" class="rg-dropdown__more">
-      Tutte le piattaforme <span>→</span>
+    <a href={moreHref} class="rg-dropdown__more">
+      {moreLabel} <span>→</span>
     </a>
 
   </div>

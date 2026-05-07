@@ -6,7 +6,50 @@ import {
   getPlatformTypeUrl
 } from '../../lib/platforms';
 
-const { platforms = [] } = Astro.props;
+const { platforms = [], lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
+
+const labels = {
+  kicker: isEn ? 'Platforms' : 'Piattaforme',
+  title: isEn ? 'Machines, systems and boards' : 'Macchine, sistemi e board',
+  description: isEn
+    ? 'Consoles, home computers and arcade systems organized by manufacturer, generation and technical features.'
+    : 'Console, home computer e sistemi arcade organizzati per produttore, generazione e caratteristiche tecniche.',
+  countSingular: isEn ? 'platform' : 'piattaforma',
+  countPlural: isEn ? 'platforms' : 'piattaforme'
+};
+
+const typeLabels = {
+  it: platformTypeLabels,
+  en: {
+    arcade: 'Arcade',
+    computer: 'Computers',
+    console: 'Consoles'
+  }
+};
+
+const typeDescriptions = {
+  it: platformTypeDescriptions,
+  en: {
+    arcade: 'Cabinets, boards and arcade systems that shaped the coin-op experience.',
+    computer: 'Home computers, personal computers and machines that shaped home computing.',
+    console: 'Home and handheld systems created for domestic gaming.'
+  }
+};
+
+const typeUrls = {
+  it: {
+    arcade: '/piattaforme/arcade/',
+    computer: '/piattaforme/computer/',
+    console: '/piattaforme/console/'
+  },
+  en: {
+    arcade: '/en/platforms/arcade/',
+    computer: '/en/platforms/computers/',
+    console: '/en/platforms/consoles/'
+  }
+};
 
 const types = [
   {
@@ -25,6 +68,9 @@ const types = [
 
 const countByType = (type) =>
   platforms.filter((platform) => platform.platformType === type).length;
+
+const getCountLabel = (count) =>
+  `${count} ${count === 1 ? labels.countSingular : labels.countPlural}`;
 ---
 
 <div class="platforms-page">
@@ -32,12 +78,9 @@ const countByType = (type) =>
 
     <section class="platforms-hero">
       <div class="platforms-hero__inner">
-        <span>Piattaforme</span>
-        <h1>Macchine, sistemi e board</h1>
-        <p>
-          Console, home computer e sistemi arcade organizzati per produttore,
-          generazione e caratteristiche tecniche.
-        </p>
+        <span>{labels.kicker}</span>
+        <h1>{labels.title}</h1>
+        <p>{labels.description}</p>
       </div>
     </section>
 
@@ -47,7 +90,10 @@ const countByType = (type) =>
         const count = countByType(item.type);
 
         return (
-          <a href={getPlatformTypeUrl(item.type)} class={`platform-type-card platform-type-card--${item.type}`}>
+          <a
+            href={typeUrls[lang]?.[item.type] || getPlatformTypeUrl(item.type)}
+            class={`platform-type-card platform-type-card--${item.type}`}
+          >
 
             <div class="platform-type-card__icon" aria-hidden="true">
               <img
@@ -58,9 +104,9 @@ const countByType = (type) =>
             </div>
 
             <div class="platform-type-card__content">
-              <span>{count} piattaforme</span>
-              <h2>{platformTypeLabels[item.type]}</h2>
-              <p>{platformTypeDescriptions[item.type]}</p>
+              <span>{getCountLabel(count)}</span>
+              <h2>{typeLabels[lang]?.[item.type] || platformTypeLabels[item.type]}</h2>
+              <p>{typeDescriptions[lang]?.[item.type] || platformTypeDescriptions[item.type]}</p>
             </div>
 
           </a>

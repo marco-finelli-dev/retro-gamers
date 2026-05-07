@@ -6,9 +6,34 @@ import {
   platformTypeLabels
 } from '../../lib/platforms';
 
-const { platform } = Astro.props;
+const { platform, lang = 'it' } = Astro.props;
 
-const typeLabel = platformTypeLabels[platform.platformType] || 'Piattaforma';
+const isEn = lang === 'en';
+
+const typeLabels = {
+  it: platformTypeLabels,
+  en: {
+    arcade: 'Arcade',
+    computer: 'Computer',
+    console: 'Console'
+  }
+};
+
+const typeLabel =
+  typeLabels[lang]?.[platform.platformType] ||
+  platformTypeLabels[platform.platformType] ||
+  (isEn ? 'Platform' : 'Piattaforma');
+
+const labels = {
+  specs: isEn ? 'Technical specs' : 'Scheda tecnica',
+  history: isEn ? 'History' : 'La storia',
+  year: isEn ? 'Release year' : 'Anno di uscita',
+  cpu: 'CPU',
+  ram: 'RAM',
+  graphics: isEn ? 'Graphics' : 'Grafica',
+  audio: 'Audio',
+  resolution: isEn ? 'Resolution' : 'Risoluzione'
+};
 
 const getLogo = (platform) => {
   if (!platform?.logo) return '';
@@ -36,12 +61,12 @@ const chips = [
 ].filter(Boolean);
 
 const specs = [
-  { label: 'Anno di uscita', value: platform.specs?.year },
-  { label: 'CPU', value: platform.specs?.cpu },
-  { label: 'RAM', value: platform.specs?.ram },
-  { label: 'Grafica', value: platform.specs?.gpu },
-  { label: 'Audio', value: platform.specs?.audio },
-  { label: 'Risoluzione', value: platform.specs?.resolution }
+  { label: labels.year, value: platform.specs?.year },
+  { label: labels.cpu, value: platform.specs?.cpu },
+  { label: labels.ram, value: platform.specs?.ram },
+  { label: labels.graphics, value: platform.specs?.gpu },
+  { label: labels.audio, value: platform.specs?.audio },
+  { label: labels.resolution, value: platform.specs?.resolution }
 ].filter((item) => item.value);
 
 const historyParagraphs = platform.history
@@ -95,7 +120,7 @@ const historyParagraphs = platform.history
             <section class="platform-sheet__specs">
 
               <div class="platform-sheet__section-title">
-                <span>Scheda tecnica</span>
+                <span>{labels.specs}</span>
               </div>
 
               <div class="platform-spec-table">
@@ -146,7 +171,7 @@ const historyParagraphs = platform.history
             <section class="platform-sheet__history">
 
               <div class="platform-sheet__section-title">
-                <span>La storia</span>
+                <span>{labels.history}</span>
               </div>
 
               <div class="platform-sheet__history-text">

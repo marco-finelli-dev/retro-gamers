@@ -3,13 +3,29 @@ import '../../styles/components/header/dropdown.css';
 import { getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 
-const { posts = [] } = Astro.props;
+const { posts = [], lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
+
+/* =========================
+   LABELS
+========================= */
+
+const labels = {
+  more: isEn ? 'View all reviews' : 'Vedi tutte le recensioni'
+};
+
+const archiveHref = isEn ? '/en/reviews/' : '/recensioni/';
 
 /* =========================
    DATA
 ========================= */
 
 const all = posts
+  .filter((post) => {
+    const postLang = post.language || 'it';
+    return postLang === lang;
+  })
   .map((p) => ({
     ...p,
     score: p?.score ?? p?.rating?.overall ?? 0
@@ -155,8 +171,8 @@ const getImage = (post) => {
       );
     })}
 
-    <a href="/recensioni/" class="rg-dropdown__more">
-      Vedi tutte le recensioni <span>→</span>
+    <a href={archiveHref} class="rg-dropdown__more">
+      {labels.more} <span>→</span>
     </a>
 
   </div>

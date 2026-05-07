@@ -10,11 +10,50 @@ import {
 const {
   type,
   manufacturer,
-  platforms = []
+  platforms = [],
+  lang = 'it'
 } = Astro.props;
 
-const title = manufacturer?.name || 'Produttore';
-const typeLabel = platformTypeLabels[type] || 'Piattaforme';
+const isEn = lang === 'en';
+
+const typeLabels = {
+  it: platformTypeLabels,
+  en: {
+    arcade: 'Arcade',
+    computer: 'Computers',
+    console: 'Consoles'
+  }
+};
+
+const typeUrlSlugs = {
+  arcade: 'arcade',
+  computer: 'computers',
+  console: 'consoles'
+};
+
+const title = manufacturer?.name || (isEn ? 'Manufacturer' : 'Produttore');
+
+const typeLabel =
+  typeLabels[lang]?.[type] ||
+  platformTypeLabels[type] ||
+  (isEn ? 'Platforms' : 'Piattaforme');
+
+const typeHref = isEn
+  ? `/en/platforms/${typeUrlSlugs[type] || type}/`
+  : getPlatformTypeUrl(type);
+
+const labels = {
+  description: isEn
+    ? `All ${typeLabel.toLowerCase()} associated with ${title} in the Retro-Gamers archive.`
+    : `Tutte le piattaforme ${typeLabel.toLowerCase()} associate a ${title} presenti nell’archivio Retro-Gamers.`,
+  back: isEn
+    ? `Back to ${typeLabel}`
+    : `Torna a ${typeLabel}`,
+  emptyTitle: isEn ? 'No platforms yet' : 'Nessuna piattaforma',
+  emptyText: isEn
+    ? 'This manufacturer does not have any linked platforms yet.'
+    : 'Questo produttore non ha ancora piattaforme collegate.'
+};
 ---
 
 <div class="platforms-page">
@@ -29,13 +68,10 @@ const typeLabel = platformTypeLabels[type] || 'Piattaforme';
 
           <h1>{title}</h1>
 
-          <p>
-            Tutte le piattaforme {typeLabel.toLowerCase()} associate a {title}
-            presenti nell’archivio Retro-Gamers.
-          </p>
+          <p>{labels.description}</p>
 
-          <a href={getPlatformTypeUrl(type)} class="platforms-back-link">
-            ← Torna a {typeLabel}
+          <a href={typeHref} class="platforms-back-link">
+            ← {labels.back}
           </a>
 
         </div>
@@ -46,14 +82,14 @@ const typeLabel = platformTypeLabels[type] || 'Piattaforme';
     {platforms.length > 0 ? (
       <section class="platform-grid">
         {platforms.map((platform) => (
-          <PlatformCard platform={platform} />
+          <PlatformCard platform={platform} lang={lang} />
         ))}
       </section>
     ) : (
       <section class="platform-empty">
         <span>RG</span>
-        <h2>Nessuna piattaforma</h2>
-        <p>Questo produttore non ha ancora piattaforme collegate.</p>
+        <h2>{labels.emptyTitle}</h2>
+        <p>{labels.emptyText}</p>
       </section>
     )}
 

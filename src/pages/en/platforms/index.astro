@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PlatformsLanding from '../../../components/platforms/PlatformsLanding.astro';
+
+import { getAllPosts, groupPosts } from '../../../lib/posts';
+import { getAllPlatforms } from '../../../lib/platforms';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const englishReviews = allPosts.filter(
+  (post) => post.type === 'review' && post.language === 'en'
+);
+
+const englishNews = allPosts.filter(
+  (post) => post.type === 'news' && post.language === 'en'
+);
+
+const platforms = await getAllPlatforms();
+---
+
+<BaseLayout
+  reviews={englishReviews}
+  news={englishNews}
+  lang="en"
+  title="Platforms"
+  description="Consoles, home computers and arcade systems from the history of retro gaming."
+  canonical="https://www.retro-gamers.it/en/platforms/"
+>
+  <PlatformsLanding platforms={platforms} lang="en" />
+</BaseLayout>

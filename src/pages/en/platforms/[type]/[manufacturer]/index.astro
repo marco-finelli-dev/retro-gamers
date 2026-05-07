@@ -1,0 +1,97 @@
+---
+import BaseLayout from '../../../../../layouts/BaseLayout.astro';
+import ManufacturerPage from '../../../../../components/platforms/ManufacturerPage.astro';
+
+import { getAllPosts, groupPosts } from '../../../../../lib/posts';
+import {
+  getAllPlatforms,
+  getPlatformsByTypeAndManufacturer
+} from '../../../../../lib/platforms';
+
+const typeMap = {
+  arcade: 'arcade',
+  computers: 'computer',
+  consoles: 'console'
+};
+
+const typeSlugMap = {
+  arcade: 'arcade',
+  computer: 'computers',
+  console: 'consoles'
+};
+
+export async function getStaticPaths() {
+  const platforms = await getAllPlatforms();
+
+  const paths = new Map();
+
+  for (const platform of platforms) {
+    if (!platform.platformType || !platform.manufacturer?.slug) continue;
+
+    const publicType = typeSlugMap[platform.platformType] || platform.platformType;
+    const key = `${publicType}/${platform.manufacturer.slug}`;
+
+    if (!paths.has(key)) {
+      paths.set(key, {
+        params: {
+          type: publicType,
+          manufacturer: platform.manufacturer.slug
+        },
+        props: {
+          manufacturer: platform.manufacturer,
+          internalType: platform.platformType
+        }
+      });
+    }
+  }
+
+  return Array.from(paths.values());
+}
+
+const { type, manufacturer } = Astro.params;
+const { manufacturer: manufacturerData, internalType: staticInternalType } = Astro.props;
+
+const platformType = staticInternalType || typeMap[type] || type;
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const englishReviews = allPosts.filter(
+  (post) => post.type === 'review' && post.language === 'en'
+);
+
+const englishNews = allPosts.filter(
+  (post) => post.type === 'news' && post.language === 'en'
+);
+
+const platforms = await getPlatformsByTypeAndManufacturer(
+  platformType,
+  manufacturer
+);
+
+const resolvedManufacturer =
+  manufacturerData ||
+  platforms[0]?.manufacturer ||
+  {
+    name: 'Manufacturer',
+    slug: manufacturer
+  };
+
+const canonicalType = typeSlugMap[platformType] || type;
+---
+
+<BaseLayout
+  reviews={englishReviews}
+  news={englishNews}
+  lang="en"
+  title={`${resolvedManufacturer.name} platforms`}
+  description={`All ${resolvedManufacturer.name} platforms in the Retro-Gamers archive.`}
+  canonical={`https://www.retro-gamers.it/en/platforms/${canonicalType}/${manufacturer}/`}
+>
+  <ManufacturerPage
+    type={platformType}
+    manufacturer={resolvedManufacturer}
+    platforms={platforms}
+    lang="en"
+  />
+</BaseLayout>

@@ -2,7 +2,31 @@
 import { urlFor } from '../../lib/image';
 import { getPlatformUrl } from '../../lib/platforms';
 
-const { platform } = Astro.props;
+const { platform, lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
+
+const typeUrlSlugs = {
+  arcade: 'arcade',
+  computer: 'computers',
+  console: 'consoles'
+};
+
+const getPlatformHref = (platform) => {
+  if (!platform) return '#';
+
+  if (isEn) {
+    const typeSlug = typeUrlSlugs[platform.platformType] || platform.platformType;
+    const manufacturerSlug = platform.manufacturer?.slug;
+    const platformSlug = platform.slug;
+
+    if (typeSlug && manufacturerSlug && platformSlug) {
+      return `/en/platforms/${typeSlug}/${manufacturerSlug}/${platformSlug}/`;
+    }
+  }
+
+  return getPlatformUrl(platform);
+};
 
 const getLogo = (platform) => {
   if (!platform?.logo?.asset) return '';
@@ -38,49 +62,52 @@ const cover = getCover(platform);
 const logo = getLogo(platform);
 const manufacturerLogo = getManufacturerLogo(platform);
 
-const manufacturerName = platform.manufacturer?.name || 'Produttore sconosciuto';
+const manufacturerName =
+  platform.manufacturer?.name ||
+  (isEn ? 'Unknown manufacturer' : 'Produttore sconosciuto');
+
 const year = platform.specs?.year || '';
 const badge = platform.badgeLabel || '';
 ---
 
-<a href={getPlatformUrl(platform)} class={`platform-card platform-card--${platform.platformType}`}>
+<a href={getPlatformHref(platform)} class={`platform-card platform-card--${platform.platformType}`}>
 
   <div class="platform-card__visual">
 
     {cover ? (
       <img
-  src={cover}
-  alt={platform.cover?.alt || platform.name}
-  class="platform-card__cover"
-  width="900"
-  height="560"
-  loading="lazy"
-  decoding="async"
-/>
+        src={cover}
+        alt={platform.cover?.alt || platform.name}
+        class="platform-card__cover"
+        width="900"
+        height="560"
+        loading="lazy"
+        decoding="async"
+      />
     ) : (
       <div class="platform-card__fallback">
         {logo && (
           <img
-  src={logo}
-  alt={platform.logo?.alt || platform.name}
-  class="platform-card__logo"
-  width="520"
-  height="220"
-  loading="lazy"
-  decoding="async"
-/>
+            src={logo}
+            alt={platform.logo?.alt || platform.name}
+            class="platform-card__logo"
+            width="520"
+            height="220"
+            loading="lazy"
+            decoding="async"
+          />
         )}
 
         {manufacturerLogo && (
           <img
-  src={manufacturerLogo}
-  alt={platform.manufacturer?.logo?.alt || manufacturerName}
-  class="platform-card__manufacturer-logo"
-  width="360"
-  height="160"
-  loading="lazy"
-  decoding="async"
-/>
+            src={manufacturerLogo}
+            alt={platform.manufacturer?.logo?.alt || manufacturerName}
+            class="platform-card__manufacturer-logo"
+            width="360"
+            height="160"
+            loading="lazy"
+            decoding="async"
+          />
         )}
       </div>
     )}
