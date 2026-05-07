@@ -188,8 +188,9 @@ export async function getAllPosts(): Promise<Post[]> {
           alt
         },
 
-        manufacturer->{
+      manufacturer->{
           name,
+          nameEn,
           "slug": slug.current,
           logo {
             asset->{ url },
@@ -207,6 +208,7 @@ export async function getAllPosts(): Promise<Post[]> {
 
       genres[]->{
         name,
+        nameEn,
         "slug": slug.current,
         logo {
           asset->{ url },
@@ -216,6 +218,7 @@ export async function getAllPosts(): Promise<Post[]> {
 
       developers[]->{
         name,
+        nameEn,
         "slug": slug.current,
         logo {
           asset->{ url },
@@ -225,6 +228,7 @@ export async function getAllPosts(): Promise<Post[]> {
 
       publishers[]->{
         name,
+        nameEn,
         "slug": slug.current,
         logo {
           asset->{ url },
@@ -234,6 +238,7 @@ export async function getAllPosts(): Promise<Post[]> {
 
       manufacturer[]->{
         name,
+        nameEn,
         "slug": slug.current,
         logo {
           asset->{ url },
@@ -243,6 +248,7 @@ export async function getAllPosts(): Promise<Post[]> {
 
       modes[]->{
         name,
+        nameEn,
         "slug": slug.current,
         logo {
           asset->{ url },
@@ -252,6 +258,7 @@ export async function getAllPosts(): Promise<Post[]> {
 
       series[]->{
         name,
+        nameEn,
         "slug": slug.current,
         logo {
           asset->{ url },
@@ -261,6 +268,7 @@ export async function getAllPosts(): Promise<Post[]> {
 
       editorialSeries[]->{
         name,
+        nameEn,
         "slug": slug.current,
         logo {
           asset->{ url },
@@ -270,6 +278,7 @@ export async function getAllPosts(): Promise<Post[]> {
 
       relatedSeries[]->{
         name,
+        nameEn,
         "slug": slug.current,
         logo {
           asset->{ url },
