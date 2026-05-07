@@ -69,8 +69,12 @@ const specs = [
   { label: labels.resolution, value: platform.specs?.resolution }
 ].filter((item) => item.value);
 
-const historyParagraphs = platform.history
-  ? platform.history.split('\n').filter(Boolean)
+const historyText = isEn
+  ? platform.historyEn || platform.history
+  : platform.history;
+
+const historyParagraphs = historyText
+  ? historyText.split('\n').filter(Boolean)
   : [];
 ---
 

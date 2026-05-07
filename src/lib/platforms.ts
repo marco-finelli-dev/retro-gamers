@@ -24,6 +24,7 @@ export type Platform = {
   };
 
   history?: string;
+  historyEn?: string;
 
   manufacturer?: {
     name: string;
@@ -73,6 +74,7 @@ export async function getAllPlatforms(): Promise<Platform[]> {
       platformType,
       badgeLabel,
       history,
+      historyEn,
 
       logo {
         asset->{ url },
@@ -114,6 +116,7 @@ export async function getPlatformsByType(type: PlatformType): Promise<Platform[]
       platformType,
       badgeLabel,
       history,
+      historyEn,
 
       logo {
         asset->{ url },
@@ -202,6 +205,7 @@ export async function getPlatformsByTypeAndManufacturer(
         platformType,
         badgeLabel,
         history,
+        historyEn,
   
         logo {
           asset->{ url },
@@ -251,6 +255,7 @@ export async function getPlatformsByTypeAndManufacturer(
         platformType,
         badgeLabel,
         history,
+        historyEn,
   
         logo {
           asset->{ url },
