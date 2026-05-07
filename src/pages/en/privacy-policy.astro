@@ -1,10 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-import { getAllPosts, groupPosts } from '../../lib/posts';
+import { getAllPosts } from '../../lib/posts';
 
 const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 
 const englishReviews = allPosts.filter(
   (post) => post.type === 'review' && post.language === 'en'
@@ -22,6 +21,7 @@ const englishNews = allPosts.filter(
   description="Information on the processing of personal data of users who visit Retro-Gamers.it."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/en/privacy-policy/"
+  lang="en"
 >
   <main class="legal-page">
     <div class="container">
@@ -74,7 +74,7 @@ const englishNews = allPosts.filter(
         </p>
 
         <ul>
-          <li>to ensure the correct technical operation of the website;</li>
+          <li>to allow the correct technical operation of the website;</li>
           <li>to ensure security, maintenance and prevention of abuse;</li>
           <li>to measure visits and understand how content is used;</li>
           <li>to display embedded content from external platforms, such as YouTube;</li>
@@ -92,27 +92,27 @@ const englishNews = allPosts.filter(
         <p>
           Processing related to non-essential analytics tools and third-party content,
           such as Google Analytics or embedded YouTube videos, is carried out only
-          with the user’s consent, where required by applicable law.
+          after the user’s consent, when required by applicable law.
         </p>
 
         <h2>5. Hosting and infrastructure services</h2>
 
         <p>
-          Retro-Gamers.it is hosted on Vercel. Vercel may process technical data
-          required for the distribution, security and operation of the website.
+          Retro-Gamers.it is hosted through Vercel. Vercel may process technical data
+          required for the delivery, security and operation of the website.
         </p>
 
         <p>
-          The website may use Vercel Web Analytics to obtain aggregate statistics
-          about visits. According to Vercel’s documentation, Web Analytics does not
-          use third-party cookies and identifies visits through a hash generated from
-          the request, with sessions discarded after 24 hours.
+          The website may use Vercel Web Analytics to obtain aggregate visit
+          statistics. According to Vercel’s documentation, Web Analytics does not use
+          third-party cookies and identifies visits through a hash generated from the
+          request, with sessions discarded after 24 hours.
         </p>
 
         <h2>6. Google Analytics</h2>
 
         <p>
-          Retro-Gamers.it may use Google Analytics to collect statistics about website
+          Retro-Gamers.it may use Google Analytics to collect statistics on website
           usage. Google Analytics may involve the processing of browsing data and the
           use of cookies or similar technologies.
         </p>
@@ -126,15 +126,15 @@ const englishNews = allPosts.filter(
         <h2>7. Embedded YouTube content</h2>
 
         <p>
-          Some articles may include videos embedded from YouTube. Viewing this content
-          may involve the transfer of data to Google/YouTube and the use of cookies or
-          similar technologies by third parties.
+          Some articles may include videos embedded from YouTube. Viewing such content
+          may involve the transfer of data to Google/YouTube and the use of cookies
+          or similar technologies by third parties.
         </p>
 
         <p>
-          Where possible, Retro-Gamers.it uses more privacy-conscious embedding
-          methods, such as the youtube-nocookie.com domain. In any case, embedded
-          videos are loaded only after the user has consented to third-party content.
+          When possible, Retro-Gamers.it uses more privacy-conscious embedding modes,
+          such as the youtube-nocookie.com domain. In any case, embedded videos are
+          loaded only after the user has consented to third-party content.
         </p>
 
         <h2>8. Amazon, eBay and other affiliate links</h2>
@@ -147,9 +147,8 @@ const englishNews = allPosts.filter(
 
         <p>
           By clicking an affiliate link, the user leaves Retro-Gamers.it and accesses
-          a third-party website. From that moment on, the processing of personal data
-          is governed by the privacy policy and cookie policy of the destination
-          website.
+          a third-party website. From that moment, the processing of personal data is
+          governed by the privacy policy and cookie policy of the destination website.
         </p>
 
         <h2>9. Social networks and external links</h2>
@@ -157,7 +156,7 @@ const englishNews = allPosts.filter(
         <p>
           The website contains links to Retro-Gamers.it social profiles, such as
           Facebook, Instagram and X. These links lead to external platforms, which
-          process data according to their own privacy notices.
+          process data according to their own policies.
         </p>
 
         <h2>10. Data retention</h2>
@@ -169,25 +168,25 @@ const englishNews = allPosts.filter(
         </p>
 
         <p>
-          Cookie consent preferences may be stored in the user’s browser in order to
-          avoid showing the banner repeatedly.
+          Cookie consent preferences may be stored in the user’s browser to avoid
+          showing the banner repeatedly.
         </p>
 
         <h2>11. User rights</h2>
 
         <p>
-          Within the limits provided by Regulation (EU) 2016/679, users may request
-          access, rectification, erasure, restriction of processing, objection to
-          processing and portability of their personal data.
+          Within the limits provided by Regulation EU 2016/679, the user may request
+          access, rectification, erasure, restriction, objection to processing and
+          portability of personal data.
         </p>
 
         <p>
-          To exercise these rights, users can write to:
+          To exercise these rights, you can write to:
           <a href="mailto:guybrush@retro-gamers.it">guybrush@retro-gamers.it</a>.
         </p>
 
         <p>
-          Users also have the right to lodge a complaint with the Italian Data
+          The user also has the right to lodge a complaint with the Italian Data
           Protection Authority.
         </p>
 
