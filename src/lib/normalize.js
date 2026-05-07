@@ -12,8 +12,9 @@ const posts = await client.fetch(`
         asset->{ url }
       },
     
-      categories[]->{
-        name,
+     categories[]->{
+        "name": coalesce(name, title),
+        "nameEn": coalesce(nameEn, titleEn),
         "slug": slug.current
       },
     

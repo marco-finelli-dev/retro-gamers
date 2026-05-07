@@ -6,6 +6,7 @@ import { client } from './sanity';
 
 export type TaxonomyRef = {
   name: string;
+  nameEn?: string;
   slug: string;
   logo?: {
     asset?: {
@@ -168,6 +169,7 @@ export async function getAllPosts(): Promise<Post[]> {
 
       categories[]->{
         "name": coalesce(name, title),
+        "nameEn": coalesce(nameEn, titleEn),
         "slug": slug.current,
         logo {
           asset->{ url },

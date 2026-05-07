@@ -20,8 +20,8 @@ export async function GET() {
         },
 
         categories[]->{
-          name,
-          nameEn,
+          "name": coalesce(name, title),
+          "nameEn": coalesce(nameEn, titleEn),
           "slug": slug.current
         },
 

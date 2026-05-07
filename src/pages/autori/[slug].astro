@@ -98,7 +98,8 @@ const posts = await client.fetch(`
     },
 
     categories[]->{
-      name,
+      "name": coalesce(name, title),
+      "nameEn": coalesce(nameEn, titleEn),
       "slug": slug.current
     },
 

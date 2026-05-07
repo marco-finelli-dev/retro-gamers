@@ -119,11 +119,11 @@ const post = await client.fetch(`
     asset->{ url }
   },
 
-  categories[]->{
-    name,
-    nameEn,
-    "slug": slug.current
-  },
+ categories[]->{
+  "name": coalesce(name, title),
+  "nameEn": coalesce(nameEn, titleEn),
+  "slug": slug.current
+},
 
   platforms[]->{
     name,
