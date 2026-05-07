@@ -1,8 +1,13 @@
 ---
 import '../../styles/components/header/search.css';
+
+const { lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
+const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
 ---
 
-<div class="search-wrapper">
+<div class="search-wrapper" data-lang={lang}>
 
   <div class="search-toggle">
     <svg viewBox="0 0 24 24">
@@ -12,7 +17,7 @@ import '../../styles/components/header/search.css';
   </div>
 
   <div class="search-bar">
-    <input type="text" placeholder="Cerca nel sito..." />
+    <input type="text" placeholder={placeholder} />
 
     <div class="search-results">
       <div class="hover-bg"></div>
@@ -66,25 +71,30 @@ import '../../styles/components/header/search.css';
   function highlight(text, query) {
     const safe = escapeHTML(text);
     const q = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return safe.replace(new RegExp(`(${q})`, 'gi'),
+
+    return safe.replace(
+      new RegExp(`(${q})`, 'gi'),
       '<span class="highlight">$1</span>'
     );
   }
 
   function optimizeImageUrl(url = '', width = 180, height = 120) {
-  if (!url) return '';
+    if (!url) return '';
 
-  const separator = url.includes('?') ? '&' : '?';
+    const separator = url.includes('?') ? '&' : '?';
 
-  return `${url}${separator}w=${width}&h=${height}&fit=crop&auto=format&q=70`;
-}
+    return `${url}${separator}w=${width}&h=${height}&fit=crop&auto=format&q=70`;
+  }
 
   /* ========================
-     ELEMENTI
+     ELEMENTS
   ======================== */
 
   const wrapper = document.querySelector('.search-wrapper');
   if (!wrapper) return;
+
+  const currentLang = wrapper.dataset.lang || 'it';
+  const isEn = currentLang === 'en';
 
   const toggle = wrapper.querySelector('.search-toggle');
   const bar = wrapper.querySelector('.search-bar');
@@ -97,6 +107,108 @@ import '../../styles/components/header/search.css';
   let cache = null;
 
   /* ========================
+     LABELS / ROUTES
+  ======================== */
+
+  const articleLabels = isEn
+    ? {
+        review: 'Review',
+        article: 'Article',
+        guide: 'Guide',
+        interview: 'Interview',
+        news: 'News',
+        feature: 'Feature',
+        special: 'Feature',
+        memories: 'Memories',
+        hardware: 'Hardware'
+      }
+    : {
+        review: 'Recensione',
+        article: 'Articolo',
+        guide: 'Guida',
+        interview: 'Intervista',
+        news: 'News',
+        feature: 'Speciale',
+        special: 'Speciale',
+        memories: 'Memories',
+        hardware: 'Hardware'
+      };
+
+  const platformLabels = {
+    console: 'Console',
+    computer: 'Computer',
+    arcade: 'Arcade'
+  };
+
+  const getArticleUrl = (article) => {
+    const routes = isEn
+      ? {
+          review: 'reviews',
+          news: 'news',
+          feature: 'features',
+          special: 'features',
+          guide: 'guides',
+          memories: 'memories',
+          interview: 'interviews',
+          hardware: 'hardware',
+          article: 'articles'
+        }
+      : {
+          review: 'recensioni',
+          news: 'news',
+          feature: 'speciali',
+          special: 'speciali',
+          guide: 'guide',
+          memories: 'memories',
+          interview: 'interviste',
+          hardware: 'hardware',
+          article: 'articoli'
+        };
+
+    const section = routes[article.type] || routes.article;
+
+    return isEn
+      ? `/en/${section}/${article.slug}/`
+      : `/${section}/${article.slug}/`;
+  };
+
+  const getPlatformUrl = (platform) => {
+    if (
+      !platform?.platformType ||
+      !platform?.manufacturer?.slug ||
+      !platform?.slug
+    ) {
+      return isEn ? '/en/platforms/' : '/piattaforme/';
+    }
+
+    const typeMap = isEn
+      ? {
+          console: 'consoles',
+          computer: 'computers',
+          arcade: 'arcade'
+        }
+      : {
+          console: 'console',
+          computer: 'computer',
+          arcade: 'arcade'
+        };
+
+    const typeSlug = typeMap[platform.platformType] || platform.platformType;
+
+    return isEn
+      ? `/en/platforms/${typeSlug}/${platform.manufacturer.slug}/${platform.slug}/`
+      : `/piattaforme/${typeSlug}/${platform.manufacturer.slug}/${platform.slug}/`;
+  };
+
+  const getTaxonomyName = (item) => {
+    if (!item) return '';
+
+    return isEn
+      ? item.nameEn || item.name || ''
+      : item.name || item.nameEn || '';
+  };
+
+  /* ========================
      UI CONTROL
   ======================== */
 
@@ -105,32 +217,32 @@ import '../../styles/components/header/search.css';
     results.innerHTML = '<div class="hover-bg"></div>';
   }
 
-function open() {
-  if (document.body.classList.contains('no-scroll')) return;
+  function open() {
+    if (document.body.classList.contains('no-scroll')) return;
 
-  const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
-  document.body.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
-  document.body.classList.add('no-scroll');
+    document.body.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+    document.body.classList.add('no-scroll');
 
-  bar.classList.add('active');
-  overlay?.classList.add('active');
+    bar.classList.add('active');
+    overlay?.classList.add('active');
 
-  input.focus();
-}
+    input.focus();
+  }
 
-function close() {
-  if (!document.body.classList.contains('no-scroll')) return;
+  function close() {
+    if (!document.body.classList.contains('no-scroll')) return;
 
-  bar.classList.remove('active');
-  overlay?.classList.remove('active');
+    bar.classList.remove('active');
+    overlay?.classList.remove('active');
 
-  document.body.classList.remove('no-scroll');
-  document.body.style.removeProperty('--scrollbar-width');
+    document.body.classList.remove('no-scroll');
+    document.body.style.removeProperty('--scrollbar-width');
 
-  input.value = '';
-  reset();
-}
+    input.value = '';
+    reset();
+  }
 
   toggle?.addEventListener('click', e => {
     e.stopPropagation();
@@ -175,130 +287,86 @@ function close() {
            BUILD INDEX
         ======================== */
 
-       const articleLabels = {
-  review: 'Recensione',
-  article: 'Articolo',
-  guide: 'Guida',
-  interview: 'Intervista',
-  news: 'News',
-  feature: 'Speciale',
-  memories: 'Memories'
-};
+        const articles = (cache.articles || [])
+          .filter((article) => (article.language || 'it') === currentLang)
+          .map((article) => {
+            const articleLabel = articleLabels[article.type] || (isEn ? 'Article' : 'Articolo');
+            const platformName = article.platforms?.[0]?.name || '';
+            const year = article.gameInfo?.releaseYear || '';
 
-const taxonomyLabels = {
-  genre: 'Genere',
-  developer: 'Sviluppatore',
-  publisher: 'Publisher',
-  manufacturer: 'Produttore',
-  mode: 'Modalità',
-  series: 'Serie',
-  editorialSeries: 'Serie editoriale'
-};
+            return {
+              ...article,
+              kind: 'article',
+              label: articleLabel,
+              url: getArticleUrl(article),
+              image: optimizeImageUrl(
+                article.featuredImage?.asset?.url ||
+                article.featuredImage?.url ||
+                article.gameInfo?.cover?.asset?.url ||
+                article.gameInfo?.cover?.url ||
+                article.cover?.asset?.url ||
+                article.cover?.url ||
+                '',
+                180,
+                120
+              ),
+              eyebrow: [
+                articleLabel,
+                platformName,
+                year
+              ].filter(Boolean).join(' · '),
+              searchableText: `
+                ${article.title || ''}
+                ${article.excerpt || ''}
+                ${article.type || ''}
+                ${(article.categories || []).map(getTaxonomyName).join(' ')}
+                ${(article.platforms || []).map(p => p.name).join(' ')}
+                ${(article.genres || []).map(getTaxonomyName).join(' ')}
+                ${(article.developers || []).map(getTaxonomyName).join(' ')}
+                ${year || ''}
+              `
+            };
+          });
 
-const platformLabels = {
-  console: 'Console',
-  computer: 'Computer',
-  arcade: 'Arcade'
-};
+        const platforms = (cache.platforms || [])
+          .map((platform) => {
+            const platformLabel = platformLabels[platform.platformType] || (isEn ? 'Platform' : 'Piattaforma');
 
-const getTaxonomyType = (taxonomy) => {
-  const types = taxonomy.type || [];
-  return Array.isArray(types) ? types[0] : types;
-};
+            return {
+              title: platform.name,
+              slug: platform.slug,
+              kind: 'platform',
+              label: platformLabel,
+              url: getPlatformUrl(platform),
+              image: optimizeImageUrl(
+                platform.cover?.asset?.url ||
+                platform.cover?.url ||
+                platform.featuredImage?.asset?.url ||
+                platform.featuredImage?.url ||
+                '',
+                180,
+                120
+              ),
+              eyebrow: [
+                platformLabel,
+                platform.manufacturer?.name,
+                platform.specs?.year
+              ].filter(Boolean).join(' · '),
+              searchableText: `
+                ${platform.name || ''}
+                ${platform.platformType || ''}
+                ${platform.manufacturer?.name || ''}
+                ${platform.specs?.year || ''}
+                ${platform.history || ''}
+                ${platform.historyEn || ''}
+              `
+            };
+          });
 
-const getArticleUrl = (article) => {
-  const routes = {
-    review: 'recensioni',
-    news: 'news',
-    feature: 'speciali',
-    guide: 'guide',
-    memories: 'memories',
-    interview: 'interviste',
-    hardware: 'hardware',
-    article: 'articoli'
-  };
-
-  const section = routes[article.type] || 'articoli';
-
-  return `/${section}/${article.slug}/`;
-};
-
-const getPlatformUrl = (platform) => {
-  if (
-    !platform?.platformType ||
-    !platform?.manufacturer?.slug ||
-    !platform?.slug
-  ) {
-    return '/piattaforme/';
-  }
-
-  return `/piattaforme/${platform.platformType}/${platform.manufacturer.slug}/${platform.slug}/`;
-};
-
-const all = [
-
-  ...cache.articles.map(a => ({
-    ...a,
-    kind: 'article',
-    label: articleLabels[a.type] || 'Articolo',
-    url: getArticleUrl(a),
-    image: optimizeImageUrl(
-  a.featuredImage?.asset?.url ||
-  a.featuredImage?.url ||
-  a.gameInfo?.cover?.asset?.url ||
-  a.gameInfo?.cover?.url ||
-  a.cover?.asset?.url ||
-  a.cover?.url ||
-  '',
-  180,
-  120
-),
-
-    eyebrow: [
-      articleLabels[a.type] || 'Articolo',
-      a.platforms?.[0]?.name,
-      a.gameInfo?.releaseYear
-    ].filter(Boolean).join(' · '),
-    searchableText: `
-      ${a.title || ''}
-      ${a.excerpt || ''}
-      ${a.type || ''}
-      ${(a.categories || []).map(c => c.name).join(' ')}
-      ${(a.platforms || []).map(p => p.name).join(' ')}
-      ${(a.genres || []).map(g => g.name).join(' ')}
-      ${(a.developers || []).map(d => d.name).join(' ')}
-      ${a.gameInfo?.releaseYear || ''}
-    `
-  })),
-
-  ...cache.platforms.map(p => ({
-    title: p.name,
-    slug: p.slug,
-    kind: 'platform',
-    label: platformLabels[p.platformType] || 'Piattaforma',
-    url: getPlatformUrl(p),
-image: optimizeImageUrl(
-  p.cover?.asset?.url ||
-  p.cover?.url ||
-  p.featuredImage?.asset?.url ||
-  p.featuredImage?.url ||
-  '',
-  180,
-  120
-),
-    eyebrow: [
-      platformLabels[p.platformType] || 'Piattaforma',
-      p.manufacturer?.name,
-      p.specs?.year
-    ].filter(Boolean).join(' · '),
-    searchableText: `
-      ${p.name || ''}
-      ${p.platformType || ''}
-      ${p.manufacturer?.name || ''}
-      ${p.specs?.year || ''}
-    `
-  })),
-];
+        const all = [
+          ...articles,
+          ...platforms
+        ];
 
         /* ========================
            RANKING
@@ -320,40 +388,50 @@ image: optimizeImageUrl(
         let html = '<div class="hover-bg"></div>';
 
         if (!ranked.length) {
-          html += `
-  <div class="search-empty">
-    <strong>Nessun risultato</strong>
-    <span>Prova con un gioco, una piattaforma, un genere o uno sviluppatore.</span>
-  </div>
-`;
+          html += isEn
+            ? `
+              <div class="search-empty">
+                <strong>No results</strong>
+                <span>Try a game, a platform, a genre or a developer.</span>
+              </div>
+            `
+            : `
+              <div class="search-empty">
+                <strong>Nessun risultato</strong>
+                <span>Prova con un gioco, una piattaforma, un genere o uno sviluppatore.</span>
+              </div>
+            `;
         } else {
 
-         html += ranked.map(post => {
+          html += ranked.map(post => {
 
-  const image = post.image || '';
-  const title = post.title || '';
-  const eyebrow = post.eyebrow || post.label || '';
+            const image = post.image || '';
+            const title = post.title || '';
+            const eyebrow = post.eyebrow || post.label || '';
 
-  return `
-    <a href="${post.url}" class="search-item">
+            return `
+              <a href="${post.url}" class="search-item">
 
-      <div class="search-thumb ${image ? '' : 'is-empty'}">
-        ${image ? `<img src="${image}" alt="" width="180" height="120" loading="lazy" decoding="async">` : `<span>${escapeHTML(post.label?.slice(0, 2) || 'RG')}</span>`}
-      </div>
+                <div class="search-thumb ${image ? '' : 'is-empty'}">
+                  ${image
+                    ? `<img src="${image}" alt="" width="180" height="120" loading="lazy" decoding="async">`
+                    : `<span>${escapeHTML(post.label?.slice(0, 2) || 'RG')}</span>`
+                  }
+                </div>
 
-      <div class="search-content">
-        <div class="search-category">
-          ${escapeHTML(eyebrow)}
-        </div>
+                <div class="search-content">
+                  <div class="search-category">
+                    ${escapeHTML(eyebrow)}
+                  </div>
 
-        <div class="search-title">
-          ${highlight(title, query)}
-        </div>
-      </div>
+                  <div class="search-title">
+                    ${highlight(title, query)}
+                  </div>
+                </div>
 
-    </a>
-  `;
-}).join('');
+              </a>
+            `;
+          }).join('');
         }
 
         results.innerHTML = html;

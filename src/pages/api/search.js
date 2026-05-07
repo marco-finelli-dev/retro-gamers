@@ -5,11 +5,13 @@ export async function GET() {
     {
       "articles": *[
         _type == "article" &&
-        defined(slug.current)
+        defined(slug.current) &&
+        !(_id in path("drafts.**"))
       ] | order(coalesce(publishedAt, _createdAt) desc) {
         title,
         excerpt,
         type,
+        language,
         "slug": slug.current,
         publishedAt,
 
@@ -19,6 +21,7 @@ export async function GET() {
 
         categories[]->{
           name,
+          nameEn,
           "slug": slug.current
         },
 
@@ -29,11 +32,13 @@ export async function GET() {
 
         genres[]->{
           name,
+          nameEn,
           "slug": slug.current
         },
 
         developers[]->{
           name,
+          nameEn,
           "slug": slug.current
         },
 
@@ -48,18 +53,24 @@ export async function GET() {
 
       "platforms": *[
         _type == "platform" &&
-        defined(slug.current)
+        defined(slug.current) &&
+        !(_id in path("drafts.**"))
       ] | order(name asc) {
         name,
         "slug": slug.current,
         platformType,
+        history,
+        historyEn,
+
         manufacturer->{
-        name,
-        "slug": slug.current
-      },
+          name,
+          "slug": slug.current
+        },
+
         cover {
           asset->{ url }
         },
+
         specs {
           year
         }
@@ -67,9 +78,11 @@ export async function GET() {
 
       "taxonomies": *[
         _type == "taxonomy" &&
-        defined(slug.current)
+        defined(slug.current) &&
+        !(_id in path("drafts.**"))
       ] | order(name asc) {
         name,
+        nameEn,
         "slug": slug.current,
         type,
         logo {
