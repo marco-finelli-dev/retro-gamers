@@ -95,8 +95,15 @@ const authorDisplayName =
     ? post.author.nickname
     : post.author?.name || '';
 
-const authorUrl = post.author?.slug
-  ? `/autori/${post.author.slug}/`
+const authorSlug =
+  typeof post.author?.slug === 'string'
+    ? post.author.slug
+    : post.author?.slug?.current;
+
+const authorUrl = authorSlug
+  ? lang === 'en'
+    ? `/en/authors/${authorSlug}/`
+    : `/autori/${authorSlug}/`
   : '';
 
 const readingTime =
