@@ -1,10 +1,28 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArchiveCard from '../../components/archive/ArchiveCard.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArchiveCard from '../../../components/archive/ArchiveCard.astro';
 import { PortableText } from 'astro-portabletext';
-import { client } from '../../lib/sanity';
-import { urlFor } from '../../lib/image';
-import { getAllPosts, groupPosts } from '../../lib/posts';
+import { client } from '../../../lib/sanity';
+import { urlFor } from '../../../lib/image';
+import { getAllPosts } from '../../../lib/posts';
+
+export async function getStaticPaths() {
+  const authors = await client.fetch(`
+    *[
+      _type == "author" &&
+      defined(slug.current) &&
+      !(_id in path("drafts.**"))
+    ]{
+      "slug": slug.current
+    }
+  `);
+
+  return authors.map((author) => ({
+    params: {
+      slug: author.slug,
+    },
+  }));
+}
 
 const { slug } = Astro.params;
 
@@ -51,12 +69,12 @@ const displayName =
     : author.name;
 
 const roleLabels = {
-  editor: 'Redattore',
-  contributor: 'Collaboratore',
-  guest: 'Ospite'
+  editor: 'Editor',
+  contributor: 'Contributor',
+  guest: 'Guest'
 };
 
-const roleLabel = roleLabels[author.role] || 'Autore';
+const roleLabel = roleLabels[author.role] || 'Author';
 
 const authorCover = author.cover?.asset
   ? urlFor(author.cover)
@@ -83,6 +101,7 @@ const posts = await client.fetch(`
     _type == "article" &&
     defined(slug.current) &&
     author._ref == $authorId &&
+    language == "en" &&
     !(_id in path("drafts.**"))
   ] | order(coalesce(publishedAt, _createdAt) desc) {
     _id,
@@ -90,6 +109,7 @@ const posts = await client.fetch(`
     excerpt,
     subtitle,
     type,
+    language,
     publishedAt,
     "slug": slug.current,
 
@@ -99,7 +119,7 @@ const posts = await client.fetch(`
     },
 
     categories[]->{
-      "name": coalesce(name, title),
+      "name": coalesce(nameEn, name, titleEn, title),
       "nameEn": coalesce(nameEn, titleEn),
       "slug": slug.current
     },
@@ -124,18 +144,25 @@ const posts = await client.fetch(`
 `, { authorId: author._id });
 
 const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
+const englishPosts = allPosts.filter((post) => post.language === 'en');
 
-const pageTitle = `Articoli di ${displayName}`;
+const englishReviews = englishPosts.filter((post) => post.type === 'review');
+const englishNews = englishPosts.filter((post) => post.type === 'news');
+
+const pageTitle = `Articles by ${displayName}`;
 
 const pageDescription =
-  author.bio ||
-  `${displayName} su Retro-Gamers.it: articoli, recensioni, guide e contenuti dal mondo retro-gaming.`;
+  `${displayName} on Retro-Gamers International: articles, reviews, guides and features from the world of retro gaming.`;
 
 const pageImage =
   authorCover ||
   authorAvatar ||
   '/og-image.jpg';
+
+const bioBlocks =
+  author.bioEn?.length > 0
+    ? author.bioEn
+    : author.bio;
 
 const socials = [
   author.showEmail && author.email && {
@@ -144,7 +171,7 @@ const socials = [
     icon: '/icons/social/mail.svg'
   },
   author.website && {
-    label: 'Sito web',
+    label: 'Website',
     url: author.website,
     icon: '/icons/social/link.svg'
   },
@@ -172,12 +199,13 @@ const socials = [
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
+  reviews={englishReviews}
+  news={englishNews}
   title={pageTitle}
   description={pageDescription}
   image={pageImage}
-  canonical={`https://www.retro-gamers.it/autori/${slug}/`}
+  canonical={`https://www.retro-gamers.it/en/authors/${slug}/`}
+  lang="en"
 >
 
   <main class="author-page">
@@ -223,39 +251,39 @@ const socials = [
             </p>
           )}
 
-         <div class="author-hero__actions">
+          <div class="author-hero__actions">
 
-  <div class="author-hero__badges">
-    <span>{roleLabel}</span>
-  </div>
+            <div class="author-hero__badges">
+              <span>{roleLabel}</span>
+            </div>
 
-  {socials.length > 0 && (
-    <div class="author-hero__socials" aria-label="Contatti autore">
-      {socials.map((item) => {
-        const isMail = item.url.startsWith('mailto:');
+            {socials.length > 0 && (
+              <div class="author-hero__socials" aria-label="Author contacts">
+                {socials.map((item) => {
+                  const isMail = item.url.startsWith('mailto:');
 
-        return (
-          <a
-            href={item.url}
-            target={isMail ? undefined : '_blank'}
-            rel={isMail ? undefined : 'noopener noreferrer'}
-            aria-label={item.label}
-            title={item.label}
-          >
-            <span
-              class="author-hero__social-icon"
-              style={`--icon: url('${item.icon}')`}
-              aria-hidden="true"
-            ></span>
+                  return (
+                    <a
+                      href={item.url}
+                      target={isMail ? undefined : '_blank'}
+                      rel={isMail ? undefined : 'noopener noreferrer'}
+                      aria-label={item.label}
+                      title={item.label}
+                    >
+                      <span
+                        class="author-hero__social-icon"
+                        style={`--icon: url('${item.icon}')`}
+                        aria-hidden="true"
+                      ></span>
 
-            <span class="sr-only">{item.label}</span>
-          </a>
-        );
-      })}
-    </div>
-  )}
+                      <span class="sr-only">{item.label}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            )}
 
-</div>
+          </div>
 
         </div>
 
@@ -268,30 +296,30 @@ const socials = [
       <article class="author-bio">
         <span>Bio</span>
 
-        <h2>Profilo autore</h2>
+        <h2>Author profile</h2>
 
-      {author.bio?.length > 0 ? (
-  <div class="author-bio__content">
-    <PortableText value={author.bio} />
-  </div>
-) : (
-  <div class="author-bio__content">
-    <p>Autore di Retro-Gamers.it.</p>
-  </div>
-)}
+        {bioBlocks?.length > 0 ? (
+          <div class="author-bio__content">
+            <PortableText value={bioBlocks} />
+          </div>
+        ) : (
+          <div class="author-bio__content">
+            <p>Author on Retro-Gamers International.</p>
+          </div>
+        )}
       </article>
 
       <aside class="author-stats">
-        <h2>Attività</h2>
+        <h2>Activity</h2>
 
         <dl>
           <div>
-            <dt>Articoli</dt>
+            <dt>Articles</dt>
             <dd>{posts.length}</dd>
           </div>
 
           <div>
-            <dt>Ruolo</dt>
+            <dt>Role</dt>
             <dd>{roleLabel}</dd>
           </div>
         </dl>
@@ -302,8 +330,8 @@ const socials = [
     <section class="author-posts">
 
       <div class="author-posts__header">
-        <span>Archivio</span>
-        <h2>Articoli pubblicati</h2>
+        <span>Archive</span>
+        <h2>Published articles</h2>
       </div>
 
       {posts.length > 0 ? (
@@ -315,7 +343,7 @@ const socials = [
                 data-author-post-item
                 hidden={index >= 12}
               >
-                <ArchiveCard post={post} />
+                <ArchiveCard post={post} lang="en" />
               </div>
             ))}
           </div>
@@ -323,14 +351,14 @@ const socials = [
           {posts.length > 12 && (
             <div class="author-posts__more">
               <button type="button" data-author-posts-more>
-                Mostra altri articoli
+                Show more articles
               </button>
             </div>
           )}
         </>
       ) : (
         <p class="author-posts__empty">
-          Nessun articolo pubblicato.
+          No articles published yet.
         </p>
       )}
 
