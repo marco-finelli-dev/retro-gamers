@@ -1,10 +1,26 @@
 import { createClient } from '@sanity/client';
 
-export const client = createClient({
-  projectId: 'y88ky0mu',
-  dataset: 'production',
-  apiVersion: '2024-01-01',
+const projectId = 'y88ky0mu';
+const dataset = 'production';
+const apiVersion = '2024-01-01';
 
-  useCdn: false, // 🔥 IMPORTANTISSIMO ORA
+export const client = createClient({
+  projectId,
+  dataset,
+  apiVersion,
+  useCdn: false,
   perspective: 'published'
 });
+
+export const previewClient = createClient({
+  projectId,
+  dataset,
+  apiVersion,
+  useCdn: false,
+  perspective: 'drafts',
+  token: import.meta.env.SANITY_API_READ_TOKEN
+});
+
+export function getSanityClient(isPreview = false) {
+  return isPreview ? previewClient : client;
+}

@@ -2,14 +2,20 @@
 import Layout from '../../layouts/BaseLayout.astro';
 import ArticlePage from '../../components/article/ArticlePage.astro';
 
-import { client } from '../../lib/sanity';
+import { getSanityClient } from '../../lib/sanity';
 import { getAllPosts, groupPosts, getRelatedPosts } from '../../lib/posts';
 
 /* ========================
-   PARAMS
+   PARAMS + PREVIEW
 ======================== */
 
 const { category, slug } = Astro.params;
+
+const isPreview =
+  Astro.url.searchParams.get('preview') === '1' &&
+  Astro.url.searchParams.get('secret') === import.meta.env.PREVIEW_SECRET;
+
+const sanityClient = getSanityClient(isPreview);
 
 const categoryToType = {
   recensioni: 'review',
@@ -76,7 +82,7 @@ function getReadingTime(content = []) {
    POST
 ======================== */
 
-const post = await client.fetch(`
+const post = await sanityClient.fetch(`
 *[
   _type == "article" &&
   slug.current == $slug &&
@@ -119,11 +125,11 @@ const post = await client.fetch(`
     asset->{ url }
   },
 
- categories[]->{
-  "name": coalesce(name, title),
-  "nameEn": coalesce(nameEn, titleEn),
-  "slug": slug.current
-},
+  categories[]->{
+    "name": coalesce(name, title),
+    "nameEn": coalesce(nameEn, titleEn),
+    "slug": slug.current
+  },
 
   platforms[]->{
     name,
@@ -301,15 +307,16 @@ if (!post) {
   return Astro.rewrite('/404');
 }
 
+const publishedPostId = post._id.replace('drafts.', '');
+
 /* ========================
    ENGLISH TRANSLATION
 ======================== */
 
-const englishTranslation = await client.fetch(`
+const englishTranslation = await sanityClient.fetch(`
   *[
     _type == "article" &&
     defined(slug.current) &&
-    !(_id in path("drafts.**")) &&
     language == "en" &&
     translationOf._ref == $postId
   ][0]{
@@ -320,7 +327,7 @@ const englishTranslation = await client.fetch(`
     language
   }
 `, {
-  postId: post._id
+  postId: publishedPostId
 });
 
 /* ========================
@@ -342,11 +349,10 @@ const hydratedPost = {
 const seriesId = hydratedPost.editorialSeries?.[0]?._id || null;
 
 const seriesPosts = seriesId
-  ? await client.fetch(`
+  ? await sanityClient.fetch(`
     *[
       _type == "article" &&
       defined(slug.current) &&
-      !(_id in path("drafts.**")) &&
       coalesce(language, "it") == "it" &&
       references($seriesId)
     ] | order(coalesce(seriesOrder, 999) asc, coalesce(publishedAt, _createdAt) asc) {
@@ -367,7 +373,7 @@ const seriesPosts = seriesId
    COMMENTS
 ======================== */
 
-const comments = await client.fetch(`
+const comments = await sanityClient.fetch(`
   *[
     _type == "comment" &&
     article._ref == $postId &&
@@ -394,7 +400,7 @@ const comments = await client.fetch(`
     }
   }
 `, {
-  postId: post._id
+  postId: publishedPostId
 });
 
 /* ========================
@@ -465,6 +471,7 @@ const alternateLanguages = englishUrl
   updatedAt={post.lastUpdated}
   lang="it"
   alternateLanguages={alternateLanguages}
+  noindex={isPreview}
 >
 
   <ArticlePage
