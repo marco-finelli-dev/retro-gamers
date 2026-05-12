@@ -55,6 +55,10 @@ function getImageUrl(image, width = 980, height = null) {
   return builder.url();
 }
 
+function getOriginalImageUrl(image) {
+  return image?.asset?.url || '';
+}
+
 function renderTextChild(child, markDefs = []) {
   let output = escapeHTML(child.text || '');
 
@@ -213,27 +217,31 @@ function chunkBalanced(images = []) {
     }
 
     if (block._type === 'image') {
-      const imageUrl = getImageUrl(block, block.isWide ? 1320 : 980);
+  const imageUrl = getImageUrl(block, block.isWide ? 1320 : 980);
+  const fullImageUrl = getOriginalImageUrl(block);
 
-      if (!imageUrl) return null;
+  if (!imageUrl) return null;
 
-      return (
-        <figure class={`article-figure ${block.isWide ? 'is-wide' : ''}`}>
-          <img
-            src={imageUrl}
-            alt={block.alt || ''}
-            width={block.isWide ? '1320' : '980'}
-            height={block.isWide ? '742' : '552'}
-            loading="lazy"
-            decoding="async"
-          />
+  return (
+    <figure class={`article-figure ${block.isWide ? 'is-wide' : ''}`}>
+      <img
+        src={imageUrl}
+        data-fullsrc={fullImageUrl || imageUrl}
+        data-caption={block.caption || ''}
+        class="js-article-lightbox-image"
+        alt={block.alt || ''}
+        width={block.isWide ? '1320' : '980'}
+        height={block.isWide ? '742' : '552'}
+        loading="lazy"
+        decoding="async"
+      />
 
-          {block.caption && (
-            <figcaption>{block.caption}</figcaption>
-          )}
-        </figure>
-      );
-    }
+      {block.caption && (
+        <figcaption>{block.caption}</figcaption>
+      )}
+    </figure>
+  );
+}
 
     if (block._type === 'imageRow') {
       const rows = chunkBalanced(block.images || []);
@@ -246,27 +254,31 @@ function chunkBalanced(images = []) {
               style={`--image-count: ${row.length};`}
             >
               {row.map((img) => {
-                const imageUrl = getImageUrl(img.image, 520, 325);
+  const imageUrl = getImageUrl(img.image, 520, 325);
+  const fullImageUrl = getOriginalImageUrl(img.image);
 
-                if (!imageUrl) return null;
+  if (!imageUrl) return null;
 
-                return (
-                  <figure>
-                    <img
-                      src={imageUrl}
-                      alt={img.alt || ''}
-                      width="520"
-                      height="325"
-                      loading="lazy"
-                      decoding="async"
-                    />
+  return (
+    <figure>
+      <img
+        src={imageUrl}
+        data-fullsrc={fullImageUrl || imageUrl}
+        data-caption={img.caption || ''}
+        class="js-article-lightbox-image"
+        alt={img.alt || ''}
+        width="520"
+        height="325"
+        loading="lazy"
+        decoding="async"
+      />
 
-                    {img.caption && (
-                      <figcaption>{img.caption}</figcaption>
-                    )}
-                  </figure>
-                );
-              })}
+      {img.caption && (
+        <figcaption>{img.caption}</figcaption>
+      )}
+    </figure>
+  );
+})}
             </div>
           ))}
         </div>
@@ -298,28 +310,32 @@ function chunkBalanced(images = []) {
           return <p set:html={html} />;
         }
 
-        if (inner._type === 'image') {
-          const imageUrl = getImageUrl(inner, 720);
+       if (inner._type === 'image') {
+  const imageUrl = getImageUrl(inner, 720);
+  const fullImageUrl = getOriginalImageUrl(inner);
 
-          if (!imageUrl) return null;
+  if (!imageUrl) return null;
 
-          return (
-            <figure class="article-aside-figure">
-              <img
-                src={imageUrl}
-                alt={inner.alt || ''}
-                width="720"
-                height="405"
-                loading="lazy"
-                decoding="async"
-              />
+  return (
+    <figure class="article-aside-figure">
+      <img
+        src={imageUrl}
+        data-fullsrc={fullImageUrl || imageUrl}
+        data-caption={inner.caption || ''}
+        class="js-article-lightbox-image"
+        alt={inner.alt || ''}
+        width="720"
+        height="405"
+        loading="lazy"
+        decoding="async"
+      />
 
-              {inner.caption && (
-                <figcaption>{inner.caption}</figcaption>
-              )}
-            </figure>
-          );
-        }
+      {inner.caption && (
+        <figcaption>{inner.caption}</figcaption>
+      )}
+    </figure>
+  );
+}
 
         if (inner._type === 'imageRow') {
           const rows = chunkBalanced(inner.images || []);
@@ -331,28 +347,32 @@ function chunkBalanced(images = []) {
                   class={`article-aside-row article-aside-row--${row.length}`}
                   style={`--aside-image-count: ${row.length};`}
                 >
-                  {row.map((img) => {
-                    const imageUrl = getImageUrl(img.image, 520, 325);
+                 {row.map((img) => {
+  const imageUrl = getImageUrl(img.image, 520, 325);
+  const fullImageUrl = getOriginalImageUrl(img.image);
 
-                    if (!imageUrl) return null;
+  if (!imageUrl) return null;
 
-                    return (
-                      <figure>
-                        <img
-                          src={imageUrl}
-                          alt={img.alt || ''}
-                          width="520"
-                          height="325"
-                          loading="lazy"
-                          decoding="async"
-                        />
+  return (
+    <figure>
+      <img
+        src={imageUrl}
+        data-fullsrc={fullImageUrl || imageUrl}
+        data-caption={img.caption || ''}
+        class="js-article-lightbox-image"
+        alt={img.alt || ''}
+        width="520"
+        height="325"
+        loading="lazy"
+        decoding="async"
+      />
 
-                        {img.caption && (
-                          <figcaption>{img.caption}</figcaption>
-                        )}
-                      </figure>
-                    );
-                  })}
+      {img.caption && (
+        <figcaption>{img.caption}</figcaption>
+      )}
+    </figure>
+  );
+})}
                 </div>
               ))}
             </div>

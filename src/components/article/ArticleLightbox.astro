@@ -6,7 +6,7 @@
     aria-label="Chiudi immagine"
   ></button>
 
-  <div class="article-lightbox__stage">
+  <div class="article-lightbox__stage" role="dialog" aria-modal="true" aria-label="Immagine ingrandita">
     <button
       class="article-lightbox__close"
       type="button"
@@ -36,28 +36,30 @@
     const caption = lightbox.querySelector('[data-lightbox-caption]');
     const closeButtons = lightbox.querySelectorAll('[data-lightbox-close]');
 
-    const candidates = document.querySelectorAll(`
-      .article-content .article-figure img,
-      .article-content .article-image-row img,
-      .article-content .article-aside-figure img,
-      .article-content .article-aside-row img
-    `);
+    const candidates = document.querySelectorAll('.js-article-lightbox-image');
 
     if (!candidates.length) return;
 
+    let lastFocusedElement = null;
+
     const open = (img) => {
       const fullSrc =
+        img.dataset.fullsrc ||
         img.currentSrc ||
         img.src;
 
-      const figure = img.closest('figure');
-      const figcaption = figure?.querySelector('figcaption')?.textContent?.trim();
+      const captionText =
+        img.dataset.caption ||
+        img.closest('figure')?.querySelector('figcaption')?.textContent?.trim() ||
+        '';
+
+      lastFocusedElement = document.activeElement;
 
       image.src = fullSrc;
       image.alt = img.alt || '';
 
-      if (figcaption) {
-        caption.textContent = figcaption;
+      if (captionText) {
+        caption.textContent = captionText;
         caption.hidden = false;
       } else {
         caption.textContent = '';
@@ -66,6 +68,9 @@
 
       lightbox.hidden = false;
       document.documentElement.classList.add('has-lightbox-open');
+
+      const closeButton = lightbox.querySelector('.article-lightbox__close');
+      closeButton?.focus();
     };
 
     const close = () => {
@@ -76,6 +81,12 @@
       caption.hidden = true;
 
       document.documentElement.classList.remove('has-lightbox-open');
+
+      if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+        lastFocusedElement.focus();
+      }
+
+      lastFocusedElement = null;
     };
 
     candidates.forEach((img) => {
