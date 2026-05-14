@@ -15,6 +15,10 @@ function escapeHTML(str = '') {
   }[char]));
 }
 
+function preserveLineBreaks(str = '') {
+  return escapeHTML(str).replace(/\n/g, '<br>');
+}
+
 function getInternalUrl(reference) {
   if (!reference?.slug) return '#';
 
@@ -60,7 +64,7 @@ function getOriginalImageUrl(image) {
 }
 
 function renderTextChild(child, markDefs = []) {
-  let output = escapeHTML(child.text || '');
+  let output = preserveLineBreaks(child.text || '');
 
   if (!child.marks?.length) return output;
 
