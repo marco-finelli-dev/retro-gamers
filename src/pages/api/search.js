@@ -10,6 +10,7 @@ export async function GET() {
       ] | order(coalesce(publishedAt, _createdAt) desc) {
         title,
         excerpt,
+        cardExcerpt,
         type,
         language,
         "slug": slug.current,

@@ -101,8 +101,13 @@ const getImage = (post, width = 420, height = 263) => {
     .url();
 };
 
+const cleanText = (value) =>
+  value?.replace(/\[…\]/g, '').trim() || '';
+
 const getExcerpt = (post) =>
-  post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
+  cleanText(post?.cardExcerpt) ||
+  cleanText(post?.subtitle) ||
+  cleanText(post?.excerpt);
 
 const getCategory = (post) => {
   const cat = post?.categories?.[0];

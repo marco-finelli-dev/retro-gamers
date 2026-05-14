@@ -317,7 +317,7 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
               ].filter(Boolean).join(' · '),
               searchableText: `
                 ${article.title || ''}
-                ${article.excerpt || ''}
+                ${article.cardExcerpt || article.subtitle || article.excerpt || ''}
                 ${article.type || ''}
                 ${(article.categories || []).map(getTaxonomyName).join(' ')}
                 ${(article.platforms || []).map(p => p.name).join(' ')}

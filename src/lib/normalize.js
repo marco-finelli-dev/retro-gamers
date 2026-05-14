@@ -7,6 +7,7 @@ const posts = await client.fetch(`
       "slug": slug.current,
       publishedAt,
       excerpt,
+      cardExcerpt,
     
       featuredImage {
         asset->{ url }

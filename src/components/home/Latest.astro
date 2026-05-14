@@ -29,7 +29,12 @@ const truncate = (text, length = 110) =>
   text.length > length ? text.slice(0, length) + '…' : text;
 
 const getExcerpt = (post) => {
-  const clean = stripHTML(post?.excerpt || '');
+  const clean = stripHTML(
+  post?.cardExcerpt ||
+  post?.subtitle ||
+  post?.excerpt ||
+  ''
+);
   if (clean) return truncate(clean, 110);
   return '';
 };

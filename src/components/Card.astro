@@ -46,7 +46,11 @@ const anno = post.gameInfo?.releaseYear;
    EXCERPT
 ======================== */
 
-const excerpt = post.excerpt || '';
+const excerpt =
+  post.cardExcerpt ||
+  post.subtitle ||
+  post.excerpt ||
+  '';
 ---
 
 <div class="card">

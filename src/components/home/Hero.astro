@@ -19,8 +19,13 @@ const labels = {
 const [main, ...rest] = posts || [];
 const side = rest.slice(0, 3);
 
+const cleanText = (value) =>
+  value?.replace(/\[…\]/g, '').trim() || '';
+
 const getExcerpt = (post) =>
-  post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
+  cleanText(post?.cardExcerpt) ||
+  cleanText(post?.subtitle) ||
+  cleanText(post?.excerpt);
 
 const getCategory = (post) => {
   const cat = post?.categories?.[0];

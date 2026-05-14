@@ -40,8 +40,13 @@ const getImage = (post, width = 640, height = 400) => {
     .url();
 };
 
+const cleanText = (value) =>
+  value?.replace(/\[…\]/g, '').trim() || '';
+
 const getExcerpt = (post) =>
-  post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
+  cleanText(post?.cardExcerpt) ||
+  cleanText(post?.subtitle) ||
+  cleanText(post?.excerpt);
 
 const getProductLabel = (post) => {
   const productType = post?.monetization?.productType;

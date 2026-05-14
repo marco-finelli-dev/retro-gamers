@@ -31,8 +31,13 @@ const getImage = (post, width = 520, height = 325) => {
     .url();
 };
 
+const cleanText = (value) =>
+  value?.replace(/\[…\]/g, '').trim() || '';
+
 const getExcerpt = (post) =>
-  post?.excerpt?.replace(/\[…\]/g, '').trim() || '';
+  cleanText(post?.cardExcerpt) ||
+  cleanText(post?.subtitle) ||
+  cleanText(post?.excerpt);
 
 const getCategory = (post) => {
   const typeLabels = isEn

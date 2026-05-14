@@ -68,6 +68,7 @@ export type Post = {
   title: string;
   slug: string;
   excerpt?: string;
+  cardExcerpt?: string;
   publishedAt?: string;
   lastUpdated?: string;
   type?: string;
@@ -147,6 +148,7 @@ export async function getAllPosts(): Promise<Post[]> {
       title,
       "slug": slug.current,
       excerpt,
+      cardExcerpt,
       subtitle,
       seoTitle,
      publishedAt,
