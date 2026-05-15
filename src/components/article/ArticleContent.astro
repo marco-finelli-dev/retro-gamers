@@ -87,42 +87,30 @@ function renderTextChild(child, markDefs = []) {
     }
 
     if (def?.href) {
-      const rel = getExternalRel(def.href);
-      const className = getExternalClass(def.href);
+  const rel = getExternalRel(def.href);
+  const className = getExternalClass(def.href);
+  const classAttr = className ? ` class="${className}"` : '';
 
-      output = `
-        <a
-          href="${escapeHTML(def.href)}"
-          target="_blank"
-          rel="${rel}"
-          class="${className}"
-        >
-          ${output}
-        </a>
-      `;
-      return;
-    }
+  output = `<a href="${escapeHTML(def.href)}" target="_blank" rel="${rel}"${classAttr}>${output}</a>`;
+  return;
+}
 
-    if (def?._type === 'internalLink') {
-      output = `
-        <a href="${escapeHTML(getInternalUrl(def.reference))}">
-          ${output}
-        </a>
-      `;
-      return;
-    }
+   if (def?._type === 'internalLink') {
+  output = `
+    <a href="${escapeHTML(getInternalUrl(def.reference))}">
+      ${output}
+    </a>
+  `;
+  return;
+}
 
     if (def?._type === 'taxonomyLink') {
-      const slug = def.reference?.slug;
+  const slug = def.reference?.slug;
 
-      if (slug) {
-        output = `
-          <a href="/tag/${escapeHTML(slug)}/">
-            ${output}
-          </a>
-        `;
-      }
-    }
+  if (slug) {
+    output = `<a href="/tag/${escapeHTML(slug)}/">${output}</a>`;
+  }
+}
   });
 
   return output;
