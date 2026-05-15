@@ -101,6 +101,13 @@ if (def?._type === 'internalLink') {
   return;
 }
 
+if (def?._type === 'pageLink') {
+  const path = def.path || '#';
+
+  output = `<a href="${escapeHTML(path)}">${output}</a>`;
+  return;
+}
+
 if (def?._type === 'taxonomyLink') {
   const slug = def.reference?.slug;
 
