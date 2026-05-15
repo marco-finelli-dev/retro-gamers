@@ -3,7 +3,7 @@ import { getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 import ConsentYouTube from '../common/ConsentYouTube.astro';
 
-const { content = [] } = Astro.props;
+const { content = [], lang = 'it' } = Astro.props;
 
 function escapeHTML(str = '') {
   return String(str).replace(/[&<>"']/g, (char) => ({
@@ -103,12 +103,13 @@ if (def?._type === 'internalLink') {
 
 if (def?._type === 'taxonomyLink') {
   const slug = def.reference?.slug;
-  const language = def.reference?.language || def.language || 'it';
 
   if (slug) {
-    const prefix = language === 'en' ? '/en' : '';
+    const prefix = lang === 'en' ? '/en' : '';
     output = `<a href="${prefix}/tag/${escapeHTML(slug)}/">${output}</a>`;
   }
+
+  return;
 }
 
   });
