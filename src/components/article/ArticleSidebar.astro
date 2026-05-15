@@ -65,6 +65,16 @@ const ui = {
 
 const t = ui[lang] || ui.it;
 
+const getTaxonomyName = (item) => {
+  if (!item) return '';
+
+  if (lang === 'en') {
+    return item.nameEn || item.name || '';
+  }
+
+  return item.name || item.nameEn || '';
+};
+
 const archiveLink = {
   label: t.archiveLabels[post.type] || t.archiveFallback,
   href: getArchiveUrl(post.type, lang)
@@ -80,7 +90,7 @@ const sidebarTags = [
   ...(post.genres || []),
   ...(post.developers || [])
 ]
-  .filter((item) => item?.name)
+  .filter((item) => getTaxonomyName(item))
   .slice(0, 6);
 
 const getMainImage = (post) => {
@@ -184,9 +194,9 @@ const getTypeLabel = (item) =>
           {archiveLink.label}
         </a>
 
-        {sidebarTags.map((item) => (
-          <span>{item.name}</span>
-        ))}
+       {sidebarTags.map((item) => (
+  <span>{getTaxonomyName(item)}</span>
+))}
       </div>
     </section>
 
