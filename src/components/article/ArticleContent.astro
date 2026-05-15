@@ -24,7 +24,8 @@ function getInternalUrl(reference) {
 
   return getPostUrl({
     type: reference.type || 'article',
-    slug: reference.slug
+    slug: reference.slug,
+    language: reference.language || 'it'
   });
 }
 
@@ -95,22 +96,21 @@ function renderTextChild(child, markDefs = []) {
   return;
 }
 
-   if (def?._type === 'internalLink') {
-  output = `
-    <a href="${escapeHTML(getInternalUrl(def.reference))}">
-      ${output}
-    </a>
-  `;
+if (def?._type === 'internalLink') {
+  output = `<a href="${escapeHTML(getInternalUrl(def.reference))}">${output}</a>`;
   return;
 }
 
-    if (def?._type === 'taxonomyLink') {
+if (def?._type === 'taxonomyLink') {
   const slug = def.reference?.slug;
+  const language = def.reference?.language || def.language || 'it';
 
   if (slug) {
-    output = `<a href="/tag/${escapeHTML(slug)}/">${output}</a>`;
+    const prefix = language === 'en' ? '/en' : '';
+    output = `<a href="${prefix}/tag/${escapeHTML(slug)}/">${output}</a>`;
   }
 }
+
   });
 
   return output;
