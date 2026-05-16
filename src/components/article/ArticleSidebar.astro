@@ -1,5 +1,5 @@
 ---
-import { getPostUrl, getArchiveUrl } from '../../lib/routes';
+import { getPostUrl, getArchiveUrl, getPlatformUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 
 const {
@@ -84,13 +84,35 @@ const sidebarRelated = relatedPosts
   .filter((item) => item?._id !== post?._id)
   .slice(0, 5);
 
+const getCategoryUrl = (category) => {
+  if (!category?.slug) return '';
+
+  const slug =
+    typeof category.slug === 'string'
+      ? category.slug
+      : category.slug?.current;
+
+  if (!slug) return '';
+
+  if (lang === 'en') {
+    return `/en/${slug}/`;
+  }
+
+  return `/${slug}/`;
+};
+
 const sidebarTags = [
-  ...(post.platforms || []),
-  ...(post.categories || []),
-  ...(post.genres || []),
-  ...(post.developers || [])
+  ...(post.platforms || []).map((item) => ({
+    label: getTaxonomyName(item),
+    href: getPlatformUrl(item, lang)
+  })),
+
+  ...(post.categories || []).map((item) => ({
+    label: getTaxonomyName(item),
+    href: getCategoryUrl(item)
+  }))
 ]
-  .filter((item) => getTaxonomyName(item))
+  .filter((item) => item.label && item.href)
   .slice(0, 6);
 
 const getMainImage = (post) => {
@@ -194,8 +216,10 @@ const getTypeLabel = (item) =>
           {archiveLink.label}
         </a>
 
-       {sidebarTags.map((item) => (
-  <span>{getTaxonomyName(item)}</span>
+ {sidebarTags.map((item) => (
+  <a href={item.href}>
+    {item.label}
+  </a>
 ))}
       </div>
     </section>
