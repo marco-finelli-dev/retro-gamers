@@ -29,6 +29,35 @@ function getInternalUrl(reference) {
   });
 }
 
+function getPlatformUrl(reference) {
+  if (!reference?.slug || !reference?.platformType || !reference?.manufacturer?.slug) {
+    return '#';
+  }
+
+  const typeMap = {
+    console: {
+      it: 'console',
+      en: 'consoles'
+    },
+    computer: {
+      it: 'computer',
+      en: 'computers'
+    },
+    arcade: {
+      it: 'arcade',
+      en: 'arcade'
+    }
+  };
+
+  const localizedType =
+    typeMap[reference.platformType]?.[lang] ||
+    reference.platformType;
+
+  const prefix = lang === 'en' ? '/en/platforms' : '/piattaforme';
+
+  return `${prefix}/${localizedType}/${reference.manufacturer.slug}/${reference.slug}/`;
+}
+
 function isAffiliateUrl(url = '') {
   return /amazon\.|amzn\.to|ebay\.|rover\.ebay/i.test(url);
 }
@@ -101,12 +130,18 @@ if (def?._type === 'internalLink') {
   return;
 }
 
+if (def?._type === 'platformLink') {
+  output = `<a href="${escapeHTML(getPlatformUrl(def.reference))}">${output}</a>`;
+  return;
+}
+
 if (def?._type === 'pageLink') {
   const path = def.path || '#';
 
   output = `<a href="${escapeHTML(path)}">${output}</a>`;
   return;
 }
+
 
 if (def?._type === 'taxonomyLink') {
   const slug = def.reference?.slug;

@@ -209,12 +209,27 @@ const post = await client.fetch(`
     markDefs[]{
       ...,
 
-      _type == "internalLink" => {
+            _type == "internalLink" => {
         ...,
         reference->{
           type,
           language,
           "slug": slug.current
+        }
+      },
+
+      _type == "platformLink" => {
+        ...,
+        reference->{
+          name,
+          nameEn,
+          "slug": slug.current,
+          platformType,
+          manufacturer->{
+            name,
+            nameEn,
+            "slug": slug.current
+          }
         }
       },
 
@@ -251,12 +266,27 @@ const post = await client.fetch(`
         markDefs[]{
           ...,
 
-          _type == "internalLink" => {
+                   _type == "internalLink" => {
             ...,
             reference->{
               type,
               language,
               "slug": slug.current
+            }
+          },
+
+          _type == "platformLink" => {
+            ...,
+            reference->{
+              name,
+              nameEn,
+              "slug": slug.current,
+              platformType,
+              manufacturer->{
+                name,
+                nameEn,
+                "slug": slug.current
+              }
             }
           },
 
