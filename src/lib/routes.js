@@ -107,3 +107,22 @@ export const getPlatformUrl = (platform, lang = 'it') => {
 
   return `/piattaforme/${type}/${manufacturerSlug}/${platformSlug}/`
 }
+
+export const getCategoryUrl = (category, lang = 'it') => {
+  if (!category) {
+    return lang === 'en' ? '/en/features/' : '/speciali/'
+  }
+
+  const slug =
+    typeof category.slug === 'string'
+      ? category.slug
+      : category.slug?.current
+
+  if (!slug) {
+    return lang === 'en' ? '/en/features/' : '/speciali/'
+  }
+
+  return lang === 'en'
+    ? `/en/categories/${slug}/`
+    : `/categorie/${slug}/`
+}

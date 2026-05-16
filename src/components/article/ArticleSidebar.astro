@@ -1,5 +1,5 @@
 ---
-import { getPostUrl, getArchiveUrl, getPlatformUrl } from '../../lib/routes';
+import { getPostUrl, getArchiveUrl, getPlatformUrl, getCategoryUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 
 const {
@@ -109,7 +109,7 @@ const sidebarTags = [
 
   ...(post.categories || []).map((item) => ({
     label: getTaxonomyName(item),
-    href: getCategoryUrl(item)
+    href: getCategoryUrl(item, lang)
   }))
 ]
   .filter((item) => item.label && item.href)
@@ -216,7 +216,7 @@ const getTypeLabel = (item) =>
           {archiveLink.label}
         </a>
 
- {sidebarTags.map((item) => (
+{sidebarTags.map((item) => (
   <a href={item.href}>
     {item.label}
   </a>
