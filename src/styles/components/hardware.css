@@ -2,6 +2,16 @@
    HARDWARE STRIP — HOME
 ======================================== */
 
+/*
+  Blocco hardware / prodotti in home.
+  Accento principale: oro + viola, con richiamo petrolio.
+*/
+
+
+/* ========================================
+   SHELL
+======================================== */
+
 .hardware-strip {
   position: relative;
   overflow: hidden;
@@ -49,7 +59,9 @@
 }
 
 
-/* HEADER */
+/* ========================================
+   HEADER
+======================================== */
 
 .hardware-strip__header {
   display: flex;
@@ -135,6 +147,8 @@
 
   color: var(--color-text-soft);
   white-space: nowrap;
+
+  transition: color var(--transition-fast);
 }
 
 .hardware-strip__link::after {
@@ -147,7 +161,9 @@
 }
 
 
-/* GRID */
+/* ========================================
+   GRID
+======================================== */
 
 .hardware-strip__grid {
   display: grid;
@@ -156,7 +172,9 @@
 }
 
 
-/* CARD */
+/* ========================================
+   CARD
+======================================== */
 
 .hardware-card {
   position: relative;
@@ -220,7 +238,6 @@
   height: 100%;
 
   object-fit: cover;
-
   transform: scale(1.02);
 
   filter:
@@ -262,6 +279,11 @@
 }
 
 .hardware-card__content h3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
   margin: 0;
 
   font-size: 17px;
@@ -269,11 +291,6 @@
   font-weight: 760;
 
   color: rgba(255,255,255,0.94);
-
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 
   transition:
     color var(--transition-fast),
@@ -286,33 +303,41 @@
 }
 
 .hardware-card__content p {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
   margin-top: 8px;
 
   font-size: 12px;
   line-height: 1.45;
 
   color: rgba(255,255,255,0.60);
-
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
-.hardware-card__content small {
+.hardware-card__content small,
+.hardware-card__price {
   display: inline-flex;
 
   margin-top: 13px;
 
   font-size: 12px;
-  line-height: 1;
+  line-height: 1.2;
+  font-style: normal;
   font-weight: 750;
 
   color: var(--color-primary);
 }
 
+.hardware-card__price {
+  color: var(--color-accent);
+}
 
-/* EMPTY STATE */
+
+/* ========================================
+   EMPTY STATE
+======================================== */
 
 .hardware-empty {
   display: grid;
@@ -418,19 +443,221 @@
   color: rgba(255,255,255,0.70);
 }
 
-.hardware-card__price {
-  display: block;
-  margin-top: 8px;
 
-  font-size: 12px;
-  line-height: 1.2;
-  font-style: normal;
-  font-weight: 750;
+/* ========================================
+   LIGHT THEME
+======================================== */
 
-  color: var(--color-accent);
+html[data-theme="light"] .hardware-strip {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(238,245,249,0.88),
+      rgba(219,230,240,0.98)
+    ),
+    radial-gradient(circle at 0% 0%, rgba(197,138,0,0.105), transparent 36%),
+    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.12), transparent 42%),
+    radial-gradient(circle at 78% 0%, rgba(8,104,122,0.070), transparent 38%);
+
+  border-color: rgba(197,138,0,0.16);
+
+  box-shadow:
+    0 24px 56px rgba(24,32,48,0.16),
+    0 0 22px rgba(197,138,0,0.045),
+    inset 0 1px 0 rgba(255,255,255,0.76),
+    inset 0 -24px 44px rgba(197,138,0,0.025);
 }
 
-/* RESPONSIVE */
+html[data-theme="light"] .hardware-strip::before {
+  background-image:
+    linear-gradient(rgba(197,138,0,0.030) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(102,81,184,0.026) 1px, transparent 1px);
+
+  opacity: 0.25;
+}
+
+html[data-theme="light"] .hardware-strip__header span {
+  color: #A87400;
+}
+
+html[data-theme="light"] .hardware-strip__header h2 {
+  color: rgba(24,28,40,0.96);
+
+  text-shadow:
+    0 10px 26px rgba(24,32,48,0.10),
+    0 0 14px rgba(197,138,0,0.060);
+}
+
+html[data-theme="light"] .hardware-strip__header h2::after {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(197,138,0,0.50),
+      rgba(102,81,184,0.34),
+      transparent
+    );
+
+  box-shadow:
+    0 0 10px rgba(197,138,0,0.12);
+}
+
+html[data-theme="light"] .hardware-strip__header p,
+html[data-theme="light"] .hardware-strip__link {
+  color: rgba(38,44,58,0.62);
+}
+
+html[data-theme="light"] .hardware-strip__link:hover {
+  color: #087C8E;
+}
+
+
+/* ========================================
+   LIGHT — CARDS
+======================================== */
+
+html[data-theme="light"] .hardware-card {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(244,248,252,0.90),
+      rgba(226,235,245,0.98)
+    ),
+    radial-gradient(circle at 0% 0%, rgba(197,138,0,0.065), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.065), transparent 42%);
+
+  border-color: rgba(197,138,0,0.13);
+
+  box-shadow:
+    0 17px 38px rgba(24,32,48,0.135),
+    inset 0 1px 0 rgba(255,255,255,0.76),
+    inset 0 -20px 34px rgba(197,138,0,0.020);
+}
+
+html[data-theme="light"] .hardware-card:hover {
+  border-color: rgba(197,138,0,0.28);
+
+  box-shadow:
+    0 22px 48px rgba(24,32,48,0.18),
+    0 0 18px rgba(197,138,0,0.080),
+    inset 0 1px 0 rgba(255,255,255,0.82);
+}
+
+html[data-theme="light"] .hardware-card__image {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(218,229,240,0.96),
+      rgba(198,214,230,0.98)
+    );
+}
+
+html[data-theme="light"] .hardware-card__image::after {
+  background:
+    linear-gradient(to top, rgba(0,0,0,0.18), transparent 62%),
+    radial-gradient(circle at 0% 0%, rgba(197,138,0,0.09), transparent 38%);
+}
+
+html[data-theme="light"] .hardware-card__image img {
+  filter:
+    brightness(0.98)
+    contrast(1.03)
+    saturate(1.03);
+}
+
+html[data-theme="light"] .hardware-card:hover img {
+  filter:
+    brightness(1.03)
+    contrast(1.04)
+    saturate(1.08);
+}
+
+html[data-theme="light"] .hardware-card__content span,
+html[data-theme="light"] .hardware-card__price {
+  color: #A87400;
+}
+
+html[data-theme="light"] .hardware-card__content small {
+  color: #087C8E;
+}
+
+html[data-theme="light"] .hardware-card__content h3 {
+  color: rgba(28,32,44,0.94);
+}
+
+html[data-theme="light"] .hardware-card:hover h3 {
+  color: #087C8E;
+
+  text-shadow:
+    0 0 10px rgba(8,104,122,0.12);
+}
+
+html[data-theme="light"] .hardware-card__content p {
+  color: rgba(42,48,62,0.62);
+}
+
+
+/* ========================================
+   LIGHT — EMPTY STATE
+======================================== */
+
+html[data-theme="light"] .hardware-empty {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(235,242,248,0.90),
+      rgba(214,226,238,0.94)
+    ),
+    radial-gradient(circle at 0% 0%, rgba(197,138,0,0.060), transparent 42%),
+    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.050), transparent 46%);
+
+  border-color: rgba(197,138,0,0.12);
+
+  box-shadow:
+    0 9px 20px rgba(24,32,48,0.075),
+    inset 0 1px 0 rgba(255,255,255,0.72);
+}
+
+html[data-theme="light"] .hardware-empty__content span {
+  color: #A87400;
+}
+
+html[data-theme="light"] .hardware-empty__content h3 {
+  color: rgba(28,32,44,0.94);
+}
+
+html[data-theme="light"] .hardware-empty__content p {
+  color: rgba(42,48,62,0.62);
+}
+
+html[data-theme="light"] .hardware-empty__badge {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(250,244,226,0.92),
+      rgba(232,220,190,0.94)
+    ),
+    radial-gradient(circle at 20% 0%, rgba(197,138,0,0.18), transparent 48%);
+
+  border-color: rgba(197,138,0,0.24);
+
+  box-shadow:
+    0 12px 24px rgba(197,138,0,0.10),
+    0 0 16px rgba(197,138,0,0.060),
+    inset 0 1px 0 rgba(255,255,255,0.78);
+}
+
+html[data-theme="light"] .hardware-empty__badge strong {
+  color: #A87400;
+}
+
+html[data-theme="light"] .hardware-empty__badge small {
+  color: rgba(42,48,62,0.64);
+}
+
+
+/* ========================================
+   RESPONSIVE
+======================================== */
 
 @media (max-width: 1024px) {
   .hardware-strip__grid {

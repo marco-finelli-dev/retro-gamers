@@ -79,12 +79,13 @@ const authorAvatar = author.image?.asset
   : '';
 
 const posts = await client.fetch(`
-  *[
-    _type == "article" &&
-    defined(slug.current) &&
-    author._ref == $authorId &&
-    !(_id in path("drafts.**"))
-  ] | order(coalesce(publishedAt, _createdAt) desc) {
+*[
+  _type == "article" &&
+  defined(slug.current) &&
+  author._ref == $authorId &&
+  (!defined(language) || language == "it") &&
+  !(_id in path("drafts.**"))
+] | order(coalesce(publishedAt, _createdAt) desc) {
     _id,
     title,
     excerpt,

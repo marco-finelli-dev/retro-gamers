@@ -95,13 +95,13 @@ const getCountLabel = (count) =>
             class={`platform-type-card platform-type-card--${item.type}`}
           >
 
-            <div class="platform-type-card__icon" aria-hidden="true">
-              <img
-                src={item.icon}
-                alt=""
-                loading="lazy"
-              />
-            </div>
+            <div class={`platform-type-card__icon platform-type-card__icon--${item.type}`} aria-hidden="true">
+  <img
+    src={item.icon}
+    alt=""
+    loading="lazy"
+  />
+</div>
 
             <div class="platform-type-card__content">
               <span>{getCountLabel(count)}</span>
