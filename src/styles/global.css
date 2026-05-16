@@ -10,6 +10,35 @@
   --color-surface: #0F0F14;
   --color-surface-2: #14141B;
 
+  --page-background:
+    radial-gradient(circle at 18% -8%, rgba(34,240,255,0.13), transparent 32%),
+    radial-gradient(circle at 88% 6%, rgba(168,85,247,0.12), transparent 34%),
+    radial-gradient(circle at 50% 110%, rgba(255,217,61,0.035), transparent 34%),
+    linear-gradient(to bottom, #050507 0%, #07070A 46%, #050507 100%);
+
+  --section-box-background:
+    linear-gradient(
+      180deg,
+      rgba(15,15,20,0.68),
+      rgba(10,10,16,0.86)
+    );
+
+  --section-box-before:
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,0.055),
+      transparent 34%
+    );
+
+  --section-box-shadow:
+    0 18px 55px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+
+  --section-box-hover-shadow:
+    0 22px 65px rgba(0,0,0,0.62),
+    0 0 22px rgba(34,240,255,0.07),
+    inset 0 1px 0 rgba(255,255,255,0.045);
+
   /* ======================
      TEXT
   ====================== */
@@ -83,6 +112,62 @@
 
 
 /* =========================
+   ☀️ LIGHT THEME
+========================= */
+
+html[data-theme="light"] {
+  --color-bg: #F4F6FB;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #E9EDF5;
+
+  --page-background:
+    radial-gradient(circle at 16% -8%, rgba(0,142,163,0.13), transparent 34%),
+    radial-gradient(circle at 88% 4%, rgba(124,58,237,0.10), transparent 34%),
+    radial-gradient(circle at 50% 112%, rgba(197,138,0,0.08), transparent 36%),
+    linear-gradient(to bottom, #F7F9FE 0%, #F4F6FB 48%, #EEF2F8 100%);
+
+  --section-box-background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,0.82),
+      rgba(244,246,251,0.94)
+    );
+
+  --section-box-before:
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,0.72),
+      transparent 38%
+    );
+
+  --section-box-shadow:
+    0 18px 45px rgba(24,32,48,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.75);
+
+  --section-box-hover-shadow:
+    0 22px 55px rgba(24,32,48,0.16),
+    0 0 18px rgba(0,142,163,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.85);
+
+  --color-text: #161824;
+  --color-text-muted: #5F6675;
+  --color-text-soft: rgba(22,24,36,0.66);
+
+  --color-primary: #008EA3;
+  --color-secondary: #7C3AED;
+  --color-accent: #C58A00;
+
+  --color-border: rgba(18,24,38,0.10);
+  --color-glass: rgba(255,255,255,0.68);
+  --color-overlay: rgba(10,14,24,0.42);
+
+  --glow-primary: 0 0 18px rgba(0,142,163,0.18);
+  --glow-secondary: 0 0 18px rgba(124,58,237,0.14);
+  --glow-soft: 0 0 12px rgba(0,142,163,0.10);
+}
+
+
+/* =========================
    🔧 RESET
 ========================= */
 
@@ -119,12 +204,7 @@ body {
   position: relative;
   min-height: 100vh;
 
-  background:
-    radial-gradient(circle at 18% -8%, rgba(34,240,255,0.13), transparent 32%),
-    radial-gradient(circle at 88% 6%, rgba(168,85,247,0.12), transparent 34%),
-    radial-gradient(circle at 50% 110%, rgba(255,217,61,0.035), transparent 34%),
-    linear-gradient(to bottom, #050507 0%, #07070A 46%, #050507 100%);
-
+  background: var(--page-background);
   background-attachment: fixed;
 
   color: var(--color-text);
@@ -141,7 +221,6 @@ body {
    🌌 GLOBAL ATMOSPHERE
 ========================= */
 
-/* Reticolo globale elegante */
 body::before {
   content: "";
   position: fixed;
@@ -173,6 +252,21 @@ body::before {
     );
 
   pointer-events: none;
+}
+
+html[data-theme="light"] body::before {
+  background:
+    linear-gradient(rgba(0,142,163,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124,58,237,0.034) 1px, transparent 1px),
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      rgba(0,142,163,0.030) 42%,
+      rgba(124,58,237,0.026) 58%,
+      transparent 100%
+    );
+
+  opacity: 0.55;
 }
 
 body > * {
@@ -291,21 +385,13 @@ a:hover {
   padding: 32px;
   border-radius: var(--radius-lg);
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(15,15,20,0.68),
-      rgba(10,10,16,0.86)
-    );
-
+  background: var(--section-box-background);
   border: 1px solid var(--color-border);
 
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 
-  box-shadow:
-    0 18px 55px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+  box-shadow: var(--section-box-shadow);
 
   transition:
     box-shadow var(--transition-smooth),
@@ -318,24 +404,23 @@ a:hover {
   position: absolute;
   inset: 0;
 
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255,255,255,0.055),
-      transparent 34%
-    );
+  background: var(--section-box-before);
 
   opacity: 0.24;
   pointer-events: none;
 }
 
+html[data-theme="light"] .section-box::before {
+  opacity: 0.36;
+}
+
 .section-box:hover {
   border-color: rgba(34,240,255,0.16);
+  box-shadow: var(--section-box-hover-shadow);
+}
 
-  box-shadow:
-    0 22px 65px rgba(0,0,0,0.62),
-    0 0 22px rgba(34,240,255,0.07),
-    inset 0 1px 0 rgba(255,255,255,0.045);
+html[data-theme="light"] .section-box:hover {
+  border-color: rgba(0,142,163,0.22);
 }
 
 
@@ -374,6 +459,19 @@ a:hover {
     0 6px 24px rgba(0,0,0,0.9);
 }
 
+html[data-theme="light"] .card:hover h1,
+html[data-theme="light"] .card:hover h2,
+html[data-theme="light"] .card:hover h3,
+html[data-theme="light"] .card:hover h4,
+html[data-theme="light"] .card:hover .card-title-xl,
+html[data-theme="light"] .card:hover .card-title-lg,
+html[data-theme="light"] .card:hover .card-title-md,
+html[data-theme="light"] .card:hover .card-title-sm {
+  text-shadow:
+    0 0 12px rgba(0,142,163,0.18),
+    0 8px 22px rgba(24,32,48,0.12);
+}
+
 
 /* =========================
    🎯 UTILITIES
@@ -399,6 +497,11 @@ a:hover {
 ::selection {
   background: rgba(34,240,255,0.25);
   color: #fff;
+}
+
+html[data-theme="light"] ::selection {
+  background: rgba(0,142,163,0.22);
+  color: #10131F;
 }
 
 html.has-mobile-menu-open,
