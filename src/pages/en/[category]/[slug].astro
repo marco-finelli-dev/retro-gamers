@@ -301,6 +301,40 @@ if (!post) {
   return Astro.rewrite('/404');
 }
 
+const publishedPostId = post._id.replace('drafts.', '');
+
+/* ========================
+   ITALIAN TRANSLATION
+======================== */
+
+const directItalianTranslation =
+  post.translationOf?.language === 'it'
+    ? post.translationOf
+    : null;
+
+const reverseItalianTranslation = directItalianTranslation
+  ? null
+  : await client.fetch(`
+    *[
+      _type == "article" &&
+      defined(slug.current) &&
+      coalesce(language, "it") == "it" &&
+      translationOf._ref == $postId
+    ][0]{
+      _id,
+      type,
+      title,
+      "slug": slug.current,
+      language
+    }
+  `, {
+    postId: publishedPostId
+  });
+
+const italianTranslation =
+  directItalianTranslation ||
+  reverseItalianTranslation;
+
 /* ========================
    HYDRATION
 ======================== */
@@ -417,13 +451,13 @@ const canonicalUrl =
   `${siteUrl}/en/${category}/${slug}/`;
 
 const italianCategory =
-  post.translationOf?.type
-    ? typeToItalianCategory[post.translationOf.type]
+  italianTranslation?.type
+    ? typeToItalianCategory[italianTranslation.type]
     : null;
 
 const italianUrl =
-  post.translationOf?.slug && italianCategory
-    ? `${siteUrl}/${italianCategory}/${post.translationOf.slug}/`
+  italianTranslation?.slug && italianCategory
+    ? `${siteUrl}/${italianCategory}/${italianTranslation.slug}/`
     : `${siteUrl}/`;
 
 const alternateLanguages = [
@@ -431,7 +465,7 @@ const alternateLanguages = [
     lang: 'en',
     url: canonicalUrl
   },
-  ...(post.translationOf?.slug && italianCategory
+  ...(italianTranslation?.slug && italianCategory
     ? [
         {
           lang: 'it',
@@ -470,8 +504,8 @@ const alternateLanguages = [
     seriesPosts={seriesPosts}
     comments={comments}
     languageSwitch={
-      post.translationOf?.slug && italianCategory
-        ? { url: `/${italianCategory}/${post.translationOf.slug}/` }
+      italianTranslation?.slug && italianCategory
+        ? { url: `/${italianCategory}/${italianTranslation.slug}/` }
         : null
     }
   />

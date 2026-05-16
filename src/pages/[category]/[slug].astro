@@ -314,22 +314,33 @@ const publishedPostId = post._id.replace('drafts.', '');
    ENGLISH TRANSLATION
 ======================== */
 
-const englishTranslation = await sanityClient.fetch(`
-  *[
-    _type == "article" &&
-    defined(slug.current) &&
-    language == "en" &&
-    translationOf._ref == $postId
-  ][0]{
-    _id,
-    type,
-    title,
-    "slug": slug.current,
-    language
-  }
-`, {
-  postId: publishedPostId
-});
+const directEnglishTranslation =
+  post.translationOf?.language === 'en'
+    ? post.translationOf
+    : null;
+
+const reverseEnglishTranslation = directEnglishTranslation
+  ? null
+  : await sanityClient.fetch(`
+    *[
+      _type == "article" &&
+      defined(slug.current) &&
+      language == "en" &&
+      translationOf._ref == $postId
+    ][0]{
+      _id,
+      type,
+      title,
+      "slug": slug.current,
+      language
+    }
+  `, {
+    postId: publishedPostId
+  });
+
+const englishTranslation =
+  directEnglishTranslation ||
+  reverseEnglishTranslation;
 
 /* ========================
    HYDRATION
