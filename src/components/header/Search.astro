@@ -9,21 +9,31 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
 
 <div class="search-wrapper" data-lang={lang}>
 
-  <div class="search-toggle">
-    <svg viewBox="0 0 24 24">
+  <button
+    type="button"
+    class="search-toggle"
+    aria-label={isEn ? 'Open search' : 'Apri ricerca'}
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="11" cy="11" r="7" stroke="white" stroke-width="2" fill="none"/>
       <line x1="16" y1="16" x2="21" y2="21" stroke="white" stroke-width="2"/>
     </svg>
-  </div>
+  </button>
 
-  <div class="search-bar">
+  <div class="search-bar" role="dialog" aria-modal="true" aria-label={isEn ? 'Site search' : 'Ricerca nel sito'}>
     <input type="text" placeholder={placeholder} />
 
     <div class="search-results">
       <div class="hover-bg"></div>
     </div>
 
-    <div class="search-close">✕</div>
+    <button
+      type="button"
+      class="search-close"
+      aria-label={isEn ? 'Close search' : 'Chiudi ricerca'}
+    >
+      ✕
+    </button>
   </div>
 
 </div>
@@ -105,6 +115,7 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
 
   let debounce;
   let cache = null;
+  let isOpen = false;
 
   /* ========================
      LABELS / ROUTES
@@ -217,47 +228,59 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
     results.innerHTML = '<div class="hover-bg"></div>';
   }
 
-  function open() {
-    if (document.body.classList.contains('no-scroll')) return;
+  function openSearch() {
+    if (isOpen) return;
 
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-    document.body.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
-    document.body.classList.add('no-scroll');
+    isOpen = true;
 
     bar.classList.add('active');
     overlay?.classList.add('active');
 
-    input.focus();
+    requestAnimationFrame(() => {
+      input?.focus();
+    });
   }
 
-  function close() {
-    if (!document.body.classList.contains('no-scroll')) return;
+  function closeSearch() {
+    if (!isOpen) return;
+
+    isOpen = false;
 
     bar.classList.remove('active');
     overlay?.classList.remove('active');
 
-    document.body.classList.remove('no-scroll');
-    document.body.style.removeProperty('--scrollbar-width');
+    if (input) input.value = '';
 
-    input.value = '';
     reset();
   }
 
-  toggle?.addEventListener('click', e => {
-    e.stopPropagation();
-    open();
+  toggle?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    openSearch();
   });
 
-  closeBtn?.addEventListener('click', close);
-  overlay?.addEventListener('click', close);
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') close();
+  bar?.addEventListener('click', (event) => {
+    event.stopPropagation();
   });
 
-  document.addEventListener('click', e => {
-    if (!wrapper.contains(e.target)) close();
+  closeBtn?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    closeSearch();
+  });
+
+  overlay?.addEventListener('click', closeSearch);
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeSearch();
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!isOpen) return;
+    if (wrapper.contains(event.target)) return;
+
+    closeSearch();
   });
 
   /* ========================
@@ -446,9 +469,4 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
   });
 
 })();
-
-window.addEventListener('load', () => {
-  document.body.classList.remove('no-scroll');
-  document.body.style.removeProperty('--scrollbar-width');
-});
 </script>

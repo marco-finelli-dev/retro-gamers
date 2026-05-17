@@ -9,16 +9,14 @@ const ui = isEnglish
       menu: 'Menu',
       close: 'Close menu',
       discover: 'Discover',
-      platforms: 'Platforms',
-      language: 'Language'
+      platforms: 'Platforms'
     }
   : {
       aria: 'Menu mobile',
       menu: 'Menu',
       close: 'Chiudi menu',
       discover: 'Scopri',
-      platforms: 'Piattaforme',
-      language: 'Lingua'
+      platforms: 'Piattaforme'
     };
 
 const mainLinks = isEnglish
@@ -72,32 +70,6 @@ const platformLinks = isEnglish
       >
         ×
       </button>
-    </div>
-
-    <div class="mobile-menu__section">
-      <span>{ui.language}</span>
-
-      <div class="mobile-menu__language">
-        <a
-          href="/"
-          class:list={[
-            'mobile-menu__language-link',
-            !isEnglish && 'is-active'
-          ]}
-        >
-          IT
-        </a>
-
-        <a
-          href="/en/"
-          class:list={[
-            'mobile-menu__language-link',
-            isEnglish && 'is-active'
-          ]}
-        >
-          EN
-        </a>
-      </div>
     </div>
 
     <div class="mobile-menu__section">

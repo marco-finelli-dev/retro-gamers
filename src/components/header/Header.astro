@@ -9,7 +9,8 @@ import '../../styles/components/header/header.css';
 const {
   reviews = [],
   news = [],
-  lang = 'it'
+  lang = 'it',
+  languageSwitch = null
 } = Astro.props;
 
 const isEnglish = lang === 'en';
@@ -40,10 +41,21 @@ const labels = isEnglish
 
 const homeUrl = isEnglish ? '/en/' : '/';
 
-const languageSwitch = {
-  it: '/',
-  en: '/en/'
-};
+const languageUrl =
+  languageSwitch?.url ||
+  (isEnglish ? '/' : '/en/');
+
+const languageLabel = isEnglish
+  ? 'Passa alla versione italiana'
+  : 'Switch to English version';
+
+const flagSrc = isEnglish
+  ? '/icons/flag-it.webp'
+  : '/icons/flag-en.webp';
+
+const flagAlt = isEnglish
+  ? 'Italiano'
+  : 'English';
 ---
 
 <header class="site-header">
@@ -123,37 +135,29 @@ const languageSwitch = {
 
     <!-- ACTIONS -->
     <div class="site-header__actions">
-<button
-  type="button"
-  class="site-header__theme-toggle"
-  data-theme-toggle
-  aria-label="Cambia tema"
->
-  <span data-theme-icon aria-hidden="true">◐</span>
-</button>
-      <div class="site-header__language" aria-label="Language">
-        <a
-          href={languageSwitch.it}
-          class:list={[
-            'site-header__language-link',
-            !isEnglish && 'is-active'
-          ]}
+        <button
+          type="button"
+          class="site-header__theme-toggle"
+          data-theme-toggle
+          aria-label="Cambia tema"
         >
-          IT
-        </a>
-
-        <span aria-hidden="true">/</span>
-
-        <a
-          href={languageSwitch.en}
-          class:list={[
-            'site-header__language-link',
-            isEnglish && 'is-active'
-          ]}
-        >
-          EN
-        </a>
-      </div>
+          <span data-theme-icon aria-hidden="true">◐</span>
+        </button>
+            <a
+        href={languageUrl}
+        class="site-header__language-toggle"
+        aria-label={languageLabel}
+        title={languageLabel}
+      >
+        <img
+          src={flagSrc}
+          alt={flagAlt}
+          width="22"
+          height="22"
+          loading="eager"
+          decoding="async"
+        />
+      </a>
 
       <Search lang={lang} />
 

@@ -15,6 +15,7 @@
 :root {
   --search-width: 600px;
   --search-top: 104px;
+  --search-header-offset: 78px;
 }
 
 
@@ -27,15 +28,23 @@
 }
 
 .search-toggle {
+  appearance: none;
+
   width: 42px;
   height: 42px;
 
   display: grid;
   place-items: center;
 
+  padding: 0;
+  border: 0;
+  outline: 0;
+
   border-radius: 15px;
 
   color: rgba(255,255,255,0.68);
+
+  background: transparent;
 
   cursor: pointer;
 
@@ -235,6 +244,8 @@
 ======================================== */
 
 .search-close {
+  appearance: none;
+
   position: absolute;
   top: 8px;
   right: 12px;
@@ -246,13 +257,20 @@
   display: grid;
   place-items: center;
 
+  padding: 0;
+  border: 0;
+  outline: 0;
+
   border-radius: 12px;
 
+  font-family: inherit;
   font-size: 23px;
   line-height: 1;
   font-weight: 300;
 
   color: rgba(255,255,255,0.62);
+
+  background: transparent;
 
   cursor: pointer;
 
@@ -580,8 +598,12 @@
 
 .search-overlay {
   position: fixed;
-  inset: 0;
-  z-index: 1500;
+  top: var(--search-header-offset);
+  right: 0;
+  bottom: 0;
+  left: 0;
+
+  z-index: 80;
 
   background:
     radial-gradient(circle at 50% 0%, rgba(34,240,255,0.09), transparent 32%),
@@ -615,7 +637,7 @@
 ======================================== */
 
 body.no-scroll {
-  overflow: hidden;
+  overflow-y: scroll;
 }
 
 
@@ -626,6 +648,7 @@ body.no-scroll {
 @media (max-width: 768px) {
   :root {
     --search-top: 82px;
+    --search-header-offset: 72px;
   }
 
   .search-bar {
@@ -678,6 +701,7 @@ body.no-scroll {
     font-size: 15px;
   }
 }
+
 
 /* ========================================
    SEARCH — LIGHT THEME
@@ -934,4 +958,32 @@ html[data-theme="light"] .search-overlay {
     blur(16px)
     saturate(145%)
     brightness(1.02);
+}
+
+/* ========================================
+   SEARCH BUTTON RESET / FOCUS CLEANUP
+======================================== */
+
+.search-toggle,
+.search-close {
+  appearance: none;
+  border: 0;
+  outline: 0;
+  font-family: inherit;
+}
+
+.search-toggle:focus,
+.search-close:focus {
+  outline: none;
+}
+
+.search-toggle:focus-visible,
+.search-close:focus-visible {
+  outline: 2px solid rgba(34,240,255,0.42);
+  outline-offset: 4px;
+}
+
+html[data-theme="light"] .search-toggle:focus-visible,
+html[data-theme="light"] .search-close:focus-visible {
+  outline-color: rgba(8,104,122,0.38);
 }
