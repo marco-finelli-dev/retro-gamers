@@ -37,22 +37,64 @@ const labels = {
 
 const getLogo = (platform) => {
   if (!platform?.logo) return '';
-  return urlFor(platform.logo).width(900).quality(86).auto('format').url();
+
+  return urlFor(platform.logo)
+    .width(900)
+    .quality(86)
+    .auto('format')
+    .url();
+};
+
+const getLogoLight = (platform) => {
+  if (!platform?.logoLight) return '';
+
+  return urlFor(platform.logoLight)
+    .width(900)
+    .quality(86)
+    .auto('format')
+    .url();
 };
 
 const getCover = (platform) => {
   if (!platform?.cover) return '';
-  return urlFor(platform.cover).width(1400).quality(78).auto('format').url();
+
+  return urlFor(platform.cover)
+    .width(1400)
+    .quality(78)
+    .auto('format')
+    .url();
 };
 
 const getManufacturerLogo = (platform) => {
   if (!platform?.manufacturer?.logo) return '';
-  return urlFor(platform.manufacturer.logo).width(700).quality(86).auto('format').url();
+
+  return urlFor(platform.manufacturer.logo)
+    .width(700)
+    .quality(86)
+    .auto('format')
+    .url();
+};
+
+const getManufacturerLogoLight = (platform) => {
+  if (!platform?.manufacturer?.logoLight) return '';
+
+  return urlFor(platform.manufacturer.logoLight)
+    .width(700)
+    .quality(86)
+    .auto('format')
+    .url();
 };
 
 const logo = getLogo(platform);
+const logoLight = getLogoLight(platform) || logo;
 const cover = getCover(platform);
 const manufacturerLogo = getManufacturerLogo(platform);
+const manufacturerLogoLight = getManufacturerLogoLight(platform) || manufacturerLogo;
+
+const logoAlt =
+  platform.logo?.alt ||
+  platform.logoLight?.alt ||
+  platform.name;
 
 const chips = [
   typeLabel,
@@ -100,11 +142,22 @@ const historyParagraphs = historyText
               <div class="platform-sheet__fallback">
 
                 {logo && (
-                  <img
-                    src={logo}
-                    alt={platform.logo?.alt || platform.name}
-                    loading="eager"
-                  />
+                  <picture class="platform-sheet__fallback-logo-picture">
+                    <img
+                      src={logo}
+                      alt={logoAlt}
+                      class="platform-sheet__fallback-logo platform-sheet__fallback-logo--dark"
+                      loading="eager"
+                    />
+
+                    <img
+                      src={logoLight}
+                      alt=""
+                      class="platform-sheet__fallback-logo platform-sheet__fallback-logo--light"
+                      loading="eager"
+                      aria-hidden="true"
+                    />
+                  </picture>
                 )}
 
               </div>
@@ -146,26 +199,46 @@ const historyParagraphs = historyText
           {(manufacturerLogo || logo) && (
             <div class="platform-sheet__brand">
 
-              {manufacturerLogo && (
-                <img
-                  src={manufacturerLogo}
-                  alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
-                  class="platform-sheet__manufacturer-logo"
-                  loading="eager"
-                />
-              )}
+           {manufacturerLogo && (
+  <picture class="platform-sheet__manufacturer-logo-picture">
+    <img
+      src={manufacturerLogo}
+      alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
+      class="platform-sheet__manufacturer-logo platform-sheet__manufacturer-logo--dark"
+      loading="eager"
+    />
+
+    <img
+      src={manufacturerLogoLight}
+      alt=""
+      class="platform-sheet__manufacturer-logo platform-sheet__manufacturer-logo--light"
+      loading="eager"
+      aria-hidden="true"
+    />
+  </picture>
+)}
 
               {manufacturerLogo && logo && (
                 <span class="platform-sheet__brand-separator" aria-hidden="true"></span>
               )}
 
               {logo && (
-                <img
-                  src={logo}
-                  alt={platform.logo?.alt || platform.name}
-                  class="platform-sheet__platform-logo"
-                  loading="eager"
-                />
+                <picture class="platform-sheet__platform-logo-picture">
+                  <img
+                    src={logo}
+                    alt={logoAlt}
+                    class="platform-sheet__platform-logo platform-sheet__platform-logo--dark"
+                    loading="eager"
+                  />
+
+                  <img
+                    src={logoLight}
+                    alt=""
+                    class="platform-sheet__platform-logo platform-sheet__platform-logo--light"
+                    loading="eager"
+                    aria-hidden="true"
+                  />
+                </picture>
               )}
 
             </div>

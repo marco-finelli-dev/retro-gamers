@@ -38,6 +38,16 @@ const getLogo = (platform) => {
     .url();
 };
 
+const getLogoLight = (platform) => {
+  if (!platform?.logoLight?.asset) return '';
+
+  return urlFor(platform.logoLight)
+    .width(520)
+    .quality(80)
+    .auto('format')
+    .url();
+};
+
 const getCover = (platform) => {
   if (!platform?.cover?.asset) return '';
 
@@ -60,7 +70,13 @@ const getManufacturerLogo = (platform) => {
 
 const cover = getCover(platform);
 const logo = getLogo(platform);
+const logoLight = getLogoLight(platform) || logo;
 const manufacturerLogo = getManufacturerLogo(platform);
+
+const logoAlt =
+  platform.logo?.alt ||
+  platform.logoLight?.alt ||
+  platform.name;
 
 const manufacturerName =
   platform.manufacturer?.name ||
@@ -87,15 +103,28 @@ const badge = platform.badgeLabel || '';
     ) : (
       <div class="platform-card__fallback">
         {logo && (
-          <img
-            src={logo}
-            alt={platform.logo?.alt || platform.name}
-            class="platform-card__logo"
-            width="520"
-            height="220"
-            loading="lazy"
-            decoding="async"
-          />
+          <picture class="platform-card__logo-picture">
+            <img
+              src={logo}
+              alt={logoAlt}
+              class="platform-card__logo platform-card__logo--dark"
+              width="520"
+              height="220"
+              loading="lazy"
+              decoding="async"
+            />
+
+            <img
+              src={logoLight}
+              alt=""
+              class="platform-card__logo platform-card__logo--light"
+              width="520"
+              height="220"
+              loading="lazy"
+              decoding="async"
+              aria-hidden="true"
+            />
+          </picture>
         )}
 
         {manufacturerLogo && (

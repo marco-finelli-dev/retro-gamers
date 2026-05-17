@@ -684,6 +684,360 @@
 
 
 /* ========================================
+   PLATFORM SHEET
+======================================== */
+
+.platform-sheet {
+  position: relative;
+  overflow: hidden;
+
+  padding: 26px;
+  border-radius: 30px;
+
+  background:
+    linear-gradient(180deg, rgba(15,15,22,0.78), rgba(8,8,12,0.98)),
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.08), transparent 38%),
+    radial-gradient(circle at 100% 0%, rgba(168,85,247,0.10), transparent 42%);
+
+  border: 1px solid rgba(255,255,255,0.09);
+
+  box-shadow:
+    0 24px 70px rgba(0,0,0,0.56),
+    inset 0 1px 0 rgba(255,255,255,0.045);
+}
+
+.platform-sheet::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    linear-gradient(rgba(34,240,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,85,247,0.018) 1px, transparent 1px);
+
+  background-size: 48px 48px;
+  opacity: 0.24;
+
+  pointer-events: none;
+}
+
+.platform-sheet > * {
+  position: relative;
+  z-index: 1;
+}
+
+.platform-sheet__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.94fr) minmax(360px, 0.76fr);
+  gap: 26px;
+  align-items: start;
+}
+
+.platform-sheet__left,
+.platform-sheet__right {
+  min-width: 0;
+}
+
+.platform-sheet__left {
+  display: grid;
+  gap: 18px;
+}
+
+.platform-sheet__right {
+  display: grid;
+  gap: 22px;
+}
+
+
+/* ========================================
+   PLATFORM SHEET VISUAL
+======================================== */
+
+.platform-sheet__visual {
+  position: relative;
+  overflow: hidden;
+
+  display: grid;
+  place-items: center;
+
+  min-height: 390px;
+  border-radius: 26px;
+
+  background:
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.10), transparent 42%),
+    linear-gradient(180deg, rgba(5,5,8,1), rgba(10,10,16,1));
+
+  border: 1px solid rgba(255,255,255,0.065);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 18px 44px rgba(0,0,0,0.30);
+}
+
+.platform-sheet__cover {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+  padding: 24px;
+
+  filter:
+    brightness(0.96)
+    contrast(1.06)
+    saturate(1.05);
+}
+
+.platform-sheet__fallback {
+  display: grid;
+  place-items: center;
+
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  padding: 42px;
+}
+
+.platform-sheet__fallback img {
+  max-width: 80%;
+  max-height: 130px;
+  object-fit: contain;
+
+  filter:
+    drop-shadow(0 0 16px rgba(255,255,255,0.18))
+    drop-shadow(0 0 22px rgba(34,240,255,0.16));
+}
+
+
+/* ========================================
+   PLATFORM SHEET BRAND
+======================================== */
+
+.platform-sheet__brand {
+  position: relative;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  min-height: 230px;
+  padding: 30px 28px;
+
+  border-radius: 26px;
+
+  background:
+    linear-gradient(180deg, rgba(16,20,30,0.88), rgba(5,7,14,0.98)),
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.18), transparent 44%),
+    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.14), transparent 48%);
+
+  border: 1px solid rgba(34,240,255,0.18);
+
+  box-shadow:
+    0 18px 42px rgba(0,0,0,0.34),
+    0 0 24px rgba(34,240,255,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.09);
+}
+
+.platform-sheet__brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.050), transparent 46%),
+    linear-gradient(rgba(255,255,255,0.020) 1px, transparent 1px);
+
+  background-size: auto, 100% 8px;
+  opacity: 0.68;
+
+  pointer-events: none;
+}
+
+.platform-sheet__brand img {
+  position: relative;
+  z-index: 1;
+
+  width: auto;
+  object-fit: contain;
+
+  filter:
+    drop-shadow(0 0 10px rgba(255,255,255,0.20))
+    drop-shadow(0 2px 5px rgba(0,0,0,0.32));
+}
+
+.platform-sheet__manufacturer-logo {
+  max-width: min(82%, 360px);
+  max-height: 78px;
+}
+
+.platform-sheet__platform-logo {
+  max-width: min(94%, 540px);
+  max-height: 104px;
+}
+
+.platform-sheet__brand-separator {
+  position: relative;
+  z-index: 1;
+
+  display: block;
+
+  width: 74px;
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(34,240,255,0.70),
+      transparent
+    );
+
+  box-shadow:
+    0 0 12px rgba(34,240,255,0.34);
+}
+
+
+/* ========================================
+   PLATFORM SHEET CHIPS
+======================================== */
+
+.platform-sheet__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.platform-sheet__chips span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 38px;
+  padding: 0 15px;
+
+  border-radius: 16px;
+
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 900;
+
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+
+  color: var(--color-primary);
+
+  background:
+    linear-gradient(180deg, rgba(16,22,32,0.88), rgba(5,7,14,0.98)),
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.18), transparent 48%),
+    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.12), transparent 52%);
+
+  border: 1px solid rgba(34,240,255,0.22);
+
+  box-shadow:
+    0 10px 22px rgba(0,0,0,0.28),
+    0 0 14px rgba(34,240,255,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.09);
+
+  text-shadow:
+    0 0 11px rgba(34,240,255,0.30);
+}
+
+
+/* ========================================
+   PLATFORM SHEET SECTION TITLES
+======================================== */
+
+.platform-sheet__section-title {
+  margin-bottom: 14px;
+}
+
+.platform-sheet__section-title span {
+  display: inline-flex;
+
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 850;
+
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+
+  color: var(--color-primary);
+}
+
+
+/* ========================================
+   PLATFORM SHEET SPECS
+======================================== */
+
+.platform-sheet__specs {
+  position: relative;
+}
+
+.platform-spec-table {
+  display: grid;
+
+  border-top: 1px solid rgba(255,255,255,0.09);
+}
+
+.platform-spec-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.46fr) minmax(0, 1fr);
+  gap: 18px;
+
+  padding: 13px 0;
+
+  border-bottom: 1px solid rgba(255,255,255,0.075);
+}
+
+.platform-spec-row span {
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 850;
+
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+
+  color: rgba(255,255,255,0.42);
+}
+
+.platform-spec-row strong {
+  font-size: 15px;
+  line-height: 1.3;
+  font-weight: 800;
+
+  color: rgba(255,255,255,0.92);
+}
+
+
+/* ========================================
+   PLATFORM SHEET HISTORY
+======================================== */
+
+.platform-sheet__history {
+  position: relative;
+
+  padding-top: 22px;
+  border-top: 1px solid rgba(255,255,255,0.085);
+}
+
+.platform-sheet__history-text p {
+  margin: 0;
+
+  font-size: 16px;
+  line-height: 1.75;
+
+  color: rgba(255,255,255,0.66);
+}
+
+.platform-sheet__history-text p + p {
+  margin-top: 13px;
+}
+
+
+/* ========================================
    LIGHT THEME — LISTING
 ======================================== */
 
@@ -922,7 +1276,8 @@ html[data-theme="light"] .platform-card__fallback {
 
 html[data-theme="light"] .platform-card__logo {
   filter:
-    drop-shadow(0 0 12px rgba(8,104,122,0.12));
+    drop-shadow(0 1px 2px rgba(24,32,48,0.16))
+    drop-shadow(0 0 10px rgba(8,104,122,0.08));
 }
 
 html[data-theme="light"] .platform-card__manufacturer-logo {
@@ -1001,457 +1356,9 @@ html[data-theme="light"] .platform-empty h2 {
 html[data-theme="light"] .platform-empty p {
   color: rgba(42,48,62,0.62);
 }
-  
-  
+
+
 /* ========================================
-   PLATFORM SHEET
-======================================== */
-
-.platform-sheet {
-    position: relative;
-    overflow: hidden;
-  
-    padding: 26px;
-    border-radius: 30px;
-  
-    background:
-      linear-gradient(180deg, rgba(15,15,22,0.78), rgba(8,8,12,0.98)),
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.08), transparent 38%),
-      radial-gradient(circle at 100% 0%, rgba(168,85,247,0.10), transparent 42%);
-  
-    border: 1px solid rgba(255,255,255,0.09);
-  
-    box-shadow:
-      0 24px 70px rgba(0,0,0,0.56),
-      inset 0 1px 0 rgba(255,255,255,0.045);
-  }
-  
-  .platform-sheet::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-  
-    background-image:
-      linear-gradient(rgba(34,240,255,0.018) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(168,85,247,0.018) 1px, transparent 1px);
-  
-    background-size: 48px 48px;
-    opacity: 0.24;
-  
-    pointer-events: none;
-  }
-  
-  .platform-sheet > * {
-    position: relative;
-    z-index: 1;
-  }
-  
-  .platform-sheet__grid {
-    display: grid;
-    grid-template-columns: minmax(0, 0.94fr) minmax(360px, 0.76fr);
-    gap: 26px;
-    align-items: start;
-  }
-  
-  .platform-sheet__left,
-  .platform-sheet__right {
-    min-width: 0;
-  }
-  
-  .platform-sheet__left {
-    display: grid;
-    gap: 18px;
-  }
-  
-  .platform-sheet__right {
-    display: grid;
-    gap: 22px;
-  }
-  
-  
-  /* VISUAL */
-  
-  .platform-sheet__visual {
-    position: relative;
-    overflow: hidden;
-  
-    display: grid;
-    place-items: center;
-  
-    min-height: 390px;
-    border-radius: 26px;
-  
-    background:
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.10), transparent 42%),
-      linear-gradient(180deg, rgba(5,5,8,1), rgba(10,10,16,1));
-  
-    border: 1px solid rgba(255,255,255,0.065);
-  
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.04),
-      0 18px 44px rgba(0,0,0,0.30);
-  }
-  
-  .platform-sheet__cover {
-    width: 100%;
-    height: 100%;
-  
-    object-fit: contain;
-    padding: 24px;
-  
-    filter:
-      brightness(0.96)
-      contrast(1.06)
-      saturate(1.05);
-  }
-  
-  .platform-sheet__fallback {
-    display: grid;
-    place-items: center;
-  
-    width: 100%;
-    height: 100%;
-    min-height: 360px;
-    padding: 42px;
-  }
-  
-  .platform-sheet__fallback img {
-    max-width: 80%;
-    max-height: 130px;
-    object-fit: contain;
-  
-    filter:
-      drop-shadow(0 0 16px rgba(255,255,255,0.18))
-      drop-shadow(0 0 22px rgba(34,240,255,0.16));
-  }
-  
-  
-  /* BRAND */
-  
-  .platform-sheet__brand {
-    position: relative;
-    overflow: hidden;
-  
-    display: grid;
-    place-items: center;
-    gap: 14px;
-  
-    min-height: 230px;
-    padding: 30px 28px;
-  
-    border-radius: 26px;
-  
-    background:
-      linear-gradient(180deg, rgba(16,20,30,0.88), rgba(5,7,14,0.98)),
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.18), transparent 44%),
-      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.14), transparent 48%);
-  
-    border: 1px solid rgba(34,240,255,0.18);
-  
-    box-shadow:
-      0 18px 42px rgba(0,0,0,0.34),
-      0 0 24px rgba(34,240,255,0.08),
-      inset 0 1px 0 rgba(255,255,255,0.09);
-  }
-  
-  .platform-sheet__brand::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-  
-    background:
-      linear-gradient(90deg, rgba(255,255,255,0.050), transparent 46%),
-      linear-gradient(rgba(255,255,255,0.020) 1px, transparent 1px);
-  
-    background-size: auto, 100% 8px;
-    opacity: 0.68;
-  
-    pointer-events: none;
-  }
-  
-  .platform-sheet__brand img {
-    position: relative;
-    z-index: 1;
-  
-    width: auto;
-    object-fit: contain;
-  
-    filter:
-      drop-shadow(0 0 10px rgba(255,255,255,0.20))
-      drop-shadow(0 2px 5px rgba(0,0,0,0.32));
-  }
-  
-  .platform-sheet__manufacturer-logo {
-    max-width: min(82%, 360px);
-    max-height: 78px;
-  }
-  
-  .platform-sheet__platform-logo {
-    max-width: min(94%, 540px);
-    max-height: 104px;
-  }
-  
-  .platform-sheet__brand-separator {
-    position: relative;
-    z-index: 1;
-  
-    display: block;
-  
-    width: 74px;
-    height: 1px;
-  
-    background:
-      linear-gradient(
-        90deg,
-        transparent,
-        rgba(34,240,255,0.70),
-        transparent
-      );
-  
-    box-shadow:
-      0 0 12px rgba(34,240,255,0.34);
-  }
-  
-  
-  /* CHIPS */
-  
-  .platform-sheet__chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  
-  .platform-sheet__chips span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  
-    min-height: 38px;
-    padding: 0 15px;
-  
-    border-radius: 16px;
-  
-    font-family: var(--font-display);
-    font-size: 13px;
-    line-height: 1;
-    font-weight: 900;
-  
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-  
-    color: var(--color-primary);
-  
-    background:
-      linear-gradient(180deg, rgba(16,22,32,0.88), rgba(5,7,14,0.98)),
-      radial-gradient(circle at 0% 0%, rgba(34,240,255,0.18), transparent 48%),
-      radial-gradient(circle at 100% 100%, rgba(168,85,247,0.12), transparent 52%);
-  
-    border: 1px solid rgba(34,240,255,0.22);
-  
-    box-shadow:
-      0 10px 22px rgba(0,0,0,0.28),
-      0 0 14px rgba(34,240,255,0.08),
-      inset 0 1px 0 rgba(255,255,255,0.09);
-  
-    text-shadow:
-      0 0 11px rgba(34,240,255,0.30);
-  }
-  
-  
-  /* SECTION TITLES */
-  
-  .platform-sheet__section-title {
-    margin-bottom: 14px;
-  }
-  
-  .platform-sheet__section-title span {
-    display: inline-flex;
-  
-    font-size: 11px;
-    line-height: 1;
-    font-weight: 850;
-  
-    text-transform: uppercase;
-    letter-spacing: 0.9px;
-  
-    color: var(--color-primary);
-  }
-  
-  
-  /* SPECS */
-  
-  .platform-sheet__specs {
-    position: relative;
-  }
-  
-  .platform-spec-table {
-    display: grid;
-  
-    border-top: 1px solid rgba(255,255,255,0.09);
-  }
-  
-  .platform-spec-row {
-    display: grid;
-    grid-template-columns: minmax(120px, 0.46fr) minmax(0, 1fr);
-    gap: 18px;
-  
-    padding: 13px 0;
-  
-    border-bottom: 1px solid rgba(255,255,255,0.075);
-  }
-  
-  .platform-spec-row span {
-    font-size: 11px;
-    line-height: 1.25;
-    font-weight: 850;
-  
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-  
-    color: rgba(255,255,255,0.42);
-  }
-  
-  .platform-spec-row strong {
-    font-size: 15px;
-    line-height: 1.3;
-    font-weight: 800;
-  
-    color: rgba(255,255,255,0.92);
-  }
-  
-  
-  /* HISTORY */
-  
-  .platform-sheet__history {
-    position: relative;
-  
-    padding-top: 22px;
-    border-top: 1px solid rgba(255,255,255,0.085);
-  }
-  
-  .platform-sheet__history-text p {
-    margin: 0;
-  
-    font-size: 16px;
-    line-height: 1.75;
-  
-    color: rgba(255,255,255,0.66);
-  }
-  
-  .platform-sheet__history-text p + p {
-    margin-top: 13px;
-  }
-  
-  /* ========================================
-     RESPONSIVE
-  ======================================== */
-  
-  @media (max-width: 1024px) {
-    .platform-type-grid,
-    .platform-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  
-    .platform-sheet__grid {
-      grid-template-columns: 1fr;
-    }
-  
-    .platform-sheet__right {
-      justify-content: flex-start;
-    }
-  
-    .platform-sheet__visual {
-      min-height: 340px;
-    }
-  }
-  
-  @media (max-width: 720px) {
-    .platforms-page {
-      padding: 32px 0 48px;
-    }
-  
-    .platforms-hero__inner {
-      padding: 25px 20px;
-      border-radius: 22px;
-    }
-  
-    .platforms-hero h1 {
-      font-size: clamp(34px, 13vw, 48px);
-    }
-  
-    .platform-type-grid,
-    .platform-grid {
-      grid-template-columns: 1fr;
-    }
-  
-    .manufacturer-block__header {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-  
-    .platform-sheet {
-        padding: 16px;
-        border-radius: 24px;
-      }
-      
-      .platform-sheet__left,
-      .platform-sheet__right {
-        gap: 16px;
-      }
-      
-      .platform-sheet__brand {
-        min-height: 180px;
-        padding: 22px 18px;
-        border-radius: 22px;
-      }
-      
-      .platform-sheet__manufacturer-logo {
-        max-height: 56px;
-      }
-      
-      .platform-sheet__platform-logo {
-        max-height: 72px;
-      }
-      
-      .platform-sheet__visual,
-      .platform-sheet__fallback {
-        min-height: 270px;
-        border-radius: 22px;
-      }
-      
-      .platform-sheet__cover {
-        padding: 16px;
-      }
-      
-      .platform-sheet__chips span {
-        min-height: 36px;
-        padding: 0 13px;
-        font-size: 12px;
-      }
-      
-      .platform-spec-row {
-        grid-template-columns: 1fr;
-        gap: 5px;
-      }
-      
-      .platform-sheet__history-text p {
-        font-size: 15px;
-        line-height: 1.7;
-      }
-
-        .platform-card__body {
-          grid-template-columns: 1fr;
-          align-items: start;
-          min-height: 0;
-        }
-      
-        .platform-card__facts {
-          justify-content: flex-start;
-          flex-wrap: wrap;
-        }
-      }
-
-   /* ========================================
    PLATFORM SHEET — LIGHT THEME
 ======================================== */
 
@@ -1515,8 +1422,8 @@ html[data-theme="light"] .platform-sheet__cover {
 
 html[data-theme="light"] .platform-sheet__fallback img {
   filter:
-    drop-shadow(0 0 12px rgba(8,104,122,0.10))
-    drop-shadow(0 2px 5px rgba(24,32,48,0.12));
+    drop-shadow(0 1px 2px rgba(24,32,48,0.16))
+    drop-shadow(0 0 10px rgba(8,104,122,0.08));
 }
 
 
@@ -1553,16 +1460,8 @@ html[data-theme="light"] .platform-sheet__brand::before {
 
 html[data-theme="light"] .platform-sheet__brand img {
   filter:
-    brightness(0)
-    saturate(100%)
-    invert(24%)
-    sepia(36%)
-    saturate(1180%)
-    hue-rotate(150deg)
-    brightness(88%)
-    contrast(96%)
-    drop-shadow(0 1px 2px rgba(24,32,48,0.20))
-    drop-shadow(0 0 10px rgba(8,104,122,0.10));
+    drop-shadow(0 1px 2px rgba(24,32,48,0.18))
+    drop-shadow(0 0 10px rgba(8,104,122,0.08));
 }
 
 html[data-theme="light"] .platform-sheet__brand-separator {
@@ -1636,4 +1535,158 @@ html[data-theme="light"] .platform-sheet__history {
 
 html[data-theme="light"] .platform-sheet__history-text p {
   color: rgba(42,48,62,0.70);
+}
+
+
+/* ========================================
+   PLATFORM LOGOS — THEME VARIANTS
+======================================== */
+
+.platform-card__logo-picture,
+.platform-sheet__fallback-logo-picture,
+.platform-sheet__manufacturer-logo-picture,
+.platform-sheet__platform-logo-picture {
+  display: block;
+  width: 100%;
+}
+
+.platform-card__logo,
+.platform-sheet__fallback-logo,
+.platform-sheet__manufacturer-logo,
+.platform-sheet__platform-logo {
+  display: block;
+  width: auto;
+  object-fit: contain;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.platform-card__logo--light,
+.platform-sheet__fallback-logo--light,
+.platform-sheet__manufacturer-logo--light,
+.platform-sheet__platform-logo--light {
+  display: none;
+}
+
+html[data-theme="light"] .platform-card__logo--dark,
+html[data-theme="light"] .platform-sheet__fallback-logo--dark,
+html[data-theme="light"] .platform-sheet__manufacturer-logo--dark,
+html[data-theme="light"] .platform-sheet__platform-logo--dark {
+  display: none;
+}
+
+html[data-theme="light"] .platform-card__logo--light,
+html[data-theme="light"] .platform-sheet__fallback-logo--light,
+html[data-theme="light"] .platform-sheet__manufacturer-logo--light,
+html[data-theme="light"] .platform-sheet__platform-logo--light {
+  display: block;
+}
+
+/* ========================================
+   RESPONSIVE
+======================================== */
+
+@media (max-width: 1024px) {
+  .platform-type-grid,
+  .platform-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .platform-sheet__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .platform-sheet__right {
+    justify-content: flex-start;
+  }
+
+  .platform-sheet__visual {
+    min-height: 340px;
+  }
+}
+
+@media (max-width: 720px) {
+  .platforms-page {
+    padding: 32px 0 48px;
+  }
+
+  .platforms-hero__inner {
+    padding: 25px 20px;
+    border-radius: 22px;
+  }
+
+  .platforms-hero h1 {
+    font-size: clamp(34px, 13vw, 48px);
+  }
+
+  .platform-type-grid,
+  .platform-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manufacturer-block__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .platform-sheet {
+    padding: 16px;
+    border-radius: 24px;
+  }
+  
+  .platform-sheet__left,
+  .platform-sheet__right {
+    gap: 16px;
+  }
+  
+  .platform-sheet__brand {
+    min-height: 180px;
+    padding: 22px 18px;
+    border-radius: 22px;
+  }
+  
+  .platform-sheet__manufacturer-logo {
+    max-height: 56px;
+  }
+  
+  .platform-sheet__platform-logo {
+    max-height: 72px;
+  }
+  
+  .platform-sheet__visual,
+  .platform-sheet__fallback {
+    min-height: 270px;
+    border-radius: 22px;
+  }
+  
+  .platform-sheet__cover {
+    padding: 16px;
+  }
+  
+  .platform-sheet__chips span {
+    min-height: 36px;
+    padding: 0 13px;
+    font-size: 12px;
+  }
+  
+  .platform-spec-row {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  
+  .platform-sheet__history-text p {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .platform-card__body {
+    grid-template-columns: 1fr;
+    align-items: start;
+    min-height: 0;
+  }
+
+  .platform-card__facts {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }
