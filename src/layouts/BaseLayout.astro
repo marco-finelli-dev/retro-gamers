@@ -4,8 +4,9 @@ import '../styles/global.css';
 import Header from '../components/header/Header.astro';
 import Footer from '../components/Footer.astro';
 import ConsentAnalytics from '../components/common/ConsentAnalytics.astro';
-import SpeedInsights from "@vercel/speed-insights/astro";
+import SpeedInsights from '@vercel/speed-insights/astro';
 import CookieConsent from '../components/common/CookieConsent.astro';
+
 import '../styles/pages/legal.css';
 import '../styles/components/cookie-consent.css';
 import '../styles/pages/author.css';
@@ -16,6 +17,7 @@ const {
   news = [],
 
   lang = 'it',
+  languageSwitch = null,
   alternateLanguages = [],
 
   title = 'Retro-Gamers.it',
@@ -88,6 +90,25 @@ const jsonLd =
 
 <html lang={lang}>
   <head>
+    <script is:inline>
+      const storedTheme = localStorage.getItem('rg-theme');
+
+      const themePreference =
+        storedTheme === 'dark' || storedTheme === 'light' || storedTheme === 'system'
+          ? storedTheme
+          : 'system';
+
+      const resolvedTheme =
+        themePreference === 'system'
+          ? window.matchMedia('(prefers-color-scheme: light)').matches
+            ? 'light'
+            : 'dark'
+          : themePreference;
+
+      document.documentElement.dataset.theme = resolvedTheme;
+      document.documentElement.dataset.themePreference = themePreference;
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -131,26 +152,6 @@ const jsonLd =
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
-    <script>
-  const storedTheme = localStorage.getItem('rg-theme')
-  const themePreference =
-    storedTheme === 'dark' || storedTheme === 'light' || storedTheme === 'system'
-      ? storedTheme
-      : 'system'
-
-  const resolvedTheme =
-    themePreference === 'system'
-      ? window.matchMedia('(prefers-color-scheme: light)').matches
-        ? 'light'
-        : 'dark'
-      : themePreference
-
-  document.documentElement.dataset.theme = resolvedTheme
-  document.documentElement.dataset.themePreference = themePreference
-</script>
-
-<script src="/src/scripts/theme.ts"></script>
-
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
@@ -166,19 +167,25 @@ const jsonLd =
   </head>
 
   <body>
-    <Header reviews={reviews} news={news} lang={lang} />
+    <Header
+      reviews={reviews}
+      news={news}
+      lang={lang}
+      languageSwitch={languageSwitch}
+    />
 
     <main>
       <slot />
     </main>
 
-    <script src="/scripts/ui.js" defer></script>
-    <script src="/scripts/dropdown.js" defer></script>
-
     <Footer lang={lang} />
 
     <ConsentAnalytics />
     <CookieConsent />
-<SpeedInsights />
+    <SpeedInsights />
+
+    <script src="/scripts/ui.js" defer></script>
+    <script src="/scripts/dropdown.js" defer></script>
+    <script src="/src/scripts/theme.ts"></script>
   </body>
 </html>
