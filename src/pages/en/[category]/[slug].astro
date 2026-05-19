@@ -243,20 +243,27 @@ const post = await client.fetch(`
       }
     },
 
-    _type == "image" => {
-      ...,
-      asset->{ url }
-    },
+_type == "image" => {
+  ...,
+  alt,
+  caption,
+  displayMode,
+  isWide,
+  asset->{ url }
+},
 
-    _type == "imageRow" => {
-      ...,
-      images[]{
-        ...,
-        image{
-          asset->{ url }
-        }
-      }
-    },
+_type == "imageRow" => {
+  ...,
+  images[]{
+    ...,
+    alt,
+    caption,
+    displayMode,
+    image{
+      asset->{ url }
+    }
+  }
+},
 
     _type == "asideBox" => {
       ...,
@@ -300,20 +307,27 @@ const post = await client.fetch(`
           }
         },
 
-        _type == "image" => {
-          ...,
-          asset->{ url }
-        },
+_type == "image" => {
+  ...,
+  alt,
+  caption,
+  displayMode,
+  isWide,
+  asset->{ url }
+},
 
-        _type == "imageRow" => {
-          ...,
-          images[]{
-            ...,
-            image{
-              asset->{ url }
-            }
-          }
-        }
+_type == "imageRow" => {
+  ...,
+  images[]{
+    ...,
+    alt,
+    caption,
+    displayMode,
+    image{
+      asset->{ url }
+    }
+  }
+}
       }
     },
 

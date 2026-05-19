@@ -133,11 +133,23 @@ function getSingleImageHeight(displayMode = 'cover') {
 }
 
 function getGalleryImageUrl(image, displayMode = 'cover') {
+  if (!image?.asset) return '';
+
   if (displayMode === 'contain' || displayMode === 'natural') {
-    return getImageUrl(image, 720);
+    return urlFor(image)
+      .width(900)
+      .quality(78)
+      .auto('format')
+      .url();
   }
 
-  return getImageUrl(image, 720, 450, 'crop');
+  return urlFor(image)
+    .width(720)
+    .height(450)
+    .fit('crop')
+    .quality(76)
+    .auto('format')
+    .url();
 }
 
 function renderTextChild(child, markDefs = []) {
@@ -352,8 +364,8 @@ function chunkBalanced(images = []) {
                       data-caption={img.caption || ''}
                       class="js-article-lightbox-image"
                       alt={img.alt || ''}
-                      width="720"
-                      height="450"
+                      width={displayMode === 'contain' || displayMode === 'natural' ? '900' : '720'}
+                      height={displayMode === 'contain' || displayMode === 'natural' ? undefined : '450'}
                       loading="lazy"
                       decoding="async"
                     />
@@ -448,8 +460,8 @@ function chunkBalanced(images = []) {
                               data-caption={img.caption || ''}
                               class="js-article-lightbox-image"
                               alt={img.alt || ''}
-                              width="720"
-                              height="450"
+                              width={displayMode === 'contain' || displayMode === 'natural' ? '900' : '720'}
+                              height={displayMode === 'contain' || displayMode === 'natural' ? undefined : '450'}
                               loading="lazy"
                               decoding="async"
                             />

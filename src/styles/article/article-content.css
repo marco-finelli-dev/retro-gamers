@@ -1929,3 +1929,30 @@ html[data-theme="light"] .article-series-box__item small {
 html[data-theme="light"] .article-series-box__item:hover strong {
   color: var(--color-primary);
 }
+
+/* ========================================
+   ARTICLE IMAGE DISPLAY MODES — HARD OVERRIDE
+======================================== */
+
+.article-content .article-image-row .article-image-row__item--contain img,
+.article-content .article-image-row .article-image-row__item--natural img {
+  width: 100% !important;
+  height: auto !important;
+
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+}
+
+.article-content .article-image-row .article-image-row__item--wide img {
+  aspect-ratio: 21 / 9 !important;
+  object-fit: cover !important;
+}
+
+.article-content .article-image-row .article-image-row__item--contain,
+.article-content .article-image-row .article-image-row__item--natural {
+  align-self: start;
+}
+
+.article-content .article-image-row {
+  align-items: start;
+}
