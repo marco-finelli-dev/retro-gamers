@@ -74,7 +74,7 @@ function getExternalClass(url = '') {
     : '';
 }
 
-function getImageUrl(image, width = 980, height = null) {
+function getImageUrl(image, width = 980, height = null, fit = null) {
   if (!image?.asset) return '';
 
   let builder = urlFor(image)
@@ -83,7 +83,11 @@ function getImageUrl(image, width = 980, height = null) {
     .auto('format');
 
   if (height) {
-    builder = builder.height(height).fit('crop');
+    builder = builder.height(height);
+
+    if (fit) {
+      builder = builder.fit(fit);
+    }
   }
 
   return builder.url();
@@ -91,6 +95,49 @@ function getImageUrl(image, width = 980, height = null) {
 
 function getOriginalImageUrl(image) {
   return image?.asset?.url || '';
+}
+
+function getDisplayMode(item = {}, fallback = 'cover') {
+  const mode = item.displayMode;
+
+  if (
+    mode === 'cover' ||
+    mode === 'contain' ||
+    mode === 'wide' ||
+    mode === 'natural'
+  ) {
+    return mode;
+  }
+
+  if (item.isWide) {
+    return 'wide';
+  }
+
+  return fallback;
+}
+
+function getSingleImageWidth(displayMode = 'cover') {
+  if (displayMode === 'wide') return 1320;
+  if (displayMode === 'natural') return 1200;
+  if (displayMode === 'contain') return 1100;
+
+  return 980;
+}
+
+function getSingleImageHeight(displayMode = 'cover') {
+  if (displayMode === 'wide') return null;
+  if (displayMode === 'natural') return null;
+  if (displayMode === 'contain') return null;
+
+  return null;
+}
+
+function getGalleryImageUrl(image, displayMode = 'cover') {
+  if (displayMode === 'contain' || displayMode === 'natural') {
+    return getImageUrl(image, 720);
+  }
+
+  return getImageUrl(image, 720, 450, 'crop');
 }
 
 function renderTextChild(child, markDefs = []) {
@@ -117,43 +164,41 @@ function renderTextChild(child, markDefs = []) {
     }
 
     if (def?.href) {
-  const rel = getExternalRel(def.href);
-  const className = getExternalClass(def.href);
-  const classAttr = className ? ` class="${className}"` : '';
+      const rel = getExternalRel(def.href);
+      const className = getExternalClass(def.href);
+      const classAttr = className ? ` class="${className}"` : '';
 
-  output = `<a href="${escapeHTML(def.href)}" target="_blank" rel="${rel}"${classAttr}>${output}</a>`;
-  return;
-}
+      output = `<a href="${escapeHTML(def.href)}" target="_blank" rel="${rel}"${classAttr}>${output}</a>`;
+      return;
+    }
 
-if (def?._type === 'internalLink') {
-  output = `<a href="${escapeHTML(getInternalUrl(def.reference))}">${output}</a>`;
-  return;
-}
+    if (def?._type === 'internalLink') {
+      output = `<a href="${escapeHTML(getInternalUrl(def.reference))}">${output}</a>`;
+      return;
+    }
 
-if (def?._type === 'platformLink') {
-  output = `<a href="${escapeHTML(getPlatformUrl(def.reference))}">${output}</a>`;
-  return;
-}
+    if (def?._type === 'platformLink') {
+      output = `<a href="${escapeHTML(getPlatformUrl(def.reference))}">${output}</a>`;
+      return;
+    }
 
-if (def?._type === 'pageLink') {
-  const path = def.path || '#';
+    if (def?._type === 'pageLink') {
+      const path = def.path || '#';
 
-  output = `<a href="${escapeHTML(path)}">${output}</a>`;
-  return;
-}
+      output = `<a href="${escapeHTML(path)}">${output}</a>`;
+      return;
+    }
 
+    if (def?._type === 'taxonomyLink') {
+      const slug = def.reference?.slug;
 
-if (def?._type === 'taxonomyLink') {
-  const slug = def.reference?.slug;
+      if (slug) {
+        const prefix = lang === 'en' ? '/en' : '';
+        output = `<a href="${prefix}/tag/${escapeHTML(slug)}/">${output}</a>`;
+      }
 
-  if (slug) {
-    const prefix = lang === 'en' ? '/en' : '';
-    output = `<a href="${prefix}/tag/${escapeHTML(slug)}/">${output}</a>`;
-  }
-
-  return;
-}
-
+      return;
+    }
   });
 
   return output;
@@ -252,31 +297,35 @@ function chunkBalanced(images = []) {
     }
 
     if (block._type === 'image') {
-  const imageUrl = getImageUrl(block, block.isWide ? 1320 : 980);
-  const fullImageUrl = getOriginalImageUrl(block);
+      const displayMode = getDisplayMode(block);
+      const imageWidth = getSingleImageWidth(displayMode);
+      const imageHeight = getSingleImageHeight(displayMode);
 
-  if (!imageUrl) return null;
+      const imageUrl = getImageUrl(block, imageWidth, imageHeight);
+      const fullImageUrl = getOriginalImageUrl(block);
 
-  return (
-    <figure class={`article-figure ${block.isWide ? 'is-wide' : ''}`}>
-      <img
-        src={imageUrl}
-        data-fullsrc={fullImageUrl || imageUrl}
-        data-caption={block.caption || ''}
-        class="js-article-lightbox-image"
-        alt={block.alt || ''}
-        width={block.isWide ? '1320' : '980'}
-        height={block.isWide ? '742' : '552'}
-        loading="lazy"
-        decoding="async"
-      />
+      if (!imageUrl) return null;
 
-      {block.caption && (
-        <figcaption>{block.caption}</figcaption>
-      )}
-    </figure>
-  );
-}
+      return (
+        <figure class={`article-figure article-figure--${displayMode} ${block.isWide ? 'is-wide' : ''}`}>
+          <img
+            src={imageUrl}
+            data-fullsrc={fullImageUrl || imageUrl}
+            data-caption={block.caption || ''}
+            class="js-article-lightbox-image"
+            alt={block.alt || ''}
+            width={displayMode === 'wide' ? '1320' : '980'}
+            height={displayMode === 'wide' ? '742' : '552'}
+            loading="lazy"
+            decoding="async"
+          />
+
+          {block.caption && (
+            <figcaption>{block.caption}</figcaption>
+          )}
+        </figure>
+      );
+    }
 
     if (block._type === 'imageRow') {
       const rows = chunkBalanced(block.images || []);
@@ -289,31 +338,32 @@ function chunkBalanced(images = []) {
               style={`--image-count: ${row.length};`}
             >
               {row.map((img) => {
-  const imageUrl = getImageUrl(img.image, 520, 325);
-  const fullImageUrl = getOriginalImageUrl(img.image);
+                const displayMode = getDisplayMode(img);
+                const imageUrl = getGalleryImageUrl(img.image, displayMode);
+                const fullImageUrl = getOriginalImageUrl(img.image);
 
-  if (!imageUrl) return null;
+                if (!imageUrl) return null;
 
-  return (
-    <figure>
-      <img
-        src={imageUrl}
-        data-fullsrc={fullImageUrl || imageUrl}
-        data-caption={img.caption || ''}
-        class="js-article-lightbox-image"
-        alt={img.alt || ''}
-        width="520"
-        height="325"
-        loading="lazy"
-        decoding="async"
-      />
+                return (
+                  <figure class={`article-image-row__item article-image-row__item--${displayMode}`}>
+                    <img
+                      src={imageUrl}
+                      data-fullsrc={fullImageUrl || imageUrl}
+                      data-caption={img.caption || ''}
+                      class="js-article-lightbox-image"
+                      alt={img.alt || ''}
+                      width="720"
+                      height="450"
+                      loading="lazy"
+                      decoding="async"
+                    />
 
-      {img.caption && (
-        <figcaption>{img.caption}</figcaption>
-      )}
-    </figure>
-  );
-})}
+                    {img.caption && (
+                      <figcaption>{img.caption}</figcaption>
+                    )}
+                  </figure>
+                );
+              })}
             </div>
           ))}
         </div>
@@ -329,97 +379,99 @@ function chunkBalanced(images = []) {
       );
     }
 
-   if (block._type === 'asideBox') {
-  const asideContent = block.content || [];
+    if (block._type === 'asideBox') {
+      const asideContent = block.content || [];
 
-  return (
-    <aside class={`article-aside-box ${block.tone || 'info'}`}>
+      return (
+        <aside class={`article-aside-box ${block.tone || 'info'}`}>
 
-      {block.title && (
-        <h4>{block.title}</h4>
-      )}
+          {block.title && (
+            <h4>{block.title}</h4>
+          )}
 
-      {asideContent.map((inner) => {
-        if (inner._type === 'block') {
-          const html = renderBlockChildren(inner);
-          return <p set:html={html} />;
-        }
+          {asideContent.map((inner) => {
+            if (inner._type === 'block') {
+              const html = renderBlockChildren(inner);
+              return <p set:html={html} />;
+            }
 
-       if (inner._type === 'image') {
-  const imageUrl = getImageUrl(inner, 720);
-  const fullImageUrl = getOriginalImageUrl(inner);
+            if (inner._type === 'image') {
+              const displayMode = getDisplayMode(inner, 'contain');
+              const imageUrl = getImageUrl(inner, 720);
+              const fullImageUrl = getOriginalImageUrl(inner);
 
-  if (!imageUrl) return null;
+              if (!imageUrl) return null;
 
-  return (
-    <figure class="article-aside-figure">
-      <img
-        src={imageUrl}
-        data-fullsrc={fullImageUrl || imageUrl}
-        data-caption={inner.caption || ''}
-        class="js-article-lightbox-image"
-        alt={inner.alt || ''}
-        width="720"
-        height="405"
-        loading="lazy"
-        decoding="async"
-      />
+              return (
+                <figure class={`article-aside-figure article-aside-figure--${displayMode}`}>
+                  <img
+                    src={imageUrl}
+                    data-fullsrc={fullImageUrl || imageUrl}
+                    data-caption={inner.caption || ''}
+                    class="js-article-lightbox-image"
+                    alt={inner.alt || ''}
+                    width="720"
+                    height="405"
+                    loading="lazy"
+                    decoding="async"
+                  />
 
-      {inner.caption && (
-        <figcaption>{inner.caption}</figcaption>
-      )}
-    </figure>
-  );
-}
+                  {inner.caption && (
+                    <figcaption>{inner.caption}</figcaption>
+                  )}
+                </figure>
+              );
+            }
 
-        if (inner._type === 'imageRow') {
-          const rows = chunkBalanced(inner.images || []);
+            if (inner._type === 'imageRow') {
+              const rows = chunkBalanced(inner.images || []);
 
-          return (
-            <div class="article-aside-gallery">
-              {rows.map((row) => (
-                <div
-                  class={`article-aside-row article-aside-row--${row.length}`}
-                  style={`--aside-image-count: ${row.length};`}
-                >
-                 {row.map((img) => {
-  const imageUrl = getImageUrl(img.image, 520, 325);
-  const fullImageUrl = getOriginalImageUrl(img.image);
+              return (
+                <div class="article-aside-gallery">
+                  {rows.map((row) => (
+                    <div
+                      class={`article-aside-row article-aside-row--${row.length}`}
+                      style={`--aside-image-count: ${row.length};`}
+                    >
+                      {row.map((img) => {
+                        const displayMode = getDisplayMode(img);
+                        const imageUrl = getGalleryImageUrl(img.image, displayMode);
+                        const fullImageUrl = getOriginalImageUrl(img.image);
 
-  if (!imageUrl) return null;
+                        if (!imageUrl) return null;
 
-  return (
-    <figure>
-      <img
-        src={imageUrl}
-        data-fullsrc={fullImageUrl || imageUrl}
-        data-caption={img.caption || ''}
-        class="js-article-lightbox-image"
-        alt={img.alt || ''}
-        width="520"
-        height="325"
-        loading="lazy"
-        decoding="async"
-      />
+                        return (
+                          <figure class={`article-aside-row__item article-aside-row__item--${displayMode}`}>
+                            <img
+                              src={imageUrl}
+                              data-fullsrc={fullImageUrl || imageUrl}
+                              data-caption={img.caption || ''}
+                              class="js-article-lightbox-image"
+                              alt={img.alt || ''}
+                              width="720"
+                              height="450"
+                              loading="lazy"
+                              decoding="async"
+                            />
 
-      {img.caption && (
-        <figcaption>{img.caption}</figcaption>
-      )}
-    </figure>
-  );
-})}
+                            {img.caption && (
+                              <figcaption>{img.caption}</figcaption>
+                            )}
+                          </figure>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          );
-        }
+              );
+            }
 
-        return null;
-      })}
+            return null;
+          })}
 
-    </aside>
-  );
-}
+        </aside>
+      );
+    }
 
     return null;
   })}
