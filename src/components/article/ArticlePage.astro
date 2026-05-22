@@ -6,6 +6,7 @@ import ArticleSidebar from './ArticleSidebar.astro';
 import ReviewSidebar from './ReviewSidebar.astro';
 import ArticleFinalRating from './ArticleFinalRating.astro';
 import ArticleAffiliateBox from './ArticleAffiliateBox.astro';
+import SupportButton from '../common/SupportButton.astro';
 import ArticleSeriesBox from './ArticleSeriesBox.astro';
 import ArticleComments from './ArticleComments.astro';
 import '../../styles/article/article.css';
@@ -72,11 +73,15 @@ const switchCta =
 
       <ArticleContent content={post.content} lang={currentLang} />
 
-      <ArticleSeriesBox post={post} seriesPosts={seriesPosts} />
+       <ArticleSeriesBox post={post} seriesPosts={seriesPosts} />
 
       {isReview && post.rating && (
+
         <ArticleFinalRating rating={post.rating} lang={currentLang} />
+
       )}
+
+      <SupportButton lang={currentLang} variant="box" />
 
       <ArticleLightbox />
 
@@ -91,7 +96,6 @@ const switchCta =
     </aside>
 
   </div>
-
   <ArticleComments post={post} comments={comments} />
 
 </main>

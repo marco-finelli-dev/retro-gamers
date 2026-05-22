@@ -1,0 +1,57 @@
+---
+const {
+  lang = 'it',
+  variant = 'inline'
+} = Astro.props;
+
+const paypalUrl = import.meta.env.PUBLIC_PAYPAL_DONATE_URL;
+
+if (!paypalUrl) {
+  return null;
+}
+
+const ui = {
+  it: {
+    label: 'Supporta Retro-Gamers.it',
+    title: 'Ti piace Retro-Gamers.it?',
+    text: 'Retro-Gamers.it è un progetto editoriale indipendente, senza pubblicità invasiva e nato dalla passione per la cultura videoludica. Se apprezzi il nostro lavoro, puoi sostenerlo con un piccolo contributo volontario.',
+    button: 'Supporta il progetto'
+  },
+  en: {
+    label: 'Support Retro-Gamers.it',
+    title: 'Enjoying Retro-Gamers.it?',
+    text: 'Retro-Gamers.it is an independent editorial project, created out of passion for videogame history and retro culture. If you appreciate our work, you can support it with a small voluntary contribution.',
+    button: 'Support the project'
+  }
+};
+
+const t = ui[lang] || ui.it;
+---
+
+{variant === 'box' ? (
+  <aside class="support-box">
+    <div class="support-box__content">
+      <span>{t.label}</span>
+      <h2>{t.title}</h2>
+      <p>{t.text}</p>
+    </div>
+
+    <a
+      href={paypalUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="support-box__button"
+    >
+      {t.button}
+    </a>
+  </aside>
+) : (
+  <a
+    href={paypalUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="support-link"
+  >
+    {t.label}
+  </a>
+)}
