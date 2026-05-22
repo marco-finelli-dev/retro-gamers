@@ -1,57 +1,46 @@
 ---
 const {
   lang = 'it',
-  variant = 'inline'
+  variant = 'box'
 } = Astro.props;
 
-const paypalUrl = import.meta.env.PUBLIC_PAYPAL_DONATE_URL;
+const donateUrl = import.meta.env.PUBLIC_PAYPAL_DONATE_URL || '';
 
-if (!paypalUrl) {
-  return null;
-}
+const isEnglish = lang === 'en';
 
-const ui = {
-  it: {
-    label: 'Supporta Retro-Gamers.it',
-    title: 'Ti piace Retro-Gamers.it?',
-    text: 'Retro-Gamers.it è un progetto editoriale indipendente, senza pubblicità invasiva e nato dalla passione per la cultura videoludica. Se apprezzi il nostro lavoro, puoi sostenerlo con un piccolo contributo volontario.',
-    button: 'Supporta il progetto'
-  },
-  en: {
-    label: 'Support Retro-Gamers.it',
-    title: 'Enjoying Retro-Gamers.it?',
-    text: 'Retro-Gamers.it is an independent editorial project, created out of passion for videogame history and retro culture. If you appreciate our work, you can support it with a small voluntary contribution.',
-    button: 'Support the project'
-  }
-};
+const label = isEnglish
+  ? 'Support Retro-Gamers.it'
+  : 'Supporta Retro-Gamers.it';
 
-const t = ui[lang] || ui.it;
+const text = isEnglish
+  ? 'Help keep this independent project alive.'
+  : 'Aiuta a mantenere vivo questo progetto indipendente.';
+
+const cta = isEnglish
+  ? 'Support the project'
+  : 'Supporta il progetto';
+
+const className = [
+  'support-button',
+  `support-button--${variant}`
+].join(' ');
 ---
 
-{variant === 'box' ? (
-  <aside class="support-box">
-    <div class="support-box__content">
-      <span>{t.label}</span>
-      <h2>{t.title}</h2>
-      <p>{t.text}</p>
-    </div>
-
-    <a
-      href={paypalUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="support-box__button"
-    >
-      {t.button}
-    </a>
-  </aside>
-) : (
+{donateUrl && (
   <a
-    href={paypalUrl}
+    href={donateUrl}
+    class={className}
     target="_blank"
     rel="noopener noreferrer"
-    class="support-link"
   >
-    {t.label}
+    {variant === 'footer' ? (
+      <span>{label}</span>
+    ) : (
+      <>
+        <span>{label}</span>
+        <strong>{cta}</strong>
+        <small>{text}</small>
+      </>
+    )}
   </a>
 )}
