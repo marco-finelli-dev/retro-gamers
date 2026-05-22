@@ -8,39 +8,47 @@ const donateUrl = import.meta.env.PUBLIC_PAYPAL_DONATE_URL || '';
 
 const isEnglish = lang === 'en';
 
-const label = isEnglish
-  ? 'Support Retro-Gamers.it'
-  : 'Supporta Retro-Gamers.it';
+const copy = isEnglish
+  ? {
+      label: 'Support Retro-Gamers.it',
+      title: 'Support the project',
+      text: 'Help keep Retro-Gamers.it independent, free from invasive advertising and focused on videogame history and retro culture.',
+      cta: 'Donate'
+    }
+  : {
+      label: 'Supporta Retro-Gamers.it',
+      title: 'Supporta il progetto',
+      text: 'Aiuta Retro-Gamers.it a restare indipendente, libero da pubblicità invasiva e dedicato alla storia dei videogiochi e alla cultura retro.',
+      cta: 'Dona'
+    };
 
-const text = isEnglish
-  ? 'Help keep this independent project alive.'
-  : 'Aiuta a mantenere vivo questo progetto indipendente.';
-
-const cta = isEnglish
-  ? 'Support the project'
-  : 'Supporta il progetto';
-
-const className = [
-  'support-button',
-  `support-button--${variant}`
-].join(' ');
+const className = `support support--${variant}`;
 ---
 
-{donateUrl && (
+{donateUrl && variant === 'footer' && (
   <a
     href={donateUrl}
     class={className}
     target="_blank"
     rel="noopener noreferrer"
   >
-    {variant === 'footer' ? (
-      <span>{label}</span>
-    ) : (
-      <>
-        <span>{label}</span>
-        <strong>{cta}</strong>
-        <small>{text}</small>
-      </>
-    )}
+    <span>{copy.label}</span>
+  </a>
+)}
+
+{donateUrl && variant !== 'footer' && (
+  <a
+    href={donateUrl}
+    class={className}
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <div class="support__content">
+      <span>{copy.label}</span>
+      <h2>{copy.title}</h2>
+      <p>{copy.text}</p>
+    </div>
+
+    <strong class="support__cta">{copy.cta}</strong>
   </a>
 )}
