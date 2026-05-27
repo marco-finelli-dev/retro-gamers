@@ -2,13 +2,24 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getAllPosts } from "../../lib/posts";
 
-const posts = await getAllPosts();
+const allPosts = await getAllPosts();
+
+const reviews = allPosts.filter(
+  (post) => post.type === 'review' && (post.language || 'it') !== 'en'
+);
+
+const news = allPosts.filter(
+  (post) => post.type === 'news' && (post.language || 'it') !== 'en'
+);
 ---
 
 <BaseLayout
+  reviews={reviews}
+  news={news}
   title="Come lavoriamo | Retro-Gamers.it"
   description="La nota editoriale di Retro-Gamers.it: come nascono i contenuti, quale ruolo hanno gli strumenti digitali e come viene mantenuta la responsabilità editoriale."
-  posts={posts}
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/come-lavoriamo/"
 >
   <main class="editorial-page">
     <section class="editorial-hero">
