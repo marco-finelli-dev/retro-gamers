@@ -1,5 +1,15 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/come-lavoriamo/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/how-we-work/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/come-lavoriamo/' }
+];
+
+const languageSwitch = {
+  url: '/come-lavoriamo/'
+};
 ---
 
 <BaseLayout
@@ -8,6 +18,8 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/en/how-we-work/"
   lang="en"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
 >
   <main class="editorial-page">
     <section class="editorial-hero">

@@ -5,6 +5,16 @@ import { getAllPosts, groupPosts } from '../lib/posts';
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/cookie-policy/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/cookie-policy/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/cookie-policy/' }
+];
+
+const languageSwitch = {
+  url: '/en/cookie-policy/'
+};
 ---
 
 <BaseLayout
@@ -14,6 +24,8 @@ const grouped = groupPosts(allPosts);
   description="Informazioni sui cookie e sulle tecnologie simili utilizzate da Retro-Gamers.it."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/cookie-policy/"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
 >
   <main class="legal-page">
     <div class="container">

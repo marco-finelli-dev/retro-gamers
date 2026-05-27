@@ -5,6 +5,16 @@ import { getAllPosts, groupPosts } from '../lib/posts';
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/privacy-policy/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/privacy-policy/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/privacy-policy/' }
+];
+
+const languageSwitch = {
+  url: '/en/privacy-policy/'
+};
 ---
 <BaseLayout
   reviews={grouped.allReviews}
@@ -13,6 +23,8 @@ const grouped = groupPosts(allPosts);
   description="Informazioni sul trattamento dei dati personali degli utenti che visitano Retro-Gamers.it."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/privacy-policy/"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
 >
   <main class="legal-page">
     <div class="container">

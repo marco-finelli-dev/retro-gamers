@@ -5,9 +5,24 @@ import { getAllPosts, groupPosts } from '../lib/posts';
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/collaborazioni/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/collaborations/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/collaborazioni/' }
+];
+
+const languageSwitch = {
+  url: '/en/collaborations/'
+};
 ---
 
-<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
   <main class="legal-page">
     <div class="container">
 

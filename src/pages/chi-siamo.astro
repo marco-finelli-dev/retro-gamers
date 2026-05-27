@@ -5,6 +5,16 @@ import { getAllPosts, groupPosts } from '../lib/posts';
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/chi-siamo/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/about/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/chi-siamo/' }
+];
+
+const languageSwitch = {
+  url: '/en/about/'
+};
 ---
 
 <BaseLayout
@@ -14,6 +24,8 @@ const grouped = groupPosts(allPosts);
   description="Retro-Gamers.it è un progetto editoriale indipendente dedicato al retro-gaming, agli home computer, alle console e alla cultura digitale."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/chi-siamo/"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
 >
   <main class="legal-page">
     <div class="container">

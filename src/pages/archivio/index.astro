@@ -6,9 +6,24 @@ import { getAllPosts, groupPosts } from '../../lib/posts';
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/archivio/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/archive/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/archivio/' }
+];
+
+const languageSwitch = {
+  url: '/en/archive/'
+};
 ---
 
-<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
   <ArchivePage
     title="Archivio"
     eyebrow="Tutti i contenuti"

@@ -13,6 +13,16 @@ const englishReviews = allPosts.filter(
 const englishNews = allPosts.filter(
   (post) => post.type === 'news' && post.language === 'en'
 );
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/chi-siamo/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/about/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/chi-siamo/' }
+];
+
+const languageSwitch = {
+  url: '/chi-siamo/'
+};
 ---
 
 <BaseLayout
@@ -23,6 +33,8 @@ const englishNews = allPosts.filter(
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/en/about/"
   lang="en"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
 >
   <main class="legal-page">
     <div class="container">

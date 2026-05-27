@@ -17,6 +17,16 @@ const englishPosts = allPosts
 
 const englishReviews = englishPosts.filter((post) => post.type === 'review');
 const englishNews = englishPosts.filter((post) => post.type === 'news');
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/archivio/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/archive/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/archivio/' }
+];
+
+const languageSwitch = {
+  url: '/archivio/'
+};
 ---
 
 <BaseLayout
@@ -26,6 +36,8 @@ const englishNews = englishPosts.filter((post) => post.type === 'news');
   description="All English articles published on Retro-Gamers: reviews, news, features, memories, guides, hardware and interviews."
   canonical="https://www.retro-gamers.it/en/archive/"
   lang="en"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
 >
   <ArchivePage
     title="Archive"
