@@ -11,6 +11,13 @@ const grouped = groupPosts(allPosts);
 const platforms = await getAllPlatforms();
 ---
 
-<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Piattaforme"
+  description="Console, home computer, arcade e sistemi storici raccontati da Retro-Gamers.it: schede, contesto, caratteristiche e percorsi nella storia del videogioco."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/piattaforme/"
+>
   <PlatformsLanding platforms={platforms} />
 </BaseLayout>
