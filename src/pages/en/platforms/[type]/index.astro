@@ -5,6 +5,8 @@ import PlatformTypePage from '../../../../components/platforms/PlatformTypePage.
 import { getAllPosts, groupPosts } from '../../../../lib/posts';
 import { getPlatformsByType } from '../../../../lib/platforms';
 
+export const prerender = true;
+
 export async function getStaticPaths() {
   return [
     { params: { type: 'arcade' } },
