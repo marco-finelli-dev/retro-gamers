@@ -127,6 +127,11 @@ export async function GET() {
       priority: '0.7'
     },
     {
+      loc: absoluteUrl('/articoli/'),
+      changefreq: 'weekly',
+      priority: '0.7'
+    },
+    {
       loc: absoluteUrl('/piattaforme/'),
       changefreq: 'weekly',
       priority: '0.8'
@@ -153,6 +158,11 @@ export async function GET() {
     },
     {
       loc: absoluteUrl('/chi-siamo/'),
+      changefreq: 'monthly',
+      priority: '0.4'
+    },
+    {
+      loc: absoluteUrl('/come-lavoriamo/'),
       changefreq: 'monthly',
       priority: '0.4'
     },
@@ -221,6 +231,11 @@ export async function GET() {
       loc: absoluteUrl('/en/archive/'),
       changefreq: 'weekly',
       priority: '0.7'
+    },
+    {
+      loc: absoluteUrl('/en/how-we-work/'),
+      changefreq: 'monthly',
+      priority: '0.4'
     },
     {
       loc: absoluteUrl('/en/platforms/'),
