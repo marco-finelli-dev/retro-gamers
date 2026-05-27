@@ -43,8 +43,32 @@ const platformData = await getPlatformByPath(
 if (!platformData) {
   return Astro.redirect('/piattaforme/');
 }
+
+const truncateDescription = (text, maxLength = 155) => {
+  const cleanText = text?.replace(/\s+/g, ' ').trim() || '';
+
+  if (cleanText.length <= maxLength) {
+    return cleanText;
+  }
+
+  const cutIndex = cleanText.lastIndexOf(' ', maxLength);
+  const safeIndex = cutIndex > 0 ? cutIndex : maxLength;
+
+  return `${cleanText.slice(0, safeIndex).trim()}...`;
+};
+
+const pageDescription =
+  truncateDescription(platformData.history) ||
+  `${platformData.name}: storia, caratteristiche e dettagli della piattaforma nell’archivio di Retro-Gamers.it.`;
 ---
 
-<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title={platformData.name}
+  description={pageDescription}
+  image={platformData.cover?.asset?.url || platformData.logoLight?.asset?.url || platformData.logo?.asset?.url || '/og-image.jpg'}
+  canonical={`https://www.retro-gamers.it/piattaforme/${platformType}/${manufacturer}/${platform}/`}
+>
   <PlatformDetail platform={platformData} />
 </BaseLayout>

@@ -57,7 +57,14 @@ const resolvedManufacturer =
   };
 ---
 
-<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title={`Piattaforme ${resolvedManufacturer.name}`}
+  description={`Tutte le piattaforme ${resolvedManufacturer.name} presenti nell’archivio di Retro-Gamers.it, tra console, computer, arcade e sistemi storici.`}
+  image={resolvedManufacturer.logoLight?.asset?.url || resolvedManufacturer.logo?.asset?.url || '/og-image.jpg'}
+  canonical={`https://www.retro-gamers.it/piattaforme/${platformType}/${manufacturer}/`}
+>
   <ManufacturerPage
     type={platformType}
     manufacturer={resolvedManufacturer}

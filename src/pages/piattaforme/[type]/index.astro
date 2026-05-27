@@ -19,9 +19,28 @@ const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
 const platforms = await getPlatformsByType(type);
+
+const pageTitles = {
+  arcade: 'Arcade',
+  computer: 'Computer',
+  console: 'Console'
+};
+
+const pageDescriptions = {
+  arcade: 'Cabinet, board e sistemi arcade che hanno definito l’esperienza da sala giochi.',
+  computer: 'Home computer, personal computer e macchine che hanno fatto la storia dell’informatica domestica.',
+  console: 'Console domestiche, portatili e sistemi da gioco che hanno segnato la storia del videogioco.'
+};
 ---
 
-<BaseLayout reviews={grouped.allReviews} news={grouped.allNews}>
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title={pageTitles[type] || 'Piattaforme'}
+  description={pageDescriptions[type] || 'Console, home computer, arcade e sistemi storici raccontati da Retro-Gamers.it.'}
+  image="/og-image.jpg"
+  canonical={`https://www.retro-gamers.it/piattaforme/${type}/`}
+>
   <PlatformTypePage
     type={type}
     platforms={platforms}
