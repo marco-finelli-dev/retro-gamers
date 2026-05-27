@@ -2,16 +2,23 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import ArchivePage from '../../../components/archive/ArchivePage.astro';
 
-import { getAllPosts, groupPosts } from '../../../lib/posts';
+import { getAllPosts } from '../../../lib/posts';
 
 const { slug } = Astro.params;
 
 const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 
 const englishPosts = allPosts.filter((post) =>
   post.language === 'en' &&
   (post.categories || []).some((category) => category.slug === slug)
+);
+
+const englishReviews = allPosts.filter(
+  (post) => post.type === 'review' && post.language === 'en'
+);
+
+const englishNews = allPosts.filter(
+  (post) => post.type === 'news' && post.language === 'en'
 );
 
 const category = englishPosts
@@ -32,8 +39,8 @@ const canonicalUrl =
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
+  reviews={englishReviews}
+  news={englishNews}
   title={`${title} | Retro-Gamers.it`}
   description={description}
   canonical={canonicalUrl}
