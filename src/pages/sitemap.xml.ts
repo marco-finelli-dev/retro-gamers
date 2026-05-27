@@ -167,6 +167,11 @@ export async function GET() {
       priority: '0.4'
     },
     {
+      loc: absoluteUrl('/risorse/'),
+      changefreq: 'monthly',
+      priority: '0.4'
+    },
+    {
       loc: absoluteUrl('/collaborazioni/'),
       changefreq: 'monthly',
       priority: '0.4'
@@ -234,6 +239,11 @@ export async function GET() {
     },
     {
       loc: absoluteUrl('/en/how-we-work/'),
+      changefreq: 'monthly',
+      priority: '0.4'
+    },
+    {
+      loc: absoluteUrl('/en/resources/'),
       changefreq: 'monthly',
       priority: '0.4'
     },
