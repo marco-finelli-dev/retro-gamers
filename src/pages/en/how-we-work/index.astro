@@ -1,11 +1,15 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getAllPosts } from "../../../lib/posts";
+
+const posts = await getAllPosts();
 ---
 
 <BaseLayout
   lang="en"
   title="How We Work | Retro-Gamers.it"
   description="The editorial note of Retro-Gamers.it: how our content is created, how digital tools are used, and where editorial responsibility remains."
+  posts={posts}
 >
   <main class="editorial-page">
     <section class="editorial-hero">
