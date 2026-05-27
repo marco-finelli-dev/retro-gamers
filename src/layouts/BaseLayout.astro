@@ -7,6 +7,7 @@ import ConsentAnalytics from '../components/common/ConsentAnalytics.astro';
 import Analytics from '@vercel/analytics/astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
 import CookieConsent from '../components/common/CookieConsent.astro';
+import { getAllPosts } from '../lib/posts';
 import '../styles/components/support.css';
 import '../styles/pages/legal.css';
 import '../styles/components/cookie-consent.css';
@@ -14,8 +15,8 @@ import '../styles/pages/author.css';
 import '../styles/pages/error.css';
 
 const {
-  reviews = [],
-  news = [],
+  reviews: providedReviews = null,
+  news: providedNews = null,
 
   lang = 'it',
   languageSwitch = null,
@@ -30,6 +31,23 @@ const {
   updatedAt = null,
   noindex = false
 } = Astro.props;
+
+const needsMenuPosts = !providedReviews || !providedNews;
+
+const menuPosts = needsMenuPosts ? await getAllPosts() : [];
+
+const fallbackReviews = menuPosts.filter((post) => {
+  const postLang = post.language || 'it';
+  return post.type === 'review' && postLang === lang;
+});
+
+const fallbackNews = menuPosts.filter((post) => {
+  const postLang = post.language || 'it';
+  return post.type === 'news' && postLang === lang;
+});
+
+const reviews = providedReviews ?? fallbackReviews;
+const news = providedNews ?? fallbackNews;
 
 const siteName = 'Retro-Gamers.it';
 const siteUrl = 'https://www.retro-gamers.it';
