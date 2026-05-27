@@ -104,7 +104,6 @@ export type Post = {
   modes?: TaxonomyRef[];
   series?: TaxonomyRef[];
   editorialSeries?: TaxonomyRef[];
-  relatedSeries?: TaxonomyRef[];
 
   monetization?: Monetization;
 
@@ -269,16 +268,6 @@ export async function getAllPosts(): Promise<Post[]> {
       },
 
       editorialSeries[]->{
-        name,
-        nameEn,
-        "slug": slug.current,
-        logo {
-          asset->{ url },
-          alt
-        }
-      },
-
-      relatedSeries[]->{
         name,
         nameEn,
         "slug": slug.current,
