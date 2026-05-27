@@ -32,7 +32,13 @@ const {
   noindex = false
 } = Astro.props;
 
-const needsMenuPosts = !providedReviews || !providedNews;
+const hasProvidedReviews =
+  Array.isArray(providedReviews) && providedReviews.length > 0;
+
+const hasProvidedNews =
+  Array.isArray(providedNews) && providedNews.length > 0;
+
+const needsMenuPosts = !hasProvidedReviews || !hasProvidedNews;
 
 const menuPosts = needsMenuPosts ? await getAllPosts() : [];
 
@@ -46,8 +52,8 @@ const fallbackNews = menuPosts.filter((post) => {
   return post.type === 'news' && postLang === lang;
 });
 
-const reviews = providedReviews ?? fallbackReviews;
-const news = providedNews ?? fallbackNews;
+const reviews = hasProvidedReviews ? providedReviews : fallbackReviews;
+const news = hasProvidedNews ? providedNews : fallbackNews;
 
 const siteName = 'Retro-Gamers.it';
 const siteUrl = 'https://www.retro-gamers.it';
