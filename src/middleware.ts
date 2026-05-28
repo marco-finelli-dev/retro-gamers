@@ -42,7 +42,13 @@ const legacyArticleRedirects: Record<string, string> = {
 
 function permanentRedirect(url: URL, destination: string) {
   const target = new URL(destination, url.origin);
-  return Response.redirect(target, 301);
+
+  return new Response(null, {
+    status: 301,
+    headers: {
+      Location: target.toString(),
+    },
+  });
 }
 
 function withTrailingSlash(pathname: string) {
