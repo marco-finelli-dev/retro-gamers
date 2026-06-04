@@ -4,25 +4,23 @@ import PlatformTypePage from '../../../../components/platforms/PlatformTypePage.
 
 import { getAllPosts, groupPosts } from '../../../../lib/posts';
 import { getPlatformsByType } from '../../../../lib/platforms';
+import type { PlatformType } from '../../../../lib/platforms';
 
-
-export async function getStaticPaths() {
-  return [
-    { params: { type: 'arcade' } },
-    { params: { type: 'computers' } },
-    { params: { type: 'consoles' } }
-  ];
-}
-
+const allowedTypes = ['arcade', 'computers', 'consoles'] as const;
 const { type } = Astro.params;
 
-const typeMap = {
+if (!type || !allowedTypes.includes(type as typeof allowedTypes[number])) {
+  return Astro.redirect('/en/platforms/');
+}
+
+const typeMap: Record<typeof allowedTypes[number], PlatformType> = {
   arcade: 'arcade',
   computers: 'computer',
   consoles: 'console'
 };
 
-const internalType = typeMap[type] || type;
+const publicType = type as typeof allowedTypes[number];
+const internalType = typeMap[publicType];
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
@@ -54,9 +52,9 @@ const pageDescriptions = {
   reviews={englishReviews}
   news={englishNews}
   lang="en"
-  title={pageTitles[type] || 'Platforms'}
-  description={pageDescriptions[type] || 'Retro gaming platforms, machines and systems.'}
-  canonical={`https://www.retro-gamers.it/en/platforms/${type}/`}
+  title={pageTitles[publicType] || 'Platforms'}
+  description={pageDescriptions[publicType] || 'Retro gaming platforms, machines and systems.'}
+  canonical={`https://www.retro-gamers.it/en/platforms/${publicType}/`}
 >
   <PlatformTypePage
     type={internalType}

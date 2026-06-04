@@ -4,22 +4,21 @@ import PlatformTypePage from '../../../components/platforms/PlatformTypePage.ast
 
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getPlatformsByType } from '../../../lib/platforms';
+import type { PlatformType } from '../../../lib/platforms';
 
+const allowedTypes = ['arcade', 'computer', 'console'] as const;
+const { type } = Astro.params;
 
-export async function getStaticPaths() {
-  return [
-    { params: { type: 'arcade' } },
-    { params: { type: 'computer' } },
-    { params: { type: 'console' } }
-  ];
+if (!type || !allowedTypes.includes(type as PlatformType)) {
+  return Astro.redirect('/piattaforme/');
 }
 
-const { type } = Astro.params;
+const platformType = type as PlatformType;
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
-const platforms = await getPlatformsByType(type);
+const platforms = await getPlatformsByType(platformType);
 
 const pageTitles = {
   arcade: 'Arcade',
@@ -37,13 +36,13 @@ const pageDescriptions = {
 <BaseLayout
   reviews={grouped.allReviews}
   news={grouped.allNews}
-  title={pageTitles[type] || 'Piattaforme'}
-  description={pageDescriptions[type] || 'Console, home computer, arcade e sistemi storici raccontati da Retro-Gamers.it.'}
+  title={pageTitles[platformType] || 'Piattaforme'}
+  description={pageDescriptions[platformType] || 'Console, home computer, arcade e sistemi storici raccontati da Retro-Gamers.it.'}
   image="/og-image.jpg"
-  canonical={`https://www.retro-gamers.it/piattaforme/${type}/`}
+  canonical={`https://www.retro-gamers.it/piattaforme/${platformType}/`}
 >
   <PlatformTypePage
-    type={type}
+    type={platformType}
     platforms={platforms}
   />
 </BaseLayout>
