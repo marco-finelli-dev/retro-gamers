@@ -118,7 +118,12 @@ const post = await sanityClient.fetch(`
     name,
     nickname,
     displayName,
-    "slug": slug.current
+    role,
+    "slug": slug.current,
+    image {
+      alt,
+      asset->{ url }
+    }
   },
 
   featuredImage {

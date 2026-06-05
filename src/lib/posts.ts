@@ -83,6 +83,20 @@ export type Post = {
     language?: 'it' | 'en';
   };
 
+  author?: {
+    name?: string;
+    nickname?: string;
+    displayName?: string;
+    role?: 'editor' | 'contributor' | 'guest';
+    slug?: string;
+    image?: {
+      asset?: {
+        url?: string;
+      };
+      alt?: string;
+    };
+  };
+
   subtitle?: string;
   seoTitle?: string;
 

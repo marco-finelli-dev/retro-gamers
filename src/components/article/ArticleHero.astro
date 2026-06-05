@@ -34,9 +34,21 @@ const typeLabel =
   typeLabels.it[post.type] ||
   'Articolo';
 
-const byLabel = lang === 'en' ? 'By' : 'Di';
+const byLabel = lang === 'en' ? 'By' : 'A cura di';
 const readingTimeLabel = lang === 'en' ? 'Reading time' : 'Tempo di lettura';
 const minuteLabel = lang === 'en' ? 'min.' : 'min.';
+const roleLabels = {
+  it: {
+    editor: 'Redattore',
+    contributor: 'Collaboratore',
+    guest: 'Ospite'
+  },
+  en: {
+    editor: 'Editor',
+    contributor: 'Contributor',
+    guest: 'Guest'
+  }
+};
 
 const isReview = post.type === 'review';
 
@@ -106,6 +118,21 @@ const authorUrl = authorSlug
     : `/autori/${authorSlug}/`
   : '';
 
+const authorRole =
+  post.author?.role
+    ? roleLabels[lang]?.[post.author.role] || roleLabels.it[post.author.role]
+    : '';
+
+const authorAvatar = post.author?.image?.asset?.url || '';
+const authorAvatarAlt = post.author?.image?.alt || authorDisplayName;
+const authorInitials = authorDisplayName
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0])
+  .join('')
+  .toUpperCase();
+
 const readingTime =
   post.readingTime ||
   post.readingTimeMinutes ||
@@ -148,23 +175,73 @@ const infoItems = [
     <div class="article-hero__footer">
 
       {(authorDisplayName || infoItems.length > 0) && (
-        <div class="article-hero__info">
+        <div class="article-hero__byline">
 
           {authorDisplayName && (
-            authorUrl ? (
-              <a href={authorUrl}>
-                {byLabel} {authorDisplayName}
-              </a>
-            ) : (
-              <span>
-                {byLabel} {authorDisplayName}
-              </span>
-            )
+            <div class="article-hero__author">
+              {authorUrl ? (
+                <a href={authorUrl} class="article-hero__author-avatar" aria-label={authorDisplayName}>
+                  {authorAvatar ? (
+                    <img
+                      src={authorAvatar}
+                      alt={authorAvatarAlt}
+                      width="56"
+                      height="56"
+                      loading="eager"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span>{authorInitials || 'RG'}</span>
+                  )}
+                </a>
+              ) : (
+                <span class="article-hero__author-avatar" aria-hidden={!authorAvatar}>
+                  {authorAvatar ? (
+                    <img
+                      src={authorAvatar}
+                      alt={authorAvatarAlt}
+                      width="56"
+                      height="56"
+                      loading="eager"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span>{authorInitials || 'RG'}</span>
+                  )}
+                </span>
+              )}
+
+              <div class="article-hero__author-body">
+                <div class="article-hero__author-line">
+                  <small>{byLabel}</small>
+
+                  {authorUrl ? (
+                    <a href={authorUrl} class="article-hero__author-name">
+                      {authorDisplayName}
+                    </a>
+                  ) : (
+                    <strong class="article-hero__author-name">
+                      {authorDisplayName}
+                    </strong>
+                  )}
+                </div>
+
+                <div class="article-hero__info">
+                  {[authorRole, ...infoItems].filter(Boolean).map((item) => (
+                    <span>{item}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
 
-          {infoItems.map((item) => (
-            <span>{item}</span>
-          ))}
+          {!authorDisplayName && infoItems.length > 0 && (
+            <div class="article-hero__info">
+              {infoItems.map((item) => (
+                <span>{item}</span>
+              ))}
+            </div>
+          )}
 
         </div>
       )}

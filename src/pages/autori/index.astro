@@ -1,0 +1,139 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { client } from '../../lib/sanity';
+import { urlFor } from '../../lib/image';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+const authors = await client.fetch(`
+  *[
+    _type == "author" &&
+    defined(slug.current) &&
+    !(_id in path("drafts.**"))
+  ] | order(name asc) {
+    _id,
+    name,
+    nickname,
+    displayName,
+    role,
+    bio,
+    "slug": slug.current,
+    image {
+      alt,
+      asset->{ url }
+    },
+    "postCount": count(*[
+      _type == "article" &&
+      defined(slug.current) &&
+      author._ref == ^._id &&
+      (!defined(language) || language == "it") &&
+      !(_id in path("drafts.**"))
+    ])
+  }
+`);
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const roleLabels = {
+  editor: 'Redattore',
+  contributor: 'Collaboratore',
+  guest: 'Ospite'
+};
+
+function getDisplayName(author) {
+  return author.displayName === 'nickname' && author.nickname
+    ? author.nickname
+    : author.name;
+}
+
+function getInitials(name = '') {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
+
+function getBioExcerpt(blocks = []) {
+  const text = blocks
+    .filter((block) => block?._type === 'block')
+    .flatMap((block) => block.children?.map((child) => child.text || '') || [])
+    .join(' ')
+    .trim();
+
+  return text.length > 170 ? `${text.slice(0, 167).trim()}...` : text;
+}
+
+const pageTitle = 'Autori';
+const pageDescription =
+  'Le firme di Retro-Gamers.it: redattori, collaboratori e autori che raccontano il retrogaming.';
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title={pageTitle}
+  description={pageDescription}
+  canonical="https://www.retro-gamers.it/autori/"
+>
+  <main class="author-page author-index-page">
+    <section class="author-index-hero">
+      <span>Redazione</span>
+      <h1>Autori</h1>
+      <p>Le firme che raccontano giochi, macchine, storie e cultura videoludica su Retro-Gamers.it.</p>
+    </section>
+
+    <section class="author-index-grid" aria-label="Elenco autori">
+      {authors.map((author) => {
+        const displayName = getDisplayName(author);
+        const roleLabel = roleLabels[author.role] || 'Autore';
+        const avatar = author.image?.asset
+          ? urlFor(author.image)
+              .width(220)
+              .height(220)
+              .fit('crop')
+              .quality(78)
+              .auto('format')
+              .url()
+          : '';
+        const excerpt = getBioExcerpt(author.bio);
+
+        return (
+          <article class="author-index-card">
+            <a href={`/autori/${author.slug}/`} class="author-index-card__link">
+              <span class="author-index-card__avatar">
+                {avatar ? (
+                  <img
+                    src={avatar}
+                    alt={author.image?.alt || displayName}
+                    width="220"
+                    height="220"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span>{getInitials(displayName) || 'RG'}</span>
+                )}
+              </span>
+
+              <span class="author-index-card__body">
+                <span class="author-index-card__role">{roleLabel}</span>
+                <strong>{displayName}</strong>
+
+                {excerpt && (
+                  <span class="author-index-card__bio">{excerpt}</span>
+                )}
+
+                <span class="author-index-card__meta">
+                  {author.postCount === 1 ? '1 articolo' : `${author.postCount || 0} articoli`}
+                </span>
+              </span>
+            </a>
+          </article>
+        );
+      })}
+    </section>
+  </main>
+</BaseLayout>

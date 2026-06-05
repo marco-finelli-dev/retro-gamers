@@ -1,0 +1,141 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { client } from '../../../lib/sanity';
+import { urlFor } from '../../../lib/image';
+import { getAllPosts } from '../../../lib/posts';
+
+const authors = await client.fetch(`
+  *[
+    _type == "author" &&
+    defined(slug.current) &&
+    !(_id in path("drafts.**"))
+  ] | order(name asc) {
+    _id,
+    name,
+    nickname,
+    displayName,
+    role,
+    bio,
+    bioEn,
+    "slug": slug.current,
+    image {
+      alt,
+      asset->{ url }
+    },
+    "postCount": count(*[
+      _type == "article" &&
+      defined(slug.current) &&
+      author._ref == ^._id &&
+      language == "en" &&
+      !(_id in path("drafts.**"))
+    ])
+  }
+`);
+
+const allPosts = await getAllPosts();
+const englishPosts = allPosts.filter((post) => post.language === 'en');
+
+const roleLabels = {
+  editor: 'Editor',
+  contributor: 'Contributor',
+  guest: 'Guest'
+};
+
+function getDisplayName(author) {
+  return author.displayName === 'nickname' && author.nickname
+    ? author.nickname
+    : author.name;
+}
+
+function getInitials(name = '') {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
+
+function getBioExcerpt(blocks = []) {
+  const text = blocks
+    .filter((block) => block?._type === 'block')
+    .flatMap((block) => block.children?.map((child) => child.text || '') || [])
+    .join(' ')
+    .trim();
+
+  return text.length > 170 ? `${text.slice(0, 167).trim()}...` : text;
+}
+
+const pageTitle = 'Authors';
+const pageDescription =
+  'The voices behind Retro-Gamers International: editors, contributors and authors writing about retro gaming.';
+---
+
+<BaseLayout
+  reviews={englishPosts.filter((post) => post.type === 'review')}
+  news={englishPosts.filter((post) => post.type === 'news')}
+  title={pageTitle}
+  description={pageDescription}
+  canonical="https://www.retro-gamers.it/en/authors/"
+  lang="en"
+>
+  <main class="author-page author-index-page">
+    <section class="author-index-hero">
+      <span>Editorial team</span>
+      <h1>Authors</h1>
+      <p>The people writing about games, machines, stories and videogame culture on Retro-Gamers International.</p>
+    </section>
+
+    <section class="author-index-grid" aria-label="Authors list">
+      {authors.map((author) => {
+        const displayName = getDisplayName(author);
+        const roleLabel = roleLabels[author.role] || 'Author';
+        const avatar = author.image?.asset
+          ? urlFor(author.image)
+              .width(220)
+              .height(220)
+              .fit('crop')
+              .quality(78)
+              .auto('format')
+              .url()
+          : '';
+        const excerpt = getBioExcerpt(author.bioEn?.length > 0 ? author.bioEn : author.bio);
+
+        return (
+          <article class="author-index-card">
+            <a href={`/en/authors/${author.slug}/`} class="author-index-card__link">
+              <span class="author-index-card__avatar">
+                {avatar ? (
+                  <img
+                    src={avatar}
+                    alt={author.image?.alt || displayName}
+                    width="220"
+                    height="220"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span>{getInitials(displayName) || 'RG'}</span>
+                )}
+              </span>
+
+              <span class="author-index-card__body">
+                <span class="author-index-card__role">{roleLabel}</span>
+                <strong>{displayName}</strong>
+
+                {excerpt && (
+                  <span class="author-index-card__bio">{excerpt}</span>
+                )}
+
+                <span class="author-index-card__meta">
+                  {author.postCount === 1 ? '1 article' : `${author.postCount || 0} articles`}
+                </span>
+              </span>
+            </a>
+          </article>
+        );
+      })}
+    </section>
+  </main>
+</BaseLayout>
