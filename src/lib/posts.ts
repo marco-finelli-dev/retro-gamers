@@ -17,6 +17,7 @@ export type TaxonomyRef = {
 };
 
 export type PlatformRef = {
+  _id?: string;
   name: string;
   slug: string;
   platformType?: 'console' | 'computer' | 'arcade';
@@ -196,6 +197,7 @@ export async function getAllPosts(): Promise<Post[]> {
       },
 
       platforms[]->{
+        _id,
         name,
         "slug": slug.current,
         platformType,
