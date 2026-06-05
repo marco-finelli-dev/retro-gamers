@@ -1,0 +1,71 @@
+.article-reading-progress {
+  position: fixed;
+  top: var(--rg-reading-progress-top, 78px);
+  left: 0;
+  right: 0;
+  z-index: 90;
+
+  height: 3px;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255,255,255,0.045),
+      rgba(255,255,255,0.020)
+    );
+
+  border-bottom: 1px solid rgba(255,255,255,0.035);
+
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.article-reading-progress__bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  transform: scaleX(0);
+  transform-origin: left center;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(45,240,255,0.96),
+      rgba(130,90,255,0.76)
+    );
+
+  box-shadow:
+    0 0 10px rgba(45,240,255,0.26),
+    0 0 14px rgba(130,90,255,0.16);
+
+  transition: transform 90ms linear;
+}
+
+html[data-theme="light"] .article-reading-progress {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(18,24,38,0.050),
+      rgba(18,24,38,0.026)
+    );
+
+  border-bottom-color: rgba(18,24,38,0.045);
+}
+
+html[data-theme="light"] .article-reading-progress__bar {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(8,124,142,0.78),
+      rgba(102,81,184,0.58)
+    );
+
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-reading-progress__bar {
+    transition: none;
+  }
+}

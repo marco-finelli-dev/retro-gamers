@@ -1,0 +1,74 @@
+---
+import '../../styles/article/reading-progress.css';
+---
+
+<div class="article-reading-progress" aria-hidden="true">
+  <span class="article-reading-progress__bar"></span>
+</div>
+
+<script is:inline>
+  (() => {
+    const initReadingProgress = () => {
+      const progress = document.querySelector('.article-reading-progress');
+      const bar = document.querySelector('.article-reading-progress__bar');
+      const header = document.querySelector('.site-header');
+      const article = document.querySelector('.article-page');
+      const content = document.querySelector('.article-page__content');
+      const scroller = document.scrollingElement || document.documentElement;
+
+      if (!progress || !bar || !article || !content || !scroller) {
+        return;
+      }
+
+      let ticking = false;
+
+      const setHeaderOffset = () => {
+        const headerHeight = header?.offsetHeight || 0;
+        document.documentElement.style.setProperty('--rg-reading-progress-top', `${headerHeight}px`);
+      };
+
+      const getDocumentTop = (element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.top + window.scrollY;
+      };
+
+      const updateProgress = () => {
+        setHeaderOffset();
+
+        const scrollTop = window.scrollY || scroller.scrollTop;
+        const viewportHeight = window.innerHeight || scroller.clientHeight;
+        const articleStart = getDocumentTop(article);
+        const contentEnd = getDocumentTop(content) + content.scrollHeight;
+        const progressEnd = Math.max(contentEnd - viewportHeight, articleStart + 1);
+        const value = Math.min(Math.max((scrollTop - articleStart) / (progressEnd - articleStart), 0), 1);
+
+        bar.style.transform = `scaleX(${value})`;
+        progress.dataset.progress = value > 0 ? 'active' : 'idle';
+        ticking = false;
+      };
+
+      const requestUpdate = () => {
+        if (!ticking) {
+          ticking = true;
+          window.requestAnimationFrame(updateProgress);
+        }
+      };
+
+      setHeaderOffset();
+      updateProgress();
+
+      window.addEventListener('scroll', requestUpdate, { passive: true });
+      window.addEventListener('resize', requestUpdate);
+
+      if (document.fonts?.ready) {
+        document.fonts.ready.then(requestUpdate);
+      }
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initReadingProgress, { once: true });
+    } else {
+      initReadingProgress();
+    }
+  })();
+</script>
