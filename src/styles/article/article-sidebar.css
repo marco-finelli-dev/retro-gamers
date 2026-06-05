@@ -43,18 +43,11 @@
   padding: 17px;
   border-radius: 18px;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(18,18,26,0.76),
-      rgba(7,7,11,0.96)
-    );
+  background: var(--rg-panel-bg);
 
-  border: 1px solid rgba(255,255,255,0.085);
+  border: 1px solid var(--rg-panel-border);
 
-  box-shadow:
-    0 16px 38px rgba(0,0,0,0.36),
-    inset 0 1px 0 rgba(255,255,255,0.045);
+  box-shadow: var(--rg-panel-shadow);
 }
 
 .article-sidebar__panel::before,
@@ -63,11 +56,10 @@
   position: absolute;
   inset: 0;
 
-  background:
-    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.09), transparent 42%),
-    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.08), transparent 46%);
+  background: var(--rg-panel-grid);
 
-  opacity: 0.62;
+  background-size: 46px 46px;
+  opacity: var(--rg-panel-grid-opacity);
   pointer-events: none;
 }
 
@@ -89,10 +81,9 @@
   text-transform: uppercase;
   letter-spacing: 0.9px;
 
-  color: rgba(255,255,255,0.92);
+  color: var(--rg-section-title-color);
 
-  text-shadow:
-    0 0 12px rgba(34,240,255,0.14);
+  text-shadow: none;
 }
 
 
@@ -108,18 +99,11 @@
   margin: 0;
   border-radius: 20px;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(8,10,16,0.88),
-      rgba(3,4,8,0.96)
-    );
+  background: var(--rg-card-bg);
 
-  border: 1px solid rgba(255,255,255,0.09);
+  border: 1px solid var(--rg-card-border);
 
-  box-shadow:
-    0 18px 44px rgba(0,0,0,0.46),
-    inset 0 1px 0 rgba(255,255,255,0.045);
+  box-shadow: var(--rg-card-shadow);
 }
 
 .article-sidebar__image {
@@ -251,17 +235,11 @@
   padding: 9px;
   border-radius: 14px;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255,255,255,0.034),
-      rgba(255,255,255,0.014)
-    );
+  background: var(--rg-card-bg);
 
-  border: 1px solid rgba(255,255,255,0.065);
+  border: 1px solid var(--rg-card-border);
 
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.035);
+  box-shadow: var(--rg-card-shadow);
 
   transition:
     transform var(--transition-smooth),
@@ -275,9 +253,7 @@
   position: absolute;
   inset: 0;
 
-  background:
-    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.09), transparent 42%),
-    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.08), transparent 46%);
+  background: var(--rg-panel-highlight);
 
   opacity: 0;
   pointer-events: none;
@@ -288,19 +264,9 @@
 .article-sidebar-related__card:hover {
   transform: translateY(-2px);
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(34,240,255,0.050),
-      rgba(255,255,255,0.016)
-    );
+  border-color: var(--rg-badge-border);
 
-  border-color: rgba(34,240,255,0.18);
-
-  box-shadow:
-    0 12px 28px rgba(0,0,0,0.30),
-    0 0 14px rgba(34,240,255,0.065),
-    inset 0 1px 0 rgba(255,255,255,0.050);
+  box-shadow: var(--rg-card-hover-shadow);
 }
 
 .article-sidebar-related__card:hover::before {
@@ -364,7 +330,7 @@
   text-transform: uppercase;
   letter-spacing: 0.7px;
 
-  color: var(--color-primary);
+  color: var(--rg-eyebrow-color);
 }
 
 .article-sidebar-related__content strong {
@@ -420,13 +386,12 @@
 }
 
 .article-sidebar-explore a {
-  color: var(--color-primary);
+  color: var(--rg-badge-color);
 
-  background: rgba(34,240,255,0.085);
-  border: 1px solid rgba(34,240,255,0.22);
+  background: var(--rg-badge-bg);
+  border: 1px solid var(--rg-badge-border);
 
   box-shadow:
-    0 0 14px rgba(34,240,255,0.08),
     inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
@@ -464,8 +429,8 @@
 
   color: var(--color-primary);
 
-  background: rgba(34,240,255,0.08);
-  border: 1px solid rgba(34,240,255,0.20);
+  background: var(--rg-badge-bg);
+  border: 1px solid var(--rg-badge-border);
 }
 
 .review-sidebar.has-no-cover {
@@ -542,35 +507,16 @@
 
 html[data-theme="light"] .article-sidebar__panel,
 html[data-theme="light"] .review-sidebar__panel {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255,255,255,0.82),
-      rgba(239,244,251,0.97)
-    ),
-    radial-gradient(circle at 0% 0%, rgba(8,104,122,0.085), transparent 38%),
-    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.075), transparent 42%);
-
-  border-color: rgba(8,104,122,0.13);
-
-  box-shadow:
-    0 18px 42px rgba(24,32,48,0.13),
-    0 0 18px rgba(8,104,122,0.035),
-    inset 0 1px 0 rgba(255,255,255,0.80);
+  background: var(--rg-panel-bg);
+  border-color: var(--rg-panel-border);
+  box-shadow: var(--rg-panel-shadow);
 }
 
 html[data-theme="light"] .article-sidebar__panel::before,
 html[data-theme="light"] .review-sidebar__panel::before {
-  background:
-    radial-gradient(circle at 0% 0%, rgba(8,104,122,0.105), transparent 42%),
-    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.080), transparent 46%),
-    linear-gradient(
-      135deg,
-      rgba(255,255,255,0.36),
-      transparent 42%
-    );
-
-  opacity: 0.72;
+  background: var(--rg-panel-grid);
+  background-size: 46px 46px;
+  opacity: var(--rg-panel-grid-opacity);
 }
 
 html[data-theme="light"] .article-sidebar__panel h2,
@@ -578,7 +524,7 @@ html[data-theme="light"] .review-sidebar__panel h2 {
   color: rgba(28,32,44,0.94);
 
   text-shadow:
-    0 8px 22px rgba(24,32,48,0.08);
+    none;
 }
 
 
@@ -645,38 +591,14 @@ html[data-theme="light"] .review-info-list dd {
 ======================================== */
 
 html[data-theme="light"] .article-sidebar-related__card {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255,255,255,0.74),
-      rgba(232,239,248,0.94)
-    ),
-    radial-gradient(circle at 0% 0%, rgba(8,104,122,0.055), transparent 42%),
-    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.045), transparent 46%);
-
-  border-color: rgba(18,24,38,0.10);
-
-  box-shadow:
-    0 10px 22px rgba(24,32,48,0.085),
-    inset 0 1px 0 rgba(255,255,255,0.74);
+  background: var(--rg-card-bg);
+  border-color: var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
 }
 
 html[data-theme="light"] .article-sidebar-related__card:hover {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255,255,255,0.84),
-      rgba(220,233,244,0.98)
-    ),
-    radial-gradient(circle at 0% 0%, rgba(8,104,122,0.095), transparent 42%),
-    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.070), transparent 46%);
-
-  border-color: rgba(8,104,122,0.23);
-
-  box-shadow:
-    0 14px 30px rgba(24,32,48,0.14),
-    0 0 16px rgba(8,104,122,0.075),
-    inset 0 1px 0 rgba(255,255,255,0.82);
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-hover-shadow);
 }
 
 html[data-theme="light"] .article-sidebar-related__image {
