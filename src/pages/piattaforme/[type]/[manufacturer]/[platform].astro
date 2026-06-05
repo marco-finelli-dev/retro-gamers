@@ -1,31 +1,13 @@
 ---
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
 import PlatformDetail from '../../../../components/platforms/PlatformDetail.astro';
+import ArchiveCard from '../../../../components/archive/ArchiveCard.astro';
 
 import { getAllPosts, groupPosts } from '../../../../lib/posts';
 import {
-  getAllPlatforms,
   getPlatformByPath,
   getPlatformTypeFromParam
 } from '../../../../lib/platforms';
-
-export async function getStaticPaths() {
-  const platforms = await getAllPlatforms();
-
-  return platforms
-    .filter((platform) =>
-      platform.platformType &&
-      platform.manufacturer?.slug &&
-      platform.slug
-    )
-    .map((platform) => ({
-      params: {
-        type: platform.platformType,
-        manufacturer: platform.manufacturer.slug,
-        platform: platform.slug
-      }
-    }));
-}
 
 const { type, manufacturer, platform } = Astro.params;
 
@@ -43,6 +25,36 @@ const platformData = await getPlatformByPath(
 if (!platformData) {
   return Astro.redirect('/piattaforme/');
 }
+
+const currentPage = Math.max(
+  1,
+  Number.parseInt(Astro.url.searchParams.get('page') || '1', 10) || 1
+);
+const postsPerPage = 12;
+
+const relatedPlatformPosts = allPosts
+  .filter((post) =>
+    (post.language || 'it') !== 'en' &&
+    post.platforms?.some((item) => item._id === platformData._id)
+  )
+  .sort((a, b) =>
+    new Date(b.publishedAt || 0).getTime() -
+    new Date(a.publishedAt || 0).getTime()
+  );
+
+const relatedTotal = relatedPlatformPosts.length;
+const relatedTotalPages = Math.max(1, Math.ceil(relatedTotal / postsPerPage));
+const relatedPage = Math.min(currentPage, relatedTotalPages);
+const relatedOffset = (relatedPage - 1) * postsPerPage;
+const relatedPagePosts = relatedPlatformPosts.slice(
+  relatedOffset,
+  relatedOffset + postsPerPage
+);
+
+const relatedBaseUrl =
+  `/piattaforme/${platformType}/${manufacturer}/${platform}/`;
+const getRelatedPageUrl = (pageNumber) =>
+  `${relatedBaseUrl}?page=${pageNumber}`;
 
 const truncateDescription = (text, maxLength = 155) => {
   const cleanText = text?.replace(/\s+/g, ' ').trim() || '';
@@ -71,4 +83,38 @@ const pageDescription =
   canonical={`https://www.retro-gamers.it/piattaforme/${platformType}/${manufacturer}/${platform}/`}
 >
   <PlatformDetail platform={platformData} />
+
+  {relatedTotal > 0 && (
+    <section class="platform-related">
+      <div class="container">
+        <div class="platform-related__inner">
+          <div class="platform-related__header">
+            <span>Archivio</span>
+            <h2>Articoli collegati</h2>
+            <p>Recensioni, speciali, guide e approfondimenti legati a questa piattaforma.</p>
+          </div>
+
+          <div class="platform-related__grid">
+            {relatedPagePosts.map((post) => (
+              <ArchiveCard post={post} />
+            ))}
+          </div>
+
+          {relatedTotalPages > 1 && (
+            <nav class="platform-related__pagination" aria-label="Paginazione articoli collegati">
+              {relatedPage > 1 && (
+                <a href={getRelatedPageUrl(relatedPage - 1)}>Precedente</a>
+              )}
+
+              <span>Pagina {relatedPage} di {relatedTotalPages}</span>
+
+              {relatedPage < relatedTotalPages && (
+                <a href={getRelatedPageUrl(relatedPage + 1)}>Successiva</a>
+              )}
+            </nav>
+          )}
+        </div>
+      </div>
+    </section>
+  )}
 </BaseLayout>
