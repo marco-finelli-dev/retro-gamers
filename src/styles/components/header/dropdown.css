@@ -40,23 +40,16 @@
   background:
     linear-gradient(
       180deg,
-      rgba(6,8,14,0.80),
-      rgba(3,4,9,0.90)
+      rgba(6,8,14,0.18),
+      rgba(4,6,12,0.28)
     ),
-    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.10), transparent 38%),
-    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.10), transparent 42%);
+    var(--rg-panel-bg);
+  border: 1px solid var(--rg-panel-border);
 
-  background-blend-mode: normal, screen, screen;
+  backdrop-filter: blur(38px) saturate(150%) brightness(0.94);
+  -webkit-backdrop-filter: blur(38px) saturate(150%) brightness(0.94);
 
-  border: 1px solid rgba(255,255,255,0.13);
-
-  backdrop-filter: blur(34px) saturate(180%);
-  -webkit-backdrop-filter: blur(34px) saturate(180%);
-
-  box-shadow:
-    0 30px 86px rgba(0,0,0,0.80),
-    0 0 34px rgba(34,240,255,0.075),
-    inset 0 1px 0 rgba(255,255,255,0.08);
+  box-shadow: var(--rg-panel-shadow);
 }
 
 .rg-dropdown__panel::before {
@@ -65,21 +58,8 @@
   inset: 0;
   z-index: 0;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(1,2,6,0.50),
-      rgba(1,2,6,0.66)
-    ),
-    linear-gradient(rgba(34,240,255,0.016) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(168,85,247,0.014) 1px, transparent 1px);
-
-  background-size:
-    100% 100%,
-    42px 42px,
-    42px 42px;
-
-  opacity: 1;
+  background-image: var(--rg-panel-grid);
+  opacity: var(--rg-panel-grid-opacity);
 
   pointer-events: none;
 }
@@ -94,14 +74,7 @@
 
   height: 1px;
 
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(34,240,255,0.42),
-      rgba(168,85,247,0.32),
-      transparent
-    );
+  background: var(--rg-panel-highlight);
 
   pointer-events: none;
 }
@@ -130,18 +103,9 @@
   color: inherit;
   text-decoration: none;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(11,14,23,0.82),
-      rgba(4,6,12,0.94)
-    );
-
-  border: 1px solid rgba(255,255,255,0.085);
-
-  box-shadow:
-    0 10px 24px rgba(0,0,0,0.26),
-    inset 0 1px 0 rgba(255,255,255,0.045);
+  background: var(--rg-card-bg);
+  border: 1px solid var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
 
   transition:
     transform var(--transition-smooth),
@@ -157,19 +121,9 @@
 .rg-dropdown__item:hover {
   transform: translateY(-1px);
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(22,27,40,0.68),
-      rgba(8,10,18,0.80)
-    );
-
-  border-color: rgba(34,240,255,0.24);
-
-  box-shadow:
-    0 14px 34px rgba(0,0,0,0.40),
-    0 0 18px rgba(34,240,255,0.10),
-    inset 0 1px 0 rgba(255,255,255,0.060);
+  background: var(--rg-badge-bg);
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-hover-shadow);
 }
 
 /* News senza score */
@@ -274,11 +228,8 @@
 }
 
 .rg-dropdown__item:hover .rg-dropdown__title {
-  color: var(--color-primary);
-
-  text-shadow:
-    0 0 12px rgba(34,240,255,0.22),
-    0 5px 20px rgba(0,0,0,0.88);
+  color: var(--rg-action-hover-color);
+  text-shadow: 0 5px 20px rgba(0,0,0,0.72);
 }
 
 
@@ -298,19 +249,9 @@
 
   border-radius: 13px;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(10,10,16,0.92),
-      rgba(4,4,8,0.99)
-    );
-
-  border: 1px solid rgba(34,240,255,0.25);
-
-  box-shadow:
-    0 10px 22px rgba(0,0,0,0.48),
-    0 0 14px rgba(34,240,255,0.10),
-    inset 0 1px 0 rgba(255,255,255,0.10);
+  background: var(--rg-badge-bg);
+  border: 1px solid var(--rg-badge-border);
+  box-shadow: var(--rg-card-shadow);
 }
 
 .rg-dropdown__score span {
@@ -335,7 +276,7 @@
 
 .rg-dropdown__score.is-top span,
 .rg-dropdown__score.is-must span {
-  color: var(--color-primary);
+  color: var(--rg-badge-color);
   text-shadow: 0 0 10px rgba(34,240,255,0.42);
 }
 
@@ -384,20 +325,12 @@
   line-height: 1;
   font-weight: 700;
 
-  color: rgba(255,255,255,0.72);
+  color: var(--rg-action-color);
   text-decoration: none;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(20,22,32,0.62),
-      rgba(8,9,14,0.88)
-    );
-
-  border: 1px solid rgba(255,255,255,0.070);
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.035);
+  background: var(--rg-card-bg);
+  border: 1px solid var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
 
   transition:
     color var(--transition-fast),
@@ -407,24 +340,14 @@
 }
 
 .rg-dropdown__more span {
-  color: var(--color-primary);
+  color: var(--rg-action-hover-color);
 }
 
 .rg-dropdown__more:hover {
-  color: #fff;
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(34,240,255,0.075),
-      rgba(8,9,14,0.92)
-    );
-
-  border-color: rgba(34,240,255,0.18);
-
-  box-shadow:
-    0 0 16px rgba(34,240,255,0.08),
-    inset 0 1px 0 rgba(255,255,255,0.045);
+  color: var(--rg-section-title-color);
+  background: var(--rg-cta-hover-bg);
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-hover-shadow);
 }
 
 
@@ -461,18 +384,9 @@
   text-decoration: none;
   color: inherit;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(20,22,32,0.78),
-      rgba(8,9,14,0.96)
-    );
-
-  border: 1px solid rgba(255,255,255,0.085);
-
-  box-shadow:
-    0 10px 24px rgba(0,0,0,0.18),
-    inset 0 1px 0 rgba(255,255,255,0.045);
+  background: var(--rg-card-bg);
+  border: 1px solid var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
 
   overflow: hidden;
 
@@ -501,19 +415,9 @@
 .rg-platform-link:hover {
   transform: translateY(-1px);
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(28,32,44,0.92),
-      rgba(9,10,16,0.99)
-    );
-
-  border-color: rgba(34,240,255,0.24);
-
-  box-shadow:
-    0 14px 34px rgba(0,0,0,0.46),
-    0 0 18px rgba(34,240,255,0.10),
-    inset 0 1px 0 rgba(255,255,255,0.060);
+  background: var(--rg-badge-bg);
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-hover-shadow);
 }
 
 .rg-platform-link:hover::before {
@@ -530,21 +434,9 @@
 
   border-radius: 18px;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(16,22,32,0.92),
-      rgba(5,7,14,0.99)
-    ),
-    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.18), transparent 48%),
-    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.12), transparent 52%);
-
-  border: 1px solid rgba(34,240,255,0.24);
-
-  box-shadow:
-    0 10px 22px rgba(0,0,0,0.34),
-    0 0 14px rgba(34,240,255,0.10),
-    inset 0 1px 0 rgba(255,255,255,0.09);
+  background: var(--rg-badge-bg);
+  border: 1px solid var(--rg-badge-border);
+  box-shadow: var(--rg-card-shadow);
 }
 
 .rg-platform-link__icon img {
@@ -588,11 +480,8 @@
 }
 
 .rg-platform-link:hover .rg-platform-link__text strong {
-  color: var(--color-primary);
-
-  text-shadow:
-    0 0 12px rgba(34,240,255,0.20),
-    0 5px 20px rgba(0,0,0,0.88);
+  color: var(--rg-action-hover-color);
+  text-shadow: 0 5px 20px rgba(0,0,0,0.72);
 }
 
 /* ========================================
@@ -603,58 +492,26 @@ html[data-theme="light"] .rg-dropdown__panel {
   background:
     linear-gradient(
       180deg,
-      rgba(238,245,249,0.92),
-      rgba(219,230,240,0.98)
+      rgba(248,251,255,0.20),
+      rgba(229,238,248,0.30)
     ),
-    radial-gradient(circle at 0% 0%, rgba(8,104,122,0.16), transparent 38%),
-    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.12), transparent 42%),
-    radial-gradient(circle at 78% 0%, rgba(197,138,0,0.045), transparent 38%);
+    var(--rg-panel-bg);
+  border-color: var(--rg-panel-border);
 
-  background-blend-mode: normal;
+  backdrop-filter: blur(38px) saturate(145%) brightness(1.02);
+  -webkit-backdrop-filter: blur(38px) saturate(145%) brightness(1.02);
 
-  border-color: rgba(8,104,122,0.16);
-
-  backdrop-filter: blur(34px) saturate(170%);
-  -webkit-backdrop-filter: blur(34px) saturate(170%);
-
-  box-shadow:
-    0 30px 76px rgba(24,32,48,0.30),
-    0 0 24px rgba(8,104,122,0.060),
-    inset 0 1px 0 rgba(255,255,255,0.78),
-    inset 0 -24px 44px rgba(8,104,122,0.030);
+  box-shadow: var(--rg-panel-shadow);
 }
 
 html[data-theme="light"] .rg-dropdown__panel::before {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255,255,255,0.18),
-      rgba(205,220,235,0.22)
-    ),
-    linear-gradient(rgba(8,104,122,0.030) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(102,81,184,0.024) 1px, transparent 1px);
-
-  background-size:
-    100% 100%,
-    42px 42px,
-    42px 42px;
-
-  opacity: 1;
+  background-image: var(--rg-panel-grid);
+  opacity: var(--rg-panel-grid-opacity);
 }
 
 html[data-theme="light"] .rg-dropdown__panel::after {
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(8,104,122,0.44),
-      rgba(102,81,184,0.30),
-      transparent
-    );
-
-  box-shadow:
-    0 0 14px rgba(8,104,122,0.12),
-    0 0 22px rgba(102,81,184,0.08);
+  background: var(--rg-panel-highlight);
+  box-shadow: none;
 }
 
 
@@ -664,40 +521,16 @@ html[data-theme="light"] .rg-dropdown__panel::after {
 
 html[data-theme="light"] .rg-dropdown__item,
 html[data-theme="light"] .rg-platform-link {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(244,248,252,0.90),
-      rgba(226,235,245,0.98)
-    ),
-    radial-gradient(circle at 0% 0%, rgba(8,104,122,0.075), transparent 38%),
-    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.060), transparent 42%);
-
-  border-color: rgba(8,104,122,0.12);
-
-  box-shadow:
-    0 12px 26px rgba(24,32,48,0.12),
-    inset 0 1px 0 rgba(255,255,255,0.76),
-    inset 0 -14px 26px rgba(8,104,122,0.025);
+  background: var(--rg-card-bg);
+  border-color: var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
 }
 
 html[data-theme="light"] .rg-dropdown__item:hover,
 html[data-theme="light"] .rg-platform-link:hover {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(232,241,247,0.94),
-      rgba(207,222,236,0.98)
-    ),
-    radial-gradient(circle at 0% 0%, rgba(8,104,122,0.105), transparent 40%),
-    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.075), transparent 44%);
-
-  border-color: rgba(8,104,122,0.24);
-
-  box-shadow:
-    0 16px 34px rgba(24,32,48,0.17),
-    0 0 16px rgba(8,104,122,0.070),
-    inset 0 1px 0 rgba(255,255,255,0.80);
+  background: var(--rg-badge-bg);
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-hover-shadow);
 }
 
 html[data-theme="light"] .rg-platform-link::before {
@@ -759,10 +592,8 @@ html[data-theme="light"] .rg-platform-link__text strong {
 
 html[data-theme="light"] .rg-dropdown__item:hover .rg-dropdown__title,
 html[data-theme="light"] .rg-platform-link:hover .rg-platform-link__text strong {
-  color: #087C8E;
-
-  text-shadow:
-    0 0 10px rgba(8,104,122,0.12);
+  color: var(--rg-action-hover-color);
+  text-shadow: none;
 }
 
 html[data-theme="light"] .rg-platform-link__text small {
@@ -775,26 +606,15 @@ html[data-theme="light"] .rg-platform-link__text small {
 ======================================== */
 
 html[data-theme="light"] .rg-dropdown__score {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(228,248,252,0.94),
-      rgba(204,232,240,0.92)
-    ),
-    radial-gradient(circle at 20% 0%, rgba(8,104,122,0.22), transparent 48%);
-
-  border-color: rgba(8,104,122,0.24);
-
-  box-shadow:
-    0 12px 24px rgba(8,104,122,0.10),
-    0 0 18px rgba(8,104,122,0.070),
-    inset 0 1px 0 rgba(255,255,255,0.78);
+  background: var(--rg-badge-bg);
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-shadow);
 }
 
 html[data-theme="light"] .rg-dropdown__score.is-top span,
 html[data-theme="light"] .rg-dropdown__score.is-must span {
-  color: #087C8E;
-  text-shadow: 0 0 10px rgba(8,104,122,0.14);
+  color: var(--rg-badge-color);
+  text-shadow: none;
 }
 
 html[data-theme="light"] .rg-dropdown__score.is-good span {
@@ -828,46 +648,21 @@ html[data-theme="light"] .rg-dropdown__score.is-good small {
 ======================================== */
 
 html[data-theme="light"] .rg-dropdown__more {
-  color: rgba(42,48,62,0.66);
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(235,242,248,0.90),
-      rgba(214,226,238,0.94)
-    ),
-    radial-gradient(circle at 0% 0%, rgba(8,104,122,0.060), transparent 42%),
-    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.050), transparent 46%);
-
-  border-color: rgba(8,104,122,0.11);
-
-  box-shadow:
-    0 9px 20px rgba(24,32,48,0.075),
-    inset 0 1px 0 rgba(255,255,255,0.72);
+  color: var(--rg-action-color);
+  background: var(--rg-card-bg);
+  border-color: var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
 }
 
 html[data-theme="light"] .rg-dropdown__more span {
-  color: #087C8E;
+  color: var(--rg-action-hover-color);
 }
 
 html[data-theme="light"] .rg-dropdown__more:hover {
-  color: rgba(28,32,44,0.92);
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(228,239,246,0.94),
-      rgba(205,220,235,0.98)
-    ),
-    radial-gradient(circle at 0% 0%, rgba(8,104,122,0.095), transparent 42%),
-    radial-gradient(circle at 100% 100%, rgba(102,81,184,0.070), transparent 46%);
-
-  border-color: rgba(8,104,122,0.20);
-
-  box-shadow:
-    0 12px 26px rgba(24,32,48,0.12),
-    0 0 14px rgba(8,104,122,0.055),
-    inset 0 1px 0 rgba(255,255,255,0.78);
+  color: var(--rg-section-title-color);
+  background: var(--rg-cta-hover-bg);
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-hover-shadow);
 }
 
 
@@ -876,21 +671,9 @@ html[data-theme="light"] .rg-dropdown__more:hover {
 ======================================== */
 
 html[data-theme="light"] .rg-platform-link__icon {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(218,227,239,0.98),
-      rgba(194,210,226,0.96)
-    ),
-    radial-gradient(circle at 24% 0%, rgba(8,104,122,0.14), transparent 54%),
-    radial-gradient(circle at 100% 100%, rgba(82,70,150,0.09), transparent 54%);
-
-  border-color: rgba(18,24,38,0.15);
-
-  box-shadow:
-    0 10px 22px rgba(24,32,48,0.12),
-    inset 0 1px 0 rgba(255,255,255,0.72),
-    inset 0 -12px 22px rgba(24,32,48,0.035);
+  background: var(--rg-badge-bg);
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-shadow);
 }
 
 html[data-theme="light"] .rg-platform-link__icon img {
@@ -909,12 +692,8 @@ html[data-theme="light"] .rg-platform-link__icon img {
 }
 
 html[data-theme="light"] .rg-platform-link:hover .rg-platform-link__icon {
-  border-color: rgba(8,104,122,0.24);
-
-  box-shadow:
-    0 11px 22px rgba(24,32,48,0.12),
-    0 0 14px rgba(8,104,122,0.060),
-    inset 0 1px 0 rgba(255,255,255,0.78);
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-hover-shadow);
 }
 
 /* ========================================
