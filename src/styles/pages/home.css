@@ -9,6 +9,127 @@
 
 
 /* ========================================
+   HOME DARK TOKENS
+======================================== */
+
+:root {
+  --home-panel-bg:
+    linear-gradient(
+      180deg,
+      rgba(24,24,34,0.54),
+      rgba(12,12,18,0.78)
+    ),
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.036), transparent 36%),
+    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.032), transparent 42%);
+
+  --home-panel-border: rgba(255,255,255,0.13);
+
+  --home-panel-shadow:
+    0 14px 34px rgba(0,0,0,0.26),
+    0 0 0 1px rgba(255,255,255,0.015),
+    inset 0 1px 0 rgba(255,255,255,0.060);
+
+  --home-panel-grid:
+    linear-gradient(rgba(34,240,255,0.030) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,85,247,0.028) 1px, transparent 1px);
+
+  --home-panel-grid-opacity: 0.26;
+
+  --home-panel-highlight:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(34,240,255,0.34),
+      rgba(168,85,247,0.26),
+      transparent
+    );
+
+  --home-panel-highlight-shadow:
+    0 0 12px rgba(34,240,255,0.065),
+    0 0 18px rgba(168,85,247,0.050);
+
+  --home-card-bg:
+    linear-gradient(
+      180deg,
+      rgba(24,24,34,0.68),
+      rgba(11,11,17,0.82)
+    );
+
+  --home-card-border: rgba(255,255,255,0.115);
+
+  --home-card-shadow:
+    0 10px 24px rgba(0,0,0,0.24),
+    inset 0 1px 0 rgba(255,255,255,0.058);
+
+  --home-card-hover-shadow:
+    0 6px 14px rgba(0,0,0,0.18);
+
+  --home-card-accent:
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.045), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(168,85,247,0.040), transparent 42%);
+
+  --home-section-title-color: rgba(255,255,255,0.94);
+  --home-section-title-size: 25px;
+  --home-section-title-weight: 800;
+  --home-section-title-letter-spacing: 1px;
+  --home-section-title-shadow:
+    0 0 12px rgba(34,240,255,0.14),
+    0 5px 20px rgba(0,0,0,0.72);
+
+  --home-section-title-line:
+    linear-gradient(
+      90deg,
+      rgba(34,240,255,0.48),
+      rgba(168,85,247,0.24) 58%,
+      transparent
+    );
+  --home-section-title-line-width: 148px;
+  --home-section-title-line-shadow: 0 0 10px rgba(34,240,255,0.10);
+
+  --home-section-eyebrow-color: rgba(34,240,255,0.86);
+  --home-section-eyebrow-letter-spacing: 0.82px;
+  --home-section-eyebrow-weight: 800;
+
+  --home-section-link-color: var(--color-text-soft);
+  --home-section-link-hover-color: var(--color-primary);
+
+  --home-badge-bg: rgba(34,240,255,0.065);
+  --home-badge-border: rgba(34,240,255,0.17);
+  --home-badge-color: rgba(34,240,255,0.90);
+  --home-badge-muted-bg: rgba(255,255,255,0.045);
+  --home-badge-muted-border: rgba(255,255,255,0.10);
+  --home-badge-muted-color: rgba(255,255,255,0.74);
+  --home-badge-shadow: inset 0 1px 0 rgba(255,255,255,0.055);
+}
+
+html[data-theme="light"] {
+  --home-section-title-color: rgba(24,28,40,0.96);
+  --home-section-title-shadow: 0 0 12px rgba(8,124,142,0.10);
+
+  --home-section-title-line:
+    linear-gradient(
+      90deg,
+      rgba(8,124,142,0.48),
+      rgba(102,81,184,0.22) 58%,
+      transparent
+    );
+  --home-section-title-line-shadow: 0 0 10px rgba(8,124,142,0.10);
+
+  --home-section-eyebrow-color: #087C8E;
+  --home-section-link-color: rgba(38,44,58,0.62);
+  --home-section-link-hover-color: #087C8E;
+
+  --home-badge-bg: rgba(8,124,142,0.070);
+  --home-badge-border: rgba(8,124,142,0.16);
+  --home-badge-color: #087C8E;
+  --home-badge-muted-bg: rgba(24,32,48,0.045);
+  --home-badge-muted-border: rgba(24,32,48,0.10);
+  --home-badge-muted-color: rgba(42,48,62,0.66);
+  --home-badge-shadow: inset 0 1px 0 rgba(255,255,255,0.70);
+}
+
+
+/* ========================================
    HOME SECTIONS BASE
 ======================================== */
 
@@ -41,12 +162,12 @@
   transform: translateX(-50%);
 
   background:
-    radial-gradient(circle at 32% 42%, rgba(34,240,255,0.13), transparent 44%),
-    radial-gradient(circle at 68% 34%, rgba(168,85,247,0.13), transparent 48%),
+    radial-gradient(circle at 32% 42%, rgba(34,240,255,0.085), transparent 44%),
+    radial-gradient(circle at 68% 34%, rgba(168,85,247,0.080), transparent 48%),
     radial-gradient(circle at 50% 72%, rgba(255,217,61,0.035), transparent 38%);
 
   filter: blur(10px);
-  opacity: 0.95;
+  opacity: 0.58;
 
   pointer-events: none;
 }
@@ -81,7 +202,7 @@ html[data-theme="light"] .home-hero::before {
     linear-gradient(90deg, rgba(168,85,247,0.105) 1px, transparent 1px);
 
   background-size: 72px 72px;
-  opacity: 0.28;
+  opacity: 0.18;
 
   mask-image:
     radial-gradient(
@@ -125,19 +246,19 @@ html[data-theme="light"] .home-hero::after {
   background:
     radial-gradient(
       ellipse at 36% 50%,
-      rgba(34,240,255,0.050),
-      rgba(34,240,255,0.020) 34%,
+      rgba(34,240,255,0.030),
+      rgba(34,240,255,0.012) 34%,
       transparent 72%
     ),
     radial-gradient(
       ellipse at 64% 50%,
-      rgba(168,85,247,0.045),
-      rgba(168,85,247,0.018) 36%,
+      rgba(168,85,247,0.026),
+      rgba(168,85,247,0.010) 36%,
       transparent 74%
     );
 
   filter: blur(18px);
-  opacity: 0.9;
+  opacity: 0.42;
 
   pointer-events: none;
 }
