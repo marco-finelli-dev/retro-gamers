@@ -1,10 +1,10 @@
 ---
 import BaseLayout from '../../../../../layouts/BaseLayout.astro';
 import PlatformDetail from '../../../../../components/platforms/PlatformDetail.astro';
+import ArchiveCard from '../../../../../components/archive/ArchiveCard.astro';
 
-import { getAllPosts, groupPosts } from '../../../../../lib/posts';
+import { getAllPosts } from '../../../../../lib/posts';
 import {
-  getAllPlatforms,
   getPlatformByPath
 } from '../../../../../lib/platforms';
 
@@ -20,34 +20,11 @@ const typeSlugMap = {
   console: 'consoles'
 };
 
-export async function getStaticPaths() {
-  const platforms = await getAllPlatforms();
-
-  return platforms
-    .filter((platform) =>
-      platform.platformType &&
-      platform.manufacturer?.slug &&
-      platform.slug
-    )
-    .map((platform) => ({
-      params: {
-        type: typeSlugMap[platform.platformType] || platform.platformType,
-        manufacturer: platform.manufacturer.slug,
-        platform: platform.slug
-      },
-      props: {
-        internalType: platform.platformType
-      }
-    }));
-}
-
 const { type, manufacturer, platform } = Astro.params;
-const { internalType: staticInternalType } = Astro.props;
 
-const platformType = staticInternalType || typeMap[type] || type;
+const platformType = typeMap[type] || type;
 
 const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 
 const englishReviews = allPosts.filter(
   (post) => post.type === 'review' && post.language === 'en'
@@ -69,6 +46,36 @@ if (!platformData) {
 
 const canonicalType = typeSlugMap[platformType] || type;
 
+const currentPage = Math.max(
+  1,
+  Number.parseInt(Astro.url.searchParams.get('page') || '1', 10) || 1
+);
+const postsPerPage = 12;
+
+const relatedPlatformPosts = allPosts
+  .filter((post) =>
+    post.language === 'en' &&
+    post.platforms?.some((item) => item._id === platformData._id)
+  )
+  .sort((a, b) =>
+    new Date(b.publishedAt || 0).getTime() -
+    new Date(a.publishedAt || 0).getTime()
+  );
+
+const relatedTotal = relatedPlatformPosts.length;
+const relatedTotalPages = Math.max(1, Math.ceil(relatedTotal / postsPerPage));
+const relatedPage = Math.min(currentPage, relatedTotalPages);
+const relatedOffset = (relatedPage - 1) * postsPerPage;
+const relatedPagePosts = relatedPlatformPosts.slice(
+  relatedOffset,
+  relatedOffset + postsPerPage
+);
+
+const relatedBaseUrl =
+  `/en/platforms/${canonicalType}/${manufacturer}/${platform}/`;
+const getRelatedPageUrl = (pageNumber) =>
+  `${relatedBaseUrl}?page=${pageNumber}`;
+
 const pageDescription =
   platformData.history?.slice(0, 155) ||
   `${platformData.name} platform profile on Retro-Gamers.it.`;
@@ -84,4 +91,38 @@ const pageDescription =
   canonical={`https://www.retro-gamers.it/en/platforms/${canonicalType}/${manufacturer}/${platform}/`}
 >
   <PlatformDetail platform={platformData} lang="en" />
+
+  {relatedTotal > 0 && (
+    <section class="platform-related">
+      <div class="container">
+        <div class="platform-related__inner">
+          <div class="platform-related__header">
+            <span>Archive</span>
+            <h2>Related articles</h2>
+            <p>Reviews, features, guides and stories connected to this platform.</p>
+          </div>
+
+          <div class="platform-related__grid">
+            {relatedPagePosts.map((post) => (
+              <ArchiveCard post={post} lang="en" />
+            ))}
+          </div>
+
+          {relatedTotalPages > 1 && (
+            <nav class="platform-related__pagination" aria-label="Related articles pagination">
+              {relatedPage > 1 && (
+                <a href={getRelatedPageUrl(relatedPage - 1)}>Previous</a>
+              )}
+
+              <span>Page {relatedPage} of {relatedTotalPages}</span>
+
+              {relatedPage < relatedTotalPages && (
+                <a href={getRelatedPageUrl(relatedPage + 1)}>Next</a>
+              )}
+            </nav>
+          )}
+        </div>
+      </div>
+    </section>
+  )}
 </BaseLayout>
