@@ -6,6 +6,7 @@ import ArticleReadingProgress from './ArticleReadingProgress.astro';
 import ArticleSidebar from './ArticleSidebar.astro';
 import ReviewSidebar from './ReviewSidebar.astro';
 import ArticleFinalRating from './ArticleFinalRating.astro';
+import ArticleProsCons from './ArticleProsCons.astro';
 import ArticleAffiliateBox from './ArticleAffiliateBox.astro';
 import SupportButton from '../common/SupportButton.astro';
 import ArticleSeriesBox from './ArticleSeriesBox.astro';
@@ -22,6 +23,13 @@ const {
 
 const isReview = post?.type === 'review';
 const currentLang = post?.language || 'it';
+const reviewPros = Array.isArray(post?.pros)
+  ? post.pros.filter((item) => typeof item === 'string' && item.trim())
+  : [];
+const reviewCons = Array.isArray(post?.cons)
+  ? post.cons.filter((item) => typeof item === 'string' && item.trim())
+  : [];
+const hasReviewProsCons = isReview && (reviewPros.length > 0 || reviewCons.length > 0);
 
 const articlePageClass = [
   'article-page',
@@ -82,6 +90,10 @@ const switchCta =
 
         <ArticleFinalRating rating={post.rating} lang={currentLang} />
 
+      )}
+
+      {hasReviewProsCons && (
+        <ArticleProsCons pros={reviewPros} cons={reviewCons} lang={currentLang} />
       )}
 
       <SupportButton lang={currentLang} variant="box" />

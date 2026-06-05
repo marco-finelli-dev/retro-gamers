@@ -1,0 +1,57 @@
+---
+const { pros = [], cons = [], lang = 'it' } = Astro.props;
+
+const prosItems = Array.isArray(pros)
+  ? pros.filter((item) => typeof item === 'string' && item.trim())
+  : [];
+
+const consItems = Array.isArray(cons)
+  ? cons.filter((item) => typeof item === 'string' && item.trim())
+  : [];
+
+const labels = {
+  it: {
+    eyebrow: 'Sintesi recensione',
+    pros: 'Pro',
+    cons: 'Contro'
+  },
+  en: {
+    eyebrow: 'Review summary',
+    pros: 'Pros',
+    cons: 'Cons'
+  }
+};
+
+const t = labels[lang] || labels.it;
+const hasItems = prosItems.length > 0 || consItems.length > 0;
+---
+
+{hasItems && (
+  <section class="article-pros-cons" aria-label={t.eyebrow}>
+    <span class="article-pros-cons__eyebrow">{t.eyebrow}</span>
+
+    <div class="article-pros-cons__grid">
+      {prosItems.length > 0 && (
+        <div class="article-pros-cons__column article-pros-cons__column--pros">
+          <h2>{t.pros}</h2>
+          <ul>
+            {prosItems.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {consItems.length > 0 && (
+        <div class="article-pros-cons__column article-pros-cons__column--cons">
+          <h2>{t.cons}</h2>
+          <ul>
+            {consItems.map((item) => (
+              <li>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  </section>
+)}

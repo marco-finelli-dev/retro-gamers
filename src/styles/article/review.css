@@ -491,3 +491,224 @@ html[data-theme="light"] .article-final-rating__content p {
 
   color: rgba(34,38,52,0.74);
 }
+
+
+/* ========================================
+   REVIEW PROS / CONS
+======================================== */
+
+.article-pros-cons {
+  position: relative;
+  overflow: hidden;
+
+  margin-top: 18px;
+  padding: 22px;
+
+  border-radius: 24px;
+
+  background: var(--rg-panel-bg);
+  border: 1px solid var(--rg-panel-border);
+  box-shadow: var(--rg-panel-shadow);
+}
+
+.article-pros-cons::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image: var(--rg-panel-grid);
+  opacity: var(--rg-panel-grid-opacity);
+
+  mask-image:
+    linear-gradient(to bottom, rgba(0,0,0,0.82), transparent 92%);
+
+  pointer-events: none;
+}
+
+.article-pros-cons::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 0;
+
+  height: 1px;
+
+  background: var(--rg-panel-highlight);
+
+  pointer-events: none;
+}
+
+.article-pros-cons > * {
+  position: relative;
+  z-index: 1;
+}
+
+.article-pros-cons__eyebrow {
+  display: inline-flex;
+  align-items: center;
+
+  margin-bottom: 14px;
+
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+
+  color: var(--rg-eyebrow-color);
+}
+
+.article-pros-cons__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.article-pros-cons__column {
+  position: relative;
+  overflow: hidden;
+
+  padding: 18px;
+
+  border-radius: 18px;
+
+  background: var(--rg-card-bg);
+  border: 1px solid var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.article-pros-cons__column::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+}
+
+.article-pros-cons__column--pros::before {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.12), transparent 48%),
+    radial-gradient(circle at 100% 100%, rgba(52,211,153,0.065), transparent 50%);
+}
+
+.article-pros-cons__column--cons::before {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(168,85,247,0.105), transparent 48%),
+    radial-gradient(circle at 100% 100%, rgba(244,114,182,0.070), transparent 50%);
+}
+
+.article-pros-cons__column > * {
+  position: relative;
+  z-index: 1;
+}
+
+.article-pros-cons h2 {
+  margin: 0 0 13px;
+
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.1;
+  font-weight: 850;
+  letter-spacing: 0;
+
+  color: var(--rg-section-title-color);
+}
+
+.article-pros-cons ul {
+  display: grid;
+  gap: 10px;
+
+  margin: 0;
+  padding: 0;
+
+  list-style: none;
+}
+
+.article-pros-cons li {
+  position: relative;
+
+  padding-left: 18px;
+
+  font-size: 14px;
+  line-height: 1.52;
+  font-weight: 560;
+
+  color: var(--color-text-soft);
+}
+
+.article-pros-cons li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.66em;
+
+  width: 7px;
+  height: 7px;
+
+  border-radius: 999px;
+
+  background: var(--rg-action-hover-color);
+  box-shadow: 0 0 10px rgba(34,240,255,0.18);
+}
+
+.article-pros-cons__column--cons li::before {
+  background: rgba(244,114,182,0.76);
+  box-shadow: 0 0 10px rgba(244,114,182,0.14);
+}
+
+html[data-theme="light"] .article-pros-cons {
+  background: var(--rg-panel-bg);
+  border-color: var(--rg-panel-border);
+  box-shadow: var(--rg-panel-shadow);
+}
+
+html[data-theme="light"] .article-pros-cons__column {
+  background: var(--rg-card-bg);
+  border-color: var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
+}
+
+html[data-theme="light"] .article-pros-cons__column--pros::before {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(8,124,142,0.090), transparent 48%),
+    radial-gradient(circle at 100% 100%, rgba(20,122,90,0.052), transparent 50%);
+}
+
+html[data-theme="light"] .article-pros-cons__column--cons::before {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(102,81,184,0.082), transparent 48%),
+    radial-gradient(circle at 100% 100%, rgba(172,61,113,0.052), transparent 50%);
+}
+
+html[data-theme="light"] .article-pros-cons h2 {
+  color: var(--rg-section-title-color);
+}
+
+html[data-theme="light"] .article-pros-cons li {
+  color: rgba(42,48,62,0.72);
+}
+
+html[data-theme="light"] .article-pros-cons li::before {
+  background: #087C8E;
+  box-shadow: 0 0 8px rgba(8,124,142,0.12);
+}
+
+html[data-theme="light"] .article-pros-cons__column--cons li::before {
+  background: rgba(172,61,113,0.78);
+  box-shadow: 0 0 8px rgba(172,61,113,0.10);
+}
+
+@media (max-width: 720px) {
+  .article-pros-cons {
+    padding: 18px;
+  }
+
+  .article-pros-cons__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .article-pros-cons__column {
+    padding: 16px;
+  }
+}

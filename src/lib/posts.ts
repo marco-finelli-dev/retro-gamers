@@ -116,6 +116,9 @@ export type Post = {
     summary?: string;
   };
 
+  pros?: string[];
+  cons?: string[];
+
   gameInfo?: {
     releaseYear?: number;
     mediaFormat?: string[] | string;
@@ -296,6 +299,9 @@ export async function getAllPosts(): Promise<Post[]> {
         overall,
         summary
       },
+
+      pros,
+      cons,
 
       gameInfo {
         releaseYear,
