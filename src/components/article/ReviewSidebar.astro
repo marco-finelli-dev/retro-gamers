@@ -56,10 +56,29 @@ const labels = {
 
 const t = labels[lang] || labels.it;
 
-const getTaxonomyName = (item) =>
-  lang === 'en'
-    ? item.nameEn || item.name
-    : item.name;
+const getTaxonomySlug = (item) => {
+  if (!item) return '';
+
+  if (typeof item.slug === 'string') return item.slug;
+  if (typeof item.slug?.current === 'string') return item.slug.current;
+
+  return '';
+};
+
+const getTaxonomyName = (item) => {
+  if (!item) return '';
+
+  return lang === 'en'
+    ? item.nameEn || item.name || getTaxonomySlug(item)
+    : item.name || item.nameEn || getTaxonomySlug(item);
+};
+
+const toTaxonomyArray = (value) => {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (value) return [value];
+
+  return [];
+};
 
 const creators = Array.isArray(post.creators)
   ? post.creators.filter((creator) => creator?.name && creator?.slug)
@@ -72,13 +91,19 @@ const getCreatorUrl = (creator) =>
 
 const companyTaxonomyTypes = new Set(['developers', 'publishers', 'manufacturer']);
 
-function renderTaxonomyList(items = [], type = '') {
-  return items
+function getSafeCompanyHref(item, type = '') {
+  const slug = getTaxonomySlug(item);
+
+  if (!companyTaxonomyTypes.has(type) || !slug) return '';
+
+  return getCompanyUrl({ ...item, slug }, lang);
+}
+
+function renderTaxonomyList(items, type = '') {
+  return toTaxonomyArray(items)
     .map((item) => ({
       label: getTaxonomyName(item),
-      href: companyTaxonomyTypes.has(type) && item?.slug
-        ? getCompanyUrl(item, lang)
-        : ''
+      href: getSafeCompanyHref(item, type)
     }))
     .filter((item) => item.label);
 }
@@ -142,11 +167,11 @@ const infoRows = [
   },
   {
     label: t.genre,
-    value: post.genres?.map(getTaxonomyName).join(' · ')
+    value: toTaxonomyArray(post.genres).map(getTaxonomyName).filter(Boolean).join(' · ')
   },
   {
     label: t.mode,
-    value: post.modes?.map(getTaxonomyName).join(' · ')
+    value: toTaxonomyArray(post.modes).map(getTaxonomyName).filter(Boolean).join(' · ')
   }
 ].filter((row) =>
   row.type === 'creators' || row.type === 'taxonomyList'
