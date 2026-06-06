@@ -33,6 +33,8 @@ export type Company = {
   logoLight?: CompanyImage;
   description?: string;
   descriptionEn?: string;
+  history?: string;
+  historyEn?: string;
   seoTitle?: string;
   seoTitleEn?: string;
   metaDescription?: string;
@@ -167,6 +169,8 @@ const companyFields = `
   type,
   description,
   descriptionEn,
+  history,
+  historyEn,
   seoTitle,
   seoTitleEn,
   metaDescription,

@@ -26,6 +26,7 @@ const grouped = groupPosts(englishPosts);
 
 const name = getCompanyName(company, 'en');
 const description = getCompanyDescription(company, 'en');
+const history = company.historyEn || company.history || '';
 const relatedArticles = (company.relatedArticles || [])
   .filter((post) => post.language === 'en');
 const relatedCreators = company.relatedCreators || [];
@@ -144,6 +145,21 @@ const hasRelations =
         )}
       </div>
     </section>
+
+    {history && (
+      <section class="company-section company-history">
+        <div class="company-section__header">
+          <span class="companies-eyebrow">Editorial profile</span>
+          <h2>History</h2>
+        </div>
+
+        <div class="company-history__content">
+          {history.split('\n').filter(Boolean).map((paragraph) => (
+            <p>{paragraph}</p>
+          ))}
+        </div>
+      </section>
+    )}
 
     {relatedArticles.length > 0 && (
       <section class="company-section">
