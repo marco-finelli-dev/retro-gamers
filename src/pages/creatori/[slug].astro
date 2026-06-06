@@ -154,18 +154,28 @@ function getInitials(name = '') {
             <ul class="creator-platform-list">
               {creator.relatedPlatforms.map((platform) => (
                 <li>
-                  <a class="creator-platform-card" href={getPlatformUrl(platform, 'it')}>
-                    {platform.logo?.asset && (
-                      <img
-                        src={urlFor(platform.logo).width(80).height(80).fit('max').auto('format').url()}
-                        alt={platform.logo?.alt || platform.name}
-                        width="30"
-                        height="30"
-                        loading="lazy"
-                        decoding="async"
-                      />
+                  <a
+                    class="creator-platform-card"
+                    href={getPlatformUrl(platform, 'it')}
+                    aria-label={platform.name}
+                    title={platform.name}
+                  >
+                    {platform.logo?.asset ? (
+                      <span class="creator-platform-card__logo">
+                        <img
+                          src={urlFor(platform.logo).width(360).height(140).fit('max').auto('format').url()}
+                          alt={platform.logo?.alt || platform.name}
+                          width="180"
+                          height="70"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </span>
+                    ) : (
+                      <span class="creator-platform-card__fallback">
+                        {platform.name}
+                      </span>
                     )}
-                    <span>{platform.name}</span>
                   </a>
                 </li>
               ))}
