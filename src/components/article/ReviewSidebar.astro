@@ -1,7 +1,7 @@
 ---
 import ReviewScoreBox from './ReviewScoreBox.astro';
 import { urlFor } from '../../lib/image';
-import { getCompanyUrl } from '../../lib/routes';
+import { getCompanyUrl, getPlatformUrl } from '../../lib/routes';
 
 const { post } = Astro.props;
 
@@ -23,9 +23,12 @@ const labels = {
       floppy: 'Floppy disk',
       tape: 'Cassetta / tape',
       cdrom: 'CD-ROM',
+      'cd-rom': 'CD-ROM',
       gdrom: 'GD-ROM',
+      'gd-rom': 'GD-ROM',
       hucard: 'HuCard',
       arcade_pcb: 'PCB arcade',
+      'arcade-pcb': 'PCB arcade',
       digital: 'Digitale',
       other: 'Altro'
     }
@@ -45,9 +48,12 @@ const labels = {
       floppy: 'Floppy disk',
       tape: 'Cassette / tape',
       cdrom: 'CD-ROM',
+      'cd-rom': 'CD-ROM',
       gdrom: 'GD-ROM',
+      'gd-rom': 'GD-ROM',
       hucard: 'HuCard',
       arcade_pcb: 'Arcade PCB',
+      'arcade-pcb': 'Arcade PCB',
       digital: 'Digital',
       other: 'Other'
     }
@@ -108,6 +114,85 @@ function renderTaxonomyList(items, type = '') {
     .filter((item) => item.label);
 }
 
+const getArchiveFilterUrl = (key, value) => {
+  if (!key || !value) return '';
+
+  const baseUrl = lang === 'en' ? '/en/archive/' : '/archivio/';
+
+  return `${baseUrl}?${key}=${encodeURIComponent(value)}`;
+};
+
+const normalizeFormatValue = (value = '') => {
+  const map = {
+    cdrom: 'cd-rom',
+    gdrom: 'gd-rom',
+    arcade_pcb: 'arcade-pcb'
+  };
+
+  const normalized = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, '-')
+    .replace(/\s+/g, '-');
+
+  return map[normalized] || normalized;
+};
+
+function getSafePlatformHref(platform) {
+  const slug = getTaxonomySlug(platform);
+  const manufacturerSlug = getTaxonomySlug(platform?.manufacturer);
+  const platformType = platform?.platformType;
+
+  if (!slug || !manufacturerSlug || !platformType) return '';
+
+  return getPlatformUrl(
+    {
+      ...platform,
+      slug,
+      manufacturer: {
+        ...(platform.manufacturer || {}),
+        slug: manufacturerSlug
+      }
+    },
+    lang
+  );
+}
+
+function renderPlatformList(platforms) {
+  return toTaxonomyArray(platforms)
+    .map((platform) => ({
+      label: getTaxonomyName(platform),
+      href: getSafePlatformHref(platform)
+    }))
+    .filter((platform) => platform.label);
+}
+
+function renderArchiveTaxonomyList(items, key) {
+  return toTaxonomyArray(items)
+    .map((item) => {
+      const slug = getTaxonomySlug(item);
+
+      return {
+        label: getTaxonomyName(item),
+        href: slug ? getArchiveFilterUrl(key, slug) : ''
+      };
+    })
+    .filter((item) => item.label);
+}
+
+function renderYearList(year) {
+  if (!year) return [];
+
+  const value = String(year);
+
+  return [
+    {
+      label: value,
+      href: getArchiveFilterUrl('year', value)
+    }
+  ];
+}
+
 const cover = post.gameInfo?.cover?.asset
   ? urlFor(post.gameInfo.cover)
       .width(720)
@@ -123,23 +208,29 @@ const coverAlt =
 
 const rawMediaFormat = post.gameInfo?.mediaFormat;
 
-const mediaFormat = Array.isArray(rawMediaFormat)
-  ? rawMediaFormat
-      .map((format) => t.mediaFormats[format] || format)
-      .filter(Boolean)
-      .join(', ')
-  : rawMediaFormat
-    ? t.mediaFormats[rawMediaFormat] || rawMediaFormat
-    : '';
+function renderMediaFormatList(value) {
+  return toTaxonomyArray(value)
+    .map((format) => {
+      const normalized = normalizeFormatValue(format);
+
+      return {
+        label: t.mediaFormats[format] || t.mediaFormats[normalized] || format,
+        href: normalized ? getArchiveFilterUrl('format', normalized) : ''
+      };
+    })
+    .filter((format) => format.label);
+}
 
 const infoRows = [
   {
     label: t.platform,
-    value: post.platforms?.map((item) => item.name).join(', ')
+    value: renderPlatformList(post.platforms),
+    type: 'taxonomyList'
   },
   {
     label: t.format,
-    value: mediaFormat
+    value: renderMediaFormatList(rawMediaFormat),
+    type: 'taxonomyList'
   },
   {
     label: t.developer,
@@ -163,15 +254,18 @@ const infoRows = [
   },
   {
     label: t.year,
-    value: post.gameInfo?.releaseYear
+    value: renderYearList(post.gameInfo?.releaseYear),
+    type: 'taxonomyList'
   },
   {
     label: t.genre,
-    value: toTaxonomyArray(post.genres).map(getTaxonomyName).filter(Boolean).join(' · ')
+    value: renderArchiveTaxonomyList(post.genres, 'genre'),
+    type: 'taxonomyList'
   },
   {
     label: t.mode,
-    value: toTaxonomyArray(post.modes).map(getTaxonomyName).filter(Boolean).join(' · ')
+    value: renderArchiveTaxonomyList(post.modes, 'mode'),
+    type: 'taxonomyList'
   }
 ].filter((row) =>
   row.type === 'creators' || row.type === 'taxonomyList'

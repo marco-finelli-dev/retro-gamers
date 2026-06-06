@@ -25,7 +25,9 @@ const ui = isEnglish
       platform: 'Platform',
       category: 'Category',
       genre: 'Genre',
+      mode: 'Mode',
       year: 'Year',
+      format: 'Format',
       product: 'Product',
       all: 'All',
       allFemale: 'All',
@@ -54,6 +56,20 @@ const ui = isEnglish
         gadget: 'Gadgets',
         service: 'Services',
         other: 'Other'
+      },
+      mediaFormatLabels: {
+        cartridge: 'Cartridge',
+        floppy: 'Floppy disk',
+        tape: 'Cassette / tape',
+        'cd-rom': 'CD-ROM',
+        cdrom: 'CD-ROM',
+        'gd-rom': 'GD-ROM',
+        gdrom: 'GD-ROM',
+        hucard: 'HuCard',
+        'arcade-pcb': 'Arcade PCB',
+        arcade_pcb: 'Arcade PCB',
+        digital: 'Digital',
+        other: 'Other'
       }
     }
   : {
@@ -65,7 +81,9 @@ const ui = isEnglish
       platform: 'Piattaforma',
       category: 'Categoria',
       genre: 'Genere',
+      mode: 'Modalità',
       year: 'Anno',
+      format: 'Formato',
       product: 'Prodotto',
       all: 'Tutti',
       allFemale: 'Tutte',
@@ -93,6 +111,20 @@ const ui = isEnglish
         software: 'Software',
         gadget: 'Gadget',
         service: 'Servizi',
+        other: 'Altro'
+      },
+      mediaFormatLabels: {
+        cartridge: 'Cartuccia',
+        floppy: 'Floppy disk',
+        tape: 'Cassetta / tape',
+        'cd-rom': 'CD-ROM',
+        cdrom: 'CD-ROM',
+        'gd-rom': 'GD-ROM',
+        gdrom: 'GD-ROM',
+        hucard: 'HuCard',
+        'arcade-pcb': 'PCB arcade',
+        arcade_pcb: 'PCB arcade',
+        digital: 'Digitale',
         other: 'Altro'
       }
     };
@@ -132,6 +164,10 @@ const genres = uniqueBy(
   posts.flatMap((post) => post.genres || [])
 ).sort((a, b) => a.name.localeCompare(b.name));
 
+const modes = uniqueBy(
+  posts.flatMap((post) => post.modes || [])
+).sort((a, b) => a.name.localeCompare(b.name));
+
 const years = [...new Set(
   posts
     .map((post) => post.gameInfo?.releaseYear)
@@ -150,11 +186,53 @@ const productTypes = [...new Set(
     .filter(Boolean)
 )].sort();
 
+const normalizeFormatValue = (value = '') => {
+  const map = {
+    cdrom: 'cd-rom',
+    gdrom: 'gd-rom',
+    arcade_pcb: 'arcade-pcb'
+  };
+
+  const normalized = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, '-')
+    .replace(/\s+/g, '-');
+
+  return map[normalized] || normalized;
+};
+
+const formatOptions = [
+  ...new Map(
+    posts
+      .flatMap((post) => {
+        const value = post.gameInfo?.mediaFormat;
+
+        return Array.isArray(value)
+          ? value
+          : value
+            ? [value]
+            : [];
+      })
+      .map((format) => normalizeFormatValue(format))
+      .filter(Boolean)
+      .map((format) => [
+        format,
+        {
+          value: format,
+          label: ui.mediaFormatLabels[format] || format
+        }
+      ])
+  ).values()
+].sort((a, b) => a.label.localeCompare(b.label));
+
 const hasFilters =
   platforms.length > 0 ||
   categories.length > 0 ||
   genres.length > 0 ||
+  modes.length > 0 ||
   years.length > 0 ||
+  formatOptions.length > 0 ||
   types.length > 1 ||
   productTypes.length > 0;
 ---
@@ -237,7 +315,19 @@ const hasFilters =
                 <select data-filter="genre">
                   <option value="">{ui.all}</option>
                   {genres.map((genre) => (
-                    <option value={genre.slug}>{genre.name}</option>
+                    <option value={genre.slug}>{isEnglish ? genre.nameEn || genre.name : genre.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {modes.length > 0 && (
+              <label class="archive-filter">
+                <span>{ui.mode}</span>
+                <select data-filter="mode">
+                  <option value="">{ui.all}</option>
+                  {modes.map((mode) => (
+                    <option value={mode.slug}>{isEnglish ? mode.nameEn || mode.name : mode.name}</option>
                   ))}
                 </select>
               </label>
@@ -250,6 +340,18 @@ const hasFilters =
                   <option value="">{ui.all}</option>
                   {years.map((year) => (
                     <option value={year}>{year}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {formatOptions.length > 0 && (
+              <label class="archive-filter">
+                <span>{ui.format}</span>
+                <select data-filter="format">
+                  <option value="">{ui.all}</option>
+                  {formatOptions.map((format) => (
+                    <option value={format.value}>{format.label}</option>
                   ))}
                 </select>
               </label>
@@ -296,7 +398,14 @@ const hasFilters =
           const platformSlugs = post.platforms?.map((item) => item.slug).filter(Boolean) || [];
           const categorySlugs = post.categories?.map((item) => item.slug).filter(Boolean) || [];
           const genreSlugs = post.genres?.map((item) => item.slug).filter(Boolean) || [];
+          const modeSlugs = post.modes?.map((item) => item.slug).filter(Boolean) || [];
           const year = post.gameInfo?.releaseYear || '';
+          const formatValues = Array.isArray(post.gameInfo?.mediaFormat)
+            ? post.gameInfo.mediaFormat
+            : post.gameInfo?.mediaFormat
+              ? [post.gameInfo.mediaFormat]
+              : [];
+          const formatSlugs = formatValues.map(normalizeFormatValue).filter(Boolean);
           const productType = post.monetization?.productType || '';
 
           return (
@@ -306,7 +415,9 @@ const hasFilters =
               data-platforms={platformSlugs.join('|')}
               data-categories={categorySlugs.join('|')}
               data-genres={genreSlugs.join('|')}
+              data-modes={modeSlugs.join('|')}
               data-year={year}
+              data-formats={formatSlugs.join('|')}
               data-product={productType}
             >
               <ArchiveCard post={post} lang={lang} />
@@ -345,6 +456,7 @@ const hasFilters =
     const items = Array.from(grid.querySelectorAll('[data-archive-item]'));
     const reset = root.querySelector('[data-filter-reset]');
     const submit = root.querySelector('[data-filter-submit]');
+    const supportedQueryFilters = new Set(['year', 'genre', 'mode', 'format', 'platform']);
 
     const includesToken = (list, value) => {
       if (!value) return true;
@@ -353,7 +465,37 @@ const hasFilters =
       return list.split('|').includes(value);
     };
 
-    const applyFilters = () => {
+    const normalizeFormatValue = (value = '') => {
+      const map = {
+        cdrom: 'cd-rom',
+        gdrom: 'gd-rom',
+        arcade_pcb: 'arcade-pcb'
+      };
+
+      const normalized = String(value)
+        .trim()
+        .toLowerCase()
+        .replace(/_/g, '-')
+        .replace(/\s+/g, '-');
+
+      return map[normalized] || normalized;
+    };
+
+    const syncQueryString = (filters) => {
+      const url = new URL(window.location.href);
+
+      supportedQueryFilters.forEach((key) => {
+        if (filters[key]) {
+          url.searchParams.set(key, filters[key]);
+        } else {
+          url.searchParams.delete(key);
+        }
+      });
+
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    };
+
+    const applyFilters = ({ updateUrl = false } = {}) => {
       const filters = Object.fromEntries(
         controls.map((control) => [control.dataset.filter, control.value])
       );
@@ -366,7 +508,9 @@ const hasFilters =
           includesToken(item.dataset.platforms, filters.platform) &&
           includesToken(item.dataset.categories, filters.category) &&
           includesToken(item.dataset.genres, filters.genre) &&
+          includesToken(item.dataset.modes, filters.mode) &&
           (!filters.year || item.dataset.year === filters.year) &&
+          includesToken(item.dataset.formats, filters.format) &&
           (!filters.product || item.dataset.product === filters.product);
 
         item.hidden = !matches;
@@ -377,15 +521,48 @@ const hasFilters =
       if (count) count.textContent = String(visible);
       if (empty) empty.hidden = visible > 0;
       grid.hidden = visible === 0;
+
+      if (updateUrl) {
+        syncQueryString(filters);
+      }
     };
 
-    submit?.addEventListener('click', applyFilters);
+    const initializeFromQuery = () => {
+      const params = new URLSearchParams(window.location.search);
+
+      controls.forEach((control) => {
+        const key = control.dataset.filter;
+        if (!supportedQueryFilters.has(key)) return;
+
+        const rawValue = params.get(key);
+        if (!rawValue) return;
+
+        const value = key === 'format'
+          ? normalizeFormatValue(rawValue)
+          : rawValue;
+
+        const hasOption = Array.from(control.options).some((option) => option.value === value);
+        if (hasOption) {
+          control.value = value;
+        }
+      });
+    };
+
+    submit?.addEventListener('click', () => {
+      applyFilters({ updateUrl: true });
+    });
+
+    controls.forEach((control) => {
+      control.addEventListener('change', () => {
+        applyFilters({ updateUrl: true });
+      });
+    });
 
     controls.forEach((control) => {
       control.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
           event.preventDefault();
-          applyFilters();
+          applyFilters({ updateUrl: true });
         }
       });
     });
@@ -395,7 +572,10 @@ const hasFilters =
         control.value = '';
       });
 
-      applyFilters();
+      applyFilters({ updateUrl: true });
     });
+
+    initializeFromQuery();
+    applyFilters();
   }
 </script>
