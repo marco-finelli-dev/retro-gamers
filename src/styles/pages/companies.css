@@ -220,22 +220,33 @@ html[data-theme="light"] .company-logo--light {
 
 .company-card__fallback,
 .company-detail-hero__fallback {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
 
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: 999px;
+  width: 100%;
+  min-height: 86px;
+  padding: 10px 14px;
 
   font-family: var(--font-display);
-  font-size: 18px;
-  line-height: 1;
-  font-weight: 850;
+  font-size: clamp(19px, 2.3vw, 28px);
+  line-height: 1.08;
+  font-weight: 820;
+  letter-spacing: 0.35px;
+  text-align: center;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 
   color: var(--rg-badge-color);
-  background: var(--rg-badge-bg);
-  border: 1px solid var(--rg-badge-border);
+  text-shadow:
+    0 0 16px rgba(34,240,255,0.34),
+    0 8px 26px rgba(0,0,0,0.42);
+}
+
+.company-detail-hero__fallback {
+  min-height: 150px;
+  font-size: clamp(28px, 4.4vw, 54px);
+  line-height: 1.02;
 }
 
 .company-card__body {
@@ -622,6 +633,12 @@ html[data-theme="light"] .company-history__content {
 html[data-theme="light"] .company-article-grid .archive-card__meta,
 html[data-theme="light"] .company-article-grid .archive-card__footer {
   color: rgba(42,48,62,0.52);
+}
+
+html[data-theme="light"] .company-card__fallback,
+html[data-theme="light"] .company-detail-hero__fallback {
+  color: var(--rg-section-title-color);
+  text-shadow: 0 10px 26px rgba(8,18,30,0.10);
 }
 
 @media (max-width: 920px) {
