@@ -1,0 +1,188 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArchiveCard from '../../components/archive/ArchiveCard.astro';
+import { PortableText } from 'astro-portabletext';
+import { urlFor } from '../../lib/image';
+import { getCreatorBySlug } from '../../lib/creators';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+import { getPlatformUrl } from '../../lib/routes';
+import '../../styles/pages/creators.css';
+
+const { slug } = Astro.params;
+
+const creator = await getCreatorBySlug(slug);
+
+if (!creator) {
+  return Astro.rewrite('/404');
+}
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const shortBio = creator.shortBio || '';
+const profile = creator.profile || [];
+const relatedArticles = (creator.relatedArticles || [])
+  .filter((post) => (post.language || 'it') !== 'en')
+  .sort((a, b) => {
+    const aDate = new Date(a.publishedAt || 0).getTime();
+    const bDate = new Date(b.publishedAt || 0).getTime();
+    return bDate - aDate;
+  });
+
+const portrait = creator.portrait?.asset
+  ? urlFor(creator.portrait)
+      .width(720)
+      .height(900)
+      .fit('crop')
+      .quality(78)
+      .auto('format')
+      .url()
+  : '';
+
+const pageTitle = creator.seoTitle || creator.name;
+const pageDescription =
+  creator.metaDescription ||
+  shortBio ||
+  `${creator.name}: profilo, opere e articoli collegati su Retro-Gamers.it.`;
+
+function getInitials(name = '') {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title={pageTitle}
+  description={pageDescription}
+  image={portrait || '/og-image.jpg'}
+  canonical={`https://www.retro-gamers.it/creatori/${creator.slug}/`}
+  languageSwitch={`/en/creators/${creator.slug}/`}
+  alternateLanguages={[
+    { lang: 'it', url: `https://www.retro-gamers.it/creatori/${creator.slug}/` },
+    { lang: 'en', url: `https://www.retro-gamers.it/en/creators/${creator.slug}/` }
+  ]}
+>
+  <main class="creators-page creator-detail-page">
+    <section class="creator-detail-hero">
+      <figure class="creator-detail-hero__portrait">
+        {portrait ? (
+          <img
+            src={portrait}
+            alt={creator.portrait?.alt || creator.name}
+            width="720"
+            height="900"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
+        ) : (
+          <span class="creator-detail-hero__initials">{getInitials(creator.name) || 'RG'}</span>
+        )}
+      </figure>
+
+      <div class="creator-detail-hero__content">
+        <span class="creators-eyebrow">Profilo creator</span>
+        <h1>{creator.name}</h1>
+
+        {shortBio && (
+          <p class="creator-detail-hero__intro">{shortBio}</p>
+        )}
+
+        <div class="creator-detail-hero__meta" aria-label="Dati creator">
+          {creator.role && <span class="creator-chip">{creator.role}</span>}
+          {creator.country && <span class="creator-chip">{creator.country}</span>}
+          {creator.activeYears && <span class="creator-chip">{creator.activeYears}</span>}
+        </div>
+      </div>
+    </section>
+
+    <section class="creator-detail-layout">
+      <article class="creator-panel creator-profile">
+        <span class="creator-section__eyebrow">Biografia</span>
+        <h2>Profilo editoriale</h2>
+
+        {profile.length > 0 ? (
+          <div class="creator-profile__content">
+            <PortableText value={profile} />
+          </div>
+        ) : shortBio ? (
+          <p class="creator-panel__copy">{shortBio}</p>
+        ) : (
+          <p class="creator-panel__copy">Profilo in preparazione.</p>
+        )}
+      </article>
+
+      <aside class="creator-facts" aria-label="Informazioni creator">
+        {creator.knownFor?.length > 0 && (
+          <section class="creator-fact-card">
+            <h3>Opere principali</h3>
+            <ul class="creator-chip-list">
+              {creator.knownFor.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {creator.companies?.length > 0 && (
+          <section class="creator-fact-card">
+            <h3>Aziende</h3>
+            <ul class="creator-chip-list">
+              {creator.companies.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {creator.relatedPlatforms?.length > 0 && (
+          <section class="creator-fact-card">
+            <h3>Piattaforme collegate</h3>
+            <ul class="creator-platform-list">
+              {creator.relatedPlatforms.map((platform) => (
+                <li>
+                  <a class="creator-platform-card" href={getPlatformUrl(platform, 'it')}>
+                    {platform.logo?.asset && (
+                      <img
+                        src={urlFor(platform.logo).width(80).height(80).fit('max').auto('format').url()}
+                        alt={platform.logo?.alt || platform.name}
+                        width="30"
+                        height="30"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
+                    <span>{platform.name}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </aside>
+    </section>
+
+    {relatedArticles.length > 0 && (
+      <section class="creator-related" aria-labelledby="creator-related-title">
+        <div class="creator-related__header">
+          <span class="creator-section__eyebrow">Archivio</span>
+          <h2 id="creator-related-title">Articoli collegati</h2>
+          <p>Recensioni, speciali, guide e approfondimenti collegati a {creator.name}.</p>
+        </div>
+
+        <div class="creator-related__grid">
+          {relatedArticles.map((post) => (
+            <ArchiveCard post={post} lang="it" />
+          ))}
+        </div>
+      </section>
+    )}
+  </main>
+</BaseLayout>

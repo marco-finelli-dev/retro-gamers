@@ -1,0 +1,118 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { urlFor } from '../../../lib/image';
+import { getAllCreators } from '../../../lib/creators';
+import { getAllPosts, groupPosts } from '../../../lib/posts';
+import '../../../styles/pages/creators.css';
+
+const creators = await getAllCreators();
+const allPosts = await getAllPosts();
+const englishPosts = allPosts.filter((post) => post.language === 'en');
+const grouped = groupPosts(englishPosts);
+
+const pageTitle = 'Creators';
+const pageDescription =
+  'Designers, programmers, composers and creative figures who shaped video game history.';
+
+function getInitials(name = '') {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
+
+function getPortrait(creator, width = 520, height = 390) {
+  if (!creator?.portrait?.asset) return '';
+
+  return urlFor(creator.portrait)
+    .width(width)
+    .height(height)
+    .fit('crop')
+    .quality(78)
+    .auto('format')
+    .url();
+}
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  lang="en"
+  title={pageTitle}
+  description={pageDescription}
+  canonical="https://www.retro-gamers.it/en/creators/"
+  languageSwitch="/creatori/"
+  alternateLanguages={[
+    { lang: 'it', url: 'https://www.retro-gamers.it/creatori/' },
+    { lang: 'en', url: 'https://www.retro-gamers.it/en/creators/' }
+  ]}
+>
+  <main class="creators-page">
+    <section class="creators-hero">
+      <span class="creators-eyebrow">Video game history</span>
+      <h1>Creators</h1>
+      <p>
+        Designers, programmers, composers, producers and creative voices who shaped the
+        imagination of video games.
+      </p>
+    </section>
+
+    {creators.length > 0 ? (
+      <section class="creators-grid" aria-label="Creators list">
+        {creators.map((creator) => {
+          const portrait = getPortrait(creator);
+          const knownFor = creator.knownFor?.slice(0, 3) || [];
+          const bio = creator.shortBioEn || creator.shortBio;
+
+          return (
+            <article class="creator-card">
+              <a class="creator-card__link" href={`/en/creators/${creator.slug}/`}>
+                <span class="creator-card__portrait">
+                  {portrait ? (
+                    <img
+                      src={portrait}
+                      alt={creator.portrait?.alt || creator.name}
+                      width="520"
+                      height="390"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span class="creator-card__initials">{getInitials(creator.name) || 'RG'}</span>
+                  )}
+                </span>
+
+                <span class="creator-card__body">
+                  {creator.role && (
+                    <span class="creator-card__role">{creator.role}</span>
+                  )}
+
+                  <h2>{creator.name}</h2>
+
+                  {bio && (
+                    <p class="creator-card__bio">{bio}</p>
+                  )}
+
+                  {knownFor.length > 0 && (
+                    <ul class="creator-chip-list" aria-label="Known for">
+                      {knownFor.map((item) => (
+                        <li>{item}</li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <span class="creator-card__action">Profile</span>
+                </span>
+              </a>
+            </article>
+          );
+        })}
+      </section>
+    ) : (
+      <p class="creators-empty">No creators available.</p>
+    )}
+  </main>
+</BaseLayout>
