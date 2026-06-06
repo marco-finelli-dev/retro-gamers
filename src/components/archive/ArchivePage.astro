@@ -1,6 +1,8 @@
 ---
 import '../../styles/components/archive-page.css';
+import '../../styles/components/pagination.css';
 import ArchiveCard from './ArchiveCard.astro';
+import { PAGE_SIZE } from '../../lib/pagination';
 
 const {
   title = 'Archivio',
@@ -38,6 +40,9 @@ const ui = isEnglish
       emptyText: 'Come back soon: this section will be updated with new content.',
       noResults: 'No results',
       noResultsText: 'Try changing or resetting the selected filters.',
+      previous: 'Previous',
+      next: 'Next',
+      pageStatus: (page, pages) => `Page ${page} of ${pages}`,
       typeLabels: {
         review: 'Reviews',
         news: 'News',
@@ -94,6 +99,9 @@ const ui = isEnglish
       emptyText: 'Torna presto: questa sezione verrà aggiornata con nuovi contenuti.',
       noResults: 'Nessun risultato',
       noResultsText: 'Prova a cambiare o azzerare i filtri selezionati.',
+      previous: 'Precedente',
+      next: 'Successiva',
+      pageStatus: (page, pages) => `Pagina ${page} di ${pages}`,
       typeLabels: {
         review: 'Recensioni',
         news: 'News',
@@ -393,8 +401,8 @@ const hasFilters =
 
     {posts.length > 0 ? (
 
-      <section class="archive-grid" aria-label={title} data-archive-grid>
-        {posts.map((post) => {
+      <section class="archive-grid" aria-label={title} data-archive-grid data-page-size={PAGE_SIZE}>
+        {posts.map((post, index) => {
           const platformSlugs = post.platforms?.map((item) => item.slug).filter(Boolean) || [];
           const categorySlugs = post.categories?.map((item) => item.slug).filter(Boolean) || [];
           const genreSlugs = post.genres?.map((item) => item.slug).filter(Boolean) || [];
@@ -419,12 +427,26 @@ const hasFilters =
               data-year={year}
               data-formats={formatSlugs.join('|')}
               data-product={productType}
+              hidden={index >= PAGE_SIZE}
             >
               <ArchiveCard post={post} lang={lang} />
             </article>
           );
         })}
       </section>
+
+      <nav
+        class="rg-pagination archive-pagination"
+        aria-label={isEnglish ? 'Archive pagination' : 'Paginazione archivio'}
+        data-archive-pagination
+        hidden={posts.length <= PAGE_SIZE}
+      >
+        <a class="rg-pagination__link" href="#" data-pagination-prev hidden>{ui.previous}</a>
+        <span class="rg-pagination__status" data-pagination-status>
+          {ui.pageStatus(1, Math.max(1, Math.ceil(posts.length / PAGE_SIZE)))}
+        </span>
+        <a class="rg-pagination__link" href="#" data-pagination-next hidden>{ui.next}</a>
+      </nav>
 
     ) : (
 
@@ -445,18 +467,36 @@ const hasFilters =
   </div>
 </div>
 
-<script>
+<script define:vars={{
+  previousLabel: ui.previous,
+  nextLabel: ui.next,
+  pageStatusPrefix: isEnglish ? 'Page' : 'Pagina',
+  pageStatusSeparator: isEnglish ? 'of' : 'di',
+}}>
   const root = document.querySelector('[data-archive-filters]');
   const grid = document.querySelector('[data-archive-grid]');
   const empty = document.querySelector('[data-filter-empty]');
   const count = document.querySelector('[data-filter-count]');
+  const pagination = document.querySelector('[data-archive-pagination]');
+  const paginationPrev = pagination?.querySelector('[data-pagination-prev]');
+  const paginationNext = pagination?.querySelector('[data-pagination-next]');
+  const paginationStatus = pagination?.querySelector('[data-pagination-status]');
 
-  if (root && grid) {
-    const controls = Array.from(root.querySelectorAll('[data-filter]'));
+  if (grid) {
+    const controls = root
+      ? Array.from(root.querySelectorAll('[data-filter]'))
+      : [];
     const items = Array.from(grid.querySelectorAll('[data-archive-item]'));
-    const reset = root.querySelector('[data-filter-reset]');
-    const submit = root.querySelector('[data-filter-submit]');
-    const supportedQueryFilters = new Set(['year', 'genre', 'mode', 'format', 'platform']);
+    const reset = root?.querySelector('[data-filter-reset]');
+    const submit = root?.querySelector('[data-filter-submit]');
+    const pageSize = Number.parseInt(grid.dataset.pageSize || '12', 10) || 12;
+    const queryFilters = new Set(
+      controls
+        .map((control) => control.dataset.filter)
+        .filter(Boolean)
+    );
+    let currentPage = 1;
+    let currentTotalPages = 1;
 
     const includesToken = (list, value) => {
       if (!value) return true;
@@ -481,10 +521,20 @@ const hasFilters =
       return map[normalized] || normalized;
     };
 
-    const syncQueryString = (filters) => {
+    const getFilters = () => Object.fromEntries(
+      controls.map((control) => [control.dataset.filter, control.value])
+    );
+
+    const getPageFromQuery = () => {
+      const value = Number.parseInt(new URLSearchParams(window.location.search).get('page') || '1', 10);
+
+      return Number.isFinite(value) && value > 0 ? value : 1;
+    };
+
+    const buildPageUrl = (filters, pageNumber) => {
       const url = new URL(window.location.href);
 
-      supportedQueryFilters.forEach((key) => {
+      queryFilters.forEach((key) => {
         if (filters[key]) {
           url.searchParams.set(key, filters[key]);
         } else {
@@ -492,38 +542,78 @@ const hasFilters =
         }
       });
 
-      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+      if (pageNumber > 1) {
+        url.searchParams.set('page', String(pageNumber));
+      } else {
+        url.searchParams.delete('page');
+      }
+
+      return `${url.pathname}${url.search}${url.hash}`;
     };
 
-    const applyFilters = ({ updateUrl = false } = {}) => {
-      const filters = Object.fromEntries(
-        controls.map((control) => [control.dataset.filter, control.value])
-      );
+    const syncQueryString = (filters, pageNumber) => {
+      window.history.replaceState({}, '', buildPageUrl(filters, pageNumber));
+    };
 
-      let visible = 0;
+    const getMatchingItems = (filters) => items.filter((item) =>
+      (!filters.type || item.dataset.type === filters.type) &&
+      includesToken(item.dataset.platforms, filters.platform) &&
+      includesToken(item.dataset.categories, filters.category) &&
+      includesToken(item.dataset.genres, filters.genre) &&
+      includesToken(item.dataset.modes, filters.mode) &&
+      (!filters.year || item.dataset.year === filters.year) &&
+      includesToken(item.dataset.formats, filters.format) &&
+      (!filters.product || item.dataset.product === filters.product)
+    );
+
+    const updatePagination = (filters, matchingItems) => {
+      currentTotalPages = Math.max(1, Math.ceil(matchingItems.length / pageSize));
+      currentPage = Math.min(Math.max(1, currentPage), currentTotalPages);
+
+      if (!pagination) return;
+
+      pagination.hidden = matchingItems.length <= pageSize;
+
+      if (paginationStatus) {
+        paginationStatus.textContent = `${pageStatusPrefix} ${currentPage} ${pageStatusSeparator} ${currentTotalPages}`;
+      }
+
+      if (paginationPrev) {
+        paginationPrev.hidden = currentPage <= 1;
+        paginationPrev.textContent = previousLabel;
+        paginationPrev.href = buildPageUrl(filters, currentPage - 1);
+      }
+
+      if (paginationNext) {
+        paginationNext.hidden = currentPage >= currentTotalPages;
+        paginationNext.textContent = nextLabel;
+        paginationNext.href = buildPageUrl(filters, currentPage + 1);
+      }
+    };
+
+    const applyFilters = ({ updateUrl = false, resetPage = false } = {}) => {
+      const filters = getFilters();
+      const matchingItems = getMatchingItems(filters);
+
+      if (resetPage) {
+        currentPage = 1;
+      }
+
+      updatePagination(filters, matchingItems);
+
+      const offset = (currentPage - 1) * pageSize;
+      const pageItems = new Set(matchingItems.slice(offset, offset + pageSize));
 
       items.forEach((item) => {
-        const matches =
-          (!filters.type || item.dataset.type === filters.type) &&
-          includesToken(item.dataset.platforms, filters.platform) &&
-          includesToken(item.dataset.categories, filters.category) &&
-          includesToken(item.dataset.genres, filters.genre) &&
-          includesToken(item.dataset.modes, filters.mode) &&
-          (!filters.year || item.dataset.year === filters.year) &&
-          includesToken(item.dataset.formats, filters.format) &&
-          (!filters.product || item.dataset.product === filters.product);
-
-        item.hidden = !matches;
-
-        if (matches) visible += 1;
+        item.hidden = !pageItems.has(item);
       });
 
-      if (count) count.textContent = String(visible);
-      if (empty) empty.hidden = visible > 0;
-      grid.hidden = visible === 0;
+      if (count) count.textContent = String(matchingItems.length);
+      if (empty) empty.hidden = matchingItems.length > 0;
+      grid.hidden = matchingItems.length === 0;
 
       if (updateUrl) {
-        syncQueryString(filters);
+        syncQueryString(filters, currentPage);
       }
     };
 
@@ -532,7 +622,7 @@ const hasFilters =
 
       controls.forEach((control) => {
         const key = control.dataset.filter;
-        if (!supportedQueryFilters.has(key)) return;
+        if (!queryFilters.has(key)) return;
 
         const rawValue = params.get(key);
         if (!rawValue) return;
@@ -546,15 +636,17 @@ const hasFilters =
           control.value = value;
         }
       });
+
+      currentPage = getPageFromQuery();
     };
 
     submit?.addEventListener('click', () => {
-      applyFilters({ updateUrl: true });
+      applyFilters({ updateUrl: true, resetPage: true });
     });
 
     controls.forEach((control) => {
       control.addEventListener('change', () => {
-        applyFilters({ updateUrl: true });
+        applyFilters({ updateUrl: true, resetPage: true });
       });
     });
 
@@ -562,7 +654,7 @@ const hasFilters =
       control.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
           event.preventDefault();
-          applyFilters({ updateUrl: true });
+          applyFilters({ updateUrl: true, resetPage: true });
         }
       });
     });
@@ -572,10 +664,28 @@ const hasFilters =
         control.value = '';
       });
 
+      applyFilters({ updateUrl: true, resetPage: true });
+    });
+
+    paginationPrev?.addEventListener('click', (event) => {
+      if (currentPage <= 1) return;
+
+      event.preventDefault();
+      currentPage -= 1;
       applyFilters({ updateUrl: true });
+      grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
+
+    paginationNext?.addEventListener('click', (event) => {
+      if (currentPage >= currentTotalPages) return;
+
+      event.preventDefault();
+      currentPage += 1;
+      applyFilters({ updateUrl: true });
+      grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
 
     initializeFromQuery();
-    applyFilters();
+    applyFilters({ updateUrl: true });
   }
 </script>

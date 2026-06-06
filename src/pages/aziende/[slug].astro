@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveCard from '../../components/archive/ArchiveCard.astro';
+import Pagination from '../../components/common/Pagination.astro';
 import PlatformCard from '../../components/platforms/PlatformCard.astro';
 import { urlFor } from '../../lib/image';
 import {
@@ -10,6 +11,7 @@ import {
   getCompanyName,
 } from '../../lib/companies';
 import { getAllPosts, groupPosts } from '../../lib/posts';
+import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../lib/pagination';
 import '../../styles/pages/companies.css';
 
 const { slug } = Astro.params;
@@ -75,6 +77,12 @@ function getInitials(value = '') {
 const logo = getLogo(company.logo);
 const logoLight = getLogo(company.logoLight) || logo;
 const primaryLogo = logo || logoLight;
+const {
+  currentPage: relatedArticlesPage,
+  totalPages: relatedArticlesTotalPages,
+  items: relatedArticlesPageItems,
+} = paginateItems(relatedArticles, getCurrentPage(Astro.url), PAGE_SIZE);
+const getRelatedArticlesPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber);
 const hasRelations =
   relatedArticles.length > 0 ||
   relatedCreators.length > 0 ||
@@ -166,10 +174,17 @@ const hasRelations =
         </div>
 
         <div class="company-article-grid">
-          {relatedArticles.map((post) => (
+          {relatedArticlesPageItems.map((post) => (
             <ArchiveCard post={post} lang="it" />
           ))}
         </div>
+
+        <Pagination
+          currentPage={relatedArticlesPage}
+          totalPages={relatedArticlesTotalPages}
+          getPageUrl={getRelatedArticlesPageUrl}
+          ariaLabel="Paginazione articoli collegati"
+        />
       </section>
     )}
 

@@ -1,0 +1,41 @@
+---
+import '../../styles/components/pagination.css';
+
+const {
+  currentPage = 1,
+  totalPages = 1,
+  lang = 'it',
+  getPageUrl,
+  className = '',
+  ariaLabel = lang === 'en' ? 'Pagination' : 'Paginazione',
+} = Astro.props;
+
+const page = Math.min(Math.max(1, Number(currentPage) || 1), Math.max(1, Number(totalPages) || 1));
+const pages = Math.max(1, Number(totalPages) || 1);
+const isEnglish = lang === 'en';
+const previousLabel = isEnglish ? 'Previous' : 'Precedente';
+const nextLabel = isEnglish ? 'Next' : 'Successiva';
+const statusLabel = isEnglish
+  ? `Page ${page} of ${pages}`
+  : `Pagina ${page} di ${pages}`;
+const previousUrl = page > 1 && typeof getPageUrl === 'function'
+  ? getPageUrl(page - 1)
+  : '';
+const nextUrl = page < pages && typeof getPageUrl === 'function'
+  ? getPageUrl(page + 1)
+  : '';
+---
+
+{pages > 1 && (
+  <nav class:list={['rg-pagination', className]} aria-label={ariaLabel}>
+    {previousUrl && (
+      <a class="rg-pagination__link" href={previousUrl}>{previousLabel}</a>
+    )}
+
+    <span class="rg-pagination__status">{statusLabel}</span>
+
+    {nextUrl && (
+      <a class="rg-pagination__link" href={nextUrl}>{nextLabel}</a>
+    )}
+  </nav>
+)}

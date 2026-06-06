@@ -2,11 +2,13 @@
 import BaseLayout from '../../../../../layouts/BaseLayout.astro';
 import PlatformDetail from '../../../../../components/platforms/PlatformDetail.astro';
 import ArchiveCard from '../../../../../components/archive/ArchiveCard.astro';
+import Pagination from '../../../../../components/common/Pagination.astro';
 
 import { getAllPosts } from '../../../../../lib/posts';
 import {
   getPlatformByPath
 } from '../../../../../lib/platforms';
+import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../../../lib/pagination';
 
 const typeMap = {
   arcade: 'arcade',
@@ -46,11 +48,7 @@ if (!platformData) {
 
 const canonicalType = typeSlugMap[platformType] || type;
 
-const currentPage = Math.max(
-  1,
-  Number.parseInt(Astro.url.searchParams.get('page') || '1', 10) || 1
-);
-const postsPerPage = 12;
+const currentPage = getCurrentPage(Astro.url);
 
 const relatedPlatformPosts = allPosts
   .filter((post) =>
@@ -62,19 +60,13 @@ const relatedPlatformPosts = allPosts
     new Date(a.publishedAt || 0).getTime()
   );
 
-const relatedTotal = relatedPlatformPosts.length;
-const relatedTotalPages = Math.max(1, Math.ceil(relatedTotal / postsPerPage));
-const relatedPage = Math.min(currentPage, relatedTotalPages);
-const relatedOffset = (relatedPage - 1) * postsPerPage;
-const relatedPagePosts = relatedPlatformPosts.slice(
-  relatedOffset,
-  relatedOffset + postsPerPage
-);
-
-const relatedBaseUrl =
-  `/en/platforms/${canonicalType}/${manufacturer}/${platform}/`;
-const getRelatedPageUrl = (pageNumber) =>
-  `${relatedBaseUrl}?page=${pageNumber}`;
+const {
+  currentPage: relatedPage,
+  total: relatedTotal,
+  totalPages: relatedTotalPages,
+  items: relatedPagePosts,
+} = paginateItems(relatedPlatformPosts, currentPage, PAGE_SIZE);
+const getRelatedPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber);
 
 const pageDescription =
   platformData.history?.slice(0, 155) ||
@@ -108,19 +100,13 @@ const pageDescription =
             ))}
           </div>
 
-          {relatedTotalPages > 1 && (
-            <nav class="platform-related__pagination" aria-label="Related articles pagination">
-              {relatedPage > 1 && (
-                <a href={getRelatedPageUrl(relatedPage - 1)}>Previous</a>
-              )}
-
-              <span>Page {relatedPage} of {relatedTotalPages}</span>
-
-              {relatedPage < relatedTotalPages && (
-                <a href={getRelatedPageUrl(relatedPage + 1)}>Next</a>
-              )}
-            </nav>
-          )}
+          <Pagination
+            currentPage={relatedPage}
+            totalPages={relatedTotalPages}
+            lang="en"
+            getPageUrl={getRelatedPageUrl}
+            ariaLabel="Related articles pagination"
+          />
         </div>
       </div>
     </section>

@@ -1,8 +1,10 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Pagination from '../../../components/common/Pagination.astro';
 import { urlFor } from '../../../lib/image';
 import { countryCodeToFlag, getAllCreators } from '../../../lib/creators';
 import { getAllPosts, groupPosts } from '../../../lib/posts';
+import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../lib/pagination';
 import '../../../styles/pages/creators.css';
 
 const creators = await getAllCreators();
@@ -13,6 +15,12 @@ const grouped = groupPosts(englishPosts);
 const pageTitle = 'Creators';
 const pageDescription =
   'Designers, programmers, composers and creative figures who shaped video game history.';
+const {
+  currentPage,
+  totalPages,
+  items: pageCreators,
+} = paginateItems(creators, getCurrentPage(Astro.url), PAGE_SIZE);
+const getCreatorsPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber);
 
 function getInitials(name = '') {
   return name
@@ -61,65 +69,75 @@ function getPortrait(creator, width = 520, height = 390) {
     </section>
 
     {creators.length > 0 ? (
-      <section class="creators-grid" aria-label="Creators list">
-        {creators.map((creator) => {
-          const portrait = getPortrait(creator);
-          const knownFor = creator.knownFor?.slice(0, 3) || [];
-          const bio = creator.shortBioEn || creator.shortBio;
-          const flag = countryCodeToFlag(creator.countryCode);
-          const country = creator.countryEn || creator.country;
+      <>
+        <section class="creators-grid" aria-label="Creators list">
+          {pageCreators.map((creator) => {
+            const portrait = getPortrait(creator);
+            const knownFor = creator.knownFor?.slice(0, 3) || [];
+            const bio = creator.shortBioEn || creator.shortBio;
+            const flag = countryCodeToFlag(creator.countryCode);
+            const country = creator.countryEn || creator.country;
 
-          return (
-            <article class="creator-card">
-              <a class="creator-card__link" href={`/en/creators/${creator.slug}/`}>
-                <span class="creator-card__portrait">
-                  {portrait ? (
-                    <img
-                      src={portrait}
-                      alt={creator.portrait?.alt || creator.name}
-                      width="520"
-                      height="390"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span class="creator-card__initials">{getInitials(creator.name) || 'RG'}</span>
-                  )}
-                </span>
+            return (
+              <article class="creator-card">
+                <a class="creator-card__link" href={`/en/creators/${creator.slug}/`}>
+                  <span class="creator-card__portrait">
+                    {portrait ? (
+                      <img
+                        src={portrait}
+                        alt={creator.portrait?.alt || creator.name}
+                        width="520"
+                        height="390"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span class="creator-card__initials">{getInitials(creator.name) || 'RG'}</span>
+                    )}
+                  </span>
 
-                <span class="creator-card__body">
-                  {creator.role && (
-                    <span class="creator-card__role">{creator.role}</span>
-                  )}
+                  <span class="creator-card__body">
+                    {creator.role && (
+                      <span class="creator-card__role">{creator.role}</span>
+                    )}
 
-                  <h2>{creator.name}</h2>
+                    <h2>{creator.name}</h2>
 
-                  {country && (
-                    <span class="creator-card__country">
-                      {flag && <span aria-hidden="true">{flag}</span>}
-                      {country}
-                    </span>
-                  )}
+                    {country && (
+                      <span class="creator-card__country">
+                        {flag && <span aria-hidden="true">{flag}</span>}
+                        {country}
+                      </span>
+                    )}
 
-                  {bio && (
-                    <p class="creator-card__bio">{bio}</p>
-                  )}
+                    {bio && (
+                      <p class="creator-card__bio">{bio}</p>
+                    )}
 
-                  {knownFor.length > 0 && (
-                    <ul class="creator-chip-list" aria-label="Known for">
-                      {knownFor.map((item) => (
-                        <li>{item}</li>
-                      ))}
-                    </ul>
-                  )}
+                    {knownFor.length > 0 && (
+                      <ul class="creator-chip-list" aria-label="Known for">
+                        {knownFor.map((item) => (
+                          <li>{item}</li>
+                        ))}
+                      </ul>
+                    )}
 
-                  <span class="creator-card__action">Profile</span>
-                </span>
-              </a>
-            </article>
-          );
-        })}
-      </section>
+                    <span class="creator-card__action">Profile</span>
+                  </span>
+                </a>
+              </article>
+            );
+          })}
+        </section>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          lang="en"
+          getPageUrl={getCreatorsPageUrl}
+          ariaLabel="Creators pagination"
+        />
+      </>
     ) : (
       <p class="creators-empty">No creators available.</p>
     )}

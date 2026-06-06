@@ -1,8 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Pagination from '../../components/common/Pagination.astro';
 import { client } from '../../lib/sanity';
 import { urlFor } from '../../lib/image';
 import { getAllPosts, groupPosts } from '../../lib/posts';
+import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../lib/pagination';
 
 const authors = await client.fetch(`
   *[
@@ -69,6 +71,12 @@ function getBioExcerpt(blocks = []) {
 const pageTitle = 'Autori';
 const pageDescription =
   'Le firme e le voci editoriali di Retro-Gamers.it.';
+const {
+  currentPage,
+  totalPages,
+  items: pageAuthors,
+} = paginateItems(authors, getCurrentPage(Astro.url), PAGE_SIZE);
+const getAuthorsPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber);
 ---
 
 <BaseLayout
@@ -86,56 +94,65 @@ const pageDescription =
     </section>
 
     {authors.length > 0 ? (
-      <section class="author-index-grid" aria-label="Elenco autori">
-        {authors.map((author) => {
-          const displayName = getDisplayName(author);
-          const roleLabel = roleLabels[author.role] || 'Autore';
-          const avatar = author.image?.asset
-            ? urlFor(author.image)
-                .width(220)
-                .height(220)
-                .fit('crop')
-                .quality(78)
-                .auto('format')
-                .url()
-            : '';
-          const excerpt = getBioExcerpt(author.bio);
+      <>
+        <section class="author-index-grid" aria-label="Elenco autori">
+          {pageAuthors.map((author) => {
+            const displayName = getDisplayName(author);
+            const roleLabel = roleLabels[author.role] || 'Autore';
+            const avatar = author.image?.asset
+              ? urlFor(author.image)
+                  .width(220)
+                  .height(220)
+                  .fit('crop')
+                  .quality(78)
+                  .auto('format')
+                  .url()
+              : '';
+            const excerpt = getBioExcerpt(author.bio);
 
-          return (
-            <article class="author-index-card">
-              <a href={`/autori/${author.slug}/`} class="author-index-card__link">
-                <span class="author-index-card__avatar">
-                  {avatar ? (
-                    <img
-                      src={avatar}
-                      alt={author.image?.alt || displayName}
-                      width="220"
-                      height="220"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span>{getInitials(displayName) || 'RG'}</span>
-                  )}
-                </span>
-
-                <span class="author-index-card__body">
-                  <span class="author-index-card__role">{roleLabel}</span>
-                  <strong>{displayName}</strong>
-
-                  {excerpt && (
-                    <span class="author-index-card__bio">{excerpt}</span>
-                  )}
-
-                  <span class="author-index-card__meta">
-                    {author.postCount === 1 ? '1 articolo' : `${author.postCount || 0} articoli`}
+            return (
+              <article class="author-index-card">
+                <a href={`/autori/${author.slug}/`} class="author-index-card__link">
+                  <span class="author-index-card__avatar">
+                    {avatar ? (
+                      <img
+                        src={avatar}
+                        alt={author.image?.alt || displayName}
+                        width="220"
+                        height="220"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span>{getInitials(displayName) || 'RG'}</span>
+                    )}
                   </span>
-                </span>
-              </a>
-            </article>
-          );
-        })}
-      </section>
+
+                  <span class="author-index-card__body">
+                    <span class="author-index-card__role">{roleLabel}</span>
+                    <strong>{displayName}</strong>
+
+                    {excerpt && (
+                      <span class="author-index-card__bio">{excerpt}</span>
+                    )}
+
+                    <span class="author-index-card__meta">
+                      {author.postCount === 1 ? '1 articolo' : `${author.postCount || 0} articoli`}
+                    </span>
+                  </span>
+                </a>
+              </article>
+            );
+          })}
+        </section>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          getPageUrl={getAuthorsPageUrl}
+          ariaLabel="Paginazione autori"
+        />
+      </>
     ) : (
       <p class="author-index-empty">Nessun autore disponibile.</p>
     )}

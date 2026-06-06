@@ -1,10 +1,12 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveCard from '../../components/archive/ArchiveCard.astro';
+import Pagination from '../../components/common/Pagination.astro';
 import { PortableText } from 'astro-portabletext';
 import { client } from '../../lib/sanity';
 import { urlFor } from '../../lib/image';
 import { getAllPosts, groupPosts } from '../../lib/posts';
+import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../lib/pagination';
 
 const { slug } = Astro.params;
 
@@ -127,6 +129,12 @@ const posts = await client.fetch(`
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
+const {
+  currentPage: authorPostsPage,
+  totalPages: authorPostsTotalPages,
+  items: authorPostsPageItems,
+} = paginateItems(posts, getCurrentPage(Astro.url), PAGE_SIZE);
+const getAuthorPostsPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber);
 
 const pageTitle = `Articoli di ${displayName}`;
 
@@ -311,24 +319,19 @@ const socials = [
       {posts.length > 0 ? (
         <>
           <div class="author-posts__grid" data-author-posts-grid>
-            {posts.map((post, index) => (
-              <div
-                class="author-posts__item"
-                data-author-post-item
-                hidden={index >= 12}
-              >
+            {authorPostsPageItems.map((post) => (
+              <div class="author-posts__item">
                 <ArchiveCard post={post} />
               </div>
             ))}
           </div>
 
-          {posts.length > 12 && (
-            <div class="author-posts__more">
-              <button type="button" data-author-posts-more>
-                Mostra altri articoli
-              </button>
-            </div>
-          )}
+          <Pagination
+            currentPage={authorPostsPage}
+            totalPages={authorPostsTotalPages}
+            getPageUrl={getAuthorPostsPageUrl}
+            ariaLabel="Paginazione articoli autore"
+          />
         </>
       ) : (
         <p class="author-posts__empty">
@@ -339,29 +342,5 @@ const socials = [
     </section>
 
   </main>
-
-  <script is:inline>
-    (() => {
-      const button = document.querySelector('[data-author-posts-more]');
-      const items = Array.from(document.querySelectorAll('[data-author-post-item]'));
-
-      if (!button || items.length === 0) return;
-
-      let visible = 12;
-      const step = 6;
-
-      button.addEventListener('click', () => {
-        visible += step;
-
-        items.forEach((item, index) => {
-          item.hidden = index >= visible;
-        });
-
-        if (visible >= items.length) {
-          button.hidden = true;
-        }
-      });
-    })();
-  </script>
 
 </BaseLayout>
