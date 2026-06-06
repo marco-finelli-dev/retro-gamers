@@ -13,6 +13,7 @@ const labels = {
     format: 'Formato',
     developer: 'Sviluppatore',
     publisher: 'Publisher',
+    creators: 'Creatori',
     year: 'Anno',
     genre: 'Genere',
     mode: 'Modalità',
@@ -34,6 +35,7 @@ const labels = {
     format: 'Format',
     developer: 'Developer',
     publisher: 'Publisher',
+    creators: 'Creators',
     year: 'Year',
     genre: 'Genre',
     mode: 'Mode',
@@ -57,6 +59,15 @@ const getTaxonomyName = (item) =>
   lang === 'en'
     ? item.nameEn || item.name
     : item.name;
+
+const creators = Array.isArray(post.creators)
+  ? post.creators.filter((creator) => creator?.name && creator?.slug)
+  : [];
+
+const getCreatorUrl = (creator) =>
+  lang === 'en'
+    ? `/en/creators/${creator.slug}/`
+    : `/creatori/${creator.slug}/`;
 
 const cover = post.gameInfo?.cover?.asset
   ? urlFor(post.gameInfo.cover)
@@ -100,6 +111,11 @@ const infoRows = [
     value: post.publishers?.map(getTaxonomyName).join(', ')
   },
   {
+    label: t.creators,
+    value: creators,
+    type: 'creators'
+  },
+  {
     label: t.year,
     value: post.gameInfo?.releaseYear
   },
@@ -111,7 +127,7 @@ const infoRows = [
     label: t.mode,
     value: post.modes?.map(getTaxonomyName).join(' · ')
   }
-].filter((row) => row.value);
+].filter((row) => row.type === 'creators' ? row.value.length > 0 : row.value);
 ---
 
 <div class={`review-sidebar ${!cover ? 'has-no-cover' : ''}`}>
@@ -142,7 +158,17 @@ const infoRows = [
           {infoRows.map((row) => (
             <div>
               <dt>{row.label}</dt>
-              <dd>{row.value}</dd>
+              {row.type === 'creators' ? (
+                <dd class="article-creator-links">
+                  {row.value.map((creator) => (
+                    <a href={getCreatorUrl(creator)}>
+                      {creator.name}
+                    </a>
+                  ))}
+                </dd>
+              ) : (
+                <dd>{row.value}</dd>
+              )}
             </div>
           ))}
         </dl>

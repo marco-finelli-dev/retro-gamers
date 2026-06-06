@@ -17,6 +17,7 @@ export type Creator = {
   country?: string;
   countryCode?: string;
   activeYears?: string;
+  activeYearsEn?: string;
   portrait?: CreatorPortrait;
   shortBio?: string;
   shortBioEn?: string;
@@ -43,6 +44,7 @@ const creatorFields = `
   country,
   countryCode,
   activeYears,
+  activeYearsEn,
 
   portrait {
     alt,

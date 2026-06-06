@@ -35,6 +35,7 @@ const typeLabels = {
 const ui = {
   it: {
     related: 'Articoli correlati',
+    creators: 'Creatori collegati',
     explore: 'Esplora',
     archiveFallback: 'Esplora archivio',
     archiveLabels: {
@@ -49,6 +50,7 @@ const ui = {
   },
   en: {
     related: 'Related articles',
+    creators: 'Related creators',
     explore: 'Explore',
     archiveFallback: 'Explore archive',
     archiveLabels: {
@@ -83,6 +85,10 @@ const archiveLink = {
 const sidebarRelated = relatedPosts
   .filter((item) => item?._id !== post?._id)
   .slice(0, 5);
+
+const creators = Array.isArray(post.creators)
+  ? post.creators.filter((creator) => creator?.name && creator?.slug)
+  : [];
 
 const sidebarTags = [
   ...(post.platforms || []).map((item) => ({
@@ -136,6 +142,37 @@ const getRelatedImage = (item) => {
     .url();
 };
 
+const getCreatorUrl = (creator) =>
+  lang === 'en'
+    ? `/en/creators/${creator.slug}/`
+    : `/creatori/${creator.slug}/`;
+
+const getCreatorRole = (creator) =>
+  lang === 'en'
+    ? creator.roleEn || creator.role || ''
+    : creator.role || creator.roleEn || '';
+
+const getCreatorImage = (creator) => {
+  if (!creator?.portrait?.asset) return '';
+
+  return urlFor(creator.portrait)
+    .width(96)
+    .height(96)
+    .fit('crop')
+    .quality(72)
+    .auto('format')
+    .url();
+};
+
+const getCreatorInitials = (name = '') =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+
 const image = getMainImage(post);
 
 const getTypeLabel = (item) =>
@@ -160,6 +197,43 @@ const getTypeLabel = (item) =>
   )}
 
   <div class="article-sidebar__sticky">
+
+    {creators.length > 0 && (
+      <section class="article-sidebar__panel article-sidebar__panel--creators">
+        <h2>{t.creators}</h2>
+
+        <div class="article-sidebar-creators">
+          {creators.map((creator) => {
+            const portrait = getCreatorImage(creator);
+            const role = getCreatorRole(creator);
+
+            return (
+              <a href={getCreatorUrl(creator)} class="article-sidebar-creator">
+                <span class="article-sidebar-creator__portrait">
+                  {portrait ? (
+                    <img
+                      src={portrait}
+                      alt={creator.portrait?.alt || creator.name}
+                      width="48"
+                      height="48"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span>{getCreatorInitials(creator.name) || 'RG'}</span>
+                  )}
+                </span>
+
+                <span class="article-sidebar-creator__body">
+                  <strong>{creator.name}</strong>
+                  {role && <small>{role}</small>}
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    )}
 
     {sidebarRelated.length > 0 && (
       <section class="article-sidebar__panel article-sidebar__panel--related">

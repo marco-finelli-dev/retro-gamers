@@ -52,6 +52,20 @@ export type PlatformRef = {
   };
 };
 
+export type CreatorRef = {
+  _id?: string;
+  name: string;
+  slug: string;
+  role?: string;
+  roleEn?: string;
+  portrait?: {
+    asset?: {
+      url?: string;
+    };
+    alt?: string;
+  };
+};
+
 export type Monetization = {
   isAffiliate?: boolean;
   productType?: 'book' | 'hardware' | 'accessory' | 'software' | 'gadget' | 'service' | 'other';
@@ -119,6 +133,7 @@ export type Post = {
   modes?: TaxonomyRef[];
   series?: TaxonomyRef[];
   editorialSeries?: TaxonomyRef[];
+  creators?: CreatorRef[];
 
   monetization?: Monetization;
 
@@ -291,6 +306,18 @@ export async function getAllPosts(): Promise<Post[]> {
         nameEn,
         "slug": slug.current,
         logo {
+          asset->{ url },
+          alt
+        }
+      },
+
+      creators[]->{
+        _id,
+        name,
+        "slug": slug.current,
+        role,
+        roleEn,
+        portrait {
           asset->{ url },
           alt
         }

@@ -193,6 +193,18 @@ const post = await sanityClient.fetch(`
     "slug": slug.current
   },
 
+  creators[]->{
+    _id,
+    name,
+    "slug": slug.current,
+    role,
+    roleEn,
+    portrait {
+      alt,
+      asset->{ url }
+    }
+  },
+
   gameInfo {
     releaseYear,
     mediaFormat,

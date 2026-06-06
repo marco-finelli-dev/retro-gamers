@@ -213,6 +213,174 @@
   color: rgba(255,255,255,0.82);
 }
 
+.article-creator-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.article-creator-links a {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 820;
+
+  color: var(--rg-badge-color);
+  text-decoration: none;
+
+  background: var(--rg-badge-bg);
+  border: 1px solid var(--rg-badge-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.article-creator-links a:hover {
+  transform: translateY(-1px);
+
+  color: var(--rg-action-hover-color);
+  border-color: var(--rg-badge-border);
+  background: var(--rg-cta-hover-bg);
+}
+
+
+/* ========================================
+   ARTICLE CREATORS
+======================================== */
+
+.article-sidebar-creators {
+  display: grid;
+  gap: 10px;
+}
+
+.article-sidebar-creator {
+  position: relative;
+  overflow: hidden;
+
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+
+  padding: 9px;
+  border-radius: 14px;
+
+  color: inherit;
+  text-decoration: none;
+
+  background: var(--rg-card-bg);
+  border: 1px solid var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
+
+  transition:
+    transform var(--transition-smooth),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-smooth),
+    background var(--transition-fast);
+}
+
+.article-sidebar-creator::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: var(--rg-panel-highlight);
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: opacity var(--transition-fast);
+}
+
+.article-sidebar-creator:hover {
+  transform: translateY(-2px);
+
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-hover-shadow);
+}
+
+.article-sidebar-creator:hover::before {
+  opacity: 1;
+}
+
+.article-sidebar-creator__portrait {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+
+  display: grid;
+  place-items: center;
+
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 850;
+
+  color: var(--rg-badge-color);
+  background: var(--rg-badge-bg);
+  border: 1px solid var(--rg-badge-border);
+}
+
+.article-sidebar-creator__portrait img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+  object-position: center;
+}
+
+.article-sidebar-creator__body {
+  position: relative;
+  z-index: 1;
+
+  display: grid;
+  gap: 5px;
+
+  min-width: 0;
+}
+
+.article-sidebar-creator__body strong {
+  overflow: hidden;
+
+  font-size: 13px;
+  line-height: 1.15;
+  font-weight: 800;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  color: rgba(255,255,255,0.92);
+}
+
+.article-sidebar-creator__body small {
+  overflow: hidden;
+
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 820;
+  letter-spacing: 0.55px;
+  text-transform: uppercase;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  color: var(--rg-eyebrow-color);
+}
+
 
 /* ========================================
    ARTICLE RELATED
@@ -583,6 +751,18 @@ html[data-theme="light"] .review-info-list dd {
   color: rgba(36,40,54,0.88);
 }
 
+html[data-theme="light"] .article-creator-links a {
+  color: var(--rg-badge-color);
+  background: var(--rg-badge-bg);
+  border-color: var(--rg-badge-border);
+  box-shadow: var(--rg-card-shadow);
+}
+
+html[data-theme="light"] .article-creator-links a:hover {
+  color: var(--rg-action-hover-color);
+  background: var(--rg-cta-hover-bg);
+}
+
 
 /* ========================================
    RELATED CARDS — LIGHT REFINEMENT
@@ -594,9 +774,26 @@ html[data-theme="light"] .article-sidebar-related__card {
   box-shadow: var(--rg-card-shadow);
 }
 
-html[data-theme="light"] .article-sidebar-related__card:hover {
+html[data-theme="light"] .article-sidebar-creator {
+  background: var(--rg-card-bg);
+  border-color: var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
+}
+
+html[data-theme="light"] .article-sidebar-related__card:hover,
+html[data-theme="light"] .article-sidebar-creator:hover {
   border-color: var(--rg-badge-border);
   box-shadow: var(--rg-card-hover-shadow);
+}
+
+html[data-theme="light"] .article-sidebar-creator__portrait {
+  color: var(--rg-badge-color);
+  background: var(--rg-badge-bg);
+  border-color: var(--rg-badge-border);
+}
+
+html[data-theme="light"] .article-sidebar-creator__body strong {
+  color: rgba(34,38,52,0.92);
 }
 
 html[data-theme="light"] .article-sidebar-related__image {

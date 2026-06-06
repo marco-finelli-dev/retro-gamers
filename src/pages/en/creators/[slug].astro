@@ -47,6 +47,7 @@ const pageDescription =
   creator.metaDescription ||
   shortBio ||
   `${creator.name}: profile, works and related articles on Retro-Gamers.it.`;
+const activeYears = creator.activeYearsEn || creator.activeYears;
 
 function getInitials(name = '') {
   return name
@@ -107,7 +108,7 @@ function getInitials(name = '') {
               {creator.country}
             </span>
           )}
-          {creator.activeYears && <span class="creator-chip">{creator.activeYears}</span>}
+          {activeYears && <span class="creator-chip">{activeYears}</span>}
         </div>
       </div>
     </section>
