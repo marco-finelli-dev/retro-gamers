@@ -203,33 +203,57 @@ function getCompanyUrl(company: CreatorCompanyRef) {
           <section class="creator-fact-card">
             <h3>Related platforms</h3>
             <ul class="creator-platform-list">
-              {creator.relatedPlatforms.map((platform) => (
-                <li>
-                  <a
-                    class="creator-platform-card"
-                    href={getPlatformUrl(platform, 'en')}
-                    aria-label={platform.name}
-                    title={platform.name}
-                  >
-                    {platform.logo?.asset ? (
-                      <span class="creator-platform-card__logo">
-                        <img
-                          src={urlFor(platform.logo).width(360).height(140).fit('max').auto('format').url()}
-                          alt={platform.logo?.alt || platform.name}
-                          width="180"
-                          height="70"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </span>
-                    ) : (
-                      <span class="creator-platform-card__fallback">
-                        {platform.name}
-                      </span>
-                    )}
-                  </a>
-                </li>
-              ))}
+              {creator.relatedPlatforms.map((platform) => {
+                const logo = platform.logo?.asset
+                  ? urlFor(platform.logo).width(360).height(140).fit('max').auto('format').url()
+                  : '';
+                const logoLight = platform.logoLight?.asset
+                  ? urlFor(platform.logoLight).width(360).height(140).fit('max').auto('format').url()
+                  : '';
+                const primaryLogo = logo || logoLight;
+                const themeLightLogo = logoLight || primaryLogo;
+                const logoAlt = platform.logo?.alt || platform.logoLight?.alt || platform.name;
+
+                return (
+                  <li>
+                    <a
+                      class="creator-platform-card"
+                      href={getPlatformUrl(platform, 'en')}
+                      aria-label={platform.name}
+                      title={platform.name}
+                    >
+                      {primaryLogo ? (
+                        <span class="creator-platform-card__logo">
+                          <img
+                            src={primaryLogo}
+                            alt={logoAlt}
+                            class="creator-platform-logo creator-platform-logo--dark"
+                            width="180"
+                            height="70"
+                            loading="lazy"
+                            decoding="async"
+                          />
+
+                          <img
+                            src={themeLightLogo}
+                            alt=""
+                            class="creator-platform-logo creator-platform-logo--light"
+                            width="180"
+                            height="70"
+                            loading="lazy"
+                            decoding="async"
+                            aria-hidden="true"
+                          />
+                        </span>
+                      ) : (
+                        <span class="creator-platform-card__fallback">
+                          {platform.name}
+                        </span>
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}

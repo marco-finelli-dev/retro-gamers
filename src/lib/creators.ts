@@ -16,6 +16,15 @@ export type CreatorPortrait = {
   };
 };
 
+export type CreatorPlatformRef = PlatformRef & {
+  logoLight?: {
+    asset?: {
+      url?: string;
+    };
+    alt?: string;
+  };
+};
+
 export type Creator = {
   _id: string;
   name: string;
@@ -35,7 +44,7 @@ export type Creator = {
   knownFor?: string[];
   companies?: string[];
   relatedCompanies?: CreatorCompanyRef[];
-  relatedPlatforms?: PlatformRef[];
+  relatedPlatforms?: CreatorPlatformRef[];
   relatedArticles?: Post[];
   featured?: boolean;
   sortOrder?: number;
