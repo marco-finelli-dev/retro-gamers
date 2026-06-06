@@ -15,6 +15,7 @@ export type Creator = {
   role?: string;
   creatorTypes?: string[];
   country?: string;
+  countryCode?: string;
   activeYears?: string;
   portrait?: CreatorPortrait;
   shortBio?: string;
@@ -40,6 +41,7 @@ const creatorFields = `
   role,
   creatorTypes,
   country,
+  countryCode,
   activeYears,
 
   portrait {
@@ -160,4 +162,16 @@ export async function getCreatorBySlug(slug: string | undefined): Promise<Creato
   `, { slug });
 
   return data || null;
+}
+
+export function countryCodeToFlag(code?: string): string {
+  const normalized = code?.trim().toUpperCase();
+
+  if (!normalized || !/^[A-Z]{2}$/.test(normalized)) {
+    return '';
+  }
+
+  return Array.from(normalized)
+    .map((letter) => String.fromCodePoint(127397 + letter.charCodeAt(0)))
+    .join('');
 }

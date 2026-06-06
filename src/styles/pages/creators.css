@@ -246,6 +246,20 @@
   color: rgba(255,255,255,0.60);
 }
 
+.creator-card__country {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  width: fit-content;
+
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 800;
+
+  color: rgba(255,255,255,0.58);
+}
+
 .creator-chip-list {
   display: flex;
   flex-wrap: wrap;
@@ -261,6 +275,7 @@
 .creator-chip {
   display: inline-flex;
   align-items: center;
+  gap: 7px;
 
   min-height: 28px;
   padding: 0 10px;
@@ -309,7 +324,7 @@
 
 .creator-detail-hero {
   display: grid;
-  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
   gap: 28px;
   align-items: stretch;
 
@@ -324,7 +339,9 @@
   display: grid;
   place-items: center;
 
-  min-height: 360px;
+  width: min(100%, 300px);
+  aspect-ratio: 1 / 1;
+  align-self: center;
   border-radius: 24px;
 
   background: var(--rg-card-bg);
@@ -683,6 +700,7 @@ html[data-theme="light"] .creators-hero p,
 html[data-theme="light"] .creator-detail-hero__intro,
 html[data-theme="light"] .creator-panel__copy,
 html[data-theme="light"] .creator-card__bio,
+html[data-theme="light"] .creator-card__country,
 html[data-theme="light"] .creator-fact-card p,
 html[data-theme="light"] .creator-related__header p,
 html[data-theme="light"] .creator-related__grid .archive-card p,
@@ -773,7 +791,8 @@ html[data-theme="light"] .creator-related__grid .archive-card__score {
   }
 
   .creator-detail-hero__portrait {
-    min-height: 320px;
+    width: min(100%, 360px);
+    justify-self: center;
     border-radius: 20px;
   }
 
@@ -799,6 +818,6 @@ html[data-theme="light"] .creator-related__grid .archive-card__score {
   }
 
   .creator-detail-hero__portrait {
-    min-height: 260px;
+    width: min(100%, 320px);
   }
 }

@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveCard from '../../components/archive/ArchiveCard.astro';
 import { PortableText } from 'astro-portabletext';
 import { urlFor } from '../../lib/image';
-import { getCreatorBySlug } from '../../lib/creators';
+import { countryCodeToFlag, getCreatorBySlug } from '../../lib/creators';
 import { getAllPosts, groupPosts } from '../../lib/posts';
 import { getPlatformUrl } from '../../lib/routes';
 import '../../styles/pages/creators.css';
@@ -40,6 +40,7 @@ const portrait = creator.portrait?.asset
   : '';
 
 const pageTitle = creator.seoTitle || creator.name;
+const countryFlag = countryCodeToFlag(creator.countryCode);
 const pageDescription =
   creator.metaDescription ||
   shortBio ||
@@ -97,7 +98,12 @@ function getInitials(name = '') {
 
         <div class="creator-detail-hero__meta" aria-label="Dati creator">
           {creator.role && <span class="creator-chip">{creator.role}</span>}
-          {creator.country && <span class="creator-chip">{creator.country}</span>}
+          {creator.country && (
+            <span class="creator-chip">
+              {countryFlag && <span aria-hidden="true">{countryFlag}</span>}
+              {creator.country}
+            </span>
+          )}
           {creator.activeYears && <span class="creator-chip">{creator.activeYears}</span>}
         </div>
       </div>

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
-import { getAllCreators } from '../../lib/creators';
+import { countryCodeToFlag, getAllCreators } from '../../lib/creators';
 import { getAllPosts, groupPosts } from '../../lib/posts';
 import '../../styles/pages/creators.css';
 
@@ -63,6 +63,7 @@ function getPortrait(creator, width = 520, height = 390) {
         {creators.map((creator) => {
           const portrait = getPortrait(creator);
           const knownFor = creator.knownFor?.slice(0, 3) || [];
+          const flag = countryCodeToFlag(creator.countryCode);
 
           return (
             <article class="creator-card">
@@ -88,6 +89,13 @@ function getPortrait(creator, width = 520, height = 390) {
                   )}
 
                   <h2>{creator.name}</h2>
+
+                  {creator.country && (
+                    <span class="creator-card__country">
+                      {flag && <span aria-hidden="true">{flag}</span>}
+                      {creator.country}
+                    </span>
+                  )}
 
                   {creator.shortBio && (
                     <p class="creator-card__bio">{creator.shortBio}</p>
