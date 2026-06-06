@@ -213,44 +213,20 @@
   color: rgba(255,255,255,0.82);
 }
 
-.article-creator-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.article-creator-links a {
-  display: inline-flex;
-  align-items: center;
-
-  min-height: 26px;
-  padding: 0 9px;
-  border-radius: 999px;
-
-  font-size: 11px;
-  line-height: 1;
-  font-weight: 820;
-
-  color: var(--rg-badge-color);
+.review-info-link {
+  color: var(--rg-action-color);
   text-decoration: none;
 
-  background: var(--rg-badge-bg);
-  border: 1px solid var(--rg-badge-border);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
-
   transition:
-    transform var(--transition-fast),
-    border-color var(--transition-fast),
-    background var(--transition-fast),
-    color var(--transition-fast);
+    color var(--transition-fast),
+    text-decoration-color var(--transition-fast);
 }
 
-.article-creator-links a:hover {
-  transform: translateY(-1px);
-
+.review-info-link:hover {
   color: var(--rg-action-hover-color);
-  border-color: var(--rg-badge-border);
-  background: var(--rg-cta-hover-bg);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 
@@ -750,19 +726,6 @@ html[data-theme="light"] .article-info-list dd,
 html[data-theme="light"] .review-info-list dd {
   color: rgba(36,40,54,0.88);
 }
-
-html[data-theme="light"] .article-creator-links a {
-  color: var(--rg-badge-color);
-  background: var(--rg-badge-bg);
-  border-color: var(--rg-badge-border);
-  box-shadow: var(--rg-card-shadow);
-}
-
-html[data-theme="light"] .article-creator-links a:hover {
-  color: var(--rg-action-hover-color);
-  background: var(--rg-cta-hover-bg);
-}
-
 
 /* ========================================
    RELATED CARDS — LIGHT REFINEMENT

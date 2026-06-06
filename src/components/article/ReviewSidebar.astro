@@ -159,11 +159,14 @@ const infoRows = [
             <div>
               <dt>{row.label}</dt>
               {row.type === 'creators' ? (
-                <dd class="article-creator-links">
-                  {row.value.map((creator) => (
-                    <a href={getCreatorUrl(creator)}>
-                      {creator.name}
-                    </a>
+                <dd>
+                  {row.value.map((creator, index) => (
+                    <>
+                      {index > 0 && ', '}
+                      <a class="review-info-link" href={getCreatorUrl(creator)}>
+                        {creator.name}
+                      </a>
+                    </>
                   ))}
                 </dd>
               ) : (

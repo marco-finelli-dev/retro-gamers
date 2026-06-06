@@ -3,7 +3,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import ArchiveCard from '../../../components/archive/ArchiveCard.astro';
 import { PortableText } from 'astro-portabletext';
 import { urlFor } from '../../../lib/image';
-import { countryCodeToFlag, getCreatorBySlug } from '../../../lib/creators';
+import { countryCodeToFlag, getCreatorBySlug, type CreatorCompanyRef } from '../../../lib/creators';
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getPlatformUrl } from '../../../lib/routes';
 import '../../../styles/pages/creators.css';
@@ -48,6 +48,10 @@ const pageDescription =
   shortBio ||
   `${creator.name}: profile, works and related articles on Retro-Gamers.it.`;
 const activeYears = creator.activeYearsEn || creator.activeYears;
+const country = creator.countryEn || creator.country;
+const relatedCompanies = (creator.relatedCompanies || []).filter((company) =>
+  (company?.nameEn || company?.name) && company?.slug && getCompanyUrl(company)
+);
 
 function getInitials(name = '') {
   return name
@@ -57,6 +61,36 @@ function getInitials(name = '') {
     .map((part) => part[0])
     .join('')
     .toUpperCase();
+}
+
+function getCompanyTypes(company: CreatorCompanyRef) {
+  return Array.isArray(company.type)
+    ? company.type
+    : company.type
+      ? [company.type]
+      : [];
+}
+
+function getCompanyUrl(company: CreatorCompanyRef) {
+  const types = getCompanyTypes(company);
+
+  if (types.includes('developer')) return `/en/developers/${company.slug}/`;
+  if (types.includes('publisher')) return `/en/publishers/${company.slug}/`;
+
+  if (types.includes('manufacturer')) {
+    const typeMap = {
+      console: 'consoles',
+      computer: 'computers',
+      arcade: 'arcade',
+    };
+    const platformType = company.platformType ? typeMap[company.platformType] : '';
+
+    return platformType
+      ? `/en/platforms/${platformType}/${company.slug}/`
+      : '/en/platforms/';
+  }
+
+  return '';
 }
 ---
 
@@ -102,10 +136,10 @@ function getInitials(name = '') {
 
         <div class="creator-detail-hero__meta" aria-label="Creator data">
           {creator.role && <span class="creator-chip">{creator.role}</span>}
-          {creator.country && (
+          {country && (
             <span class="creator-chip">
               {countryFlag && <span aria-hidden="true">{countryFlag}</span>}
-              {creator.country}
+              {country}
             </span>
           )}
           {activeYears && <span class="creator-chip">{activeYears}</span>}
@@ -141,7 +175,20 @@ function getInitials(name = '') {
           </section>
         )}
 
-        {creator.companies?.length > 0 && (
+        {relatedCompanies.length > 0 ? (
+          <section class="creator-fact-card">
+            <h3>Companies</h3>
+            <ul class="creator-chip-list">
+              {relatedCompanies.map((company) => (
+                <li>
+                  <a href={getCompanyUrl(company)}>
+                    {company.nameEn || company.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : creator.companies?.length > 0 && (
           <section class="creator-fact-card">
             <h3>Companies</h3>
             <ul class="creator-chip-list">

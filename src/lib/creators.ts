@@ -1,6 +1,14 @@
 import { client } from './sanity';
 import type { PlatformRef, Post } from './posts';
 
+export type CreatorCompanyRef = {
+  name: string;
+  nameEn?: string;
+  slug: string;
+  type?: string | string[];
+  platformType?: 'console' | 'computer' | 'arcade';
+};
+
 export type CreatorPortrait = {
   alt?: string;
   asset?: {
@@ -15,6 +23,7 @@ export type Creator = {
   role?: string;
   creatorTypes?: string[];
   country?: string;
+  countryEn?: string;
   countryCode?: string;
   activeYears?: string;
   activeYearsEn?: string;
@@ -25,6 +34,7 @@ export type Creator = {
   profileEn?: any[];
   knownFor?: string[];
   companies?: string[];
+  relatedCompanies?: CreatorCompanyRef[];
   relatedPlatforms?: PlatformRef[];
   relatedArticles?: Post[];
   featured?: boolean;
@@ -42,6 +52,7 @@ const creatorFields = `
   role,
   creatorTypes,
   country,
+  countryEn,
   countryCode,
   activeYears,
   activeYearsEn,
@@ -57,6 +68,19 @@ const creatorFields = `
   profileEn,
   knownFor,
   companies,
+
+  relatedCompanies[]->{
+    "name": coalesce(name, title),
+    "nameEn": coalesce(nameEn, titleEn),
+    "slug": slug.current,
+    type,
+    "platformType": *[
+      _type == "platform" &&
+      manufacturer._ref == ^._id &&
+      defined(platformType)
+    ] | order(platformType asc)[0].platformType
+  },
+
   featured,
   sortOrder,
   seoTitle,

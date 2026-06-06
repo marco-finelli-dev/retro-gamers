@@ -67,6 +67,7 @@ function getPortrait(creator, width = 520, height = 390) {
           const knownFor = creator.knownFor?.slice(0, 3) || [];
           const bio = creator.shortBioEn || creator.shortBio;
           const flag = countryCodeToFlag(creator.countryCode);
+          const country = creator.countryEn || creator.country;
 
           return (
             <article class="creator-card">
@@ -93,10 +94,10 @@ function getPortrait(creator, width = 520, height = 390) {
 
                   <h2>{creator.name}</h2>
 
-                  {creator.country && (
+                  {country && (
                     <span class="creator-card__country">
                       {flag && <span aria-hidden="true">{flag}</span>}
-                      {creator.country}
+                      {country}
                     </span>
                   )}
 

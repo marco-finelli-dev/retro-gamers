@@ -30,6 +30,12 @@ const label =
   Number(score) >= 8 ? 'Good' :
   t.fallbackScore;
 
+const badgeLabel =
+  Number(score) >= 9.5 ? 'TOP' :
+  Number(score) >= 9 ? 'MUST' :
+  Number(score) >= 8 ? 'GOOD' :
+  '';
+
 const rows = [
   { label: t.graphics, value: rating?.grafica },
   { label: t.sound, value: rating?.sonoro },
@@ -42,7 +48,9 @@ const rows = [
 
   <div class="review-score-box__main">
     <span>{formattedScore}</span>
-    <small>{label}</small>
+    {(!compact || badgeLabel) && (
+      <small>{compact ? badgeLabel : label}</small>
+    )}
   </div>
 
   {rows.length > 0 && (

@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchiveCard from '../../components/archive/ArchiveCard.astro';
 import { PortableText } from 'astro-portabletext';
 import { urlFor } from '../../lib/image';
-import { countryCodeToFlag, getCreatorBySlug } from '../../lib/creators';
+import { countryCodeToFlag, getCreatorBySlug, type CreatorCompanyRef } from '../../lib/creators';
 import { getAllPosts, groupPosts } from '../../lib/posts';
 import { getPlatformUrl } from '../../lib/routes';
 import '../../styles/pages/creators.css';
@@ -45,6 +45,9 @@ const pageDescription =
   creator.metaDescription ||
   shortBio ||
   `${creator.name}: profilo, opere e articoli collegati su Retro-Gamers.it.`;
+const relatedCompanies = (creator.relatedCompanies || []).filter((company) =>
+  company?.name && company?.slug && getCompanyUrl(company)
+);
 
 function getInitials(name = '') {
   return name
@@ -54,6 +57,29 @@ function getInitials(name = '') {
     .map((part) => part[0])
     .join('')
     .toUpperCase();
+}
+
+function getCompanyTypes(company: CreatorCompanyRef) {
+  return Array.isArray(company.type)
+    ? company.type
+    : company.type
+      ? [company.type]
+      : [];
+}
+
+function getCompanyUrl(company: CreatorCompanyRef) {
+  const types = getCompanyTypes(company);
+
+  if (types.includes('developer')) return `/sviluppatore/${company.slug}/`;
+  if (types.includes('publisher')) return `/publisher/${company.slug}/`;
+
+  if (types.includes('manufacturer')) {
+    return company.platformType
+      ? `/piattaforme/${company.platformType}/${company.slug}/`
+      : '/piattaforme/';
+  }
+
+  return '';
 }
 ---
 
@@ -137,7 +163,20 @@ function getInitials(name = '') {
           </section>
         )}
 
-        {creator.companies?.length > 0 && (
+        {relatedCompanies.length > 0 ? (
+          <section class="creator-fact-card">
+            <h3>Aziende</h3>
+            <ul class="creator-chip-list">
+              {relatedCompanies.map((company) => (
+                <li>
+                  <a href={getCompanyUrl(company)}>
+                    {company.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : creator.companies?.length > 0 && (
           <section class="creator-fact-card">
             <h3>Aziende</h3>
             <ul class="creator-chip-list">

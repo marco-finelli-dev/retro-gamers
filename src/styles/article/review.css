@@ -130,6 +130,68 @@
   
     color: rgba(255,255,255,0.92);
   }
+
+  .review-sidebar .review-score-box.is-compact {
+    gap: 12px;
+
+    padding: 13px;
+    border-radius: 18px;
+
+    box-shadow:
+      0 12px 28px rgba(0,0,0,0.34),
+      0 0 14px rgba(34,240,255,0.07),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  .review-sidebar .review-score-box.is-compact::before {
+    opacity: 0.50;
+  }
+
+  .review-sidebar .review-score-box.is-compact .review-score-box__main {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+
+    min-height: 72px;
+    border-radius: 15px;
+
+    box-shadow:
+      0 9px 20px rgba(0,0,0,0.30),
+      0 0 12px rgba(34,240,255,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.10);
+  }
+
+  .review-sidebar .review-score-box.is-compact .review-score-box__main span {
+    font-size: 32px;
+    line-height: 1;
+    font-weight: 900;
+  }
+
+  .review-sidebar .review-score-box.is-compact .review-score-box__main small {
+    margin-top: 0;
+    font-family: var(--font-display);
+    font-size: 31px;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+
+  .review-sidebar .review-score-box.is-compact .review-score-box__details {
+    gap: 8px;
+  }
+
+  .review-sidebar .review-score-box.is-compact .review-score-row {
+    gap: 10px;
+  }
+
+  .review-sidebar .review-score-box.is-compact .review-score-row span {
+    font-size: 12px;
+  }
+
+  .review-sidebar .review-score-box.is-compact .review-score-row strong {
+    font-size: 13px;
+  }
   
  /* ========================================
    FINAL RATING
@@ -417,6 +479,16 @@ html[data-theme="light"] .review-score-row span {
 
 html[data-theme="light"] .review-score-row strong {
   color: rgba(34,38,52,0.92);
+}
+
+html[data-theme="light"] .review-sidebar .review-score-box.is-compact {
+  box-shadow: var(--rg-card-shadow);
+}
+
+html[data-theme="light"] .review-sidebar .review-score-box.is-compact .review-score-box__main {
+  box-shadow:
+    0 8px 18px rgba(8,104,122,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.64);
 }
 
 
