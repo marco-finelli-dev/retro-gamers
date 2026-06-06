@@ -3,9 +3,10 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import ArchiveCard from '../../../components/archive/ArchiveCard.astro';
 import { PortableText } from 'astro-portabletext';
 import { urlFor } from '../../../lib/image';
-import { countryCodeToFlag, getCreatorBySlug, type CreatorCompanyRef } from '../../../lib/creators';
+import { countryCodeToFlag, getCreatorBySlug } from '../../../lib/creators';
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getPlatformUrl } from '../../../lib/routes';
+import { getCompanyUrl } from '../../../lib/companies';
 import '../../../styles/pages/creators.css';
 
 const { slug } = Astro.params;
@@ -63,35 +64,6 @@ function getInitials(name = '') {
     .toUpperCase();
 }
 
-function getCompanyTypes(company: CreatorCompanyRef) {
-  return Array.isArray(company.type)
-    ? company.type
-    : company.type
-      ? [company.type]
-      : [];
-}
-
-function getCompanyUrl(company: CreatorCompanyRef) {
-  const types = getCompanyTypes(company);
-
-  if (types.includes('developer')) return `/en/developers/${company.slug}/`;
-  if (types.includes('publisher')) return `/en/publishers/${company.slug}/`;
-
-  if (types.includes('manufacturer')) {
-    const typeMap = {
-      console: 'consoles',
-      computer: 'computers',
-      arcade: 'arcade',
-    };
-    const platformType = company.platformType ? typeMap[company.platformType] : '';
-
-    return platformType
-      ? `/en/platforms/${platformType}/${company.slug}/`
-      : '/en/platforms/';
-  }
-
-  return '';
-}
 ---
 
 <BaseLayout
@@ -181,7 +153,7 @@ function getCompanyUrl(company: CreatorCompanyRef) {
             <ul class="creator-chip-list">
               {relatedCompanies.map((company) => (
                 <li>
-                  <a href={getCompanyUrl(company)}>
+                  <a href={getCompanyUrl(company, 'en')}>
                     {company.nameEn || company.name}
                   </a>
                 </li>

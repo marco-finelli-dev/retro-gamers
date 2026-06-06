@@ -1,0 +1,224 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArchiveCard from '../../../components/archive/ArchiveCard.astro';
+import PlatformCard from '../../../components/platforms/PlatformCard.astro';
+import { urlFor } from '../../../lib/image';
+import {
+  companyTypeLabels,
+  getCompanyBySlug,
+  getCompanyDescription,
+  getCompanyName,
+} from '../../../lib/companies';
+import { getAllPosts, groupPosts } from '../../../lib/posts';
+import '../../../styles/pages/companies.css';
+
+const { slug } = Astro.params;
+
+const company = await getCompanyBySlug(slug);
+
+if (!company) {
+  return Astro.rewrite('/404');
+}
+
+const allPosts = await getAllPosts();
+const englishPosts = allPosts.filter((post) => post.language === 'en');
+const grouped = groupPosts(englishPosts);
+
+const name = getCompanyName(company, 'en');
+const description = getCompanyDescription(company, 'en');
+const relatedArticles = (company.relatedArticles || [])
+  .filter((post) => post.language === 'en');
+const relatedCreators = company.relatedCreators || [];
+const relatedPlatforms = company.relatedPlatforms || [];
+const typeLabels = (company.type || [])
+  .filter((type) => companyTypeLabels.en[type])
+  .map((type) => companyTypeLabels.en[type]);
+
+const pageTitle = company.seoTitleEn || company.seoTitle || name;
+const pageDescription =
+  company.metaDescriptionEn ||
+  company.metaDescription ||
+  description ||
+  `${name}: company profile, related articles, creators and platforms on Retro-Gamers.it.`;
+
+function getLogo(image, width = 620) {
+  if (!image?.asset) return '';
+
+  return urlFor(image)
+    .width(width)
+    .quality(84)
+    .auto('format')
+    .url();
+}
+
+function getPortrait(creator, width = 220, height = 220) {
+  if (!creator?.portrait?.asset) return '';
+
+  return urlFor(creator.portrait)
+    .width(width)
+    .height(height)
+    .fit('crop')
+    .quality(78)
+    .auto('format')
+    .url();
+}
+
+function getInitials(value = '') {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
+
+const logo = getLogo(company.logo);
+const logoLight = getLogo(company.logoLight) || logo;
+const primaryLogo = logo || logoLight;
+const hasRelations =
+  relatedArticles.length > 0 ||
+  relatedCreators.length > 0 ||
+  relatedPlatforms.length > 0;
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  lang="en"
+  title={pageTitle}
+  description={pageDescription}
+  canonical={`https://www.retro-gamers.it/en/companies/${company.slug}/`}
+  languageSwitch={`/aziende/${company.slug}/`}
+  alternateLanguages={[
+    { lang: 'it', url: `https://www.retro-gamers.it/aziende/${company.slug}/` },
+    { lang: 'en', url: `https://www.retro-gamers.it/en/companies/${company.slug}/` }
+  ]}
+>
+  <main class="companies-page company-detail-page">
+    <section class="company-detail-hero">
+      <div class="company-detail-hero__logo">
+        {primaryLogo ? (
+          <span class="company-logo-wrap company-logo-wrap--hero">
+            <img
+              src={primaryLogo}
+              alt={company.logo?.alt || company.logoLight?.alt || name}
+              class="company-logo company-logo--dark"
+              width="620"
+              height="260"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+            />
+            <img
+              src={logoLight}
+              alt=""
+              class="company-logo company-logo--light"
+              width="620"
+              height="260"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+              aria-hidden="true"
+            />
+          </span>
+        ) : (
+          <span class="company-detail-hero__fallback">{name}</span>
+        )}
+      </div>
+
+      <div class="company-detail-hero__content">
+        <span class="companies-eyebrow">Company profile</span>
+        <h1>{name}</h1>
+
+        {typeLabels.length > 0 && (
+          <ul class="company-type-list" aria-label="Company types">
+            {typeLabels.map((type) => (
+              <li>{type}</li>
+            ))}
+          </ul>
+        )}
+
+        {description && (
+          <p>{description}</p>
+        )}
+      </div>
+    </section>
+
+    {relatedArticles.length > 0 && (
+      <section class="company-section">
+        <div class="company-section__header">
+          <span class="companies-eyebrow">Archive</span>
+          <h2>Related articles</h2>
+        </div>
+
+        <div class="company-article-grid">
+          {relatedArticles.map((post) => (
+            <ArchiveCard post={post} lang="en" />
+          ))}
+        </div>
+      </section>
+    )}
+
+    {relatedCreators.length > 0 && (
+      <section class="company-section">
+        <div class="company-section__header">
+          <span class="companies-eyebrow">People</span>
+          <h2>Related creators</h2>
+        </div>
+
+        <div class="company-creator-grid">
+          {relatedCreators.map((creator) => {
+            const portrait = getPortrait(creator);
+            const role = creator.roleEn || creator.role;
+
+            return (
+              <a class="company-creator-card" href={`/en/creators/${creator.slug}/`}>
+                <span class="company-creator-card__portrait">
+                  {portrait ? (
+                    <img
+                      src={portrait}
+                      alt={creator.portrait?.alt || creator.name}
+                      width="220"
+                      height="220"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span>{getInitials(creator.name) || 'RG'}</span>
+                  )}
+                </span>
+                <span>
+                  {role && <small>{role}</small>}
+                  <strong>{creator.name}</strong>
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    )}
+
+    {relatedPlatforms.length > 0 && (
+      <section class="company-section">
+        <div class="company-section__header">
+          <span class="companies-eyebrow">Hardware</span>
+          <h2>Related platforms</h2>
+        </div>
+
+        <div class="company-platform-grid">
+          {relatedPlatforms.map((platform) => (
+            <PlatformCard platform={platform} lang="en" />
+          ))}
+        </div>
+      </section>
+    )}
+
+    {!hasRelations && (
+      <section class="companies-empty">
+        <h2>Connections coming soon</h2>
+        <p>Articles, creators and platforms will appear here when available.</p>
+      </section>
+    )}
+  </main>
+</BaseLayout>

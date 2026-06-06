@@ -126,3 +126,22 @@ export const getCategoryUrl = (category, lang = 'it') => {
     ? `/en/categories/${slug}/`
     : `/categorie/${slug}/`
 }
+
+export const getCompanyUrl = (company, lang = 'it') => {
+  if (!company) {
+    return lang === 'en' ? '/en/companies/' : '/aziende/'
+  }
+
+  const slug =
+    typeof company.slug === 'string'
+      ? company.slug
+      : company.slug?.current
+
+  if (!slug) {
+    return lang === 'en' ? '/en/companies/' : '/aziende/'
+  }
+
+  return lang === 'en'
+    ? `/en/companies/${slug}/`
+    : `/aziende/${slug}/`
+}

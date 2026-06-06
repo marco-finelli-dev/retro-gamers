@@ -4,6 +4,10 @@ import {
   getAllPlatforms,
   getPlatformUrl
 } from '../lib/platforms';
+import {
+  getAllCompanies,
+  getCompanyUrl
+} from '../lib/companies';
 
 const SITE_URL = 'https://www.retro-gamers.it';
 
@@ -79,6 +83,7 @@ function getPostLastmod(post: any) {
 export async function GET() {
   const posts = await getAllPosts();
   const platforms = await getAllPlatforms();
+  const companies = await getAllCompanies();
 
   const staticPages = [
     {
@@ -155,6 +160,11 @@ export async function GET() {
       loc: absoluteUrl('/autori/marco-finelli/'),
       changefreq: 'monthly',
       priority: '0.5'
+    },
+    {
+      loc: absoluteUrl('/aziende/'),
+      changefreq: 'weekly',
+      priority: '0.7'
     },
     {
       loc: absoluteUrl('/chi-siamo/'),
@@ -273,6 +283,11 @@ export async function GET() {
       priority: '0.5'
     },
     {
+      loc: absoluteUrl('/en/companies/'),
+      changefreq: 'weekly',
+      priority: '0.7'
+    },
+    {
       loc: absoluteUrl('/en/about/'),
       changefreq: 'monthly',
       priority: '0.4'
@@ -353,13 +368,31 @@ export async function GET() {
     priority: '0.6'
   }));
 
+  const companyPagesIt = companies
+    .filter((company) => company?.slug)
+    .map((company) => ({
+      loc: absoluteUrl(getCompanyUrl(company, 'it')),
+      changefreq: 'monthly',
+      priority: '0.6'
+    }));
+
+  const companyPagesEn = companies
+    .filter((company) => company?.slug)
+    .map((company) => ({
+      loc: absoluteUrl(getCompanyUrl(company, 'en')),
+      changefreq: 'monthly',
+      priority: '0.6'
+    }));
+
   const urls = [
     ...staticPages,
     ...postPages,
     ...platformPagesIt,
     ...platformPagesEn,
     ...categoryPagesIt,
-    ...categoryPagesEn
+    ...categoryPagesEn,
+    ...companyPagesIt,
+    ...companyPagesEn
   ];
 
   const uniqueUrls = Array.from(

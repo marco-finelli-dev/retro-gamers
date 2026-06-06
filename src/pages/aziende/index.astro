@@ -1,0 +1,124 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { urlFor } from '../../lib/image';
+import {
+  companyTypeLabels,
+  getAllCompanies,
+  getCompanyDescription,
+  getCompanyName,
+  getCompanyUrl,
+} from '../../lib/companies';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+import '../../styles/pages/companies.css';
+
+const companies = await getAllCompanies();
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const pageTitle = 'Aziende';
+const pageDescription =
+  'Software house, publisher, sviluppatori e produttori che hanno segnato la storia videoludica.';
+
+function getLogo(image, width = 420) {
+  if (!image?.asset) return '';
+
+  return urlFor(image)
+    .width(width)
+    .quality(82)
+    .auto('format')
+    .url();
+}
+
+function getTypeLabels(company) {
+  return (company.type || [])
+    .filter((type) => companyTypeLabels.it[type])
+    .map((type) => companyTypeLabels.it[type]);
+}
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title={pageTitle}
+  description={pageDescription}
+  canonical="https://www.retro-gamers.it/aziende/"
+  languageSwitch="/en/companies/"
+  alternateLanguages={[
+    { lang: 'it', url: 'https://www.retro-gamers.it/aziende/' },
+    { lang: 'en', url: 'https://www.retro-gamers.it/en/companies/' }
+  ]}
+>
+  <main class="companies-page">
+    <section class="companies-hero">
+      <span class="companies-eyebrow">Archivio aziende</span>
+      <h1>Aziende</h1>
+      <p>
+        Software house, publisher, sviluppatori e produttori che hanno dato forma
+        all'immaginario e alla tecnologia del videogioco.
+      </p>
+    </section>
+
+    {companies.length > 0 ? (
+      <section class="companies-grid" aria-label="Elenco aziende">
+        {companies.map((company) => {
+          const name = getCompanyName(company, 'it');
+          const description = getCompanyDescription(company, 'it');
+          const logo = getLogo(company.logo);
+          const logoLight = getLogo(company.logoLight) || logo;
+          const primaryLogo = logo || logoLight;
+          const typeLabels = getTypeLabels(company);
+
+          return (
+            <article class="company-card">
+              <a class="company-card__link" href={getCompanyUrl(company, 'it')}>
+                <span class="company-card__visual">
+                  {primaryLogo ? (
+                    <span class="company-logo-wrap">
+                      <img
+                        src={primaryLogo}
+                        alt={company.logo?.alt || company.logoLight?.alt || name}
+                        class="company-logo company-logo--dark"
+                        width="420"
+                        height="180"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      <img
+                        src={logoLight}
+                        alt=""
+                        class="company-logo company-logo--light"
+                        width="420"
+                        height="180"
+                        loading="lazy"
+                        decoding="async"
+                        aria-hidden="true"
+                      />
+                    </span>
+                  ) : (
+                    <span class="company-card__fallback">{name}</span>
+                  )}
+                </span>
+
+                <span class="company-card__body">
+                  {typeLabels.length > 0 && (
+                    <span class="company-card__types">{typeLabels.join(' · ')}</span>
+                  )}
+
+                  <h2>{name}</h2>
+
+                  {description && (
+                    <p>{description}</p>
+                  )}
+
+                  <span class="company-card__action">Scheda azienda</span>
+                </span>
+              </a>
+            </article>
+          );
+        })}
+      </section>
+    ) : (
+      <p class="companies-empty">Nessuna azienda disponibile.</p>
+    )}
+  </main>
+</BaseLayout>
