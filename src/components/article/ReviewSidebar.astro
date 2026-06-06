@@ -1,6 +1,7 @@
 ---
 import ReviewScoreBox from './ReviewScoreBox.astro';
 import { urlFor } from '../../lib/image';
+import { getCompanyUrl } from '../../lib/routes';
 
 const { post } = Astro.props;
 
@@ -69,6 +70,19 @@ const getCreatorUrl = (creator) =>
     ? `/en/creators/${creator.slug}/`
     : `/creatori/${creator.slug}/`;
 
+const companyTaxonomyTypes = new Set(['developers', 'publishers', 'manufacturer']);
+
+function renderTaxonomyList(items = [], type = '') {
+  return items
+    .map((item) => ({
+      label: getTaxonomyName(item),
+      href: companyTaxonomyTypes.has(type) && item?.slug
+        ? getCompanyUrl(item, lang)
+        : ''
+    }))
+    .filter((item) => item.label);
+}
+
 const cover = post.gameInfo?.cover?.asset
   ? urlFor(post.gameInfo.cover)
       .width(720)
@@ -104,11 +118,18 @@ const infoRows = [
   },
   {
     label: t.developer,
-    value: post.developers?.map(getTaxonomyName).join(', ')
+    value: renderTaxonomyList(post.developers, 'developers'),
+    type: 'taxonomyList'
   },
   {
     label: t.publisher,
-    value: post.publishers?.map(getTaxonomyName).join(', ')
+    value: renderTaxonomyList(post.publishers, 'publishers'),
+    type: 'taxonomyList'
+  },
+  {
+    label: lang === 'en' ? 'Manufacturer' : 'Produttore',
+    value: renderTaxonomyList(post.manufacturer, 'manufacturer'),
+    type: 'taxonomyList'
   },
   {
     label: t.creators,
@@ -127,7 +148,11 @@ const infoRows = [
     label: t.mode,
     value: post.modes?.map(getTaxonomyName).join(' · ')
   }
-].filter((row) => row.type === 'creators' ? row.value.length > 0 : row.value);
+].filter((row) =>
+  row.type === 'creators' || row.type === 'taxonomyList'
+    ? row.value.length > 0
+    : row.value
+);
 ---
 
 <div class={`review-sidebar ${!cover ? 'has-no-cover' : ''}`}>
@@ -166,6 +191,21 @@ const infoRows = [
                       <a class="review-info-link" href={getCreatorUrl(creator)}>
                         {creator.name}
                       </a>
+                    </>
+                  ))}
+                </dd>
+              ) : row.type === 'taxonomyList' ? (
+                <dd>
+                  {row.value.map((item, index) => (
+                    <>
+                      {index > 0 && ', '}
+                      {item.href ? (
+                        <a class="review-info-link" href={item.href}>
+                          {item.label}
+                        </a>
+                      ) : (
+                        <>{item.label}</>
+                      )}
                     </>
                   ))}
                 </dd>
