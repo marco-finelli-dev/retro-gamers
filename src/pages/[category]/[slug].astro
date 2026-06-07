@@ -266,6 +266,24 @@ const post = await sanityClient.fetch(`
           nameEn,
           "slug": slug.current
         }
+      },
+
+      _type == "creatorLink" => {
+        ...,
+        reference->{
+          name,
+          "slug": slug.current
+        }
+      },
+
+      _type == "companyLink" => {
+        ...,
+        reference->{
+          name,
+          nameEn,
+          "slug": slug.current,
+          type
+        }
       }
     },
 
@@ -329,6 +347,24 @@ _type == "imageRow" => {
               name,
               nameEn,
               "slug": slug.current
+            }
+          },
+
+          _type == "creatorLink" => {
+            ...,
+            reference->{
+              name,
+              "slug": slug.current
+            }
+          },
+
+          _type == "companyLink" => {
+            ...,
+            reference->{
+              name,
+              nameEn,
+              "slug": slug.current,
+              type
             }
           }
         },

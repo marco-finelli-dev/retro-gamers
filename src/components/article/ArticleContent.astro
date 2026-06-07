@@ -58,6 +58,22 @@ function getPlatformUrl(reference) {
   return `${prefix}/${localizedType}/${reference.manufacturer.slug}/${reference.slug}/`;
 }
 
+function getCreatorUrl(reference) {
+  if (!reference?.slug) return '#';
+
+  return lang === 'en'
+    ? `/en/creators/${reference.slug}/`
+    : `/creatori/${reference.slug}/`;
+}
+
+function getCompanyUrl(reference) {
+  if (!reference?.slug) return '#';
+
+  return lang === 'en'
+    ? `/en/companies/${reference.slug}/`
+    : `/aziende/${reference.slug}/`;
+}
+
 function isAffiliateUrl(url = '') {
   return /amazon\.|amzn\.to|ebay\.|rover\.ebay/i.test(url);
 }
@@ -191,6 +207,16 @@ function renderTextChild(child, markDefs = []) {
 
     if (def?._type === 'platformLink') {
       output = `<a href="${escapeHTML(getPlatformUrl(def.reference))}">${output}</a>`;
+      return;
+    }
+
+    if (def?._type === 'creatorLink') {
+      output = `<a href="${escapeHTML(getCreatorUrl(def.reference))}">${output}</a>`;
+      return;
+    }
+
+    if (def?._type === 'companyLink') {
+      output = `<a href="${escapeHTML(getCompanyUrl(def.reference))}">${output}</a>`;
       return;
     }
 
