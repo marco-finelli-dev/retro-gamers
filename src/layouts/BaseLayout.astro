@@ -8,6 +8,7 @@ import Analytics from '@vercel/analytics/astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
 import CookieConsent from '../components/common/CookieConsent.astro';
 import { getAllPosts } from '../lib/posts';
+import { getLanguageSwitchUrl } from '../lib/language-switch.js';
 import '../styles/components/support.css';
 import '../styles/pages/legal.css';
 import '../styles/components/cookie-consent.css';
@@ -54,6 +55,18 @@ const fallbackNews = menuPosts.filter((post) => {
 
 const reviews = hasProvidedReviews ? providedReviews : fallbackReviews;
 const news = hasProvidedNews ? providedNews : fallbackNews;
+
+const resolvedLanguageSwitchUrl = getLanguageSwitchUrl({
+  currentUrl: Astro.url,
+  lang,
+  languageSwitch,
+  alternateLanguages
+});
+
+const resolvedLanguageSwitch = {
+  ...(typeof languageSwitch === 'object' && languageSwitch ? languageSwitch : {}),
+  url: resolvedLanguageSwitchUrl
+};
 
 const siteName = 'Retro-Gamers.it';
 const siteUrl = 'https://www.retro-gamers.it';
@@ -196,7 +209,7 @@ const jsonLd =
       reviews={reviews}
       news={news}
       lang={lang}
-      languageSwitch={languageSwitch}
+      languageSwitch={resolvedLanguageSwitch}
     />
 
     <main>

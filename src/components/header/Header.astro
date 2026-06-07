@@ -41,8 +41,13 @@ const labels = isEnglish
 
 const homeUrl = isEnglish ? '/en/' : '/';
 
+const languageSwitchUrl =
+  typeof languageSwitch === 'string'
+    ? languageSwitch
+    : languageSwitch?.url;
+
 const languageUrl =
-  languageSwitch?.url ||
+  languageSwitchUrl ||
   (isEnglish ? '/' : '/en/');
 
 const languageLabel = isEnglish
