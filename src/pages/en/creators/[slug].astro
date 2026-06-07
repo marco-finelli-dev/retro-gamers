@@ -4,7 +4,12 @@ import ArchiveCard from '../../../components/archive/ArchiveCard.astro';
 import Pagination from '../../../components/common/Pagination.astro';
 import { PortableText } from 'astro-portabletext';
 import { urlFor } from '../../../lib/image';
-import { countryCodeToFlag, getCreatorBySlug } from '../../../lib/creators';
+import {
+  countryCodeToFlag,
+  getArticlesReferencingCreator,
+  getCreatorBySlug,
+  mergeCreatorRelatedArticles
+} from '../../../lib/creators';
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../lib/pagination';
 import { getPlatformUrl } from '../../../lib/routes';
@@ -25,13 +30,12 @@ const grouped = groupPosts(englishPosts);
 
 const shortBio = creator.shortBioEn || creator.shortBio || '';
 const profile = creator.profileEn?.length > 0 ? creator.profileEn : creator.profile || [];
-const relatedArticles = (creator.relatedArticles || [])
-  .filter((post) => post.language === 'en')
-  .sort((a, b) => {
-    const aDate = new Date(a.publishedAt || 0).getTime();
-    const bDate = new Date(b.publishedAt || 0).getTime();
-    return bDate - aDate;
-  });
+const inverseRelatedArticles = await getArticlesReferencingCreator(creator._id, 'en');
+const relatedArticles = mergeCreatorRelatedArticles(
+  creator.relatedArticles || [],
+  inverseRelatedArticles,
+  'en'
+);
 
 const portrait = creator.portrait?.asset
   ? urlFor(creator.portrait)

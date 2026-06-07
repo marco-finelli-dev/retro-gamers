@@ -4,6 +4,11 @@ import ArticlePage from '../../../components/article/ArticlePage.astro';
 
 import { client } from '../../../lib/sanity';
 import { getAllPosts, groupPosts, getRelatedPosts } from '../../../lib/posts';
+import {
+  getCreatorRefsFromPortableText,
+  getCreatorsReferencingArticle,
+  mergeCreatorRefs
+} from '../../../lib/creators';
 
 /* ========================
    PARAMS
@@ -264,8 +269,15 @@ const post = await client.fetch(`
       _type == "creatorLink" => {
         ...,
         reference->{
+          _id,
           name,
-          "slug": slug.current
+          "slug": slug.current,
+          role,
+          roleEn,
+          portrait {
+            alt,
+            asset->{ url }
+          }
         }
       },
 
@@ -346,8 +358,15 @@ _type == "imageRow" => {
           _type == "creatorLink" => {
             ...,
             reference->{
+              _id,
               name,
-              "slug": slug.current
+              "slug": slug.current,
+              role,
+              roleEn,
+              portrait {
+                alt,
+                asset->{ url }
+              }
             }
           },
 
@@ -401,6 +420,13 @@ if (!post) {
 }
 
 const publishedPostId = post._id.replace('drafts.', '');
+const inverseCreators = await getCreatorsReferencingArticle(publishedPostId);
+const portableTextCreators = getCreatorRefsFromPortableText(post.content);
+const articleCreators = mergeCreatorRefs(
+  post.creators,
+  inverseCreators,
+  portableTextCreators
+);
 
 /* ========================
    ITALIAN TRANSLATION
@@ -442,6 +468,7 @@ const readingTime = getReadingTime(post.content);
 
 const hydratedPost = {
   ...post,
+  creators: articleCreators,
   language: post.language || 'en',
   readingTime
 };
