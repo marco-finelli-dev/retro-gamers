@@ -1,5 +1,6 @@
 ---
 import { urlFor } from '../../lib/image';
+import { getFormatLabel } from '../../lib/formatLabels';
 import { getPostUrl } from '../../lib/routes';
 
 const { post, lang = 'it' } = Astro.props;
@@ -47,22 +48,6 @@ const compactMode = (name = '') => {
   return name;
 };
 
-const formatMedia = (value = '') => {
-  const map = {
-    cartridge: 'CART',
-    floppy: 'FLOPPY',
-    tape: 'TAPE',
-    cdrom: 'CD-ROM',
-    gdrom: 'GD-ROM',
-    hucard: 'HuCard',
-    arcade_pcb: 'PCB',
-    digital: 'DIGITAL',
-    other: 'OTHER'
-  };
-
-  return map[value] || value;
-};
-
 const platform = post.platforms?.[0]?.name || '';
 const developer = post.developers?.[0]?.name || '';
 const year = post.gameInfo?.releaseYear || '';
@@ -102,7 +87,7 @@ const rawMediaFormat = Array.isArray(post.gameInfo?.mediaFormat)
   : post.gameInfo?.mediaFormat;
 
 const mediaFormat =
-  formatMedia(rawMediaFormat) ||
+  getFormatLabel(rawMediaFormat, lang, { variant: 'compact' }) ||
   post.platforms?.[0]?.platformType?.toUpperCase() ||
   'SYSTEM';
 

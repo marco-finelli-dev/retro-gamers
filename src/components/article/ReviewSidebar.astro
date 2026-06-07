@@ -1,5 +1,6 @@
 ---
 import ReviewScoreBox from './ReviewScoreBox.astro';
+import { getFormatFilterValue, getFormatLabel } from '../../lib/formatLabels';
 import { urlFor } from '../../lib/image';
 import { getCompanyUrl, getPlatformUrl } from '../../lib/routes';
 
@@ -17,21 +18,7 @@ const labels = {
     creators: 'Creatori',
     year: 'Anno',
     genre: 'Genere',
-    mode: 'Modalità',
-    mediaFormats: {
-      cartridge: 'Cartuccia',
-      floppy: 'Floppy disk',
-      tape: 'Cassetta / tape',
-      cdrom: 'CD-ROM',
-      'cd-rom': 'CD-ROM',
-      gdrom: 'GD-ROM',
-      'gd-rom': 'GD-ROM',
-      hucard: 'HuCard',
-      arcade_pcb: 'PCB arcade',
-      'arcade-pcb': 'PCB arcade',
-      digital: 'Digitale',
-      other: 'Altro'
-    }
+    mode: 'Modalità'
   },
   en: {
     gameCard: 'Game info',
@@ -42,21 +29,7 @@ const labels = {
     creators: 'Creators',
     year: 'Year',
     genre: 'Genre',
-    mode: 'Mode',
-    mediaFormats: {
-      cartridge: 'Cartridge',
-      floppy: 'Floppy disk',
-      tape: 'Cassette / tape',
-      cdrom: 'CD-ROM',
-      'cd-rom': 'CD-ROM',
-      gdrom: 'GD-ROM',
-      'gd-rom': 'GD-ROM',
-      hucard: 'HuCard',
-      arcade_pcb: 'Arcade PCB',
-      'arcade-pcb': 'Arcade PCB',
-      digital: 'Digital',
-      other: 'Other'
-    }
+    mode: 'Mode'
   }
 };
 
@@ -120,22 +93,6 @@ const getArchiveFilterUrl = (key, value) => {
   const baseUrl = lang === 'en' ? '/en/archive/' : '/archivio/';
 
   return `${baseUrl}?${key}=${encodeURIComponent(value)}`;
-};
-
-const normalizeFormatValue = (value = '') => {
-  const map = {
-    cdrom: 'cd-rom',
-    gdrom: 'gd-rom',
-    arcade_pcb: 'arcade-pcb'
-  };
-
-  const normalized = String(value)
-    .trim()
-    .toLowerCase()
-    .replace(/_/g, '-')
-    .replace(/\s+/g, '-');
-
-  return map[normalized] || normalized;
 };
 
 function getSafePlatformHref(platform) {
@@ -211,11 +168,11 @@ const rawMediaFormat = post.gameInfo?.mediaFormat;
 function renderMediaFormatList(value) {
   return toTaxonomyArray(value)
     .map((format) => {
-      const normalized = normalizeFormatValue(format);
+      const filterValue = getFormatFilterValue(format);
 
       return {
-        label: t.mediaFormats[format] || t.mediaFormats[normalized] || format,
-        href: normalized ? getArchiveFilterUrl('format', normalized) : ''
+        label: getFormatLabel(format, lang),
+        href: filterValue ? getArchiveFilterUrl('format', filterValue) : ''
       };
     })
     .filter((format) => format.label);

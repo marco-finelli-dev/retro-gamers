@@ -2,6 +2,7 @@
 import '../../styles/components/archive-page.css';
 import '../../styles/components/pagination.css';
 import ArchiveCard from './ArchiveCard.astro';
+import { getFormatFilterAliases, getFormatFilterValue, getFormatLabel } from '../../lib/formatLabels';
 import { PAGE_SIZE } from '../../lib/pagination';
 
 const {
@@ -61,20 +62,6 @@ const ui = isEnglish
         gadget: 'Gadgets',
         service: 'Services',
         other: 'Other'
-      },
-      mediaFormatLabels: {
-        cartridge: 'Cartridge',
-        floppy: 'Floppy disk',
-        tape: 'Cassette / tape',
-        'cd-rom': 'CD-ROM',
-        cdrom: 'CD-ROM',
-        'gd-rom': 'GD-ROM',
-        gdrom: 'GD-ROM',
-        hucard: 'HuCard',
-        'arcade-pcb': 'Arcade PCB',
-        arcade_pcb: 'Arcade PCB',
-        digital: 'Digital',
-        other: 'Other'
       }
     }
   : {
@@ -119,20 +106,6 @@ const ui = isEnglish
         software: 'Software',
         gadget: 'Gadget',
         service: 'Servizi',
-        other: 'Altro'
-      },
-      mediaFormatLabels: {
-        cartridge: 'Cartuccia',
-        floppy: 'Floppy disk',
-        tape: 'Cassetta / tape',
-        'cd-rom': 'CD-ROM',
-        cdrom: 'CD-ROM',
-        'gd-rom': 'GD-ROM',
-        gdrom: 'GD-ROM',
-        hucard: 'HuCard',
-        'arcade-pcb': 'PCB arcade',
-        arcade_pcb: 'PCB arcade',
-        digital: 'Digitale',
         other: 'Altro'
       }
     };
@@ -194,22 +167,6 @@ const productTypes = [...new Set(
     .filter(Boolean)
 )].sort();
 
-const normalizeFormatValue = (value = '') => {
-  const map = {
-    cdrom: 'cd-rom',
-    gdrom: 'gd-rom',
-    arcade_pcb: 'arcade-pcb'
-  };
-
-  const normalized = String(value)
-    .trim()
-    .toLowerCase()
-    .replace(/_/g, '-')
-    .replace(/\s+/g, '-');
-
-  return map[normalized] || normalized;
-};
-
 const formatOptions = [
   ...new Map(
     posts
@@ -222,13 +179,13 @@ const formatOptions = [
             ? [value]
             : [];
       })
-      .map((format) => normalizeFormatValue(format))
+      .map((format) => getFormatFilterValue(format))
       .filter(Boolean)
       .map((format) => [
         format,
         {
           value: format,
-          label: ui.mediaFormatLabels[format] || format
+          label: getFormatLabel(format, lang)
         }
       ])
   ).values()
@@ -413,7 +370,7 @@ const hasFilters =
             : post.gameInfo?.mediaFormat
               ? [post.gameInfo.mediaFormat]
               : [];
-          const formatSlugs = formatValues.map(normalizeFormatValue).filter(Boolean);
+          const formatSlugs = formatValues.flatMap((format) => getFormatFilterAliases(format));
           const productType = post.monetization?.productType || '';
 
           return (
@@ -506,19 +463,26 @@ const hasFilters =
     };
 
     const normalizeFormatValue = (value = '') => {
-      const map = {
-        cdrom: 'cd-rom',
-        gdrom: 'gd-rom',
-        arcade_pcb: 'arcade-pcb'
-      };
-
-      const normalized = String(value)
+      return String(value)
         .trim()
         .toLowerCase()
-        .replace(/_/g, '-')
         .replace(/\s+/g, '-');
+    };
 
-      return map[normalized] || normalized;
+    const getFormatAliases = (value = '') => {
+      const normalized = normalizeFormatValue(value);
+      const map = {
+        cdrom: 'cd-rom',
+        'cd-rom': 'cdrom',
+        dvdrom: 'dvd-rom',
+        'dvd-rom': 'dvdrom',
+        gdrom: 'gd-rom',
+        'gd-rom': 'gdrom',
+        arcade_pcb: 'arcade-pcb',
+        'arcade-pcb': 'arcade_pcb'
+      };
+
+      return [...new Set([normalized, map[normalized]].filter(Boolean))];
     };
 
     const getFilters = () => Object.fromEntries(
@@ -627,11 +591,23 @@ const hasFilters =
         const rawValue = params.get(key);
         if (!rawValue) return;
 
-        const value = key === 'format'
+        let value = key === 'format'
           ? normalizeFormatValue(rawValue)
           : rawValue;
 
-        const hasOption = Array.from(control.options).some((option) => option.value === value);
+        let hasOption = Array.from(control.options).some((option) => option.value === value);
+
+        if (!hasOption && key === 'format') {
+          const alias = getFormatAliases(value).find((item) =>
+            Array.from(control.options).some((option) => option.value === item)
+          );
+
+          if (alias) {
+            value = alias;
+            hasOption = true;
+          }
+        }
+
         if (hasOption) {
           control.value = value;
         }
