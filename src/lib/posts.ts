@@ -364,14 +364,20 @@ export async function getAllPosts(): Promise<Post[]> {
 // GROUPING HOME — NO DUPLICATI
 // =========================
 
+function getHomePostKey(post: Post) {
+  return post?._id?.replace(/^drafts\./, '') || post?.slug || '';
+}
+
 function uniqueById(posts: Post[] = []) {
   const seen = new Set<string>();
 
   return posts.filter((post) => {
-    if (!post?._id) return false;
-    if (seen.has(post._id)) return false;
+    const key = getHomePostKey(post);
 
-    seen.add(post._id);
+    if (!key) return false;
+    if (seen.has(key)) return false;
+
+    seen.add(key);
     return true;
   });
 }
@@ -390,12 +396,14 @@ function takeUnused(
   const picked: Post[] = [];
 
   for (const post of source) {
-    if (!post?._id) continue;
-    if (usedIds.has(post._id)) continue;
+    const key = getHomePostKey(post);
+
+    if (!key) continue;
+    if (usedIds.has(key)) continue;
     if (requireImage && !hasImage(post)) continue;
 
     picked.push(post);
-    usedIds.add(post._id);
+    usedIds.add(key);
 
     if (picked.length >= limit) break;
   }
@@ -475,13 +483,19 @@ export function groupPosts(posts: Post[] = []) {
   const memories = takeUnused(
     italianPosts.filter((post) => post.type === 'memories'),
     usedIds,
-    3,
+    4,
     { requireImage: true }
+  );
+
+  const interviews = takeUnused(
+    italianPosts.filter((post) => post.type === 'interview'),
+    usedIds,
+    3
   );
 
   /*
     ARCHIVE STRIP:
-    blocco editoriale misto, ma senza ripetere hero/reviews/specials/memories.
+    blocco editoriale misto, ma senza ripetere hero/reviews/specials/memories/interviews.
   */
   const archive = takeUnused(
     italianPosts.filter((post) =>
@@ -527,6 +541,7 @@ export function groupPosts(posts: Post[] = []) {
     reviews,
     specials,
     memories,
+    interviews,
     news,
     guides: takeUnused(
       italianPosts.filter((post) => post.type === 'guide'),

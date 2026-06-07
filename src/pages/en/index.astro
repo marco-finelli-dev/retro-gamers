@@ -6,6 +6,7 @@ import Latest from '../../components/home/Latest.astro';
 import Reviews from '../../components/home/Reviews.astro';
 import EditorialHub from '../../components/home/EditorialHub.astro';
 import ArchiveStrip from '../../components/home/ArchiveStrip.astro';
+import Interviews from '../../components/home/Interviews.astro';
 import Hardware from '../../components/home/Hardware.astro';
 
 import '../../styles/pages/home.css';
@@ -34,17 +35,22 @@ const usedIds = new Set();
 
 const hasImage = (post) => Boolean(post.featuredImage?.asset?.url);
 
+const getPostKey = (post) =>
+  post?._id?.replace(/^drafts\./, '') || post?.slug || '';
+
 const takeUnused = (source, limit, options = {}) => {
   const requireImage = options.requireImage ?? false;
   const picked = [];
 
   for (const post of source) {
-    if (!post?._id) continue;
-    if (usedIds.has(post._id)) continue;
+    const key = getPostKey(post);
+
+    if (!key) continue;
+    if (usedIds.has(key)) continue;
     if (requireImage && !hasImage(post)) continue;
 
     picked.push(post);
-    usedIds.add(post._id);
+    usedIds.add(key);
 
     if (picked.length >= limit) break;
   }
@@ -91,8 +97,13 @@ const specials = takeUnused(
 
 const memories = takeUnused(
   englishPosts.filter((post) => post.type === 'memories'),
-  3,
+  4,
   { requireImage: true }
+);
+
+const interviews = takeUnused(
+  englishPosts.filter((post) => post.type === 'interview'),
+  3
 );
 
 const archive = takeUnused(
@@ -154,6 +165,14 @@ const latest = takeUnused(englishPosts, 6, {
       <ArchiveStrip posts={archive} lang="en" />
     </div>
   </section>
+
+  {interviews.length > 0 && (
+    <section class="home-interviews">
+      <div class="container">
+        <Interviews posts={interviews} lang="en" />
+      </div>
+    </section>
+  )}
 
   <section class="home-hardware">
     <div class="container">

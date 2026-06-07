@@ -1,0 +1,120 @@
+---
+import '../../styles/components/interviews.css';
+import { urlFor } from '../../lib/image';
+import { getPostUrl } from '../../lib/routes';
+
+const { posts = [], lang = 'it' } = Astro.props;
+
+const isEn = lang === 'en';
+const items = posts.slice(0, 3);
+const mainInterview = items[0] || null;
+const secondaryInterviews = items.slice(1, 3);
+
+const labels = {
+  title: isEn ? 'Interviews' : 'Interviste',
+  eyebrow: isEn ? 'Conversations' : 'Voci dal settore',
+  description: isEn
+    ? 'Conversations with developers, authors and people who shaped retro-gaming culture.'
+    : 'Conversazioni con sviluppatori, autori e protagonisti della cultura videoludica.',
+  all: isEn ? 'All interviews' : 'Tutte le interviste',
+  href: isEn ? '/en/interviews/' : '/interviste/',
+  category: isEn ? 'Interview' : 'Intervista'
+};
+
+const cleanText = (value) =>
+  value?.replace(/\[…\]/g, '').trim() || '';
+
+const truncate = (text, length = 148) =>
+  text.length > length ? `${text.slice(0, length).trim()}…` : text;
+
+const getExcerpt = (post, length = 148) => {
+  const excerpt =
+    cleanText(post?.cardExcerpt) ||
+    cleanText(post?.subtitle) ||
+    cleanText(post?.excerpt);
+
+  return excerpt ? truncate(excerpt, length) : '';
+};
+
+const getImage = (post, width = 760, height = 475) => {
+  if (!post?.featuredImage?.asset) return '/placeholder-retro.png';
+
+  return urlFor(post.featuredImage)
+    .width(width)
+    .height(height)
+    .fit('crop')
+    .quality(74)
+    .auto('format')
+    .url();
+};
+---
+
+{items.length > 0 && (
+  <section class={`section-box home-interviews-block ${secondaryInterviews.length === 0 ? 'home-interviews-block--single' : ''}`}>
+    <div class="home-interviews-block__header">
+      <div>
+        <span>{labels.eyebrow}</span>
+        <h2>{labels.title}</h2>
+        <p>{labels.description}</p>
+      </div>
+
+      <a href={labels.href} class="home-interviews-block__link">
+        {labels.all}
+      </a>
+    </div>
+
+    <div class="home-interviews-block__grid">
+      {mainInterview && (
+        <a href={getPostUrl(mainInterview)} class="home-interview-card home-interview-card--main">
+          <div class="home-interview-card__image">
+            <img
+              src={getImage(mainInterview, 820, 512)}
+              alt={mainInterview.featuredImage?.alt || mainInterview.title}
+              width="820"
+              height="512"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+
+          <div class="home-interview-card__content">
+            <span>{labels.category}</span>
+            <h3>{mainInterview.title}</h3>
+
+            {getExcerpt(mainInterview, 170) && (
+              <p>{getExcerpt(mainInterview, 170)}</p>
+            )}
+          </div>
+        </a>
+      )}
+
+      {secondaryInterviews.length > 0 && (
+        <div class="home-interviews-block__side">
+          {secondaryInterviews.map((post) => (
+            <a href={getPostUrl(post)} class="home-interview-card home-interview-card--side">
+              <div class="home-interview-card__image">
+                <img
+                  src={getImage(post, 460, 288)}
+                  alt={post.featuredImage?.alt || post.title}
+                  width="460"
+                  height="288"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+
+              <div class="home-interview-card__content">
+                <span>{labels.category}</span>
+                <h3>{post.title}</h3>
+
+                {getExcerpt(post, 118) && (
+                  <p>{getExcerpt(post, 118)}</p>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+)}

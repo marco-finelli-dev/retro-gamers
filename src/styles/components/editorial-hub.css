@@ -71,14 +71,17 @@ html:not([data-theme="light"]) .editorial-hub::after {
 
 .editorial-hub__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(280px, 0.82fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .editorial-aside {
   display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
+  height: 100%;
+  min-height: 0;
 }
 
 
@@ -90,6 +93,10 @@ html:not([data-theme="light"]) .editorial-hub::after {
   position: relative;
   overflow: hidden;
 
+  display: flex;
+  flex-direction: column;
+
+  min-height: 0;
   padding: 18px;
   border-radius: 18px;
 
@@ -262,8 +269,15 @@ html:not([data-theme="light"]) .editorial-hub::after {
 ======================================== */
 
 .editorial-list {
-  display: grid;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   gap: 12px;
+  min-height: 0;
+}
+
+.editorial-list-card {
+  flex: 1;
 }
 
 .editorial-list-card {
@@ -374,13 +388,9 @@ html:not([data-theme="light"]) .editorial-hub::after {
    MEMORY FEATURE
 ======================================== */
 
-.editorial-panel--memories {
-  display: flex;
-  flex-direction: column;
-}
-
 .memory-feature {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
 
   overflow: hidden;
@@ -481,8 +491,11 @@ html:not([data-theme="light"]) .editorial-hub::after {
 ======================================== */
 
 .memory-mini-list {
-  display: grid;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   gap: 10px;
+  min-height: 0;
 
   margin-top: 12px;
   padding-top: 12px;
@@ -495,10 +508,12 @@ html:not([data-theme="light"]) .editorial-hub::after {
   overflow: hidden;
 
   display: grid;
+  flex: 1 1 0;
   grid-template-columns: 74px minmax(0, 1fr);
   gap: 11px;
   align-items: center;
 
+  min-height: 70px;
   padding: 9px;
   border-radius: 14px;
 
@@ -587,7 +602,16 @@ html:not([data-theme="light"]) .editorial-hub::after {
 .quick-guides,
 .platform-shortcuts {
   display: grid;
+  flex: 1;
+  align-content: start;
   gap: 8px;
+  min-height: 0;
+}
+
+.editorial-panel--guides .editorial-panel__footer-link,
+.editorial-panel--platforms .editorial-panel__footer-link {
+  margin-top: auto;
+  padding-top: 16px;
 }
 
 .quick-guide,
@@ -972,6 +996,8 @@ html[data-theme="light"] .platform-shortcut:hover .platform-shortcut__icon {
 
   .editorial-aside {
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    height: auto;
   }
 }
 
@@ -982,6 +1008,7 @@ html[data-theme="light"] .platform-shortcut:hover .platform-shortcut__icon {
 
   .editorial-aside {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
   }
 
   .editorial-panel {

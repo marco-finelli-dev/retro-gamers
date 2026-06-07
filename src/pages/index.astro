@@ -6,6 +6,7 @@ import Latest from '../components/home/Latest.astro';
 import Reviews from '../components/home/Reviews.astro';
 import EditorialHub from '../components/home/EditorialHub.astro';
 import ArchiveStrip from '../components/home/ArchiveStrip.astro';
+import Interviews from '../components/home/Interviews.astro';
 import Hardware from '../components/home/Hardware.astro';
 
 import '../styles/pages/home.css';
@@ -23,6 +24,7 @@ const {
   news,
   hardware,
   archive,
+  interviews,
   guides
 } = groupPosts(allPosts);
 ---
@@ -63,6 +65,14 @@ const {
       <ArchiveStrip posts={archive} />
     </div>
   </section>
+
+  {interviews.length > 0 && (
+    <section class="home-interviews">
+      <div class="container">
+        <Interviews posts={interviews} />
+      </div>
+    </section>
+  )}
 
   <section class="home-hardware">
     <div class="container">
