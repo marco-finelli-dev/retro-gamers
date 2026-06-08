@@ -132,7 +132,7 @@ html:not([data-theme="light"]) .rg-hero::after {
 
 
 /* ========================================
-   TOP
+   HEADER
 ======================================== */
 
 .rg-hero__top {
@@ -264,6 +264,38 @@ html:not([data-theme="light"]) .rg-hero::after {
     brightness(1)
     contrast(1.08)
     saturate(1.14);
+}
+
+.rg-hero-main img.review-badge--hero {
+  position: absolute;
+  inset: auto;
+  top: 22px;
+  right: 22px;
+  z-index: 4;
+
+  display: block;
+
+  width: clamp(84px, 6vw, 90px);
+  max-width: 22%;
+  height: auto;
+
+  object-fit: contain;
+
+  transform: none;
+
+  pointer-events: none;
+
+  filter:
+    drop-shadow(0 10px 22px rgba(0,0,0,0.36))
+    drop-shadow(0 0 14px rgba(34,240,255,0.12));
+}
+
+.rg-hero-main:hover img.review-badge--hero {
+  transform: none;
+
+  filter:
+    drop-shadow(0 12px 24px rgba(0,0,0,0.40))
+    drop-shadow(0 0 16px rgba(34,240,255,0.14));
 }
 
 .rg-hero-main::before {
@@ -855,6 +887,12 @@ html[data-theme="light"] .rg-hero-main:hover .rg-hero__cta {
   border-color: rgba(120,225,235,0.44);
 }
 
+html[data-theme="light"] .rg-hero-main img.review-badge--hero {
+  filter:
+    drop-shadow(0 9px 20px rgba(24,32,48,0.20))
+    drop-shadow(0 0 10px rgba(8,104,122,0.08));
+}
+
 
 /* ========================================
    TABLET
@@ -918,6 +956,14 @@ html[data-theme="light"] .rg-hero-main:hover .rg-hero__cta {
   .rg-hero-main {
     min-height: 360px;
     border-radius: 18px;
+  }
+
+  .rg-hero-main img.review-badge--hero {
+    top: 16px;
+    right: 16px;
+
+    width: 82px;
+    max-width: 30%;
   }
 
   .rg-hero-main__content {

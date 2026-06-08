@@ -1,20 +1,25 @@
 ---
+import { getReviewRibbonBadge } from '../../lib/reviewBadges';
+
 const { rating, compact = false, lang = 'it' } = Astro.props;
 
 const score = rating?.overall;
+const numericScore = Number(score);
+const hasScore =
+  score !== undefined &&
+  score !== null &&
+  Number.isFinite(numericScore);
 const formattedScore =
-  score !== undefined && score !== null ? Number(score).toFixed(1) : '-';
+  hasScore ? numericScore.toFixed(1) : '-';
 
 const labels = {
   it: {
-    fallbackScore: 'Voto',
     graphics: 'Grafica',
     sound: 'Sonoro',
     gameplay: 'Gameplay',
     longevity: 'Longevità'
   },
   en: {
-    fallbackScore: 'Score',
     graphics: 'Graphics',
     sound: 'Sound',
     gameplay: 'Gameplay',
@@ -23,18 +28,7 @@ const labels = {
 };
 
 const t = labels[lang] || labels.it;
-
-const label =
-  Number(score) >= 9.5 ? 'Top' :
-  Number(score) >= 9 ? 'Must' :
-  Number(score) >= 8 ? 'Good' :
-  t.fallbackScore;
-
-const badgeLabel =
-  Number(score) >= 9.5 ? 'TOP' :
-  Number(score) >= 9 ? 'MUST' :
-  Number(score) >= 8 ? 'GOOD' :
-  '';
+const reviewBadge = getReviewRibbonBadge(numericScore, lang);
 
 const rows = [
   { label: t.graphics, value: rating?.grafica },
@@ -46,11 +40,20 @@ const rows = [
 
 <div class={`review-score-box ${compact ? 'is-compact' : ''}`}>
 
-  <div class="review-score-box__main">
-    <span>{formattedScore}</span>
-    {(!compact || badgeLabel) && (
-      <small>{compact ? badgeLabel : label}</small>
+  <div class={`review-score-box__main ${reviewBadge ? 'has-review-badge' : ''}`}>
+    {reviewBadge && (
+      <img
+        src={reviewBadge.src}
+        alt={reviewBadge.alt}
+        class={`review-badge review-badge--sidebar review-badge--${reviewBadge.key}`}
+        width="1746"
+        height="592"
+        loading="lazy"
+        decoding="async"
+      />
     )}
+
+    <span>{formattedScore}</span>
   </div>
 
   {rows.length > 0 && (

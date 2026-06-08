@@ -303,6 +303,38 @@ html:not([data-theme="light"]) .rg-reviews::after {
     saturate(1.14);
 }
 
+.rg-reviews .rg-review-card__image img.rg-review-card__badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+
+  display: block;
+
+  width: 76px;
+  max-width: 48%;
+  height: auto;
+  max-height: 30px;
+
+  object-fit: contain;
+
+  transform: none;
+
+  pointer-events: none;
+
+  filter:
+    drop-shadow(0 5px 10px rgba(0,0,0,0.32))
+    drop-shadow(0 0 7px rgba(34,240,255,0.08));
+}
+
+.rg-reviews .rg-review-card:hover .rg-review-card__image img.rg-review-card__badge {
+  transform: none;
+
+  filter:
+    drop-shadow(0 5px 10px rgba(0,0,0,0.34))
+    drop-shadow(0 0 8px rgba(34,240,255,0.10));
+}
+
 
 /* ========================================
    CARD BODY
@@ -672,6 +704,12 @@ html[data-theme="light"] .rg-review-card__image img {
     saturate(1.04);
 }
 
+html[data-theme="light"] .rg-reviews .rg-review-card__image img.rg-review-card__badge {
+  filter:
+    drop-shadow(0 5px 10px rgba(24,32,48,0.13))
+    drop-shadow(0 0 6px rgba(8,104,122,0.06));
+}
+
 html[data-theme="light"] .rg-review-card:hover .rg-review-card__image img {
   filter:
     brightness(1.03)
@@ -871,6 +909,15 @@ html[data-theme="light"] .rg-review-card:hover .rg-platform-badge {
   .rg-review-card__body h3 {
     min-height: calc(15px * 1.22 * 2);
     font-size: 15px;
+  }
+
+  .rg-reviews .rg-review-card__image img.rg-review-card__badge {
+    top: 7px;
+    right: 7px;
+
+    width: 56px;
+    max-width: 44%;
+    max-height: 24px;
   }
 }
 

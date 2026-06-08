@@ -87,13 +87,6 @@ const finalPosts = uniqueById([
 const formatScore = (score) =>
   score ? Number(score).toFixed(1) : '-';
 
-const getScoreLabel = (score) => {
-  if (score >= 9.5) return 'TOP';
-  if (score >= 9) return 'MUST';
-  if (score >= 8.5) return 'GOOD';
-  return '';
-};
-
 const getScoreClass = (score) => {
   if (score >= 9.5) return 'is-top';
   if (score >= 9) return 'is-must';
@@ -162,9 +155,6 @@ const getImage = (post) => {
 
           <div class={`rg-dropdown__score ${getScoreClass(score)}`}>
             <span>{formatScore(score)}</span>
-            {getScoreLabel(score) && (
-              <small>{getScoreLabel(score)}</small>
-            )}
           </div>
 
         </a>

@@ -1,30 +1,26 @@
 ---
+import { getReviewBadge } from '../../lib/reviewBadges';
+
 const { rating, lang = 'it' } = Astro.props;
 
 const score = rating?.overall;
+const numericScore = Number(score);
 const formattedScore =
   score !== undefined && score !== null ? Number(score).toFixed(1) : '-';
 
 const labels = {
   it: {
-    fallbackScore: 'Voto',
     kicker: 'Verdetto',
     title: 'Il giudizio finale'
   },
   en: {
-    fallbackScore: 'Score',
     kicker: 'Verdict',
     title: 'Final verdict'
   }
 };
 
 const t = labels[lang] || labels.it;
-
-const label =
-  Number(score) >= 9.5 ? 'Top' :
-  Number(score) >= 9 ? 'Must' :
-  Number(score) >= 8 ? 'Good' :
-  t.fallbackScore;
+const reviewBadge = getReviewBadge(numericScore, lang);
 ---
 
 <section class="article-final-rating">
@@ -33,11 +29,24 @@ const label =
 
     <div class="article-final-rating__badge">
       <span>{formattedScore}</span>
-      <small>{label}</small>
     </div>
 
-    <span>{t.kicker}</span>
-    <h2>{t.title}</h2>
+    <div class="article-final-rating__heading">
+      <span>{t.kicker}</span>
+      <h2>{t.title}</h2>
+    </div>
+
+    {reviewBadge && (
+      <img
+        src={reviewBadge.src}
+        alt={reviewBadge.alt}
+        class={`review-badge review-badge--verdict review-badge--${reviewBadge.key}`}
+        width="1024"
+        height="1024"
+        loading="lazy"
+        decoding="async"
+      />
+    )}
 
     {rating?.summary && (
       <p>{rating.summary}</p>

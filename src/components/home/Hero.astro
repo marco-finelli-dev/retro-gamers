@@ -2,6 +2,7 @@
 import '../../styles/components/hero.css';
 import { getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
+import { getReviewBadge } from '../../lib/reviewBadges';
 
 const { posts = [], lang = 'it' } = Astro.props;
 
@@ -18,6 +19,7 @@ const labels = {
 
 const [main, ...rest] = posts || [];
 const side = rest.slice(0, 3);
+const mainReviewBadge = getReviewBadge(main?.rating?.overall ?? main?.score, lang);
 
 const cleanText = (value) =>
   value?.replace(/\[…\]/g, '').trim() || '';
@@ -106,6 +108,18 @@ const getImage = (image, width = 960, height = null) => {
             height="720"
             loading="eager"
             fetchpriority="high"
+            decoding="async"
+          />
+        )}
+
+        {mainReviewBadge && (
+          <img
+            src={mainReviewBadge.src}
+            alt={mainReviewBadge.alt}
+            class={`review-badge review-badge--hero review-badge--${mainReviewBadge.key}`}
+            width="1024"
+            height="1024"
+            loading="eager"
             decoding="async"
           />
         )}

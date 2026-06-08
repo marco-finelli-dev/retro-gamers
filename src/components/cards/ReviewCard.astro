@@ -2,6 +2,7 @@
 import { urlFor } from '../../lib/image';
 import { getFormatLabel } from '../../lib/formatLabels';
 import { getPostUrl } from '../../lib/routes';
+import { getReviewRibbonBadge } from '../../lib/reviewBadges';
 
 const { post, lang = 'it' } = Astro.props;
 
@@ -34,20 +35,6 @@ const getImage = (post, width = 520, height = 325) => {
     .url();
 };
 
-const compactMode = (name = '') => {
-  const normalized = name.toLowerCase();
-
-  if (normalized.includes('giocatore singolo')) return 'Single';
-  if (normalized.includes('single player')) return 'Single';
-  if (normalized.includes('single-player')) return 'Single';
-  if (normalized.includes('multigiocatore')) return 'Multi';
-  if (normalized.includes('multiplayer')) return 'Multi';
-  if (normalized.includes('cooperativa')) return 'Co-op';
-  if (normalized.includes('co-op')) return 'Co-op';
-
-  return name;
-};
-
 const platform = post.platforms?.[0]?.name || '';
 const developer = post.developers?.[0]?.name || '';
 const year = post.gameInfo?.releaseYear || '';
@@ -65,14 +52,7 @@ const genres =
     ?.map((genre) => getTaxonomyLabel(genre))
     .filter(Boolean) || [];
 
-const modeItem = post.modes?.[0];
-
-const mode = getTaxonomyLabel(modeItem);
-const modeTitle = modeItem
-  ? getTaxonomyLabel(modeItem)
-  : '';
-
-const genreBadges = genres.slice(0, 2).map((genre) => ({
+const genreBadges = genres.slice(0, 1).map((genre) => ({
   label: genre,
   title: genre
 }));
@@ -92,6 +72,7 @@ const mediaFormat =
   'SYSTEM';
 
 const score = getScore(post);
+const reviewBadge = getReviewRibbonBadge(score, lang);
 
 const metaItems = [
   platform,
@@ -99,20 +80,8 @@ const metaItems = [
   year
 ].filter(Boolean);
 
-const badges = [
-  ...genreBadges,
+const badges = genreBadges;
 
- mode && {
-  label: compactMode(mode),
-  title: modeTitle || mode
-}
-].filter(Boolean);
-
-const scoreLabel = score >= 9
-  ? 'top'
-  : isEn
-    ? 'score'
-    : 'voto';
 ---
 
 <a href={getPostUrl(post)} class="rg-review-card">
@@ -132,6 +101,18 @@ const scoreLabel = score >= 9
       loading="lazy"
       decoding="async"
     />
+
+    {reviewBadge && (
+      <img
+        src={reviewBadge.src}
+        alt={reviewBadge.alt}
+        class={`rg-review-card__badge review-ribbon-badge review-badge--home review-badge--${reviewBadge.key}`}
+        width="1746"
+        height="592"
+        loading="lazy"
+        decoding="async"
+      />
+    )}
   </div>
 
   <div class="rg-review-card__body">
@@ -139,7 +120,7 @@ const scoreLabel = score >= 9
 
     {badges.length > 0 && (
       <div class="rg-review-card__badges">
-        {badges.slice(0, 3).map((badge) => (
+        {badges.map((badge) => (
           <span title={badge.title}>{badge.label}</span>
         ))}
       </div>
@@ -148,10 +129,11 @@ const scoreLabel = score >= 9
 
   <div class="rg-review-card__footer">
 
-    <div class={`rg-score ${getScoreClass(score)}`}>
-      <span>{formatScore(score)}</span>
-      <small>{scoreLabel}</small>
-    </div>
+    {score ? (
+      <div class={`rg-score ${getScoreClass(score)}`}>
+        <span>{formatScore(score)}</span>
+      </div>
+    ) : null}
 
     {platformBadge && (
       <div class="rg-platform-badge" title={`${platform} · ${mediaFormat}`}>

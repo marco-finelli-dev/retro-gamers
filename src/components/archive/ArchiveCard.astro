@@ -1,6 +1,7 @@
 ---
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
+import { getReviewRibbonBadge } from '../../lib/reviewBadges';
 
 const {
   post,
@@ -75,6 +76,7 @@ const date = post?.publishedAt
   : '';
 
 const score = post?.rating?.overall;
+const reviewBadge = getReviewRibbonBadge(score, lang);
 ---
 
 <a href={getPostUrl(post)} class="archive-card">
@@ -88,6 +90,18 @@ const score = post?.rating?.overall;
       loading="lazy"
       decoding="async"
     />
+
+    {reviewBadge && (
+      <img
+        src={reviewBadge.src}
+        alt={reviewBadge.alt}
+        class={`archive-card__badge review-ribbon-badge review-badge--card review-badge--${reviewBadge.key}`}
+        width="1746"
+        height="592"
+        loading="lazy"
+        decoding="async"
+      />
+    )}
 
     {score && (
       <div class="archive-card__score">
