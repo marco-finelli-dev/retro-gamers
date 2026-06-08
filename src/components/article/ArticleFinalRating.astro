@@ -40,7 +40,7 @@ const reviewBadge = getReviewBadge(numericScore, lang);
       <img
         src={reviewBadge.src}
         alt={reviewBadge.alt}
-        class={`review-badge review-badge--verdict review-badge--${reviewBadge.key}`}
+        class={`review-badge review-badge--verdict review-badge--verdict-desktop review-badge--${reviewBadge.key}`}
         width="1024"
         height="1024"
         loading="lazy"
@@ -49,7 +49,21 @@ const reviewBadge = getReviewBadge(numericScore, lang);
     )}
 
     {rating?.summary && (
-      <p>{rating.summary}</p>
+      <div class="article-final-rating__summary">
+        {reviewBadge && (
+          <img
+            src={reviewBadge.src}
+            alt={reviewBadge.alt}
+            class={`review-badge review-badge--verdict-mobile review-badge--${reviewBadge.key}`}
+            width="1024"
+            height="1024"
+            loading="lazy"
+            decoding="async"
+          />
+        )}
+
+        <p>{rating.summary}</p>
+      </div>
     )}
 
   </div>

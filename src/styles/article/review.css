@@ -369,14 +369,14 @@
   
   /* SUMMARY */
   
-  .article-final-rating__content p {
+  .article-final-rating__summary {
     grid-column: 1 / -1;
-  
+
     margin: 22px 0 0;
     padding-top: 24px;
-  
+
     border-top: 1px solid transparent;
-  
+
     border-image:
       linear-gradient(
         90deg,
@@ -384,11 +384,19 @@
         rgba(168,85,247,0.34),
         transparent
       ) 1;
-  
+  }
+
+  .article-final-rating__summary p {
+    margin: 0;
+
     font-size: 17px;
     line-height: 1.72;
-  
+
     color: rgba(255,255,255,0.75);
+  }
+
+  .review-badge--verdict-mobile {
+    display: none;
   }
   
   
@@ -421,23 +429,49 @@
       font-size: 22px;
     }
 
-    .review-badge--verdict {
-      grid-column: 2;
-      grid-row: auto;
-
-      width: 78px;
-      max-width: 28vw;
-      margin-top: 10px;
-
-      justify-self: start;
+    .review-badge--verdict-desktop {
+      display: none;
     }
-  
-    .article-final-rating__content p {
+
+    .article-final-rating__summary {
       margin-top: 22px;
       padding-top: 22px;
+    }
+
+    .review-badge--verdict-mobile {
+      display: block;
+      float: right;
+    
+      width: 82px;
+      max-width: 28vw;
+      height: auto;
+      max-height: none;
+    
+      margin: 2px 0 8px 12px;
+    
+      filter:
+        drop-shadow(0 8px 16px rgba(0,0,0,0.22))
+        drop-shadow(0 0 10px rgba(34,240,255,0.08));
+    }
   
+
+    .article-final-rating__summary::after {
+      content: "";
+      display: block;
+      clear: both;
+    }
+  
+    .article-final-rating__summary p {
       font-size: 15px;
       line-height: 1.65;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .review-badge--verdict-mobile {
+      width: 76px;
+      max-width: 27vw;
+      margin: 2px 0 8px 10px;
     }
   }
 
@@ -570,7 +604,7 @@ html[data-theme="light"] .article-final-rating__heading h2 {
     0 0 12px rgba(8,104,122,0.08);
 }
 
-html[data-theme="light"] .article-final-rating__content p {
+html[data-theme="light"] .article-final-rating__summary {
   border-image:
     linear-gradient(
       90deg,
@@ -579,7 +613,9 @@ html[data-theme="light"] .article-final-rating__content p {
       rgba(197,138,0,0.16),
       transparent
     ) 1;
+}
 
+html[data-theme="light"] .article-final-rating__summary p {
   color: rgba(34,38,52,0.74);
 }
 
