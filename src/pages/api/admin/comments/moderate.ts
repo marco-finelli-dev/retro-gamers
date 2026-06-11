@@ -5,6 +5,10 @@ import {
   sendCommentApprovedEmail,
   sendReplyApprovedEmail,
 } from '../../../../lib/supabase/comment-emails';
+import {
+  buildUnsubscribeUrl,
+  createUnsubscribeToken,
+} from '../../../../lib/supabase/comment-subscriptions';
 
 type ModeratePayload = {
   commentId?: string;
@@ -59,6 +63,8 @@ async function notifyApprovedComment(comment: {
   try {
     await sendCommentApprovedEmail({
       to: authorEmail,
+      userId: comment.user_id,
+      commentId: comment.id,
       articleTitle,
       articleUrl,
       language,
@@ -87,7 +93,7 @@ async function notifyApprovedComment(comment: {
 
   const { data: subscription, error: subscriptionError } = await supabaseAdmin
     .from('comment_subscriptions')
-    .select('id')
+    .select('id, unsubscribe_token')
     .eq('user_id', parentComment.user_id)
     .eq('comment_id', parentComment.id)
     .eq('type', 'replies_to_comment')
@@ -99,13 +105,28 @@ async function notifyApprovedComment(comment: {
   }
 
   const parentEmail = await getAuthUserEmail(parentComment.user_id);
+  let unsubscribeToken = subscription.unsubscribe_token;
+
+  if (!unsubscribeToken) {
+    const nextUnsubscribeToken = createUnsubscribeToken();
+
+    const { error: tokenError } = await supabaseAdmin
+      .from('comment_subscriptions')
+      .update({ unsubscribe_token: nextUnsubscribeToken })
+      .eq('id', subscription.id);
+
+    unsubscribeToken = tokenError ? null : nextUnsubscribeToken;
+  }
 
   try {
     await sendReplyApprovedEmail({
       to: parentEmail,
+      userId: parentComment.user_id,
+      commentId: comment.id,
       articleTitle: parentComment.article_title || articleTitle,
       articleUrl: parentComment.article_url || articleUrl,
       language: parentComment.article_language === 'en' ? 'en' : 'it',
+      unsubscribeUrl: unsubscribeToken ? buildUnsubscribeUrl(unsubscribeToken) : null,
     });
   } catch (error) {
     console.error('Reply notification email failed:', error);

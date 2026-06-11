@@ -1,0 +1,61 @@
+---
+import '../../../styles/pages/account.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { supabaseAdmin } from '../../../lib/supabase/server';
+import { isValidUnsubscribeToken } from '../../../lib/supabase/comment-subscriptions';
+
+const title = 'Disiscrizione notifiche | Retro-Gamers.it';
+const description = 'Interrompi le notifiche email dei commenti su Retro-Gamers.it.';
+const token = Astro.url.searchParams.get('token')?.trim() ?? '';
+
+let status: 'missing' | 'invalid' | 'success' | 'already' | 'error' = 'missing';
+let message = 'Link di disiscrizione mancante.';
+
+if (token) {
+  if (!isValidUnsubscribeToken(token)) {
+    status = 'invalid';
+    message = 'Il link di disiscrizione non è valido.';
+  } else {
+    const { data, error } = await supabaseAdmin
+      .from('comment_subscriptions')
+      .update({ is_active: false })
+      .eq('unsubscribe_token', token)
+      .eq('is_active', true)
+      .select('id');
+
+    if (error) {
+      status = 'error';
+      message = 'Non siamo riusciti a completare la disiscrizione. Riprova più tardi.';
+    } else if ((data ?? []).length > 0) {
+      status = 'success';
+      message = 'Disiscrizione completata. Non riceverai più queste notifiche email.';
+    } else {
+      status = 'already';
+      message = 'Questa iscrizione era già stata disattivata oppure il link non è più attivo.';
+    }
+  }
+}
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="account-page">
+    <section class="account-card">
+      <p class="account-kicker">Notifiche commenti</p>
+      <h1>Disiscrizione</h1>
+      <p
+        class="account-message"
+        data-type={status === 'success' || status === 'already' ? 'ok' : 'error'}
+      >
+        {message}
+      </p>
+
+      <p class="account-switch">
+        Puoi continuare a leggere Retro-Gamers.it senza ricevere altre email per questa conversazione.
+      </p>
+
+      <div class="account-actions account-actions--standalone">
+        <a href="/">Torna alla home</a>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

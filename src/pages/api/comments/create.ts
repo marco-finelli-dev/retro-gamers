@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { supabasePublic, supabaseAdmin } from '../../../lib/supabase/server';
 import { isBlockedProfileStatus } from '../../../lib/supabase/auth';
 import { sendNewCommentAdminEmail } from '../../../lib/supabase/comment-emails';
+import { createUnsubscribeToken } from '../../../lib/supabase/comment-subscriptions';
 
 type CreateCommentPayload = {
   articleSlug?: string;
@@ -192,7 +193,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: insertError.message }, 500);
   }
 
-  const subscriptionsToCreate = [];
+  const subscriptionsToCreate: Array<Record<string, unknown>> = [];
 
   if (notifyReplies) {
     subscriptionsToCreate.push({
@@ -202,6 +203,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       comment_id: comment.id,
       type: 'replies_to_comment',
       is_active: true,
+      unsubscribe_token: createUnsubscribeToken(),
     });
   }
 
@@ -213,6 +215,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       comment_id: null,
       type: 'article_thread',
       is_active: true,
+      unsubscribe_token: createUnsubscribeToken(),
     });
   }
 
@@ -240,6 +243,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       authorName: profile.display_name || profile.username || 'Lettore',
       body,
       language: articleLanguage,
+      commentId: comment.id,
     });
   } catch {
     return json({
