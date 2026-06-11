@@ -1,0 +1,175 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import '../../../styles/pages/admin-comments.css';
+
+const title = 'Moderazione commenti | Retro-Gamers.it';
+const description = 'Pannello moderazione commenti Retro-Gamers.it';
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="admin-comments-page">
+    <section class="admin-comments-panel">
+      <div class="admin-comments-panel__header">
+        <p>Retro-Gamers.it</p>
+        <h1>Moderazione commenti</h1>
+        <span data-admin-comments-count>Caricamento...</span>
+      </div>
+
+      <div class="admin-comments-message" data-admin-comments-message hidden></div>
+
+      <div class="admin-comments-list" data-admin-comments-list>
+        <p class="admin-comments-empty">Caricamento commenti in attesa...</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const listNode = document.querySelector('[data-admin-comments-list]');
+    const countNode = document.querySelector('[data-admin-comments-count]');
+    const messageNode = document.querySelector('[data-admin-comments-message]');
+
+    const escapeHtml = (value) =>
+      String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    const showMessage = (text, type = 'ok') => {
+      if (!messageNode) return;
+
+      messageNode.textContent = text;
+      messageNode.dataset.type = type;
+      messageNode.hidden = !text;
+    };
+
+    const formatDate = (value) => {
+      if (!value) return '';
+
+      return new Intl.DateTimeFormat('it-IT', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value));
+    };
+
+    const renderComment = (comment) => {
+      const profile = comment.profiles || {};
+      const author = profile.display_name || profile.username || 'Utente';
+      const badge = profile.user_badges?.label_it || profile.user_badges?.label_en || '';
+      const articleUrl = comment.article_url || '#';
+
+      return `
+        <article class="admin-comment-card" data-comment-id="${escapeHtml(comment.id)}">
+          <header class="admin-comment-card__header">
+            <div>
+              <p class="admin-comment-card__article">
+                <a href="${escapeHtml(articleUrl)}" target="_blank" rel="noreferrer">
+                  ${escapeHtml(comment.article_title || comment.article_slug)}
+                </a>
+              </p>
+
+              <h2>${escapeHtml(author)}</h2>
+
+              <p class="admin-comment-card__meta">
+                ${badge ? `<span>${escapeHtml(badge)}</span>` : ''}
+                ${comment.article_language ? `<span>${escapeHtml(comment.article_language.toUpperCase())}</span>` : ''}
+                ${comment.created_at ? `<span>${escapeHtml(formatDate(comment.created_at))}</span>` : ''}
+              </p>
+            </div>
+          </header>
+
+          <div class="admin-comment-card__body">
+            ${escapeHtml(comment.body)}
+          </div>
+
+          <div class="admin-comment-card__actions">
+            <button type="button" data-action="approve">Approva</button>
+            <button type="button" data-action="reject">Rifiuta</button>
+            <button type="button" data-action="spam">Spam</button>
+            <button type="button" data-action="delete">Elimina</button>
+          </div>
+        </article>
+      `;
+    };
+
+    const loadPendingComments = async () => {
+      if (!listNode) return;
+
+      try {
+        const response = await fetch('/api/admin/comments/pending');
+        const result = await response.json();
+
+        if (!result.ok) {
+          listNode.innerHTML = `<p class="admin-comments-empty">${escapeHtml(result.error || 'Errore caricamento commenti.')}</p>`;
+          if (countNode) countNode.textContent = 'Accesso non disponibile';
+          return;
+        }
+
+        const comments = result.comments || [];
+
+        if (countNode) {
+          countNode.textContent = comments.length === 1
+            ? '1 commento in attesa'
+            : `${comments.length} commenti in attesa`;
+        }
+
+        if (comments.length === 0) {
+          listNode.innerHTML = '<p class="admin-comments-empty">Nessun commento in attesa.</p>';
+          return;
+        }
+
+        listNode.innerHTML = comments.map(renderComment).join('');
+      } catch {
+        listNode.innerHTML = '<p class="admin-comments-empty">Errore di connessione.</p>';
+      }
+    };
+
+    listNode?.addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+
+      const card = button.closest('[data-comment-id]');
+      const commentId = card?.dataset.commentId;
+      const action = button.dataset.action;
+
+      if (!commentId || !action) return;
+
+      button.disabled = true;
+      showMessage('');
+
+      try {
+        const response = await fetch('/api/admin/comments/moderate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            commentId,
+            action,
+            note: `Moderazione da pannello admin: ${action}`
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(result.error || 'Azione non riuscita.', 'error');
+          button.disabled = false;
+          return;
+        }
+
+        showMessage('Commento aggiornato.', 'ok');
+        await loadPendingComments();
+      } catch {
+        showMessage('Errore di connessione.', 'error');
+        button.disabled = false;
+      }
+    });
+
+    loadPendingComments();
+  </script>
+</BaseLayout>

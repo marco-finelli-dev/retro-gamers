@@ -1,0 +1,91 @@
+---
+import '../../../styles/pages/account.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+
+const title = 'Accedi a Retro-Gamers.it';
+const description = 'Accedi al tuo profilo lettore per commentare gli articoli di Retro-Gamers.it.';
+const returnTo = Astro.url.searchParams.get('returnTo') || '/';
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="account-page">
+    <section class="account-card">
+      <p class="account-kicker">Profilo lettore</p>
+      <h1>Accedi</h1>
+      <p>Entra con il tuo account per partecipare alle discussioni sotto gli articoli.</p>
+
+      <form class="account-form" data-login-form>
+        <input type="hidden" name="returnTo" value={returnTo} />
+
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" required autocomplete="email" />
+        </label>
+
+        <label>
+          <span>Password</span>
+          <input type="password" name="password" required autocomplete="current-password" />
+        </label>
+
+        <p class="account-message" data-account-message hidden></p>
+
+        <button type="submit">Accedi</button>
+      </form>
+
+      <p class="account-switch">
+        Non hai ancora un account?
+        <a href="/account/register/">Registrati</a>
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector('[data-login-form]');
+    const message = document.querySelector('[data-account-message]');
+
+    const showMessage = (text, type = 'ok') => {
+      if (!message) return;
+      message.textContent = text;
+      message.hidden = false;
+      message.dataset.type = type;
+    };
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(form);
+      const button = form.querySelector('button[type="submit"]');
+
+      if (button) button.disabled = true;
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: String(formData.get('email') || ''),
+            password: String(formData.get('password') || '')
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(result.error || 'Login non riuscito.', 'error');
+          return;
+        }
+
+        showMessage('Login effettuato. Puoi tornare all’articolo e commentare.', 'ok');
+
+        setTimeout(() => {
+          const returnTo = String(formData.get('returnTo') || '/');
+          window.location.href = returnTo.startsWith('/') ? returnTo : '/';
+        }, 700);
+      } catch {
+        showMessage('Errore di connessione. Riprova.', 'error');
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+  </script>
+</BaseLayout>

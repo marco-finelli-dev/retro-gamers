@@ -1,0 +1,118 @@
+---
+import '../../../styles/pages/account.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+
+const title = 'Registrati su Retro-Gamers.it';
+const description = 'Crea un profilo lettore per commentare gli articoli di Retro-Gamers.it.';
+
+const badges = [
+  ['arcade_kid', 'Arcade Kid'],
+  ['eight_bit_player', '8-bit Player'],
+  ['sixteen_bit_veteran', '16-bit Veteran'],
+  ['amiga_user', 'Amiga User'],
+  ['console_warrior', 'Console Warrior'],
+  ['point_click_lover', 'Point & Click Lover'],
+  ['jrpg_explorer', 'JRPG Explorer'],
+  ['retro_collector', 'Retro Collector']
+];
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="account-page">
+    <section class="account-card">
+      <p class="account-kicker">Profilo lettore</p>
+      <h1>Registrati</h1>
+      <p>Scegli un nickname, un badge e partecipa alle discussioni sotto gli articoli.</p>
+
+      <form class="account-form" data-register-form>
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" required autocomplete="email" />
+        </label>
+
+        <label>
+          <span>Password</span>
+          <input type="password" name="password" required minlength="8" autocomplete="new-password" />
+        </label>
+
+        <label>
+          <span>Username</span>
+          <input type="text" name="username" required minlength="3" maxlength="24" autocomplete="username" />
+        </label>
+
+        <label>
+          <span>Nome visualizzato</span>
+          <input type="text" name="displayName" required minlength="2" maxlength="40" />
+        </label>
+
+        <label>
+          <span>Badge lettore</span>
+          <select name="badgeKey" required>
+            <option value="">Scegli un badge</option>
+            {badges.map(([value, label]) => (
+              <option value={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+
+        <p class="account-message" data-account-message hidden></p>
+
+        <button type="submit">Crea account</button>
+      </form>
+
+      <p class="account-switch">
+        Hai già un account?
+        <a href="/account/login/">Accedi</a>
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector('[data-register-form]');
+    const message = document.querySelector('[data-account-message]');
+
+    const showMessage = (text, type = 'ok') => {
+      if (!message) return;
+      message.textContent = text;
+      message.hidden = false;
+      message.dataset.type = type;
+    };
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(form);
+      const button = form.querySelector('button[type="submit"]');
+
+      if (button) button.disabled = true;
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: String(formData.get('email') || ''),
+            password: String(formData.get('password') || ''),
+            username: String(formData.get('username') || ''),
+            displayName: String(formData.get('displayName') || ''),
+            badgeKey: String(formData.get('badgeKey') || '')
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(result.error || 'Registrazione non riuscita.', 'error');
+          return;
+        }
+
+        showMessage('Account creato. Controlla la tua email per confermare la registrazione.', 'ok');
+        form.reset();
+      } catch {
+        showMessage('Errore di connessione. Riprova.', 'error');
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+  </script>
+</BaseLayout>

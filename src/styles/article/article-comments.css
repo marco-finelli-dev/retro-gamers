@@ -252,6 +252,34 @@
     justify-content: space-between;
     gap: 20px;
   }
+
+  .article-comments__auth-actions {
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
+  .article-comments__auth-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 42px;
+    padding: 0 18px;
+
+    border: 1px solid var(--rg-cta-border);
+    border-radius: 999px;
+
+    background: var(--rg-cta-bg);
+    color: var(--rg-cta-color);
+
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  .article-comments__auth-actions a:hover {
+    background: var(--rg-cta-hover-bg);
+    color: var(--color-primary);
+  }
   
   .article-comments__actions small {
     max-width: 620px;
@@ -292,6 +320,39 @@
     background: var(--rg-cta-hover-bg);
     box-shadow: var(--rg-card-hover-shadow);
     transform: translateY(-1px);
+  }
+
+  .article-comments button:disabled {
+    cursor: wait;
+    opacity: 0.58;
+    transform: none;
+  }
+
+  .article-comments__current-user {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .article-comments__checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin: 0;
+    color: var(--color-text-soft);
+  }
+
+  .article-comments__checkbox input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--color-primary);
+  }
+
+  .article-comments__checkbox span {
+    font-weight: 650;
   }
   
   /* ========================
@@ -516,6 +577,27 @@
   .article-comment__editor-reply + .article-comment__editor-reply {
     margin-top: 0.75rem;
   }
+
+  .article-comment__editor-reply-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    margin-bottom: 12px;
+  }
+
+  .article-comment__editor-reply-meta {
+    min-width: 0;
+  }
+
+  .article-comment__editor-reply-submeta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+
+    margin-top: 3px;
+  }
   
   .article-comment__editor-reply strong {
     display: block;
@@ -561,6 +643,25 @@
   
   .article-comment__meta {
     min-width: 0;
+  }
+
+  .article-comment__badge-label {
+    display: inline-flex;
+    align-items: center;
+
+    margin-left: 8px;
+    padding: 2px 8px;
+
+    border: 1px solid var(--rg-badge-border);
+    border-radius: 999px;
+
+    background: var(--rg-badge-bg);
+    color: var(--rg-badge-color);
+
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
+    vertical-align: middle;
   }
   
   .article-comment__reactions {

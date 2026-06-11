@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
+import { Resend } from 'resend';
 import { supabasePublic, supabaseAdmin } from '../../../lib/supabase/server';
+import { isBlockedProfileStatus } from '../../../lib/supabase/auth';
 
 type CreateCommentPayload = {
   articleSlug?: string;
@@ -20,6 +22,21 @@ const json = (payload: unknown, status = 200) =>
     },
   });
 
+const resend = import.meta.env.RESEND_API_KEY
+  ? new Resend(import.meta.env.RESEND_API_KEY)
+  : null;
+
+const notifyEmail = String(import.meta.env.COMMENTS_NOTIFY_EMAIL || '').trim();
+const siteUrl = String(import.meta.env.PUBLIC_SITE_URL || 'https://www.retro-gamers.it').replace(/\/$/, '');
+
+const escapeHtml = (value = '') =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
 const normalizeUrl = (value: string) => {
   const trimmed = value.trim();
 
@@ -34,6 +51,62 @@ const normalizeUrl = (value: string) => {
     return trimmed;
   }
 };
+
+const absoluteArticleUrl = (articleUrl: string) => {
+  if (articleUrl.startsWith('http://') || articleUrl.startsWith('https://')) {
+    return articleUrl;
+  }
+
+  return `${siteUrl}${articleUrl.startsWith('/') ? articleUrl : `/${articleUrl}`}`;
+};
+
+async function sendNewCommentAdminEmail({
+  articleTitle,
+  articleUrl,
+  authorName,
+  body,
+  language,
+}: {
+  articleTitle: string;
+  articleUrl: string;
+  authorName: string;
+  body: string;
+  language: 'it' | 'en';
+}) {
+  if (!resend || !notifyEmail) {
+    return;
+  }
+
+  const preview = body.length > 700 ? `${body.slice(0, 700)}...` : body;
+
+  await resend.emails.send({
+    from: 'Retro-Gamers <noreply@retro-gamers.it>',
+    to: notifyEmail,
+    subject: `Nuovo commento in attesa su ${articleTitle || 'Retro-Gamers.it'}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
+        <h2>Nuovo commento in attesa</h2>
+        <p>
+          È arrivato un nuovo commento su
+          <strong>${escapeHtml(articleTitle || 'un articolo Retro-Gamers')}</strong>.
+        </p>
+        <p>
+          <strong>Autore:</strong> ${escapeHtml(authorName)}<br>
+          <strong>Lingua:</strong> ${escapeHtml(language.toUpperCase())}
+        </p>
+        <blockquote style="margin: 20px 0; padding: 14px 18px; border-left: 4px solid #22c8ff; background: #f4f7fb;">
+          ${escapeHtml(preview).replace(/\n/g, '<br>')}
+        </blockquote>
+        <p>
+          <a href="${escapeHtml(absoluteArticleUrl(articleUrl))}" style="color: #0070f3;">Apri l’articolo</a>
+        </p>
+        <p style="font-size: 13px; color: #666;">
+          Apri il pannello commenti per approvare o rifiutare il messaggio.
+        </p>
+      </div>
+    `,
+  });
+}
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const token = cookies.get('rg_access_token')?.value;
@@ -64,7 +137,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'Profilo lettore non trovato.' }, 404);
   }
 
-  if (profile.status === 'blocked') {
+  if (isBlockedProfileStatus(profile.status)) {
     return json({ ok: false, error: 'Account bloccato.' }, 403);
   }
 
@@ -102,7 +175,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   if (body.length > 3000) {
-    return json({ ok: false, error: 'Il commento è troppo lungo. Massimo 3000 caratteri.' }, 4);
+    return json({ ok: false, error: 'Il commento è troppo lungo. Massimo 3000 caratteri.' }, 400);
   }
 
   if (parentId) {
@@ -191,6 +264,23 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         comment,
       });
     }
+  }
+
+  try {
+    await sendNewCommentAdminEmail({
+      articleTitle,
+      articleUrl,
+      authorName: profile.display_name || profile.username || 'Lettore',
+      body,
+      language: articleLanguage,
+    });
+  } catch {
+    return json({
+      ok: true,
+      warning: 'Commento inviato, ma la notifica email alla redazione non è partita.',
+      message: 'Commento inviato. Sarà visibile dopo l’approvazione della redazione.',
+      comment,
+    });
   }
 
   return json({

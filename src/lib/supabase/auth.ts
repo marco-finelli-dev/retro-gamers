@@ -1,5 +1,9 @@
 import { supabaseAdmin, supabasePublic } from './server';
 
+export function isBlockedProfileStatus(status?: string | null) {
+  return status === 'blocked' || status === 'suspended' || status === 'banned';
+}
+
 export async function getUserProfileFromToken(token: string) {
   if (!token) {
     return {
@@ -63,7 +67,7 @@ export async function getUserProfileFromToken(token: string) {
     };
   }
 
-  if (profile.status === 'blocked') {
+  if (isBlockedProfileStatus(profile.status)) {
     return {
       user,
       profile,

@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabasePublic, supabaseAdmin } from '../../../lib/supabase/server';
+import { isBlockedProfileStatus } from '../../../lib/supabase/auth';
 
 type LoginPayload = {
   email?: string;
@@ -76,7 +77,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'Profilo lettore non trovato.' }, 404);
   }
 
-  if (profile.status === 'blocked') {
+  if (isBlockedProfileStatus(profile.status)) {
     return json({ ok: false, error: 'Account bloccato.' }, 403);
   }
 
