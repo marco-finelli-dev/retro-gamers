@@ -119,7 +119,7 @@ export const POST: APIRoute = async ({ request }) => {
       username,
       display_name: displayName,
       badge_key: badgeKey,
-      role: 'reader',
+      role: 'user',
       status: 'active',
     });
 

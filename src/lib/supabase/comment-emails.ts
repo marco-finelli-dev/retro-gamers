@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import { supabaseAdmin } from './server';
 
 type CommentEmailLanguage = 'it' | 'en';
-type CommentEmailType = 'new_comment_admin' | 'comment_approved' | 'reply_approved';
+type CommentEmailType = 'comment_approved' | 'reply_to_comment';
 
 type CommentEmailPayload = {
   to?: string | null;
@@ -54,7 +54,7 @@ async function sendEmail({
   subject,
   html,
 }: {
-  type: CommentEmailType;
+  type?: CommentEmailType;
   to?: string | null;
   userId?: string | null;
   commentId?: string | null;
@@ -66,14 +66,16 @@ async function sendEmail({
   }
 
   if (!resend) {
-    await logEmailNotification({
-      type,
-      to,
-      userId,
-      commentId,
-      status: 'failed',
-      errorMessage: 'RESEND_API_KEY non configurata.',
-    });
+    if (type) {
+      await logEmailNotification({
+        type,
+        to,
+        userId,
+        commentId,
+        status: 'failed',
+        errorMessage: 'RESEND_API_KEY non configurata.',
+      });
+    }
 
     return false;
   }
@@ -86,24 +88,28 @@ async function sendEmail({
       html,
     });
 
-    await logEmailNotification({
-      type,
-      to,
-      userId,
-      commentId,
-      status: 'sent',
-    });
+    if (type) {
+      await logEmailNotification({
+        type,
+        to,
+        userId,
+        commentId,
+        status: 'sent',
+      });
+    }
 
     return true;
   } catch (error) {
-    await logEmailNotification({
-      type,
-      to,
-      userId,
-      commentId,
-      status: 'failed',
-      errorMessage: error instanceof Error ? error.message : 'Errore invio email.',
-    });
+    if (type) {
+      await logEmailNotification({
+        type,
+        to,
+        userId,
+        commentId,
+        status: 'failed',
+        errorMessage: error instanceof Error ? error.message : 'Errore invio email.',
+      });
+    }
 
     console.error('Comment email send failed:', error);
 
@@ -152,7 +158,6 @@ export async function sendNewCommentAdminEmail({
   commentId,
 }: CommentEmailPayload) {
   return sendEmail({
-    type: 'new_comment_admin',
     to: notifyEmail,
     commentId,
     subject: `Nuovo commento in attesa su ${articleTitle || 'Retro-Gamers.it'}`,
@@ -242,7 +247,7 @@ export async function sendReplyApprovedEmail({
   const unsubscribeLabel = language === 'en' ? 'Unsubscribe' : 'Disiscriviti';
 
   return sendEmail({
-    type: 'reply_approved',
+    type: 'reply_to_comment',
     to,
     userId,
     commentId,
