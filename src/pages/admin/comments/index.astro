@@ -15,6 +15,44 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
         <span data-admin-comments-count>Caricamento...</span>
       </div>
 
+      <form class="admin-comments-filters" data-admin-comments-filters>
+        <label>
+          <span>Stato</span>
+          <select name="status">
+            <option value="pending" selected>In attesa</option>
+            <option value="approved">Approvati</option>
+            <option value="rejected">Rifiutati</option>
+            <option value="spam">Spam</option>
+            <option value="deleted">Eliminati</option>
+            <option value="all">Tutti</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Lingua</span>
+          <select name="language">
+            <option value="all" selected>Tutte</option>
+            <option value="it">Italiano</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Ricerca</span>
+          <input
+            type="search"
+            name="q"
+            placeholder="Autore, testo, articolo..."
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="admin-comments-filters__actions">
+          <button type="submit">Filtra</button>
+          <button type="button" data-admin-comments-reset>Reset</button>
+        </div>
+      </form>
+
       <div class="admin-comments-message" data-admin-comments-message hidden></div>
 
       <div class="admin-comments-list" data-admin-comments-list>
@@ -27,6 +65,8 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
     const listNode = document.querySelector('[data-admin-comments-list]');
     const countNode = document.querySelector('[data-admin-comments-count]');
     const messageNode = document.querySelector('[data-admin-comments-message]');
+    const filtersForm = document.querySelector('[data-admin-comments-filters]');
+    const resetButton = document.querySelector('[data-admin-comments-reset]');
 
     const escapeHtml = (value) =>
       String(value || '')
@@ -56,11 +96,40 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
       }).format(new Date(value));
     };
 
+    const statusLabels = {
+      pending: 'In attesa',
+      approved: 'Approvato',
+      rejected: 'Rifiutato',
+      spam: 'Spam',
+      deleted: 'Eliminato'
+    };
+
+    const getFilterParams = () => {
+      const params = new URLSearchParams();
+
+      if (!filtersForm) return params;
+
+      const formData = new FormData(filtersForm);
+      const status = String(formData.get('status') || 'pending');
+      const language = String(formData.get('language') || 'all');
+      const q = String(formData.get('q') || '').trim();
+
+      params.set('status', status);
+      params.set('language', language);
+      if (q) params.set('q', q);
+
+      return params;
+    };
+
     const renderComment = (comment) => {
       const profile = comment.profiles || {};
       const author = profile.display_name || profile.username || 'Utente';
       const badge = profile.user_badges?.label_it || profile.user_badges?.label_en || '';
       const articleUrl = comment.article_url || '#';
+      const status = statusLabels[comment.status] || comment.status || 'Stato sconosciuto';
+      const parent = comment.parent || null;
+      const parentProfile = parent?.profiles || {};
+      const parentAuthor = parentProfile.display_name || parentProfile.username || 'Commento originale';
 
       return `
         <article class="admin-comment-card" data-comment-id="${escapeHtml(comment.id)}">
@@ -75,6 +144,9 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
               <h2>${escapeHtml(author)}</h2>
 
               <p class="admin-comment-card__meta">
+                <span class="admin-comment-card__status" data-status="${escapeHtml(comment.status || '')}">
+                  ${escapeHtml(status)}
+                </span>
                 ${badge ? `<span>${escapeHtml(badge)}</span>` : ''}
                 ${comment.article_language ? `<span>${escapeHtml(comment.article_language.toUpperCase())}</span>` : ''}
                 ${comment.created_at ? `<span>${escapeHtml(formatDate(comment.created_at))}</span>` : ''}
@@ -82,25 +154,35 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
             </div>
           </header>
 
+          ${parent ? `
+            <div class="admin-comment-card__parent">
+              <strong>Risposta a ${escapeHtml(parentAuthor)}</strong>
+              <p>${escapeHtml(parent.body || '').slice(0, 220)}</p>
+            </div>
+          ` : ''}
+
           <div class="admin-comment-card__body">
             ${escapeHtml(comment.body)}
           </div>
 
           <div class="admin-comment-card__actions">
-            <button type="button" data-action="approve">Approva</button>
-            <button type="button" data-action="reject">Rifiuta</button>
-            <button type="button" data-action="spam">Spam</button>
-            <button type="button" data-action="delete">Elimina</button>
+            <a href="${escapeHtml(articleUrl)}" target="_blank" rel="noreferrer">Apri articolo</a>
+            ${comment.status !== 'approved' ? '<button type="button" data-action="approve">Approva</button>' : ''}
+            ${comment.status !== 'rejected' ? '<button type="button" data-action="reject">Rifiuta</button>' : ''}
+            ${comment.status !== 'spam' ? '<button type="button" data-action="spam" data-confirm="Segnare questo commento come spam?">Spam</button>' : ''}
+            ${comment.status !== 'deleted' ? '<button type="button" data-action="delete" data-confirm="Eliminare questo commento dalla moderazione pubblica?">Elimina</button>' : ''}
+            ${comment.status !== 'pending' ? '<button type="button" data-action="restore">Rimetti in coda</button>' : ''}
           </div>
         </article>
       `;
     };
 
-    const loadPendingComments = async () => {
+    const loadComments = async () => {
       if (!listNode) return;
 
       try {
-        const response = await fetch('/api/admin/comments/pending');
+        const params = getFilterParams();
+        const response = await fetch(`/api/admin/comments/pending?${params.toString()}`);
         const result = await response.json();
 
         if (!result.ok) {
@@ -113,12 +195,12 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
 
         if (countNode) {
           countNode.textContent = comments.length === 1
-            ? '1 commento in attesa'
-            : `${comments.length} commenti in attesa`;
+            ? '1 commento trovato'
+            : `${comments.length} commenti trovati`;
         }
 
         if (comments.length === 0) {
-          listNode.innerHTML = '<p class="admin-comments-empty">Nessun commento in attesa.</p>';
+          listNode.innerHTML = '<p class="admin-comments-empty">Nessun commento trovato con questi filtri.</p>';
           return;
         }
 
@@ -127,6 +209,18 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
         listNode.innerHTML = '<p class="admin-comments-empty">Errore di connessione.</p>';
       }
     };
+
+    filtersForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      showMessage('');
+      loadComments();
+    });
+
+    resetButton?.addEventListener('click', () => {
+      filtersForm?.reset();
+      showMessage('');
+      loadComments();
+    });
 
     listNode?.addEventListener('click', async (event) => {
       const button = event.target.closest('button[data-action]');
@@ -137,6 +231,11 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
       const action = button.dataset.action;
 
       if (!commentId || !action) return;
+
+      const confirmation = button.dataset.confirm;
+      if (confirmation && !window.confirm(confirmation)) {
+        return;
+      }
 
       button.disabled = true;
       showMessage('');
@@ -163,13 +262,13 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
         }
 
         showMessage('Commento aggiornato.', 'ok');
-        await loadPendingComments();
+        await loadComments();
       } catch {
         showMessage('Errore di connessione.', 'error');
         button.disabled = false;
       }
     });
 
-    loadPendingComments();
+    loadComments();
   </script>
 </BaseLayout>

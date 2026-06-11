@@ -1,0 +1,171 @@
+---
+import '../../styles/pages/account.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getUserProfileFromToken } from '../../lib/supabase/auth';
+import { supabaseAdmin } from '../../lib/supabase/server';
+
+const title = 'Profilo lettore | Retro-Gamers.it';
+const description = 'Gestisci il tuo profilo lettore, il nome visualizzato e il badge community.';
+const token = Astro.cookies.get('rg_access_token')?.value ?? '';
+const session = await getUserProfileFromToken(token);
+const isLoggedIn = Boolean(!session.error && session.user && session.profile);
+
+const { data: badges } = isLoggedIn
+  ? await supabaseAdmin
+      .from('user_badges')
+      .select('key, label_it, label_en, image_path')
+      .eq('is_active', true)
+  : { data: [] };
+
+const profile = session.profile;
+const user = session.user;
+const currentBadge = profile?.user_badges;
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="account-page">
+    <section class="account-card">
+      <p class="account-kicker">Profilo lettore</p>
+      <h1>Area account</h1>
+
+      {isLoggedIn ? (
+        <>
+          <p>
+            Gestisci il nome con cui compari nei commenti e il badge che racconta
+            meglio il tuo angolo di retro-gaming.
+          </p>
+
+          <div class="account-summary">
+            <div>
+              <span>Email</span>
+              <strong>{user?.email}</strong>
+            </div>
+
+            <div>
+              <span>Username</span>
+              <strong>{profile?.username}</strong>
+            </div>
+
+            <div>
+              <span>Ruolo</span>
+              <strong>{profile?.role || 'reader'}</strong>
+            </div>
+
+            <div>
+              <span>Stato</span>
+              <strong>{profile?.status || 'active'}</strong>
+            </div>
+
+            <div>
+              <span>Badge attuale</span>
+              <strong>{currentBadge?.label_it || profile?.badge_key || 'Non impostato'}</strong>
+            </div>
+          </div>
+
+          <form class="account-form" data-account-profile-form>
+            <label>
+              <span>Nome visualizzato</span>
+              <input
+                type="text"
+                name="displayName"
+                required
+                minlength="2"
+                maxlength="40"
+                value={profile?.display_name || profile?.username || ''}
+              />
+            </label>
+
+            <label>
+              <span>Badge lettore</span>
+              <select name="badgeKey" required>
+                <option value="">Scegli un badge</option>
+                {(badges || []).map((badge) => (
+                  <option value={badge.key} selected={badge.key === profile?.badge_key}>
+                    {badge.label_it || badge.label_en || badge.key}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <p class="account-message" data-account-message hidden></p>
+
+            <div class="account-actions">
+              <button type="submit">Salva profilo</button>
+              <button type="button" data-account-logout>Esci</button>
+            </div>
+          </form>
+        </>
+      ) : (
+        <>
+          <p>
+            Accedi per gestire il tuo profilo lettore, scegliere il badge e
+            partecipare alle discussioni sotto gli articoli.
+          </p>
+
+          <div class="account-actions account-actions--standalone">
+            <a href="/account/login/">Accedi</a>
+            <a href="/account/register/">Registrati</a>
+          </div>
+        </>
+      )}
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector('[data-account-profile-form]');
+    const message = document.querySelector('[data-account-message]');
+    const logoutButton = document.querySelector('[data-account-logout]');
+
+    const showMessage = (text, type = 'ok') => {
+      if (!message) return;
+      message.textContent = text;
+      message.hidden = false;
+      message.dataset.type = type;
+    };
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(form);
+      const button = form.querySelector('button[type="submit"]');
+
+      if (button) button.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/update-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            displayName: String(formData.get('displayName') || ''),
+            badgeKey: String(formData.get('badgeKey') || '')
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(result.error || 'Aggiornamento non riuscito.', 'error');
+          return;
+        }
+
+        showMessage('Profilo aggiornato.', 'ok');
+      } catch {
+        showMessage('Errore di connessione. Riprova.', 'error');
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+
+    logoutButton?.addEventListener('click', async () => {
+      logoutButton.disabled = true;
+
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = '/';
+      } catch {
+        showMessage('Logout non riuscito. Riprova.', 'error');
+        logoutButton.disabled = false;
+      }
+    });
+  </script>
+</BaseLayout>

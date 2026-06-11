@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabasePublic, supabaseAdmin } from '../../../lib/supabase/server';
+import { isBlockedProfileStatus } from '../../../lib/supabase/auth';
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -54,7 +55,7 @@ export const GET: APIRoute = async ({ cookies }) => {
     return json({ ok: false, error: 'Profilo lettore non trovato.' }, 404);
   }
 
-  if (profile.status === 'blocked') {
+  if (isBlockedProfileStatus(profile.status)) {
     return json({ ok: false, error: 'Account bloccato.' }, 403);
   }
 

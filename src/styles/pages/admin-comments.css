@@ -77,6 +77,78 @@
   background: rgba(248,113,113,0.10);
 }
 
+.admin-comments-filters {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.7fr) minmax(140px, 0.7fr) minmax(220px, 1.4fr) auto;
+  gap: 14px;
+  align-items: end;
+  margin: 0 0 22px;
+  padding: 16px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 22px;
+  background: var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.admin-comments-filters label {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-comments-filters label span {
+  color: var(--color-text-soft);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-comments-filters input,
+.admin-comments-filters select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0 13px;
+  background: var(--color-glass);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.admin-comments-filters input:focus,
+.admin-comments-filters select:focus {
+  outline: none;
+  border-color: var(--rg-cta-border);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+
+.admin-comments-filters__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-comments-filters button {
+  min-height: 44px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 16px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-comments-filters button[type="button"] {
+  border-color: var(--color-border);
+  background: var(--color-glass);
+  color: var(--color-text);
+}
+
+.admin-comments-filters button:hover {
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+}
+
 .admin-comments-list {
   display: grid;
   gap: 18px;
@@ -130,6 +202,42 @@
   color: var(--rg-badge-color);
 }
 
+.admin-comment-card__status[data-status="pending"] {
+  border-color: rgba(251,191,36,0.30);
+  background: rgba(251,191,36,0.12);
+}
+
+.admin-comment-card__status[data-status="approved"] {
+  border-color: rgba(34,197,94,0.26);
+  background: rgba(34,197,94,0.10);
+}
+
+.admin-comment-card__status[data-status="rejected"],
+.admin-comment-card__status[data-status="spam"],
+.admin-comment-card__status[data-status="deleted"] {
+  border-color: rgba(248,113,113,0.24);
+  background: rgba(248,113,113,0.10);
+}
+
+.admin-comment-card__parent {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-glass);
+  color: var(--color-text-soft);
+}
+
+.admin-comment-card__parent strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-text);
+}
+
+.admin-comment-card__parent p {
+  margin: 0;
+}
+
 .admin-comment-card__body {
   white-space: pre-wrap;
   padding: 18px;
@@ -146,20 +254,32 @@
   margin-top: 18px;
 }
 
-.admin-comment-card__actions button {
+.admin-comment-card__actions button,
+.admin-comment-card__actions a {
   min-height: 40px;
   border: 1px solid var(--rg-cta-border);
   border-radius: 999px;
   padding: 0 16px;
   background: var(--rg-cta-bg);
   color: var(--rg-cta-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 900;
+  text-decoration: none;
   cursor: pointer;
 }
 
-.admin-comment-card__actions button:hover {
+.admin-comment-card__actions button:hover,
+.admin-comment-card__actions a:hover {
   background: var(--rg-cta-hover-bg);
   color: var(--color-primary);
+}
+
+.admin-comment-card__actions a {
+  border-color: var(--color-border);
+  background: var(--color-glass);
+  color: var(--color-text);
 }
 
 .admin-comment-card__actions button:disabled {
@@ -171,6 +291,14 @@
   .admin-comments-panel__header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .admin-comments-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-comments-filters__actions {
+    flex-wrap: wrap;
   }
 
   .admin-comment-card__actions button {
