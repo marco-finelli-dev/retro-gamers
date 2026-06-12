@@ -547,6 +547,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const textarea = root.querySelector('[data-comment-textarea]');
 
     let currentProfile = null;
+    let lastPermalinkTarget = null;
+    let permalinkScrollAttempts = 0;
 
     const setStatus = (message, type = 'ok') => {
       if (!statusNode) return;
@@ -564,6 +566,65 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       countNode.textContent = `${count} ${label}`;
     };
 
+    const getCommentHashTargetId = () => {
+      const hash = window.location.hash || '';
+
+      if (!hash.startsWith('#comment-')) {
+        return '';
+      }
+
+      try {
+        return decodeURIComponent(hash.slice(1));
+      } catch {
+        return hash.slice(1);
+      }
+    };
+
+    const highlightPermalinkTarget = (target) => {
+      if (lastPermalinkTarget && lastPermalinkTarget !== target) {
+        lastPermalinkTarget.classList.remove('article-comment--permalink-target');
+      }
+
+      target.classList.add('article-comment--permalink-target');
+      lastPermalinkTarget = target;
+    };
+
+    const scrollToCommentHash = (shouldRetry = false) => {
+      const targetId = getCommentHashTargetId();
+
+      if (!targetId) {
+        return false;
+      }
+
+      const target = document.getElementById(targetId);
+
+      if (!target) {
+        if (shouldRetry && permalinkScrollAttempts < 24) {
+          permalinkScrollAttempts += 1;
+          window.setTimeout(() => scrollToCommentHash(true), 120);
+        }
+
+        return false;
+      }
+
+      permalinkScrollAttempts = 0;
+      highlightPermalinkTarget(target);
+      target.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+      });
+
+      return true;
+    };
+
+    const queueCommentHashScroll = () => {
+      window.requestAnimationFrame(() => {
+        scrollToCommentHash(true);
+      });
+    };
+
     const renderComments = (comments) => {
       const mergedComments = sortComments(dedupeComments([...legacyComments, ...comments]));
 
@@ -573,12 +634,14 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
       if (mergedComments.length === 0) {
         listNode.innerHTML = `<p class="article-comments__empty">${escapeHtml(labels.empty)}</p>`;
+        queueCommentHashScroll();
         return;
       }
 
       listNode.innerHTML = mergedComments
         .map((comment) => renderComment(comment, articleLanguage, labels, Boolean(currentProfile)))
         .join('');
+      queueCommentHashScroll();
     };
 
     const updateReactionGroup = (group, userReaction, likeCount, dislikeCount) => {
@@ -804,6 +867,11 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     cancelReply?.addEventListener('click', () => {
       if (parentInput) parentInput.value = '';
       if (replyingTo) replyingTo.hidden = true;
+    });
+
+    window.addEventListener('hashchange', () => {
+      permalinkScrollAttempts = 0;
+      queueCommentHashScroll();
     });
 
     Promise.resolve()
