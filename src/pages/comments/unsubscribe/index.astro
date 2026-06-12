@@ -9,12 +9,11 @@ const description = 'Interrompi le notifiche email dei commenti su Retro-Gamers.
 const token = Astro.url.searchParams.get('token')?.trim() ?? '';
 
 let status: 'missing' | 'invalid' | 'success' | 'already' | 'error' = 'missing';
-let message = 'Link di disiscrizione mancante.';
+let message = 'Il link di disiscrizione non è valido o non è più attivo.';
 
 if (token) {
   if (!isValidUnsubscribeToken(token)) {
     status = 'invalid';
-    message = 'Il link di disiscrizione non è valido.';
   } else {
     const { data, error } = await supabaseAdmin
       .from('comment_subscriptions')
@@ -25,16 +24,19 @@ if (token) {
 
     if (error) {
       status = 'error';
-      message = 'Non siamo riusciti a completare la disiscrizione. Riprova più tardi.';
     } else if ((data ?? []).length > 0) {
       status = 'success';
-      message = 'Disiscrizione completata. Non riceverai più queste notifiche email.';
+      message = 'La disiscrizione è stata completata.';
     } else {
       status = 'already';
-      message = 'Questa iscrizione era già stata disattivata oppure il link non è più attivo.';
     }
   }
 }
+
+const isSuccess = status === 'success';
+const secondaryText = isSuccess
+  ? 'Non riceverai più email per questa conversazione.'
+  : 'Se continui a ricevere email da questa conversazione, puoi riprovare usando il link più recente.';
 ---
 
 <BaseLayout title={title} description={description}>
@@ -50,7 +52,7 @@ if (token) {
       </p>
 
       <p class="account-switch">
-        Puoi continuare a leggere Retro-Gamers.it senza ricevere altre email per questa conversazione.
+        {secondaryText}
       </p>
 
       <div class="account-actions account-actions--standalone">
