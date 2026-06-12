@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { sendNewReaderRegistrationAdminEmail } from '../../../lib/supabase/account-emails';
 import { supabaseAdmin, supabasePublic } from '../../../lib/supabase/server';
 
 type RegisterPayload = {
@@ -130,6 +131,18 @@ export const POST: APIRoute = async ({ request }) => {
       ok: false,
       error: insertProfileError.message,
     }, 500);
+  }
+
+  try {
+    await sendNewReaderRegistrationAdminEmail({
+      userId: user.id,
+      email: user.email,
+      username,
+      displayName,
+      createdAt: user.created_at,
+    });
+  } catch (error) {
+    console.error('New reader registration admin notification failed:', error);
   }
 
   return json({
