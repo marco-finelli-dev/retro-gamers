@@ -3,6 +3,7 @@ import '../../styles/pages/account.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import UserAvatar from '../../components/account/UserAvatar.astro';
 import { getActiveReaderBadges } from '../../lib/badges';
+import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserProfileFromToken } from '../../lib/supabase/auth';
 import { supabaseAdmin } from '../../lib/supabase/server';
 
@@ -21,6 +22,7 @@ const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const accountDisplayName =
   profile?.display_name || profile?.username || user?.email || 'Utente Retro-Gamers';
 const accountHandle = profile?.username ? `@${profile.username}` : user?.email || '';
+const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
 
 const commentActivity = {
   approved: 0,
@@ -92,6 +94,11 @@ if (isLoggedIn && user?.id) {
               <span>Profilo community</span>
               <strong>{accountDisplayName}</strong>
               {accountHandle && <small>{accountHandle}</small>}
+              {publicProfileHref && (
+                <a class="account-profile-card__link" href={publicProfileHref}>
+                  Vedi profilo pubblico
+                </a>
+              )}
             </div>
           </div>
 

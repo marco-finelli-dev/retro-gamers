@@ -295,6 +295,37 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       : badge.label_it || badge.label_en || '';
   };
 
+  const getProfileHref = (profile, language, isLegacy = false) => {
+    const username = String(profile?.username || '').trim();
+
+    if (isLegacy || !username || !/^[a-z0-9_-]{3,24}$/i.test(username)) {
+      return '';
+    }
+
+    const encodedUsername = encodeURIComponent(username.toLowerCase());
+
+    return language === 'en'
+      ? `/en/users/${encodedUsername}/`
+      : `/utenti/${encodedUsername}/`;
+  };
+
+  const renderAvatar = (initial, avatarLabel, href = '') => {
+    const avatar = `
+      <span class="article-comment__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
+        ${escapeHtml(initial)}
+      </span>
+    `;
+
+    return href
+      ? `<a class="article-comment__avatar-link" href="${escapeHtml(href)}">${avatar}</a>`
+      : avatar;
+  };
+
+  const renderAuthorName = (authorName, href = '') =>
+    href
+      ? `<a class="article-comment__author-link" href="${escapeHtml(href)}">${escapeHtml(authorName)}</a>`
+      : escapeHtml(authorName);
+
   const readLegacyComments = (root) => {
     const node = root.querySelector('[data-legacy-comments]');
 
@@ -392,16 +423,15 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const badgeLabel = getBadgeLabel(profile, language);
     const initial = getAvatarInitial(profile, labels.reader);
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
+    const profileHref = getProfileHref(profile, language, Boolean(reply.isLegacy));
 
     return `
       <div class="article-comment__editor-reply">
         <div class="article-comment__editor-reply-header">
-          <div class="article-comment__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
-            ${escapeHtml(initial)}
-          </div>
+          ${renderAvatar(initial, avatarLabel, profileHref)}
 
           <div class="article-comment__editor-reply-meta">
-            <strong>${escapeHtml(authorName)}</strong>
+            <strong>${renderAuthorName(authorName, profileHref)}</strong>
 
             <div class="article-comment__editor-reply-submeta">
               ${reply.created_at ? `
@@ -430,17 +460,16 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
     const replies = Array.isArray(comment.replies) ? sortComments(comment.replies) : [];
     const isLegacy = Boolean(comment.isLegacy);
+    const profileHref = getProfileHref(profile, language, isLegacy);
     const highlightedClass = comment.isHighlighted ? ' article-comment--highlighted' : '';
 
     return `
       <article class="article-comment${highlightedClass}" data-comment-id="${escapeHtml(comment.id)}">
         <header class="article-comment__header">
-          <div class="article-comment__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
-            ${escapeHtml(initial)}
-          </div>
+          ${renderAvatar(initial, avatarLabel, profileHref)}
 
           <div class="article-comment__meta">
-            <h3>${escapeHtml(authorName)}</h3>
+            <h3>${renderAuthorName(authorName, profileHref)}</h3>
 
             ${comment.created_at ? `
               <time datetime="${escapeHtml(comment.created_at)}">

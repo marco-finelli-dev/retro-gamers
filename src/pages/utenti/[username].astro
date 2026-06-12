@@ -1,0 +1,118 @@
+---
+import '../../styles/pages/user-profile.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import UserAvatar from '../../components/account/UserAvatar.astro';
+import {
+  getCommentArticleHref,
+  getCommentExcerpt,
+  getPublicReaderProfile,
+  getPublicUserUrl,
+} from '../../lib/supabase/public-profiles';
+
+const username = String(Astro.params.username || '');
+const result = await getPublicReaderProfile(username);
+const profile = result.profile;
+const comments = result.comments;
+const isUnavailable = !profile;
+
+if (isUnavailable) {
+  Astro.response.status = 404;
+}
+
+const displayName = profile?.display_name || profile?.username || 'Lettore';
+const pageTitle = isUnavailable
+  ? 'Profilo non disponibile'
+  : `${displayName} | Profilo lettore`;
+const description = isUnavailable
+  ? 'Profilo lettore non disponibile su Retro-Gamers.it.'
+  : `Profilo pubblico di ${displayName} su Retro-Gamers.it.`;
+const languageSwitch = profile
+  ? getPublicUserUrl(profile.username, 'en')
+  : '/en/';
+const badge = profile?.user_badges;
+const badgeLabel = badge?.label_it || badge?.label_en || profile?.badge_key || '';
+const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
+const dateFormatter = new Intl.DateTimeFormat('it-IT', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={description}
+  languageSwitch={languageSwitch}
+  noindex={isUnavailable}
+>
+  <main class="public-user-page">
+    {isUnavailable ? (
+      <section class="public-user-panel public-user-panel--empty">
+        <p class="public-user-kicker">Profilo lettore</p>
+        <h1>Profilo non disponibile</h1>
+        <p>Questo profilo non esiste oppure non è pubblico.</p>
+        <a href="/">Torna alla home</a>
+      </section>
+    ) : (
+      <>
+        <section class="public-user-hero">
+          <UserAvatar
+            name={displayName}
+            size="lg"
+            label={`Avatar di ${displayName}`}
+            class="public-user-hero__avatar"
+          />
+
+          <div class="public-user-hero__content">
+            <p class="public-user-kicker">Profilo lettore</p>
+            <h1>{displayName}</h1>
+            <p class="public-user-username">@{profile.username}</p>
+
+            <div class="public-user-badges" aria-label="Badge e ruolo">
+              {badgeLabel && <span>{badgeLabel}</span>}
+              {isStaff && <span>Staff Retro-Gamers</span>}
+            </div>
+          </div>
+        </section>
+
+        <section class="public-user-stats" aria-label="Statistiche profilo">
+          <div>
+            <span>Commenti pubblicati</span>
+            <strong>{result.approvedCount}</strong>
+          </div>
+        </section>
+
+        <section class="public-user-panel" aria-labelledby="latest-comments-title">
+          <div class="public-user-section-heading">
+            <p class="public-user-kicker">Community</p>
+            <h2 id="latest-comments-title">Ultimi commenti</h2>
+          </div>
+
+          {comments.length > 0 ? (
+            <div class="public-user-comments">
+              {comments.map((comment) => (
+                <article class="public-user-comment">
+                  <p>{getCommentExcerpt(comment.body)}</p>
+
+                  <footer>
+                    <time datetime={comment.created_at || undefined}>
+                      {comment.created_at
+                        ? dateFormatter.format(new Date(comment.created_at))
+                        : 'Data non disponibile'}
+                    </time>
+
+                    <a href={getCommentArticleHref(comment)}>
+                      {comment.article_title || 'Apri articolo'}
+                    </a>
+                  </footer>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p class="public-user-empty">Questo lettore non ha ancora commenti pubblici.</p>
+          )}
+        </section>
+      </>
+    )}
+  </main>
+</BaseLayout>

@@ -440,6 +440,26 @@
   
     box-shadow: var(--rg-card-hover-shadow);
   }
+
+  .article-comment__avatar-link {
+    display: inline-flex;
+    flex: 0 0 46px;
+    border-radius: 50%;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .article-comment__avatar-link:hover .article-comment__avatar,
+  .article-comment__avatar-link:focus-visible .article-comment__avatar {
+    border-color: var(--rg-cta-border);
+    box-shadow:
+      var(--rg-card-hover-shadow),
+      0 0 0 3px rgba(34,240,255,0.12);
+  }
+
+  .article-comment__avatar-link:focus-visible {
+    outline: none;
+  }
   
   .article-comment h3 {
     margin: 0 0 4px;
@@ -447,6 +467,17 @@
     color: var(--color-white, #fff);
     font-size: 1.05rem;
     line-height: 1.2;
+  }
+
+  .article-comment__author-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .article-comment__author-link:hover,
+  .article-comment__author-link:focus-visible {
+    color: var(--rg-action-hover-color);
+    outline: none;
   }
   
   .article-comment time {

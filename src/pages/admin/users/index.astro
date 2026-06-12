@@ -87,6 +87,16 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
       return (match?.[0] || '?').toUpperCase();
     };
 
+    const getPublicProfileHref = (username) => {
+      const normalizedUsername = String(username || '').trim().toLowerCase();
+
+      if (!/^[a-z0-9_-]{3,24}$/.test(normalizedUsername)) {
+        return '';
+      }
+
+      return `/utenti/${encodeURIComponent(normalizedUsername)}/`;
+    };
+
     const roleLabels = {
       user: 'User',
       moderator: 'Moderator',
@@ -148,6 +158,7 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
       const comments = user.comments || { total: 0, pending: 0, approved: 0 };
       const avatarInitial = getUserInitial(user);
       const avatarLabel = `Avatar di ${user.displayName || user.username || user.email || 'utente'}`;
+      const publicProfileHref = getPublicProfileHref(user.username);
 
       return `
         <article class="admin-user-card" data-user-id="${escapeHtml(user.userId)}">
@@ -193,6 +204,7 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
           </div>
 
           <div class="admin-user-card__actions">
+            ${publicProfileHref ? `<a class="admin-user-card__profile-link" href="${escapeHtml(publicProfileHref)}">Vedi profilo</a>` : ''}
             ${user.isSelf ? '<span class="admin-user-card__notice">Il tuo account è protetto da modifiche dirette.</span>' : ''}
             ${actions || (!user.isSelf ? '<span class="admin-user-card__notice">Nessuna azione disponibile per il tuo ruolo.</span>' : '')}
           </div>
