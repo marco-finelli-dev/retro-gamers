@@ -59,7 +59,7 @@ function getInitials(name = '') {
 }
 
 function getBioExcerpt(blocks = []) {
-  const text = blocks
+  const text = (Array.isArray(blocks) ? blocks : [])
     .filter((block) => block?._type === 'block')
     .flatMap((block) => block.children?.map((child) => child.text || '') || [])
     .join(' ')
