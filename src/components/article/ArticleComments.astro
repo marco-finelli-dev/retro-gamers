@@ -235,7 +235,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       loginToReact: 'Accedi o registrati per votare un commento.',
       ownReactionError: 'Non puoi votare un tuo commento.',
       reactionError: 'Non è stato possibile aggiornare il voto. Riprova.',
-      avatarOf: 'Avatar di {name}'
+      avatarOf: 'Avatar di {name}',
+      directLink: 'Link diretto al commento'
     },
     en: {
       commentSingular: 'comment',
@@ -253,7 +254,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       loginToReact: 'Sign in or create an account to react to a comment.',
       ownReactionError: 'You cannot react to your own comment.',
       reactionError: 'The reaction could not be updated. Please try again.',
-      avatarOf: 'Avatar for {name}'
+      avatarOf: 'Avatar for {name}',
+      directLink: 'Direct link to comment'
     }
   };
 
@@ -325,6 +327,24 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     href
       ? `<a class="article-comment__author-link" href="${escapeHtml(href)}">${escapeHtml(authorName)}</a>`
       : escapeHtml(authorName);
+
+  const getCommentAnchorId = (comment) =>
+    comment?.id ? `comment-${String(comment.id)}` : '';
+
+  const renderCommentTime = (comment, language, labels) => {
+    if (!comment.created_at) return '';
+
+    const anchorId = getCommentAnchorId(comment);
+    const time = `
+      <time datetime="${escapeHtml(comment.created_at)}">
+        ${escapeHtml(formatCommentDate(comment.created_at, language))}
+      </time>
+    `;
+
+    return anchorId
+      ? `<a class="article-comment__permalink" href="#${escapeHtml(anchorId)}" aria-label="${escapeHtml(labels.directLink)}">${time}</a>`
+      : time;
+  };
 
   const readLegacyComments = (root) => {
     const node = root.querySelector('[data-legacy-comments]');
@@ -426,7 +446,10 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const profileHref = getProfileHref(profile, language, Boolean(reply.isLegacy));
 
     return `
-      <div class="article-comment__editor-reply">
+      <div
+        class="article-comment__editor-reply"
+        ${reply.id ? `id="${escapeHtml(getCommentAnchorId(reply))}" data-comment-id="${escapeHtml(reply.id)}"` : ''}
+      >
         <div class="article-comment__editor-reply-header">
           ${renderAvatar(initial, avatarLabel, profileHref)}
 
@@ -434,11 +457,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
             <strong>${renderAuthorName(authorName, profileHref)}</strong>
 
             <div class="article-comment__editor-reply-submeta">
-              ${reply.created_at ? `
-                <time datetime="${escapeHtml(reply.created_at)}">
-                  ${escapeHtml(formatCommentDate(reply.created_at, language))}
-                </time>
-              ` : ''}
+              ${renderCommentTime(reply, language, labels)}
 
               ${renderBadge(badgeLabel)}
             </div>
@@ -464,18 +483,17 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const highlightedClass = comment.isHighlighted ? ' article-comment--highlighted' : '';
 
     return `
-      <article class="article-comment${highlightedClass}" data-comment-id="${escapeHtml(comment.id)}">
+      <article
+        class="article-comment${highlightedClass}"
+        ${comment.id ? `id="${escapeHtml(getCommentAnchorId(comment))}" data-comment-id="${escapeHtml(comment.id)}"` : ''}
+      >
         <header class="article-comment__header">
           ${renderAvatar(initial, avatarLabel, profileHref)}
 
           <div class="article-comment__meta">
             <h3>${renderAuthorName(authorName, profileHref)}</h3>
 
-            ${comment.created_at ? `
-              <time datetime="${escapeHtml(comment.created_at)}">
-                ${escapeHtml(formatCommentDate(comment.created_at, language))}
-              </time>
-            ` : ''}
+            ${renderCommentTime(comment, language, labels)}
 
             ${renderBadge(badgeLabel)}
           </div>
@@ -736,7 +754,11 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         if (replyingTo) replyingTo.hidden = true;
         if (composer) composer.open = false;
 
-        setStatus(labels.sent, 'ok');
+        setStatus(result.message || labels.sent, 'ok');
+
+        if (result.comment?.status === 'approved') {
+          await loadComments();
+        }
       } catch {
         setStatus(labels.error, 'error');
       } finally {

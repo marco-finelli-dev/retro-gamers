@@ -1,8 +1,14 @@
 import type { APIRoute } from 'astro';
 import { supabasePublic, supabaseAdmin } from '../../../lib/supabase/server';
-import { isBlockedProfileStatus } from '../../../lib/supabase/auth';
-import { sendNewCommentAdminEmail } from '../../../lib/supabase/comment-emails';
-import { createUnsubscribeToken } from '../../../lib/supabase/comment-subscriptions';
+import { isBlockedProfileStatus, isStaffProfile } from '../../../lib/supabase/auth';
+import {
+  sendNewCommentAdminEmail,
+  sendReplyApprovedEmail,
+} from '../../../lib/supabase/comment-emails';
+import {
+  buildUnsubscribeUrl,
+  createUnsubscribeToken,
+} from '../../../lib/supabase/comment-subscriptions';
 
 type CreateCommentPayload = {
   articleSlug?: string;
@@ -38,6 +44,86 @@ const normalizeUrl = (value: string) => {
   }
 };
 
+async function getAuthUserEmail(userId?: string | null) {
+  if (!userId) return null;
+
+  const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+  if (error) {
+    return null;
+  }
+
+  return data.user?.email ?? null;
+}
+
+async function notifyParentAuthorAboutApprovedReply(comment: {
+  id: string;
+  user_id?: string | null;
+  parent_id?: string | null;
+  article_title?: string | null;
+  article_url?: string | null;
+  article_language?: 'it' | 'en' | string | null;
+}) {
+  if (!comment.parent_id) {
+    return;
+  }
+
+  const { data: parentComment, error: parentError } = await supabaseAdmin
+    .from('comments')
+    .select('id, user_id, article_title, article_url, article_language')
+    .eq('id', comment.parent_id)
+    .maybeSingle();
+
+  if (parentError || !parentComment?.user_id) {
+    return;
+  }
+
+  if (parentComment.user_id === comment.user_id) {
+    return;
+  }
+
+  const { data: subscription, error: subscriptionError } = await supabaseAdmin
+    .from('comment_subscriptions')
+    .select('id, unsubscribe_token')
+    .eq('user_id', parentComment.user_id)
+    .eq('comment_id', parentComment.id)
+    .eq('type', 'replies_to_comment')
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (subscriptionError || !subscription) {
+    return;
+  }
+
+  const parentEmail = await getAuthUserEmail(parentComment.user_id);
+  let unsubscribeToken = subscription.unsubscribe_token;
+
+  if (!unsubscribeToken) {
+    const nextUnsubscribeToken = createUnsubscribeToken();
+
+    const { error: tokenError } = await supabaseAdmin
+      .from('comment_subscriptions')
+      .update({ unsubscribe_token: nextUnsubscribeToken })
+      .eq('id', subscription.id);
+
+    unsubscribeToken = tokenError ? null : nextUnsubscribeToken;
+  }
+
+  try {
+    await sendReplyApprovedEmail({
+      to: parentEmail,
+      userId: parentComment.user_id,
+      commentId: comment.id,
+      articleTitle: parentComment.article_title || comment.article_title || 'Retro-Gamers.it',
+      articleUrl: parentComment.article_url || comment.article_url || '/',
+      language: parentComment.article_language === 'en' ? 'en' : 'it',
+      unsubscribeUrl: unsubscribeToken ? buildUnsubscribeUrl(unsubscribeToken) : null,
+    });
+  } catch (error) {
+    console.error('Staff reply notification email failed:', error);
+  }
+}
+
 export const POST: APIRoute = async ({ request, cookies }) => {
   const token = cookies.get('rg_access_token')?.value;
 
@@ -55,7 +141,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select('id, user_id, username, display_name, status')
+    .select('id, user_id, username, display_name, role, status')
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -70,6 +156,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (isBlockedProfileStatus(profile.status)) {
     return json({ ok: false, error: 'Account bloccato.' }, 403);
   }
+
+  const isStaff = isStaffProfile(profile);
 
   let payload: CreateCommentPayload;
 
@@ -127,23 +215,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }, 429);
   }
 
-  const pendingThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  const { count: pendingCount, error: pendingCountError } = await supabaseAdmin
-    .from('comments')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('status', 'pending')
-    .gte('created_at', pendingThreshold);
+  if (!isStaff) {
+    const pendingThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { count: pendingCount, error: pendingCountError } = await supabaseAdmin
+      .from('comments')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .gte('created_at', pendingThreshold);
 
-  if (pendingCountError) {
-    return json({ ok: false, error: pendingCountError.message }, 500);
-  }
+    if (pendingCountError) {
+      return json({ ok: false, error: pendingCountError.message }, 500);
+    }
 
-  if ((pendingCount ?? 0) >= 5) {
-    return json({
-      ok: false,
-      error: 'Hai già diversi commenti in moderazione. Attendi la revisione prima di inviarne altri.',
-    }, 429);
+    if ((pendingCount ?? 0) >= 5) {
+      return json({
+        ok: false,
+        error: 'Hai già diversi commenti in moderazione. Attendi la revisione prima di inviarne altri.',
+      }, 429);
+    }
   }
 
   if (parentId) {
@@ -173,20 +263,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
   }
 
+  const nextStatus = isStaff ? 'approved' : 'pending';
+  const publishedMessage = articleLanguage === 'en' ? 'Comment published.' : 'Commento pubblicato.';
+  const pendingMessage = articleLanguage === 'en'
+    ? 'Comment sent. It will appear after moderation.'
+    : 'Commento inviato. Sarà visibile dopo la moderazione.';
+
+  const insertPayload: Record<string, unknown> = {
+    article_slug: articleSlug,
+    article_language: articleLanguage,
+    article_title: articleTitle,
+    article_url: articleUrl,
+    user_id: user.id,
+    profile_id: profile.id,
+    parent_id: parentId,
+    body,
+    status: nextStatus,
+  };
+
+  if (isStaff) {
+    insertPayload.approved_at = new Date().toISOString();
+    insertPayload.approved_by = user.id;
+  }
+
   const { data: comment, error: insertError } = await supabaseAdmin
     .from('comments')
-    .insert({
-      article_slug: articleSlug,
-      article_language: articleLanguage,
-      article_title: articleTitle,
-      article_url: articleUrl,
-      user_id: user.id,
-      profile_id: profile.id,
-      parent_id: parentId,
-      body,
-      status: 'pending',
-    })
-    .select('id, status, created_at')
+    .insert(insertPayload)
+    .select('id, user_id, parent_id, status, created_at, article_title, article_url, article_language')
     .single();
 
   if (insertError) {
@@ -230,10 +333,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return json({
         ok: true,
         warning: subscriptionError.message,
-        message: 'Commento inviato, ma non è stato possibile salvare le preferenze di notifica.',
+        message: isStaff
+          ? `${publishedMessage} Non è stato possibile salvare le preferenze di notifica.`
+          : 'Commento inviato, ma non è stato possibile salvare le preferenze di notifica.',
         comment,
       });
     }
+  }
+
+  if (isStaff) {
+    await notifyParentAuthorAboutApprovedReply(comment);
+
+    return json({
+      ok: true,
+      message: publishedMessage,
+      comment,
+    });
   }
 
   try {
@@ -249,14 +364,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({
       ok: true,
       warning: 'Commento inviato, ma la notifica email alla redazione non è partita.',
-      message: 'Commento inviato. Sarà visibile dopo l’approvazione della redazione.',
+      message: pendingMessage,
       comment,
     });
   }
 
   return json({
     ok: true,
-    message: 'Commento inviato. Sarà visibile dopo l’approvazione della redazione.',
+    message: pendingMessage,
     comment,
   });
 };

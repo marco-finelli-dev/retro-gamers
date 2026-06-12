@@ -47,8 +47,10 @@ export const getPublicUserUrl = (username: string, lang: 'it' | 'en' = 'it') => 
 };
 
 export const getCommentArticleHref = (comment: PublicReaderComment) => {
+  const anchor = comment.id ? `comment-${String(comment.id)}` : 'comments';
+
   if (comment.article_url) {
-    return `${comment.article_url}#comments`;
+    return `${comment.article_url.split('#')[0]}#${anchor}`;
   }
 
   if (!comment.article_slug) {
@@ -56,8 +58,8 @@ export const getCommentArticleHref = (comment: PublicReaderComment) => {
   }
 
   return comment.article_language === 'en'
-    ? `/en/articles/${comment.article_slug}/#comments`
-    : `/articoli/${comment.article_slug}/#comments`;
+    ? `/en/articles/${comment.article_slug}/#${anchor}`
+    : `/articoli/${comment.article_slug}/#${anchor}`;
 };
 
 export const getCommentExcerpt = (body: string | null, maxLength = 180) => {
