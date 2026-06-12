@@ -135,16 +135,6 @@ if (isLoggedIn && user?.id) {
           </div>
 
           <section class="account-avatar-section" aria-labelledby="account-avatar-title">
-            <div class="account-avatar-section__preview">
-              <UserAvatar
-                name={accountDisplayName}
-                email={user?.email}
-                src={avatarUrl}
-                size="lg"
-                label={`Avatar di ${accountDisplayName}`}
-              />
-            </div>
-
             <div class="account-avatar-section__content">
               <p class="account-kicker">Community</p>
               <h2 id="account-avatar-title">Avatar</h2>
@@ -365,10 +355,8 @@ if (isLoggedIn && user?.id) {
     const avatarDropzone = document.querySelector('[data-account-avatar-dropzone]');
     const avatarDropzoneLabel = document.querySelector('[data-account-avatar-dropzone-label]');
     const avatarFilename = document.querySelector('[data-account-avatar-filename]');
-    const avatarPreview = document.querySelector('.account-avatar-section__preview .user-avatar');
     const logoutButton = document.querySelector('[data-account-logout]');
     const avatarDefaultDropzoneText = avatarDropzoneLabel?.textContent?.trim() || '';
-    let avatarPreviewUrl = '';
     let selectedAvatarFile = null;
 
     const showMessage = (target, text, type = 'ok') => {
@@ -401,31 +389,6 @@ if (isLoggedIn && user?.id) {
       avatarFilename.hidden = false;
     };
 
-    const updateAvatarPreview = (file) => {
-      if (!avatarPreview || !file) return;
-
-      if (avatarPreviewUrl) {
-        URL.revokeObjectURL(avatarPreviewUrl);
-      }
-
-      avatarPreviewUrl = URL.createObjectURL(file);
-      let image = avatarPreview.querySelector('img');
-
-      if (!image) {
-        image = document.createElement('img');
-        image.alt = '';
-        image.loading = 'lazy';
-        image.decoding = 'async';
-        image.onerror = () => {
-          image.hidden = true;
-        };
-        avatarPreview.append(image);
-      }
-
-      image.hidden = false;
-      image.src = avatarPreviewUrl;
-    };
-
     const handleAvatarFile = (file) => {
       selectedAvatarFile = null;
       updateAvatarFilename(file);
@@ -446,7 +409,6 @@ if (isLoggedIn && user?.id) {
 
       selectedAvatarFile = file;
       if (avatarMessage) avatarMessage.hidden = true;
-      updateAvatarPreview(file);
     };
 
     avatarInput?.addEventListener('change', () => {
