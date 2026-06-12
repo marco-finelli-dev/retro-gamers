@@ -667,6 +667,14 @@
     line-height: 1.35;
     vertical-align: middle;
   }
+
+  .article-comment__reaction-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    margin-top: 14px;
+  }
   
   .article-comment__reactions {
     display: inline-flex;
@@ -785,10 +793,45 @@
     opacity: 0.55;
     transform: none;
   }
+
+  .comment-reaction.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.54;
+    transform: none;
+  }
+
+  .comment-reaction.is-disabled:hover {
+    border-color: var(--rg-badge-border);
+    background:
+      linear-gradient(135deg, rgba(34,240,255,0.08), rgba(168,85,247,0.035)),
+      rgba(4, 8, 16, 0.42);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
   
   .comment-reaction span {
     min-width: 1ch;
     color: currentColor;
+  }
+
+  .article-comment__reaction-controls .comment-reaction {
+    width: auto;
+    min-width: auto;
+    height: 34px;
+    padding: 0 12px;
+
+    font-size: 0.76rem;
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
+
+  .comment-reaction__label {
+    min-width: 0;
+  }
+
+  .comment-reaction__count {
+    min-width: 1.5ch;
+    text-align: right;
   }
   
   /* ========================================
@@ -874,6 +917,15 @@
     .comment-reaction::before {
       width: 17px;
       height: 17px;
+    }
+
+    .article-comment__reaction-controls {
+      gap: 8px;
+    }
+
+    .article-comment__reaction-controls .comment-reaction {
+      flex: 1 1 132px;
+      width: auto;
     }
   
     .article-comment__reader-replies,
@@ -1100,4 +1152,18 @@ html[data-theme="light"] .comment-reaction.is-active {
   box-shadow:
     0 8px 18px rgba(24,32,48,0.14),
     inset 0 1px 0 rgba(255,255,255,0.82);
+}
+
+html[data-theme="light"] .comment-reaction.is-disabled:hover {
+  border-color: var(--rg-badge-border);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(0,142,163,0.08),
+      rgba(0,142,163,0.035)
+    ),
+    rgba(255,255,255,0.58);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.72),
+    0 0 14px rgba(0,142,163,0.06);
 }

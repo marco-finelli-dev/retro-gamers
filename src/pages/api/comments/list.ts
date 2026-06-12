@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabaseAdmin } from '../../../lib/supabase/server';
+import { supabaseAdmin, supabasePublic } from '../../../lib/supabase/server';
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -9,7 +9,19 @@ const json = (payload: unknown, status = 200) =>
     },
   });
 
-export const GET: APIRoute = async ({ url }) => {
+type CommentReactionSummary = {
+  likeCount: number;
+  dislikeCount: number;
+  userReaction: 'like' | 'dislike' | null;
+};
+
+const emptyReactionSummary = (): CommentReactionSummary => ({
+  likeCount: 0,
+  dislikeCount: 0,
+  userReaction: null,
+});
+
+export const GET: APIRoute = async ({ url, cookies }) => {
   const articleSlug = url.searchParams.get('articleSlug')?.trim() ?? '';
   const articleLanguage = url.searchParams.get('articleLanguage') === 'en' ? 'en' : 'it';
 
@@ -28,6 +40,7 @@ export const GET: APIRoute = async ({ url }) => {
       parent_id,
       body,
       status,
+      user_id,
       created_at,
       profiles:profile_id (
         id,
@@ -53,13 +66,64 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   const comments = data ?? [];
+  const commentIds = comments.map((comment) => comment.id).filter(Boolean);
+  const reactionSummaries = new Map<string, CommentReactionSummary>();
+
+  let currentUserId: string | null = null;
+  const token = cookies.get('rg_access_token')?.value ?? '';
+
+  if (token) {
+    const { data: userData } = await supabasePublic.auth.getUser(token);
+    currentUserId = userData.user?.id ?? null;
+  }
+
+  if (commentIds.length > 0) {
+    const { data: reactionRows, error: reactionError } = await supabaseAdmin
+      .from('comment_reactions')
+      .select('comment_id, user_id, reaction')
+      .in('comment_id', commentIds);
+
+    if (!reactionError) {
+      for (const row of reactionRows ?? []) {
+        const commentId = String(row.comment_id || '');
+        const summary = reactionSummaries.get(commentId) ?? emptyReactionSummary();
+
+        if (row.reaction === 'like') {
+          summary.likeCount += 1;
+        }
+
+        if (row.reaction === 'dislike') {
+          summary.dislikeCount += 1;
+        }
+
+        if (currentUserId && row.user_id === currentUserId) {
+          summary.userReaction = row.reaction === 'dislike' ? 'dislike' : 'like';
+        }
+
+        reactionSummaries.set(commentId, summary);
+      }
+    }
+  }
 
   const roots = comments.filter((comment) => !comment.parent_id);
   const replies = comments.filter((comment) => comment.parent_id);
+  const withReactionSummary = (comment: (typeof comments)[number]) => {
+    const { user_id: userId, ...publicComment } = comment;
+    const isOwnComment = Boolean(currentUserId && userId === currentUserId);
+
+    return {
+      ...publicComment,
+      ...(reactionSummaries.get(comment.id) ?? emptyReactionSummary()),
+      isOwnComment,
+      canReact: Boolean(currentUserId && !isOwnComment),
+    };
+  };
 
   const threadedComments = roots.map((comment) => ({
-    ...comment,
-    replies: replies.filter((reply) => reply.parent_id === comment.id),
+    ...withReactionSummary(comment),
+    replies: replies
+      .filter((reply) => reply.parent_id === comment.id)
+      .map(withReactionSummary),
   }));
 
   return json({

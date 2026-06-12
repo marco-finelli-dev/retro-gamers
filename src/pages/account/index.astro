@@ -20,6 +20,55 @@ const { data: badges } = isLoggedIn
 const profile = session.profile;
 const user = session.user;
 const currentBadge = profile?.user_badges;
+
+const commentActivity = {
+  approved: 0,
+  pending: 0,
+  likesReceived: 0,
+  dislikesReceived: 0,
+};
+
+if (isLoggedIn && user?.id) {
+  const { data: userComments, error: userCommentsError } = await supabaseAdmin
+    .from('comments')
+    .select('id, status')
+    .eq('user_id', user.id);
+
+  if (!userCommentsError) {
+    const commentIds = (userComments ?? [])
+      .map((comment) => comment.id)
+      .filter(Boolean);
+
+    for (const comment of userComments ?? []) {
+      if (comment.status === 'approved') {
+        commentActivity.approved += 1;
+      }
+
+      if (comment.status === 'pending') {
+        commentActivity.pending += 1;
+      }
+    }
+
+    if (commentIds.length > 0) {
+      const { data: receivedReactions, error: reactionsError } = await supabaseAdmin
+        .from('comment_reactions')
+        .select('reaction')
+        .in('comment_id', commentIds);
+
+      if (!reactionsError) {
+        for (const reaction of receivedReactions ?? []) {
+          if (reaction.reaction === 'like') {
+            commentActivity.likesReceived += 1;
+          }
+
+          if (reaction.reaction === 'dislike') {
+            commentActivity.dislikesReceived += 1;
+          }
+        }
+      }
+    }
+  }
+}
 ---
 
 <BaseLayout title={title} description={description}>
@@ -59,6 +108,30 @@ const currentBadge = profile?.user_badges;
             <div>
               <span>Badge attuale</span>
               <strong>{currentBadge?.label_it || profile?.badge_key || 'Non impostato'}</strong>
+            </div>
+          </div>
+
+          <h2 class="account-section-title">Le tue memorie</h2>
+
+          <div class="account-summary account-summary--memories">
+            <div>
+              <span>Commenti pubblicati</span>
+              <strong>{commentActivity.approved}</strong>
+            </div>
+
+            <div>
+              <span>In attesa di moderazione</span>
+              <strong>{commentActivity.pending}</strong>
+            </div>
+
+            <div>
+              <span>Like ricevuti</span>
+              <strong>{commentActivity.likesReceived}</strong>
+            </div>
+
+            <div>
+              <span>Dislike ricevuti</span>
+              <strong>{commentActivity.dislikesReceived}</strong>
             </div>
           </div>
 

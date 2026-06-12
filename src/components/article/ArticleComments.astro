@@ -41,7 +41,12 @@ const labels = {
     sent: 'Commento inviato. Sarà visibile dopo l’approvazione.',
     error: 'Qualcosa è andato storto. Riprova.',
     reader: 'Lettore',
-    legacyBadge: 'Archivio'
+    legacyBadge: 'Archivio',
+    like: 'Mi piace',
+    dislike: 'Non mi piace',
+    loginToReact: 'Accedi o registrati per votare un commento.',
+    ownReactionError: 'Non puoi votare un tuo commento.',
+    reactionError: 'Non è stato possibile aggiornare il voto. Riprova.'
   },
   en: {
     title: 'Reader Memories',
@@ -69,7 +74,12 @@ const labels = {
     sent: 'Comment submitted. It will appear after approval.',
     error: 'Something went wrong. Please try again.',
     reader: 'Reader',
-    legacyBadge: 'Archive'
+    legacyBadge: 'Archive',
+    like: 'Like',
+    dislike: 'Dislike',
+    loginToReact: 'Sign in or create an account to react to a comment.',
+    ownReactionError: 'You cannot react to your own comment.',
+    reactionError: 'The reaction could not be updated. Please try again.'
   }
 };
 
@@ -212,7 +222,12 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       loggedAs: 'Stai commentando come',
       reply: 'Rispondi',
       replyTo: 'Risposta a',
-      reader: 'Lettore'
+      reader: 'Lettore',
+      like: 'Mi piace',
+      dislike: 'Non mi piace',
+      loginToReact: 'Accedi o registrati per votare un commento.',
+      ownReactionError: 'Non puoi votare un tuo commento.',
+      reactionError: 'Non è stato possibile aggiornare il voto. Riprova.'
     },
     en: {
       commentSingular: 'comment',
@@ -224,7 +239,12 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       loggedAs: 'You are commenting as',
       reply: 'Reply',
       replyTo: 'Reply to',
-      reader: 'Reader'
+      reader: 'Reader',
+      like: 'Like',
+      dislike: 'Dislike',
+      loginToReact: 'Sign in or create an account to react to a comment.',
+      ownReactionError: 'You cannot react to your own comment.',
+      reactionError: 'The reaction could not be updated. Please try again.'
     }
   };
 
@@ -300,9 +320,59 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
   const renderCommentBody = (body) =>
     `<p>${escapeHtml(body).replaceAll('\n', '<br>')}</p>`;
 
-  const renderReply = (reply, language, fallbackName) => {
+  const getReactionCount = (comment, key) => {
+    const value = Number(comment?.[key] || 0);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  };
+
+  const renderReactionControls = (comment, labels) => {
+    if (comment.isLegacy || !comment.id) return '';
+
+    const likeCount = getReactionCount(comment, 'likeCount');
+    const dislikeCount = getReactionCount(comment, 'dislikeCount');
+    const isOwnComment = Boolean(comment.isOwnComment);
+    const userReaction = comment.userReaction === 'dislike'
+      ? 'dislike'
+      : comment.userReaction === 'like'
+        ? 'like'
+        : '';
+
+    return `
+      <div class="article-comment__reaction-controls" data-comment-reactions="${escapeHtml(comment.id)}">
+        <button
+          class="comment-reaction comment-reaction--like${userReaction === 'like' ? ' is-active' : ''}${isOwnComment ? ' is-disabled' : ''}"
+          type="button"
+          data-comment-id="${escapeHtml(comment.id)}"
+          data-comment-reaction="like"
+          data-own-comment="${isOwnComment ? 'true' : 'false'}"
+          aria-pressed="${userReaction === 'like' ? 'true' : 'false'}"
+          aria-disabled="${isOwnComment ? 'true' : 'false'}"
+          title="${isOwnComment ? escapeHtml(labels.ownReactionError) : ''}"
+        >
+          <span class="comment-reaction__label">${escapeHtml(labels.like)}</span>
+          <span class="comment-reaction__count" data-reaction-count>${likeCount}</span>
+        </button>
+
+        <button
+          class="comment-reaction comment-reaction--dislike${userReaction === 'dislike' ? ' is-active' : ''}${isOwnComment ? ' is-disabled' : ''}"
+          type="button"
+          data-comment-id="${escapeHtml(comment.id)}"
+          data-comment-reaction="dislike"
+          data-own-comment="${isOwnComment ? 'true' : 'false'}"
+          aria-pressed="${userReaction === 'dislike' ? 'true' : 'false'}"
+          aria-disabled="${isOwnComment ? 'true' : 'false'}"
+          title="${isOwnComment ? escapeHtml(labels.ownReactionError) : ''}"
+        >
+          <span class="comment-reaction__label">${escapeHtml(labels.dislike)}</span>
+          <span class="comment-reaction__count" data-reaction-count>${dislikeCount}</span>
+        </button>
+      </div>
+    `;
+  };
+
+  const renderReply = (reply, language, labels) => {
     const profile = reply.profiles || {};
-    const authorName = getAuthorName(profile, fallbackName);
+    const authorName = getAuthorName(profile, labels.reader);
     const badgeLabel = getBadgeLabel(profile, language);
     const initial = authorName.charAt(0).toUpperCase();
 
@@ -329,6 +399,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         </div>
 
         ${renderCommentBody(reply.body)}
+
+        ${renderReactionControls(reply, labels)}
       </div>
     `;
   };
@@ -377,9 +449,11 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
         ${renderCommentBody(comment.body)}
 
+        ${renderReactionControls(comment, labels)}
+
         ${replies.length > 0 ? `
           <div class="article-comment__editor-replies">
-            ${replies.map((reply) => renderReply(reply, language, labels.reader)).join('')}
+            ${replies.map((reply) => renderReply(reply, language, labels)).join('')}
           </div>
         ` : ''}
       </article>
@@ -440,6 +514,89 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       listNode.innerHTML = mergedComments
         .map((comment) => renderComment(comment, articleLanguage, labels, Boolean(currentProfile)))
         .join('');
+    };
+
+    const updateReactionGroup = (group, userReaction, likeCount, dislikeCount) => {
+      if (!group) return;
+
+      group.querySelectorAll('[data-comment-reaction]').forEach((reactionButton) => {
+        const reaction = reactionButton.dataset.commentReaction;
+        const isActive = reaction === userReaction;
+        const count = reaction === 'dislike' ? dislikeCount : likeCount;
+        const countNode = reactionButton.querySelector('[data-reaction-count]');
+
+        reactionButton.classList.toggle('is-active', isActive);
+        reactionButton.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+
+        if (countNode) {
+          countNode.textContent = String(Number(count || 0));
+        }
+      });
+    };
+
+    const handleReaction = async (button) => {
+      if (!currentProfile) {
+        setStatus(labels.loginToReact, 'error');
+        return;
+      }
+
+      if (button.dataset.ownComment === 'true') {
+        setStatus(labels.ownReactionError, 'error');
+        return;
+      }
+
+      const commentId = button.dataset.commentId || '';
+      const reaction = button.dataset.commentReaction || '';
+
+      if (!commentId || (reaction !== 'like' && reaction !== 'dislike')) return;
+
+      const group = button.closest('[data-comment-reactions]');
+      const buttons = group
+        ? Array.from(group.querySelectorAll('[data-comment-reaction]'))
+        : [button];
+
+      buttons.forEach((reactionButton) => {
+        reactionButton.disabled = true;
+      });
+
+      setStatus('');
+
+      try {
+        const response = await fetch('/api/comments/reaction', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            commentId,
+            reaction
+          })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          setStatus(
+            result.code === 'own_comment'
+              ? labels.ownReactionError
+              : result.error || labels.reactionError,
+            'error'
+          );
+          return;
+        }
+
+        updateReactionGroup(
+          group,
+          result.userReaction || null,
+          result.likeCount,
+          result.dislikeCount
+        );
+      } catch {
+        setStatus(labels.reactionError, 'error');
+      } finally {
+        buttons.forEach((reactionButton) => {
+          reactionButton.disabled = false;
+        });
+      }
     };
 
     const loadCurrentUser = async () => {
@@ -542,6 +699,15 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
     listNode?.addEventListener('click', (event) => {
       const target = event.target;
+      const reactionButton = target instanceof Element
+        ? target.closest('[data-comment-reaction]')
+        : null;
+
+      if (reactionButton) {
+        handleReaction(reactionButton);
+        return;
+      }
+
       const button = target instanceof Element
         ? target.closest('[data-reply-to-comment]')
         : null;
