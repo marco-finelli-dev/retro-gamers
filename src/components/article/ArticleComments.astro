@@ -400,6 +400,9 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const likeCount = getReactionCount(comment, 'likeCount');
     const dislikeCount = getReactionCount(comment, 'dislikeCount');
     const isOwnComment = Boolean(comment.isOwnComment);
+
+    if (isOwnComment) return '';
+
     const userReaction = comment.userReaction === 'dislike'
       ? 'dislike'
       : comment.userReaction === 'like'
@@ -409,30 +412,28 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     return `
       <div class="article-comment__reaction-controls" data-comment-reactions="${escapeHtml(comment.id)}">
         <button
-          class="comment-reaction comment-reaction--like${userReaction === 'like' ? ' is-active' : ''}${isOwnComment ? ' is-disabled' : ''}"
+          class="comment-reaction comment-reaction--like${userReaction === 'like' ? ' is-active' : ''}"
           type="button"
           data-comment-id="${escapeHtml(comment.id)}"
           data-comment-reaction="like"
-          data-own-comment="${isOwnComment ? 'true' : 'false'}"
+          data-own-comment="false"
           aria-pressed="${userReaction === 'like' ? 'true' : 'false'}"
-          aria-disabled="${isOwnComment ? 'true' : 'false'}"
-          title="${isOwnComment ? escapeHtml(labels.ownReactionError) : ''}"
+          aria-label="${escapeHtml(labels.like)}"
+          title="${escapeHtml(labels.like)}"
         >
-          <span class="comment-reaction__label">${escapeHtml(labels.like)}</span>
           <span class="comment-reaction__count" data-reaction-count>${likeCount}</span>
         </button>
 
         <button
-          class="comment-reaction comment-reaction--dislike${userReaction === 'dislike' ? ' is-active' : ''}${isOwnComment ? ' is-disabled' : ''}"
+          class="comment-reaction comment-reaction--dislike${userReaction === 'dislike' ? ' is-active' : ''}"
           type="button"
           data-comment-id="${escapeHtml(comment.id)}"
           data-comment-reaction="dislike"
-          data-own-comment="${isOwnComment ? 'true' : 'false'}"
+          data-own-comment="false"
           aria-pressed="${userReaction === 'dislike' ? 'true' : 'false'}"
-          aria-disabled="${isOwnComment ? 'true' : 'false'}"
-          title="${isOwnComment ? escapeHtml(labels.ownReactionError) : ''}"
+          aria-label="${escapeHtml(labels.dislike)}"
+          title="${escapeHtml(labels.dislike)}"
         >
-          <span class="comment-reaction__label">${escapeHtml(labels.dislike)}</span>
           <span class="comment-reaction__count" data-reaction-count>${dislikeCount}</span>
         </button>
       </div>
