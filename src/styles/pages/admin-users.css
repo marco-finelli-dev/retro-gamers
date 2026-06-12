@@ -288,6 +288,116 @@ html[data-theme="light"] .admin-user-card__avatar {
   font-size: 1.35rem;
 }
 
+.admin-user-card__badges {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--rg-card-bg) 74%, transparent);
+}
+
+.admin-user-card__badges-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-user-card__badges h3 {
+  margin: 0 0 4px;
+  color: var(--rg-section-title-color);
+  font-size: 0.98rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-user-card__badges p {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+  font-weight: 760;
+}
+
+.admin-user-card__badge-list,
+.admin-user-card__badge-assign {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  padding: 5px 7px 5px 13px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.admin-user-badge.is-current {
+  border-color: var(--rg-cta-border);
+  background:
+    linear-gradient(135deg, rgba(34,240,255,0.14), rgba(168,85,247,0.08)),
+    var(--rg-badge-bg);
+}
+
+.admin-user-badge button,
+.admin-user-card__badge-assign button {
+  min-height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0 11px;
+  background: var(--color-glass);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-user-card__badge-assign select {
+  min-height: 40px;
+  min-width: min(100%, 220px);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0 12px;
+  background: var(--color-glass);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.admin-user-card__badge-assign button {
+  min-height: 40px;
+  border-color: var(--rg-cta-border);
+  padding: 0 15px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+}
+
+.admin-user-badge button:hover,
+.admin-user-badge button:focus-visible,
+.admin-user-card__badge-assign button:hover,
+.admin-user-card__badge-assign button:focus-visible {
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.admin-user-badge button:disabled,
+.admin-user-card__badge-assign button:disabled,
+.admin-user-card__badge-assign select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .admin-user-card__actions {
   display: flex;
   flex-wrap: wrap;
@@ -373,6 +483,16 @@ html[data-theme="light"] .admin-user-card__avatar {
 
   .admin-user-card h2 {
     white-space: normal;
+  }
+
+  .admin-user-card__badge-assign {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-user-card__badge-assign select,
+  .admin-user-card__badge-assign button {
+    width: 100%;
   }
 
   .admin-user-card__actions button {

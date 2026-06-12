@@ -2,7 +2,7 @@
 import '../../styles/pages/account.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import UserAvatar from '../../components/account/UserAvatar.astro';
-import { getActiveReaderBadges } from '../../lib/badges';
+import { getOwnedReaderBadges } from '../../lib/badges';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserProfileFromToken } from '../../lib/supabase/auth';
 import { supabaseAdmin } from '../../lib/supabase/server';
@@ -12,11 +12,9 @@ const description = 'Gestisci il tuo profilo lettore, il nome visualizzato e il 
 const token = Astro.cookies.get('rg_access_token')?.value ?? '';
 const session = await getUserProfileFromToken(token);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
-
-const badges = isLoggedIn ? await getActiveReaderBadges() : [];
-
 const profile = session.profile;
 const user = session.user;
+const badges = isLoggedIn ? await getOwnedReaderBadges(user?.id) : [];
 const currentBadge = profile?.user_badges;
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const accountDisplayName =
@@ -253,7 +251,9 @@ if (isLoggedIn && user?.id) {
             <label>
               <span>Badge lettore</span>
               <select name="badgeKey" required>
-                <option value="">Scegli un badge</option>
+                <option value="">
+                  {badges.length > 0 ? 'Scegli un badge' : 'Nessun badge assegnato'}
+                </option>
                 {badges.map((badge) => (
                   <option value={badge.key} selected={badge.key === profile?.badge_key}>
                     {badge.label_it || badge.label_en || badge.key}

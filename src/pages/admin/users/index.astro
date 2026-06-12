@@ -51,6 +51,8 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
     const resetButton = document.querySelector('[data-admin-users-reset]');
 
     let viewerRole = 'moderator';
+    let availableBadges = [];
+    let badgeManagementAvailable = false;
 
     const escapeHtml = (value) =>
       String(value || '')
@@ -109,6 +111,9 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
       banned: 'Bannato'
     };
 
+    const getBadgeLabel = (badge) =>
+      badge?.labelIt || badge?.labelEn || badge?.key || 'Badge';
+
     const getFilterParams = () => {
       const params = new URLSearchParams();
 
@@ -143,6 +148,74 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
         ${user.status !== 'active' ? '<button type="button" data-status="active">Riattiva</button>' : ''}
         ${user.status !== 'suspended' ? '<button type="button" data-status="suspended" data-confirm="Sospendere questo utente?">Sospendi</button>' : ''}
         ${user.status !== 'banned' ? '<button type="button" data-status="banned" data-confirm="Bannare questo utente?">Banna</button>' : ''}
+      `;
+    };
+
+    const renderBadgeManagement = (user) => {
+      const assignedBadges = user.assignedBadges || [];
+      const assignedKeys = new Set(assignedBadges.map((badge) => badge.key));
+      const assignableBadges = availableBadges.filter((badge) => !assignedKeys.has(badge.key));
+      const currentBadgeLabel = user.currentBadge
+        ? getBadgeLabel(user.currentBadge)
+        : user.currentBadgeKey || 'Non impostato';
+      const assignedMarkup = assignedBadges.length > 0
+        ? assignedBadges.map((badge) => {
+            const isCurrent = badge.key === user.currentBadgeKey;
+
+            return `
+              <span class="admin-user-badge${isCurrent ? ' is-current' : ''}">
+                <span>${escapeHtml(getBadgeLabel(badge))}${isCurrent ? ' · attivo' : ''}</span>
+                ${user.canManageBadges ? `
+                  <button
+                    type="button"
+                    data-badge-action="remove"
+                    data-badge-key="${escapeHtml(badge.key)}"
+                    data-confirm="Rimuovere questo badge dall’utente?"
+                  >
+                    Rimuovi
+                  </button>
+                ` : ''}
+              </span>
+            `;
+          }).join('')
+        : '<p class="admin-user-card__notice">Nessun badge assegnato</p>';
+      const assignMarkup = user.canManageBadges
+        ? `
+          <div class="admin-user-card__badge-assign">
+            <select data-badge-select ${assignableBadges.length === 0 ? 'disabled' : ''}>
+              <option value="">Assegna badge</option>
+              ${assignableBadges.map((badge) => `
+                <option value="${escapeHtml(badge.key)}">${escapeHtml(getBadgeLabel(badge))}</option>
+              `).join('')}
+            </select>
+            <button
+              type="button"
+              data-badge-action="assign"
+              ${assignableBadges.length === 0 ? 'disabled' : ''}
+            >
+              Assegna badge
+            </button>
+          </div>
+        `
+        : badgeManagementAvailable
+          ? '<p class="admin-user-card__notice">Solo gli admin possono modificare i badge.</p>'
+          : '<p class="admin-user-card__notice">Gestione badge non disponibile: esegui lo SQL dedicato in Supabase.</p>';
+
+      return `
+        <section class="admin-user-card__badges" aria-label="Gestisci badge">
+          <div class="admin-user-card__badges-header">
+            <div>
+              <h3>Gestisci badge</h3>
+              <p>Badge attivo: ${escapeHtml(currentBadgeLabel)}</p>
+            </div>
+          </div>
+
+          <div class="admin-user-card__badge-list" aria-label="Badge assegnati">
+            ${assignedMarkup}
+          </div>
+
+          ${assignMarkup}
+        </section>
       `;
     };
 
@@ -203,6 +276,8 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
             </div>
           </div>
 
+          ${renderBadgeManagement(user)}
+
           <div class="admin-user-card__actions">
             ${publicProfileHref ? `<a class="admin-user-card__profile-link" href="${escapeHtml(publicProfileHref)}">Vedi profilo</a>` : ''}
             ${user.isSelf ? '<span class="admin-user-card__notice">Il tuo account è protetto da modifiche dirette.</span>' : ''}
@@ -227,6 +302,8 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
         }
 
         viewerRole = result.viewerRole || 'moderator';
+        availableBadges = result.availableBadges || [];
+        badgeManagementAvailable = Boolean(result.badgeManagementAvailable);
         const users = result.users || [];
 
         if (countNode) {
@@ -259,6 +336,60 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
     });
 
     listNode?.addEventListener('click', async (event) => {
+      const badgeButton = event.target.closest('button[data-badge-action]');
+
+      if (badgeButton) {
+        const card = badgeButton.closest('[data-user-id]');
+        const userId = card?.dataset.userId;
+        const action = badgeButton.dataset.badgeAction;
+        const badgeKey = action === 'assign'
+          ? card?.querySelector('[data-badge-select]')?.value
+          : badgeButton.dataset.badgeKey;
+
+        if (!userId || !badgeKey || (action !== 'assign' && action !== 'remove')) {
+          showMessage('Scegli un badge valido.', 'error');
+          return;
+        }
+
+        const confirmation = badgeButton.dataset.confirm;
+        if (confirmation && !window.confirm(confirmation)) {
+          return;
+        }
+
+        badgeButton.disabled = true;
+        showMessage('');
+
+        try {
+          const response = await fetch('/api/admin/users/badges/update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              userId,
+              badgeKey,
+              action
+            })
+          });
+
+          const result = await response.json();
+
+          if (!result.ok) {
+            showMessage(result.error || 'Gestione badge non riuscita.', 'error');
+            badgeButton.disabled = false;
+            return;
+          }
+
+          showMessage(result.message || 'Badge aggiornato.', 'ok');
+          await loadUsers();
+        } catch {
+          showMessage('Errore di connessione.', 'error');
+          badgeButton.disabled = false;
+        }
+
+        return;
+      }
+
       const button = event.target.closest('button[data-role], button[data-status]');
       if (!button) return;
 

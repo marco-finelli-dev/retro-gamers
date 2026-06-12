@@ -1,4 +1,9 @@
 import type { APIRoute } from 'astro';
+import {
+  getActiveReaderBadges,
+  isBadgeAssignmentsUnavailable,
+  type ReaderBadge,
+} from '../../../../lib/badges';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserProfileFromToken, isStaffProfile } from '../../../../lib/supabase/auth';
 
@@ -101,6 +106,58 @@ const fetchCommentStats = async () => {
   return stats;
 };
 
+const fetchBadgeAssignments = async () => {
+  const assignments = new Map<string, Set<string>>();
+  const pageSize = 1000;
+
+  for (let from = 0; from < 20000; from += pageSize) {
+    const { data, error } = await supabaseAdmin
+      .from('user_badge_assignments')
+      .select('user_id, badge_key')
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      if (isBadgeAssignmentsUnavailable(error)) {
+        return {
+          assignments,
+          available: false,
+          error: null,
+        };
+      }
+
+      throw error;
+    }
+
+    for (const row of data ?? []) {
+      const userId = String(row.user_id || '');
+      const badgeKey = String(row.badge_key || '');
+
+      if (!userId || !badgeKey) continue;
+
+      const current = assignments.get(userId) ?? new Set<string>();
+      current.add(badgeKey);
+      assignments.set(userId, current);
+    }
+
+    if ((data ?? []).length < pageSize) {
+      break;
+    }
+  }
+
+  return {
+    assignments,
+    available: true,
+    error: null,
+  };
+};
+
+const serializeBadge = (badge: ReaderBadge) => ({
+  key: badge.key,
+  labelIt: badge.label_it,
+  labelEn: badge.label_en,
+  imagePath: badge.image_path,
+});
+
 export const GET: APIRoute = async ({ cookies, url }) => {
   const token = cookies.get('rg_access_token')?.value;
   const session = await getUserProfileFromToken(token ?? '');
@@ -116,14 +173,18 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   const search = normalizeSearch(url.searchParams.get('q') || '');
 
   try {
-    const [authUsers, profiles, commentStats] = await Promise.all([
+    const [authUsers, profiles, commentStats, activeBadges, badgeAssignmentsResult] = await Promise.all([
       fetchAllAuthUsers(),
       fetchAllProfiles(),
       fetchCommentStats(),
+      getActiveReaderBadges({ fallback: false }),
+      fetchBadgeAssignments(),
     ]);
 
     const authByUserId = new Map(authUsers.map((user) => [user.id, user]));
+    const activeBadgeByKey = new Map(activeBadges.map((badge) => [badge.key, badge]));
     const viewerRole = session.profile.role === 'admin' ? 'admin' : 'moderator';
+    const badgeManagementAvailable = badgeAssignmentsResult.available;
 
     let users = profiles.map((profile) => {
       const authUser = authByUserId.get(profile.user_id);
@@ -135,6 +196,16 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       const isSelf = profile.user_id === session.user?.id;
       const role = profile.role || 'user';
       const status = profile.status || 'active';
+      const assignedBadgeKeys = badgeManagementAvailable
+        ? [...(badgeAssignmentsResult.assignments.get(profile.user_id) ?? new Set<string>())]
+        : (profile.badge_key ? [profile.badge_key] : []);
+      const assignedBadges = assignedBadgeKeys
+        .map((badgeKey) => activeBadgeByKey.get(badgeKey))
+        .filter((badge): badge is ReaderBadge => Boolean(badge))
+        .map(serializeBadge);
+      const currentBadge = profile.badge_key
+        ? activeBadgeByKey.get(profile.badge_key)
+        : null;
 
       return {
         id: profile.id,
@@ -144,6 +215,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         displayName: profile.display_name || '',
         role,
         status,
+        currentBadgeKey: profile.badge_key || '',
+        currentBadge: currentBadge ? serializeBadge(currentBadge) : null,
+        assignedBadges,
         createdAt: authUser?.created_at || null,
         emailConfirmedAt: authUser?.email_confirmed_at || null,
         comments,
@@ -151,6 +225,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         canManageRole: viewerRole === 'admin' && !isSelf,
         canManageStatus:
           !isSelf && (viewerRole === 'admin' || (viewerRole === 'moderator' && role === 'user')),
+        canManageBadges: viewerRole === 'admin' && badgeManagementAvailable,
       };
     });
 
@@ -181,6 +256,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     return json({
       ok: true,
       viewerRole,
+      badgeManagementAvailable,
+      availableBadges: activeBadges.map(serializeBadge),
       users,
       filters: {
         q: search,

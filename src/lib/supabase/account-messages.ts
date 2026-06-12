@@ -41,6 +41,11 @@ type WelcomeMessageInput = {
   displayName?: string | null;
 };
 
+type BadgeUnlockedMessageInput = {
+  userId?: string | null;
+  badgeName: string;
+};
+
 const DEFAULT_LIMIT = 60;
 
 const logAccountMessagesError = (context: string, error: { code?: string; message?: string; hint?: string } | null) => {
@@ -78,6 +83,7 @@ export async function createAccountMessage(input: AccountMessageInput) {
       .eq('user_id', input.userId)
       .eq('type', input.type)
       .eq('title', input.title)
+      .eq('body', input.body)
       .eq('action_url', actionUrl)
       .maybeSingle();
 
@@ -145,6 +151,17 @@ Marco Finelli
 Founder / Editor di Retro-Gamers.it`,
     actionLabel: 'Apri il tuo account',
     actionUrl: '/account/',
+  });
+}
+
+export async function createBadgeUnlockedAccountMessage(input: BadgeUnlockedMessageInput) {
+  return createAccountMessage({
+    userId: input.userId,
+    type: 'badge_unlocked',
+    title: 'Nuovo badge sbloccato',
+    body: `Hai sbloccato il badge “${input.badgeName}” su Retro-Gamers.it.`,
+    actionLabel: 'Vedi i tuoi badge',
+    actionUrl: '/badges/',
   });
 }
 

@@ -7,6 +7,12 @@ export type ReaderBadge = {
   image_path: string | null;
 };
 
+export type ReaderBadgeAssignment = {
+  userId: string;
+  badge: ReaderBadge;
+  createdAt: string | null;
+};
+
 export const fallbackReaderBadges: ReaderBadge[] = [
   { key: 'arcade_kid', label_it: 'Arcade Kid', label_en: 'Arcade Kid', image_path: null },
   { key: 'eight_bit_player', label_it: '8-bit Player', label_en: '8-bit Player', image_path: null },
@@ -64,6 +70,25 @@ const sortReaderBadges = (badges: ReaderBadge[], lang: 'it' | 'en' = 'it') =>
     return labelA.localeCompare(labelB, lang) || a.key.localeCompare(b.key);
   });
 
+export const isBadgeAssignmentsUnavailable = (
+  error: { code?: string; message?: string; details?: string; hint?: string } | null | undefined
+) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`.toLowerCase();
+
+  return (
+    error.code === '42P01' ||
+    error.code === 'PGRST205' ||
+    error.code === 'PGRST204' ||
+    (message.includes('user_badge_assignments') &&
+      (message.includes('not exist') ||
+        message.includes('schema cache') ||
+        message.includes('relation') ||
+        message.includes('table')))
+  );
+};
+
 export async function getActiveReaderBadges(
   options: { fallback?: boolean; lang?: 'it' | 'en' } = {}
 ) {
@@ -91,4 +116,155 @@ export async function getActiveReaderBadges(
   }
 
   return fallback ? sortReaderBadges(fallbackReaderBadges, lang) : [];
+}
+
+export async function getOwnedReaderBadges(
+  userId?: string | null,
+  options: { fallbackToActive?: boolean; lang?: 'it' | 'en' } = {}
+) {
+  const { fallbackToActive = true, lang = 'it' } = options;
+
+  if (!userId) return [];
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('user_badge_assignments')
+      .select(`
+        badge_key,
+        user_badges (
+          key,
+          label_it,
+          label_en,
+          image_path,
+          is_active
+        )
+      `)
+      .eq('user_id', userId);
+
+    if (error) {
+      if (fallbackToActive && isBadgeAssignmentsUnavailable(error)) {
+        return getActiveReaderBadges({ fallback: true, lang });
+      }
+
+      throw error;
+    }
+
+    const badges = (data ?? [])
+      .map((row) => {
+        const badge = Array.isArray(row.user_badges)
+          ? row.user_badges[0]
+          : row.user_badges;
+
+        if (!badge?.is_active) return null;
+
+        return normalizeBadge(badge);
+      })
+      .filter((badge): badge is ReaderBadge => Boolean(badge));
+
+    return sortReaderBadges(badges, lang);
+  } catch {
+    return fallbackToActive ? getActiveReaderBadges({ fallback: true, lang }) : [];
+  }
+}
+
+export async function readerOwnsBadge(userId: string, badgeKey: string) {
+  const normalizedBadgeKey = badgeKey.trim();
+
+  if (!userId || !normalizedBadgeKey) {
+    return { owns: false, assignmentsAvailable: true };
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('user_badge_assignments')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('badge_key', normalizedBadgeKey)
+    .maybeSingle();
+
+  if (error) {
+    return {
+      owns: false,
+      assignmentsAvailable: !isBadgeAssignmentsUnavailable(error),
+      error,
+    };
+  }
+
+  return {
+    owns: Boolean(data),
+    assignmentsAvailable: true,
+  };
+}
+
+export async function assignReaderBadgeToUser(input: {
+  userId: string;
+  badgeKey: string;
+  assignedBy?: string | null;
+}) {
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from('user_badge_assignments')
+    .select('id')
+    .eq('user_id', input.userId)
+    .eq('badge_key', input.badgeKey)
+    .maybeSingle();
+
+  if (existingError) {
+    return {
+      ok: false,
+      alreadyAssigned: false,
+      assignmentsAvailable: !isBadgeAssignmentsUnavailable(existingError),
+      error: existingError,
+    };
+  }
+
+  if (existing) {
+    return {
+      ok: true,
+      alreadyAssigned: true,
+      assignmentsAvailable: true,
+    };
+  }
+
+  const { error } = await supabaseAdmin
+    .from('user_badge_assignments')
+    .insert({
+      user_id: input.userId,
+      badge_key: input.badgeKey,
+      assigned_by: input.assignedBy || null,
+    });
+
+  if (error) {
+    return {
+      ok: false,
+      alreadyAssigned: false,
+      assignmentsAvailable: !isBadgeAssignmentsUnavailable(error),
+      error,
+    };
+  }
+
+  return {
+    ok: true,
+    alreadyAssigned: false,
+    assignmentsAvailable: true,
+  };
+}
+
+export async function removeReaderBadgeFromUser(userId: string, badgeKey: string) {
+  const { error } = await supabaseAdmin
+    .from('user_badge_assignments')
+    .delete()
+    .eq('user_id', userId)
+    .eq('badge_key', badgeKey);
+
+  if (error) {
+    return {
+      ok: false,
+      assignmentsAvailable: !isBadgeAssignmentsUnavailable(error),
+      error,
+    };
+  }
+
+  return {
+    ok: true,
+    assignmentsAvailable: true,
+  };
 }

@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { assignReaderBadgeToUser } from '../../../lib/badges';
 import { sendNewReaderRegistrationAdminEmail } from '../../../lib/supabase/account-emails';
 import { createWelcomeAccountMessage } from '../../../lib/supabase/account-messages';
 import { supabaseAdmin, supabasePublic } from '../../../lib/supabase/server';
@@ -132,6 +133,15 @@ export const POST: APIRoute = async ({ request }) => {
       ok: false,
       error: insertProfileError.message,
     }, 500);
+  }
+
+  const badgeAssignment = await assignReaderBadgeToUser({
+    userId: user.id,
+    badgeKey,
+  });
+
+  if (!badgeAssignment.ok && badgeAssignment.assignmentsAvailable) {
+    console.error('Initial reader badge assignment failed:', badgeAssignment.error);
   }
 
   try {

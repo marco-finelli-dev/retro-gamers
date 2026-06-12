@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { readerOwnsBadge } from '../../../lib/badges';
 import { getUserProfileFromToken } from '../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
@@ -72,6 +73,19 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (!badge) {
       return json({ ok: false, error: 'Badge non valido.' }, 400);
+    }
+
+    const ownership = await readerOwnsBadge(session.user.id, badgeKey);
+
+    if (ownership.error && ownership.assignmentsAvailable) {
+      return json({ ok: false, error: ownership.error.message }, 500);
+    }
+
+    if (ownership.assignmentsAvailable && !ownership.owns) {
+      return json({
+        ok: false,
+        error: 'Puoi scegliere solo un badge assegnato al tuo profilo.',
+      }, 403);
     }
 
     updatePayload.display_name = displayName;
