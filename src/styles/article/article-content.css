@@ -5,6 +5,11 @@
 .article-content {
   position: relative;
 
+  --article-caption-color: rgba(255,255,255,0.72);
+  --article-caption-border: rgba(255,255,255,0.13);
+  --article-caption-shadow: 0 3px 14px rgba(0,0,0,0.64);
+  --article-aside-caption-color: rgba(255,255,255,0.66);
+
   font-size: 17px;
   line-height: 1.82;
 
@@ -148,6 +153,10 @@
   margin: 2.2rem 0;
 }
 
+.article-figure:has(figcaption) {
+  margin-bottom: 2.65rem;
+}
+
 .article-figure.is-wide,
 .article-figure--wide {
   width: min(1000px, calc(100vw - 32px));
@@ -212,18 +221,21 @@
 
 .article-figure figcaption {
   max-width: 760px;
-  margin: 12px auto 0;
+  margin: 14px auto 0;
+  padding: 10px 18px 0;
 
-  font-size: 13px;
-  line-height: 1.45;
-  font-weight: 520;
+  border-top: 1px solid var(--article-caption-border);
+
+  font-size: 13.5px;
+  line-height: 1.55;
+  font-weight: 560;
 
   text-align: center;
+  letter-spacing: 0.01em;
 
-  color: rgba(255,255,255,0.62);
+  color: var(--article-caption-color);
 
-  text-shadow:
-    0 3px 14px rgba(0,0,0,0.72);
+  text-shadow: var(--article-caption-shadow);
 }
 
 /* ========================================
@@ -235,6 +247,10 @@
   gap: 14px;
 
   margin: 2.2rem 0;
+}
+
+.article-image-gallery:has(figcaption) {
+  margin-bottom: 2.65rem;
 }
 
 .article-image-row {
@@ -288,18 +304,21 @@
 
 .article-image-row figcaption {
   max-width: 760px;
-  margin: 10px auto 0;
+  margin: 12px auto 0;
+  padding: 9px 14px 0;
+
+  border-top: 1px solid var(--article-caption-border);
 
   font-size: 13px;
-  line-height: 1.45;
-  font-weight: 520;
+  line-height: 1.52;
+  font-weight: 560;
 
   text-align: center;
+  letter-spacing: 0.01em;
 
-  color: rgba(255,255,255,0.62);
+  color: var(--article-caption-color);
 
-  text-shadow:
-    0 3px 14px rgba(0,0,0,0.72);
+  text-shadow: var(--article-caption-shadow);
 }
 
 
@@ -441,6 +460,10 @@
   margin: 18px 0 0;
 }
 
+.article-aside-figure:has(figcaption) {
+  margin-bottom: 14px;
+}
+
 .article-aside-figure--contain img,
 .article-aside-figure--natural img {
   object-fit: contain;
@@ -478,13 +501,20 @@
 }
 
 .article-aside-figure figcaption {
-  margin-top: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
 
-  font-size: 12px;
-  line-height: 1.45;
+  border-top: 1px solid var(--article-caption-border);
+
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-weight: 560;
   text-align: center;
+  letter-spacing: 0.01em;
 
-  color: rgba(255,255,255,0.50);
+  color: var(--article-aside-caption-color);
+
+  text-shadow: var(--article-caption-shadow);
 }
 
 
@@ -500,6 +530,10 @@
   max-width: 100%;
 
   margin: 18px 0 0;
+}
+
+.article-aside-gallery:has(figcaption) {
+  margin-bottom: 14px;
 }
 
 .article-aside-row {
@@ -567,16 +601,20 @@
   max-width: 100%;
 
   margin: 0;
-  padding: 0 4px 2px;
+  padding: 8px 6px 2px;
+
+  border-top: 1px solid var(--article-caption-border);
 
   font-size: 12px;
-  line-height: 1.35;
-  font-weight: 650;
+  line-height: 1.45;
+  font-weight: 600;
 
   text-align: center;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.01em;
 
-  color: rgba(255,255,255,0.56);
+  color: var(--article-aside-caption-color);
+
+  text-shadow: var(--article-caption-shadow);
 
   overflow: visible;
 }
@@ -1104,6 +1142,11 @@
     grid-template-columns: 1fr;
   }
 
+  .article-figure:has(figcaption),
+  .article-image-gallery:has(figcaption) {
+    margin-bottom: 2.35rem;
+  }
+
   .article-aside-box {
     margin: 2rem 0;
     padding: 18px;
@@ -1113,6 +1156,11 @@
   .article-aside-gallery {
     gap: 16px;
     margin-top: 16px;
+  }
+
+  .article-aside-figure:has(figcaption),
+  .article-aside-gallery:has(figcaption) {
+    margin-bottom: 10px;
   }
 
   .article-aside-row,
@@ -1136,12 +1184,12 @@
   }
 
   .article-aside-row figcaption {
-    padding: 0 2px 4px;
+    padding: 8px 4px 4px;
 
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 1.45;
 
-    color: rgba(255,255,255,0.58);
+    color: var(--article-aside-caption-color);
   }
 
   .article-aside-gallery.is-single {
@@ -1523,6 +1571,11 @@ html[data-theme="light"] .article-lightbox__close:hover {
 ======================================== */
 
 html[data-theme="light"] .article-content {
+  --article-caption-color: rgba(22,24,36,0.68);
+  --article-caption-border: rgba(18,24,38,0.14);
+  --article-caption-shadow: 0 2px 8px rgba(255,255,255,0.48);
+  --article-aside-caption-color: rgba(22,24,36,0.62);
+
   color: rgba(22,24,36,0.82);
 }
 
@@ -1620,10 +1673,14 @@ html[data-theme="light"] .article-figure figcaption,
 html[data-theme="light"] .article-image-row figcaption,
 html[data-theme="light"] .article-aside-figure figcaption,
 html[data-theme="light"] .article-aside-row figcaption {
-  color: rgba(22,24,36,0.58);
+  color: var(--article-caption-color);
 
-  text-shadow:
-    0 2px 8px rgba(255,255,255,0.42);
+  text-shadow: var(--article-caption-shadow);
+}
+
+html[data-theme="light"] .article-aside-figure figcaption,
+html[data-theme="light"] .article-aside-row figcaption {
+  color: var(--article-aside-caption-color);
 }
 
 html[data-theme="light"] .article-video {
