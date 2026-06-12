@@ -1,0 +1,309 @@
+.admin-users-page {
+  width: min(1120px, calc(100% - 32px));
+  margin: 72px auto;
+}
+
+.admin-users-panel {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(26px, 4vw, 42px);
+  border: 1px solid var(--rg-panel-border);
+  border-radius: 28px;
+  background: var(--rg-panel-bg);
+  box-shadow: var(--rg-panel-shadow);
+}
+
+.admin-users-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--rg-panel-grid);
+  background-size: 76px 76px;
+  opacity: var(--rg-panel-grid-opacity);
+  pointer-events: none;
+}
+
+.admin-users-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-users-panel__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.admin-users-panel__header p {
+  margin: 0 0 8px;
+  color: var(--rg-eyebrow-color);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.admin-users-panel__header h1 {
+  margin: 0;
+  color: var(--rg-section-title-color);
+  font-size: clamp(34px, 5vw, 56px);
+}
+
+.admin-users-panel__header span {
+  flex: 0 0 auto;
+  color: var(--color-text-soft);
+  font-weight: 800;
+}
+
+.admin-users-message,
+.admin-users-empty {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-glass);
+  color: var(--color-text-soft);
+}
+
+.admin-users-message[data-type="ok"] {
+  border-color: rgba(34,197,94,0.24);
+  background: rgba(34,197,94,0.10);
+}
+
+.admin-users-message[data-type="error"] {
+  border-color: rgba(248,113,113,0.24);
+  background: rgba(248,113,113,0.10);
+}
+
+.admin-users-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+  margin: 0 0 22px;
+  padding: 16px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 22px;
+  background: var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.admin-users-filters label {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-users-filters label span {
+  color: var(--color-text-soft);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-users-filters input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0 13px;
+  background: var(--color-glass);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.admin-users-filters input:focus {
+  outline: none;
+  border-color: var(--rg-cta-border);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+
+.admin-users-filters__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-users-filters button {
+  min-height: 44px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 16px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-users-filters button[type="button"] {
+  border-color: var(--color-border);
+  background: var(--color-glass);
+  color: var(--color-text);
+}
+
+.admin-users-filters button:hover {
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+}
+
+.admin-users-list {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-user-card {
+  padding: 22px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 22px;
+  background: var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.admin-user-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.admin-user-card__email {
+  margin: 0 0 8px;
+  color: var(--rg-eyebrow-color);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.admin-user-card h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-base);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.admin-user-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--color-text-soft);
+  font-size: 13px;
+}
+
+.admin-user-card__meta span {
+  padding: 4px 8px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+}
+
+.admin-user-card__status[data-status="active"] {
+  border-color: rgba(34,197,94,0.26);
+  background: rgba(34,197,94,0.10);
+}
+
+.admin-user-card__status[data-status="suspended"] {
+  border-color: rgba(251,191,36,0.30);
+  background: rgba(251,191,36,0.12);
+}
+
+.admin-user-card__status[data-status="banned"] {
+  border-color: rgba(248,113,113,0.24);
+  background: rgba(248,113,113,0.10);
+}
+
+.admin-user-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-user-card__stats div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px dashed var(--color-border);
+  border-radius: 16px;
+  background: var(--color-glass);
+}
+
+.admin-user-card__stats span {
+  color: var(--color-text-soft);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-user-card__stats strong {
+  color: var(--color-text);
+  font-size: 1.35rem;
+}
+
+.admin-user-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.admin-user-card__actions button {
+  min-height: 40px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 16px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-user-card__actions button:hover {
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+}
+
+.admin-user-card__actions button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.admin-user-card__notice {
+  align-self: center;
+  color: var(--color-text-soft);
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+@media (max-width: 720px) {
+  .admin-users-panel__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-users-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-users-filters__actions {
+    flex-wrap: wrap;
+  }
+
+  .admin-user-card__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-user-card__actions button {
+    flex: 1 1 auto;
+  }
+}

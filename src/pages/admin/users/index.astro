@@ -1,0 +1,284 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import '../../../styles/pages/admin-users.css';
+
+const title = 'Gestione utenti | Retro-Gamers.it';
+const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="admin-users-page">
+    <section class="admin-users-panel">
+      <div class="admin-users-panel__header">
+        <div>
+          <p>Retro-Gamers.it</p>
+          <h1>Utenti registrati</h1>
+        </div>
+
+        <span data-admin-users-count>Caricamento...</span>
+      </div>
+
+      <form class="admin-users-filters" data-admin-users-filters>
+        <label>
+          <span>Ricerca</span>
+          <input
+            type="search"
+            name="q"
+            placeholder="Email, username, nome..."
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="admin-users-filters__actions">
+          <button type="submit">Cerca</button>
+          <button type="button" data-admin-users-reset>Reset</button>
+        </div>
+      </form>
+
+      <div class="admin-users-message" data-admin-users-message hidden></div>
+
+      <div class="admin-users-list" data-admin-users-list>
+        <p class="admin-users-empty">Caricamento utenti registrati...</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const listNode = document.querySelector('[data-admin-users-list]');
+    const countNode = document.querySelector('[data-admin-users-count]');
+    const messageNode = document.querySelector('[data-admin-users-message]');
+    const filtersForm = document.querySelector('[data-admin-users-filters]');
+    const resetButton = document.querySelector('[data-admin-users-reset]');
+
+    let viewerRole = 'moderator';
+
+    const escapeHtml = (value) =>
+      String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    const showMessage = (text, type = 'ok') => {
+      if (!messageNode) return;
+
+      messageNode.textContent = text;
+      messageNode.dataset.type = type;
+      messageNode.hidden = !text;
+    };
+
+    const formatDate = (value) => {
+      if (!value) return 'Non disponibile';
+
+      return new Intl.DateTimeFormat('it-IT', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value));
+    };
+
+    const roleLabels = {
+      user: 'User',
+      moderator: 'Moderator',
+      admin: 'Admin'
+    };
+
+    const statusLabels = {
+      active: 'Active',
+      suspended: 'Sospeso',
+      banned: 'Bannato'
+    };
+
+    const getFilterParams = () => {
+      const params = new URLSearchParams();
+
+      if (!filtersForm) return params;
+
+      const formData = new FormData(filtersForm);
+      const q = String(formData.get('q') || '').trim();
+
+      if (q) params.set('q', q);
+
+      return params;
+    };
+
+    const renderRoleActions = (user) => {
+      if (!user.canManageRole || viewerRole !== 'admin') {
+        return '';
+      }
+
+      return `
+        ${user.role !== 'admin' ? '<button type="button" data-role="admin" data-confirm="Promuovere questo utente ad admin?">Promuovi a admin</button>' : ''}
+        ${user.role !== 'moderator' ? '<button type="button" data-role="moderator">Promuovi a moderator</button>' : ''}
+        ${user.role !== 'user' ? '<button type="button" data-role="user">Riporta a user</button>' : ''}
+      `;
+    };
+
+    const renderStatusActions = (user) => {
+      if (!user.canManageStatus) {
+        return '';
+      }
+
+      return `
+        ${user.status !== 'active' ? '<button type="button" data-status="active">Riattiva</button>' : ''}
+        ${user.status !== 'suspended' ? '<button type="button" data-status="suspended" data-confirm="Sospendere questo utente?">Sospendi</button>' : ''}
+        ${user.status !== 'banned' ? '<button type="button" data-status="banned" data-confirm="Bannare questo utente?">Banna</button>' : ''}
+      `;
+    };
+
+    const renderUser = (user) => {
+      const role = roleLabels[user.role] || user.role || 'User';
+      const status = statusLabels[user.status] || user.status || 'Active';
+      const actions = [renderRoleActions(user), renderStatusActions(user)]
+        .filter(Boolean)
+        .join('');
+      const displayName = user.displayName || 'Non impostato';
+      const username = user.username || 'Non impostato';
+      const email = user.email || 'Email non disponibile';
+      const comments = user.comments || { total: 0, pending: 0, approved: 0 };
+
+      return `
+        <article class="admin-user-card" data-user-id="${escapeHtml(user.userId)}">
+          <header class="admin-user-card__header">
+            <div>
+              <p class="admin-user-card__email">${escapeHtml(email)}</p>
+              <h2>${escapeHtml(displayName)}</h2>
+
+              <p class="admin-user-card__meta">
+                <span>@${escapeHtml(username)}</span>
+                <span class="admin-user-card__role" data-role="${escapeHtml(user.role || '')}">
+                  Ruolo: ${escapeHtml(role)}
+                </span>
+                <span class="admin-user-card__status" data-status="${escapeHtml(user.status || '')}">
+                  Stato: ${escapeHtml(status)}
+                </span>
+                <span>Registrato: ${escapeHtml(formatDate(user.createdAt))}</span>
+              </p>
+            </div>
+          </header>
+
+          <div class="admin-user-card__stats" aria-label="Commenti">
+            <div>
+              <span>Commenti</span>
+              <strong>${Number(comments.total || 0)}</strong>
+            </div>
+
+            <div>
+              <span>Pending</span>
+              <strong>${Number(comments.pending || 0)}</strong>
+            </div>
+
+            <div>
+              <span>Approved</span>
+              <strong>${Number(comments.approved || 0)}</strong>
+            </div>
+          </div>
+
+          <div class="admin-user-card__actions">
+            ${user.isSelf ? '<span class="admin-user-card__notice">Il tuo account è protetto da modifiche dirette.</span>' : ''}
+            ${actions || (!user.isSelf ? '<span class="admin-user-card__notice">Nessuna azione disponibile per il tuo ruolo.</span>' : '')}
+          </div>
+        </article>
+      `;
+    };
+
+    const loadUsers = async () => {
+      if (!listNode) return;
+
+      try {
+        const params = getFilterParams();
+        const response = await fetch(`/api/admin/users/list?${params.toString()}`);
+        const result = await response.json();
+
+        if (!result.ok) {
+          listNode.innerHTML = `<p class="admin-users-empty">${escapeHtml(result.error || 'Errore caricamento utenti.')}</p>`;
+          if (countNode) countNode.textContent = 'Accesso non disponibile';
+          return;
+        }
+
+        viewerRole = result.viewerRole || 'moderator';
+        const users = result.users || [];
+
+        if (countNode) {
+          countNode.textContent = users.length === 1
+            ? '1 utente trovato'
+            : `${users.length} utenti trovati`;
+        }
+
+        if (users.length === 0) {
+          listNode.innerHTML = '<p class="admin-users-empty">Nessun utente trovato con questi filtri.</p>';
+          return;
+        }
+
+        listNode.innerHTML = users.map(renderUser).join('');
+      } catch {
+        listNode.innerHTML = '<p class="admin-users-empty">Errore di connessione.</p>';
+      }
+    };
+
+    filtersForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      showMessage('');
+      loadUsers();
+    });
+
+    resetButton?.addEventListener('click', () => {
+      filtersForm?.reset();
+      showMessage('');
+      loadUsers();
+    });
+
+    listNode?.addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-role], button[data-status]');
+      if (!button) return;
+
+      const card = button.closest('[data-user-id]');
+      const userId = card?.dataset.userId;
+      const role = button.dataset.role;
+      const status = button.dataset.status;
+
+      if (!userId || (!role && !status)) return;
+
+      const confirmation = button.dataset.confirm;
+      if (confirmation && !window.confirm(confirmation)) {
+        return;
+      }
+
+      button.disabled = true;
+      showMessage('');
+
+      try {
+        const response = await fetch('/api/admin/users/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userId,
+            ...(role ? { role } : {}),
+            ...(status ? { status } : {})
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(result.error || 'Azione non riuscita.', 'error');
+          button.disabled = false;
+          return;
+        }
+
+        showMessage('Utente aggiornato.', 'ok');
+        await loadUsers();
+      } catch {
+        showMessage('Errore di connessione.', 'error');
+        button.disabled = false;
+      }
+    });
+
+    loadUsers();
+  </script>
+</BaseLayout>
