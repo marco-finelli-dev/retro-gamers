@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../lib/api-errors';
 import { assignReaderBadgeToUser } from '../../../lib/badges';
 import { sendNewReaderRegistrationAdminEmail } from '../../../lib/supabase/account-emails';
 import { createWelcomeAccountMessage } from '../../../lib/supabase/account-messages';
@@ -72,7 +73,8 @@ export const POST: APIRoute = async ({ request }) => {
     .maybeSingle();
 
   if (badgeError) {
-    return json({ ok: false, error: badgeError.message }, 500);
+    logApiError('auth-register.badge', badgeError);
+    return json({ ok: false, error: 'Registrazione non disponibile. Riprova più tardi.' }, 500);
   }
 
   if (!badge) {
@@ -86,7 +88,8 @@ export const POST: APIRoute = async ({ request }) => {
     .maybeSingle();
 
   if (profileCheckError) {
-    return json({ ok: false, error: profileCheckError.message }, 500);
+    logApiError('auth-register.profile-check', profileCheckError);
+    return json({ ok: false, error: 'Registrazione non disponibile. Riprova più tardi.' }, 500);
   }
 
   if (existingProfile) {
@@ -128,10 +131,11 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (insertProfileError) {
     await supabaseAdmin.auth.admin.deleteUser(user.id);
+    logApiError('auth-register.profile-insert', insertProfileError);
 
     return json({
       ok: false,
-      error: insertProfileError.message,
+      error: 'Registrazione non completata. Riprova più tardi.',
     }, 500);
   }
 

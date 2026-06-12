@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../../lib/api-errors';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserProfileFromToken, isStaffProfile } from '../../../../lib/supabase/auth';
 
@@ -76,7 +77,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .maybeSingle();
 
   if (targetError) {
-    return json({ ok: false, error: targetError.message }, 500);
+    logApiError('admin-users-update.lookup', targetError);
+    return json({ ok: false, error: 'Utente non disponibile. Riprova più tardi.' }, 500);
   }
 
   if (!targetProfile) {
@@ -112,7 +114,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .single();
 
   if (updateError) {
-    return json({ ok: false, error: updateError.message }, 500);
+    logApiError('admin-users-update.update', updateError);
+    return json({ ok: false, error: 'Utente non aggiornato. Riprova più tardi.' }, 500);
   }
 
   return json({

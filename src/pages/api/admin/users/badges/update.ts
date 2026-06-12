@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../../../lib/api-errors';
 import {
   assignReaderBadgeToUser,
   getReaderBadgeLabel,
@@ -95,7 +96,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .maybeSingle();
 
   if (targetError) {
-    return json({ ok: false, error: targetError.message }, 500);
+    logApiError('admin-users-badges.target', targetError);
+    return json({ ok: false, error: 'Utente non disponibile. Riprova più tardi.' }, 500);
   }
 
   if (!targetProfile) {
@@ -110,7 +112,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .maybeSingle();
 
   if (badgeError) {
-    return json({ ok: false, error: badgeError.message }, 500);
+    logApiError('admin-users-badges.badge', badgeError);
+    return json({ ok: false, error: 'Badge non disponibile. Riprova più tardi.' }, 500);
   }
 
   if (!badge) {
@@ -127,8 +130,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (!result.ok) {
       const status = result.assignmentsAvailable ? 500 : 409;
       const error = result.assignmentsAvailable
-        ? result.error?.message || 'Assegnazione badge non riuscita.'
+        ? 'Assegnazione badge non riuscita. Riprova più tardi.'
         : 'Gestione badge non disponibile. Esegui lo SQL user-badges-admin.sql in Supabase.';
+
+      if (result.error) {
+        logApiError('admin-users-badges.assign', result.error);
+      }
 
       return json({ ok: false, error }, status);
     }
@@ -140,7 +147,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .eq('user_id', userId);
 
       if (currentBadgeError) {
-        return json({ ok: false, error: currentBadgeError.message }, 500);
+        logApiError('admin-users-badges.set-current', currentBadgeError);
+        return json({ ok: false, error: 'Badge attivo non aggiornato. Riprova più tardi.' }, 500);
       }
     }
 
@@ -166,8 +174,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (!removeResult.ok) {
     const status = removeResult.assignmentsAvailable ? 500 : 409;
     const error = removeResult.assignmentsAvailable
-      ? removeResult.error?.message || 'Rimozione badge non riuscita.'
+      ? 'Rimozione badge non riuscita. Riprova più tardi.'
       : 'Gestione badge non disponibile. Esegui lo SQL user-badges-admin.sql in Supabase.';
+
+    if (removeResult.error) {
+      logApiError('admin-users-badges.remove', removeResult.error);
+    }
 
     return json({ ok: false, error }, status);
   }
@@ -178,7 +190,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (nextBadge.error) {
       const error = isBadgeAssignmentsUnavailable(nextBadge.error)
         ? 'Gestione badge non disponibile. Esegui lo SQL user-badges-admin.sql in Supabase.'
-        : nextBadge.error.message;
+        : 'Badge attivo non aggiornato. Riprova più tardi.';
+
+      logApiError('admin-users-badges.next-current', nextBadge.error);
 
       return json({ ok: false, error }, 500);
     }
@@ -189,7 +203,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .eq('user_id', userId);
 
     if (currentBadgeError) {
-      return json({ ok: false, error: currentBadgeError.message }, 500);
+      logApiError('admin-users-badges.clear-current', currentBadgeError);
+      return json({ ok: false, error: 'Badge attivo non aggiornato. Riprova più tardi.' }, 500);
     }
   }
 

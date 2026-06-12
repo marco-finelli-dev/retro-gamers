@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../lib/api-errors';
 import { getUserProfileFromToken } from '../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
@@ -92,7 +93,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .maybeSingle();
 
   if (commentError) {
-    return json({ ok: false, error: commentError.message }, 500);
+    logApiError('comments-reaction.comment', commentError);
+    return json({ ok: false, error: 'Reazione non aggiornata. Riprova più tardi.' }, 500);
   }
 
   if (!comment) {
@@ -119,7 +121,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .maybeSingle();
 
   if (existingReactionError) {
-    return json({ ok: false, error: existingReactionError.message }, 500);
+    logApiError('comments-reaction.existing', existingReactionError);
+    return json({ ok: false, error: 'Reazione non aggiornata. Riprova più tardi.' }, 500);
   }
 
   if (existingReaction?.reaction === reaction) {
@@ -130,7 +133,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .eq('user_id', session.user.id);
 
     if (error) {
-      return json({ ok: false, error: error.message }, 500);
+      logApiError('comments-reaction.delete', error);
+      return json({ ok: false, error: 'Reazione non aggiornata. Riprova più tardi.' }, 500);
     }
   } else if (existingReaction) {
     const { error } = await supabaseAdmin
@@ -140,7 +144,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .eq('user_id', session.user.id);
 
     if (error) {
-      return json({ ok: false, error: error.message }, 500);
+      logApiError('comments-reaction.update', error);
+      return json({ ok: false, error: 'Reazione non aggiornata. Riprova più tardi.' }, 500);
     }
   } else {
     const { error } = await supabaseAdmin
@@ -152,7 +157,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
 
     if (error) {
-      return json({ ok: false, error: error.message }, 500);
+      logApiError('comments-reaction.insert', error);
+      return json({ ok: false, error: 'Reazione non aggiornata. Riprova più tardi.' }, 500);
     }
   }
 
@@ -164,9 +170,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       ...counts,
     });
   } catch (error) {
+    logApiError('comments-reaction.counts', error);
     return json({
       ok: false,
-      error: error instanceof Error ? error.message : 'Impossibile aggiornare le reazioni.',
+      error: 'Impossibile aggiornare le reazioni.',
     }, 500);
   }
 };

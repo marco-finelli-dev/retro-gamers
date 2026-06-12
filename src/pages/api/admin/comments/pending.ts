@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../../lib/api-errors';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserProfileFromToken, isStaffProfile } from '../../../../lib/supabase/auth';
 
@@ -74,7 +75,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   const { data, error } = await query;
 
   if (error) {
-    return json({ ok: false, error: error.message }, 500);
+    logApiError('admin-comments-pending.comments', error);
+    return json({ ok: false, error: 'Commenti non disponibili. Riprova più tardi.' }, 500);
   }
 
   let comments = data ?? [];
@@ -120,7 +122,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       .in('id', parentIds);
 
     if (parentsError) {
-      return json({ ok: false, error: parentsError.message }, 500);
+      logApiError('admin-comments-pending.parents', parentsError);
+      return json({ ok: false, error: 'Contesto risposta non disponibile.' }, 500);
     }
 
     const parentsById = new Map((parents ?? []).map((parent) => [parent.id, parent]));

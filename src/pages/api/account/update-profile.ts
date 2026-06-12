@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../lib/api-errors';
 import { readerOwnsBadge } from '../../../lib/badges';
 import { getUserProfileFromToken } from '../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
@@ -70,7 +71,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         .maybeSingle();
 
       if (badgeError) {
-        return json({ ok: false, error: badgeError.message }, 500);
+        logApiError('account-update-profile.badge-lookup', badgeError);
+        return json({ ok: false, error: 'Badge non disponibile. Riprova più tardi.' }, 500);
       }
 
       if (!badge) {
@@ -80,7 +82,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       const ownership = await readerOwnsBadge(session.user.id, badgeKey);
 
       if (ownership.error && ownership.assignmentsAvailable) {
-        return json({ ok: false, error: ownership.error.message }, 500);
+        logApiError('account-update-profile.badge-ownership', ownership.error);
+        return json({ ok: false, error: 'Badge non disponibile. Riprova più tardi.' }, 500);
       }
 
       if (ownership.assignmentsAvailable && !ownership.owns) {
@@ -153,7 +156,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .single();
 
   if (updateError) {
-    return json({ ok: false, error: updateError.message }, 500);
+    logApiError('account-update-profile.update', updateError);
+    return json({ ok: false, error: 'Profilo non aggiornato. Riprova più tardi.' }, 500);
   }
 
   return json({

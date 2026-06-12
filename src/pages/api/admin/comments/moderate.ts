@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../../lib/api-errors';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserProfileFromToken, isStaffProfile } from '../../../../lib/supabase/auth';
 import {
@@ -192,7 +193,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .maybeSingle();
 
   if (existingCommentError) {
-    return json({ ok: false, error: existingCommentError.message }, 500);
+    logApiError('admin-comments-moderate.lookup', existingCommentError);
+    return json({ ok: false, error: 'Commento non disponibile. Riprova più tardi.' }, 500);
   }
 
   if (!existingComment) {
@@ -227,7 +229,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .single();
 
   if (updateError) {
-    return json({ ok: false, error: updateError.message }, 500);
+    logApiError('admin-comments-moderate.update', updateError);
+    return json({ ok: false, error: 'Commento non aggiornato. Riprova più tardi.' }, 500);
   }
 
   const { error: eventError } = await supabaseAdmin
@@ -240,13 +243,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
 
   if (eventError) {
+    logApiError('admin-comments-moderate.event', eventError);
     if (action === 'approve' && existingComment.status !== 'approved') {
       await notifyApprovedComment(existingComment);
     }
 
     return json({
       ok: true,
-      warning: eventError.message,
+      warning: 'Evento di moderazione non registrato.',
       comment,
     });
   }

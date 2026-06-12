@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../lib/api-errors';
 import { supabaseAdmin, supabasePublic } from '../../../lib/supabase/server';
 
 const json = (payload: unknown, status = 200) =>
@@ -62,7 +63,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     .order('created_at', { ascending: true });
 
   if (error) {
-    return json({ ok: false, error: error.message }, 500);
+    logApiError('comments-list.comments', error);
+    return json({ ok: false, error: 'Commenti non disponibili. Riprova più tardi.' }, 500);
   }
 
   const comments = data ?? [];

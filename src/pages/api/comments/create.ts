@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../lib/api-errors';
 import { supabasePublic, supabaseAdmin } from '../../../lib/supabase/server';
 import { isBlockedProfileStatus, isStaffProfile } from '../../../lib/supabase/auth';
 import {
@@ -174,7 +175,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .maybeSingle();
 
   if (profileError) {
-    return json({ ok: false, error: profileError.message }, 500);
+    logApiError('comments-create.profile', profileError);
+    return json({ ok: false, error: 'Profilo non disponibile. Riprova più tardi.' }, 500);
   }
 
   if (!profile) {
@@ -233,7 +235,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .limit(1);
 
   if (recentCommentsError) {
-    return json({ ok: false, error: recentCommentsError.message }, 500);
+    logApiError('comments-create.cooldown', recentCommentsError);
+    return json({ ok: false, error: 'Commento non inviato. Riprova più tardi.' }, 500);
   }
 
   if ((recentComments ?? []).length > 0) {
@@ -253,7 +256,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .gte('created_at', pendingThreshold);
 
     if (pendingCountError) {
-      return json({ ok: false, error: pendingCountError.message }, 500);
+      logApiError('comments-create.pending-count', pendingCountError);
+      return json({ ok: false, error: 'Commento non inviato. Riprova più tardi.' }, 500);
     }
 
     if ((pendingCount ?? 0) >= 5) {
@@ -272,7 +276,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       .maybeSingle();
 
     if (parentError) {
-      return json({ ok: false, error: parentError.message }, 500);
+      logApiError('comments-create.parent', parentError);
+      return json({ ok: false, error: 'Risposta non disponibile. Riprova più tardi.' }, 500);
     }
 
     if (!parentComment || parentComment.status !== 'approved') {
@@ -321,7 +326,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .single();
 
   if (insertError) {
-    return json({ ok: false, error: insertError.message }, 500);
+    logApiError('comments-create.insert', insertError);
+    return json({ ok: false, error: 'Commento non inviato. Riprova più tardi.' }, 500);
   }
 
   const subscriptionsToCreate: Array<Record<string, unknown>> = [];
@@ -358,9 +364,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       });
 
     if (subscriptionError) {
+      logApiError('comments-create.subscriptions', subscriptionError);
       return json({
         ok: true,
-        warning: subscriptionError.message,
+        warning: 'Preferenze di notifica non salvate.',
         message: isStaff
           ? `${publishedMessage} Non è stato possibile salvare le preferenze di notifica.`
           : 'Commento inviato, ma non è stato possibile salvare le preferenze di notifica.',

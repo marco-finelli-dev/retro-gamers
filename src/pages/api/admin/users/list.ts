@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../../lib/api-errors';
 import {
   getActiveReaderBadges,
   isBadgeAssignmentsUnavailable,
@@ -264,9 +265,10 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       },
     });
   } catch (error) {
+    logApiError('admin-users-list', error);
     return json({
       ok: false,
-      error: error instanceof Error ? error.message : 'Errore caricamento utenti.',
+      error: 'Utenti non disponibili. Riprova più tardi.',
     }, 500);
   }
 };

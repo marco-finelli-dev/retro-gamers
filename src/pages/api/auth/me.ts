@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../lib/api-errors';
 import { supabasePublic, supabaseAdmin } from '../../../lib/supabase/server';
 import { isBlockedProfileStatus } from '../../../lib/supabase/auth';
 
@@ -48,7 +49,8 @@ export const GET: APIRoute = async ({ cookies }) => {
     .maybeSingle();
 
   if (profileError) {
-    return json({ ok: false, error: profileError.message }, 500);
+    logApiError('auth-me.profile', profileError);
+    return json({ ok: false, error: 'Profilo non disponibile. Riprova più tardi.' }, 500);
   }
 
   if (!profile) {
