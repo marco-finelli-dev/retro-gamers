@@ -90,23 +90,31 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
 
           {comments.length > 0 ? (
             <div class="public-user-comments">
-              {comments.map((comment) => (
-                <article class="public-user-comment">
-                  <p>{getCommentExcerpt(comment.body)}</p>
+              {comments.map((comment) => {
+                const commentHref = getCommentArticleHref(comment);
 
-                  <footer>
-                    <time datetime={comment.created_at || undefined}>
-                      {comment.created_at
-                        ? dateFormatter.format(new Date(comment.created_at))
-                        : 'Data non disponibile'}
-                    </time>
+                return (
+                  <article class="public-user-comment">
+                    <p>
+                      <a class="public-user-comment__excerpt-link" href={commentHref}>
+                        {getCommentExcerpt(comment.body)}
+                      </a>
+                    </p>
 
-                    <a href={getCommentArticleHref(comment)}>
-                      {comment.article_title || 'Apri articolo'}
-                    </a>
-                  </footer>
-                </article>
-              ))}
+                    <footer>
+                      <time datetime={comment.created_at || undefined}>
+                        {comment.created_at
+                          ? dateFormatter.format(new Date(comment.created_at))
+                          : 'Data non disponibile'}
+                      </time>
+
+                      <a href={commentHref}>
+                        {comment.article_title || 'Apri articolo'}
+                      </a>
+                    </footer>
+                  </article>
+                );
+              })}
             </div>
           ) : (
             <p class="public-user-empty">

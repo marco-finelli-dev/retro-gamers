@@ -47,7 +47,7 @@ export const getPublicUserUrl = (username: string, lang: 'it' | 'en' = 'it') => 
 };
 
 export const getCommentArticleHref = (comment: PublicReaderComment) => {
-  const anchor = comment.id ? `comment-${String(comment.id)}` : 'comments';
+  const anchor = `comment-${String(comment.id)}`;
 
   if (comment.article_url) {
     return `${comment.article_url.split('#')[0]}#${anchor}`;
