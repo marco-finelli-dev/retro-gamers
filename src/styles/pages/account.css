@@ -146,6 +146,62 @@
   margin-top: 16px;
 }
 
+.account-avatar-dropzone {
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+  padding: 18px;
+  border: 1px dashed var(--rg-cta-border);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(64,224,255,0.10), transparent 58%),
+    var(--color-glass);
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.account-avatar-dropzone:hover,
+.account-avatar-dropzone:focus-within,
+.account-avatar-dropzone[data-drag-active="true"] {
+  transform: translateY(-1px);
+  border-color: var(--color-primary);
+  background:
+    linear-gradient(135deg, rgba(64,224,255,0.18), transparent 62%),
+    var(--rg-card-bg);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+
+.account-avatar-dropzone__label {
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.account-avatar-dropzone__help,
+.account-avatar-dropzone__filename {
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.account-avatar-dropzone__filename {
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 7px 10px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .account-form {
   display: grid;
   gap: 18px;
@@ -369,6 +425,26 @@
     inset 0 1px 0 rgba(255,255,255,0.065);
 }
 
+.account-form .account-avatar-input {
+  position: absolute;
+  width: 1px;
+  min-height: 0;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.account-form .account-avatar-dropzone__label {
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
 .account-character-count {
   justify-self: end;
   color: var(--color-text-soft);
@@ -476,6 +552,11 @@ html[data-theme="light"] .account-message[data-type="error"] {
 
   .account-avatar-section__preview {
     justify-content: start;
+  }
+
+  .account-avatar-dropzone {
+    min-height: 118px;
+    padding: 16px;
   }
 
   .account-profile-card strong {
