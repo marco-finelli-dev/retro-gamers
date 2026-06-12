@@ -16,6 +16,7 @@ const profile = session.profile;
 const user = session.user;
 const badges = isLoggedIn ? await getOwnedReaderBadges(user?.id) : [];
 const currentBadge = profile?.user_badges;
+const avatarUrl = profile?.avatar_url || '';
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const accountDisplayName =
   profile?.display_name || profile?.username || user?.email || 'Utente Retro-Gamers';
@@ -116,7 +117,7 @@ if (isLoggedIn && user?.id) {
           </p>
 
           <div class="account-profile-card">
-            <UserAvatar name={accountDisplayName} email={user?.email} size="lg" />
+            <UserAvatar name={accountDisplayName} email={user?.email} src={avatarUrl} size="lg" />
 
             <div>
               <span>Profilo community</span>
@@ -132,6 +133,51 @@ if (isLoggedIn && user?.id) {
               </a>
             </div>
           </div>
+
+          <section class="account-avatar-section" aria-labelledby="account-avatar-title">
+            <div class="account-avatar-section__preview">
+              <UserAvatar
+                name={accountDisplayName}
+                email={user?.email}
+                src={avatarUrl}
+                size="lg"
+                label={`Avatar di ${accountDisplayName}`}
+              />
+            </div>
+
+            <div class="account-avatar-section__content">
+              <p class="account-kicker">Community</p>
+              <h2 id="account-avatar-title">Avatar</h2>
+              <p>
+                Carica un’immagine per rendere riconoscibile il tuo profilo nella community.
+              </p>
+
+              <form class="account-form account-avatar-form" data-account-avatar-form>
+                <label>
+                  <span>Immagine avatar</span>
+                  <input
+                    type="file"
+                    name="avatar"
+                    accept="image/jpeg,image/png,image/webp"
+                    data-account-avatar-input
+                  />
+                </label>
+
+                <p class="account-message" data-account-avatar-message hidden></p>
+
+                <div class="account-actions">
+                  <button type="submit">Carica avatar</button>
+                  <button
+                    type="button"
+                    data-account-avatar-remove
+                    hidden={!avatarUrl}
+                  >
+                    Rimuovi avatar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
 
           <div class="account-summary">
             <div>
@@ -301,6 +347,10 @@ if (isLoggedIn && user?.id) {
     const bioMessage = document.querySelector('[data-account-bio-message]');
     const bioTextarea = document.querySelector('[data-account-bio-form] textarea[name="bio"]');
     const bioCounter = document.querySelector('[data-account-bio-counter]');
+    const avatarForm = document.querySelector('[data-account-avatar-form]');
+    const avatarInput = document.querySelector('[data-account-avatar-input]');
+    const avatarMessage = document.querySelector('[data-account-avatar-message]');
+    const avatarRemoveButton = document.querySelector('[data-account-avatar-remove]');
     const logoutButton = document.querySelector('[data-account-logout]');
 
     const showMessage = (target, text, type = 'ok') => {
@@ -317,6 +367,72 @@ if (isLoggedIn && user?.id) {
 
     updateBioCounter();
     bioTextarea?.addEventListener('input', updateBioCounter);
+
+    avatarForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const file = avatarInput?.files?.[0];
+      const button = avatarForm.querySelector('button[type="submit"]');
+      const validTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+      if (!file || !validTypes.has(file.type)) {
+        showMessage(avatarMessage, 'File non valido. Usa JPG, PNG o WebP.', 'error');
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        showMessage(avatarMessage, 'Il file è troppo grande. Dimensione massima: 2 MB.', 'error');
+        return;
+      }
+
+      if (button) button.disabled = true;
+
+      try {
+        const payload = new FormData();
+        payload.set('avatar', file);
+
+        const response = await fetch('/api/account/avatar/upload', {
+          method: 'POST',
+          body: payload
+        });
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(avatarMessage, result.error || 'Upload non riuscito.', 'error');
+          return;
+        }
+
+        showMessage(avatarMessage, 'Avatar aggiornato.', 'ok');
+        window.setTimeout(() => window.location.reload(), 450);
+      } catch {
+        showMessage(avatarMessage, 'Errore di connessione. Riprova.', 'error');
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+
+    avatarRemoveButton?.addEventListener('click', async () => {
+      avatarRemoveButton.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/avatar/remove', {
+          method: 'POST'
+        });
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(avatarMessage, result.error || 'Rimozione non riuscita.', 'error');
+          avatarRemoveButton.disabled = false;
+          return;
+        }
+
+        showMessage(avatarMessage, 'Avatar rimosso.', 'ok');
+        window.setTimeout(() => window.location.reload(), 450);
+      } catch {
+        showMessage(avatarMessage, 'Errore di connessione. Riprova.', 'error');
+        avatarRemoveButton.disabled = false;
+      }
+    });
 
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();

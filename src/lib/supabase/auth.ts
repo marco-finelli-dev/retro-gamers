@@ -1,4 +1,5 @@
 import { supabaseAdmin, supabasePublic } from './server';
+import { getAvatarPublicUrl, isMissingAvatarColumnError } from './avatars';
 
 export function isBlockedProfileStatus(status?: string | null) {
   return status === 'blocked' || status === 'suspended' || status === 'banned';
@@ -27,13 +28,12 @@ export async function getUserProfileFromToken(token: string) {
 
   const user = userData.user;
 
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .select(`
+  const profileSelect = `
       id,
       user_id,
       username,
       display_name,
+      avatar_path,
       badge_key,
       role,
       status,
@@ -45,9 +45,25 @@ export async function getUserProfileFromToken(token: string) {
         label_en,
         image_path
       )
-    `)
+    `;
+  const profileSelectFallback = profileSelect.replace('avatar_path,', '');
+
+  let { data: profile, error: profileError } = await supabaseAdmin
+    .from('profiles')
+    .select(profileSelect)
     .eq('user_id', user.id)
     .maybeSingle();
+
+  if (isMissingAvatarColumnError(profileError)) {
+    const fallbackResult = await supabaseAdmin
+      .from('profiles')
+      .select(profileSelectFallback)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    profile = fallbackResult.data;
+    profileError = fallbackResult.error;
+  }
 
   if (profileError) {
     return {
@@ -78,7 +94,10 @@ export async function getUserProfileFromToken(token: string) {
 
   return {
     user,
-    profile,
+    profile: {
+      ...profile,
+      avatar_url: getAvatarPublicUrl(profile.avatar_path),
+    },
     error: null,
     status: 200,
   };

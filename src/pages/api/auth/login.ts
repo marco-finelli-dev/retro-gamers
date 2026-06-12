@@ -1,7 +1,6 @@
 import type { APIRoute } from 'astro';
-import { logApiError } from '../../../lib/api-errors';
-import { supabasePublic, supabaseAdmin } from '../../../lib/supabase/server';
-import { isBlockedProfileStatus } from '../../../lib/supabase/auth';
+import { supabasePublic } from '../../../lib/supabase/server';
+import { getUserProfileFromToken } from '../../../lib/supabase/auth';
 
 type LoginPayload = {
   email?: string;
@@ -48,39 +47,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'Login non completato.' }, 500);
   }
 
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .select(`
-      id,
-      user_id,
-      username,
-      display_name,
-      badge_key,
-      role,
-      status,
-      notify_replies_to_my_comments,
-      notify_threads_i_join,
-      user_badges (
-        key,
-        label_it,
-        label_en,
-        image_path
-      )
-    `)
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const profileSession = await getUserProfileFromToken(session.access_token);
 
-  if (profileError) {
-    logApiError('auth-login.profile', profileError);
-    return json({ ok: false, error: 'Profilo non disponibile. Riprova più tardi.' }, 500);
-  }
-
-  if (!profile) {
-    return json({ ok: false, error: 'Profilo lettore non trovato.' }, 404);
-  }
-
-  if (isBlockedProfileStatus(profile.status)) {
-    return json({ ok: false, error: 'Account bloccato.' }, 403);
+  if (profileSession.error || !profileSession.profile) {
+    return json({ ok: false, error: profileSession.error }, profileSession.status);
   }
 
   const secure = import.meta.env.PROD;
@@ -108,6 +78,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       id: user.id,
       email: user.email,
     },
-    profile,
+    profile: profileSession.profile,
   });
 };

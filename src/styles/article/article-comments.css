@@ -423,8 +423,10 @@
   }
   
   .article-comment__avatar {
+    position: relative;
     display: grid;
     place-items: center;
+    overflow: hidden;
   
     width: 46px;
     height: 46px;
@@ -448,6 +450,24 @@
     font-weight: 900;
   
     box-shadow: var(--rg-card-hover-shadow);
+  }
+
+  .article-comment__avatar img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .article-comment__avatar img[hidden] {
+    display: none;
+  }
+
+  .article-comment__avatar-fallback {
+    display: grid;
+    place-items: center;
   }
 
   .article-comment__avatar-link {

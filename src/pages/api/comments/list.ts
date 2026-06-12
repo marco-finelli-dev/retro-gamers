@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
+import { getAvatarPublicUrl, isMissingAvatarColumnError } from '../../../lib/supabase/avatars';
 import { supabaseAdmin, supabasePublic } from '../../../lib/supabase/server';
 
 const json = (payload: unknown, status = 200) =>
@@ -22,17 +23,7 @@ const emptyReactionSummary = (): CommentReactionSummary => ({
   userReaction: null,
 });
 
-export const GET: APIRoute = async ({ url, cookies }) => {
-  const articleSlug = url.searchParams.get('articleSlug')?.trim() ?? '';
-  const articleLanguage = url.searchParams.get('articleLanguage') === 'en' ? 'en' : 'it';
-
-  if (!articleSlug) {
-    return json({ ok: false, error: 'Parametro articleSlug mancante.' }, 400);
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from('comments')
-    .select(`
+const getCommentsSelect = (includeAvatar = true) => `
       id,
       article_slug,
       article_language,
@@ -47,6 +38,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
         id,
         username,
         display_name,
+        ${includeAvatar ? 'avatar_path,' : ''}
         badge_key,
         role,
         user_badges (
@@ -56,11 +48,45 @@ export const GET: APIRoute = async ({ url, cookies }) => {
           image_path
         )
       )
-    `)
+    `;
+
+const withAvatarUrl = (profile: Record<string, unknown> | null | undefined) => {
+  if (!profile) return profile;
+
+  return {
+    ...profile,
+    avatar_url: getAvatarPublicUrl(String(profile.avatar_path || '')),
+  };
+};
+
+export const GET: APIRoute = async ({ url, cookies }) => {
+  const articleSlug = url.searchParams.get('articleSlug')?.trim() ?? '';
+  const articleLanguage = url.searchParams.get('articleLanguage') === 'en' ? 'en' : 'it';
+
+  if (!articleSlug) {
+    return json({ ok: false, error: 'Parametro articleSlug mancante.' }, 400);
+  }
+
+  let { data, error } = await supabaseAdmin
+    .from('comments')
+    .select(getCommentsSelect(true))
     .eq('article_slug', articleSlug)
     .eq('article_language', articleLanguage)
     .eq('status', 'approved')
     .order('created_at', { ascending: true });
+
+  if (isMissingAvatarColumnError(error)) {
+    const fallbackResult = await supabaseAdmin
+      .from('comments')
+      .select(getCommentsSelect(false))
+      .eq('article_slug', articleSlug)
+      .eq('article_language', articleLanguage)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: true });
+
+    data = fallbackResult.data;
+    error = fallbackResult.error;
+  }
 
   if (error) {
     logApiError('comments-list.comments', error);
@@ -115,6 +141,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     return {
       ...publicComment,
+      profiles: withAvatarUrl(publicComment.profiles),
       ...(reactionSummaries.get(comment.id) ?? emptyReactionSummary()),
       isOwnComment,
       canReact: Boolean(currentUserId && !isOwnComment),

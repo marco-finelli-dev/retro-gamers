@@ -360,11 +360,24 @@ const flagAlt = isEnglish
     const displayName = getAccountName(profile, user);
     const initial = isLoggedIn ? getAccountInitial(profile, user) : '';
     const publicProfileUrl = isLoggedIn ? getPublicProfileUrl(profile) : '';
+    const avatarUrl = isLoggedIn ? String(profile?.avatar_url || '') : '';
 
     root?.classList.toggle('has-avatar', Boolean(isLoggedIn && initial));
 
     document.querySelectorAll('[data-account-avatar]').forEach((node) => {
       node.textContent = initial;
+
+      if (avatarUrl) {
+        const img = document.createElement('img');
+        img.src = avatarUrl;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.addEventListener('error', () => {
+          img.hidden = true;
+        });
+        node.appendChild(img);
+      }
     });
 
     document.querySelectorAll('[data-mobile-account-name]').forEach((node) => {

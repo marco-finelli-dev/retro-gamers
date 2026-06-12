@@ -311,8 +311,10 @@
   }
 
   .mobile-menu__account-avatar {
+    position: relative;
     display: grid;
     place-items: center;
+    overflow: hidden;
     width: 42px;
     height: 42px;
     flex: 0 0 42px;
@@ -327,6 +329,19 @@
     font-weight: 950;
     line-height: 1;
     text-transform: uppercase;
+  }
+
+  .mobile-menu__account-avatar img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .mobile-menu__account-avatar img[hidden] {
+    display: none;
   }
 
   .mobile-menu__account-summary > span:last-child {

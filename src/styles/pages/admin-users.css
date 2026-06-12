@@ -180,8 +180,10 @@
 }
 
 .admin-user-card__avatar {
+  position: relative;
   display: grid;
   place-items: center;
+  overflow: hidden;
   width: 48px;
   height: 48px;
   flex: 0 0 48px;
@@ -196,6 +198,24 @@
   line-height: 1;
   text-transform: uppercase;
   box-shadow: var(--rg-card-shadow);
+}
+
+.admin-user-card__avatar img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-user-card__avatar img[hidden] {
+  display: none;
+}
+
+.admin-user-card__avatar-fallback {
+  display: grid;
+  place-items: center;
 }
 
 .admin-user-card__email {

@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './server';
+import { getAvatarPublicUrl, isMissingAvatarColumnError } from './avatars';
 
 export type PublicReaderBadge = {
   key?: string | null;
@@ -13,6 +14,8 @@ export type PublicReaderProfile = {
   username: string;
   display_name: string | null;
   bio?: string | null;
+  avatar_path?: string | null;
+  avatar_url?: string | null;
   role: string | null;
   status: string | null;
   badge_key: string | null;
@@ -73,12 +76,13 @@ export const getCommentExcerpt = (body: string | null, maxLength = 180) => {
   return `${normalized.slice(0, maxLength - 1).trim()}...`;
 };
 
-const getProfileSelect = (includeBio = true) => `
+const getProfileSelect = (includeBio = true, includeAvatar = true) => `
   id,
   user_id,
   username,
   display_name,
   ${includeBio ? 'bio,' : ''}
+  ${includeAvatar ? 'avatar_path,' : ''}
   badge_key,
   role,
   status,
@@ -117,17 +121,34 @@ export async function getPublicReaderProfile(
     };
   }
 
+  let includeBio = true;
+  let includeAvatar = true;
   let { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select(getProfileSelect(true))
+    .select(getProfileSelect(includeBio, includeAvatar))
     .eq('username', normalizedUsername)
     .eq('status', 'active')
     .maybeSingle();
 
-  if (isMissingBioColumnError(profileError)) {
+  if (isMissingBioColumnError(profileError) || isMissingAvatarColumnError(profileError)) {
+    includeBio = !isMissingBioColumnError(profileError);
+    includeAvatar = !isMissingAvatarColumnError(profileError);
+
     const fallbackResult = await supabaseAdmin
       .from('profiles')
-      .select(getProfileSelect(false))
+      .select(getProfileSelect(includeBio, includeAvatar))
+      .eq('username', normalizedUsername)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    profile = fallbackResult.data;
+    profileError = fallbackResult.error;
+  }
+
+  if (isMissingBioColumnError(profileError) || isMissingAvatarColumnError(profileError)) {
+    const fallbackResult = await supabaseAdmin
+      .from('profiles')
+      .select(getProfileSelect(false, false))
       .eq('username', normalizedUsername)
       .eq('status', 'active')
       .maybeSingle();
@@ -188,7 +209,10 @@ export async function getPublicReaderProfile(
   }
 
   return {
-    profile,
+    profile: {
+      ...profile,
+      avatar_url: getAvatarPublicUrl(profile.avatar_path),
+    },
     comments: comments ?? [],
     approvedCount: count ?? 0,
     error: null,

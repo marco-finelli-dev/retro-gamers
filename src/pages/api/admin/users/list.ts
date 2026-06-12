@@ -7,6 +7,7 @@ import {
 } from '../../../../lib/badges';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserProfileFromToken, isStaffProfile } from '../../../../lib/supabase/auth';
+import { getAvatarPublicUrl, isMissingAvatarColumnError } from '../../../../lib/supabase/avatars';
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -43,15 +44,30 @@ const fetchAllAuthUsers = async () => {
   return users;
 };
 
+const getProfilesSelect = (includeAvatar = true) =>
+  `id, user_id, username, display_name, ${includeAvatar ? 'avatar_path,' : ''} role, status, badge_key`;
+
 const fetchAllProfiles = async () => {
   const rows = [];
   const pageSize = 1000;
+  let includeAvatar = true;
 
   for (let from = 0; from < 10000; from += pageSize) {
-    const { data, error } = await supabaseAdmin
+    let { data, error } = await supabaseAdmin
       .from('profiles')
-      .select('id, user_id, username, display_name, role, status, badge_key')
+      .select(getProfilesSelect(includeAvatar))
       .range(from, from + pageSize - 1);
+
+    if (isMissingAvatarColumnError(error)) {
+      includeAvatar = false;
+      const fallbackResult = await supabaseAdmin
+        .from('profiles')
+        .select(getProfilesSelect(false))
+        .range(from, from + pageSize - 1);
+
+      data = fallbackResult.data;
+      error = fallbackResult.error;
+    }
 
     if (error) {
       throw error;
@@ -214,6 +230,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         email: authUser?.email || '',
         username: profile.username || '',
         displayName: profile.display_name || '',
+        avatarUrl: getAvatarPublicUrl(profile.avatar_path),
         role,
         status,
         currentBadgeKey: profile.badge_key || '',

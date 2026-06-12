@@ -232,13 +232,25 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
       const avatarInitial = getUserInitial(user);
       const avatarLabel = `Avatar di ${user.displayName || user.username || user.email || 'utente'}`;
       const publicProfileHref = getPublicProfileHref(user.username);
+      const avatarImage = user.avatarUrl
+        ? `
+          <img
+            src="${escapeHtml(user.avatarUrl)}"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onerror="this.hidden = true"
+          />
+        `
+        : '';
 
       return `
         <article class="admin-user-card" data-user-id="${escapeHtml(user.userId)}">
           <header class="admin-user-card__header">
             <div class="admin-user-card__identity">
               <span class="admin-user-card__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
-                ${escapeHtml(avatarInitial)}
+                <span class="admin-user-card__avatar-fallback" aria-hidden="true">${escapeHtml(avatarInitial)}</span>
+                ${avatarImage}
               </span>
 
               <div>

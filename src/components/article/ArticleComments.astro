@@ -313,10 +313,19 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       : `/utenti/${encodedUsername}/`;
   };
 
-  const renderAvatar = (initial, avatarLabel, href = '') => {
+  const renderAvatar = (initial, avatarLabel, href = '', src = '') => {
     const avatar = `
       <span class="article-comment__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
-        ${escapeHtml(initial)}
+        <span class="article-comment__avatar-fallback" aria-hidden="true">${escapeHtml(initial)}</span>
+        ${src ? `
+          <img
+            src="${escapeHtml(src)}"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onerror="this.hidden = true"
+          />
+        ` : ''}
       </span>
     `;
 
@@ -447,6 +456,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const initial = getAvatarInitial(profile, labels.reader);
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
     const profileHref = getProfileHref(profile, language, Boolean(reply.isLegacy));
+    const avatarUrl = profile.avatar_url || '';
 
     return `
       <div
@@ -454,7 +464,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         ${reply.id ? `id="${escapeHtml(getCommentAnchorId(reply))}" data-comment-id="${escapeHtml(reply.id)}"` : ''}
       >
         <div class="article-comment__editor-reply-header">
-          ${renderAvatar(initial, avatarLabel, profileHref)}
+          ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl)}
 
           <div class="article-comment__editor-reply-meta">
             <strong>${renderAuthorName(authorName, profileHref)}</strong>
@@ -484,6 +494,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const isLegacy = Boolean(comment.isLegacy);
     const profileHref = getProfileHref(profile, language, isLegacy);
     const highlightedClass = comment.isHighlighted ? ' article-comment--highlighted' : '';
+    const avatarUrl = profile.avatar_url || '';
 
     return `
       <article
@@ -491,7 +502,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         ${comment.id ? `id="${escapeHtml(getCommentAnchorId(comment))}" data-comment-id="${escapeHtml(comment.id)}"` : ''}
       >
         <header class="article-comment__header">
-          ${renderAvatar(initial, avatarLabel, profileHref)}
+          ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl)}
 
           <div class="article-comment__meta">
             <h3>${renderAuthorName(authorName, profileHref)}</h3>
