@@ -1,0 +1,122 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+import { getAllPosts } from '../../lib/posts';
+
+const allPosts = await getAllPosts();
+
+const englishReviews = allPosts.filter(
+  (post) => post.type === 'review' && post.language === 'en'
+);
+
+const englishNews = allPosts.filter(
+  (post) => post.type === 'news' && post.language === 'en'
+);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/regolamento-commenti/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/comment-rules/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/regolamento-commenti/' }
+];
+
+const languageSwitch = {
+  url: '/regolamento-commenti/'
+};
+---
+
+<BaseLayout
+  reviews={englishReviews}
+  news={englishNews}
+  title="Comment rules"
+  description="The rules for joining Retro-Gamers.it comments in a respectful, useful way, in line with the spirit of the community."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/en/comment-rules/"
+  lang="en"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <main class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Community</span>
+        <h1>Comment rules</h1>
+        <p>
+          A few simple rules to keep discussions useful, respectful and enjoyable
+          for everyone.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <h2>1. Respect comes first</h2>
+
+        <p>
+          Comments are a space for conversation between enthusiasts. Memories,
+          opinions, corrections, personal experiences and different points of
+          view are welcome. Insults, personal attacks, provocation,
+          discrimination, blasphemy or hostile behaviour towards other users,
+          authors, the editorial team or the community are not allowed.
+        </p>
+
+        <h2>2. Stay on topic</h2>
+
+        <p>
+          Comments should remain connected to the article, game, platform,
+          author or topic being discussed. Digressions are natural, but
+          completely off-topic discussions, personal arguments or unrelated
+          complaints may be removed.
+        </p>
+
+        <h2>3. No spam or self-promotion</h2>
+
+        <p>
+          Spam, advertising, promotional links, repeated self-promotion and
+          invitations to unrelated channels, groups, shops or external services
+          are not allowed. Useful and contextual links may be accepted when they
+          add value to the discussion.
+        </p>
+
+        <h2>4. Spoilers, piracy and sensitive content</h2>
+
+        <p>
+          Spoilers should be clearly marked. Emulation, historical preservation
+          and piracy can be discussed as cultural or technical subjects, but
+          links to illegal material, ROMs, cracks, pirate websites or
+          instructions for bypassing protections and copyright are not allowed.
+          Pornographic, violent, illegal or otherwise unsuitable content is not
+          allowed in the editorial context of the website.
+        </p>
+
+        <h2>5. Moderation</h2>
+
+        <p>
+          Comments may be reviewed before publication or moderated afterwards.
+          The editorial team may approve, reject, edit, hide or remove comments
+          when needed to keep the discussion orderly and respectful. Moderation
+          decisions are not discussed publicly in the comments.
+        </p>
+
+        <h2>6. Accounts and abusive behaviour</h2>
+
+        <p>
+          Accounts must be used correctly. Attempts to bypass restrictions,
+          create multiple identities to disrupt discussion, impersonate other
+          people or use comments to harass other users are not allowed. In case
+          of abuse, an account may be suspended or limited.
+        </p>
+
+        <h2>7. Community spirit</h2>
+
+        <p>
+          Retro-Gamers.it exists because of a shared passion for video games,
+          computers, consoles, arcades and digital memory. Criticism and
+          disagreement are welcome when expressed with respect. The goal is to
+          build discussions that add something to the article, not to win a war
+          in the comments.
+        </p>
+
+      </article>
+    </div>
+  </main>
+</BaseLayout>

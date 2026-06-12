@@ -25,6 +25,7 @@ const labels = {
     submit: 'Invia commento',
     moderation:
       'I commenti vengono moderati prima della pubblicazione. Usa un tono civile e resta in tema con l’articolo.',
+    rulesLink: 'Regolamento commenti',
     empty:
       'Non ci sono ancora commenti approvati. Puoi essere il primo a lasciare una memoria.',
     loading: 'Caricamento commenti...',
@@ -58,6 +59,7 @@ const labels = {
     submit: 'Submit comment',
     moderation:
       'Comments are reviewed before publication. Please keep the discussion respectful and on topic.',
+    rulesLink: 'Comment rules',
     empty:
       'There are no approved comments yet. You can be the first to leave a memory.',
     loading: 'Loading comments...',
@@ -84,6 +86,7 @@ const labels = {
 };
 
 const t = labels[lang] || labels.it;
+const commentRulesHref = lang === 'en' ? '/en/comment-rules/' : '/regolamento-commenti/';
 
 const legacyComments = Array.isArray(comments)
   ? comments
@@ -142,6 +145,10 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       <h2>{t.title}</h2>
 
       <p>{t.intro}</p>
+
+      <a class="article-comments__rules-link" href={commentRulesHref}>
+        {t.rulesLink}
+      </a>
 
       <p class="article-comments__status" data-comments-status hidden></p>
     </div>

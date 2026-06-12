@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+import { getAllPosts, groupPosts } from '../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/regolamento-commenti/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/comment-rules/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/regolamento-commenti/' }
+];
+
+const languageSwitch = {
+  url: '/en/comment-rules/'
+};
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Regolamento commenti"
+  description="Le regole per partecipare ai commenti di Retro-Gamers.it in modo rispettoso, utile e coerente con lo spirito della community."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/regolamento-commenti/"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <main class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Community</span>
+        <h1>Regolamento commenti</h1>
+        <p>
+          Poche regole semplici per mantenere le discussioni utili,
+          rispettose e piacevoli per tutti.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <h2>1. Rispetto prima di tutto</h2>
+
+        <p>
+          I commenti sono uno spazio di confronto tra appassionati. Sono
+          benvenuti ricordi, opinioni, correzioni, esperienze personali e punti
+          di vista diversi. Non sono ammessi insulti, attacchi personali,
+          provocazioni, discriminazioni, bestemmie o comportamenti ostili verso
+          altri utenti, autori, redazione o community.
+        </p>
+
+        <h2>2. Restare in tema</h2>
+
+        <p>
+          I commenti devono restare collegati all’articolo, al gioco, alla
+          piattaforma, all’autore o al tema trattato. Le digressioni sono
+          naturali, ma le discussioni completamente fuori tema, polemiche
+          personali o lamentele non pertinenti possono essere rimosse.
+        </p>
+
+        <h2>3. Niente spam o autopromozione</h2>
+
+        <p>
+          Non sono ammessi spam, pubblicità, link promozionali, autopromozione
+          insistente, inviti a canali, gruppi, shop o servizi esterni non
+          pertinenti. Link utili e contestuali possono essere accettati se
+          aggiungono valore alla discussione.
+        </p>
+
+        <h2>4. Spoiler, pirateria e contenuti sensibili</h2>
+
+        <p>
+          Gli spoiler devono essere segnalati con chiarezza. È possibile
+          discutere di emulazione, conservazione storica e pirateria come
+          fenomeni culturali o tecnici, ma non sono ammessi link a materiale
+          illegale, ROM, crack, siti pirata o istruzioni per aggirare protezioni
+          e diritti d’autore. Non sono ammessi contenuti pornografici, violenti,
+          illegali o inadatti al contesto editoriale del sito.
+        </p>
+
+        <h2>5. Moderazione</h2>
+
+        <p>
+          I commenti possono essere letti prima della pubblicazione o moderati
+          successivamente. La redazione può approvare, rifiutare, modificare,
+          nascondere o rimuovere commenti quando necessario per mantenere la
+          discussione ordinata e rispettosa. Le decisioni di moderazione non
+          sono oggetto di discussione pubblica nei commenti.
+        </p>
+
+        <h2>6. Account e comportamenti scorretti</h2>
+
+        <p>
+          L’uso dell’account deve essere corretto. Non sono ammessi tentativi di
+          aggirare blocchi, creare identità multiple per disturbare la
+          discussione, impersonare altre persone o usare i commenti per
+          molestare altri utenti. In caso di abusi, l’account può essere
+          sospeso o limitato.
+        </p>
+
+        <h2>7. Spirito della community</h2>
+
+        <p>
+          Retro-Gamers.it nasce dalla passione per videogiochi, computer,
+          console, arcade e memoria digitale. Critiche e disaccordi sono
+          benvenuti, purché espressi con rispetto. L’obiettivo è costruire
+          discussioni che aggiungano qualcosa all’articolo, non vincere una
+          guerra nei commenti.
+        </p>
+
+      </article>
+    </div>
+  </main>
+</BaseLayout>
