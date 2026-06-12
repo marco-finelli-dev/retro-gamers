@@ -32,6 +32,7 @@ const languageSwitch = profile
 const badge = profile?.user_badges;
 const badgeLabel = badge?.label_it || badge?.label_en || profile?.badge_key || '';
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
+const bio = profile?.bio?.trim() || '';
 const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   day: 'numeric',
   month: 'long',
@@ -72,6 +73,8 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
               {badgeLabel && <span>{badgeLabel}</span>}
               {isStaff && <span>Staff Retro-Gamers</span>}
             </div>
+
+            {bio && <p class="public-user-bio">{bio}</p>}
           </div>
         </section>
 

@@ -12,6 +12,7 @@ export type PublicReaderProfile = {
   user_id: string;
   username: string;
   display_name: string | null;
+  bio?: string | null;
   role: string | null;
   status: string | null;
   badge_key: string | null;
@@ -72,6 +73,35 @@ export const getCommentExcerpt = (body: string | null, maxLength = 180) => {
   return `${normalized.slice(0, maxLength - 1).trim()}...`;
 };
 
+const getProfileSelect = (includeBio = true) => `
+  id,
+  user_id,
+  username,
+  display_name,
+  ${includeBio ? 'bio,' : ''}
+  badge_key,
+  role,
+  status,
+  user_badges (
+    key,
+    label_it,
+    label_en,
+    image_path
+  )
+`;
+
+const isMissingBioColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    error.code === '42703' ||
+    error.code === 'PGRST204' ||
+    (message.includes('bio') && (message.includes('column') || message.includes('schema cache')))
+  );
+};
+
 export async function getPublicReaderProfile(
   username: string,
   commentLimit = 8
@@ -87,26 +117,24 @@ export async function getPublicReaderProfile(
     };
   }
 
-  const { data: profile, error: profileError } = await supabaseAdmin
+  let { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select(`
-      id,
-      user_id,
-      username,
-      display_name,
-      badge_key,
-      role,
-      status,
-      user_badges (
-        key,
-        label_it,
-        label_en,
-        image_path
-      )
-    `)
+    .select(getProfileSelect(true))
     .eq('username', normalizedUsername)
     .eq('status', 'active')
     .maybeSingle();
+
+  if (isMissingBioColumnError(profileError)) {
+    const fallbackResult = await supabaseAdmin
+      .from('profiles')
+      .select(getProfileSelect(false))
+      .eq('username', normalizedUsername)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    profile = fallbackResult.data;
+    profileError = fallbackResult.error;
+  }
 
   if (profileError) {
     return {

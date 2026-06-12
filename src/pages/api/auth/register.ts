@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { sendNewReaderRegistrationAdminEmail } from '../../../lib/supabase/account-emails';
+import { createWelcomeAccountMessage } from '../../../lib/supabase/account-messages';
 import { supabaseAdmin, supabasePublic } from '../../../lib/supabase/server';
 
 type RegisterPayload = {
@@ -131,6 +132,15 @@ export const POST: APIRoute = async ({ request }) => {
       ok: false,
       error: insertProfileError.message,
     }, 500);
+  }
+
+  try {
+    await createWelcomeAccountMessage({
+      userId: user.id,
+      displayName,
+    });
+  } catch (error) {
+    console.error('Welcome account message failed:', error);
   }
 
   try {

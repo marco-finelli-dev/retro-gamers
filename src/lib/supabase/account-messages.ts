@@ -36,6 +36,11 @@ type CommentReference = {
   article_url?: string | null;
 };
 
+type WelcomeMessageInput = {
+  userId?: string | null;
+  displayName?: string | null;
+};
+
 const DEFAULT_LIMIT = 60;
 
 const logAccountMessagesError = (context: string, error: { code?: string; message?: string; hint?: string } | null) => {
@@ -72,6 +77,7 @@ export async function createAccountMessage(input: AccountMessageInput) {
       .select('id')
       .eq('user_id', input.userId)
       .eq('type', input.type)
+      .eq('title', input.title)
       .eq('action_url', actionUrl)
       .maybeSingle();
 
@@ -113,6 +119,32 @@ export async function createCommentApprovedAccountMessage(comment: CommentRefere
     body: 'Il tuo commento è stato approvato ed è ora visibile su Retro-Gamers.it.',
     actionLabel: 'Apri commento',
     actionUrl: getCommentActionUrl(comment),
+  });
+}
+
+export async function createWelcomeAccountMessage(input: WelcomeMessageInput) {
+  const displayName = input.displayName?.trim() || 'lettore';
+
+  return createAccountMessage({
+    userId: input.userId,
+    type: 'system',
+    title: 'Benvenuto su Retro-Gamers.it',
+    body: `Ciao ${displayName},
+benvenuto su Retro-Gamers.it.
+
+Questo sito nasce per raccontare la storia dei videogiochi, ma anche per raccogliere le memorie di chi quei giochi, quelle macchine e quelle sale giochi le ha vissute davvero.
+
+Con il tuo account puoi commentare articoli e recensioni, rispondere agli altri lettori, costruire il tuo profilo, sbloccare badge, seguire le notifiche interne e lasciare il tuo contributo dentro l’archivio del sito.
+
+Ti chiedo solo di usare questo spazio con rispetto: qui vogliamo discussioni vere, ricordi, opinioni sincere, correzioni utili e passione retro, non il rumore dei social.
+
+Benvenuto tra noi.
+Ci vediamo sotto gli articoli.
+
+Marco Finelli
+Founder / Editor di Retro-Gamers.it`,
+    actionLabel: 'Apri il tuo account',
+    actionUrl: '/account/',
   });
 }
 

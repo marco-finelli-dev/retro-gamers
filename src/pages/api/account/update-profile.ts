@@ -5,6 +5,7 @@ import { supabaseAdmin } from '../../../lib/supabase/server';
 type UpdateProfilePayload = {
   displayName?: string;
   badgeKey?: string;
+  bio?: string;
 };
 
 const json = (payload: unknown, status = 200) =>
@@ -33,41 +34,82 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const displayName = payload.displayName?.trim() ?? '';
   const badgeKey = payload.badgeKey?.trim() ?? '';
+  const hasProfileFields =
+    typeof payload.displayName === 'string' || typeof payload.badgeKey === 'string';
+  const hasBio = typeof payload.bio === 'string';
+  const updatePayload: {
+    display_name?: string;
+    badge_key?: string;
+    bio?: string | null;
+  } = {};
 
-  if (displayName.length < 2 || displayName.length > 40) {
-    return json({
-      ok: false,
-      error: 'Il nome visualizzato deve contenere 2-40 caratteri.',
-    }, 400);
+  if (!hasProfileFields && !hasBio) {
+    return json({ ok: false, error: 'Nessun dato da aggiornare.' }, 400);
   }
 
-  if (!badgeKey) {
-    return json({ ok: false, error: 'Scegli un badge lettore.' }, 400);
+  if (hasProfileFields) {
+    if (displayName.length < 2 || displayName.length > 40) {
+      return json({
+        ok: false,
+        error: 'Il nome visualizzato deve contenere 2-40 caratteri.',
+      }, 400);
+    }
+
+    if (!badgeKey) {
+      return json({ ok: false, error: 'Scegli un badge lettore.' }, 400);
+    }
+
+    const { data: badge, error: badgeError } = await supabaseAdmin
+      .from('user_badges')
+      .select('key')
+      .eq('key', badgeKey)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (badgeError) {
+      return json({ ok: false, error: badgeError.message }, 500);
+    }
+
+    if (!badge) {
+      return json({ ok: false, error: 'Badge non valido.' }, 400);
+    }
+
+    updatePayload.display_name = displayName;
+    updatePayload.badge_key = badgeKey;
   }
 
-  const { data: badge, error: badgeError } = await supabaseAdmin
-    .from('user_badges')
-    .select('key')
-    .eq('key', badgeKey)
-    .eq('is_active', true)
-    .maybeSingle();
+  if (hasBio) {
+    const bio = String(payload.bio || '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+      .trim();
 
-  if (badgeError) {
-    return json({ ok: false, error: badgeError.message }, 500);
+    if (bio.length > 500) {
+      return json({ ok: false, error: 'La bio non può superare 500 caratteri.' }, 400);
+    }
+
+    updatePayload.bio = bio || null;
   }
 
-  if (!badge) {
-    return json({ ok: false, error: 'Badge non valido.' }, 400);
-  }
-
-  const { data: profile, error: updateError } = await supabaseAdmin
-    .from('profiles')
-    .update({
-      display_name: displayName,
-      badge_key: badgeKey,
-    })
-    .eq('user_id', session.user.id)
-    .select(`
+  const selectFields = hasBio
+    ? `
+      id,
+      user_id,
+      username,
+      display_name,
+      bio,
+      badge_key,
+      role,
+      status,
+      user_badges (
+        key,
+        label_it,
+        label_en,
+        image_path
+      )
+    `
+    : `
       id,
       user_id,
       username,
@@ -81,7 +123,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         label_en,
         image_path
       )
-    `)
+    `;
+
+  const { data: profile, error: updateError } = await supabaseAdmin
+    .from('profiles')
+    .update(updatePayload)
+    .eq('user_id', session.user.id)
+    .select(selectFields)
     .single();
 
   if (updateError) {
@@ -90,7 +138,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   return json({
     ok: true,
-    message: 'Profilo aggiornato.',
+    message: hasBio && !hasProfileFields ? 'Bio aggiornata.' : 'Profilo aggiornato.',
     profile,
   });
 };

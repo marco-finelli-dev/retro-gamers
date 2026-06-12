@@ -23,6 +23,36 @@ const accountDisplayName =
   profile?.display_name || profile?.username || user?.email || 'Utente Retro-Gamers';
 const accountHandle = profile?.username ? `@${profile.username}` : user?.email || '';
 const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
+let currentBio = '';
+const isMissingBioColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    error.code === '42703' ||
+    error.code === 'PGRST204' ||
+    (message.includes('bio') && (message.includes('column') || message.includes('schema cache')))
+  );
+};
+
+if (isLoggedIn && user?.id) {
+  const { data: profileBio, error: profileBioError } = await supabaseAdmin
+    .from('profiles')
+    .select('bio')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (!profileBioError) {
+    currentBio = profileBio?.bio || '';
+  } else if (!isMissingBioColumnError(profileBioError)) {
+    console.error('Profile bio query failed:', {
+      code: profileBioError.code,
+      message: profileBioError.message,
+      hint: profileBioError.hint,
+    });
+  }
+}
 
 const commentActivity = {
   approved: 0,
@@ -160,6 +190,39 @@ if (isLoggedIn && user?.id) {
             <a href="/account/memories/">Vedi tutte le memorie</a>
           </div>
 
+          <section class="account-public-profile" aria-labelledby="account-public-profile-title">
+            <div class="account-public-profile__heading">
+              <p class="account-kicker">Community</p>
+              <h2 id="account-public-profile-title">Profilo pubblico</h2>
+              <p>
+                Racconta in poche righe chi sei come lettore, giocatore o
+                appassionato retro.
+              </p>
+            </div>
+
+            <form class="account-form account-form--bio" data-account-bio-form>
+              <label>
+                <span>Bio</span>
+                <textarea
+                  name="bio"
+                  maxlength="500"
+                  rows="5"
+                  placeholder="Esempio: cresciuto tra Amiga, sale giochi e riviste consumate fino all’ultima pagina."
+                >{currentBio}</textarea>
+              </label>
+
+              <small class="account-character-count" data-account-bio-counter>
+                {currentBio.length}/500
+              </small>
+
+              <p class="account-message" data-account-bio-message hidden></p>
+
+              <div class="account-actions">
+                <button type="submit">Salva bio</button>
+              </div>
+            </form>
+          </section>
+
           {isStaff && (
             <section class="account-editorial-tools" aria-labelledby="account-editorial-tools-title">
               <div>
@@ -227,15 +290,27 @@ if (isLoggedIn && user?.id) {
 
   <script>
     const form = document.querySelector('[data-account-profile-form]');
-    const message = document.querySelector('[data-account-message]');
+    const profileMessage = document.querySelector('[data-account-message]');
+    const bioForm = document.querySelector('[data-account-bio-form]');
+    const bioMessage = document.querySelector('[data-account-bio-message]');
+    const bioTextarea = document.querySelector('[data-account-bio-form] textarea[name="bio"]');
+    const bioCounter = document.querySelector('[data-account-bio-counter]');
     const logoutButton = document.querySelector('[data-account-logout]');
 
-    const showMessage = (text, type = 'ok') => {
-      if (!message) return;
-      message.textContent = text;
-      message.hidden = false;
-      message.dataset.type = type;
+    const showMessage = (target, text, type = 'ok') => {
+      if (!target) return;
+      target.textContent = text;
+      target.hidden = false;
+      target.dataset.type = type;
     };
+
+    const updateBioCounter = () => {
+      if (!bioTextarea || !bioCounter) return;
+      bioCounter.textContent = `${bioTextarea.value.length}/500`;
+    };
+
+    updateBioCounter();
+    bioTextarea?.addEventListener('input', updateBioCounter);
 
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -258,13 +333,49 @@ if (isLoggedIn && user?.id) {
         const result = await response.json();
 
         if (!result.ok) {
-          showMessage(result.error || 'Aggiornamento non riuscito.', 'error');
+          showMessage(profileMessage, result.error || 'Aggiornamento non riuscito.', 'error');
           return;
         }
 
-        showMessage('Profilo aggiornato.', 'ok');
+        showMessage(profileMessage, 'Profilo aggiornato.', 'ok');
       } catch {
-        showMessage('Errore di connessione. Riprova.', 'error');
+        showMessage(profileMessage, 'Errore di connessione. Riprova.', 'error');
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+
+    bioForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(bioForm);
+      const button = bioForm.querySelector('button[type="submit"]');
+      const bio = String(formData.get('bio') || '');
+
+      if (bio.length > 500) {
+        showMessage(bioMessage, 'La bio non può superare 500 caratteri.', 'error');
+        return;
+      }
+
+      if (button) button.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/update-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bio })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(bioMessage, result.error || 'Aggiornamento non riuscito.', 'error');
+          return;
+        }
+
+        showMessage(bioMessage, 'Bio aggiornata.', 'ok');
+      } catch {
+        showMessage(bioMessage, 'Errore di connessione. Riprova.', 'error');
       } finally {
         if (button) button.disabled = false;
       }
@@ -277,7 +388,7 @@ if (isLoggedIn && user?.id) {
         await fetch('/api/auth/logout', { method: 'POST' });
         window.location.href = '/';
       } catch {
-        showMessage('Logout non riuscito. Riprova.', 'error');
+        showMessage(profileMessage, 'Logout non riuscito. Riprova.', 'error');
         logoutButton.disabled = false;
       }
     });
