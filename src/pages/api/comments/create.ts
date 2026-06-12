@@ -2,6 +2,10 @@ import type { APIRoute } from 'astro';
 import { supabasePublic, supabaseAdmin } from '../../../lib/supabase/server';
 import { isBlockedProfileStatus, isStaffProfile } from '../../../lib/supabase/auth';
 import {
+  createCommentApprovedAccountMessage,
+  createReplyAccountMessage,
+} from '../../../lib/supabase/account-messages';
+import {
   sendNewCommentAdminEmail,
   sendReplyApprovedEmail,
 } from '../../../lib/supabase/comment-emails';
@@ -54,6 +58,30 @@ async function getAuthUserEmail(userId?: string | null) {
   }
 
   return data.user?.email ?? null;
+}
+
+async function createInternalApprovedMessages(comment: {
+  id: string;
+  user_id?: string | null;
+  parent_id?: string | null;
+  article_title?: string | null;
+  article_url?: string | null;
+}) {
+  const approvedResult = await createCommentApprovedAccountMessage(comment);
+
+  if (!approvedResult.ok && !approvedResult.skipped) {
+    console.error('Account message for approved comment failed:', approvedResult.error);
+  }
+
+  if (!comment.parent_id) {
+    return;
+  }
+
+  const replyResult = await createReplyAccountMessage(comment);
+
+  if (!replyResult.ok && !replyResult.skipped) {
+    console.error('Account message for comment reply failed:', replyResult.error);
+  }
 }
 
 async function notifyParentAuthorAboutApprovedReply(comment: {
@@ -342,6 +370,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   if (isStaff) {
+    await createInternalApprovedMessages(comment);
     await notifyParentAuthorAboutApprovedReply(comment);
 
     return json({

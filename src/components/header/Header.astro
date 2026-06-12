@@ -218,6 +218,11 @@ const flagAlt = isEnglish
               {isEnglish ? 'My memories' : 'Le mie memorie'}
             </a>
 
+            <a href="/account/messages/" role="menuitem">
+              <span>{isEnglish ? 'Messages' : 'Messaggi'}</span>
+              <span class="site-header__account-unread" data-account-unread hidden></span>
+            </a>
+
             <a href="/account/" role="menuitem" data-account-public-profile hidden>
               {isEnglish ? 'Public profile' : 'Profilo pubblico'}
             </a>
@@ -302,6 +307,34 @@ const flagAlt = isEnglish
     return isEnglish
       ? `/en/users/${encodeURIComponent(username)}/`
       : `/utenti/${encodeURIComponent(username)}/`;
+  };
+
+  const setUnreadCount = (count = 0) => {
+    const safeCount = Number.isFinite(Number(count)) ? Math.max(0, Number(count)) : 0;
+    const label = safeCount > 99 ? '99+' : String(safeCount);
+
+    root?.classList.toggle('has-unread', safeCount > 0);
+
+    document.querySelectorAll('[data-account-unread]').forEach((node) => {
+      node.textContent = safeCount > 0 ? label : '';
+      node.hidden = safeCount <= 0;
+    });
+  };
+
+  const refreshUnreadCount = async (isLoggedIn) => {
+    if (!isLoggedIn) {
+      setUnreadCount(0);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/account/messages/unread-count');
+      const result = await response.json();
+
+      setUnreadCount(result?.unreadCount || 0);
+    } catch {
+      setUnreadCount(0);
+    }
   };
 
   const closeMenu = () => {
@@ -394,6 +427,7 @@ const flagAlt = isEnglish
 
       if (!response.ok || !result.ok || !result.profile) {
         setAccountState(false);
+        refreshUnreadCount(false);
         return;
       }
 
@@ -403,8 +437,10 @@ const flagAlt = isEnglish
         result.profile,
         result.user
       );
+      refreshUnreadCount(true);
     } catch {
       setAccountState(false);
+      refreshUnreadCount(false);
     }
   };
 

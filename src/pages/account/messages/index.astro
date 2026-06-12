@@ -1,0 +1,218 @@
+---
+import '../../../styles/pages/account.css';
+import '../../../styles/pages/account-messages.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import {
+  getAccountMessages,
+  getUnreadAccountMessageCount,
+  type AccountMessage,
+} from '../../../lib/supabase/account-messages';
+import { getUserProfileFromToken } from '../../../lib/supabase/auth';
+
+const title = 'Messaggi account | Retro-Gamers.it';
+const description = 'Centro notifiche e messaggi interni del profilo lettore Retro-Gamers.it.';
+const token = Astro.cookies.get('rg_access_token')?.value ?? '';
+const session = await getUserProfileFromToken(token);
+const isLoggedIn = Boolean(!session.error && session.user && session.profile);
+
+let messages: AccountMessage[] = [];
+let unreadCount = 0;
+let messagesError = '';
+
+if (isLoggedIn && session.user) {
+  const [messagesResult, unreadResult] = await Promise.all([
+    getAccountMessages(session.user.id),
+    getUnreadAccountMessageCount(session.user.id),
+  ]);
+
+  messages = messagesResult.messages;
+  unreadCount = unreadResult.count;
+  messagesError = messagesResult.error?.message || unreadResult.error?.message || '';
+}
+
+const typeLabels: Record<string, string> = {
+  comment_approved: 'Commento approvato',
+  comment_reply: 'Risposta',
+  badge_unlocked: 'Badge',
+  system: 'Sistema',
+};
+
+const dateFormatter = new Intl.DateTimeFormat('it-IT', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="account-page account-messages-page">
+    <section class="account-card">
+      <p class="account-kicker">Community</p>
+      <h1>Messaggi</h1>
+
+      {isLoggedIn ? (
+        <>
+          <p>
+            Qui trovi notifiche e messaggi legati alla tua attività nella community:
+            commenti approvati, risposte ricevute e aggiornamenti del profilo.
+          </p>
+
+          <div class="account-messages-toolbar">
+            <span data-account-messages-count>
+              {unreadCount === 1
+                ? '1 messaggio non letto'
+                : `${unreadCount} messaggi non letti`}
+            </span>
+
+            {unreadCount > 0 && (
+              <button type="button" data-mark-all-read>
+                Segna tutti come letti
+              </button>
+            )}
+          </div>
+
+          {messagesError ? (
+            <p class="account-message" data-type="error">
+              Messaggi non disponibili. Verifica che la tabella account_messages sia stata creata in Supabase.
+            </p>
+          ) : messages.length > 0 ? (
+            <div class="account-messages-list" data-account-messages-list>
+              {messages.map((message) => (
+                <article
+                  class={`account-message-card${message.is_read ? '' : ' is-unread'}`}
+                  data-message-id={message.id}
+                >
+                  <header>
+                    <span>{typeLabels[message.type] || message.type}</span>
+                    <time datetime={message.created_at}>
+                      {dateFormatter.format(new Date(message.created_at))}
+                    </time>
+                  </header>
+
+                  <h2>{message.title}</h2>
+                  <p>{message.body}</p>
+
+                  <footer>
+                    {message.action_url && (
+                      <a href={message.action_url}>
+                        {message.action_label || 'Apri'}
+                      </a>
+                    )}
+
+                    {!message.is_read && (
+                      <button type="button" data-mark-message-read>
+                        Segna come letto
+                      </button>
+                    )}
+                  </footer>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p class="account-messages-empty">
+              Nessun messaggio per ora. Le notifiche della community appariranno qui.
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <p>
+            Accedi per leggere i messaggi del tuo profilo e seguire gli aggiornamenti
+            della community.
+          </p>
+
+          <div class="account-actions account-actions--standalone">
+            <a href="/account/login/">Accedi</a>
+            <a href="/account/register/">Registrati</a>
+          </div>
+        </>
+      )}
+    </section>
+  </main>
+
+  <script>
+    const list = document.querySelector('[data-account-messages-list]');
+    const countNode = document.querySelector('[data-account-messages-count]');
+    const markAllButton = document.querySelector('[data-mark-all-read]');
+
+    const refreshUnreadCount = async () => {
+      try {
+        const response = await fetch('/api/account/messages/unread-count');
+        const result = await response.json();
+        const count = Number(result.unreadCount || 0);
+
+        if (countNode) {
+          countNode.textContent = count === 1
+            ? '1 messaggio non letto'
+            : `${count} messaggi non letti`;
+        }
+
+        if (markAllButton) {
+          markAllButton.hidden = count <= 0;
+        }
+      } catch {
+        // The page remains usable even if the counter refresh fails.
+      }
+    };
+
+    list?.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-mark-message-read]');
+      if (!button) return;
+
+      const card = button.closest('[data-message-id]');
+      const messageId = card?.dataset.messageId;
+
+      if (!messageId) return;
+
+      button.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/messages/mark-read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messageId }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          button.disabled = false;
+          return;
+        }
+
+        card.classList.remove('is-unread');
+        button.remove();
+        refreshUnreadCount();
+      } catch {
+        button.disabled = false;
+      }
+    });
+
+    markAllButton?.addEventListener('click', async () => {
+      markAllButton.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/messages/mark-all-read', {
+          method: 'POST',
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          markAllButton.disabled = false;
+          return;
+        }
+
+        document.querySelectorAll('.account-message-card.is-unread').forEach((card) => {
+          card.classList.remove('is-unread');
+          card.querySelector('[data-mark-message-read]')?.remove();
+        });
+
+        refreshUnreadCount();
+      } catch {
+        markAllButton.disabled = false;
+      }
+    });
+  </script>
+</BaseLayout>

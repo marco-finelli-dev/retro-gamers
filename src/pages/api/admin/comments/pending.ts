@@ -28,9 +28,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     return json({ ok: false, error: 'Permessi insufficienti.' }, 403);
   }
 
-  const statusParam = url.searchParams.get('status') || 'pending';
+  const statusParam = url.searchParams.get('status') || 'all';
   const languageParam = url.searchParams.get('language') || 'all';
-  const status = allowedStatuses.has(statusParam) ? statusParam : 'pending';
+  const status = allowedStatuses.has(statusParam) ? statusParam : 'all';
   const language = allowedLanguages.has(languageParam) ? languageParam : 'all';
   const search = normalizeSearch(url.searchParams.get('q') || '');
 

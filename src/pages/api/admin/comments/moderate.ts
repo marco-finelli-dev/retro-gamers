@@ -2,6 +2,10 @@ import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserProfileFromToken, isStaffProfile } from '../../../../lib/supabase/auth';
 import {
+  createCommentApprovedAccountMessage,
+  createReplyAccountMessage,
+} from '../../../../lib/supabase/account-messages';
+import {
   sendCommentApprovedEmail,
   sendReplyApprovedEmail,
 } from '../../../../lib/supabase/comment-emails';
@@ -59,6 +63,11 @@ async function notifyApprovedComment(comment: {
   const articleTitle = comment.article_title || 'Retro-Gamers.it';
   const articleUrl = comment.article_url || '/';
   const authorEmail = await getAuthUserEmail(comment.user_id);
+  const accountMessageResult = await createCommentApprovedAccountMessage(comment);
+
+  if (!accountMessageResult.ok && !accountMessageResult.skipped) {
+    console.error('Account message for approved comment failed:', accountMessageResult.error);
+  }
 
   try {
     await sendCommentApprovedEmail({
@@ -89,6 +98,12 @@ async function notifyApprovedComment(comment: {
 
   if (parentComment.user_id === comment.user_id) {
     return;
+  }
+
+  const replyMessageResult = await createReplyAccountMessage(comment, parentComment);
+
+  if (!replyMessageResult.ok && !replyMessageResult.skipped) {
+    console.error('Account message for comment reply failed:', replyMessageResult.error);
   }
 
   const { data: subscription, error: subscriptionError } = await supabaseAdmin

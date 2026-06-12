@@ -60,6 +60,7 @@ const accountLabels = isEnglish
       register: 'Register',
       account: 'My account',
       memories: 'My memories',
+      messages: 'Messages',
       moderation: 'Comment moderation',
       users: 'Users management',
       signOut: 'Sign out'
@@ -70,6 +71,7 @@ const accountLabels = isEnglish
       register: 'Registrati',
       account: 'Il mio account',
       memories: 'Le mie memorie',
+      messages: 'Messaggi',
       moderation: 'Moderazione commenti',
       users: 'Gestione utenti',
       signOut: 'Esci'
@@ -116,6 +118,10 @@ const accountLabels = isEnglish
 
           <a href="/account/">{accountLabels.account}</a>
           <a href="/account/#memories">{accountLabels.memories}</a>
+          <a href="/account/messages/">
+            <span>{accountLabels.messages}</span>
+            <span class="mobile-menu__account-unread" data-account-unread hidden></span>
+          </a>
           <a href="/account/" data-account-public-profile hidden>
             {isEnglish ? 'Public profile' : 'Profilo pubblico'}
           </a>

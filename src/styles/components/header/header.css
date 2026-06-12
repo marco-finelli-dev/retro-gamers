@@ -825,6 +825,10 @@ html[data-theme="light"] .site-header__account.is-staff .site-header__account-li
   display: none;
 }
 
+.site-header__account-group [data-account-unread][hidden] {
+  display: none;
+}
+
 .site-header__account-group a,
 .site-header__account-group button {
   appearance: none;
@@ -857,6 +861,22 @@ html[data-theme="light"] .site-header__account.is-staff .site-header__account-li
     background var(--transition-fast),
     border-color var(--transition-fast),
     transform var(--transition-fast);
+}
+
+.site-header__account-unread {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-left: auto;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  padding: 0 6px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.72rem;
+  font-weight: 950;
+  line-height: 1;
 }
 
 .site-header__account-group a::after,

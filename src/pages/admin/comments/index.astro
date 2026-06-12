@@ -19,12 +19,12 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
         <label>
           <span>Stato</span>
           <select name="status">
-            <option value="pending" selected>In attesa</option>
+            <option value="all" selected>Tutti</option>
+            <option value="pending">In attesa</option>
             <option value="approved">Approvati</option>
             <option value="rejected">Rifiutati</option>
             <option value="spam">Spam</option>
             <option value="deleted">Eliminati</option>
-            <option value="all">Tutti</option>
           </select>
         </label>
 
@@ -110,7 +110,7 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
       if (!filtersForm) return params;
 
       const formData = new FormData(filtersForm);
-      const status = String(formData.get('status') || 'pending');
+      const status = String(formData.get('status') || 'all');
       const language = String(formData.get('language') || 'all');
       const q = String(formData.get('q') || '').trim();
 
