@@ -556,6 +556,96 @@ html[data-theme="light"] .site-header__language-toggle:focus-visible {
   outline-color: rgba(8,104,122,0.46);
 }
 
+/* ========================================
+   HEADER ACCOUNT LINK
+======================================== */
+
+.site-header__account-link {
+  display: inline-grid;
+  place-items: center;
+
+  width: 38px;
+  height: 38px;
+
+  padding: 0;
+  border-radius: 14px;
+
+  color: rgba(255,255,255,0.64);
+  text-decoration: none;
+
+  background: var(--rg-card-bg);
+  border: 1px solid var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
+
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.site-header__account-link img {
+  display: block;
+  width: 21px;
+  height: 21px;
+  opacity: 0.72;
+  filter: invert(1);
+
+  transition:
+    opacity var(--transition-fast),
+    filter var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.site-header__account-link:hover {
+  transform: translateY(-1px);
+
+  border-color: var(--rg-badge-border);
+  background: var(--rg-badge-bg);
+
+  box-shadow: var(--rg-card-hover-shadow);
+}
+
+.site-header__account-link:hover img {
+  opacity: 1;
+  filter:
+    invert(1)
+    drop-shadow(0 0 8px rgba(34,240,255,0.28));
+  transform: scale(1.04);
+}
+
+.site-header__account-link:focus-visible {
+  outline: 2px solid rgba(34,240,255,0.55);
+  outline-offset: 4px;
+}
+
+html[data-theme="light"] .site-header__account-link {
+  background: var(--rg-card-bg);
+  border-color: var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
+}
+
+html[data-theme="light"] .site-header__account-link img {
+  opacity: 0.68;
+  filter: none;
+}
+
+html[data-theme="light"] .site-header__account-link:hover {
+  border-color: var(--rg-badge-border);
+  background: var(--rg-badge-bg);
+
+  box-shadow: var(--rg-card-hover-shadow);
+}
+
+html[data-theme="light"] .site-header__account-link:hover img {
+  opacity: 1;
+  filter: drop-shadow(0 0 8px rgba(8,104,122,0.16));
+}
+
+html[data-theme="light"] .site-header__account-link:focus-visible {
+  outline-color: rgba(8,104,122,0.46);
+}
+
 
 /* ========================================
    RESPONSIVE
@@ -595,6 +685,10 @@ html[data-theme="light"] .site-header__language-toggle:focus-visible {
   .site-header__inner {
     grid-template-columns: auto auto;
     justify-content: space-between;
+  }
+
+  .site-header__account-link {
+    display: none;
   }
 }
 
