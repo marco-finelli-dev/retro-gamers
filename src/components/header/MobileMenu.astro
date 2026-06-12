@@ -61,6 +61,7 @@ const accountLabels = isEnglish
       account: 'My account',
       memories: 'My memories',
       moderation: 'Comment moderation',
+      users: 'Users management',
       signOut: 'Sign out'
     }
   : {
@@ -70,6 +71,7 @@ const accountLabels = isEnglish
       account: 'Il mio account',
       memories: 'Le mie memorie',
       moderation: 'Moderazione commenti',
+      users: 'Gestione utenti',
       signOut: 'Esci'
     };
 ---
@@ -105,6 +107,7 @@ const accountLabels = isEnglish
           <a href="/account/">{accountLabels.account}</a>
           <a href="/account/#memories">{accountLabels.memories}</a>
           <a href="/admin/comments/" data-account-staff hidden>{accountLabels.moderation}</a>
+          <a href="/admin/users/" data-account-staff hidden>{accountLabels.users}</a>
           <button type="button" data-account-logout>{accountLabels.signOut}</button>
         </div>
       </div>
