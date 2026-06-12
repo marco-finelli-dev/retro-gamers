@@ -1,0 +1,65 @@
+.user-avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 2px solid var(--rg-badge-border);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255,255,255,0.24), transparent 34%),
+    linear-gradient(135deg, rgba(34,240,255,0.14), rgba(168,85,247,0.11)),
+    var(--rg-badge-bg);
+  color: var(--color-white, #fff);
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    0 0 0 1px rgba(34,240,255,0.08),
+    var(--rg-card-shadow);
+}
+
+.user-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-avatar--sm {
+  width: 42px;
+  height: 42px;
+  font-size: 0.95rem;
+}
+
+.user-avatar--md {
+  width: 52px;
+  height: 52px;
+  font-size: 1.1rem;
+}
+
+.user-avatar--lg {
+  width: 78px;
+  height: 78px;
+  font-size: 1.55rem;
+}
+
+html[data-theme="light"] .user-avatar {
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255,255,255,0.78), transparent 36%),
+    linear-gradient(135deg, rgba(8,124,142,0.13), rgba(102,81,184,0.08)),
+    var(--rg-badge-bg);
+  color: rgba(18,24,38,0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.60),
+    0 0 0 1px rgba(8,124,142,0.08),
+    var(--rg-card-shadow);
+}
+
+@media (max-width: 520px) {
+  .user-avatar--lg {
+    width: 66px;
+    height: 66px;
+    font-size: 1.3rem;
+  }
+}

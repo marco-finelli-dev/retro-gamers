@@ -80,6 +80,13 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
       }).format(new Date(value));
     };
 
+    const getUserInitial = (user) => {
+      const source = user.displayName || user.username || user.email || 'Utente';
+      const match = String(source || '').trim().match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/);
+
+      return (match?.[0] || '?').toUpperCase();
+    };
+
     const roleLabels = {
       user: 'User',
       moderator: 'Moderator',
@@ -139,24 +146,32 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
       const username = user.username || 'Non impostato';
       const email = user.email || 'Email non disponibile';
       const comments = user.comments || { total: 0, pending: 0, approved: 0 };
+      const avatarInitial = getUserInitial(user);
+      const avatarLabel = `Avatar di ${user.displayName || user.username || user.email || 'utente'}`;
 
       return `
         <article class="admin-user-card" data-user-id="${escapeHtml(user.userId)}">
           <header class="admin-user-card__header">
-            <div>
-              <p class="admin-user-card__email">${escapeHtml(email)}</p>
-              <h2>${escapeHtml(displayName)}</h2>
+            <div class="admin-user-card__identity">
+              <span class="admin-user-card__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
+                ${escapeHtml(avatarInitial)}
+              </span>
 
-              <p class="admin-user-card__meta">
-                <span>@${escapeHtml(username)}</span>
-                <span class="admin-user-card__role" data-role="${escapeHtml(user.role || '')}">
-                  Ruolo: ${escapeHtml(role)}
-                </span>
-                <span class="admin-user-card__status" data-status="${escapeHtml(user.status || '')}">
-                  Stato: ${escapeHtml(status)}
-                </span>
-                <span>Registrato: ${escapeHtml(formatDate(user.createdAt))}</span>
-              </p>
+              <div>
+                <p class="admin-user-card__email">${escapeHtml(email)}</p>
+                <h2>${escapeHtml(displayName)}</h2>
+
+                <p class="admin-user-card__meta">
+                  <span>@${escapeHtml(username)}</span>
+                  <span class="admin-user-card__role" data-role="${escapeHtml(user.role || '')}">
+                    Ruolo: ${escapeHtml(role)}
+                  </span>
+                  <span class="admin-user-card__status" data-status="${escapeHtml(user.status || '')}">
+                    Stato: ${escapeHtml(status)}
+                  </span>
+                  <span>Registrato: ${escapeHtml(formatDate(user.createdAt))}</span>
+                </p>
+              </div>
             </div>
           </header>
 

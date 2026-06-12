@@ -175,6 +175,12 @@ const flagAlt = isEnglish
           aria-controls="site-account-menu"
           data-account-menu-toggle
         >
+          <span
+            class="site-header__account-avatar"
+            data-account-avatar
+            aria-hidden="true"
+          ></span>
+
           <img
             src="/icons/account-user.svg"
             alt=""
@@ -271,6 +277,16 @@ const flagAlt = isEnglish
   const panel = root?.querySelector('[data-account-menu-panel]');
   const isEnglish = root?.dataset.lang === 'en';
 
+  const getAccountName = (profile, user) =>
+    profile?.display_name || profile?.username || user?.email || '';
+
+  const getAccountInitial = (profile, user) => {
+    const source = getAccountName(profile, user);
+    const match = String(source || '').trim().match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/);
+
+    return (match?.[0] || '?').toUpperCase();
+  };
+
   const closeMenu = () => {
     if (!root || !trigger || !panel) return;
     root.classList.remove('is-open');
@@ -294,9 +310,25 @@ const flagAlt = isEnglish
     closeMenu();
   };
 
-  const setAccountState = (isLoggedIn, isStaff = false) => {
+  const setAccountAvatar = (isLoggedIn, profile = null, user = null) => {
+    const displayName = getAccountName(profile, user);
+    const initial = isLoggedIn ? getAccountInitial(profile, user) : '';
+
+    root?.classList.toggle('has-avatar', Boolean(isLoggedIn && initial));
+
+    document.querySelectorAll('[data-account-avatar]').forEach((node) => {
+      node.textContent = initial;
+    });
+
+    document.querySelectorAll('[data-mobile-account-name]').forEach((node) => {
+      node.textContent = displayName || (isEnglish ? 'My account' : 'Il mio account');
+    });
+  };
+
+  const setAccountState = (isLoggedIn, isStaff = false, profile = null, user = null) => {
     root?.classList.toggle('is-authenticated', isLoggedIn);
     root?.classList.toggle('is-staff', isLoggedIn && isStaff);
+    setAccountAvatar(isLoggedIn, profile, user);
 
     const accountLabel = isLoggedIn
       ? (isStaff
@@ -339,7 +371,12 @@ const flagAlt = isEnglish
         return;
       }
 
-      setAccountState(true, role === 'admin' || role === 'moderator');
+      setAccountState(
+        true,
+        role === 'admin' || role === 'moderator',
+        result.profile,
+        result.user
+      );
     } catch {
       setAccountState(false);
     }

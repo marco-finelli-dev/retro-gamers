@@ -284,6 +284,49 @@
     display: none;
   }
 
+  .mobile-menu__account-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 58px;
+    padding: 10px 14px;
+    border: 1px solid var(--rg-card-border);
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, rgba(10,14,22,0.52), rgba(5,7,12,0.60)),
+      var(--rg-card-bg);
+    box-shadow: var(--rg-card-shadow);
+  }
+
+  .mobile-menu__account-avatar {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border: 2px solid var(--rg-badge-border);
+    border-radius: 999px;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), transparent 34%),
+      linear-gradient(135deg, rgba(34,240,255,0.18), rgba(168,85,247,0.12)),
+      var(--rg-badge-bg);
+    color: var(--color-white, #fff);
+    font-size: 0.95rem;
+    font-weight: 950;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .mobile-menu__account-summary > span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .mobile-menu__links a,
   .mobile-menu__links button {
     appearance: none;
@@ -516,6 +559,22 @@ html[data-theme="light"] .mobile-menu__section {
 html[data-theme="light"] .mobile-menu__section > span {
   color: var(--rg-eyebrow-color);
   text-shadow: none;
+}
+
+html[data-theme="light"] .mobile-menu__account-summary {
+  background:
+    linear-gradient(180deg, rgba(248,251,255,0.58), rgba(229,238,248,0.64)),
+    var(--rg-card-bg);
+  border-color: var(--rg-card-border);
+  box-shadow: var(--rg-card-shadow);
+}
+
+html[data-theme="light"] .mobile-menu__account-avatar {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.80), transparent 36%),
+    linear-gradient(135deg, rgba(8,124,142,0.15), rgba(102,81,184,0.08)),
+    var(--rg-badge-bg);
+  color: rgba(18,24,38,0.90);
 }
 
 html[data-theme="light"] .mobile-menu__section > span::before {

@@ -1,0 +1,38 @@
+---
+import '../../styles/components/user-avatar.css';
+
+interface Props {
+  name?: string | null;
+  email?: string | null;
+  src?: string | null;
+  size?: 'sm' | 'md' | 'lg';
+  label?: string;
+  class?: string;
+}
+
+const {
+  name = '',
+  email = '',
+  src = null,
+  size = 'md',
+  label = '',
+  class: className = '',
+} = Astro.props;
+
+const displayName = String(name || email || 'Utente').trim() || 'Utente';
+const initialSource = String(displayName || email || '').trim();
+const initialMatch = initialSource.match(/[\p{L}\p{N}]/u);
+const initial = (initialMatch?.[0] || '?').toLocaleUpperCase('it-IT');
+const avatarLabel = label || `Avatar di ${displayName}`;
+const classes = ['user-avatar', `user-avatar--${size}`, className]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<span class={classes} role="img" aria-label={avatarLabel} title={avatarLabel}>
+  {src ? (
+    <img src={src} alt="" loading="lazy" decoding="async" />
+  ) : (
+    <span aria-hidden="true">{initial}</span>
+  )}
+</span>

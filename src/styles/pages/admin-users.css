@@ -162,9 +162,40 @@
 
 .admin-user-card__header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
   margin-bottom: 16px;
+}
+
+.admin-user-card__identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.admin-user-card__identity > div {
+  min-width: 0;
+}
+
+.admin-user-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border: 2px solid var(--rg-badge-border);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), transparent 34%),
+    linear-gradient(135deg, rgba(34,240,255,0.16), rgba(168,85,247,0.10)),
+    var(--rg-badge-bg);
+  color: var(--color-white, #fff);
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+  box-shadow: var(--rg-card-shadow);
 }
 
 .admin-user-card__email {
@@ -178,11 +209,14 @@
 }
 
 .admin-user-card h2 {
+  overflow: hidden;
   margin: 0;
   color: var(--color-text);
   font-family: var(--font-base);
   font-size: 22px;
   font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-user-card__meta {
@@ -215,6 +249,14 @@
 .admin-user-card__status[data-status="banned"] {
   border-color: rgba(248,113,113,0.24);
   background: rgba(248,113,113,0.10);
+}
+
+html[data-theme="light"] .admin-user-card__avatar {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.80), transparent 36%),
+    linear-gradient(135deg, rgba(8,124,142,0.14), rgba(102,81,184,0.08)),
+    var(--rg-badge-bg);
+  color: rgba(18,24,38,0.90);
 }
 
 .admin-user-card__stats {
@@ -301,6 +343,14 @@
 
   .admin-user-card__stats {
     grid-template-columns: 1fr;
+  }
+
+  .admin-user-card__identity {
+    align-items: flex-start;
+  }
+
+  .admin-user-card h2 {
+    white-space: normal;
   }
 
   .admin-user-card__actions button {

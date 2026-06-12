@@ -234,7 +234,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       dislike: 'Non mi piace',
       loginToReact: 'Accedi o registrati per votare un commento.',
       ownReactionError: 'Non puoi votare un tuo commento.',
-      reactionError: 'Non è stato possibile aggiornare il voto. Riprova.'
+      reactionError: 'Non è stato possibile aggiornare il voto. Riprova.',
+      avatarOf: 'Avatar di {name}'
     },
     en: {
       commentSingular: 'comment',
@@ -251,7 +252,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       dislike: 'Dislike',
       loginToReact: 'Sign in or create an account to react to a comment.',
       ownReactionError: 'You cannot react to your own comment.',
-      reactionError: 'The reaction could not be updated. Please try again.'
+      reactionError: 'The reaction could not be updated. Please try again.',
+      avatarOf: 'Avatar for {name}'
     }
   };
 
@@ -275,6 +277,13 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
   const getAuthorName = (profile, fallback) =>
     profile?.display_name || profile?.username || fallback;
+
+  const getAvatarInitial = (profile, fallback) => {
+    const source = getAuthorName(profile, fallback) || profile?.email || fallback;
+    const match = String(source || '').trim().match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/);
+
+    return (match?.[0] || '?').toUpperCase();
+  };
 
   const getBadgeLabel = (profile, language) => {
     const badge = profile?.user_badges;
@@ -381,12 +390,13 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const profile = reply.profiles || {};
     const authorName = getAuthorName(profile, labels.reader);
     const badgeLabel = getBadgeLabel(profile, language);
-    const initial = authorName.charAt(0).toUpperCase();
+    const initial = getAvatarInitial(profile, labels.reader);
+    const avatarLabel = labels.avatarOf.replace('{name}', authorName);
 
     return `
       <div class="article-comment__editor-reply">
         <div class="article-comment__editor-reply-header">
-          <div class="article-comment__avatar" aria-hidden="true">
+          <div class="article-comment__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
             ${escapeHtml(initial)}
           </div>
 
@@ -416,7 +426,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const profile = comment.profiles || {};
     const authorName = getAuthorName(profile, labels.reader);
     const badgeLabel = getBadgeLabel(profile, language);
-    const initial = authorName.charAt(0).toUpperCase();
+    const initial = getAvatarInitial(profile, labels.reader);
+    const avatarLabel = labels.avatarOf.replace('{name}', authorName);
     const replies = Array.isArray(comment.replies) ? sortComments(comment.replies) : [];
     const isLegacy = Boolean(comment.isLegacy);
     const highlightedClass = comment.isHighlighted ? ' article-comment--highlighted' : '';
@@ -424,7 +435,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     return `
       <article class="article-comment${highlightedClass}" data-comment-id="${escapeHtml(comment.id)}">
         <header class="article-comment__header">
-          <div class="article-comment__avatar" aria-hidden="true">
+          <div class="article-comment__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
             ${escapeHtml(initial)}
           </div>
 

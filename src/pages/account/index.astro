@@ -1,6 +1,7 @@
 ---
 import '../../styles/pages/account.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import UserAvatar from '../../components/account/UserAvatar.astro';
 import { getActiveReaderBadges } from '../../lib/badges';
 import { getUserProfileFromToken } from '../../lib/supabase/auth';
 import { supabaseAdmin } from '../../lib/supabase/server';
@@ -17,6 +18,9 @@ const profile = session.profile;
 const user = session.user;
 const currentBadge = profile?.user_badges;
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
+const accountDisplayName =
+  profile?.display_name || profile?.username || user?.email || 'Utente Retro-Gamers';
+const accountHandle = profile?.username ? `@${profile.username}` : user?.email || '';
 
 const commentActivity = {
   approved: 0,
@@ -80,6 +84,16 @@ if (isLoggedIn && user?.id) {
             Gestisci il nome con cui compari nei commenti e il badge che racconta
             meglio il tuo angolo di retro-gaming.
           </p>
+
+          <div class="account-profile-card">
+            <UserAvatar name={accountDisplayName} email={user?.email} size="lg" />
+
+            <div>
+              <span>Profilo community</span>
+              <strong>{accountDisplayName}</strong>
+              {accountHandle && <small>{accountHandle}</small>}
+            </div>
+          </div>
 
           <div class="account-summary">
             <div>
