@@ -248,21 +248,27 @@ if (isLoggedIn && user?.id) {
               />
             </label>
 
-            <label>
-              <span>Badge lettore</span>
-              <select name="badgeKey" required>
-                <option value="">
-                  {badges.length > 0 ? 'Scegli un badge' : 'Nessun badge assegnato'}
-                </option>
-                {badges.map((badge) => (
-                  <option value={badge.key} selected={badge.key === profile?.badge_key}>
-                    {badge.label_it || badge.label_en || badge.key}
-                  </option>
-                ))}
-              </select>
+            {badges.length > 0 ? (
+              <label>
+                <span>Badge lettore</span>
+                <select name="badgeKey" required>
+                  <option value="">Scegli un badge</option>
+                  {badges.map((badge) => (
+                    <option value={badge.key} selected={badge.key === profile?.badge_key}>
+                      {badge.label_it || badge.label_en || badge.key}
+                    </option>
+                  ))}
+                </select>
 
-              <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
-            </label>
+                <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
+              </label>
+            ) : (
+              <div class="account-badge-empty">
+                <span>Badge lettore</span>
+                <p>Non hai ancora badge assegnati.</p>
+                <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
+              </div>
+            )}
 
             <p class="account-message" data-account-message hidden></p>
 
@@ -317,6 +323,11 @@ if (isLoggedIn && user?.id) {
 
       const formData = new FormData(form);
       const button = form.querySelector('button[type="submit"]');
+      const badgeSelect = form.querySelector('select[name="badgeKey"]');
+      const payload = {
+        displayName: String(formData.get('displayName') || ''),
+        ...(badgeSelect ? { badgeKey: String(formData.get('badgeKey') || '') } : {})
+      };
 
       if (button) button.disabled = true;
 
@@ -324,10 +335,7 @@ if (isLoggedIn && user?.id) {
         const response = await fetch('/api/account/update-profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            displayName: String(formData.get('displayName') || ''),
-            badgeKey: String(formData.get('badgeKey') || '')
-          })
+          body: JSON.stringify(payload)
         });
 
         const result = await response.json();

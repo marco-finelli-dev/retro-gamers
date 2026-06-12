@@ -35,8 +35,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const displayName = payload.displayName?.trim() ?? '';
   const badgeKey = payload.badgeKey?.trim() ?? '';
-  const hasProfileFields =
-    typeof payload.displayName === 'string' || typeof payload.badgeKey === 'string';
+  const hasDisplayName = typeof payload.displayName === 'string';
+  const hasBadgeKey = typeof payload.badgeKey === 'string';
+  const hasProfileFields = hasDisplayName || hasBadgeKey;
   const hasBio = typeof payload.bio === 'string';
   const updatePayload: {
     display_name?: string;
@@ -49,47 +50,52 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   if (hasProfileFields) {
-    if (displayName.length < 2 || displayName.length > 40) {
+    if (hasDisplayName && (displayName.length < 2 || displayName.length > 40)) {
       return json({
         ok: false,
         error: 'Il nome visualizzato deve contenere 2-40 caratteri.',
       }, 400);
     }
 
-    if (!badgeKey) {
+    if (hasBadgeKey && !badgeKey) {
       return json({ ok: false, error: 'Scegli un badge lettore.' }, 400);
     }
 
-    const { data: badge, error: badgeError } = await supabaseAdmin
-      .from('user_badges')
-      .select('key')
-      .eq('key', badgeKey)
-      .eq('is_active', true)
-      .maybeSingle();
+    if (hasBadgeKey) {
+      const { data: badge, error: badgeError } = await supabaseAdmin
+        .from('user_badges')
+        .select('key')
+        .eq('key', badgeKey)
+        .eq('is_active', true)
+        .maybeSingle();
 
-    if (badgeError) {
-      return json({ ok: false, error: badgeError.message }, 500);
+      if (badgeError) {
+        return json({ ok: false, error: badgeError.message }, 500);
+      }
+
+      if (!badge) {
+        return json({ ok: false, error: 'Badge non valido.' }, 400);
+      }
+
+      const ownership = await readerOwnsBadge(session.user.id, badgeKey);
+
+      if (ownership.error && ownership.assignmentsAvailable) {
+        return json({ ok: false, error: ownership.error.message }, 500);
+      }
+
+      if (ownership.assignmentsAvailable && !ownership.owns) {
+        return json({
+          ok: false,
+          error: 'Puoi scegliere solo un badge assegnato al tuo profilo.',
+        }, 403);
+      }
+
+      updatePayload.badge_key = badgeKey;
     }
 
-    if (!badge) {
-      return json({ ok: false, error: 'Badge non valido.' }, 400);
+    if (hasDisplayName) {
+      updatePayload.display_name = displayName;
     }
-
-    const ownership = await readerOwnsBadge(session.user.id, badgeKey);
-
-    if (ownership.error && ownership.assignmentsAvailable) {
-      return json({ ok: false, error: ownership.error.message }, 500);
-    }
-
-    if (ownership.assignmentsAvailable && !ownership.owns) {
-      return json({
-        ok: false,
-        error: 'Puoi scegliere solo un badge assegnato al tuo profilo.',
-      }, 403);
-    }
-
-    updatePayload.display_name = displayName;
-    updatePayload.badge_key = badgeKey;
   }
 
   if (hasBio) {

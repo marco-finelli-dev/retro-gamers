@@ -5,6 +5,7 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import {
   getAccountMessages,
   getUnreadAccountMessageCount,
+  markAccountMessagesRead,
   type AccountMessage,
 } from '../../../lib/supabase/account-messages';
 import { getUserProfileFromToken } from '../../../lib/supabase/auth';
@@ -28,6 +29,28 @@ if (isLoggedIn && session.user) {
   messages = messagesResult.messages;
   unreadCount = unreadResult.error ? 0 : unreadResult.count;
   messagesError = Boolean(messagesResult.error);
+
+  const unreadMessageIds = messages
+    .filter((message) => !message.is_read)
+    .map((message) => message.id);
+
+  if (!messagesError && unreadMessageIds.length > 0) {
+    const markReadResult = await markAccountMessagesRead(session.user.id, unreadMessageIds);
+
+    if (!markReadResult.error) {
+      const readAt = new Date().toISOString();
+      const readMessageIds = new Set(unreadMessageIds);
+
+      messages = messages.map((message) =>
+        readMessageIds.has(message.id)
+          ? { ...message, is_read: true, read_at: readAt }
+          : message
+      );
+      unreadCount = Math.max(0, unreadCount - unreadMessageIds.length);
+    } else {
+      console.error('Account messages auto mark-read failed:', markReadResult.error);
+    }
+  }
 }
 
 const typeLabels: Record<string, string> = {

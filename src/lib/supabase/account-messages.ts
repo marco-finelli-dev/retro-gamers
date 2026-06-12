@@ -250,6 +250,28 @@ export async function markAccountMessageRead(userId: string, messageId: string) 
   return { message: data, error };
 }
 
+export async function markAccountMessagesRead(userId: string, messageIds: string[]) {
+  const uniqueMessageIds = [...new Set(messageIds.filter(Boolean))];
+
+  if (uniqueMessageIds.length === 0) {
+    return { error: null };
+  }
+
+  const { error } = await supabaseAdmin
+    .from('account_messages')
+    .update({
+      is_read: true,
+      read_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId)
+    .eq('is_read', false)
+    .in('id', uniqueMessageIds);
+
+  logAccountMessagesError('mark-loaded-read', error);
+
+  return { error };
+}
+
 export async function markAllAccountMessagesRead(userId: string) {
   const { error } = await supabaseAdmin
     .from('account_messages')
