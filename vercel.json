@@ -1,6 +1,29 @@
 {
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "retro-gamers.it"
+        }
+      ],
+      "destination": "https://www.retro-gamers.it/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "retro-gamers.it"
+        }
+      ],
+      "destination": "https://www.retro-gamers.it/:path*",
+      "permanent": true
+    },
+
+    {
       "source": "/guida/",
       "destination": "/guide/",
       "permanent": true
@@ -38,6 +61,41 @@
     {
       "source": "/recensione/:slug",
       "destination": "/recensioni/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/news/:slug/feed/",
+      "destination": "/news/:slug/",
+      "permanent": true
+    },
+    {
+      "source": "/recensione/:slug/feed/",
+      "destination": "/recensioni/:slug/",
+      "permanent": true
+    },
+    {
+      "source": "/guida/:slug/feed/",
+      "destination": "/guide/:slug/",
+      "permanent": true
+    },
+    {
+      "source": "/speciale/:slug/feed/",
+      "destination": "/speciali/:slug/",
+      "permanent": true
+    },
+    {
+      "source": "/intervista/:slug/feed/",
+      "destination": "/interviste/:slug/",
+      "permanent": true
+    },
+    {
+      "source": "/sviluppatore/:slug/feed/",
+      "destination": "/aziende/:slug/",
+      "permanent": true
+    },
+    {
+      "source": "/publisher/:slug/feed/",
+      "destination": "/aziende/:slug/",
       "permanent": true
     },
 
@@ -140,22 +198,22 @@
     },
     {
       "source": "/sviluppatore/:slug/",
-      "destination": "/archivio/",
+      "destination": "/aziende/:slug/",
       "permanent": true
     },
     {
       "source": "/sviluppatore/:slug",
-      "destination": "/archivio/",
+      "destination": "/aziende/:slug",
       "permanent": true
     },
     {
       "source": "/publisher/:slug/",
-      "destination": "/archivio/",
+      "destination": "/aziende/:slug/",
       "permanent": true
     },
     {
       "source": "/publisher/:slug",
-      "destination": "/archivio/",
+      "destination": "/aziende/:slug",
       "permanent": true
     },
     {
@@ -195,12 +253,12 @@
     },
     {
       "source": "/sviluppatore/:path*",
-      "destination": "/archivio/",
+      "destination": "/aziende/:path*",
       "permanent": true
     },
     {
       "source": "/publisher/:path*",
-      "destination": "/archivio/",
+      "destination": "/aziende/:path*",
       "permanent": true
     },
     {
@@ -268,7 +326,7 @@
     },
     {
       "source": "/:path*/feed/",
-      "destination": "/archivio/",
+      "destination": "/:path*/",
       "permanent": true
     },
     {
