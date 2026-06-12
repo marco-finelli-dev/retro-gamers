@@ -20,6 +20,7 @@ const { data: badges } = isLoggedIn
 const profile = session.profile;
 const user = session.user;
 const currentBadge = profile?.user_badges;
+const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 
 const commentActivity = {
   approved: 0,
@@ -134,6 +135,17 @@ if (isLoggedIn && user?.id) {
               <strong>{commentActivity.dislikesReceived}</strong>
             </div>
           </div>
+
+          {isStaff && (
+            <section class="account-editorial-tools" aria-labelledby="account-editorial-tools-title">
+              <div>
+                <h2 id="account-editorial-tools-title">Strumenti redazione</h2>
+                <p>Gestisci i commenti in attesa di moderazione.</p>
+              </div>
+
+              <a href="/admin/comments/">Moderazione commenti</a>
+            </section>
+          )}
 
           <form class="account-form" data-account-profile-form>
             <label>
