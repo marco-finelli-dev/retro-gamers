@@ -276,6 +276,7 @@ const flagAlt = isEnglish
   const trigger = root?.querySelector('[data-account-menu-toggle]');
   const panel = root?.querySelector('[data-account-menu-panel]');
   const isEnglish = root?.dataset.lang === 'en';
+  const staffRoles = new Set(['admin', 'moderator']);
 
   const getAccountName = (profile, user) =>
     profile?.display_name || profile?.username || user?.email || '';
@@ -373,7 +374,7 @@ const flagAlt = isEnglish
 
       setAccountState(
         true,
-        role === 'admin' || role === 'moderator',
+        staffRoles.has(role),
         result.profile,
         result.user
       );
