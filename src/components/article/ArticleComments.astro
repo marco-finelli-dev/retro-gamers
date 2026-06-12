@@ -236,7 +236,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       ownReactionError: 'Non puoi votare un tuo commento.',
       reactionError: 'Non è stato possibile aggiornare il voto. Riprova.',
       avatarOf: 'Avatar di {name}',
-      directLink: 'Link diretto al commento'
+      directLink: 'Link diretto al commento',
+      targetLoading: 'Caricamento commento...'
     },
     en: {
       commentSingular: 'comment',
@@ -255,7 +256,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       ownReactionError: 'You cannot react to your own comment.',
       reactionError: 'The reaction could not be updated. Please try again.',
       avatarOf: 'Avatar for {name}',
-      directLink: 'Direct link to comment'
+      directLink: 'Direct link to comment',
+      targetLoading: 'Loading comment...'
     }
   };
 
@@ -580,6 +582,27 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       }
     };
 
+    const jumpToCommentsForCommentHash = () => {
+      if (!getCommentHashTargetId()) {
+        return false;
+      }
+
+      root.scrollIntoView({
+        block: 'start',
+        behavior: 'auto',
+      });
+
+      if (listNode && !listNode.querySelector('[id^="comment-"]')) {
+        listNode.innerHTML = `
+          <p class="article-comments__empty article-comments__empty--target">
+            ${escapeHtml(labels.targetLoading)}
+          </p>
+        `;
+      }
+
+      return true;
+    };
+
     const highlightPermalinkTarget = (target) => {
       if (lastPermalinkTarget && lastPermalinkTarget !== target) {
         lastPermalinkTarget.classList.remove('article-comment--permalink-target');
@@ -871,8 +894,11 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
     window.addEventListener('hashchange', () => {
       permalinkScrollAttempts = 0;
+      jumpToCommentsForCommentHash();
       queueCommentHashScroll();
     });
+
+    jumpToCommentsForCommentHash();
 
     Promise.resolve()
       .then(loadCurrentUser)
