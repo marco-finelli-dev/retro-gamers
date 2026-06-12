@@ -92,16 +92,6 @@ const accountLabels = isEnglish
       </button>
     </div>
 
-    <div class="mobile-menu__section">
-      <span>{ui.discover}</span>
-
-      <div class="mobile-menu__links">
-        {mainLinks.map((item) => (
-          <a href={item.href}>{item.label}</a>
-        ))}
-      </div>
-    </div>
-
     <div class="mobile-menu__section" data-mobile-account-menu>
       <span>{accountLabels.title}</span>
 
@@ -117,6 +107,16 @@ const accountLabels = isEnglish
           <a href="/admin/comments/" data-account-staff hidden>{accountLabels.moderation}</a>
           <button type="button" data-account-logout>{accountLabels.signOut}</button>
         </div>
+      </div>
+    </div>
+
+    <div class="mobile-menu__section">
+      <span>{ui.discover}</span>
+
+      <div class="mobile-menu__links">
+        {mainLinks.map((item) => (
+          <a href={item.href}>{item.label}</a>
+        ))}
       </div>
     </div>
 
