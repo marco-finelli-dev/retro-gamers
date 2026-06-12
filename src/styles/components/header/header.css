@@ -561,6 +561,7 @@ html[data-theme="light"] .site-header__language-toggle:focus-visible {
 ======================================== */
 
 .site-header__account-link {
+  appearance: none;
   display: inline-grid;
   place-items: center;
 
@@ -576,6 +577,8 @@ html[data-theme="light"] .site-header__language-toggle:focus-visible {
   background: var(--rg-card-bg);
   border: 1px solid var(--rg-card-border);
   box-shadow: var(--rg-card-shadow);
+
+  cursor: pointer;
 
   transition:
     transform var(--transition-fast),
@@ -644,6 +647,131 @@ html[data-theme="light"] .site-header__account-link:hover img {
 
 html[data-theme="light"] .site-header__account-link:focus-visible {
   outline-color: rgba(8,104,122,0.46);
+}
+
+.site-header__account {
+  position: relative;
+}
+
+.site-header__account-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 80;
+
+  width: 236px;
+  padding: 10px;
+
+  border: 1px solid var(--rg-panel-border);
+  border-radius: 18px;
+
+  background:
+    linear-gradient(180deg, rgba(6,8,14,0.78), rgba(4,6,12,0.86)),
+    var(--rg-panel-bg);
+  box-shadow: var(--rg-panel-shadow);
+
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+
+.site-header__account-menu[hidden] {
+  display: none;
+}
+
+.site-header__account-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: var(--rg-panel-grid);
+  opacity: calc(var(--rg-panel-grid-opacity) * 0.75);
+  pointer-events: none;
+}
+
+.site-header__account-group {
+  position: relative;
+  z-index: 1;
+
+  display: grid;
+  gap: 6px;
+}
+
+.site-header__account-group[hidden] {
+  display: none;
+}
+
+.site-header__account-group a,
+.site-header__account-group button {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+
+  border: 1px solid transparent;
+  border-radius: 12px;
+
+  background: transparent;
+  color: rgba(255,255,255,0.82);
+
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 820;
+  line-height: 1;
+  text-align: left;
+  text-decoration: none;
+
+  cursor: pointer;
+
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.site-header__account-group a::after,
+.site-header__account-group button::after {
+  content: "→";
+  color: var(--rg-action-hover-color);
+  font-weight: 900;
+}
+
+.site-header__account-group a:hover,
+.site-header__account-group button:hover,
+.site-header__account-group a:focus-visible,
+.site-header__account-group button:focus-visible {
+  color: var(--rg-section-title-color);
+  border-color: var(--rg-badge-border);
+  background: var(--rg-badge-bg);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+html[data-theme="light"] .site-header__account-menu {
+  background:
+    linear-gradient(180deg, rgba(248,251,255,0.68), rgba(229,238,248,0.78)),
+    var(--rg-panel-bg);
+  border-color: var(--rg-panel-border);
+  box-shadow: var(--rg-panel-shadow);
+}
+
+html[data-theme="light"] .site-header__account-group a,
+html[data-theme="light"] .site-header__account-group button {
+  color: rgba(22,24,36,0.78);
+}
+
+html[data-theme="light"] .site-header__account-group a:hover,
+html[data-theme="light"] .site-header__account-group button:hover,
+html[data-theme="light"] .site-header__account-group a:focus-visible,
+html[data-theme="light"] .site-header__account-group button:focus-visible {
+  color: rgba(22,24,36,0.96);
+  border-color: var(--rg-badge-border);
+  background: var(--rg-badge-bg);
 }
 
 

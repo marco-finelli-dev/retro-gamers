@@ -27,8 +27,7 @@ const mainLinks = isEnglish
       { label: 'Guides', href: '/en/guides/' },
       { label: 'Memories', href: '/en/memories/' },
       { label: 'Interviews', href: '/en/interviews/' },
-      { label: 'Hardware', href: '/en/hardware/' },
-      { label: 'Account', href: '/account/' }
+      { label: 'Hardware', href: '/en/hardware/' }
     ]
   : [
       { label: 'Recensioni', href: '/recensioni/' },
@@ -37,8 +36,7 @@ const mainLinks = isEnglish
       { label: 'Guide', href: '/guide/' },
       { label: 'Memories', href: '/memories/' },
       { label: 'Interviste', href: '/interviste/' },
-      { label: 'Hardware', href: '/hardware/' },
-      { label: 'Account', href: '/account/' }
+      { label: 'Hardware', href: '/hardware/' }
     ];
 
 const platformLinks = isEnglish
@@ -54,6 +52,26 @@ const platformLinks = isEnglish
       { label: 'Computer', href: '/piattaforme/computer/' },
       { label: 'Arcade', href: '/piattaforme/arcade/' }
     ];
+
+const accountLabels = isEnglish
+  ? {
+      title: 'Account',
+      signIn: 'Sign in',
+      register: 'Register',
+      account: 'My account',
+      memories: 'My memories',
+      moderation: 'Comment moderation',
+      signOut: 'Sign out'
+    }
+  : {
+      title: 'Account',
+      signIn: 'Accedi',
+      register: 'Registrati',
+      account: 'Il mio account',
+      memories: 'Le mie memorie',
+      moderation: 'Moderazione commenti',
+      signOut: 'Esci'
+    };
 ---
 
 <div class="mobile-menu" id="mobile-menu" aria-hidden="true" data-mobile-menu>
@@ -81,6 +99,24 @@ const platformLinks = isEnglish
         {mainLinks.map((item) => (
           <a href={item.href}>{item.label}</a>
         ))}
+      </div>
+    </div>
+
+    <div class="mobile-menu__section" data-mobile-account-menu>
+      <span>{accountLabels.title}</span>
+
+      <div class="mobile-menu__links">
+        <div data-account-guest data-mobile-account-guest>
+          <a href="/account/login/">{accountLabels.signIn}</a>
+          <a href="/account/register/">{accountLabels.register}</a>
+        </div>
+
+        <div data-account-auth data-mobile-account-auth hidden>
+          <a href="/account/">{accountLabels.account}</a>
+          <a href="/account/#memories">{accountLabels.memories}</a>
+          <a href="/admin/comments/" data-account-staff hidden>{accountLabels.moderation}</a>
+          <button type="button" data-account-logout>{accountLabels.signOut}</button>
+        </div>
       </div>
     </div>
 

@@ -164,22 +164,64 @@ const flagAlt = isEnglish
         />
       </a>
 
-      <a
-        href="/account/"
-        class="site-header__account-link"
-        aria-label="Account"
-        title="Account"
-      >
-        <img
-          src="/icons/account-user.svg"
-          alt=""
-          width="22"
-          height="22"
-          aria-hidden="true"
-          loading="eager"
-          decoding="async"
-        />
-      </a>
+      <div class="site-header__account" data-account-menu data-lang={lang}>
+        <button
+          type="button"
+          class="site-header__account-link"
+          aria-label="Account"
+          title="Account"
+          aria-haspopup="menu"
+          aria-expanded="false"
+          aria-controls="site-account-menu"
+          data-account-menu-toggle
+        >
+          <img
+            src="/icons/account-user.svg"
+            alt=""
+            width="22"
+            height="22"
+            aria-hidden="true"
+            loading="eager"
+            decoding="async"
+          />
+        </button>
+
+        <div
+          id="site-account-menu"
+          class="site-header__account-menu"
+          role="menu"
+          data-account-menu-panel
+          hidden
+        >
+          <div class="site-header__account-group" data-account-guest>
+            <a href="/account/login/" role="menuitem">
+              {isEnglish ? 'Sign in' : 'Accedi'}
+            </a>
+
+            <a href="/account/register/" role="menuitem">
+              {isEnglish ? 'Register' : 'Registrati'}
+            </a>
+          </div>
+
+          <div class="site-header__account-group" data-account-auth hidden>
+            <a href="/account/" role="menuitem">
+              {isEnglish ? 'My account' : 'Il mio account'}
+            </a>
+
+            <a href="/account/#memories" role="menuitem">
+              {isEnglish ? 'My memories' : 'Le mie memorie'}
+            </a>
+
+            <a href="/admin/comments/" role="menuitem" data-account-staff hidden>
+              {isEnglish ? 'Comment moderation' : 'Moderazione commenti'}
+            </a>
+
+            <button type="button" role="menuitem" data-account-logout>
+              {isEnglish ? 'Sign out' : 'Esci'}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <Search lang={lang} />
 
@@ -217,3 +259,104 @@ const flagAlt = isEnglish
 </header>
 
 <MobileMenu lang={lang} />
+
+<script is:inline>
+(() => {
+  const root = document.querySelector('[data-account-menu]');
+  const trigger = root?.querySelector('[data-account-menu-toggle]');
+  const panel = root?.querySelector('[data-account-menu-panel]');
+
+  const closeMenu = () => {
+    if (!root || !trigger || !panel) return;
+    root.classList.remove('is-open');
+    panel.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+  };
+
+  const openMenu = () => {
+    if (!root || !trigger || !panel) return;
+    root.classList.add('is-open');
+    panel.hidden = false;
+    trigger.setAttribute('aria-expanded', 'true');
+  };
+
+  const toggleMenu = () => {
+    if (!panel || panel.hidden) {
+      openMenu();
+      return;
+    }
+
+    closeMenu();
+  };
+
+  const setAccountState = (isLoggedIn, isStaff = false) => {
+    document.querySelectorAll('[data-account-guest]').forEach((node) => {
+      node.hidden = isLoggedIn;
+    });
+
+    document.querySelectorAll('[data-account-auth]').forEach((node) => {
+      node.hidden = !isLoggedIn;
+    });
+
+    document.querySelectorAll('[data-account-staff]').forEach((node) => {
+      node.hidden = !isStaff;
+    });
+
+    document.querySelectorAll('[data-mobile-account-guest]').forEach((node) => {
+      node.hidden = isLoggedIn;
+    });
+
+    document.querySelectorAll('[data-mobile-account-auth]').forEach((node) => {
+      node.hidden = !isLoggedIn;
+    });
+  };
+
+  const refreshAccountState = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      const result = await response.json();
+      const role = result?.profile?.role;
+
+      if (!response.ok || !result.ok || !result.profile) {
+        setAccountState(false);
+        return;
+      }
+
+      setAccountState(true, role === 'admin' || role === 'moderator');
+    } catch {
+      setAccountState(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      window.location.href = '/account/login/';
+    }
+  };
+
+  trigger?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleMenu();
+  });
+
+  panel?.addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
+
+  document.addEventListener('click', closeMenu);
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeMenu();
+    }
+  });
+
+  document.querySelectorAll('[data-account-logout]').forEach((button) => {
+    button.addEventListener('click', logout);
+  });
+
+  refreshAccountState();
+})();
+</script>
