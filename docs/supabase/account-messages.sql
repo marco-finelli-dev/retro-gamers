@@ -23,6 +23,9 @@ create index if not exists account_messages_user_read_idx
 
 alter table public.account_messages enable row level security;
 
+grant usage on schema public to authenticated, service_role;
+grant all on public.account_messages to service_role;
+
 drop policy if exists "Users can read own account messages" on public.account_messages;
 create policy "Users can read own account messages"
   on public.account_messages
@@ -44,6 +47,9 @@ grant update (is_read, read_at) on public.account_messages to authenticated;
 
 -- Inserts and server-side management are performed with the Supabase service role.
 -- No public insert/delete policy is required.
+
+-- Force PostgREST to refresh its schema cache after creating this table.
+notify pgrst, 'reload schema';
 
 -- TODO Community 3.0:
 -- Add badge_unlocked messages when badge unlock logic becomes available.

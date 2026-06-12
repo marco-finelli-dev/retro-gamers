@@ -21,7 +21,7 @@ export const GET: APIRoute = async ({ cookies }) => {
   const { count, error } = await getUnreadAccountMessageCount(session.user.id);
 
   if (error) {
-    return json({ ok: true, unreadCount: 0, warning: error.message });
+    return json({ ok: true, unreadCount: 0 });
   }
 
   return json({ ok: true, unreadCount: count });

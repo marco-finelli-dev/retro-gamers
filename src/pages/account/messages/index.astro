@@ -17,7 +17,7 @@ const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 
 let messages: AccountMessage[] = [];
 let unreadCount = 0;
-let messagesError = '';
+let messagesError = false;
 
 if (isLoggedIn && session.user) {
   const [messagesResult, unreadResult] = await Promise.all([
@@ -26,8 +26,8 @@ if (isLoggedIn && session.user) {
   ]);
 
   messages = messagesResult.messages;
-  unreadCount = unreadResult.count;
-  messagesError = messagesResult.error?.message || unreadResult.error?.message || '';
+  unreadCount = unreadResult.error ? 0 : unreadResult.count;
+  messagesError = Boolean(messagesResult.error);
 }
 
 const typeLabels: Record<string, string> = {

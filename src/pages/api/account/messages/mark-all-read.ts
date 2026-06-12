@@ -21,7 +21,7 @@ export const POST: APIRoute = async ({ cookies }) => {
   const { error } = await markAllAccountMessagesRead(session.user.id);
 
   if (error) {
-    return json({ ok: false, error: error.message }, 500);
+    return json({ ok: false, error: 'Messaggi non aggiornati.' }, 500);
   }
 
   return json({ ok: true });

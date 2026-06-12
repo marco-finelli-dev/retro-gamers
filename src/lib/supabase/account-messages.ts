@@ -38,6 +38,17 @@ type CommentReference = {
 
 const DEFAULT_LIMIT = 60;
 
+const logAccountMessagesError = (context: string, error: { code?: string; message?: string; hint?: string } | null) => {
+  if (!error) return;
+
+  console.error('Account messages query failed:', {
+    context,
+    code: error.code,
+    message: error.message,
+    hint: error.hint,
+  });
+};
+
 export const getCommentActionUrl = (comment: { id?: string | null; article_url?: string | null }) => {
   if (!comment.id) {
     return comment.article_url || '/';
@@ -67,6 +78,10 @@ export async function createAccountMessage(input: AccountMessageInput) {
     if (!existingError && existing) {
       return { ok: true, skipped: true, id: existing.id };
     }
+
+    if (existingError) {
+      logAccountMessagesError('dedupe', existingError);
+    }
   }
 
   const { data, error } = await supabaseAdmin
@@ -83,6 +98,7 @@ export async function createAccountMessage(input: AccountMessageInput) {
     .single();
 
   if (error) {
+    logAccountMessagesError('insert', error);
     return { ok: false, skipped: false, error: error.message };
   }
 
@@ -130,6 +146,7 @@ export async function getCommentById(commentId?: string | null): Promise<Comment
     .maybeSingle();
 
   if (error || !data) {
+    logAccountMessagesError('get-comment', error);
     return null;
   }
 
@@ -144,6 +161,8 @@ export async function getAccountMessages(userId: string, limit = DEFAULT_LIMIT) 
     .order('created_at', { ascending: false })
     .limit(limit);
 
+  logAccountMessagesError('list', error);
+
   return {
     messages: (data ?? []) as AccountMessage[],
     error,
@@ -156,6 +175,8 @@ export async function getUnreadAccountMessageCount(userId: string) {
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
     .eq('is_read', false);
+
+  logAccountMessagesError('unread-count', error);
 
   return {
     count: count ?? 0,
@@ -175,6 +196,8 @@ export async function markAccountMessageRead(userId: string, messageId: string) 
     .select('id, is_read, read_at')
     .maybeSingle();
 
+  logAccountMessagesError('mark-read', error);
+
   return { message: data, error };
 }
 
@@ -187,6 +210,8 @@ export async function markAllAccountMessagesRead(userId: string) {
     })
     .eq('user_id', userId)
     .eq('is_read', false);
+
+  logAccountMessagesError('mark-all-read', error);
 
   return { error };
 }

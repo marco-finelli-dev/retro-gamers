@@ -42,7 +42,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const { message, error } = await markAccountMessageRead(session.user.id, messageId);
 
   if (error) {
-    return json({ ok: false, error: error.message }, 500);
+    return json({ ok: false, error: 'Messaggio non aggiornato.' }, 500);
   }
 
   if (!message) {

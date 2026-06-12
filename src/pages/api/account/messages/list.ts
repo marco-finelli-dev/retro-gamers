@@ -24,7 +24,7 @@ export const GET: APIRoute = async ({ cookies }) => {
   ]);
 
   if (error) {
-    return json({ ok: false, error: error.message }, 500);
+    return json({ ok: false, error: 'Messaggi non disponibili.' }, 500);
   }
 
   return json({
