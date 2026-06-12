@@ -265,6 +265,7 @@ const flagAlt = isEnglish
   const root = document.querySelector('[data-account-menu]');
   const trigger = root?.querySelector('[data-account-menu-toggle]');
   const panel = root?.querySelector('[data-account-menu-panel]');
+  const isEnglish = root?.dataset.lang === 'en';
 
   const closeMenu = () => {
     if (!root || !trigger || !panel) return;
@@ -290,6 +291,18 @@ const flagAlt = isEnglish
   };
 
   const setAccountState = (isLoggedIn, isStaff = false) => {
+    root?.classList.toggle('is-authenticated', isLoggedIn);
+    root?.classList.toggle('is-staff', isLoggedIn && isStaff);
+
+    const accountLabel = isLoggedIn
+      ? (isStaff
+          ? (isEnglish ? 'Staff account' : 'Account staff')
+          : (isEnglish ? 'User account' : 'Account utente'))
+      : 'Account';
+
+    trigger?.setAttribute('aria-label', accountLabel);
+    trigger?.setAttribute('title', accountLabel);
+
     document.querySelectorAll('[data-account-guest]').forEach((node) => {
       node.hidden = isLoggedIn;
     });
