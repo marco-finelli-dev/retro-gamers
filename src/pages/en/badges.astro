@@ -1,0 +1,77 @@
+---
+import '../../styles/pages/badges.css';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import {
+  getActiveReaderBadges,
+  getReaderBadgeImageSrc,
+  getReaderBadgeInitials,
+  getReaderBadgeLabel
+} from '../../lib/badges';
+
+const badges = await getActiveReaderBadges({ lang: 'en' });
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/badges/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/badges/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/badges/' }
+];
+
+const languageSwitch = {
+  url: '/badges/'
+};
+---
+
+<BaseLayout
+  title="Reader badges"
+  description="Small identity markers to show your corner of retro-gaming on Retro-Gamers.it."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/en/badges/"
+  lang="en"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <main class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Community</span>
+        <h1>Reader badges</h1>
+        <p>
+          Small identity markers to show your corner of retro-gaming.
+        </p>
+      </section>
+
+      <article class="legal-content">
+        <h2>Your comment signature</h2>
+
+        <p class="reader-badges-intro">
+          You can choose your badge during registration or change it from your
+          account panel.
+        </p>
+
+        <div class="reader-badges-grid">
+          {badges.map((badge) => {
+            const label = getReaderBadgeLabel(badge, 'en');
+            const imageSrc = getReaderBadgeImageSrc(badge.image_path);
+            const fallback = getReaderBadgeInitials(label) || 'RG';
+
+            return (
+              <article class="reader-badge-card">
+                <div class="reader-badge-card__visual" aria-hidden="true">
+                  {imageSrc ? (
+                    <img src={imageSrc} alt="" loading="lazy" decoding="async" />
+                  ) : (
+                    <span class="reader-badge-card__fallback">{fallback}</span>
+                  )}
+                </div>
+
+                <h2>{label}</h2>
+              </article>
+            );
+          })}
+        </div>
+      </article>
+    </div>
+  </main>
+</BaseLayout>

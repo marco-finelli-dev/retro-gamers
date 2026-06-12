@@ -1,6 +1,7 @@
 ---
 import '../../styles/pages/account.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getActiveReaderBadges } from '../../lib/badges';
 import { getUserProfileFromToken } from '../../lib/supabase/auth';
 import { supabaseAdmin } from '../../lib/supabase/server';
 
@@ -10,12 +11,7 @@ const token = Astro.cookies.get('rg_access_token')?.value ?? '';
 const session = await getUserProfileFromToken(token);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 
-const { data: badges } = isLoggedIn
-  ? await supabaseAdmin
-      .from('user_badges')
-      .select('key, label_it, label_en, image_path')
-      .eq('is_active', true)
-  : { data: [] };
+const badges = isLoggedIn ? await getActiveReaderBadges() : [];
 
 const profile = session.profile;
 const user = session.user;
@@ -164,12 +160,14 @@ if (isLoggedIn && user?.id) {
               <span>Badge lettore</span>
               <select name="badgeKey" required>
                 <option value="">Scegli un badge</option>
-                {(badges || []).map((badge) => (
+                {badges.map((badge) => (
                   <option value={badge.key} selected={badge.key === profile?.badge_key}>
                     {badge.label_it || badge.label_en || badge.key}
                   </option>
                 ))}
               </select>
+
+              <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
             </label>
 
             <p class="account-message" data-account-message hidden></p>

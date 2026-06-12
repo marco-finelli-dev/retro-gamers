@@ -1,20 +1,12 @@
 ---
 import '../../../styles/pages/account.css';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getActiveReaderBadges } from '../../../lib/badges';
 
 const title = 'Registrati su Retro-Gamers.it';
 const description = 'Crea un profilo lettore per commentare gli articoli di Retro-Gamers.it.';
 
-const badges = [
-  ['arcade_kid', 'Arcade Kid'],
-  ['eight_bit_player', '8-bit Player'],
-  ['sixteen_bit_veteran', '16-bit Veteran'],
-  ['amiga_user', 'Amiga User'],
-  ['console_warrior', 'Console Warrior'],
-  ['point_click_lover', 'Point & Click Lover'],
-  ['jrpg_explorer', 'JRPG Explorer'],
-  ['retro_collector', 'Retro Collector']
-];
+const badges = await getActiveReaderBadges();
 ---
 
 <BaseLayout title={title} description={description}>
@@ -49,8 +41,8 @@ const badges = [
           <span>Badge lettore</span>
           <select name="badgeKey" required>
             <option value="">Scegli un badge</option>
-            {badges.map(([value, label]) => (
-              <option value={value}>{label}</option>
+            {badges.map((badge) => (
+              <option value={badge.key}>{badge.label_it || badge.label_en || badge.key}</option>
             ))}
           </select>
         </label>
