@@ -218,6 +218,10 @@ const flagAlt = isEnglish
               {isEnglish ? 'My memories' : 'Le mie memorie'}
             </a>
 
+            <a href="/account/" role="menuitem" data-account-public-profile hidden>
+              {isEnglish ? 'Public profile' : 'Profilo pubblico'}
+            </a>
+
             <a href="/admin/comments/" role="menuitem" data-account-staff hidden>
               {isEnglish ? 'Comment moderation' : 'Moderazione commenti'}
             </a>
@@ -288,6 +292,18 @@ const flagAlt = isEnglish
     return (match?.[0] || '?').toUpperCase();
   };
 
+  const getPublicProfileUrl = (profile) => {
+    const username = String(profile?.username || '').trim().toLowerCase();
+
+    if (!/^[a-z0-9_-]{3,24}$/.test(username)) {
+      return '';
+    }
+
+    return isEnglish
+      ? `/en/users/${encodeURIComponent(username)}/`
+      : `/utenti/${encodeURIComponent(username)}/`;
+  };
+
   const closeMenu = () => {
     if (!root || !trigger || !panel) return;
     root.classList.remove('is-open');
@@ -314,6 +330,7 @@ const flagAlt = isEnglish
   const setAccountAvatar = (isLoggedIn, profile = null, user = null) => {
     const displayName = getAccountName(profile, user);
     const initial = isLoggedIn ? getAccountInitial(profile, user) : '';
+    const publicProfileUrl = isLoggedIn ? getPublicProfileUrl(profile) : '';
 
     root?.classList.toggle('has-avatar', Boolean(isLoggedIn && initial));
 
@@ -323,6 +340,14 @@ const flagAlt = isEnglish
 
     document.querySelectorAll('[data-mobile-account-name]').forEach((node) => {
       node.textContent = displayName || (isEnglish ? 'My account' : 'Il mio account');
+    });
+
+    document.querySelectorAll('[data-account-public-profile]').forEach((node) => {
+      node.hidden = !publicProfileUrl;
+
+      if (publicProfileUrl) {
+        node.setAttribute('href', publicProfileUrl);
+      }
     });
   };
 
