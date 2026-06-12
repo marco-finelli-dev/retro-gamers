@@ -8,24 +8,6 @@ import { urlFor } from '../../../lib/image';
 import { getAllPosts } from '../../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../lib/pagination';
 
-export async function getStaticPaths() {
-  const authors = await client.fetch(`
-    *[
-      _type == "author" &&
-      defined(slug.current) &&
-      !(_id in path("drafts.**"))
-    ]{
-      "slug": slug.current
-    }
-  `);
-
-  return authors.map((author) => ({
-    params: {
-      slug: author.slug,
-    },
-  }));
-}
-
 const { slug } = Astro.params;
 
 const author = await client.fetch(`

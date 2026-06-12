@@ -4,7 +4,6 @@ import ManufacturerPage from '../../../../../components/platforms/ManufacturerPa
 
 import { getAllPosts, groupPosts } from '../../../../../lib/posts';
 import {
-  getAllPlatforms,
   getPlatformsByTypeAndManufacturer
 } from '../../../../../lib/platforms';
 
@@ -14,44 +13,9 @@ const typeMap = {
   consoles: 'console'
 };
 
-const typeSlugMap = {
-  arcade: 'arcade',
-  computer: 'computers',
-  console: 'consoles'
-};
-
-export async function getStaticPaths() {
-  const platforms = await getAllPlatforms();
-
-  const paths = new Map();
-
-  for (const platform of platforms) {
-    if (!platform.platformType || !platform.manufacturer?.slug) continue;
-
-    const publicType = typeSlugMap[platform.platformType] || platform.platformType;
-    const key = `${publicType}/${platform.manufacturer.slug}`;
-
-    if (!paths.has(key)) {
-      paths.set(key, {
-        params: {
-          type: publicType,
-          manufacturer: platform.manufacturer.slug
-        },
-        props: {
-          manufacturer: platform.manufacturer,
-          internalType: platform.platformType
-        }
-      });
-    }
-  }
-
-  return Array.from(paths.values());
-}
-
 const { type, manufacturer } = Astro.params;
-const { manufacturer: manufacturerData, internalType: staticInternalType } = Astro.props;
 
-const platformType = staticInternalType || typeMap[type] || type;
+const platformType = typeMap[type] || type;
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
@@ -70,12 +34,17 @@ const platforms = await getPlatformsByTypeAndManufacturer(
 );
 
 const resolvedManufacturer =
-  manufacturerData ||
   platforms[0]?.manufacturer ||
   {
     name: 'Manufacturer',
     slug: manufacturer
   };
+
+const typeSlugMap = {
+  arcade: 'arcade',
+  computer: 'computers',
+  console: 'consoles'
+};
 
 const canonicalType = typeSlugMap[platformType] || type;
 ---
