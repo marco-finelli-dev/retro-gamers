@@ -7,10 +7,48 @@ import {
   oauthCodeVerifierCookie,
 } from '../../../../lib/supabase/oauth';
 
-const redirectToLogin = (origin: string, reason = 'oauth') =>
-  Response.redirect(`${origin}/account/login/?oauthError=${encodeURIComponent(reason)}`, 303);
+const redirect = (location: string, status = 302, setCookie?: string) => {
+  const headers = new Headers({ Location: location });
 
-export const GET: APIRoute = async ({ cookies, url }) => {
+  if (setCookie) {
+    headers.set('Set-Cookie', setCookie);
+  }
+
+  return new Response(null, { status, headers });
+};
+
+const serializeCookie = (
+  name: string,
+  value: string,
+  {
+    maxAge,
+    path,
+    secure,
+  }: {
+    maxAge: number;
+    path: string;
+    secure: boolean;
+  }
+) => {
+  const parts = [
+    `${name}=${encodeURIComponent(value)}`,
+    `Path=${path}`,
+    `Max-Age=${maxAge}`,
+    'SameSite=Lax',
+    'HttpOnly',
+  ];
+
+  if (secure) {
+    parts.push('Secure');
+  }
+
+  return parts.join('; ');
+};
+
+const redirectToLogin = (origin: string, reason = 'oauth') =>
+  redirect(`${origin}/account/login/?oauthError=${encodeURIComponent(reason)}`, 303);
+
+export const GET: APIRoute = async ({ url }) => {
   const provider = url.searchParams.get('provider');
 
   if (!isSocialOAuthProvider(provider)) {
@@ -46,13 +84,11 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     return redirectToLogin(url.origin, 'start');
   }
 
-  cookies.set(oauthCodeVerifierCookie, codeVerifier, {
+  const verifierCookie = serializeCookie(oauthCodeVerifierCookie, codeVerifier, {
     path: '/api/auth/oauth',
-    httpOnly: true,
     secure: import.meta.env.PROD,
-    sameSite: 'lax',
     maxAge: 10 * 60,
   });
 
-  return Response.redirect(data.url, 302);
+  return redirect(data.url, 302, verifierCookie);
 };
