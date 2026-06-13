@@ -285,16 +285,52 @@
 }
 
 .private-thread-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
   align-items: center;
   gap: 18px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(34,240,255,0.08), rgba(168,85,247,0.035)),
+    var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.private-thread-header__identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.private-thread-header__avatar {
+  flex: 0 0 auto;
+  width: clamp(58px, 8vw, 72px);
+  height: clamp(58px, 8vw, 72px);
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+}
+
+.private-thread-header__body {
+  display: grid;
+  min-width: 0;
+}
+
+.private-thread-header__actions {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+  min-width: 0;
 }
 
 .private-thread-header h1 {
+  overflow-wrap: anywhere;
   margin: 0;
   color: var(--rg-section-title-color);
-  font-size: clamp(2rem, 5vw, 3.8rem);
+  font-size: clamp(1.75rem, 3.7vw, 2.8rem);
+  line-height: 1.02;
 }
 
 .private-thread-header p:not(.account-kicker) {
@@ -303,7 +339,7 @@
   font-weight: 850;
 }
 
-.private-thread-header a,
+.private-thread-header__actions > a,
 .private-thread-actions button,
 .private-message button,
 .private-reply-form button {
@@ -327,7 +363,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 18px;
+  justify-content: flex-end;
+  margin: 0;
 }
 
 .private-thread-actions button,
@@ -339,7 +376,7 @@
 
 .private-thread {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   margin-top: 20px;
 }
 
@@ -356,16 +393,19 @@
 }
 
 .private-message__bubble {
-  width: min(72ch, 82%);
-  padding: 14px 16px;
+  width: min(64ch, 78%);
+  padding: 12px 15px;
   border: 1px solid var(--rg-card-border);
-  border-radius: 20px;
+  border-radius: 18px 18px 18px 6px;
   background: var(--rg-card-bg);
-  box-shadow: var(--rg-card-shadow);
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.035);
 }
 
 .private-message.is-mine .private-message__bubble {
   border-color: var(--rg-badge-border);
+  border-radius: 18px 18px 6px 18px;
   background:
     linear-gradient(135deg, rgba(34,240,255,0.1), rgba(168,85,247,0.045)),
     var(--rg-card-bg);
@@ -374,7 +414,7 @@
 .private-message__bubble p {
   margin: 0;
   color: var(--color-text);
-  line-height: 1.65;
+  line-height: 1.58;
   white-space: pre-line;
 }
 
@@ -384,16 +424,23 @@
   gap: 8px 10px;
   align-items: center;
   justify-content: flex-end;
-  margin-top: 10px;
+  margin-top: 8px;
   color: var(--color-text-soft);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 800;
 }
 
 .private-reply-form {
   display: grid;
-  gap: 14px;
-  margin-top: 24px;
+  gap: 12px;
+  margin-top: 22px;
+  padding: 16px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--rg-card-bg) 86%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.035),
+    0 8px 22px rgba(0,0,0,0.10);
 }
 
 .private-reply-form label {
@@ -410,14 +457,18 @@
 }
 
 .private-reply-form textarea {
-  min-height: 132px;
+  min-height: 112px;
   border: 1px solid var(--color-border);
-  border-radius: 18px;
-  padding: 14px 16px;
+  border-radius: 16px;
+  padding: 13px 15px;
   background: var(--rg-card-bg);
   color: var(--color-text);
   font: inherit;
   resize: vertical;
+}
+
+.private-reply-form .account-actions {
+  justify-content: flex-end;
 }
 
 @media (max-width: 640px) {
@@ -449,10 +500,32 @@
 
   .private-thread-header {
     align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .private-thread-header__identity {
+    align-items: flex-start;
+  }
+
+  .private-thread-header__actions {
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .private-thread-header__actions > a {
+    width: 100%;
+  }
+
+  .private-thread-actions {
+    justify-content: stretch;
   }
 
   .private-message__bubble {
     width: 100%;
+  }
+
+  .private-reply-form {
+    padding: 14px;
   }
 }

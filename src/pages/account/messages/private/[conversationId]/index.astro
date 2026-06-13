@@ -63,29 +63,39 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
           {thread ? (
             <>
               <header class="private-thread-header">
-                <UserAvatar
-                  name={otherName}
-                  src={otherProfile?.avatar_url}
-                  size="md"
-                  label={`Avatar di ${otherName}`}
-                />
+                <div class="private-thread-header__identity">
+                  <UserAvatar
+                    name={otherName}
+                    src={otherProfile?.avatar_url}
+                    size="md"
+                    label={`Avatar di ${otherName}`}
+                    class="private-thread-header__avatar"
+                  />
 
-                <div>
-                  <p class="account-kicker">Messaggio privato</p>
-                  <h1>{otherName}</h1>
-                  {otherProfile?.username && <p>@{otherProfile.username}</p>}
+                  <div class="private-thread-header__body">
+                    <p class="account-kicker">Messaggio privato</p>
+                    <h1>{otherName}</h1>
+                    {otherProfile?.username && <p>@{otherProfile.username}</p>}
+                  </div>
+                </div>
+
+                <div class="private-thread-header__actions">
                   <a href={otherProfileUrl}>Vedi profilo pubblico</a>
+
+                  <div
+                    class="private-thread-actions"
+                    data-private-thread-actions
+                    data-conversation-id={conversationId}
+                  >
+                    {thread.isBlockedByViewer ? (
+                      <button type="button" data-private-unblock>Sblocca utente</button>
+                    ) : (
+                      <button type="button" data-private-block>Blocca utente</button>
+                    )}
+                    <button type="button" data-private-report-conversation>Segnala conversazione</button>
+                  </div>
                 </div>
               </header>
-
-              <div class="private-thread-actions" data-private-thread-actions data-conversation-id={conversationId}>
-                {thread.isBlockedByViewer ? (
-                  <button type="button" data-private-unblock>Sblocca utente</button>
-                ) : (
-                  <button type="button" data-private-block>Blocca utente</button>
-                )}
-                <button type="button" data-private-report-conversation>Segnala conversazione</button>
-              </div>
 
               {thread.isBlockedByViewer && (
                 <p class="account-message" data-type="ok">Hai bloccato questo utente. Puoi sbloccarlo quando vuoi.</p>
