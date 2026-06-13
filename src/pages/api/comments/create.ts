@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
-import { supabasePublic, supabaseAdmin } from '../../../lib/supabase/server';
-import { isBlockedProfileStatus, isStaffProfile } from '../../../lib/supabase/auth';
+import { supabaseAdmin } from '../../../lib/supabase/server';
+import { getUserSessionFromCookies, isBlockedProfileStatus, isStaffProfile } from '../../../lib/supabase/auth';
 import {
   createCommentApprovedAccountMessage,
   createReplyAccountMessage,
@@ -154,34 +154,14 @@ async function notifyParentAuthorAboutApprovedReply(comment: {
 }
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  const token = cookies.get('rg_access_token')?.value;
+  const session = await getUserSessionFromCookies(cookies);
 
-  if (!token) {
-    return json({ ok: false, error: 'Devi effettuare il login per commentare.' }, 401);
+  if (session.error || !session.user || !session.profile) {
+    return json({ ok: false, error: 'Sessione non valida. Effettua di nuovo il login.' }, session.status || 401);
   }
 
-  const { data: userData, error: userError } = await supabasePublic.auth.getUser(token);
-
-  if (userError || !userData.user) {
-    return json({ ok: false, error: 'Sessione non valida. Effettua di nuovo il login.' }, 401);
-  }
-
-  const user = userData.user;
-
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .select('id, user_id, username, display_name, role, status')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (profileError) {
-    logApiError('comments-create.profile', profileError);
-    return json({ ok: false, error: 'Profilo non disponibile. Riprova più tardi.' }, 500);
-  }
-
-  if (!profile) {
-    return json({ ok: false, error: 'Profilo lettore non trovato.' }, 404);
-  }
+  const user = session.user;
+  const profile = session.profile;
 
   if (isBlockedProfileStatus(profile.status)) {
     return json({ ok: false, error: 'Account bloccato.' }, 403);

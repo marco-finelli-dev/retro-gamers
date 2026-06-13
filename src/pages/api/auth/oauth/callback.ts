@@ -5,6 +5,12 @@ import {
   normalizeReturnTo,
   oauthCodeVerifierCookie,
 } from '../../../../lib/supabase/oauth';
+import {
+  authAccessCookie,
+  authAccessCookieMaxAge,
+  authRefreshCookie,
+  authRefreshCookieMaxAge,
+} from '../../../../lib/supabase/auth';
 
 const authCookieOptions = {
   path: '/',
@@ -109,20 +115,20 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   if (!profileResult.ok) {
     return redirect(`${url.origin}/account/login/?oauthError=${encodeURIComponent('profile')}`, 303, [
       deleteCookie(oauthCodeVerifierCookie, '/api/auth/oauth'),
-      deleteCookie('rg_access_token', '/'),
-      deleteCookie('rg_refresh_token', '/'),
+      deleteCookie(authAccessCookie, '/'),
+      deleteCookie(authRefreshCookie, '/'),
     ]);
   }
 
   const setCookies = [
     deleteCookie(oauthCodeVerifierCookie, '/api/auth/oauth'),
-    serializeCookie('rg_access_token', session.access_token, {
+    serializeCookie(authAccessCookie, session.access_token, {
       ...authCookieOptions,
-      maxAge: 60 * 60,
+      maxAge: authAccessCookieMaxAge,
     }),
-    serializeCookie('rg_refresh_token', session.refresh_token, {
+    serializeCookie(authRefreshCookie, session.refresh_token, {
       ...authCookieOptions,
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge: authRefreshCookieMaxAge,
     }),
   ];
 

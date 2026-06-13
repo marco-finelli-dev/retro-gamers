@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getUserProfileFromToken } from '../../../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
 import { getPrivateConversations, isPrivateMessagesUnavailable } from '../../../../lib/supabase/private-messages';
 
 const json = (payload: unknown, status = 200) =>
@@ -11,8 +11,7 @@ const json = (payload: unknown, status = 200) =>
   });
 
 export const GET: APIRoute = async ({ cookies }) => {
-  const token = cookies.get('rg_access_token')?.value ?? '';
-  const session = await getUserProfileFromToken(token);
+  const session = await getUserSessionFromCookies(cookies);
 
   if (session.error || !session.user || !session.profile) {
     return json({ ok: false, error: session.error || 'Sessione non valida.' }, session.status || 401);

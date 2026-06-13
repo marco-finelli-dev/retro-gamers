@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../../lib/api-errors';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
-import { getUserProfileFromToken, isStaffProfile } from '../../../../lib/supabase/auth';
+import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supabase/auth';
 import {
   createCommentApprovedAccountMessage,
   createReplyAccountMessage,
@@ -150,8 +150,7 @@ async function notifyApprovedComment(comment: {
 }
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  const token = cookies.get('rg_access_token')?.value;
-  const session = await getUserProfileFromToken(token ?? '');
+  const session = await getUserSessionFromCookies(cookies);
 
   if (session.error || !session.profile || !session.user) {
     return json({ ok: false, error: session.error }, session.status);

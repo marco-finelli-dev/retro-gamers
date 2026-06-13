@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { markAccountMessageRead } from '../../../../lib/supabase/account-messages';
-import { getUserProfileFromToken } from '../../../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
 
 type MarkReadPayload = {
   messageId?: string;
@@ -18,8 +18,7 @@ const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(value);
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  const token = cookies.get('rg_access_token')?.value;
-  const session = await getUserProfileFromToken(token ?? '');
+  const session = await getUserSessionFromCookies(cookies);
 
   if (session.error || !session.user) {
     return json({ ok: false, error: session.error }, session.status);

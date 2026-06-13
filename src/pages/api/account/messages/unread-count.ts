@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getUnreadAccountMessageCount } from '../../../../lib/supabase/account-messages';
-import { getUserProfileFromToken } from '../../../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
 import { getUnreadPrivateMessageCount } from '../../../../lib/supabase/private-messages';
 
 const json = (payload: unknown, status = 200) =>
@@ -12,8 +12,7 @@ const json = (payload: unknown, status = 200) =>
   });
 
 export const GET: APIRoute = async ({ cookies }) => {
-  const token = cookies.get('rg_access_token')?.value;
-  const session = await getUserProfileFromToken(token ?? '');
+  const session = await getUserSessionFromCookies(cookies);
 
   if (session.error || !session.user) {
     return json({ ok: true, unreadCount: 0 });

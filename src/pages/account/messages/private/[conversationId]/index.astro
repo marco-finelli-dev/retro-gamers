@@ -3,7 +3,7 @@ import '../../../../../styles/pages/account.css';
 import '../../../../../styles/pages/account-messages.css';
 import BaseLayout from '../../../../../layouts/BaseLayout.astro';
 import UserAvatar from '../../../../../components/account/UserAvatar.astro';
-import { getUserProfileFromToken } from '../../../../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../../../../lib/supabase/auth';
 import {
   getPrivateConversationThread,
   getPrivateProfileLabel,
@@ -13,8 +13,7 @@ import {
 } from '../../../../../lib/supabase/private-messages';
 
 const conversationId = String(Astro.params.conversationId || '');
-const token = Astro.cookies.get('rg_access_token')?.value ?? '';
-const session = await getUserProfileFromToken(token);
+const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const title = 'Conversazione privata | Retro-Gamers.it';
 const description = 'Conversazione privata tra lettori Retro-Gamers.it.';

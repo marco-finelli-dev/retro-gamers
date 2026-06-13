@@ -7,7 +7,7 @@ import {
   getCommentExcerpt,
   type PublicReaderComment,
 } from '../../../lib/supabase/public-profiles';
-import { getUserProfileFromToken } from '../../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
 type MemoryStatus = 'approved' | 'pending' | 'rejected' | 'spam';
@@ -21,8 +21,7 @@ type ReaderMemory = PublicReaderComment & {
 
 const title = 'Le mie memorie | Retro-Gamers.it';
 const description = 'Ritrova i commenti lasciati su Retro-Gamers.it e torna alle discussioni pubblicate.';
-const token = Astro.cookies.get('rg_access_token')?.value ?? '';
-const session = await getUserProfileFromToken(token);
+const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const currentUrl = new URL(Astro.url);
 const pageSize = 10;

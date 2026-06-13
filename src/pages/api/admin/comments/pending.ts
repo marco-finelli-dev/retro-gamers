@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../../lib/api-errors';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
-import { getUserProfileFromToken, isStaffProfile } from '../../../../lib/supabase/auth';
+import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supabase/auth';
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -18,8 +18,7 @@ const normalizeSearch = (value: string) =>
   value.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 80);
 
 export const GET: APIRoute = async ({ cookies, url }) => {
-  const token = cookies.get('rg_access_token')?.value;
-  const session = await getUserProfileFromToken(token ?? '');
+  const session = await getUserSessionFromCookies(cookies);
 
   if (session.error || !session.profile) {
     return json({ ok: false, error: session.error }, session.status);

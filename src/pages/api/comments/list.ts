@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { getAvatarPublicUrl, isMissingAvatarColumnError } from '../../../lib/supabase/avatars';
-import { supabaseAdmin, supabasePublic } from '../../../lib/supabase/server';
+import { supabaseAdmin } from '../../../lib/supabase/server';
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -98,12 +99,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   const reactionSummaries = new Map<string, CommentReactionSummary>();
 
   let currentUserId: string | null = null;
-  const token = cookies.get('rg_access_token')?.value ?? '';
-
-  if (token) {
-    const { data: userData } = await supabasePublic.auth.getUser(token);
-    currentUserId = userData.user?.id ?? null;
-  }
+  const session = await getUserSessionFromCookies(cookies);
+  currentUserId = session.user?.id ?? null;
 
   if (commentIds.length > 0) {
     const { data: reactionRows, error: reactionError } = await supabaseAdmin

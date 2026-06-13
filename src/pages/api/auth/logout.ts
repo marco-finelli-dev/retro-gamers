@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
+import { clearAuthSessionCookies } from '../../../lib/supabase/auth';
 
 export const POST: APIRoute = async ({ cookies }) => {
-  cookies.delete('rg_access_token', { path: '/' });
-  cookies.delete('rg_refresh_token', { path: '/' });
+  clearAuthSessionCookies(cookies);
 
   return new Response(
     JSON.stringify({

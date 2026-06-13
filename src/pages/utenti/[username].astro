@@ -8,15 +8,14 @@ import {
   getPublicReaderProfile,
   getPublicUserUrl,
 } from '../../lib/supabase/public-profiles';
-import { getUserProfileFromToken } from '../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 
 const username = String(Astro.params.username || '');
 const result = await getPublicReaderProfile(username);
 const profile = result.profile;
 const comments = result.comments;
 const isUnavailable = !profile;
-const token = Astro.cookies.get('rg_access_token')?.value ?? '';
-const viewerSession = await getUserProfileFromToken(token);
+const viewerSession = await getUserSessionFromCookies(Astro.cookies);
 const isViewerLoggedIn = Boolean(!viewerSession.error && viewerSession.user && viewerSession.profile);
 
 if (isUnavailable) {
@@ -87,8 +86,6 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
               {isStaff && <span>Staff Retro-Gamers</span>}
             </div>
 
-            {bio && <p class="public-user-bio">{bio}</p>}
-
             {!isOwnProfile && (
               <div class="public-user-actions">
                 {canSendPrivateMessage ? (
@@ -98,6 +95,8 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
                 )}
               </div>
             )}
+
+            {bio && <p class="public-user-bio">{bio}</p>}
           </div>
         </section>
 

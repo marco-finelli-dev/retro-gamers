@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getUserProfileFromToken } from '../../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -10,8 +10,7 @@ const json = (payload: unknown, status = 200) =>
   });
 
 export const GET: APIRoute = async ({ cookies }) => {
-  const token = cookies.get('rg_access_token')?.value;
-  const session = await getUserProfileFromToken(token ?? '');
+  const session = await getUserSessionFromCookies(cookies);
 
   if (session.error || !session.user || !session.profile) {
     return json({ ok: false, error: session.error }, session.status);

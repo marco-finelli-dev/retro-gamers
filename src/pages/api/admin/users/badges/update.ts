@@ -6,7 +6,7 @@ import {
   isBadgeAssignmentsUnavailable,
   removeReaderBadgeFromUser,
 } from '../../../../../lib/badges';
-import { getUserProfileFromToken } from '../../../../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../../../../lib/supabase/auth';
 import { createBadgeUnlockedAccountMessage } from '../../../../../lib/supabase/account-messages';
 import { supabaseAdmin } from '../../../../../lib/supabase/server';
 
@@ -54,8 +54,7 @@ const getNextAssignedBadgeKey = async (userId: string) => {
 };
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  const token = cookies.get('rg_access_token')?.value;
-  const session = await getUserProfileFromToken(token ?? '');
+  const session = await getUserSessionFromCookies(cookies);
 
   if (session.error || !session.profile || !session.user) {
     return json({ ok: false, error: session.error }, session.status);

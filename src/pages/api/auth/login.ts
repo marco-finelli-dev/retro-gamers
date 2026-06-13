@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabasePublic } from '../../../lib/supabase/server';
-import { getUserProfileFromToken } from '../../../lib/supabase/auth';
+import { getUserProfileFromToken, setAuthSessionCookies } from '../../../lib/supabase/auth';
 
 type LoginPayload = {
   email?: string;
@@ -53,23 +53,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: profileSession.error }, profileSession.status);
   }
 
-  const secure = import.meta.env.PROD;
-
-  cookies.set('rg_access_token', session.access_token, {
-    path: '/',
-    httpOnly: true,
-    secure,
-    sameSite: 'lax',
-    maxAge: 60 * 60,
-  });
-
-  cookies.set('rg_refresh_token', session.refresh_token, {
-    path: '/',
-    httpOnly: true,
-    secure,
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 30,
-  });
+  setAuthSessionCookies(cookies, session);
 
   return json({
     ok: true,

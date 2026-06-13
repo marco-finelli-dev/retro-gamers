@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
-import { getUserProfileFromToken } from '../../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
 type CommentReaction = 'like' | 'dislike';
@@ -60,8 +60,7 @@ const getReactionCounts = async (commentId: string, userId: string) => {
 };
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  const token = cookies.get('rg_access_token')?.value ?? '';
-  const session = await getUserProfileFromToken(token);
+  const session = await getUserSessionFromCookies(cookies);
 
   if (session.error || !session.user || !session.profile) {
     return json({ ok: false, error: session.error || 'Devi effettuare il login per votare.' }, session.status || 401);

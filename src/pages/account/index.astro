@@ -4,13 +4,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import UserAvatar from '../../components/account/UserAvatar.astro';
 import { getOwnedReaderBadges } from '../../lib/badges';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
-import { getUserProfileFromToken } from '../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { supabaseAdmin } from '../../lib/supabase/server';
 
 const title = 'Profilo lettore | Retro-Gamers.it';
 const description = 'Gestisci il tuo profilo lettore, il nome visualizzato e il badge community.';
-const token = Astro.cookies.get('rg_access_token')?.value ?? '';
-const session = await getUserProfileFromToken(token);
+const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const profile = session.profile;
 const user = session.user;
