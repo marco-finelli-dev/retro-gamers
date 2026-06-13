@@ -172,6 +172,7 @@
 .community-profile-card__content {
   display: grid;
   gap: 5px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -201,10 +202,11 @@
 }
 
 .community-link-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 5px;
+  width: 100%;
 }
 
 .community-link-list a,
@@ -226,6 +228,12 @@
   line-height: 1.2;
   text-align: center;
   text-decoration: none;
+}
+
+.community-profile-card .community-link-list a {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 10px;
 }
 
 .community-soft-badge {
@@ -359,6 +367,10 @@
   .community-action-link,
   .community-action-button {
     width: 100%;
+  }
+
+  .community-profile-card .community-link-list {
+    grid-template-columns: 1fr;
   }
 
   .community-detail-list div {
