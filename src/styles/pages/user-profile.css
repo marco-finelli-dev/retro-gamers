@@ -116,6 +116,27 @@
   white-space: pre-line;
 }
 
+.public-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.public-user-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 18px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  font-weight: 900;
+  text-decoration: none;
+}
+
 .public-user-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -235,6 +256,8 @@
 
 .public-user-comment a:hover,
 .public-user-comment a:focus-visible,
+.public-user-actions a:hover,
+.public-user-actions a:focus-visible,
 .public-user-panel--empty a:hover,
 .public-user-panel--empty a:focus-visible {
   color: var(--rg-action-hover-color);

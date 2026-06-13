@@ -9,6 +9,7 @@ import {
   type AccountMessage,
 } from '../../../lib/supabase/account-messages';
 import { getUserProfileFromToken } from '../../../lib/supabase/auth';
+import { getUnreadPrivateMessageCount } from '../../../lib/supabase/private-messages';
 
 const title = 'Messaggi account | Retro-Gamers.it';
 const description = 'Centro notifiche e messaggi interni del profilo lettore Retro-Gamers.it.';
@@ -18,16 +19,19 @@ const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 
 let messages: AccountMessage[] = [];
 let unreadCount = 0;
+let privateUnreadCount = 0;
 let messagesError = false;
 
 if (isLoggedIn && session.user) {
-  const [messagesResult, unreadResult] = await Promise.all([
+  const [messagesResult, unreadResult, privateUnreadResult] = await Promise.all([
     getAccountMessages(session.user.id),
     getUnreadAccountMessageCount(session.user.id),
+    getUnreadPrivateMessageCount(session.user.id),
   ]);
 
   messages = messagesResult.messages;
   unreadCount = unreadResult.error ? 0 : unreadResult.count;
+  privateUnreadCount = privateUnreadResult.error ? 0 : privateUnreadResult.count;
   messagesError = Boolean(messagesResult.error);
 
   const unreadMessageIds = messages
@@ -81,6 +85,16 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
             Qui trovi notifiche e messaggi legati alla tua attività nella community:
             commenti approvati, risposte ricevute e aggiornamenti del profilo.
           </p>
+
+          <nav class="account-messages-tabs" aria-label="Sezioni messaggi">
+            <a href="/account/messages/" aria-current="page">Sistema</a>
+            <a href="/account/messages/private/">
+              Privati
+              {privateUnreadCount > 0 && (
+                <span>{privateUnreadCount > 99 ? '99+' : privateUnreadCount}</span>
+              )}
+            </a>
+          </nav>
 
           <div class="account-messages-toolbar">
             <span data-account-messages-count>
@@ -164,7 +178,7 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
       try {
         const response = await fetch('/api/account/messages/unread-count');
         const result = await response.json();
-        const count = Number(result.unreadCount || 0);
+        const count = Number(result.systemUnreadCount || 0);
 
         if (countNode) {
           countNode.textContent = count === 1

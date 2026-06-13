@@ -1,0 +1,147 @@
+---
+import '../../../../styles/pages/account.css';
+import '../../../../styles/pages/account-messages.css';
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import UserAvatar from '../../../../components/account/UserAvatar.astro';
+import { getUserProfileFromToken } from '../../../../lib/supabase/auth';
+import {
+  getOrCreatePrivateConversationByUsername,
+  getPrivateConversations,
+  getPrivateMessageExcerpt,
+  getPrivateProfileLabel,
+  getPrivateProfileUrl,
+  isPrivateMessagesUnavailable,
+  type PrivateConversationSummary,
+} from '../../../../lib/supabase/private-messages';
+
+const title = 'Messaggi privati | Retro-Gamers.it';
+const description = 'Conversazioni private tra lettori Retro-Gamers.it.';
+const token = Astro.cookies.get('rg_access_token')?.value ?? '';
+const session = await getUserProfileFromToken(token);
+const isLoggedIn = Boolean(!session.error && session.user && session.profile);
+const toUsername = String(Astro.url.searchParams.get('to') || '').trim();
+
+let conversations: PrivateConversationSummary[] = [];
+let conversationsError = '';
+
+if (isLoggedIn && session.user && toUsername) {
+  const result = await getOrCreatePrivateConversationByUsername(session.user.id, toUsername);
+
+  if (result.conversation) {
+    return Astro.redirect(`/account/messages/private/${result.conversation.id}/`, 303);
+  }
+
+  conversationsError = result.error || 'Conversazione non disponibile.';
+}
+
+if (isLoggedIn && session.user) {
+  const result = await getPrivateConversations(session.user.id);
+  conversations = result.conversations;
+
+  if (result.error && !conversationsError) {
+    conversationsError = isPrivateMessagesUnavailable(result.error)
+      ? 'Messaggi privati non disponibili. Esegui lo SQL private-messages.sql in Supabase.'
+      : 'Conversazioni non disponibili. Riprova più tardi.';
+  }
+}
+
+const dateFormatter = new Intl.DateTimeFormat('it-IT', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="account-page account-messages-page">
+    <section class="account-card">
+      <p class="account-kicker">Community</p>
+      <h1>Messaggi privati</h1>
+
+      {isLoggedIn ? (
+        <>
+          <p>
+            Conversazioni 1:1 con gli altri lettori. Usa questo spazio con calma,
+            rispetto e senza trasformarlo in una chat rumorosa.
+          </p>
+
+          <nav class="account-messages-tabs" aria-label="Sezioni messaggi">
+            <a href="/account/messages/">Sistema</a>
+            <a href="/account/messages/private/" aria-current="page">Privati</a>
+          </nav>
+
+          {conversationsError && (
+            <p class="account-message" data-type="error">{conversationsError}</p>
+          )}
+
+          {conversations.length > 0 ? (
+            <div class="private-conversation-list">
+              {conversations.map((item) => {
+                const otherName = getPrivateProfileLabel(item.otherProfile);
+                const lastMessage = item.lastMessage;
+                const lastMessageText = lastMessage
+                  ? getPrivateMessageExcerpt(lastMessage.body)
+                  : 'Nessun messaggio ancora. Apri la conversazione per iniziare.';
+
+                return (
+                  <a
+                    class:list={[
+                      'private-conversation-card',
+                      item.unreadCount > 0 && 'is-unread',
+                    ]}
+                    href={`/account/messages/private/${item.conversation.id}/`}
+                  >
+                    <UserAvatar
+                      name={otherName}
+                      src={item.otherProfile.avatar_url}
+                      size="sm"
+                      label={`Avatar di ${otherName}`}
+                    />
+
+                    <span class="private-conversation-card__content">
+                      <strong>{otherName}</strong>
+                      <span>@{item.otherProfile.username}</span>
+                      <span>{lastMessageText}</span>
+                    </span>
+
+                    <span class="private-conversation-card__meta">
+                      {lastMessage ? (
+                        <time datetime={lastMessage.created_at}>
+                          {dateFormatter.format(new Date(lastMessage.created_at))}
+                        </time>
+                      ) : (
+                        <span>Nuova</span>
+                      )}
+
+                      {item.unreadCount > 0 && (
+                        <span class="private-conversation-card__unread">
+                          {item.unreadCount > 99 ? '99+' : item.unreadCount}
+                        </span>
+                      )}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          ) : !conversationsError ? (
+            <p class="account-messages-empty">
+              Nessuna conversazione privata per ora. Puoi scrivere a un lettore dal suo profilo pubblico.
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <p>
+            Accedi per leggere e inviare messaggi privati agli altri lettori.
+          </p>
+
+          <div class="account-actions account-actions--standalone">
+            <a href={`/account/login/?returnTo=${encodeURIComponent('/account/messages/private/')}`}>Accedi</a>
+          </div>
+        </>
+      )}
+    </section>
+  </main>
+</BaseLayout>

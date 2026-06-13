@@ -8,12 +8,16 @@ import {
   getPublicReaderProfile,
   getPublicUserUrl,
 } from '../../lib/supabase/public-profiles';
+import { getUserProfileFromToken } from '../../lib/supabase/auth';
 
 const username = String(Astro.params.username || '');
 const result = await getPublicReaderProfile(username);
 const profile = result.profile;
 const comments = result.comments;
 const isUnavailable = !profile;
+const token = Astro.cookies.get('rg_access_token')?.value ?? '';
+const viewerSession = await getUserProfileFromToken(token);
+const isViewerLoggedIn = Boolean(!viewerSession.error && viewerSession.user && viewerSession.profile);
 
 if (isUnavailable) {
   Astro.response.status = 404;
@@ -33,6 +37,14 @@ const badge = profile?.user_badges;
 const badgeLabel = badge?.label_it || badge?.label_en || profile?.badge_key || '';
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const bio = profile?.bio?.trim() || '';
+const isOwnProfile = Boolean(isViewerLoggedIn && viewerSession.user?.id === profile?.user_id);
+const canSendPrivateMessage = Boolean(profile && isViewerLoggedIn && !isOwnProfile && profile.status === 'active');
+const privateMessageHref = profile
+  ? `/account/messages/private/?to=${encodeURIComponent(profile.username)}`
+  : '/account/messages/private/';
+const loginPrivateMessageHref = profile
+  ? `/account/login/?returnTo=${encodeURIComponent(getPublicUserUrl(profile.username, 'it'))}`
+  : '/account/login/';
 const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   day: 'numeric',
   month: 'long',
@@ -76,6 +88,16 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
             </div>
 
             {bio && <p class="public-user-bio">{bio}</p>}
+
+            {!isOwnProfile && (
+              <div class="public-user-actions">
+                {canSendPrivateMessage ? (
+                  <a href={privateMessageHref}>Scrivi un messaggio</a>
+                ) : (
+                  <a href={loginPrivateMessageHref}>Accedi per scrivere</a>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
