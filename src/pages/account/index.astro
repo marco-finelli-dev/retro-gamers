@@ -106,227 +106,246 @@ if (isLoggedIn && user?.id) {
 <BaseLayout title={title} description={description}>
   <main class="account-page">
     <section class="account-card">
-      <p class="account-kicker">Profilo lettore</p>
-      <h1>Area account</h1>
-
       {isLoggedIn ? (
-        <>
-          <p>
-            Gestisci il nome con cui compari nei commenti e il badge che racconta
-            meglio il tuo angolo di retro-gaming.
-          </p>
-
-          <div class="account-profile-card">
-            <UserAvatar name={accountDisplayName} email={user?.email} src={avatarUrl} size="lg" />
-
-            <div>
-              <span>Profilo community</span>
-              <strong>{accountDisplayName}</strong>
-              {accountHandle && <small>{accountHandle}</small>}
-              {publicProfileHref && (
-                <a class="account-profile-card__link" href={publicProfileHref}>
-                  Vedi profilo pubblico
-                </a>
-              )}
-              <a class="account-profile-card__link" href="/account/messages/">
-                Apri messaggi
-              </a>
-            </div>
+        <div class="account-layout">
+          <div class="account-intro">
+            <p class="account-kicker">Profilo lettore</p>
+            <h1>Area account</h1>
+            <p>
+              Gestisci il nome con cui compari nei commenti e il badge che racconta
+              meglio il tuo angolo di retro-gaming.
+            </p>
           </div>
 
-          <section class="account-avatar-section" aria-labelledby="account-avatar-title">
-            <div class="account-avatar-section__content">
-              <p class="account-kicker">Community</p>
-              <h2 id="account-avatar-title">Avatar</h2>
-              <p>
-                Carica un’immagine per rendere riconoscibile il tuo profilo nella community.
-              </p>
+          <aside class="account-sidebar" aria-label="Riepilogo account">
+            <div class="account-profile-card">
+              <UserAvatar name={accountDisplayName} email={user?.email} src={avatarUrl} size="lg" />
 
-              <form class="account-form account-avatar-form" data-account-avatar-form>
-                <label class="account-avatar-dropzone" data-account-avatar-dropzone>
-                  <input
-                    class="account-avatar-input"
-                    type="file"
-                    name="avatar"
-                    accept="image/jpeg,image/png,image/webp"
-                    data-account-avatar-input
-                  />
-                  <span class="account-avatar-dropzone__label" data-account-avatar-dropzone-label>
-                    Trascina qui la tua immagine oppure scegli un file
-                  </span>
-                  <span class="account-avatar-dropzone__help">
-                    JPG, PNG o WebP. Max 2 MB.
-                  </span>
-                  <span
-                    class="account-avatar-dropzone__filename"
-                    data-account-avatar-filename
-                    hidden
-                  ></span>
-                </label>
-
-                <p class="account-message" data-account-avatar-message hidden></p>
-
-                <div class="account-actions">
-                  <button type="submit">Carica avatar</button>
-                  <button
-                    type="button"
-                    data-account-avatar-remove
-                    hidden={!avatarUrl}
-                  >
-                    Rimuovi avatar
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
-
-          <div class="account-summary">
-            <div>
-              <span>Email</span>
-              <strong>{user?.email}</strong>
-            </div>
-
-            <div>
-              <span>Username</span>
-              <strong>{profile?.username}</strong>
-            </div>
-
-            <div>
-              <span>Ruolo</span>
-              <strong>{profile?.role || 'reader'}</strong>
-            </div>
-
-            <div>
-              <span>Stato</span>
-              <strong>{profile?.status || 'active'}</strong>
-            </div>
-
-            <div>
-              <span>Badge attuale</span>
-              <strong>{currentBadge?.label_it || profile?.badge_key || 'Non impostato'}</strong>
-            </div>
-          </div>
-
-          <h2 id="memories" class="account-section-title">Le tue memorie</h2>
-
-          <div class="account-summary account-summary--memories">
-            <div>
-              <span>Commenti pubblicati</span>
-              <strong>{commentActivity.approved}</strong>
-            </div>
-
-            <div>
-              <span>In attesa di moderazione</span>
-              <strong>{commentActivity.pending}</strong>
-            </div>
-
-            <div>
-              <span>Like ricevuti</span>
-              <strong>{commentActivity.likesReceived}</strong>
-            </div>
-
-            <div>
-              <span>Dislike ricevuti</span>
-              <strong>{commentActivity.dislikesReceived}</strong>
-            </div>
-          </div>
-
-          <div class="account-actions account-actions--section">
-            <a href="/account/memories/">Vedi tutte le memorie</a>
-          </div>
-
-          <section class="account-public-profile" aria-labelledby="account-public-profile-title">
-            <div class="account-public-profile__heading">
-              <p class="account-kicker">Community</p>
-              <h2 id="account-public-profile-title">Profilo pubblico</h2>
-              <p>
-                Racconta in poche righe chi sei come lettore, giocatore o
-                appassionato retro.
-              </p>
-            </div>
-
-            <form class="account-form account-form--bio" data-account-bio-form>
-              <label>
-                <span>Bio</span>
-                <textarea
-                  name="bio"
-                  maxlength="500"
-                  rows="5"
-                  placeholder="Esempio: cresciuto tra Amiga, sale giochi e riviste consumate fino all’ultima pagina."
-                >{currentBio}</textarea>
-              </label>
-
-              <small class="account-character-count" data-account-bio-counter>
-                {currentBio.length}/500
-              </small>
-
-              <p class="account-message" data-account-bio-message hidden></p>
-
-              <div class="account-actions">
-                <button type="submit">Salva bio</button>
-              </div>
-            </form>
-          </section>
-
-          {isStaff && (
-            <section class="account-editorial-tools" aria-labelledby="account-editorial-tools-title">
               <div>
-                <h2 id="account-editorial-tools-title">Pannello redazione</h2>
-                <p>Gestisci commenti in moderazione, utenti registrati e strumenti community.</p>
+                <span>Profilo community</span>
+                <strong>{accountDisplayName}</strong>
+                {accountHandle && <small>{accountHandle}</small>}
+                {publicProfileHref && (
+                  <a class="account-profile-card__link" href={publicProfileHref}>
+                    Vedi profilo pubblico
+                  </a>
+                )}
+                <a class="account-profile-card__link" href="/account/messages/">
+                  Apri messaggi
+                </a>
+                <a class="account-profile-card__link" href="/account/memories/">
+                  Vedi tutte le memorie
+                </a>
               </div>
+            </div>
 
-              <div class="account-editorial-tools__actions">
-                <a href="/admin/comments/">Moderazione commenti</a>
-                <a href="/admin/users/">Gestione utenti</a>
+            <section class="account-sidebar-section" aria-labelledby="account-data-title">
+              <h2 id="account-data-title">Dati account</h2>
+
+              <div class="account-summary account-summary--sidebar">
+                <div>
+                  <span>Email</span>
+                  <strong>{user?.email}</strong>
+                </div>
+
+                <div>
+                  <span>Username</span>
+                  <strong>{profile?.username}</strong>
+                </div>
+
+                <div>
+                  <span>Ruolo</span>
+                  <strong>{profile?.role || 'reader'}</strong>
+                </div>
+
+                <div>
+                  <span>Stato</span>
+                  <strong>{profile?.status || 'active'}</strong>
+                </div>
+
+                <div>
+                  <span>Badge attuale</span>
+                  <strong>{currentBadge?.label_it || profile?.badge_key || 'Non impostato'}</strong>
+                </div>
               </div>
             </section>
-          )}
 
-          <form class="account-form" data-account-profile-form>
-            <label>
-              <span>Nome visualizzato</span>
-              <input
-                type="text"
-                name="displayName"
-                required
-                minlength="2"
-                maxlength="40"
-                value={profile?.display_name || profile?.username || ''}
-              />
-            </label>
+            <section id="memories" class="account-sidebar-section" aria-labelledby="account-memories-title">
+              <h2 id="account-memories-title">Le tue memorie</h2>
 
-            {badges.length > 0 ? (
-              <label>
-                <span>Badge lettore</span>
-                <select name="badgeKey" required>
-                  <option value="">Scegli un badge</option>
-                  {badges.map((badge) => (
-                    <option value={badge.key} selected={badge.key === profile?.badge_key}>
-                      {badge.label_it || badge.label_en || badge.key}
-                    </option>
-                  ))}
-                </select>
+              <div class="account-summary account-summary--stats">
+                <div>
+                  <span>Commenti pubblicati</span>
+                  <strong>{commentActivity.approved}</strong>
+                </div>
 
-                <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
-              </label>
-            ) : (
-              <div class="account-badge-empty">
-                <span>Badge lettore</span>
-                <p>Non hai ancora badge assegnati.</p>
-                <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
+                <div>
+                  <span>In attesa di moderazione</span>
+                  <strong>{commentActivity.pending}</strong>
+                </div>
+
+                <div>
+                  <span>Like ricevuti</span>
+                  <strong>{commentActivity.likesReceived}</strong>
+                </div>
+
+                <div>
+                  <span>Dislike ricevuti</span>
+                  <strong>{commentActivity.dislikesReceived}</strong>
+                </div>
               </div>
+            </section>
+          </aside>
+
+          <div class="account-main">
+            <section class="account-avatar-section" aria-labelledby="account-avatar-title">
+              <div class="account-avatar-section__content">
+                <p class="account-kicker">Community</p>
+                <h2 id="account-avatar-title">Avatar</h2>
+                <p>
+                  Carica un’immagine per rendere riconoscibile il tuo profilo nella community.
+                </p>
+
+                <form class="account-form account-avatar-form" data-account-avatar-form>
+                  <label class="account-avatar-dropzone" data-account-avatar-dropzone>
+                    <input
+                      class="account-avatar-input"
+                      type="file"
+                      name="avatar"
+                      accept="image/jpeg,image/png,image/webp"
+                      data-account-avatar-input
+                    />
+                    <span class="account-avatar-dropzone__label" data-account-avatar-dropzone-label>
+                      Trascina qui la tua immagine oppure scegli un file
+                    </span>
+                    <span class="account-avatar-dropzone__help">
+                      JPG, PNG o WebP. Max 2 MB.
+                    </span>
+                    <span
+                      class="account-avatar-dropzone__filename"
+                      data-account-avatar-filename
+                      hidden
+                    ></span>
+                  </label>
+
+                  <p class="account-message" data-account-avatar-message hidden></p>
+
+                  <div class="account-actions">
+                    <button type="submit">Carica avatar</button>
+                    <button
+                      type="button"
+                      data-account-avatar-remove
+                      hidden={!avatarUrl}
+                    >
+                      Rimuovi avatar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </section>
+
+            <section class="account-public-profile" aria-labelledby="account-public-profile-title">
+              <div class="account-public-profile__heading">
+                <p class="account-kicker">Community</p>
+                <h2 id="account-public-profile-title">Profilo pubblico</h2>
+                <p>
+                  Racconta in poche righe chi sei come lettore, giocatore o
+                  appassionato retro.
+                </p>
+              </div>
+
+              <form class="account-form account-form--bio" data-account-bio-form>
+                <label>
+                  <span>Bio</span>
+                  <textarea
+                    name="bio"
+                    maxlength="500"
+                    rows="5"
+                    placeholder="Esempio: cresciuto tra Amiga, sale giochi e riviste consumate fino all’ultima pagina."
+                  >{currentBio}</textarea>
+                </label>
+
+                <small class="account-character-count" data-account-bio-counter>
+                  {currentBio.length}/500
+                </small>
+
+                <p class="account-message" data-account-bio-message hidden></p>
+
+                <div class="account-actions">
+                  <button type="submit">Salva bio</button>
+                </div>
+              </form>
+            </section>
+
+            {isStaff && (
+              <section class="account-editorial-tools" aria-labelledby="account-editorial-tools-title">
+                <div>
+                  <h2 id="account-editorial-tools-title">Pannello redazione</h2>
+                  <p>Gestisci commenti in moderazione, utenti registrati e strumenti community.</p>
+                </div>
+
+                <div class="account-editorial-tools__actions">
+                  <a href="/admin/comments/">Moderazione commenti</a>
+                  <a href="/admin/users/">Gestione utenti</a>
+                </div>
+              </section>
             )}
 
-            <p class="account-message" data-account-message hidden></p>
+            <section class="account-settings-section" aria-labelledby="account-settings-title">
+              <div class="account-settings-section__heading">
+                <p class="account-kicker">Impostazioni</p>
+                <h2 id="account-settings-title">Profilo</h2>
+              </div>
 
-            <div class="account-actions">
-              <button type="submit">Salva profilo</button>
-              <button type="button" data-account-logout>Esci</button>
-            </div>
-          </form>
-        </>
+              <form class="account-form" data-account-profile-form>
+                <label>
+                  <span>Nome visualizzato</span>
+                  <input
+                    type="text"
+                    name="displayName"
+                    required
+                    minlength="2"
+                    maxlength="40"
+                    value={profile?.display_name || profile?.username || ''}
+                  />
+                </label>
+
+                {badges.length > 0 ? (
+                  <label>
+                    <span>Badge lettore</span>
+                    <select name="badgeKey" required>
+                      <option value="">Scegli un badge</option>
+                      {badges.map((badge) => (
+                        <option value={badge.key} selected={badge.key === profile?.badge_key}>
+                          {badge.label_it || badge.label_en || badge.key}
+                        </option>
+                      ))}
+                    </select>
+
+                    <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
+                  </label>
+                ) : (
+                  <div class="account-badge-empty">
+                    <span>Badge lettore</span>
+                    <p>Non hai ancora badge assegnati.</p>
+                    <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
+                  </div>
+                )}
+
+                <p class="account-message" data-account-message hidden></p>
+
+                <div class="account-actions">
+                  <button type="submit">Salva profilo</button>
+                  <button type="button" data-account-logout>Esci</button>
+                </div>
+              </form>
+            </section>
+          </div>
+        </div>
       ) : (
         <>
+          <p class="account-kicker">Profilo lettore</p>
+          <h1>Area account</h1>
           <p>
             Accedi per gestire il tuo profilo lettore, scegliere il badge e
             partecipare alle discussioni sotto gli articoli.

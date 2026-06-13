@@ -1,11 +1,11 @@
 .account-page {
-  width: min(920px, calc(100% - 32px));
+  width: min(1180px, calc(100% - 32px));
   margin: 72px auto;
 }
 
 .account-card {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   padding: clamp(28px, 4vw, 48px);
   border: 1px solid var(--rg-panel-border);
   border-radius: 28px;
@@ -19,6 +19,7 @@
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background-image: var(--rg-panel-grid);
   background-size: 76px 76px;
   opacity: var(--rg-panel-grid-opacity);
@@ -50,11 +51,53 @@
   color: var(--color-text-soft);
 }
 
+.account-layout {
+  display: grid;
+  grid-template-areas:
+    "intro sidebar"
+    "main sidebar";
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 26px;
+  align-items: start;
+}
+
+.account-intro {
+  grid-area: intro;
+}
+
+.account-intro h1 {
+  margin: 0 0 14px;
+  color: var(--rg-section-title-color);
+  font-size: clamp(36px, 6vw, 64px);
+}
+
+.account-intro p:not(.account-kicker) {
+  max-width: 680px;
+  margin: 0;
+  color: var(--color-text-soft);
+}
+
+.account-main {
+  display: grid;
+  grid-area: main;
+  gap: 22px;
+  min-width: 0;
+}
+
+.account-sidebar {
+  display: grid;
+  position: sticky;
+  top: 112px;
+  grid-area: sidebar;
+  gap: 16px;
+  min-width: 0;
+}
+
 .account-profile-card {
   display: flex;
   align-items: center;
   gap: 18px;
-  margin: 26px 0 4px;
+  margin: 0;
   padding: 16px;
   border: 1px solid var(--rg-card-border);
   border-radius: 22px;
@@ -85,6 +128,10 @@
   white-space: nowrap;
 }
 
+.account-sidebar .account-profile-card strong {
+  font-size: clamp(1.2rem, 2vw, 1.45rem);
+}
+
 .account-profile-card small {
   overflow: hidden;
   color: var(--color-text-soft);
@@ -109,7 +156,7 @@
 }
 
 .account-avatar-section {
-  margin-top: 22px;
+  margin-top: 0;
   padding: 18px 20px;
   border: 1px solid var(--rg-card-border);
   border-radius: 22px;
@@ -206,20 +253,37 @@
   margin: 28px 0 6px;
 }
 
-.account-section-title {
-  margin: 30px 0 0;
+.account-sidebar-section {
+  padding: 16px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 20px;
+  background: var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.account-sidebar-section h2 {
+  margin: 0;
   color: var(--rg-section-title-color);
-  font-size: clamp(1.45rem, 2.6vw, 2rem);
-  letter-spacing: 0.04em;
+  font-size: 0.96rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.account-section-title#memories {
+.account-sidebar-section#memories {
   scroll-margin-top: 128px;
 }
 
-.account-summary--memories {
-  margin-top: 14px;
+.account-summary--sidebar,
+.account-summary--stats {
+  margin: 12px 0 0;
+}
+
+.account-summary--sidebar {
+  grid-template-columns: 1fr;
+}
+
+.account-summary--stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .account-summary div {
@@ -252,7 +316,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  margin-top: 22px;
+  margin-top: 0;
   padding: 18px 20px;
   border: 1px solid var(--rg-card-border);
   border-radius: 20px;
@@ -307,7 +371,7 @@
 .account-public-profile {
   display: grid;
   gap: 18px;
-  margin-top: 26px;
+  margin-top: 0;
   padding: 20px;
   border: 1px solid var(--rg-card-border);
   border-radius: 22px;
@@ -333,6 +397,31 @@
 }
 
 .account-form--bio {
+  margin-top: 0;
+}
+
+.account-settings-section {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 22px;
+  background: var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.account-settings-section__heading {
+  display: grid;
+  gap: 8px;
+}
+
+.account-settings-section__heading h2 {
+  margin: 0;
+  color: var(--rg-section-title-color);
+  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+}
+
+.account-settings-section .account-form {
   margin-top: 0;
 }
 
@@ -454,10 +543,6 @@
   margin-top: 28px;
 }
 
-.account-actions--section {
-  margin-top: 14px;
-}
-
 .account-form button,
 .account-actions a {
   display: inline-flex;
@@ -530,6 +615,24 @@ html[data-theme="light"] .account-message[data-type="error"] {
 .account-switch a {
   color: var(--color-primary);
   font-weight: 800;
+}
+
+@media (max-width: 960px) {
+  .account-layout {
+    grid-template-areas:
+      "intro"
+      "sidebar"
+      "main";
+    grid-template-columns: 1fr;
+  }
+
+  .account-sidebar {
+    position: static;
+  }
+
+  .account-summary--stats {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
 }
 
 @media (max-width: 680px) {
