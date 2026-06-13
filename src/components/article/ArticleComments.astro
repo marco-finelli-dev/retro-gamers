@@ -528,6 +528,19 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
         ${renderCommentBody(comment.body)}
 
+        ${canReply && !isLegacy ? `
+          <div class="article-comment__mobile-actions">
+            <button
+              class="article-comment__mobile-reply-button"
+              type="button"
+              data-reply-to-comment="${escapeHtml(comment.id)}"
+              data-reply-to-author="${escapeHtml(authorName)}"
+            >
+              ${escapeHtml(labels.reply)}
+            </button>
+          </div>
+        ` : ''}
+
         ${renderReactionControls(comment, labels)}
 
         ${replies.length > 0 ? `

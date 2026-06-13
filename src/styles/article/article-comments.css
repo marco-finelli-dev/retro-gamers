@@ -813,9 +813,14 @@
   
     margin-left: auto;
   }
+
+  .article-comment__mobile-actions {
+    display: none;
+  }
   
   .comment-reaction,
-  .article-comment__reply-button {
+  .article-comment__reply-button,
+  .article-comment__mobile-reply-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -852,7 +857,8 @@
       opacity 160ms ease;
   }
   
-  .article-comment__reply-button {
+  .article-comment__reply-button,
+  .article-comment__mobile-reply-button {
     min-width: auto;
   
     font-size: 0.72rem;
@@ -892,7 +898,8 @@
   }
   
   .comment-reaction:hover,
-  .article-comment__reply-button:hover {
+  .article-comment__reply-button:hover,
+  .article-comment__mobile-reply-button:hover {
     border-color: var(--rg-badge-border);
     background:
       linear-gradient(135deg, rgba(34,240,255,0.12), rgba(168,85,247,0.055)),
@@ -1027,20 +1034,30 @@
     }
   
     .article-comment__reactions {
-      width: 100%;
-      margin-left: 56px;
-      margin-top: 2px;
+      display: none;
+    }
+
+    .article-comment__mobile-actions {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 10px;
     }
   
     .comment-reaction,
-    .article-comment__reply-button {
+    .article-comment__reply-button,
+    .article-comment__mobile-reply-button {
       min-width: 54px;
       height: 36px;
       padding: 0 12px;
     }
   
-    .article-comment__reply-button {
-      flex: 1;
+    .article-comments .article-comment__mobile-reply-button {
+      width: auto;
+      min-width: 0;
+      height: 32px;
+      padding: 0 11px;
+      font-size: 0.68rem;
+      flex: 0 0 auto;
     }
   
     .comment-reaction::before {
@@ -1051,6 +1068,7 @@
     .article-comment__reaction-controls {
       gap: 8px;
       justify-content: flex-end;
+      margin-top: 10px;
     }
 
     .article-comment__reaction-controls .comment-reaction {
@@ -1078,7 +1096,7 @@
     }
     
     .article-comment--nested .article-comment__reactions {
-      margin-left: 52px;
+      display: none;
     }
   }
 
@@ -1263,7 +1281,8 @@ html[data-theme="light"] .article-comments__empty--target {
 }
 
 html[data-theme="light"] .comment-reaction,
-html[data-theme="light"] .article-comment__reply-button {
+html[data-theme="light"] .article-comment__reply-button,
+html[data-theme="light"] .article-comment__mobile-reply-button {
   border-color: var(--rg-badge-border);
 
   background:
@@ -1282,7 +1301,8 @@ html[data-theme="light"] .article-comment__reply-button {
 }
 
 html[data-theme="light"] .comment-reaction:hover,
-html[data-theme="light"] .article-comment__reply-button:hover {
+html[data-theme="light"] .article-comment__reply-button:hover,
+html[data-theme="light"] .article-comment__mobile-reply-button:hover {
   border-color: var(--rg-badge-border);
 
   background:
