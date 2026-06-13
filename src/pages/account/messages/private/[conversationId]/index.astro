@@ -103,8 +103,6 @@ const emojiOptions = ['😀', '😄', '😂', '😊', '😉', '😍', '😎', '�
 
     {isLoggedIn ? (
       <>
-        <a class="account-back-link" href="/account/messages/private/">← Tutte le conversazioni</a>
-
         {thread ? (
           <>
             <CommunityHero
@@ -112,6 +110,8 @@ const emojiOptions = ['😀', '😄', '😂', '😊', '😉', '😍', '😎', '�
               title="Conversazione privata"
               description={`Conversazione con ${otherName}. I messaggi restano visibili solo ai partecipanti.`}
             />
+
+            <a class="account-back-link" href="/account/messages/private/">← Tutte le conversazioni</a>
 
             <section class="community-card private-thread-main">
               {thread.isBlockedByViewer && (
