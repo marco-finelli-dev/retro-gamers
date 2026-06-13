@@ -19,6 +19,12 @@ import { getPublicUserUrl } from '../../../lib/supabase/public-profiles';
 
 const title = 'Messaggi account | Retro-Gamers.it';
 const description = 'Centro notifiche e messaggi interni del profilo lettore Retro-Gamers.it.';
+const requestedTab = Astro.url.searchParams.get('tab') === 'system' ? 'system' : 'private';
+
+if (requestedTab === 'private') {
+  return Astro.redirect('/account/messages/private/', 303);
+}
+
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 
@@ -125,8 +131,8 @@ const communityStatItems = [
       {isLoggedIn ? (
         <>
           <nav class="account-messages-tabs" aria-label="Sezioni messaggi">
-            <a href="/account/messages/" aria-current="page">Sistema</a>
-            <a href="/account/messages/private/">
+            <a href="/account/messages/?tab=system" aria-current="page">Sistema</a>
+            <a href="/account/messages/?tab=private">
               Privati
               {privateUnreadCount > 0 && (
                 <span>{privateUnreadCount > 99 ? '99+' : privateUnreadCount}</span>
