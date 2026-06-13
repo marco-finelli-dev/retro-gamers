@@ -8,6 +8,25 @@ const description = 'Crea un profilo lettore per commentare gli articoli di Retr
 
 const badges = await getActiveReaderBadges();
 const encodedReturnTo = encodeURIComponent('/account/');
+const enableFacebookLogin = false;
+const socialProviders = [
+  {
+    provider: 'google',
+    label: 'Continua con Google',
+    iconLight: '/icons/oauth/google-light.webp',
+    iconDark: '/icons/oauth/google-dark.webp',
+  },
+  ...(enableFacebookLogin
+    ? [
+        {
+          provider: 'facebook',
+          label: 'Continua con Facebook',
+          iconLight: '/icons/oauth/facebook-light.webp',
+          iconDark: '/icons/oauth/facebook-dark.webp',
+        },
+      ]
+    : []),
+];
 ---
 
 <BaseLayout title={title} description={description}>
@@ -17,13 +36,30 @@ const encodedReturnTo = encodeURIComponent('/account/');
       <h1>Registrati</h1>
       <p>Scegli un nickname, un badge e partecipa alle discussioni sotto gli articoli.</p>
 
-      <div class="account-social-auth" aria-label="Registrazione social">
-        <a href={`/api/auth/oauth/start?provider=google&returnTo=${encodedReturnTo}`}>
-          Continua con Google
-        </a>
-        <a href={`/api/auth/oauth/start?provider=facebook&returnTo=${encodedReturnTo}`}>
-          Continua con Facebook
-        </a>
+      <div class:list={['account-social-auth', socialProviders.length === 1 && 'account-social-auth--single']} aria-label="Registrazione social">
+        {socialProviders.map((provider) => (
+          <a href={`/api/auth/oauth/start?provider=${provider.provider}&returnTo=${encodedReturnTo}`}>
+            <span class="account-social-auth__icons" aria-hidden="true">
+              <img
+                class="account-social-auth__icon account-social-auth__icon--light"
+                src={provider.iconLight}
+                alt=""
+                width="24"
+                height="24"
+                loading="lazy"
+              />
+              <img
+                class="account-social-auth__icon account-social-auth__icon--dark"
+                src={provider.iconDark}
+                alt=""
+                width="24"
+                height="24"
+                loading="lazy"
+              />
+            </span>
+            <span>{provider.label}</span>
+          </a>
+        ))}
       </div>
 
       <div class="account-divider" aria-hidden="true">

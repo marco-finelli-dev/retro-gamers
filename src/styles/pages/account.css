@@ -253,10 +253,15 @@
   margin-top: 26px;
 }
 
+.account-social-auth--single {
+  grid-template-columns: minmax(0, 360px);
+}
+
 .account-social-auth a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   min-height: 48px;
   border: 1px solid var(--rg-card-border);
   border-radius: 999px;
@@ -281,6 +286,34 @@
   background: var(--rg-cta-hover-bg);
   color: var(--color-primary);
   outline: none;
+}
+
+.account-social-auth__icons {
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+}
+
+.account-social-auth__icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.account-social-auth__icon--light {
+  display: none;
+}
+
+html[data-theme="light"] .account-social-auth__icon--light {
+  display: block;
+}
+
+html[data-theme="light"] .account-social-auth__icon--dark {
+  display: none;
 }
 
 .account-divider {
@@ -703,6 +736,10 @@ html[data-theme="light"] .account-message[data-type="error"] {
   }
 
   .account-social-auth {
+    grid-template-columns: 1fr;
+  }
+
+  .account-social-auth--single {
     grid-template-columns: 1fr;
   }
 
