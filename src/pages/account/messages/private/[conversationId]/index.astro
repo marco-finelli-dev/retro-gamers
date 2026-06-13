@@ -62,25 +62,98 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
 
           {thread ? (
             <>
-              <header class="private-thread-header">
-                <div class="private-thread-header__identity">
-                  <UserAvatar
-                    name={otherName}
-                    src={otherProfile?.avatar_url}
-                    size="md"
-                    label={`Avatar di ${otherName}`}
-                    class="private-thread-header__avatar"
-                  />
-
-                  <div class="private-thread-header__body">
+              <div class="private-thread-layout">
+                <div class="private-thread-main">
+                  <header class="private-thread-header">
                     <p class="account-kicker">Messaggio privato</p>
                     <h1>{otherName}</h1>
                     {otherProfile?.username && <p>@{otherProfile.username}</p>}
+                  </header>
+
+                  {thread.isBlockedByViewer && (
+                    <p class="account-message" data-type="ok">Hai bloccato questo utente. Puoi sbloccarlo quando vuoi.</p>
+                  )}
+
+                  {thread.isViewerBlocked && (
+                    <p class="account-message" data-type="error">Non puoi inviare messaggi a questo utente.</p>
+                  )}
+
+                  <div class="private-thread" data-private-thread>
+                    {thread.messages.length > 0 ? (
+                      thread.messages.map((message) => {
+                        const isMine = message.sender_id === session.user?.id;
+
+                        return (
+                          <article
+                            class:list={['private-message', isMine ? 'is-mine' : 'is-theirs']}
+                            data-message-id={message.id}
+                          >
+                            <div class="private-message__bubble">
+                              <p>{message.body}</p>
+                              <footer>
+                                <time datetime={message.created_at}>
+                                  {dateFormatter.format(new Date(message.created_at))}
+                                </time>
+
+                                {!isMine && (
+                                  <button type="button" data-private-report-message>
+                                    Segnala
+                                  </button>
+                                )}
+                              </footer>
+                            </div>
+                          </article>
+                        );
+                      })
+                    ) : (
+                      <p class="account-messages-empty">
+                        Nessun messaggio ancora. Scrivi il primo messaggio qui sotto.
+                      </p>
+                    )}
                   </div>
+
+                  <form
+                    class="private-reply-form"
+                    data-private-reply-form
+                    data-conversation-id={conversationId}
+                    hidden={!canReply}
+                  >
+                    <label>
+                      <span>Rispondi</span>
+                      <textarea
+                        name="body"
+                        rows="5"
+                        maxlength="2000"
+                        required
+                        placeholder="Scrivi un messaggio privato..."
+                      ></textarea>
+                    </label>
+
+                    <p class="account-message" data-private-message-feedback hidden></p>
+
+                    <div class="account-actions">
+                      <button type="submit">Invia messaggio</button>
+                    </div>
+                  </form>
                 </div>
 
-                <div class="private-thread-header__actions">
-                  <a href={otherProfileUrl}>Vedi profilo pubblico</a>
+                <aside class="private-thread-sidebar" aria-label="Interlocutore">
+                  <section class="private-thread-profile">
+                    <UserAvatar
+                      name={otherName}
+                      src={otherProfile?.avatar_url}
+                      size="md"
+                      label={`Avatar di ${otherName}`}
+                      class="private-thread-profile__avatar"
+                    />
+
+                    <div>
+                      <span>Interlocutore</span>
+                      <strong>{otherName}</strong>
+                      {otherProfile?.username && <small>@{otherProfile.username}</small>}
+                      <a href={otherProfileUrl}>Vedi profilo pubblico</a>
+                    </div>
+                  </section>
 
                   <div
                     class="private-thread-actions"
@@ -94,74 +167,8 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
                     )}
                     <button type="button" data-private-report-conversation>Segnala conversazione</button>
                   </div>
-                </div>
-              </header>
-
-              {thread.isBlockedByViewer && (
-                <p class="account-message" data-type="ok">Hai bloccato questo utente. Puoi sbloccarlo quando vuoi.</p>
-              )}
-
-              {thread.isViewerBlocked && (
-                <p class="account-message" data-type="error">Non puoi inviare messaggi a questo utente.</p>
-              )}
-
-              <div class="private-thread" data-private-thread>
-                {thread.messages.length > 0 ? (
-                  thread.messages.map((message) => {
-                    const isMine = message.sender_id === session.user?.id;
-
-                    return (
-                      <article
-                        class:list={['private-message', isMine ? 'is-mine' : 'is-theirs']}
-                        data-message-id={message.id}
-                      >
-                        <div class="private-message__bubble">
-                          <p>{message.body}</p>
-                          <footer>
-                            <time datetime={message.created_at}>
-                              {dateFormatter.format(new Date(message.created_at))}
-                            </time>
-
-                            {!isMine && (
-                              <button type="button" data-private-report-message>
-                                Segnala
-                              </button>
-                            )}
-                          </footer>
-                        </div>
-                      </article>
-                    );
-                  })
-                ) : (
-                  <p class="account-messages-empty">
-                    Nessun messaggio ancora. Scrivi il primo messaggio qui sotto.
-                  </p>
-                )}
+                </aside>
               </div>
-
-              <form
-                class="private-reply-form"
-                data-private-reply-form
-                data-conversation-id={conversationId}
-                hidden={!canReply}
-              >
-                <label>
-                  <span>Rispondi</span>
-                  <textarea
-                    name="body"
-                    rows="5"
-                    maxlength="2000"
-                    required
-                    placeholder="Scrivi un messaggio privato..."
-                  ></textarea>
-                </label>
-
-                <p class="account-message" data-private-message-feedback hidden></p>
-
-                <div class="account-actions">
-                  <button type="submit">Invia messaggio</button>
-                </div>
-              </form>
             </>
           ) : (
             <p class="account-message" data-type="error">{threadError || 'Conversazione non disponibile.'}</p>
