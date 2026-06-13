@@ -50,9 +50,12 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
+});
+const timeFormatter = new Intl.DateTimeFormat('it-IT', {
   hour: '2-digit',
   minute: '2-digit',
 });
+const emojiOptions = ['😀', '😄', '😂', '😊', '😉', '😍', '😎', '🤔', '😅', '😢', '❤️', '👍', '👎', '🙌', '👏', '🔥', '🎮', '🕹️', '💾', '🐸'];
 ---
 
 <BaseLayout title={title} description={description}>
@@ -73,7 +76,7 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
               <span>Interlocutore</span>
               <strong>{otherName}</strong>
               {otherProfile?.username && <small>@{otherProfile.username}</small>}
-              <a href={otherProfileUrl}>Vedi profilo pubblico</a>
+              <a class="private-thread-profile__link" href={otherProfileUrl}>Vedi profilo pubblico</a>
             </div>
           </section>
 
@@ -82,6 +85,11 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
             data-private-thread-actions
             data-conversation-id={conversationId}
           >
+            <div class="private-thread-actions__header">
+              <h2>Azioni conversazione</h2>
+              <p>Gestisci questa conversazione senza uscire dal thread.</p>
+            </div>
+
             {thread.isBlockedByViewer ? (
               <button type="button" data-private-unblock>Sblocca utente</button>
             ) : (
@@ -126,10 +134,14 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
                       >
                         <div class="private-message__bubble">
                           <p>{message.body}</p>
-                          <footer>
-                            <time datetime={message.created_at}>
-                              {dateFormatter.format(new Date(message.created_at))}
-                            </time>
+                          <footer class="private-message__meta">
+                            <span class="private-message__meta-text">
+                              <strong>{isMine ? 'Tu' : otherName}</strong>{' '}
+                              {isMine ? 'hai scritto' : 'ha scritto'}{' '}
+                              <time datetime={message.created_at}>
+                                il {dateFormatter.format(new Date(message.created_at))} alle {timeFormatter.format(new Date(message.created_at))}
+                              </time>
+                            </span>
 
                             {!isMine && (
                               <button type="button" data-private-report-message>
@@ -158,6 +170,7 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
                   <span>Rispondi</span>
                   <textarea
                     name="body"
+                    data-private-reply-body
                     rows="5"
                     maxlength="2000"
                     required
@@ -167,8 +180,31 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
 
                 <p class="account-message" data-private-message-feedback hidden></p>
 
-                <div class="account-actions">
-                  <button type="submit">Invia messaggio</button>
+                <div class="private-reply-form__toolbar">
+                  <div class="private-emoji-control" data-private-emoji>
+                    <button
+                      type="button"
+                      class="private-emoji-toggle"
+                      aria-label="Apri selettore emoji"
+                      aria-expanded="false"
+                      data-private-emoji-toggle
+                    >
+                      <span aria-hidden="true">😊</span>
+                      Emoji
+                    </button>
+
+                    <div class="private-emoji-picker" aria-label="Scegli emoji" data-private-emoji-picker hidden>
+                      {emojiOptions.map((emoji) => (
+                        <button type="button" data-private-emoji-value={emoji} aria-label={`Inserisci emoji ${emoji}`}>
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div class="account-actions">
+                    <button type="submit">Invia messaggio</button>
+                  </div>
                 </div>
               </form>
             </section>
@@ -208,6 +244,10 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
     const form = document.querySelector('[data-private-reply-form]');
     const feedback = document.querySelector('[data-private-message-feedback]');
     const threadActions = document.querySelector('[data-private-thread-actions]');
+    const replyTextarea = document.querySelector('[data-private-reply-body]');
+    const emojiRoot = document.querySelector('[data-private-emoji]');
+    const emojiToggle = document.querySelector('[data-private-emoji-toggle]');
+    const emojiPicker = document.querySelector('[data-private-emoji-picker]');
 
     const showFeedback = (text, type = 'ok') => {
       if (!feedback) return;
@@ -215,6 +255,52 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
       feedback.dataset.type = type;
       feedback.hidden = !text;
     };
+
+    const setEmojiPickerOpen = (isOpen) => {
+      if (!emojiToggle || !emojiPicker) return;
+      emojiToggle.setAttribute('aria-expanded', String(isOpen));
+      emojiPicker.hidden = !isOpen;
+    };
+
+    const insertEmoji = (emoji) => {
+      if (!replyTextarea) return;
+
+      replyTextarea.focus();
+
+      if (typeof replyTextarea.setRangeText === 'function') {
+        const start = replyTextarea.selectionStart ?? replyTextarea.value.length;
+        const end = replyTextarea.selectionEnd ?? replyTextarea.value.length;
+        replyTextarea.setRangeText(emoji, start, end, 'end');
+      } else {
+        replyTextarea.value = `${replyTextarea.value}${emoji}`;
+      }
+
+      replyTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
+    emojiToggle?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      setEmojiPickerOpen(emojiPicker?.hidden ?? true);
+    });
+
+    emojiPicker?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-private-emoji-value]');
+      if (!button) return;
+
+      insertEmoji(button.dataset.privateEmojiValue || '');
+      setEmojiPickerOpen(false);
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!emojiRoot || emojiRoot.contains(event.target)) return;
+      setEmojiPickerOpen(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        setEmojiPickerOpen(false);
+      }
+    });
 
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
