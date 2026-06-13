@@ -238,9 +238,9 @@
 }
 
 .private-conversation-card.is-unread {
-  border-color: var(--rg-badge-border);
+  border-color: rgba(34,240,255,0.24);
   background:
-    linear-gradient(135deg, rgba(34,240,255,0.12), rgba(168,85,247,0.055)),
+    linear-gradient(135deg, rgba(34,240,255,0.07), rgba(168,85,247,0.035)),
     var(--rg-card-bg);
 }
 
@@ -275,13 +275,39 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  min-height: 28px;
+  min-width: 24px;
+  min-height: 24px;
   border-radius: 999px;
-  padding: 0 8px;
-  background: var(--rg-eyebrow-color);
-  color: var(--rg-panel-bg);
+  border: 1px solid rgba(34,240,255,0.30);
+  padding: 0 7px;
+  background:
+    linear-gradient(180deg, rgba(34,240,255,0.12), rgba(34,240,255,0.045)),
+    rgba(8,18,26,0.48);
+  color: rgba(190,248,255,0.94);
+  font-size: 0.76rem;
   font-weight: 950;
+  line-height: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 0 10px rgba(34,240,255,0.08);
+}
+
+html[data-theme="light"] .private-conversation-card.is-unread {
+  border-color: rgba(8,124,142,0.22);
+  background:
+    linear-gradient(135deg, rgba(8,124,142,0.055), rgba(102,81,184,0.025)),
+    var(--rg-card-bg);
+}
+
+html[data-theme="light"] .private-conversation-card__unread {
+  border-color: rgba(8,124,142,0.26);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.72), rgba(224,246,250,0.58)),
+    rgba(237,248,252,0.68);
+  color: rgba(8,104,122,0.92);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.74),
+    0 0 8px rgba(8,124,142,0.07);
 }
 
 .private-thread-header {
