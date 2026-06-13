@@ -182,6 +182,7 @@ const flagAlt = isEnglish
           ></span>
 
           <img
+            class="site-header__account-icon"
             src="/icons/account-user.svg"
             alt=""
             width="22"
@@ -299,6 +300,9 @@ const flagAlt = isEnglish
     return (match?.[0] || '?').toUpperCase();
   };
 
+  const getAccountAvatarUrl = (profile) =>
+    String(profile?.avatar_url || profile?.avatarUrl || '').trim();
+
   const getPublicProfileUrl = (profile) => {
     const username = String(profile?.username || '').trim().toLowerCase();
 
@@ -366,9 +370,10 @@ const flagAlt = isEnglish
     const displayName = getAccountName(profile, user);
     const initial = isLoggedIn ? getAccountInitial(profile, user) : '';
     const publicProfileUrl = isLoggedIn ? getPublicProfileUrl(profile) : '';
-    const avatarUrl = isLoggedIn ? String(profile?.avatar_url || '') : '';
+    const avatarUrl = isLoggedIn ? getAccountAvatarUrl(profile) : '';
 
     root?.classList.toggle('has-avatar', Boolean(isLoggedIn && initial));
+    root?.classList.toggle('has-real-avatar', Boolean(isLoggedIn && avatarUrl));
 
     document.querySelectorAll('[data-account-avatar]').forEach((node) => {
       node.textContent = initial;
