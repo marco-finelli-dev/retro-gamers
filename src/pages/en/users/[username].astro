@@ -69,22 +69,31 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     ) : (
       <>
         <section class="public-user-hero">
-          <UserAvatar
-            name={displayName}
-            src={profile.avatar_url}
-            size="lg"
-            label={`Avatar for ${displayName}`}
-            class="public-user-hero__avatar"
-          />
+          <div class="public-user-hero__identity">
+            <UserAvatar
+              name={displayName}
+              src={profile.avatar_url}
+              size="lg"
+              label={`Avatar for ${displayName}`}
+              class="public-user-hero__avatar"
+            />
 
-          <div class="public-user-hero__content">
-            <p class="public-user-kicker">Reader profile</p>
-            <h1>{displayName}</h1>
-            <p class="public-user-username">@{profile.username}</p>
+            <div class="public-user-hero__content">
+              <p class="public-user-kicker">Reader profile</p>
+              <h1>{displayName}</h1>
+              <p class="public-user-username">@{profile.username}</p>
 
-            <div class="public-user-badges" aria-label="Badges and role">
-              {badgeLabel && <span>{badgeLabel}</span>}
-              {isStaff && <span>Retro-Gamers staff</span>}
+              <div class="public-user-badges" aria-label="Badges and role">
+                {badgeLabel && <span>{badgeLabel}</span>}
+                {isStaff && <span>Retro-Gamers staff</span>}
+              </div>
+            </div>
+          </div>
+
+          <div class="public-user-hero__meta">
+            <div class="public-user-stat">
+              <span>Published comments</span>
+              <strong>{result.approvedCount}</strong>
             </div>
 
             {!isOwnProfile && (
@@ -96,16 +105,9 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
                 )}
               </div>
             )}
-
-            {bio && <p class="public-user-bio">{bio}</p>}
           </div>
-        </section>
 
-        <section class="public-user-stats" aria-label="Profile stats">
-          <div>
-            <span>Published comments</span>
-            <strong>{result.approvedCount}</strong>
-          </div>
+          {bio && <p class="public-user-bio">{bio}</p>}
         </section>
 
         <section class="public-user-panel" aria-labelledby="latest-comments-title">

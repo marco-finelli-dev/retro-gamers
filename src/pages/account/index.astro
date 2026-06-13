@@ -141,56 +141,56 @@ if (isLoggedIn && user?.id) {
             <section class="account-sidebar-section" aria-labelledby="account-data-title">
               <h2 id="account-data-title">Dati account</h2>
 
-              <div class="account-summary account-summary--sidebar">
+              <dl class="account-detail-list">
                 <div>
-                  <span>Email</span>
-                  <strong>{user?.email}</strong>
+                  <dt>Email</dt>
+                  <dd>{user?.email}</dd>
                 </div>
 
                 <div>
-                  <span>Username</span>
-                  <strong>{profile?.username}</strong>
+                  <dt>Username</dt>
+                  <dd>{profile?.username}</dd>
                 </div>
 
                 <div>
-                  <span>Ruolo</span>
-                  <strong>{profile?.role || 'reader'}</strong>
+                  <dt>Ruolo</dt>
+                  <dd>{profile?.role || 'reader'}</dd>
                 </div>
 
                 <div>
-                  <span>Stato</span>
-                  <strong>{profile?.status || 'active'}</strong>
+                  <dt>Stato</dt>
+                  <dd>{profile?.status || 'active'}</dd>
                 </div>
 
                 <div>
-                  <span>Badge attuale</span>
-                  <strong>{currentBadge?.label_it || profile?.badge_key || 'Non impostato'}</strong>
+                  <dt>Badge attuale</dt>
+                  <dd>{currentBadge?.label_it || profile?.badge_key || 'Non impostato'}</dd>
                 </div>
-              </div>
+              </dl>
             </section>
 
             <section id="memories" class="account-sidebar-section" aria-labelledby="account-memories-title">
               <h2 id="account-memories-title">Le tue memorie</h2>
 
-              <div class="account-summary account-summary--stats">
+              <div class="account-compact-stats">
                 <div>
-                  <span>Commenti pubblicati</span>
                   <strong>{commentActivity.approved}</strong>
+                  <span>Commenti pubblicati</span>
                 </div>
 
                 <div>
-                  <span>In attesa di moderazione</span>
                   <strong>{commentActivity.pending}</strong>
+                  <span>In attesa di moderazione</span>
                 </div>
 
                 <div>
-                  <span>Like ricevuti</span>
                   <strong>{commentActivity.likesReceived}</strong>
+                  <span>Like ricevuti</span>
                 </div>
 
                 <div>
-                  <span>Dislike ricevuti</span>
                   <strong>{commentActivity.dislikesReceived}</strong>
+                  <span>Dislike ricevuti</span>
                 </div>
               </div>
             </section>
