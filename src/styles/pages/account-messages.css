@@ -2,7 +2,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 22px;
+  margin: 0 0 18px;
 }
 
 .account-messages-tabs a {
@@ -214,7 +214,7 @@
 .private-conversation-list {
   display: grid;
   gap: 12px;
-  margin-top: 22px;
+  margin-top: 0;
 }
 
 .private-conversation-card {
@@ -348,24 +348,9 @@ html[data-theme="light"] .private-conversation-card__unread {
     0 0 8px rgba(8,124,142,0.07);
 }
 
-.private-thread-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
-  gap: 22px;
-  align-items: start;
-}
-
 .private-thread-main {
   display: grid;
   gap: 18px;
-  min-width: 0;
-}
-
-.private-thread-sidebar {
-  display: grid;
-  position: sticky;
-  top: 112px;
-  gap: 14px;
   min-width: 0;
 }
 
@@ -382,9 +367,6 @@ html[data-theme="light"] .private-conversation-card__unread {
   align-items: flex-start;
   gap: 14px;
   min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--rg-card-border);
-  border-radius: 20px;
   background:
     linear-gradient(135deg, rgba(34,240,255,0.075), rgba(168,85,247,0.035)),
     var(--rg-card-bg);
@@ -481,9 +463,6 @@ html[data-theme="light"] .private-conversation-card__unread {
   display: grid;
   gap: 10px;
   margin: 0;
-  padding: 14px;
-  border: 1px solid var(--rg-card-border);
-  border-radius: 18px;
   background: color-mix(in srgb, var(--rg-card-bg) 82%, transparent);
 }
 
@@ -592,15 +571,6 @@ html[data-theme="light"] .private-conversation-card__unread {
 }
 
 @media (max-width: 860px) {
-  .private-thread-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .private-thread-sidebar {
-    position: static;
-    order: -1;
-  }
-
   .private-thread-profile {
     padding: 14px;
   }

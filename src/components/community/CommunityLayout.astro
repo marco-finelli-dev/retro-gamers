@@ -1,0 +1,26 @@
+---
+import '../../styles/pages/community.css';
+
+interface Props {
+  class?: string;
+  sidebar?: boolean;
+}
+
+const { class: className = '', sidebar } = Astro.props;
+const hasSidebar = sidebar ?? Astro.slots.has('sidebar');
+const classes = ['community-page', className].filter(Boolean).join(' ');
+---
+
+<main class={classes}>
+  <div class:list={['community-shell', hasSidebar && 'community-shell--with-sidebar']}>
+    <div class="community-main">
+      <slot />
+    </div>
+
+    {hasSidebar && (
+      <aside class="community-sidebar">
+        <slot name="sidebar" />
+      </aside>
+    )}
+  </div>
+</main>

@@ -1,0 +1,26 @@
+---
+interface StatItem {
+  label: string;
+  value: string | number;
+}
+
+interface Props {
+  title?: string;
+  items: StatItem[];
+}
+
+const { title = '', items } = Astro.props;
+---
+
+<section class="community-sidebar-card community-stat-section">
+  {title && <h2>{title}</h2>}
+
+  <div class="community-stat-list">
+    {items.map((item) => (
+      <div>
+        <strong>{item.value}</strong>
+        <span>{item.label}</span>
+      </div>
+    ))}
+  </div>
+</section>

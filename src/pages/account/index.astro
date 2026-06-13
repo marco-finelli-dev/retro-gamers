@@ -1,10 +1,15 @@
 ---
 import '../../styles/pages/account.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import UserAvatar from '../../components/account/UserAvatar.astro';
+import CommunityHero from '../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../components/community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
+import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
+import CommunityStatList from '../../components/community/CommunityStatList.astro';
 import { getOwnedReaderBadges } from '../../lib/badges';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
 import { supabaseAdmin } from '../../lib/supabase/server';
 
 const title = 'Profilo lettore | Retro-Gamers.it';
@@ -19,7 +24,6 @@ const avatarUrl = profile?.avatar_url || '';
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const accountDisplayName =
   profile?.display_name || profile?.username || user?.email || 'Utente Retro-Gamers';
-const accountHandle = profile?.username ? `@${profile.username}` : user?.email || '';
 const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
 let currentBio = '';
 const isMissingBioColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
@@ -52,151 +56,76 @@ if (isLoggedIn && user?.id) {
   }
 }
 
-const commentActivity = {
-  approved: 0,
-  pending: 0,
-  likesReceived: 0,
-  dislikesReceived: 0,
-};
+let commentActivity = { ...emptyCommunityStats };
 
 if (isLoggedIn && user?.id) {
-  const { data: userComments, error: userCommentsError } = await supabaseAdmin
-    .from('comments')
-    .select('id, status')
-    .eq('user_id', user.id);
-
-  if (!userCommentsError) {
-    const commentIds = (userComments ?? [])
-      .map((comment) => comment.id)
-      .filter(Boolean);
-
-    for (const comment of userComments ?? []) {
-      if (comment.status === 'approved') {
-        commentActivity.approved += 1;
-      }
-
-      if (comment.status === 'pending') {
-        commentActivity.pending += 1;
-      }
-    }
-
-    if (commentIds.length > 0) {
-      const { data: receivedReactions, error: reactionsError } = await supabaseAdmin
-        .from('comment_reactions')
-        .select('reaction')
-        .in('comment_id', commentIds);
-
-      if (!reactionsError) {
-        for (const reaction of receivedReactions ?? []) {
-          if (reaction.reaction === 'like') {
-            commentActivity.likesReceived += 1;
-          }
-
-          if (reaction.reaction === 'dislike') {
-            commentActivity.dislikesReceived += 1;
-          }
-        }
-      }
-    }
-  }
+  commentActivity = await getCommunityStats(user.id);
 }
+
+const communityStatItems = [
+  { label: 'Commenti pubblicati', value: commentActivity.approved },
+  { label: 'In attesa', value: commentActivity.pending },
+  { label: 'Like ricevuti', value: commentActivity.likesReceived },
+  { label: 'Dislike ricevuti', value: commentActivity.dislikesReceived },
+];
 ---
 
 <BaseLayout title={title} description={description}>
-  <main class="account-page">
-    <section class="account-card">
-      {isLoggedIn ? (
-        <div class="account-layout">
-          <div class="account-intro">
-            <p class="account-kicker">Profilo lettore</p>
-            <h1>Area account</h1>
-            <p>
-              Gestisci il nome con cui compari nei commenti e il badge che racconta
-              meglio il tuo angolo di retro-gaming.
-            </p>
-          </div>
+  <CommunityLayout class="account-community-page" sidebar={isLoggedIn}>
+    {isLoggedIn ? (
+      <>
+        <CommunityHero
+          kicker="Profilo lettore"
+          title="Area account"
+          description="Gestisci il nome con cui compari nei commenti, il profilo pubblico e il badge che racconta meglio il tuo angolo di retro-gaming."
+        />
 
-          <aside class="account-sidebar" aria-label="Riepilogo account">
-            <div class="account-profile-card">
-              <UserAvatar name={accountDisplayName} email={user?.email} src={avatarUrl} size="lg" />
+        <Fragment slot="sidebar">
+          <CommunitySidebarProfile
+            name={accountDisplayName}
+            username={profile?.username}
+            email={user?.email}
+            avatarUrl={avatarUrl}
+          >
+            {publicProfileHref && <a href={publicProfileHref}>Profilo pubblico</a>}
+            <a href="/account/messages/">Messaggi</a>
+            <a href="/account/memories/">Le mie memorie</a>
+            <a href="/account/">Il mio account</a>
+          </CommunitySidebarProfile>
+
+          <CommunitySidebarSection title="Dati account">
+            <dl class="community-detail-list" id="memories">
+              <div>
+                <dt>Email</dt>
+                <dd>{user?.email}</dd>
+              </div>
 
               <div>
-                <span>Profilo community</span>
-                <strong>{accountDisplayName}</strong>
-                {accountHandle && <small>{accountHandle}</small>}
-                {publicProfileHref && (
-                  <a class="account-profile-card__link" href={publicProfileHref}>
-                    Vedi profilo pubblico
-                  </a>
-                )}
-                <a class="account-profile-card__link" href="/account/messages/">
-                  Apri messaggi
-                </a>
-                <a class="account-profile-card__link" href="/account/memories/">
-                  Vedi tutte le memorie
-                </a>
+                <dt>Username</dt>
+                <dd>{profile?.username}</dd>
               </div>
-            </div>
 
-            <section class="account-sidebar-section" aria-labelledby="account-data-title">
-              <h2 id="account-data-title">Dati account</h2>
-
-              <dl class="account-detail-list">
-                <div>
-                  <dt>Email</dt>
-                  <dd>{user?.email}</dd>
-                </div>
-
-                <div>
-                  <dt>Username</dt>
-                  <dd>{profile?.username}</dd>
-                </div>
-
-                <div>
-                  <dt>Ruolo</dt>
-                  <dd>{profile?.role || 'reader'}</dd>
-                </div>
-
-                <div>
-                  <dt>Stato</dt>
-                  <dd>{profile?.status || 'active'}</dd>
-                </div>
-
-                <div>
-                  <dt>Badge attuale</dt>
-                  <dd>{currentBadge?.label_it || profile?.badge_key || 'Non impostato'}</dd>
-                </div>
-              </dl>
-            </section>
-
-            <section id="memories" class="account-sidebar-section" aria-labelledby="account-memories-title">
-              <h2 id="account-memories-title">Le tue memorie</h2>
-
-              <div class="account-compact-stats">
-                <div>
-                  <strong>{commentActivity.approved}</strong>
-                  <span>Commenti pubblicati</span>
-                </div>
-
-                <div>
-                  <strong>{commentActivity.pending}</strong>
-                  <span>In attesa di moderazione</span>
-                </div>
-
-                <div>
-                  <strong>{commentActivity.likesReceived}</strong>
-                  <span>Like ricevuti</span>
-                </div>
-
-                <div>
-                  <strong>{commentActivity.dislikesReceived}</strong>
-                  <span>Dislike ricevuti</span>
-                </div>
+              <div>
+                <dt>Ruolo</dt>
+                <dd>{profile?.role || 'reader'}</dd>
               </div>
-            </section>
-          </aside>
 
-          <div class="account-main">
+              <div>
+                <dt>Stato</dt>
+                <dd>{profile?.status || 'active'}</dd>
+              </div>
+
+              <div>
+                <dt>Badge</dt>
+                <dd>{currentBadge?.label_it || profile?.badge_key || 'Non impostato'}</dd>
+              </div>
+            </dl>
+          </CommunitySidebarSection>
+
+          <CommunityStatList title="Statistiche community" items={communityStatItems} />
+        </Fragment>
+
+        <div class="community-content-stack">
             <section class="account-avatar-section" aria-labelledby="account-avatar-title">
               <div class="account-avatar-section__content">
                 <p class="account-kicker">Community</p>
@@ -340,25 +269,25 @@ if (isLoggedIn && user?.id) {
                 </div>
               </form>
             </section>
-          </div>
         </div>
-      ) : (
-        <>
-          <p class="account-kicker">Profilo lettore</p>
-          <h1>Area account</h1>
-          <p>
-            Accedi per gestire il tuo profilo lettore, scegliere il badge e
-            partecipare alle discussioni sotto gli articoli.
-          </p>
+      </>
+    ) : (
+      <>
+        <CommunityHero
+          kicker="Profilo lettore"
+          title="Area account"
+          description="Accedi per gestire il tuo profilo lettore, scegliere il badge e partecipare alle discussioni sotto gli articoli."
+        />
 
+        <section class="community-card">
           <div class="account-actions account-actions--standalone">
             <a href="/account/login/">Accedi</a>
             <a href="/account/register/">Registrati</a>
           </div>
-        </>
-      )}
-    </section>
-  </main>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
 
   <script>
     const form = document.querySelector('[data-account-profile-form]');

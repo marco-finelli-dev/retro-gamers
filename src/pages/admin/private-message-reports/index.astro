@@ -1,23 +1,40 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../../components/community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import '../../../styles/pages/admin-private-message-reports.css';
 
 const title = 'Segnalazioni messaggi | Retro-Gamers.it';
 const description = 'Pannello segnalazioni messaggi privati Retro-Gamers.it';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
 ---
 
 <BaseLayout title={title} description={description}>
-  <main class="admin-private-reports-page">
-    <section class="admin-private-reports-panel">
-      <div class="admin-private-reports-panel__header">
-        <div>
-          <p>Community</p>
-          <h1>Segnalazioni messaggi</h1>
-        </div>
+  <CommunityLayout class="admin-private-reports-page" sidebar={isStaff}>
+    <CommunityHero
+      kicker="Community"
+      title="Segnalazioni messaggi"
+      description="Controlla le conversazioni segnalate dai lettori e chiudi le verifiche già risolte."
+    >
+      <span slot="aside" class="community-soft-badge" data-private-reports-count>Caricamento...</span>
+    </CommunityHero>
 
-        <span data-private-reports-count>Caricamento...</span>
-      </div>
+    {isStaff && (
+      <Fragment slot="sidebar">
+        <CommunitySidebarSection title="Strumenti redazione">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/admin/comments/">Moderazione commenti</a>
+            <a class="community-action-link" href="/admin/users/">Gestione utenti</a>
+            <a class="community-action-link" href="/admin/private-message-reports/">Segnalazioni messaggi</a>
+          </div>
+        </CommunitySidebarSection>
+      </Fragment>
+    )}
 
+    <section class="community-card admin-private-reports-panel">
       <form class="admin-private-reports-filters" data-private-reports-filters>
         <label>
           <span>Stato</span>
@@ -36,7 +53,7 @@ const description = 'Pannello segnalazioni messaggi privati Retro-Gamers.it';
         <p class="admin-private-reports-empty">Caricamento segnalazioni...</p>
       </div>
     </section>
-  </main>
+  </CommunityLayout>
 
   <script>
     const listNode = document.querySelector('[data-private-reports-list]');

@@ -2,6 +2,8 @@
 import '../../../styles/pages/user-profile.css';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import UserAvatar from '../../../components/account/UserAvatar.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
 import {
   getCommentArticleHref,
   getCommentExcerpt,
@@ -58,9 +60,9 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   languageSwitch={languageSwitch}
   noindex={isUnavailable}
 >
-  <main class="public-user-page">
+  <CommunityLayout class="public-user-community-page">
     {isUnavailable ? (
-      <section class="public-user-panel public-user-panel--empty">
+      <section class="community-card public-user-panel public-user-panel--empty">
         <p class="public-user-kicker">Reader profile</p>
         <h1>Profile unavailable</h1>
         <p>This profile does not exist or is not public.</p>
@@ -68,8 +70,13 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
       </section>
     ) : (
       <>
-        <section class="public-user-hero">
-          <div class="public-user-hero__identity">
+        <CommunityHero
+          class="public-user-hero"
+          kicker="Reader profile"
+          title={displayName}
+          description={`@${profile.username}`}
+        >
+          <Fragment slot="leading">
             <UserAvatar
               name={displayName}
               src={profile.avatar_url}
@@ -77,20 +84,16 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
               label={`Avatar for ${displayName}`}
               class="public-user-hero__avatar"
             />
+          </Fragment>
 
-            <div class="public-user-hero__content">
-              <p class="public-user-kicker">Reader profile</p>
-              <h1>{displayName}</h1>
-              <p class="public-user-username">@{profile.username}</p>
-
-              <div class="public-user-badges" aria-label="Badges and role">
-                {badgeLabel && <span>{badgeLabel}</span>}
-                {isStaff && <span>Retro-Gamers staff</span>}
-              </div>
-            </div>
+          <div class="public-user-badges" aria-label="Badges and role">
+            {badgeLabel && <span>{badgeLabel}</span>}
+            {isStaff && <span>Retro-Gamers staff</span>}
           </div>
 
-          <div class="public-user-hero__meta">
+          {bio && <p class="public-user-bio">{bio}</p>}
+
+          <Fragment slot="aside">
             <div class="public-user-stat">
               <span>Published comments</span>
               <strong>{result.approvedCount}</strong>
@@ -105,12 +108,10 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
                 )}
               </div>
             )}
-          </div>
+          </Fragment>
+        </CommunityHero>
 
-          {bio && <p class="public-user-bio">{bio}</p>}
-        </section>
-
-        <section class="public-user-panel" aria-labelledby="latest-comments-title">
+        <section class="community-card public-user-panel" aria-labelledby="latest-comments-title">
           <div class="public-user-section-heading">
             <p class="public-user-kicker">Community</p>
             <h2 id="latest-comments-title">Latest comments</h2>
@@ -152,5 +153,5 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
         </section>
       </>
     )}
-  </main>
+  </CommunityLayout>
 </BaseLayout>

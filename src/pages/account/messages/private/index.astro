@@ -2,8 +2,13 @@
 import '../../../../styles/pages/account.css';
 import '../../../../styles/pages/account-messages.css';
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../../components/community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../../../../components/community/CommunitySidebarProfile.astro';
+import CommunityStatList from '../../../../components/community/CommunityStatList.astro';
 import UserAvatar from '../../../../components/account/UserAvatar.astro';
 import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
+import { emptyCommunityStats, getCommunityStats } from '../../../../lib/supabase/community';
 import {
   getOrCreatePrivateConversationByUsername,
   getPrivateConversations,
@@ -13,6 +18,7 @@ import {
   isPrivateMessagesUnavailable,
   type PrivateConversationSummary,
 } from '../../../../lib/supabase/private-messages';
+import { getPublicUserUrl } from '../../../../lib/supabase/public-profiles';
 
 const title = 'Messaggi privati | Retro-Gamers.it';
 const description = 'Conversazioni private tra lettori Retro-Gamers.it.';
@@ -22,6 +28,7 @@ const toUsername = String(Astro.url.searchParams.get('to') || '').trim();
 
 let conversations: PrivateConversationSummary[] = [];
 let conversationsError = '';
+let communityStats = { ...emptyCommunityStats };
 
 if (isLoggedIn && session.user && toUsername) {
   const result = await getOrCreatePrivateConversationByUsername(session.user.id, toUsername);
@@ -34,8 +41,12 @@ if (isLoggedIn && session.user && toUsername) {
 }
 
 if (isLoggedIn && session.user) {
-  const result = await getPrivateConversations(session.user.id);
+  const [result, statsResult] = await Promise.all([
+    getPrivateConversations(session.user.id),
+    getCommunityStats(session.user.id),
+  ]);
   conversations = result.conversations;
+  communityStats = statsResult;
 
   if (result.error && !conversationsError) {
     conversationsError = isPrivateMessagesUnavailable(result.error)
@@ -51,21 +62,49 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   hour: '2-digit',
   minute: '2-digit',
 });
+const profile = session.profile;
+const accountDisplayName =
+  profile?.display_name || profile?.username || session.user?.email || 'Utente Retro-Gamers';
+const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
+const communityStatItems = [
+  { label: 'Commenti pubblicati', value: communityStats.approved },
+  { label: 'In attesa', value: communityStats.pending },
+  { label: 'Like ricevuti', value: communityStats.likesReceived },
+  { label: 'Dislike ricevuti', value: communityStats.dislikesReceived },
+];
 ---
 
 <BaseLayout title={title} description={description}>
-  <main class="account-page account-messages-page">
-    <section class="account-card">
-      <p class="account-kicker">Community</p>
-      <h1>Messaggi privati</h1>
+  <CommunityLayout class="account-messages-page" sidebar={isLoggedIn}>
+    <CommunityHero
+      kicker="Community"
+      title="Messaggi privati"
+      description={isLoggedIn
+        ? 'Conversazioni 1:1 con gli altri lettori. Usa questo spazio con calma, rispetto e senza trasformarlo in una chat rumorosa.'
+        : 'Accedi per leggere e inviare messaggi privati agli altri lettori.'}
+    />
 
+    {isLoggedIn && (
+      <Fragment slot="sidebar">
+        <CommunitySidebarProfile
+          name={accountDisplayName}
+          username={profile?.username}
+          email={session.user?.email}
+          avatarUrl={profile?.avatar_url}
+        >
+          <a href="/account/">Il mio account</a>
+          {publicProfileHref && <a href={publicProfileHref}>Profilo pubblico</a>}
+          <a href="/account/messages/">Messaggi sistema</a>
+          <a href="/account/memories/">Le mie memorie</a>
+        </CommunitySidebarProfile>
+
+        <CommunityStatList title="Statistiche community" items={communityStatItems} />
+      </Fragment>
+    )}
+
+    <section class="community-card">
       {isLoggedIn ? (
         <>
-          <p>
-            Conversazioni 1:1 con gli altri lettori. Usa questo spazio con calma,
-            rispetto e senza trasformarlo in una chat rumorosa.
-          </p>
-
           <nav class="account-messages-tabs" aria-label="Sezioni messaggi">
             <a href="/account/messages/">Sistema</a>
             <a href="/account/messages/private/" aria-current="page">Privati</a>
@@ -132,15 +171,11 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
         </>
       ) : (
         <>
-          <p>
-            Accedi per leggere e inviare messaggi privati agli altri lettori.
-          </p>
-
           <div class="account-actions account-actions--standalone">
             <a href={`/account/login/?returnTo=${encodeURIComponent('/account/messages/private/')}`}>Accedi</a>
           </div>
         </>
       )}
     </section>
-  </main>
+  </CommunityLayout>
 </BaseLayout>

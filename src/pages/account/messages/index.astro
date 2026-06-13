@@ -2,6 +2,10 @@
 import '../../../styles/pages/account.css';
 import '../../../styles/pages/account-messages.css';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../../../components/community/CommunitySidebarProfile.astro';
+import CommunityStatList from '../../../components/community/CommunityStatList.astro';
 import {
   getAccountMessages,
   getUnreadAccountMessageCount,
@@ -9,7 +13,9 @@ import {
   type AccountMessage,
 } from '../../../lib/supabase/account-messages';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
+import { emptyCommunityStats, getCommunityStats } from '../../../lib/supabase/community';
 import { getUnreadPrivateMessageCount } from '../../../lib/supabase/private-messages';
+import { getPublicUserUrl } from '../../../lib/supabase/public-profiles';
 
 const title = 'Messaggi account | Retro-Gamers.it';
 const description = 'Centro notifiche e messaggi interni del profilo lettore Retro-Gamers.it.';
@@ -20,17 +26,20 @@ let messages: AccountMessage[] = [];
 let unreadCount = 0;
 let privateUnreadCount = 0;
 let messagesError = false;
+let communityStats = { ...emptyCommunityStats };
 
 if (isLoggedIn && session.user) {
-  const [messagesResult, unreadResult, privateUnreadResult] = await Promise.all([
+  const [messagesResult, unreadResult, privateUnreadResult, statsResult] = await Promise.all([
     getAccountMessages(session.user.id),
     getUnreadAccountMessageCount(session.user.id),
     getUnreadPrivateMessageCount(session.user.id),
+    getCommunityStats(session.user.id),
   ]);
 
   messages = messagesResult.messages;
   unreadCount = unreadResult.error ? 0 : unreadResult.count;
   privateUnreadCount = privateUnreadResult.error ? 0 : privateUnreadResult.count;
+  communityStats = statsResult;
   messagesError = Boolean(messagesResult.error);
 
   const unreadMessageIds = messages
@@ -70,21 +79,49 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   hour: '2-digit',
   minute: '2-digit',
 });
+const profile = session.profile;
+const accountDisplayName =
+  profile?.display_name || profile?.username || session.user?.email || 'Utente Retro-Gamers';
+const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
+const communityStatItems = [
+  { label: 'Commenti pubblicati', value: communityStats.approved },
+  { label: 'In attesa', value: communityStats.pending },
+  { label: 'Like ricevuti', value: communityStats.likesReceived },
+  { label: 'Dislike ricevuti', value: communityStats.dislikesReceived },
+];
 ---
 
 <BaseLayout title={title} description={description}>
-  <main class="account-page account-messages-page">
-    <section class="account-card">
-      <p class="account-kicker">Community</p>
-      <h1>Messaggi</h1>
+  <CommunityLayout class="account-messages-page" sidebar={isLoggedIn}>
+    <CommunityHero
+      kicker="Community"
+      title="Messaggi"
+      description={isLoggedIn
+        ? 'Qui trovi notifiche e messaggi legati alla tua attività nella community: commenti approvati, risposte ricevute e aggiornamenti del profilo.'
+        : 'Accedi per leggere i messaggi del tuo profilo e seguire gli aggiornamenti della community.'}
+    />
 
+    {isLoggedIn && (
+      <Fragment slot="sidebar">
+        <CommunitySidebarProfile
+          name={accountDisplayName}
+          username={profile?.username}
+          email={session.user?.email}
+          avatarUrl={profile?.avatar_url}
+        >
+          <a href="/account/">Il mio account</a>
+          {publicProfileHref && <a href={publicProfileHref}>Profilo pubblico</a>}
+          <a href="/account/messages/private/">Messaggi privati</a>
+          <a href="/account/memories/">Le mie memorie</a>
+        </CommunitySidebarProfile>
+
+        <CommunityStatList title="Statistiche community" items={communityStatItems} />
+      </Fragment>
+    )}
+
+    <section class="community-card">
       {isLoggedIn ? (
         <>
-          <p>
-            Qui trovi notifiche e messaggi legati alla tua attività nella community:
-            commenti approvati, risposte ricevute e aggiornamenti del profilo.
-          </p>
-
           <nav class="account-messages-tabs" aria-label="Sezioni messaggi">
             <a href="/account/messages/" aria-current="page">Sistema</a>
             <a href="/account/messages/private/">
@@ -154,11 +191,6 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
         </>
       ) : (
         <>
-          <p>
-            Accedi per leggere i messaggi del tuo profilo e seguire gli aggiornamenti
-            della community.
-          </p>
-
           <div class="account-actions account-actions--standalone">
             <a href="/account/login/">Accedi</a>
             <a href="/account/register/">Registrati</a>
@@ -166,7 +198,7 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
         </>
       )}
     </section>
-  </main>
+  </CommunityLayout>
 
   <script>
     const list = document.querySelector('[data-account-messages-list]');

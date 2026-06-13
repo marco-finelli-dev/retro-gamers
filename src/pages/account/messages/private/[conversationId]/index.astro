@@ -2,6 +2,8 @@
 import '../../../../../styles/pages/account.css';
 import '../../../../../styles/pages/account-messages.css';
 import BaseLayout from '../../../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../../../components/community/CommunityLayout.astro';
 import UserAvatar from '../../../../../components/account/UserAvatar.astro';
 import { getUserSessionFromCookies } from '../../../../../lib/supabase/auth';
 import {
@@ -54,138 +56,141 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
 ---
 
 <BaseLayout title={title} description={description}>
-  <main class="account-page account-messages-page">
-    <section class="account-card">
-      {isLoggedIn ? (
-        <>
-          <a class="account-back-link" href="/account/messages/private/">← Tutte le conversazioni</a>
+  <CommunityLayout class="account-messages-page private-thread-page" sidebar={Boolean(isLoggedIn && thread)}>
+    {isLoggedIn ? (
+      <>
+        <a class="account-back-link" href="/account/messages/private/">← Tutte le conversazioni</a>
 
-          {thread ? (
-            <>
-              <div class="private-thread-layout">
-                <div class="private-thread-main">
-                  <header class="private-thread-header">
-                    <p class="account-kicker">Messaggio privato</p>
-                    <h1>{otherName}</h1>
-                    {otherProfile?.username && <p>@{otherProfile.username}</p>}
-                  </header>
+        {thread ? (
+          <>
+            <CommunityHero
+              kicker="Messaggio privato"
+              title="Conversazione privata"
+              description={`Conversazione con ${otherName}. I messaggi restano visibili solo ai partecipanti.`}
+            />
 
-                  {thread.isBlockedByViewer && (
-                    <p class="account-message" data-type="ok">Hai bloccato questo utente. Puoi sbloccarlo quando vuoi.</p>
-                  )}
+            <Fragment slot="sidebar">
+              <section class="community-sidebar-card private-thread-profile">
+                <UserAvatar
+                  name={otherName}
+                  src={otherProfile?.avatar_url}
+                  size="md"
+                  label={`Avatar di ${otherName}`}
+                  class="private-thread-profile__avatar"
+                />
 
-                  {thread.isViewerBlocked && (
-                    <p class="account-message" data-type="error">Non puoi inviare messaggi a questo utente.</p>
-                  )}
-
-                  <div class="private-thread" data-private-thread>
-                    {thread.messages.length > 0 ? (
-                      thread.messages.map((message) => {
-                        const isMine = message.sender_id === session.user?.id;
-
-                        return (
-                          <article
-                            class:list={['private-message', isMine ? 'is-mine' : 'is-theirs']}
-                            data-message-id={message.id}
-                          >
-                            <div class="private-message__bubble">
-                              <p>{message.body}</p>
-                              <footer>
-                                <time datetime={message.created_at}>
-                                  {dateFormatter.format(new Date(message.created_at))}
-                                </time>
-
-                                {!isMine && (
-                                  <button type="button" data-private-report-message>
-                                    Segnala
-                                  </button>
-                                )}
-                              </footer>
-                            </div>
-                          </article>
-                        );
-                      })
-                    ) : (
-                      <p class="account-messages-empty">
-                        Nessun messaggio ancora. Scrivi il primo messaggio qui sotto.
-                      </p>
-                    )}
-                  </div>
-
-                  <form
-                    class="private-reply-form"
-                    data-private-reply-form
-                    data-conversation-id={conversationId}
-                    hidden={!canReply}
-                  >
-                    <label>
-                      <span>Rispondi</span>
-                      <textarea
-                        name="body"
-                        rows="5"
-                        maxlength="2000"
-                        required
-                        placeholder="Scrivi un messaggio privato..."
-                      ></textarea>
-                    </label>
-
-                    <p class="account-message" data-private-message-feedback hidden></p>
-
-                    <div class="account-actions">
-                      <button type="submit">Invia messaggio</button>
-                    </div>
-                  </form>
+                <div>
+                  <span>Interlocutore</span>
+                  <strong>{otherName}</strong>
+                  {otherProfile?.username && <small>@{otherProfile.username}</small>}
+                  <a href={otherProfileUrl}>Vedi profilo pubblico</a>
                 </div>
+              </section>
 
-                <aside class="private-thread-sidebar" aria-label="Interlocutore">
-                  <section class="private-thread-profile">
-                    <UserAvatar
-                      name={otherName}
-                      src={otherProfile?.avatar_url}
-                      size="md"
-                      label={`Avatar di ${otherName}`}
-                      class="private-thread-profile__avatar"
-                    />
-
-                    <div>
-                      <span>Interlocutore</span>
-                      <strong>{otherName}</strong>
-                      {otherProfile?.username && <small>@{otherProfile.username}</small>}
-                      <a href={otherProfileUrl}>Vedi profilo pubblico</a>
-                    </div>
-                  </section>
-
-                  <div
-                    class="private-thread-actions"
-                    data-private-thread-actions
-                    data-conversation-id={conversationId}
-                  >
-                    {thread.isBlockedByViewer ? (
-                      <button type="button" data-private-unblock>Sblocca utente</button>
-                    ) : (
-                      <button type="button" data-private-block>Blocca utente</button>
-                    )}
-                    <button type="button" data-private-report-conversation>Segnala conversazione</button>
-                  </div>
-                </aside>
+              <div
+                class="community-sidebar-card private-thread-actions"
+                data-private-thread-actions
+                data-conversation-id={conversationId}
+              >
+                {thread.isBlockedByViewer ? (
+                  <button type="button" data-private-unblock>Sblocca utente</button>
+                ) : (
+                  <button type="button" data-private-block>Blocca utente</button>
+                )}
+                <button type="button" data-private-report-conversation>Segnala conversazione</button>
               </div>
-            </>
-          ) : (
+            </Fragment>
+
+            <section class="community-card private-thread-main">
+              {thread.isBlockedByViewer && (
+                <p class="account-message" data-type="ok">Hai bloccato questo utente. Puoi sbloccarlo quando vuoi.</p>
+              )}
+
+              {thread.isViewerBlocked && (
+                <p class="account-message" data-type="error">Non puoi inviare messaggi a questo utente.</p>
+              )}
+
+              <div class="private-thread" data-private-thread>
+                {thread.messages.length > 0 ? (
+                  thread.messages.map((message) => {
+                    const isMine = message.sender_id === session.user?.id;
+
+                    return (
+                      <article
+                        class:list={['private-message', isMine ? 'is-mine' : 'is-theirs']}
+                        data-message-id={message.id}
+                      >
+                        <div class="private-message__bubble">
+                          <p>{message.body}</p>
+                          <footer>
+                            <time datetime={message.created_at}>
+                              {dateFormatter.format(new Date(message.created_at))}
+                            </time>
+
+                            {!isMine && (
+                              <button type="button" data-private-report-message>
+                                Segnala
+                              </button>
+                            )}
+                          </footer>
+                        </div>
+                      </article>
+                    );
+                  })
+                ) : (
+                  <p class="account-messages-empty">
+                    Nessun messaggio ancora. Scrivi il primo messaggio qui sotto.
+                  </p>
+                )}
+              </div>
+
+              <form
+                class="private-reply-form"
+                data-private-reply-form
+                data-conversation-id={conversationId}
+                hidden={!canReply}
+              >
+                <label>
+                  <span>Rispondi</span>
+                  <textarea
+                    name="body"
+                    rows="5"
+                    maxlength="2000"
+                    required
+                    placeholder="Scrivi un messaggio privato..."
+                  ></textarea>
+                </label>
+
+                <p class="account-message" data-private-message-feedback hidden></p>
+
+                <div class="account-actions">
+                  <button type="submit">Invia messaggio</button>
+                </div>
+              </form>
+            </section>
+          </>
+        ) : (
+          <section class="community-card">
             <p class="account-message" data-type="error">{threadError || 'Conversazione non disponibile.'}</p>
-          )}
-        </>
-      ) : (
-        <>
-          <p class="account-kicker">Messaggi privati</p>
-          <h1>Accesso richiesto</h1>
-          <p>Accedi per leggere questa conversazione.</p>
+          </section>
+        )}
+      </>
+    ) : (
+      <>
+        <CommunityHero
+          kicker="Messaggi privati"
+          title="Accesso richiesto"
+          description="Accedi per leggere questa conversazione."
+        />
+
+        <section class="community-card">
           <div class="account-actions account-actions--standalone">
             <a href={`/account/login/?returnTo=${encodeURIComponent(Astro.url.pathname)}`}>Accedi</a>
           </div>
-        </>
-      )}
-    </section>
-  </main>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
 
   <script>
     const escapeHtml = (value) =>

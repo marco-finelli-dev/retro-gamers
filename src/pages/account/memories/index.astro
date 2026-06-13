@@ -2,12 +2,18 @@
 import '../../../styles/pages/account.css';
 import '../../../styles/pages/account-memories.css';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../../../components/community/CommunitySidebarProfile.astro';
+import CommunityStatList from '../../../components/community/CommunityStatList.astro';
 import {
   getCommentArticleHref,
   getCommentExcerpt,
+  getPublicUserUrl,
   type PublicReaderComment,
 } from '../../../lib/supabase/public-profiles';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
+import { emptyCommunityStats, getCommunityStats } from '../../../lib/supabase/community';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
 type MemoryStatus = 'approved' | 'pending' | 'rejected' | 'spam';
@@ -60,6 +66,7 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
 let memories: ReaderMemory[] = [];
 let totalCount = 0;
 let memoriesError = '';
+let communityStats = { ...emptyCommunityStats };
 
 const getFilterHref = (filter: string) => {
   const url = new URL(Astro.url);
@@ -97,6 +104,8 @@ const getArticleHref = (memory: ReaderMemory) => {
 };
 
 if (isLoggedIn && session.user) {
+  communityStats = await getCommunityStats(session.user.id);
+
   let query = supabaseAdmin
     .from('comments')
     .select(`
@@ -170,20 +179,49 @@ if (isLoggedIn && session.user) {
 const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 const hasPrevious = currentPage > 1;
 const hasNext = currentPage < totalPages;
+const profile = session.profile;
+const accountDisplayName =
+  profile?.display_name || profile?.username || session.user?.email || 'Utente Retro-Gamers';
+const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
+const communityStatItems = [
+  { label: 'Commenti pubblicati', value: communityStats.approved },
+  { label: 'In attesa', value: communityStats.pending },
+  { label: 'Like ricevuti', value: communityStats.likesReceived },
+  { label: 'Dislike ricevuti', value: communityStats.dislikesReceived },
+];
 ---
 
 <BaseLayout title={title} description={description}>
-  <main class="account-page account-memories-page">
-    <section class="account-card">
-      <p class="account-kicker">Community</p>
-      <h1>Le mie memorie</h1>
+  <CommunityLayout class="account-memories-page" sidebar={isLoggedIn}>
+    <CommunityHero
+      kicker="Community"
+      title="Le mie memorie"
+      description={isLoggedIn
+        ? 'Ritrova i commenti che hai lasciato su Retro-Gamers.it, controlla quelli in attesa e torna alle discussioni pubblicate.'
+        : 'Accedi per ritrovare i commenti lasciati sotto gli articoli e seguire lo stato della moderazione.'}
+    />
 
+    {isLoggedIn && (
+      <Fragment slot="sidebar">
+        <CommunitySidebarProfile
+          name={accountDisplayName}
+          username={profile?.username}
+          email={session.user?.email}
+          avatarUrl={profile?.avatar_url}
+        >
+          <a href="/account/">Il mio account</a>
+          {publicProfileHref && <a href={publicProfileHref}>Profilo pubblico</a>}
+          <a href="/account/messages/">Messaggi</a>
+          <a href="/account/messages/private/">Messaggi privati</a>
+        </CommunitySidebarProfile>
+
+        <CommunityStatList title="Statistiche community" items={communityStatItems} />
+      </Fragment>
+    )}
+
+    <section class="community-card">
       {isLoggedIn ? (
         <>
-          <p>
-            Ritrova i commenti che hai lasciato su Retro-Gamers.it, controlla quelli
-            in attesa e torna alle discussioni pubblicate.
-          </p>
 
           <nav class="account-memories-filters" aria-label="Filtra memorie">
             {filters.map((filter) => (
@@ -273,11 +311,6 @@ const hasNext = currentPage < totalPages;
         </>
       ) : (
         <>
-          <p>
-            Accedi per ritrovare i commenti lasciati sotto gli articoli e seguire
-            lo stato della moderazione.
-          </p>
-
           <div class="account-actions account-actions--standalone">
             <a href="/account/login/">Accedi</a>
             <a href="/account/register/">Registrati</a>
@@ -285,5 +318,5 @@ const hasNext = currentPage < totalPages;
         </>
       )}
     </section>
-  </main>
+  </CommunityLayout>
 </BaseLayout>

@@ -1,0 +1,40 @@
+---
+interface Props {
+  kicker?: string;
+  title: string;
+  description?: string;
+  class?: string;
+}
+
+const {
+  kicker = 'Community',
+  title,
+  description = '',
+  class: className = '',
+} = Astro.props;
+
+const hasLeading = Astro.slots.has('leading');
+const hasAside = Astro.slots.has('aside');
+const classes = ['community-hero', className].filter(Boolean).join(' ');
+---
+
+<section class={classes}>
+  {hasLeading && (
+    <div class="community-hero__leading">
+      <slot name="leading" />
+    </div>
+  )}
+
+  <div class="community-hero__body">
+    <p class="community-kicker">{kicker}</p>
+    <h1>{title}</h1>
+    {description && <p>{description}</p>}
+    <slot />
+  </div>
+
+  {hasAside && (
+    <div class="community-hero__aside">
+      <slot name="aside" />
+    </div>
+  )}
+</section>

@@ -1,0 +1,36 @@
+---
+import UserAvatar from '../account/UserAvatar.astro';
+
+interface Props {
+  name?: string | null;
+  username?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  label?: string;
+}
+
+const {
+  name = '',
+  username = '',
+  email = '',
+  avatarUrl = '',
+  label = 'Profilo community',
+} = Astro.props;
+
+const displayName = name || username || email || 'Utente Retro-Gamers';
+const handle = username ? `@${username}` : email || '';
+---
+
+<section class="community-sidebar-card community-profile-card">
+  <UserAvatar name={displayName} email={email} src={avatarUrl} size="md" />
+
+  <div class="community-profile-card__content">
+    <span>{label}</span>
+    <strong>{displayName}</strong>
+    {handle && <small>{handle}</small>}
+
+    <div class="community-link-list">
+      <slot />
+    </div>
+  </div>
+</section>

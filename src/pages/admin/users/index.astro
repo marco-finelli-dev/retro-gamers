@@ -1,23 +1,40 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../../components/community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import '../../../styles/pages/admin-users.css';
 
 const title = 'Gestione utenti | Retro-Gamers.it';
 const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
 ---
 
 <BaseLayout title={title} description={description}>
-  <main class="admin-users-page">
-    <section class="admin-users-panel">
-      <div class="admin-users-panel__header">
-        <div>
-          <p>Retro-Gamers.it</p>
-          <h1>Utenti registrati</h1>
-        </div>
+  <CommunityLayout class="admin-users-page" sidebar={isStaff}>
+    <CommunityHero
+      kicker="Retro-Gamers.it"
+      title="Utenti registrati"
+      description="Gestisci ruoli, stati e badge dei lettori registrati senza uscire dal pannello community."
+    >
+      <span slot="aside" class="community-soft-badge" data-admin-users-count>Caricamento...</span>
+    </CommunityHero>
 
-        <span data-admin-users-count>Caricamento...</span>
-      </div>
+    {isStaff && (
+      <Fragment slot="sidebar">
+        <CommunitySidebarSection title="Strumenti redazione">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/admin/comments/">Moderazione commenti</a>
+            <a class="community-action-link" href="/admin/users/">Gestione utenti</a>
+            <a class="community-action-link" href="/admin/private-message-reports/">Segnalazioni messaggi</a>
+          </div>
+        </CommunitySidebarSection>
+      </Fragment>
+    )}
 
+    <section class="community-card admin-users-panel">
       <form class="admin-users-filters" data-admin-users-filters>
         <label>
           <span>Ricerca</span>
@@ -41,7 +58,7 @@ const description = 'Pannello gestione utenti registrati Retro-Gamers.it';
         <p class="admin-users-empty">Caricamento utenti registrati...</p>
       </div>
     </section>
-  </main>
+  </CommunityLayout>
 
   <script>
     const listNode = document.querySelector('[data-admin-users-list]');
