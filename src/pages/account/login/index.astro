@@ -5,6 +5,11 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 const title = 'Accedi a Retro-Gamers.it';
 const description = 'Accedi al tuo profilo lettore per commentare gli articoli di Retro-Gamers.it.';
 const returnTo = Astro.url.searchParams.get('returnTo') || '/';
+const encodedReturnTo = encodeURIComponent(returnTo);
+const oauthError = Astro.url.searchParams.get('oauthError');
+const oauthErrorMessage = oauthError
+  ? 'Accesso social non completato. Riprova oppure usa email e password.'
+  : '';
 ---
 
 <BaseLayout title={title} description={description}>
@@ -13,6 +18,23 @@ const returnTo = Astro.url.searchParams.get('returnTo') || '/';
       <p class="account-kicker">Profilo lettore</p>
       <h1>Accedi</h1>
       <p>Entra con il tuo account per partecipare alle discussioni sotto gli articoli.</p>
+
+      <div class="account-social-auth" aria-label="Accesso social">
+        <a href={`/api/auth/oauth/start?provider=google&returnTo=${encodedReturnTo}`}>
+          Continua con Google
+        </a>
+        <a href={`/api/auth/oauth/start?provider=facebook&returnTo=${encodedReturnTo}`}>
+          Continua con Facebook
+        </a>
+      </div>
+
+      {oauthErrorMessage && (
+        <p class="account-message" data-type="error">{oauthErrorMessage}</p>
+      )}
+
+      <div class="account-divider" aria-hidden="true">
+        <span>oppure</span>
+      </div>
 
       <form class="account-form" data-login-form>
         <input type="hidden" name="returnTo" value={returnTo} />

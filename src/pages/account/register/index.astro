@@ -7,6 +7,7 @@ const title = 'Registrati su Retro-Gamers.it';
 const description = 'Crea un profilo lettore per commentare gli articoli di Retro-Gamers.it.';
 
 const badges = await getActiveReaderBadges();
+const encodedReturnTo = encodeURIComponent('/account/');
 ---
 
 <BaseLayout title={title} description={description}>
@@ -15,6 +16,19 @@ const badges = await getActiveReaderBadges();
       <p class="account-kicker">Profilo lettore</p>
       <h1>Registrati</h1>
       <p>Scegli un nickname, un badge e partecipa alle discussioni sotto gli articoli.</p>
+
+      <div class="account-social-auth" aria-label="Registrazione social">
+        <a href={`/api/auth/oauth/start?provider=google&returnTo=${encodedReturnTo}`}>
+          Continua con Google
+        </a>
+        <a href={`/api/auth/oauth/start?provider=facebook&returnTo=${encodedReturnTo}`}>
+          Continua con Facebook
+        </a>
+      </div>
+
+      <div class="account-divider" aria-hidden="true">
+        <span>oppure</span>
+      </div>
 
       <form class="account-form" data-register-form>
         <label>
