@@ -18,13 +18,13 @@ const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const profile = session.profile;
 const user = session.user;
-const badges = isLoggedIn ? await getOwnedReaderBadges(user?.id) : [];
 const currentBadge = profile?.user_badges;
 const avatarUrl = profile?.avatar_url || '';
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const accountDisplayName =
   profile?.display_name || profile?.username || user?.email || 'Utente Retro-Gamers';
 const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
+let badges = [] as Awaited<ReturnType<typeof getOwnedReaderBadges>>;
 let currentBio = '';
 const isMissingBioColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
   if (!error) return false;
@@ -38,28 +38,40 @@ const isMissingBioColumnError = (error: { code?: string; message?: string; detai
   );
 };
 
-if (isLoggedIn && user?.id) {
+const getProfileBio = async (userId: string) => {
   const { data: profileBio, error: profileBioError } = await supabaseAdmin
     .from('profiles')
     .select('bio')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .maybeSingle();
 
   if (!profileBioError) {
-    currentBio = profileBio?.bio || '';
-  } else if (!isMissingBioColumnError(profileBioError)) {
+    return profileBio?.bio || '';
+  }
+
+  if (!isMissingBioColumnError(profileBioError)) {
     console.error('Profile bio query failed:', {
       code: profileBioError.code,
       message: profileBioError.message,
       hint: profileBioError.hint,
     });
   }
-}
+
+  return '';
+};
 
 let commentActivity = { ...emptyCommunityStats };
 
 if (isLoggedIn && user?.id) {
-  commentActivity = await getCommunityStats(user.id);
+  const [ownedBadges, profileBio, stats] = await Promise.all([
+    getOwnedReaderBadges(user.id),
+    getProfileBio(user.id),
+    getCommunityStats(user.id),
+  ]);
+
+  badges = ownedBadges;
+  currentBio = profileBio;
+  commentActivity = stats;
 }
 
 const communityStatItems = [

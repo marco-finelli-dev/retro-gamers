@@ -104,8 +104,7 @@ const getArticleHref = (memory: ReaderMemory) => {
 };
 
 if (isLoggedIn && session.user) {
-  communityStats = await getCommunityStats(session.user.id);
-
+  const communityStatsPromise = getCommunityStats(session.user.id);
   let query = supabaseAdmin
     .from('comments')
     .select(`
@@ -134,7 +133,11 @@ if (isLoggedIn && session.user) {
     query = query.in('status', ['approved', 'pending', 'rejected', 'spam']);
   }
 
-  const { data, count, error } = await query;
+  const [{ data, count, error }, statsResult] = await Promise.all([
+    query,
+    communityStatsPromise,
+  ]);
+  communityStats = statsResult;
 
   if (error) {
     memoriesError = error.message;

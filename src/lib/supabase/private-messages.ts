@@ -253,12 +253,41 @@ async function getBlockRows(userId: string, otherUserId: string) {
   return { rows: data ?? [], error: null };
 }
 
+async function getBlockRowsForUserPairs(userId: string, otherUserIds: string[]) {
+  const participantIds = [...new Set([userId, ...otherUserIds].filter(Boolean))];
+
+  if (participantIds.length < 2) {
+    return { rows: [], error: null };
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('private_message_blocks')
+    .select('blocker_id, blocked_id')
+    .in('blocker_id', participantIds)
+    .in('blocked_id', participantIds);
+
+  if (error) {
+    logPrivateMessagesError('blocks-bulk', error);
+    return { rows: [], error };
+  }
+
+  return { rows: data ?? [], error: null };
+}
+
+const getBlockStateFromRows = (
+  rows: Array<{ blocker_id: string; blocked_id: string }>,
+  userId: string,
+  otherUserId: string
+) => ({
+  isBlockedByViewer: rows.some((row) => row.blocker_id === userId && row.blocked_id === otherUserId),
+  isViewerBlocked: rows.some((row) => row.blocker_id === otherUserId && row.blocked_id === userId),
+});
+
 export async function getPrivateBlockState(userId: string, otherUserId: string) {
   const { rows, error } = await getBlockRows(userId, otherUserId);
 
   return {
-    isBlockedByViewer: rows.some((row) => row.blocker_id === userId && row.blocked_id === otherUserId),
-    isViewerBlocked: rows.some((row) => row.blocker_id === otherUserId && row.blocked_id === userId),
+    ...getBlockStateFromRows(rows, userId, otherUserId),
     error,
   };
 }
@@ -449,14 +478,17 @@ export async function getPrivateConversations(userId: string, limit = DEFAULT_LI
     }
   }
 
-  const blockPairs = await Promise.all(
-    rows.map(async (conversation) => {
+  const { rows: blockRows } = await getBlockRowsForUserPairs(userId, otherUserIds);
+  const blockByConversation = new Map(
+    rows.map((conversation) => {
       const otherUserId = getOtherConversationUserId(conversation, userId);
-      const blockState = await getPrivateBlockState(userId, otherUserId);
-      return [conversation.id, blockState] as const;
+
+      return [
+        conversation.id,
+        getBlockStateFromRows(blockRows, userId, otherUserId),
+      ] as const;
     })
   );
-  const blockByConversation = new Map(blockPairs);
 
   const summaries = rows
     .map((conversation) => {

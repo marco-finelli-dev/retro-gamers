@@ -68,26 +68,35 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     return json({ ok: false, error: 'Parametro articleSlug mancante.' }, 400);
   }
 
-  let { data, error } = await supabaseAdmin
-    .from('comments')
-    .select(getCommentsSelect(true))
-    .eq('article_slug', articleSlug)
-    .eq('article_language', articleLanguage)
-    .eq('status', 'approved')
-    .order('created_at', { ascending: true });
-
-  if (isMissingAvatarColumnError(error)) {
-    const fallbackResult = await supabaseAdmin
+  const fetchApprovedComments = async () => {
+    let { data, error } = await supabaseAdmin
       .from('comments')
-      .select(getCommentsSelect(false))
+      .select(getCommentsSelect(true))
       .eq('article_slug', articleSlug)
       .eq('article_language', articleLanguage)
       .eq('status', 'approved')
       .order('created_at', { ascending: true });
 
-    data = fallbackResult.data;
-    error = fallbackResult.error;
-  }
+    if (isMissingAvatarColumnError(error)) {
+      const fallbackResult = await supabaseAdmin
+        .from('comments')
+        .select(getCommentsSelect(false))
+        .eq('article_slug', articleSlug)
+        .eq('article_language', articleLanguage)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: true });
+
+      data = fallbackResult.data;
+      error = fallbackResult.error;
+    }
+
+    return { data, error };
+  };
+
+  const [{ data, error }, session] = await Promise.all([
+    fetchApprovedComments(),
+    getUserSessionFromCookies(cookies),
+  ]);
 
   if (error) {
     logApiError('comments-list.comments', error);
@@ -99,7 +108,6 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   const reactionSummaries = new Map<string, CommentReactionSummary>();
 
   let currentUserId: string | null = null;
-  const session = await getUserSessionFromCookies(cookies);
   currentUserId = session.user?.id ?? null;
 
   if (commentIds.length > 0) {
