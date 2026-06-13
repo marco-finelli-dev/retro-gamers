@@ -1,20 +1,40 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../../components/community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import '../../../styles/pages/admin-comments.css';
 
 const title = 'Moderazione commenti | Retro-Gamers.it';
 const description = 'Pannello moderazione commenti Retro-Gamers.it';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
 ---
 
 <BaseLayout title={title} description={description}>
-  <main class="admin-comments-page">
-    <section class="admin-comments-panel">
-      <div class="admin-comments-panel__header">
-        <p>Retro-Gamers.it</p>
-        <h1>Moderazione commenti</h1>
-        <span data-admin-comments-count>Caricamento...</span>
-      </div>
+  <CommunityLayout class="admin-comments-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title="Strumenti redazione">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/admin/comments/">Moderazione commenti</a>
+            <a class="community-action-link" href="/admin/users/">Gestione utenti</a>
+            <a class="community-action-link" href="/admin/private-message-reports/">Segnalazioni messaggi</a>
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
 
+    <CommunityHero
+      kicker="Retro-Gamers.it"
+      title="Moderazione commenti"
+      description="Controlla la coda, filtra gli stati e mantieni leggibili le discussioni della community."
+    >
+      <span slot="aside" class="community-soft-badge" data-admin-comments-count>Caricamento...</span>
+    </CommunityHero>
+
+    <section class="community-card admin-comments-panel">
       <form class="admin-comments-filters" data-admin-comments-filters>
         <label>
           <span>Stato</span>
@@ -59,7 +79,7 @@ const description = 'Pannello moderazione commenti Retro-Gamers.it';
         <p class="admin-comments-empty">Caricamento commenti...</p>
       </div>
     </section>
-  </main>
+  </CommunityLayout>
 
   <script>
     const listNode = document.querySelector('[data-admin-comments-list]');

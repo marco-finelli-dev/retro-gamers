@@ -14,16 +14,8 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
 
 <BaseLayout title={title} description={description}>
   <CommunityLayout class="admin-private-reports-page" sidebar={isStaff}>
-    <CommunityHero
-      kicker="Community"
-      title="Segnalazioni messaggi"
-      description="Controlla le conversazioni segnalate dai lettori e chiudi le verifiche già risolte."
-    >
-      <span slot="aside" class="community-soft-badge" data-private-reports-count>Caricamento...</span>
-    </CommunityHero>
-
-    {isStaff && (
-      <Fragment slot="sidebar">
+    <Fragment slot="sidebar">
+      {isStaff && (
         <CommunitySidebarSection title="Strumenti redazione">
           <div class="community-staff-links">
             <a class="community-action-link" href="/admin/comments/">Moderazione commenti</a>
@@ -31,8 +23,16 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
             <a class="community-action-link" href="/admin/private-message-reports/">Segnalazioni messaggi</a>
           </div>
         </CommunitySidebarSection>
-      </Fragment>
-    )}
+      )}
+    </Fragment>
+
+    <CommunityHero
+      kicker="Community"
+      title="Segnalazioni messaggi"
+      description="Controlla le conversazioni segnalate dai lettori e chiudi le verifiche già risolte."
+    >
+      <span slot="aside" class="community-soft-badge" data-private-reports-count>Caricamento...</span>
+    </CommunityHero>
 
     <section class="community-card admin-private-reports-panel">
       <form class="admin-private-reports-filters" data-private-reports-filters>

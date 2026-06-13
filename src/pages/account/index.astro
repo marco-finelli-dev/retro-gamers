@@ -72,15 +72,9 @@ const communityStatItems = [
 
 <BaseLayout title={title} description={description}>
   <CommunityLayout class="account-community-page" sidebar={isLoggedIn}>
-    {isLoggedIn ? (
-      <>
-        <CommunityHero
-          kicker="Profilo lettore"
-          title="Area account"
-          description="Gestisci il nome con cui compari nei commenti, il profilo pubblico e il badge che racconta meglio il tuo angolo di retro-gaming."
-        />
-
-        <Fragment slot="sidebar">
+    <Fragment slot="sidebar">
+      {isLoggedIn && (
+        <>
           <CommunitySidebarProfile
             name={accountDisplayName}
             username={profile?.username}
@@ -123,7 +117,17 @@ const communityStatItems = [
           </CommunitySidebarSection>
 
           <CommunityStatList title="Statistiche community" items={communityStatItems} />
-        </Fragment>
+        </>
+      )}
+    </Fragment>
+
+    {isLoggedIn ? (
+      <>
+        <CommunityHero
+          kicker="Profilo lettore"
+          title="Area account"
+          description="Gestisci il nome con cui compari nei commenti, il profilo pubblico e il badge che racconta meglio il tuo angolo di retro-gaming."
+        />
 
         <div class="community-content-stack">
             <section class="account-avatar-section" aria-labelledby="account-avatar-title">

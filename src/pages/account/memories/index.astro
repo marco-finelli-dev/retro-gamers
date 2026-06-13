@@ -193,6 +193,26 @@ const communityStatItems = [
 
 <BaseLayout title={title} description={description}>
   <CommunityLayout class="account-memories-page" sidebar={isLoggedIn}>
+    <Fragment slot="sidebar">
+      {isLoggedIn && (
+        <>
+          <CommunitySidebarProfile
+            name={accountDisplayName}
+            username={profile?.username}
+            email={session.user?.email}
+            avatarUrl={profile?.avatar_url}
+          >
+            <a href="/account/">Il mio account</a>
+            {publicProfileHref && <a href={publicProfileHref}>Profilo pubblico</a>}
+            <a href="/account/messages/">Messaggi</a>
+            <a href="/account/messages/private/">Messaggi privati</a>
+          </CommunitySidebarProfile>
+
+          <CommunityStatList title="Statistiche community" items={communityStatItems} />
+        </>
+      )}
+    </Fragment>
+
     <CommunityHero
       kicker="Community"
       title="Le mie memorie"
@@ -200,24 +220,6 @@ const communityStatItems = [
         ? 'Ritrova i commenti che hai lasciato su Retro-Gamers.it, controlla quelli in attesa e torna alle discussioni pubblicate.'
         : 'Accedi per ritrovare i commenti lasciati sotto gli articoli e seguire lo stato della moderazione.'}
     />
-
-    {isLoggedIn && (
-      <Fragment slot="sidebar">
-        <CommunitySidebarProfile
-          name={accountDisplayName}
-          username={profile?.username}
-          email={session.user?.email}
-          avatarUrl={profile?.avatar_url}
-        >
-          <a href="/account/">Il mio account</a>
-          {publicProfileHref && <a href={publicProfileHref}>Profilo pubblico</a>}
-          <a href="/account/messages/">Messaggi</a>
-          <a href="/account/messages/private/">Messaggi privati</a>
-        </CommunitySidebarProfile>
-
-        <CommunityStatList title="Statistiche community" items={communityStatItems} />
-      </Fragment>
-    )}
 
     <section class="community-card">
       {isLoggedIn ? (

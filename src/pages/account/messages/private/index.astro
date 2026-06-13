@@ -76,6 +76,26 @@ const communityStatItems = [
 
 <BaseLayout title={title} description={description}>
   <CommunityLayout class="account-messages-page" sidebar={isLoggedIn}>
+    <Fragment slot="sidebar">
+      {isLoggedIn && (
+        <>
+          <CommunitySidebarProfile
+            name={accountDisplayName}
+            username={profile?.username}
+            email={session.user?.email}
+            avatarUrl={profile?.avatar_url}
+          >
+            <a href="/account/">Il mio account</a>
+            {publicProfileHref && <a href={publicProfileHref}>Profilo pubblico</a>}
+            <a href="/account/messages/">Messaggi sistema</a>
+            <a href="/account/memories/">Le mie memorie</a>
+          </CommunitySidebarProfile>
+
+          <CommunityStatList title="Statistiche community" items={communityStatItems} />
+        </>
+      )}
+    </Fragment>
+
     <CommunityHero
       kicker="Community"
       title="Messaggi privati"
@@ -83,24 +103,6 @@ const communityStatItems = [
         ? 'Conversazioni 1:1 con gli altri lettori. Usa questo spazio con calma, rispetto e senza trasformarlo in una chat rumorosa.'
         : 'Accedi per leggere e inviare messaggi privati agli altri lettori.'}
     />
-
-    {isLoggedIn && (
-      <Fragment slot="sidebar">
-        <CommunitySidebarProfile
-          name={accountDisplayName}
-          username={profile?.username}
-          email={session.user?.email}
-          avatarUrl={profile?.avatar_url}
-        >
-          <a href="/account/">Il mio account</a>
-          {publicProfileHref && <a href={publicProfileHref}>Profilo pubblico</a>}
-          <a href="/account/messages/">Messaggi sistema</a>
-          <a href="/account/memories/">Le mie memorie</a>
-        </CommunitySidebarProfile>
-
-        <CommunityStatList title="Statistiche community" items={communityStatItems} />
-      </Fragment>
-    )}
 
     <section class="community-card">
       {isLoggedIn ? (

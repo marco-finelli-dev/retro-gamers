@@ -15,7 +15,12 @@ const {
 
 const hasLeading = Astro.slots.has('leading');
 const hasAside = Astro.slots.has('aside');
-const classes = ['community-hero', className].filter(Boolean).join(' ');
+const classes = [
+  'community-hero',
+  hasLeading && 'community-hero--with-leading',
+  hasAside && 'community-hero--with-aside',
+  className,
+].filter(Boolean).join(' ');
 ---
 
 <section class={classes}>
