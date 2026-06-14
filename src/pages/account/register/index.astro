@@ -8,6 +8,7 @@ const description = 'Crea un profilo lettore per commentare gli articoli di Retr
 
 const badges = await getActiveReaderBadges();
 const encodedReturnTo = encodeURIComponent('/account/');
+const enableAppleLogin = false;
 const enableFacebookLogin = false;
 const socialProviders = [
   {
@@ -16,12 +17,16 @@ const socialProviders = [
     iconLight: '/icons/oauth/google-light.webp',
     iconDark: '/icons/oauth/google-dark.webp',
   },
-  {
-    provider: 'apple',
-    label: 'Continua con Apple',
-    iconLight: '/icons/oauth/apple-light.webp',
-    iconDark: '/icons/oauth/apple-dark.webp',
-  },
+  ...(enableAppleLogin
+    ? [
+        {
+          provider: 'apple',
+          label: 'Continua con Apple',
+          iconLight: '/icons/oauth/apple-light.webp',
+          iconDark: '/icons/oauth/apple-dark.webp',
+        },
+      ]
+    : []),
   ...(enableFacebookLogin
     ? [
         {

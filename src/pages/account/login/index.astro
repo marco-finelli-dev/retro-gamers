@@ -10,6 +10,7 @@ const oauthError = Astro.url.searchParams.get('oauthError');
 const oauthErrorMessage = oauthError
   ? 'Accesso social non completato. Riprova oppure usa email e password.'
   : '';
+const enableAppleLogin = false;
 const enableFacebookLogin = false;
 const socialProviders = [
   {
@@ -18,12 +19,16 @@ const socialProviders = [
     iconLight: '/icons/oauth/google-light.webp',
     iconDark: '/icons/oauth/google-dark.webp',
   },
-  {
-    provider: 'apple',
-    label: 'Continua con Apple',
-    iconLight: '/icons/oauth/apple-light.webp',
-    iconDark: '/icons/oauth/apple-dark.webp',
-  },
+  ...(enableAppleLogin
+    ? [
+        {
+          provider: 'apple',
+          label: 'Continua con Apple',
+          iconLight: '/icons/oauth/apple-light.webp',
+          iconDark: '/icons/oauth/apple-dark.webp',
+        },
+      ]
+    : []),
   ...(enableFacebookLogin
     ? [
         {
