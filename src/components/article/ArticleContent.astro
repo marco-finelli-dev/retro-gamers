@@ -248,6 +248,14 @@ function renderBlockChildren(block) {
     .join('') || '';
 }
 
+function isBlankBlockHtml(html = '') {
+  return String(html)
+    .replace(/<br\s*\/?>/gi, '')
+    .replace(/&nbsp;/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .trim().length === 0;
+}
+
 /*
   Gallery principale:
   2 → 2
@@ -318,6 +326,10 @@ function chunkBalanced(images = []) {
 
     if (block._type === 'block') {
       const html = renderBlockChildren(block);
+
+      if (isBlankBlockHtml(html)) {
+        return null;
+      }
 
       if (block.style === 'h2') {
         return <h2 set:html={html} />;
@@ -430,6 +442,11 @@ function chunkBalanced(images = []) {
           {asideContent.map((inner) => {
             if (inner._type === 'block') {
               const html = renderBlockChildren(inner);
+
+              if (isBlankBlockHtml(html)) {
+                return null;
+              }
+
               return <p set:html={html} />;
             }
 

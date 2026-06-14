@@ -39,17 +39,15 @@ box-shadow: var(--rg-panel-shadow);
 .support--box::before {
   content: "";
   position: absolute;
-  inset: 1px;
-  border-radius: inherit;
+  inset: 0;
 
   background-image: var(--rg-panel-grid);
+
   background-size: 46px 46px;
   opacity: var(--rg-panel-grid-opacity);
 
-  -webkit-mask-image:
-    linear-gradient(to bottom, transparent 0 18px, rgba(0,0,0,0.82) 42px, transparent 94%);
   mask-image:
-    linear-gradient(to bottom, transparent 0 18px, rgba(0,0,0,0.82) 42px, transparent 94%);
+    linear-gradient(to bottom, rgba(0,0,0,0.82), transparent 94%);
 
   pointer-events: none;
 }
