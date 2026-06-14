@@ -6,11 +6,11 @@ Retro-Gamers.it con Supabase Auth.
 Provider implementati nel frontend:
 
 - Google
-- Facebook
-
-Provider pianificato per una fase successiva:
-
 - Apple
+
+Provider pronto nel codice ma nascosto lato UI pubblica:
+
+- Facebook
 
 ## URL applicazione
 
@@ -99,6 +99,7 @@ Il sito usa:
 
 ```text
 /api/auth/oauth/start?provider=google
+/api/auth/oauth/start?provider=apple
 /api/auth/oauth/start?provider=facebook
 ```
 
@@ -116,15 +117,11 @@ La callback:
 - crea il messaggio interno di benvenuto solo alla prima creazione profilo;
 - invia la notifica admin nuova registrazione solo alla prima creazione profilo.
 
-## Apple, prossimo step
+## Apple Login
 
-Apple Sign in richiede configurazione più delicata:
+Apple richiede configurazione manuale in Apple Developer e Supabase Dashboard.
+Seguire la guida dedicata:
 
-- Service ID Apple;
-- private key;
-- team ID;
-- key ID;
-- verifica dominio;
-- callback Supabase.
-
-Per questo motivo Apple non è stato abilitato in questa prima passata.
+```text
+docs/supabase/apple-login-setup.md
+```

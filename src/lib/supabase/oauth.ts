@@ -4,13 +4,13 @@ import { sendNewReaderRegistrationAdminEmail } from './account-emails';
 import { createWelcomeAccountMessage } from './account-messages';
 import { supabaseAdmin } from './server';
 
-export type SocialOAuthProvider = 'google' | 'facebook';
+export type SocialOAuthProvider = 'google' | 'facebook' | 'apple';
 
-export const socialOAuthProviders: SocialOAuthProvider[] = ['google', 'facebook'];
+export const socialOAuthProviders: SocialOAuthProvider[] = ['google', 'facebook', 'apple'];
 export const oauthCodeVerifierCookie = 'rg_oauth_code_verifier';
 
 export const isSocialOAuthProvider = (value: string | null): value is SocialOAuthProvider =>
-  value === 'google' || value === 'facebook';
+  value === 'google' || value === 'facebook' || value === 'apple';
 
 export const getSiteUrl = () =>
   String(import.meta.env.PUBLIC_SITE_URL || import.meta.env.SITE || 'http://localhost:4321')

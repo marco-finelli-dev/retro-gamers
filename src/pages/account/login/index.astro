@@ -18,6 +18,12 @@ const socialProviders = [
     iconLight: '/icons/oauth/google-light.webp',
     iconDark: '/icons/oauth/google-dark.webp',
   },
+  {
+    provider: 'apple',
+    label: 'Continua con Apple',
+    iconLight: '/icons/oauth/apple-light.svg',
+    iconDark: '/icons/oauth/apple-dark.svg',
+  },
   ...(enableFacebookLogin
     ? [
         {
@@ -40,7 +46,10 @@ const socialProviders = [
 
       <div class:list={['account-social-auth', socialProviders.length === 1 && 'account-social-auth--single']} aria-label="Accesso social">
         {socialProviders.map((provider) => (
-          <a href={`/api/auth/oauth/start?provider=${provider.provider}&returnTo=${encodedReturnTo}`}>
+          <a
+            href={`/api/auth/oauth/start?provider=${provider.provider}&returnTo=${encodedReturnTo}`}
+            aria-label={provider.label}
+          >
             <span class="account-social-auth__icons" aria-hidden="true">
               <img
                 class="account-social-auth__icon account-social-auth__icon--light"
