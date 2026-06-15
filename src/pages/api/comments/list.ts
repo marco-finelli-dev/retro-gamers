@@ -24,6 +24,8 @@ const emptyReactionSummary = (): CommentReactionSummary => ({
   userReaction: null,
 });
 
+const COMMENT_EDIT_WINDOW_MS = 10 * 60 * 1000;
+
 const getCommentsSelect = (includeAvatar = true) => `
       id,
       article_slug,
@@ -68,35 +70,52 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     return json({ ok: false, error: 'Parametro articleSlug mancante.' }, 400);
   }
 
-  const fetchApprovedComments = async () => {
-    let { data, error } = await supabaseAdmin
+  const session = await getUserSessionFromCookies(cookies);
+  const currentUserId = session.user?.id ?? null;
+
+  const fetchArticleComments = async (includeAvatar = true) => {
+    const { data: approvedComments, error: approvedError } = await supabaseAdmin
       .from('comments')
-      .select(getCommentsSelect(true))
+      .select(getCommentsSelect(includeAvatar))
       .eq('article_slug', articleSlug)
       .eq('article_language', articleLanguage)
       .eq('status', 'approved')
       .order('created_at', { ascending: true });
 
-    if (isMissingAvatarColumnError(error)) {
-      const fallbackResult = await supabaseAdmin
-        .from('comments')
-        .select(getCommentsSelect(false))
-        .eq('article_slug', articleSlug)
-        .eq('article_language', articleLanguage)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: true });
-
-      data = fallbackResult.data;
-      error = fallbackResult.error;
+    if (approvedError) {
+      return { data: null, error: approvedError };
     }
 
-    return { data, error };
+    if (!currentUserId) {
+      return { data: approvedComments ?? [], error: null };
+    }
+
+    const { data: pendingComments, error: pendingError } = await supabaseAdmin
+      .from('comments')
+      .select(getCommentsSelect(includeAvatar))
+      .eq('article_slug', articleSlug)
+      .eq('article_language', articleLanguage)
+      .eq('status', 'pending')
+      .eq('user_id', currentUserId)
+      .order('created_at', { ascending: true });
+
+    if (pendingError) {
+      return { data: null, error: pendingError };
+    }
+
+    return {
+      data: [...(approvedComments ?? []), ...(pendingComments ?? [])],
+      error: null,
+    };
   };
 
-  const [{ data, error }, session] = await Promise.all([
-    fetchApprovedComments(),
-    getUserSessionFromCookies(cookies),
-  ]);
+  let { data, error } = await fetchArticleComments(true);
+
+  if (isMissingAvatarColumnError(error)) {
+    const fallbackResult = await fetchArticleComments(false);
+    data = fallbackResult.data;
+    error = fallbackResult.error;
+  }
 
   if (error) {
     logApiError('comments-list.comments', error);
@@ -106,9 +125,6 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   const comments = data ?? [];
   const commentIds = comments.map((comment) => comment.id).filter(Boolean);
   const reactionSummaries = new Map<string, CommentReactionSummary>();
-
-  let currentUserId: string | null = null;
-  currentUserId = session.user?.id ?? null;
 
   if (commentIds.length > 0) {
     const { data: reactionRows, error: reactionError } = await supabaseAdmin
@@ -140,6 +156,23 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
   const roots = comments.filter((comment) => !comment.parent_id);
   const replies = comments.filter((comment) => comment.parent_id);
+  const canEditComment = (comment: (typeof comments)[number]) => {
+    if (!currentUserId || comment.user_id !== currentUserId) {
+      return false;
+    }
+
+    if (comment.status === 'pending') {
+      return true;
+    }
+
+    if (comment.status !== 'approved' || !comment.created_at) {
+      return false;
+    }
+
+    const createdAt = new Date(comment.created_at).getTime();
+
+    return Number.isFinite(createdAt) && Date.now() - createdAt <= COMMENT_EDIT_WINDOW_MS;
+  };
   const withReactionSummary = (comment: (typeof comments)[number]) => {
     const { user_id: userId, ...publicComment } = comment;
     const isOwnComment = Boolean(currentUserId && userId === currentUserId);
@@ -149,8 +182,9 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       profiles: withAvatarUrl(publicComment.profiles),
       ...(reactionSummaries.get(comment.id) ?? emptyReactionSummary()),
       isOwnComment,
-      canReact: Boolean(currentUserId && !isOwnComment),
-      canReport: Boolean(currentUserId && !isOwnComment),
+      canReact: Boolean(currentUserId && !isOwnComment && comment.status === 'approved'),
+      canReport: Boolean(currentUserId && !isOwnComment && comment.status === 'approved'),
+      canEdit: canEditComment(comment),
     };
   };
 

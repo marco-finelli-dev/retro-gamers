@@ -301,6 +301,14 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       reportError: 'Non è stato possibile inviare la segnalazione. Riprova.',
       roleStaff: 'Staff Retro-Gamers',
       roleModerator: 'Moderatore',
+      pendingStatus: 'In attesa',
+      edit: 'Modifica',
+      editLabel: 'Modifica commento',
+      saveEdit: 'Salva modifica',
+      cancelEdit: 'Annulla',
+      editSuccess: 'Commento aggiornato.',
+      editExpired: 'Il tempo per modificare questo commento è scaduto.',
+      editError: 'Non è stato possibile aggiornare il commento. Riprova.',
       sortLabel: 'Ordina',
       sortOldest: 'Meno recenti',
       sortNewest: 'Più recenti',
@@ -335,6 +343,14 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       reportError: 'The report could not be sent. Please try again.',
       roleStaff: 'Retro-Gamers Staff',
       roleModerator: 'Moderator',
+      pendingStatus: 'Pending',
+      edit: 'Edit',
+      editLabel: 'Edit comment',
+      saveEdit: 'Save edit',
+      cancelEdit: 'Cancel',
+      editSuccess: 'Comment updated.',
+      editExpired: 'The edit window for this comment has expired.',
+      editError: 'The comment could not be updated. Please try again.',
       sortLabel: 'Sort',
       sortOldest: 'Oldest first',
       sortNewest: 'Newest first',
@@ -472,6 +488,11 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       : '';
   };
 
+  const renderStatusBadge = (comment, labels) =>
+    comment?.status === 'pending'
+      ? `<span class="article-comment__status-badge">${escapeHtml(labels.pendingStatus)}</span>`
+      : '';
+
   const getCommentAnchorId = (comment) =>
     comment?.id ? `comment-${String(comment.id)}` : '';
 
@@ -532,7 +553,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       : '';
 
   const renderCommentBody = (body) =>
-    `<p>${escapeHtml(body).replaceAll('\n', '<br>')}</p>`;
+    `<p class="article-comment__body" data-comment-body>${escapeHtml(body).replaceAll('\n', '<br>')}</p>`;
 
   const getReactionCount = (comment, key) => {
     const value = Number(comment?.[key] || 0);
@@ -621,14 +642,53 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     `;
   };
 
+  const renderEditControls = (comment, labels) => {
+    if (comment.isLegacy || !comment.id || !comment.canEdit) return '';
+
+    return `
+      <div class="article-comment__edit" data-comment-edit="${escapeHtml(comment.id)}">
+        <button
+          class="article-comment__edit-toggle"
+          type="button"
+          data-edit-comment="${escapeHtml(comment.id)}"
+          aria-expanded="false"
+        >
+          ${escapeHtml(labels.edit)}
+        </button>
+
+        <form class="article-comment__edit-form" data-edit-form hidden>
+          <label>
+            <span>${escapeHtml(labels.editLabel)}</span>
+            <textarea
+              name="body"
+              required
+              minlength="3"
+              maxlength="3000"
+              rows="4"
+            >${escapeHtml(comment.body)}</textarea>
+          </label>
+
+          <div class="article-comment__edit-actions">
+            <button type="submit">${escapeHtml(labels.saveEdit)}</button>
+            <button type="button" data-edit-cancel>${escapeHtml(labels.cancelEdit)}</button>
+          </div>
+
+          <p class="article-comment__edit-message" data-edit-message hidden></p>
+        </form>
+      </div>
+    `;
+  };
+
   const renderCommentActions = (comment, labels) => {
+    const editControls = renderEditControls(comment, labels);
     const reportControls = renderReportControls(comment, labels);
     const reactionControls = renderReactionControls(comment, labels);
 
-    if (!reportControls && !reactionControls) return '';
+    if (!editControls && !reportControls && !reactionControls) return '';
 
     return `
       <div class="article-comment__secondary-actions">
+        ${editControls}
         ${reportControls}
         ${reactionControls}
       </div>
@@ -640,6 +700,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const authorName = getAuthorName(profile, labels.reader);
     const badgeLabel = getBadgeLabel(profile, language);
     const roleBadge = renderRoleBadge(profile, labels);
+    const statusBadge = renderStatusBadge(reply, labels);
     const initial = getAvatarInitial(profile, labels.reader);
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
     const profileHref = getProfileHref(profile, language, Boolean(reply.isLegacy));
@@ -662,6 +723,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
             <div class="article-comment__editor-reply-submeta">
               ${renderCommentTime(reply, language, labels)}
 
+              ${statusBadge}
+
               ${renderBadge(badgeLabel, profile?.user_badges)}
             </div>
           </div>
@@ -679,6 +742,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const authorName = getAuthorName(profile, labels.reader);
     const badgeLabel = getBadgeLabel(profile, language);
     const roleBadge = renderRoleBadge(profile, labels);
+    const statusBadge = renderStatusBadge(comment, labels);
     const initial = getAvatarInitial(profile, labels.reader);
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
     const replies = Array.isArray(comment.replies) ? sortComments(comment.replies) : [];
@@ -686,6 +750,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const profileHref = getProfileHref(profile, language, isLegacy);
     const highlightedClass = comment.isHighlighted ? ' article-comment--highlighted' : '';
     const avatarUrl = profile.avatar_url || '';
+
+    const canReplyToComment = canReply && !isLegacy && comment.status === 'approved';
 
     return `
       <article
@@ -703,10 +769,12 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
             ${renderCommentTime(comment, language, labels)}
 
+            ${statusBadge}
+
             ${renderBadge(badgeLabel, profile?.user_badges)}
           </div>
 
-          ${canReply && !isLegacy ? `
+          ${canReplyToComment ? `
             <div class="article-comment__reactions">
               <button
                 class="article-comment__reply-button"
@@ -722,7 +790,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
         ${renderCommentBody(comment.body)}
 
-        ${canReply && !isLegacy ? `
+        ${canReplyToComment ? `
           <div class="article-comment__mobile-actions">
             <button
               class="article-comment__mobile-reply-button"
@@ -1050,6 +1118,67 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       });
     };
 
+    const setEditMessage = (form, message, type = 'ok') => {
+      const messageNode = form?.querySelector('[data-edit-message]');
+
+      if (!messageNode) return;
+
+      messageNode.textContent = message;
+      messageNode.dataset.type = type;
+      messageNode.hidden = !message;
+    };
+
+    const setEditFormOpen = (form, isOpen) => {
+      if (!form) return;
+
+      form.hidden = !isOpen;
+      const wrapper = form.closest('[data-comment-edit]');
+      const toggle = wrapper?.querySelector('[data-edit-comment]');
+      const commentNode = form.closest('[data-comment-id]');
+      const bodyNode = commentNode?.querySelector('[data-comment-body]');
+
+      toggle?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+
+      if (bodyNode) {
+        bodyNode.hidden = isOpen;
+      }
+
+      if (!isOpen) {
+        setEditMessage(form, '');
+      }
+    };
+
+    const closeEditForm = (form) => {
+      setEditFormOpen(form, false);
+    };
+
+    const closeOtherEditForms = (activeForm) => {
+      listNode?.querySelectorAll('[data-edit-form]').forEach((form) => {
+        if (form !== activeForm) {
+          closeEditForm(form);
+        }
+      });
+    };
+
+    const toggleEditForm = (button) => {
+      if (!currentProfile) {
+        return;
+      }
+
+      const wrapper = button.closest('[data-comment-edit]');
+      const form = wrapper?.querySelector('[data-edit-form]');
+
+      if (!form) return;
+
+      const willOpen = form.hidden;
+      closeOtherEditForms(form);
+      setEditFormOpen(form, willOpen);
+
+      if (willOpen) {
+        form.querySelector('textarea')?.focus();
+      }
+    };
+
     const toggleReportForm = (button) => {
       if (!currentProfile) {
         return;
@@ -1067,6 +1196,54 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
       if (willOpen) {
         form.querySelector('textarea')?.focus();
+      }
+    };
+
+    const handleEditSubmit = async (form) => {
+      if (!currentProfile) {
+        return;
+      }
+
+      const wrapper = form.closest('[data-comment-edit]');
+      const commentId = wrapper?.dataset.commentEdit || '';
+      const submitButton = form.querySelector('button[type="submit"]');
+      const body = String(new FormData(form).get('body') || '').trim();
+
+      if (!commentId || !submitButton) return;
+
+      submitButton.disabled = true;
+      setEditMessage(form, '');
+
+      try {
+        const response = await fetch('/api/comments/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            commentId,
+            body
+          })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          setEditMessage(
+            form,
+            result.code === 'edit_window_expired'
+              ? labels.editExpired
+              : result.error || labels.editError,
+            'error'
+          );
+          return;
+        }
+
+        setStatus(labels.editSuccess, 'ok');
+        await loadComments();
+      } catch {
+        setEditMessage(form, labels.editError, 'error');
+      } finally {
+        submitButton.disabled = false;
       }
     };
 
@@ -1211,7 +1388,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
         setStatus(result.message || labels.sent, 'ok');
 
-        if (result.comment?.status === 'approved') {
+        if (result.comment) {
           await loadComments();
         }
       } catch {
@@ -1238,6 +1415,24 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
       if (reportButton) {
         toggleReportForm(reportButton);
+        return;
+      }
+
+      const editButton = target instanceof Element
+        ? target.closest('[data-edit-comment]')
+        : null;
+
+      if (editButton) {
+        toggleEditForm(editButton);
+        return;
+      }
+
+      const editCancel = target instanceof Element
+        ? target.closest('[data-edit-cancel]')
+        : null;
+
+      if (editCancel) {
+        closeEditForm(editCancel.closest('[data-edit-form]'));
         return;
       }
 
@@ -1275,6 +1470,16 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     });
 
     listNode?.addEventListener('submit', (event) => {
+      const editForm = event.target instanceof Element
+        ? event.target.closest('[data-edit-form]')
+        : null;
+
+      if (editForm) {
+        event.preventDefault();
+        handleEditSubmit(editForm);
+        return;
+      }
+
       const form = event.target instanceof Element
         ? event.target.closest('[data-report-form]')
         : null;
