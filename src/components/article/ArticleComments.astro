@@ -55,7 +55,11 @@ const labels = {
     reportCancel: 'Annulla',
     reportSuccess: 'Segnalazione inviata. Grazie, la controlleremo.',
     reportDuplicate: 'Hai già segnalato questo commento.',
-    reportError: 'Non è stato possibile inviare la segnalazione. Riprova.'
+    reportError: 'Non è stato possibile inviare la segnalazione. Riprova.',
+    sortLabel: 'Ordina',
+    sortOldest: 'Meno recenti',
+    sortNewest: 'Più recenti',
+    sortLiked: 'Più apprezzati'
   },
   en: {
     title: 'Memories and comments',
@@ -97,7 +101,11 @@ const labels = {
     reportCancel: 'Cancel',
     reportSuccess: 'Report sent. Thank you, we will review it.',
     reportDuplicate: 'You have already reported this comment.',
-    reportError: 'The report could not be sent. Please try again.'
+    reportError: 'The report could not be sent. Please try again.',
+    sortLabel: 'Sort',
+    sortOldest: 'Oldest first',
+    sortNewest: 'Newest first',
+    sortLiked: 'Most liked'
   }
 };
 
@@ -226,6 +234,24 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     </form>
   </details>
 
+  <div class="article-comments__toolbar" data-comments-toolbar hidden>
+    <span>{t.sortLabel}</span>
+
+    <div class="article-comments__sort" role="group" aria-label={t.sortLabel}>
+      <button type="button" data-comments-sort="oldest" aria-pressed="true">
+        {t.sortOldest}
+      </button>
+
+      <button type="button" data-comments-sort="newest" aria-pressed="false">
+        {t.sortNewest}
+      </button>
+
+      <button type="button" data-comments-sort="liked" aria-pressed="false">
+        {t.sortLiked}
+      </button>
+    </div>
+  </div>
+
   <div class="article-comments__list" data-comments-list>
     <p class="article-comments__empty">{t.loading}</p>
   </div>
@@ -261,7 +287,11 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       reportCancel: 'Annulla',
       reportSuccess: 'Segnalazione inviata. Grazie, la controlleremo.',
       reportDuplicate: 'Hai già segnalato questo commento.',
-      reportError: 'Non è stato possibile inviare la segnalazione. Riprova.'
+      reportError: 'Non è stato possibile inviare la segnalazione. Riprova.',
+      sortLabel: 'Ordina',
+      sortOldest: 'Meno recenti',
+      sortNewest: 'Più recenti',
+      sortLiked: 'Più apprezzati'
     },
     en: {
       commentSingular: 'comment',
@@ -289,7 +319,11 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       reportCancel: 'Cancel',
       reportSuccess: 'Report sent. Thank you, we will review it.',
       reportDuplicate: 'You have already reported this comment.',
-      reportError: 'The report could not be sent. Please try again.'
+      reportError: 'The report could not be sent. Please try again.',
+      sortLabel: 'Sort',
+      sortOldest: 'Oldest first',
+      sortNewest: 'Newest first',
+      sortLiked: 'Most liked'
     }
   };
 
@@ -674,6 +708,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const statusNode = root.querySelector('[data-comments-status]');
     const authBox = root.querySelector('[data-comments-auth-box]');
     const composer = root.querySelector('[data-comments-composer]');
+    const toolbarNode = root.querySelector('[data-comments-toolbar]');
+    const sortButtons = root.querySelectorAll('[data-comments-sort]');
     const form = root.querySelector('[data-comments-form]');
     const currentUserNode = root.querySelector('[data-current-user]');
     const parentInput = root.querySelector('[data-parent-comment-id]');
@@ -683,8 +719,17 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const textarea = root.querySelector('[data-comment-textarea]');
 
     let currentProfile = null;
+    let loadedComments = [];
     let lastPermalinkTarget = null;
     let permalinkScrollAttempts = 0;
+
+    const allowedSorts = new Set(['oldest', 'newest', 'liked']);
+    const readCommentSort = () => {
+      const sort = new URL(window.location.href).searchParams.get('commentsSort') || 'oldest';
+
+      return allowedSorts.has(sort) ? sort : 'oldest';
+    };
+    let currentSort = readCommentSort();
 
     const setStatus = (message, type = 'ok') => {
       if (!statusNode) return;
@@ -782,10 +827,52 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       });
     };
 
+    const getCommentTime = (comment) =>
+      comment?.created_at ? new Date(comment.created_at).getTime() : 0;
+
+    const sortRootComments = (comments) =>
+      [...comments].sort((a, b) => {
+        const aTime = getCommentTime(a);
+        const bTime = getCommentTime(b);
+        const idCompare = String(a.id || '').localeCompare(String(b.id || ''));
+
+        if (currentSort === 'newest') {
+          return (bTime - aTime) || idCompare;
+        }
+
+        if (currentSort === 'liked') {
+          const likeCompare = getReactionCount(b, 'likeCount') - getReactionCount(a, 'likeCount');
+
+          return likeCompare || (aTime - bTime) || idCompare;
+        }
+
+        return (aTime - bTime) || idCompare;
+      });
+
+    const updateSortControls = () => {
+      sortButtons.forEach((button) => {
+        const isActive = button.dataset.commentsSort === currentSort;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+    };
+
+    const updateSortUrl = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('commentsSort', currentSort);
+      url.hash = window.location.hash;
+      window.history.replaceState(window.history.state, '', url);
+    };
+
     const renderComments = (comments) => {
-      const mergedComments = sortComments(dedupeComments([...legacyComments, ...comments]));
+      const mergedComments = sortRootComments(dedupeComments([...legacyComments, ...comments]));
 
       updateCount(mergedComments.length);
+      updateSortControls();
+
+      if (toolbarNode) {
+        toolbarNode.hidden = mergedComments.length < 2;
+      }
 
       if (!listNode) return;
 
@@ -1021,7 +1108,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
           return;
         }
 
-        renderComments(Array.isArray(result.comments) ? result.comments : []);
+        loadedComments = Array.isArray(result.comments) ? result.comments : [];
+        renderComments(loadedComments);
       } catch {
         listNode.innerHTML = `<p class="article-comments__empty">${escapeHtml(labels.error)}</p>`;
         updateCount(legacyComments.length);
@@ -1144,6 +1232,20 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
       event.preventDefault();
       handleReportSubmit(form);
+    });
+
+    sortButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const nextSort = button.dataset.commentsSort || 'oldest';
+
+        if (!allowedSorts.has(nextSort) || nextSort === currentSort) {
+          return;
+        }
+
+        currentSort = nextSort;
+        updateSortUrl();
+        renderComments(loadedComments);
+      });
     });
 
     cancelReply?.addEventListener('click', () => {
