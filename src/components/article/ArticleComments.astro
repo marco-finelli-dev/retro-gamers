@@ -111,6 +111,62 @@ const labels = {
 
 const t = labels[lang] || labels.it;
 const commentRulesHref = lang === 'en' ? '/en/comment-rules/' : '/regolamento-commenti/';
+const readerMemoryLabels = {
+  it: {
+    review: {
+      title: 'Memorie dei lettori',
+      text:
+        'Hai giocato anche tu a questo titolo? Racconta il tuo ricordo, una versione che hai amato, un difetto che non hai mai sopportato o un dettaglio che secondo te merita di essere riscoperto. I commenti su Retro-Gamers.it restano accanto all’articolo e non si perdono nel flusso dei social.'
+    },
+    feature: {
+      title: 'Memorie dei lettori',
+      text:
+        'Hai vissuto anche tu questa storia, questa macchina o questo periodo? Lascia il tuo ricordo nei commenti. L’idea è raccogliere punti di vista, esperienze e memorie personali accanto agli speciali di Retro-Gamers.it.'
+    },
+    special: {
+      title: 'Memorie dei lettori',
+      text:
+        'Hai vissuto anche tu questa storia, questa macchina o questo periodo? Lascia il tuo ricordo nei commenti. L’idea è raccogliere punti di vista, esperienze e memorie personali accanto agli speciali di Retro-Gamers.it.'
+    },
+    guide: {
+      title: 'Memorie dei lettori',
+      text:
+        'Hai provato questa configurazione o hai un consiglio utile da aggiungere? Raccontalo nei commenti: può aiutare altri lettori e restare come nota pratica accanto alla guida.'
+    },
+    fallback: {
+      title: 'Memorie dei lettori',
+      text:
+        'Vuoi aggiungere un ricordo, una correzione o un punto di vista? Lascia un commento: su Retro-Gamers.it le discussioni restano accanto agli articoli, non spariscono nel flusso dei social.'
+    }
+  },
+  en: {
+    review: {
+      title: 'Reader memories',
+      text:
+        'Did you play this game too? Share a memory, a version you loved, something you never liked, or a detail you think deserves to be rediscovered. Comments on Retro-Gamers.it stay next to the article instead of disappearing into the social media flow.'
+    },
+    feature: {
+      title: 'Reader memories',
+      text:
+        'Did you experience this story, machine or period too? Leave your memory in the comments. The idea is to collect personal experiences and points of view alongside Retro-Gamers.it features.'
+    },
+    special: {
+      title: 'Reader memories',
+      text:
+        'Did you experience this story, machine or period too? Leave your memory in the comments. The idea is to collect personal experiences and points of view alongside Retro-Gamers.it features.'
+    },
+    guide: {
+      title: 'Reader memories',
+      text:
+        'Have you tried this setup or do you have a useful tip to add? Share it in the comments: it may help other readers and stay as a practical note next to the guide.'
+    },
+    fallback: {
+      title: 'Reader memories',
+      text:
+        'Do you want to add a memory, a correction or a point of view? Leave a comment: on Retro-Gamers.it discussions stay next to the articles instead of disappearing into the social media flow.'
+    }
+  }
+};
 const commentCtaLabels = {
   it: {
     review: {
@@ -170,6 +226,8 @@ const commentCtaLabels = {
 const articleType = String(post?.type || '').trim();
 const ctaLabels = commentCtaLabels[lang] || commentCtaLabels.it;
 const commentCta = ctaLabels[articleType] || ctaLabels.fallback;
+const memoryLabels = readerMemoryLabels[lang] || readerMemoryLabels.it;
+const readerMemoryPrompt = memoryLabels[articleType] || memoryLabels.fallback;
 
 const legacyComments = Array.isArray(comments)
   ? comments
@@ -219,6 +277,11 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
   data-article-title={articleTitle}
   data-article-url={articleUrl}
 >
+  <aside class="article-comments__memory-box">
+    <h3>{readerMemoryPrompt.title}</h3>
+    <p>{readerMemoryPrompt.text}</p>
+  </aside>
+
   <div class="article-comments__header">
     <div>
       <span class="article-comments__kicker" data-comments-count>
