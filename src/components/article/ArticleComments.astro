@@ -21,9 +21,6 @@ const labels = {
     countPlural: 'commenti',
     intro:
       'Condividi un ricordo, una correzione o un dettaglio su questo articolo. I commenti sono moderati per mantenere la discussione civile e leggibile.',
-    ctaTitle: 'Hai un ricordo da aggiungere?',
-    ctaText:
-      'Racconta quando hai scoperto questo gioco, su quale macchina lo hai vissuto o cosa ne pensi oggi. I commenti migliori restano accanto all’articolo, non si perdono nel flusso dei social.',
     comment: 'Commento',
     submit: 'Invia commento',
     moderation:
@@ -70,9 +67,6 @@ const labels = {
     countPlural: 'comments',
     intro:
       'Share a memory, a correction or a detail about this article. Comments are moderated to keep the discussion civil and readable.',
-    ctaTitle: 'Do you have a memory to add?',
-    ctaText:
-      'Tell us when you discovered this game, which machine you played it on or what you think about it today. The best comments stay next to the article, instead of getting lost in the social media feed.',
     comment: 'Comment',
     submit: 'Submit comment',
     moderation:
@@ -117,6 +111,65 @@ const labels = {
 
 const t = labels[lang] || labels.it;
 const commentRulesHref = lang === 'en' ? '/en/comment-rules/' : '/regolamento-commenti/';
+const commentCtaLabels = {
+  it: {
+    review: {
+      title: 'Hai un ricordo da aggiungere?',
+      text:
+        'Racconta quando hai scoperto questo gioco, su quale macchina lo hai vissuto o cosa ne pensi oggi. I commenti migliori restano accanto all’articolo, non si perdono nel flusso dei social.'
+    },
+    feature: {
+      title: 'Hai un ricordo o un punto di vista da aggiungere?',
+      text:
+        'Racconta la tua esperienza, il tuo ricordo legato a questo periodo o cosa ne pensi del tema dell’articolo. I commenti migliori restano accanto allo speciale, non si perdono nel flusso dei social.'
+    },
+    interview: {
+      title: 'Vuoi aggiungere una riflessione?',
+      text:
+        'Condividi cosa ti ha colpito dell’intervista, del progetto raccontato o del tema trattato. I commenti migliori restano accanto all’articolo, non si perdono nel flusso dei social.'
+    },
+    guide: {
+      title: 'Hai un consiglio da aggiungere?',
+      text:
+        'Condividi la tua esperienza, una soluzione utile o un consiglio che può aiutare altri lettori. I commenti migliori restano accanto alla guida, non si perdono nel flusso dei social.'
+    },
+    fallback: {
+      title: 'Hai qualcosa da aggiungere?',
+      text:
+        'Condividi il tuo ricordo, la tua esperienza o il tuo punto di vista. I commenti migliori restano accanto all’articolo, non si perdono nel flusso dei social.'
+    }
+  },
+  en: {
+    review: {
+      title: 'Do you have a memory to add?',
+      text:
+        'Tell us when you discovered this game, which machine you played it on or what you think about it today. The best comments stay next to the article, instead of getting lost in the social media feed.'
+    },
+    feature: {
+      title: 'Do you have a memory or point of view to add?',
+      text:
+        'Share your experience, a memory connected to that period or what you think about the topic of the article. The best comments stay next to the feature, instead of getting lost in the social media feed.'
+    },
+    interview: {
+      title: 'Do you want to add a thought?',
+      text:
+        'Share what struck you about the interview, the project or the topic discussed. The best comments stay next to the article, instead of getting lost in the social media feed.'
+    },
+    guide: {
+      title: 'Do you have a tip to add?',
+      text:
+        'Share your experience, a useful solution or a tip that could help other readers. The best comments stay next to the guide, instead of getting lost in the social media feed.'
+    },
+    fallback: {
+      title: 'Do you have something to add?',
+      text:
+        'Share your memory, experience or point of view. The best comments stay next to the article, instead of getting lost in the social media feed.'
+    }
+  }
+};
+const articleType = String(post?.type || '').trim();
+const ctaLabels = commentCtaLabels[lang] || commentCtaLabels.it;
+const commentCta = ctaLabels[articleType] || ctaLabels.fallback;
 
 const legacyComments = Array.isArray(comments)
   ? comments
@@ -185,8 +238,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
   </div>
 
   <div class="article-comments__prompt">
-    <h3>{t.ctaTitle}</h3>
-    <p>{t.ctaText}</p>
+    <h3>{commentCta.title}</h3>
+    <p>{commentCta.text}</p>
   </div>
 
   <div class="article-comments__composer" data-comments-auth-box hidden>
