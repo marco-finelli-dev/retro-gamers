@@ -57,6 +57,32 @@ Nel codice frontend la registrazione email/password passa come destinazione:
 /account/confirmed/
 ```
 
+## Template Confirm signup
+
+Il Body HTML pronto da copiare in Supabase è in:
+
+```text
+docs/supabase/confirm-signup-email-template.html
+```
+
+In Supabase Dashboard:
+
+```text
+Authentication -> Emails -> Confirm signup -> Body
+```
+
+Subject consigliato:
+
+```text
+Conferma il tuo account Retro-Gamers.it / Confirm your account
+```
+
+Il template non usa immagini e mantiene il placeholder Supabase:
+
+```text
+{{ .ConfirmationURL }}
+```
+
 ## Redirect consigliato
 
 In futuro, se il template email o la configurazione Supabase lo supportano in
