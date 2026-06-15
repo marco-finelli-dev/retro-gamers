@@ -132,6 +132,18 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
     const getBadgeLabel = (badge) =>
       badge?.labelIt || badge?.labelEn || badge?.key || 'Badge';
 
+    const getBadgeImage = (badge) => {
+      const value = String(badge?.imagePath || '').trim();
+
+      if (!value) return '';
+
+      if (/^https?:\/\//i.test(value) || value.startsWith('/')) {
+        return value;
+      }
+
+      return `/${value.replace(/^\/+/, '')}`;
+    };
+
     const getFilterParams = () => {
       const params = new URLSearchParams();
 
@@ -182,6 +194,7 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
 
             return `
               <span class="admin-user-badge${isCurrent ? ' is-current' : ''}">
+                ${getBadgeImage(badge) ? `<img src="${escapeHtml(getBadgeImage(badge))}" alt="" loading="lazy" decoding="async" />` : ''}
                 <span>${escapeHtml(getBadgeLabel(badge))}${isCurrent ? ' · attivo' : ''}</span>
                 ${user.canManageBadges ? `
                   <button

@@ -10,6 +10,7 @@ import {
   getPublicReaderProfile,
   getPublicUserUrl,
 } from '../../../lib/supabase/public-profiles';
+import { getReaderBadgeImageSrcForBadge } from '../../../lib/badges';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 
 const username = String(Astro.params.username || '');
@@ -36,6 +37,7 @@ const languageSwitch = profile
   : '/';
 const badge = profile?.user_badges;
 const badgeLabel = badge?.label_en || badge?.label_it || profile?.badge_key || '';
+const badgeImageSrc = getReaderBadgeImageSrcForBadge(badge || { key: profile?.badge_key || '' });
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const bio = profile?.bio?.trim() || '';
 const isOwnProfile = Boolean(isViewerLoggedIn && viewerSession.user?.id === profile?.user_id);
@@ -87,7 +89,12 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
           </Fragment>
 
           <div class="public-user-badges" aria-label="Badges and role">
-            {badgeLabel && <span>{badgeLabel}</span>}
+            {badgeLabel && (
+              <span class="public-user-badge">
+                {badgeImageSrc && <img src={badgeImageSrc} alt="" loading="lazy" decoding="async" />}
+                <span>{badgeLabel}</span>
+              </span>
+            )}
             {isStaff && <span>Retro-Gamers staff</span>}
           </div>
 

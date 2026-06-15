@@ -331,6 +331,30 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       : badge.label_it || badge.label_en || '';
   };
 
+  const readerBadgeImagePaths = {
+    arcade_kid: '/badges/reader/arcade-kid.webp',
+    eight_bit_player: '/badges/reader/eight-bit-player.webp',
+    sixteen_bit_veteran: '/badges/reader/sixteen-bit-veteran.webp',
+    amiga_user: '/badges/reader/amiga-user.webp',
+    console_warrior: '/badges/reader/console-warrior.webp',
+    point_click_lover: '/badges/reader/point-click-lover.webp',
+    jrpg_explorer: '/badges/reader/jrpg-explorer.webp',
+    retro_collector: '/badges/reader/retro-collector.webp'
+  };
+
+  const getBadgeImageSrc = (badge) => {
+    const value = readerBadgeImagePaths[String(badge?.key || '').trim()]
+      || String(badge?.image_path || '').trim();
+
+    if (!value) return '';
+
+    if (/^https?:\/\//i.test(value) || value.startsWith('/')) {
+      return value;
+    }
+
+    return `/${value.replace(/^\/+/, '')}`;
+  };
+
   const getProfileHref = (profile, language, isLegacy = false) => {
     const username = String(profile?.username || '').trim();
 
@@ -422,9 +446,12 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     });
   };
 
-  const renderBadge = (badgeLabel) =>
+  const renderBadge = (badgeLabel, badge = null) =>
     badgeLabel
-      ? `<span class="article-comment__badge-label">${escapeHtml(badgeLabel)}</span>`
+      ? `<span class="article-comment__badge-label">
+          ${getBadgeImageSrc(badge) ? `<img src="${escapeHtml(getBadgeImageSrc(badge))}" alt="" loading="lazy" decoding="async" />` : ''}
+          <span>${escapeHtml(badgeLabel)}</span>
+        </span>`
       : '';
 
   const renderCommentBody = (body) =>
@@ -554,7 +581,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
             <div class="article-comment__editor-reply-submeta">
               ${renderCommentTime(reply, language, labels)}
 
-              ${renderBadge(badgeLabel)}
+              ${renderBadge(badgeLabel, profile?.user_badges)}
             </div>
           </div>
         </div>
@@ -591,7 +618,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
             ${renderCommentTime(comment, language, labels)}
 
-            ${renderBadge(badgeLabel)}
+            ${renderBadge(badgeLabel, profile?.user_badges)}
           </div>
 
           ${canReply && !isLegacy ? `

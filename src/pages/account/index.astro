@@ -6,7 +6,7 @@ import CommunityLayout from '../../components/community/CommunityLayout.astro';
 import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
 import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
 import CommunityStatList from '../../components/community/CommunityStatList.astro';
-import { getOwnedReaderBadges } from '../../lib/badges';
+import { getOwnedReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
@@ -19,6 +19,7 @@ const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const profile = session.profile;
 const user = session.user;
 const currentBadge = profile?.user_badges;
+const currentBadgeImageSrc = getReaderBadgeImageSrcForBadge(currentBadge || { key: profile?.badge_key || '' });
 const avatarUrl = profile?.avatar_url || '';
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const accountDisplayName =
@@ -123,7 +124,16 @@ const communityStatItems = [
 
               <div>
                 <dt>Badge</dt>
-                <dd>{currentBadge?.label_it || profile?.badge_key || 'Non impostato'}</dd>
+                <dd>
+                  {currentBadgeImageSrc ? (
+                    <span class="account-reader-badge">
+                      <img src={currentBadgeImageSrc} alt="" loading="lazy" decoding="async" />
+                      <span>{currentBadge?.label_it || currentBadge?.label_en || profile?.badge_key}</span>
+                    </span>
+                  ) : (
+                    currentBadge?.label_it || profile?.badge_key || 'Non impostato'
+                  )}
+                </dd>
               </div>
             </dl>
           </CommunitySidebarSection>
