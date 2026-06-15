@@ -47,7 +47,15 @@ const labels = {
     dislike: 'Non mi piace',
     loginToReact: 'Accedi o registrati per votare un commento.',
     ownReactionError: 'Non puoi votare un tuo commento.',
-    reactionError: 'Non è stato possibile aggiornare il voto. Riprova.'
+    reactionError: 'Non è stato possibile aggiornare il voto. Riprova.',
+    report: 'Segnala',
+    reportReason: 'Motivo della segnalazione (opzionale)',
+    reportPlaceholder: 'Aggiungi un contesto utile per la redazione.',
+    reportSubmit: 'Invia segnalazione',
+    reportCancel: 'Annulla',
+    reportSuccess: 'Segnalazione inviata. Grazie, la controlleremo.',
+    reportDuplicate: 'Hai già segnalato questo commento.',
+    reportError: 'Non è stato possibile inviare la segnalazione. Riprova.'
   },
   en: {
     title: 'Memories and comments',
@@ -81,7 +89,15 @@ const labels = {
     dislike: 'Dislike',
     loginToReact: 'Sign in or create an account to react to a comment.',
     ownReactionError: 'You cannot react to your own comment.',
-    reactionError: 'The reaction could not be updated. Please try again.'
+    reactionError: 'The reaction could not be updated. Please try again.',
+    report: 'Report',
+    reportReason: 'Reason for the report (optional)',
+    reportPlaceholder: 'Add useful context for the editorial team.',
+    reportSubmit: 'Send report',
+    reportCancel: 'Cancel',
+    reportSuccess: 'Report sent. Thank you, we will review it.',
+    reportDuplicate: 'You have already reported this comment.',
+    reportError: 'The report could not be sent. Please try again.'
   }
 };
 
@@ -237,7 +253,15 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       reactionError: 'Non è stato possibile aggiornare il voto. Riprova.',
       avatarOf: 'Avatar di {name}',
       directLink: 'Link diretto al commento',
-      targetLoading: 'Caricamento commento...'
+      targetLoading: 'Caricamento commento...',
+      report: 'Segnala',
+      reportReason: 'Motivo della segnalazione (opzionale)',
+      reportPlaceholder: 'Aggiungi un contesto utile per la redazione.',
+      reportSubmit: 'Invia segnalazione',
+      reportCancel: 'Annulla',
+      reportSuccess: 'Segnalazione inviata. Grazie, la controlleremo.',
+      reportDuplicate: 'Hai già segnalato questo commento.',
+      reportError: 'Non è stato possibile inviare la segnalazione. Riprova.'
     },
     en: {
       commentSingular: 'comment',
@@ -257,7 +281,15 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       reactionError: 'The reaction could not be updated. Please try again.',
       avatarOf: 'Avatar for {name}',
       directLink: 'Direct link to comment',
-      targetLoading: 'Loading comment...'
+      targetLoading: 'Loading comment...',
+      report: 'Report',
+      reportReason: 'Reason for the report (optional)',
+      reportPlaceholder: 'Add useful context for the editorial team.',
+      reportSubmit: 'Send report',
+      reportCancel: 'Cancel',
+      reportSuccess: 'Report sent. Thank you, we will review it.',
+      reportDuplicate: 'You have already reported this comment.',
+      reportError: 'The report could not be sent. Please try again.'
     }
   };
 
@@ -449,6 +481,56 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     `;
   };
 
+  const renderReportControls = (comment, labels) => {
+    if (comment.isLegacy || !comment.id || comment.isOwnComment || !comment.canReport) return '';
+
+    return `
+      <div class="article-comment__report" data-comment-report="${escapeHtml(comment.id)}">
+        <button
+          class="article-comment__report-toggle"
+          type="button"
+          data-report-comment="${escapeHtml(comment.id)}"
+          aria-expanded="false"
+        >
+          ${escapeHtml(labels.report)}
+        </button>
+
+        <form class="article-comment__report-form" data-report-form hidden>
+          <label>
+            <span>${escapeHtml(labels.reportReason)}</span>
+            <textarea
+              name="reason"
+              maxlength="1000"
+              rows="3"
+              placeholder="${escapeHtml(labels.reportPlaceholder)}"
+            ></textarea>
+          </label>
+
+          <div class="article-comment__report-actions">
+            <button type="submit">${escapeHtml(labels.reportSubmit)}</button>
+            <button type="button" data-report-cancel>${escapeHtml(labels.reportCancel)}</button>
+          </div>
+
+          <p class="article-comment__report-message" data-report-message hidden></p>
+        </form>
+      </div>
+    `;
+  };
+
+  const renderCommentActions = (comment, labels) => {
+    const reportControls = renderReportControls(comment, labels);
+    const reactionControls = renderReactionControls(comment, labels);
+
+    if (!reportControls && !reactionControls) return '';
+
+    return `
+      <div class="article-comment__secondary-actions">
+        ${reportControls}
+        ${reactionControls}
+      </div>
+    `;
+  };
+
   const renderReply = (reply, language, labels) => {
     const profile = reply.profiles || {};
     const authorName = getAuthorName(profile, labels.reader);
@@ -479,7 +561,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
         ${renderCommentBody(reply.body)}
 
-        ${renderReactionControls(reply, labels)}
+        ${renderCommentActions(reply, labels)}
       </div>
     `;
   };
@@ -541,7 +623,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
           </div>
         ` : ''}
 
-        ${renderReactionControls(comment, labels)}
+        ${renderCommentActions(comment, labels)}
 
         ${replies.length > 0 ? `
           <div class="article-comment__editor-replies">
@@ -775,6 +857,102 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       }
     };
 
+    const setReportMessage = (form, message, type = 'ok') => {
+      const messageNode = form?.querySelector('[data-report-message]');
+
+      if (!messageNode) return;
+
+      messageNode.textContent = message;
+      messageNode.dataset.type = type;
+      messageNode.hidden = !message;
+    };
+
+    const closeReportForm = (form) => {
+      if (!form) return;
+
+      form.hidden = true;
+      const wrapper = form.closest('[data-comment-report]');
+      const toggle = wrapper?.querySelector('[data-report-comment]');
+      toggle?.setAttribute('aria-expanded', 'false');
+      setReportMessage(form, '');
+    };
+
+    const closeOtherReportForms = (activeForm) => {
+      listNode?.querySelectorAll('[data-report-form]').forEach((form) => {
+        if (form !== activeForm) {
+          closeReportForm(form);
+        }
+      });
+    };
+
+    const toggleReportForm = (button) => {
+      if (!currentProfile) {
+        return;
+      }
+
+      const wrapper = button.closest('[data-comment-report]');
+      const form = wrapper?.querySelector('[data-report-form]');
+
+      if (!form) return;
+
+      const willOpen = form.hidden;
+      closeOtherReportForms(form);
+      form.hidden = !willOpen;
+      button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+      if (willOpen) {
+        form.querySelector('textarea')?.focus();
+      }
+    };
+
+    const handleReportSubmit = async (form) => {
+      if (!currentProfile) {
+        return;
+      }
+
+      const wrapper = form.closest('[data-comment-report]');
+      const commentId = wrapper?.dataset.commentReport || '';
+      const submitButton = form.querySelector('button[type="submit"]');
+      const reason = String(new FormData(form).get('reason') || '').trim();
+
+      if (!commentId || !submitButton) return;
+
+      submitButton.disabled = true;
+      setReportMessage(form, '');
+
+      try {
+        const response = await fetch('/api/comments/report', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            commentId,
+            reason
+          })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          setReportMessage(
+            form,
+            result.code === 'duplicate_report'
+              ? labels.reportDuplicate
+              : labels.reportError,
+            'error'
+          );
+          return;
+        }
+
+        form.reset();
+        setReportMessage(form, labels.reportSuccess, 'ok');
+      } catch {
+        setReportMessage(form, labels.reportError, 'error');
+      } finally {
+        submitButton.disabled = false;
+      }
+    };
+
     const loadCurrentUser = async () => {
       try {
         const response = await fetch('/api/auth/me');
@@ -888,6 +1066,24 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         return;
       }
 
+      const reportButton = target instanceof Element
+        ? target.closest('[data-report-comment]')
+        : null;
+
+      if (reportButton) {
+        toggleReportForm(reportButton);
+        return;
+      }
+
+      const reportCancel = target instanceof Element
+        ? target.closest('[data-report-cancel]')
+        : null;
+
+      if (reportCancel) {
+        closeReportForm(reportCancel.closest('[data-report-form]'));
+        return;
+      }
+
       const button = target instanceof Element
         ? target.closest('[data-reply-to-comment]')
         : null;
@@ -910,6 +1106,17 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       }
 
       textarea?.focus();
+    });
+
+    listNode?.addEventListener('submit', (event) => {
+      const form = event.target instanceof Element
+        ? event.target.closest('[data-report-form]')
+        : null;
+
+      if (!form) return;
+
+      event.preventDefault();
+      handleReportSubmit(form);
     });
 
     cancelReply?.addEventListener('click', () => {

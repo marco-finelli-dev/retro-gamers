@@ -1,0 +1,273 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../../components/community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
+import '../../../styles/pages/admin-comment-reports.css';
+
+const title = 'Segnalazioni commenti | Retro-Gamers.it';
+const description = 'Pannello segnalazioni commenti pubblici Retro-Gamers.it';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
+---
+
+<BaseLayout title={title} description={description}>
+  <CommunityLayout class="admin-comment-reports-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title="Strumenti redazione">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/admin/comments/">Moderazione commenti</a>
+            <a class="community-action-link" href="/admin/comment-reports/">Segnalazioni commenti</a>
+            <a class="community-action-link" href="/admin/users/">Gestione utenti</a>
+            <a class="community-action-link" href="/admin/private-message-reports/">Segnalazioni messaggi</a>
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    <CommunityHero
+      kicker="Community"
+      title="Segnalazioni commenti"
+      description="Verifica i commenti pubblici segnalati dai lettori e tieni ordinata la discussione."
+    >
+      <span slot="aside" class="community-soft-badge" data-comment-reports-count>Caricamento...</span>
+    </CommunityHero>
+
+    <section class="community-card admin-comment-reports-panel">
+      <form class="admin-comment-reports-filters" data-comment-reports-filters>
+        <label>
+          <span>Stato</span>
+          <select name="status">
+            <option value="open" selected>Aperte</option>
+            <option value="resolved">Risolte</option>
+            <option value="archived">Archiviate</option>
+            <option value="all">Tutte</option>
+          </select>
+        </label>
+
+        <button type="submit">Filtra</button>
+      </form>
+
+      <div class="admin-comment-reports-message" data-comment-reports-message hidden></div>
+      <div class="admin-comment-reports-list" data-comment-reports-list>
+        <p class="admin-comment-reports-empty">Caricamento segnalazioni...</p>
+      </div>
+    </section>
+  </CommunityLayout>
+
+  <script>
+    const listNode = document.querySelector('[data-comment-reports-list]');
+    const countNode = document.querySelector('[data-comment-reports-count]');
+    const messageNode = document.querySelector('[data-comment-reports-message]');
+    const filtersForm = document.querySelector('[data-comment-reports-filters]');
+
+    const escapeHtml = (value) =>
+      String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    const formatDate = (value) => {
+      if (!value) return 'Non disponibile';
+
+      return new Intl.DateTimeFormat('it-IT', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value));
+    };
+
+    const statusLabels = {
+      open: 'Aperta',
+      resolved: 'Risolta',
+      archived: 'Archiviata'
+    };
+
+    const getProfileName = (profile) =>
+      profile?.display_name || profile?.username || 'Utente';
+
+    const getProfileUrl = (profile) => {
+      const username = String(profile?.username || '').trim().toLowerCase();
+
+      if (!/^[a-z0-9_-]{3,24}$/.test(username)) {
+        return '';
+      }
+
+      return `/utenti/${encodeURIComponent(username)}/`;
+    };
+
+    const showMessage = (text, type = 'ok') => {
+      if (!messageNode) return;
+
+      messageNode.textContent = text;
+      messageNode.dataset.type = type;
+      messageNode.hidden = !text;
+    };
+
+    const renderProfileLink = (label, profile) => {
+      const profileUrl = getProfileUrl(profile);
+      const name = getProfileName(profile);
+      const username = profile?.username ? `@${profile.username}` : name;
+
+      return profileUrl
+        ? `<a href="${escapeHtml(profileUrl)}">${escapeHtml(label)}: ${escapeHtml(username)}</a>`
+        : `<span>${escapeHtml(label)}: ${escapeHtml(name)}</span>`;
+    };
+
+    const renderReport = (report) => {
+      const comment = report.comment || {};
+      const articleTitle = comment.article_title || comment.article_slug || 'Articolo non disponibile';
+      const status = report.status || 'open';
+      const reason = report.reason || 'Nessun motivo specificato.';
+      const commentBody = comment.body || 'Commento non disponibile.';
+      const commentUrl = report.commentUrl || '';
+
+      return `
+        <article
+          class="admin-comment-report-card"
+          data-report-id="${escapeHtml(report.id)}"
+          data-current-status="${escapeHtml(status)}"
+        >
+          <header>
+            <div>
+              <span>${escapeHtml(statusLabels[status] || status)}</span>
+              <h2>${escapeHtml(articleTitle)}</h2>
+            </div>
+
+            <time datetime="${escapeHtml(report.createdAt)}">${escapeHtml(formatDate(report.createdAt))}</time>
+          </header>
+
+          <div class="admin-comment-report-card__meta">
+            ${renderProfileLink('Autore commento', report.reportedUser)}
+            ${renderProfileLink('Segnalato da', report.reporter)}
+            ${commentUrl ? `<a href="${escapeHtml(commentUrl)}">Apri commento</a>` : '<span>Link commento non disponibile</span>'}
+          </div>
+
+          <blockquote>${escapeHtml(commentBody)}</blockquote>
+
+          <section class="admin-comment-report-card__reason">
+            <h3>Motivo</h3>
+            <p>${escapeHtml(reason)}</p>
+          </section>
+
+          <label class="admin-comment-report-card__note">
+            <span>Nota staff</span>
+            <textarea rows="3" maxlength="2000" data-report-note>${escapeHtml(report.adminNote || '')}</textarea>
+          </label>
+
+          <footer>
+            ${status !== 'resolved' ? '<button type="button" data-report-status="resolved">Segna risolta</button>' : ''}
+            ${status !== 'archived' ? '<button type="button" data-report-status="archived">Archivia</button>' : ''}
+            ${status !== 'open' ? '<button type="button" data-report-status="open">Riapri</button>' : ''}
+            <button type="button" data-report-save-note>Salva nota</button>
+          </footer>
+        </article>
+      `;
+    };
+
+    const loadReports = async () => {
+      if (!listNode) return;
+
+      const params = new URLSearchParams(new FormData(filtersForm));
+
+      try {
+        const response = await fetch(`/api/admin/comment-reports/list?${params.toString()}`);
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          listNode.innerHTML = `<p class="admin-comment-reports-empty">${escapeHtml(result.error || 'Segnalazioni non disponibili.')}</p>`;
+          if (countNode) countNode.textContent = 'Accesso non disponibile';
+          return;
+        }
+
+        const reports = result.reports || [];
+        if (countNode) {
+          countNode.textContent = reports.length === 1
+            ? '1 segnalazione'
+            : `${reports.length} segnalazioni`;
+        }
+
+        if (reports.length === 0) {
+          listNode.innerHTML = '<p class="admin-comment-reports-empty">Nessuna segnalazione con questi filtri.</p>';
+          return;
+        }
+
+        listNode.innerHTML = reports.map(renderReport).join('');
+      } catch {
+        listNode.innerHTML = '<p class="admin-comment-reports-empty">Errore di connessione.</p>';
+      }
+    };
+
+    const updateReport = async (card, status) => {
+      const reportId = card?.dataset.reportId;
+      const adminNote = card?.querySelector('[data-report-note]')?.value || '';
+
+      if (!reportId || !status) return;
+
+      const buttons = Array.from(card.querySelectorAll('button'));
+      buttons.forEach((button) => {
+        button.disabled = true;
+      });
+
+      try {
+        const response = await fetch('/api/admin/comment-reports/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reportId,
+            status,
+            adminNote,
+          }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(result.error || 'Segnalazione non aggiornata.', 'error');
+          buttons.forEach((button) => {
+            button.disabled = false;
+          });
+          return;
+        }
+
+        showMessage('Segnalazione aggiornata.', 'ok');
+        loadReports();
+      } catch {
+        showMessage('Errore di connessione.', 'error');
+        buttons.forEach((button) => {
+          button.disabled = false;
+        });
+      }
+    };
+
+    filtersForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      showMessage('');
+      loadReports();
+    });
+
+    listNode?.addEventListener('click', (event) => {
+      const target = event.target;
+      const statusButton = target instanceof Element
+        ? target.closest('button[data-report-status]')
+        : null;
+      const noteButton = target instanceof Element
+        ? target.closest('[data-report-save-note]')
+        : null;
+
+      if (!statusButton && !noteButton) return;
+
+      const card = (statusButton || noteButton).closest('[data-report-id]');
+      const status = statusButton?.dataset.reportStatus || card?.dataset.currentStatus;
+
+      updateReport(card, status);
+    });
+
+    loadReports();
+  </script>
+</BaseLayout>

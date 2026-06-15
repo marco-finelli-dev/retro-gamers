@@ -150,6 +150,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       ...(reactionSummaries.get(comment.id) ?? emptyReactionSummary()),
       isOwnComment,
       canReact: Boolean(currentUserId && !isOwnComment),
+      canReport: Boolean(currentUserId && !isOwnComment),
     };
   };
 

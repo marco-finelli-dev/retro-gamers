@@ -805,6 +805,103 @@
 
     margin-top: 14px;
   }
+
+  .article-comment__secondary-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    margin-top: 14px;
+  }
+
+  .article-comment__secondary-actions .article-comment__reaction-controls {
+    margin-top: 0;
+  }
+
+  .article-comment__report {
+    display: grid;
+    justify-items: end;
+    gap: 8px;
+  }
+
+  .article-comment__report-toggle {
+    min-height: 34px;
+    padding: 0 12px;
+
+    border-color: rgba(255, 255, 255, 0.14);
+    background:
+      linear-gradient(135deg, rgba(34,240,255,0.045), rgba(168,85,247,0.028)),
+      rgba(4, 8, 16, 0.28);
+    color: rgba(255, 255, 255, 0.68);
+
+    font-size: 0.68rem;
+  }
+
+  .article-comment__report-toggle:hover,
+  .article-comment__report-toggle:focus-visible {
+    color: var(--rg-badge-color);
+  }
+
+  .article-comment__report-form {
+    display: grid;
+    gap: 10px;
+
+    width: min(420px, calc(100vw - 72px));
+    padding: 12px;
+
+    border: 1px solid var(--rg-card-border);
+    border-radius: 16px;
+    background: rgba(4, 8, 16, 0.70);
+    box-shadow: var(--rg-card-shadow);
+  }
+
+  .article-comment__report-form[hidden] {
+    display: none;
+  }
+
+  .article-comment__report-form label {
+    color: rgba(255, 255, 255, 0.70);
+    font-size: 0.78rem;
+  }
+
+  .article-comment__report-form textarea {
+    min-height: 86px;
+  }
+
+  .article-comment__report-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .article-comments .article-comment__report-actions button {
+    min-height: 34px;
+    width: auto;
+    padding: 0 12px;
+    font-size: 0.66rem;
+  }
+
+  .article-comments .article-comment__report-actions [data-report-cancel] {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.68);
+  }
+
+  .article-comment__report-message {
+    margin: 0;
+    color: var(--rg-badge-color);
+    font-size: 0.82rem;
+    font-weight: 800;
+    line-height: 1.45;
+  }
+
+  .article-comment__report-message[data-type="error"] {
+    color: #ff9fb2;
+  }
   
   .article-comment__reactions {
     display: inline-flex;
@@ -1075,6 +1172,35 @@
       flex: 0 1 auto;
       width: auto;
     }
+
+    .article-comment__secondary-actions {
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .article-comment__report {
+      width: 100%;
+    }
+
+    .article-comments .article-comment__report-toggle {
+      width: auto;
+      min-height: 32px;
+      margin-left: auto;
+      padding: 0 11px;
+    }
+
+    .article-comment__report-form {
+      width: 100%;
+    }
+
+    .article-comment__report-actions {
+      justify-content: flex-start;
+    }
+
+    .article-comments .article-comment__report-actions button {
+      width: auto;
+    }
   
     .article-comment__reader-replies,
     .article-comment__editor-replies {
@@ -1298,6 +1424,43 @@ html[data-theme="light"] .article-comment__mobile-reply-button {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.72),
     0 0 14px rgba(0,142,163,0.06);
+}
+
+html[data-theme="light"] .article-comment__report-toggle {
+  border-color: rgba(18,24,38,0.12);
+  background:
+    linear-gradient(135deg, rgba(0,142,163,0.04), rgba(102,81,184,0.025)),
+    rgba(255,255,255,0.46);
+  color: rgba(22,24,36,0.58);
+}
+
+html[data-theme="light"] .article-comment__report-toggle:hover,
+html[data-theme="light"] .article-comment__report-toggle:focus-visible {
+  color: var(--color-primary);
+}
+
+html[data-theme="light"] .article-comment__report-form {
+  border-color: var(--rg-card-border);
+  background: rgba(255,255,255,0.86);
+  box-shadow: var(--rg-card-shadow);
+}
+
+html[data-theme="light"] .article-comment__report-form label {
+  color: rgba(22,24,36,0.70);
+}
+
+html[data-theme="light"] .article-comments .article-comment__report-actions [data-report-cancel] {
+  border-color: rgba(18,24,38,0.12);
+  background: rgba(255,255,255,0.56);
+  color: rgba(22,24,36,0.62);
+}
+
+html[data-theme="light"] .article-comment__report-message {
+  color: var(--color-primary);
+}
+
+html[data-theme="light"] .article-comment__report-message[data-type="error"] {
+  color: #b42345;
 }
 
 html[data-theme="light"] .comment-reaction:hover,
