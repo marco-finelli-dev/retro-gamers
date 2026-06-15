@@ -27,6 +27,63 @@ const normalizeUsername = (value: string) =>
     .toLowerCase()
     .replace(/\s+/g, '-');
 
+const registrationReceivedMessage =
+  'Registrazione ricevuta. Controlla la tua email per confermare l’account.';
+const registrationReceivedMessageEn =
+  'Registration received. Check your email to confirm your account.';
+const confirmationEmailErrorMessage =
+  'Non siamo riusciti a inviare la mail di conferma. Riprova più tardi o contattaci.';
+const confirmationEmailErrorMessageEn =
+  'We could not send the confirmation email. Please try again later or contact us.';
+const unconfirmedAccountMessage =
+  'Questo account è già stato creato ma non è ancora confermato. Controlla la tua email o richiedi un nuovo link di conferma.';
+const unconfirmedAccountMessageEn =
+  'This account has already been created but is not confirmed yet. Check your email or request a new confirmation link.';
+
+const isEmailDeliveryError = (error: unknown) => {
+  const message = String((error as { message?: string } | null)?.message || '').toLowerCase();
+
+  return /email|mail|smtp|rate|limit|confirmation|confirm|send/.test(message);
+};
+
+const isAlreadyRegisteredError = (error: unknown) => {
+  const message = String((error as { message?: string } | null)?.message || '').toLowerCase();
+
+  return /already|registered|exists|duplicate/.test(message);
+};
+
+const isConfirmedAuthUser = (user: { email_confirmed_at?: string | null; confirmed_at?: string | null }) =>
+  Boolean(user.email_confirmed_at || user.confirmed_at);
+
+const findAuthUserByEmail = async (email: string) => {
+  const perPage = 1000;
+
+  for (let page = 1; page <= 10; page += 1) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    const user = (data.users ?? []).find(
+      (candidate) => candidate.email?.trim().toLowerCase() === email
+    );
+
+    if (user) {
+      return user;
+    }
+
+    if ((data.users ?? []).length < perPage) {
+      break;
+    }
+  }
+
+  return null;
+};
+
 export const POST: APIRoute = async ({ request }) => {
   let payload: RegisterPayload;
 
@@ -59,6 +116,30 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (displayName.length < 2 || displayName.length > 40) {
     return json({ ok: false, error: 'Il nome visualizzato deve contenere 2-40 caratteri.' }, 400);
+  }
+
+  try {
+    const existingAuthUser = await findAuthUserByEmail(email);
+
+    if (existingAuthUser) {
+      if (!isConfirmedAuthUser(existingAuthUser)) {
+        return json({
+          ok: false,
+          error: unconfirmedAccountMessage,
+          errorEn: unconfirmedAccountMessageEn,
+          code: 'email_not_confirmed',
+        }, 409);
+      }
+
+      return json({
+        ok: false,
+        error: 'Questo indirizzo email è già registrato. Accedi con il tuo account.',
+        code: 'email_already_registered',
+      }, 409);
+    }
+  } catch (error) {
+    logApiError('auth-register.email-check', error);
+    return json({ ok: false, error: 'Registrazione non disponibile. Riprova più tardi.' }, 500);
   }
 
   if (!badgeKey) {
@@ -104,18 +185,72 @@ export const POST: APIRoute = async ({ request }) => {
   const { data: signUpData, error: signUpError } = await supabasePublic.auth.signUp({
     email,
     password,
-    options: {     emailRedirectTo: `${siteUrl}/account/conferma/`,
+    options: {
+      emailRedirectTo: `${siteUrl.replace(/\/$/, '')}/account/confirmed/`,
     },
   });
 
   if (signUpError) {
-    return json({ ok: false, error: signUpError.message }, 400);
+    logApiError('auth-register.sign-up', signUpError);
+
+    if (isAlreadyRegisteredError(signUpError)) {
+      return json({
+        ok: false,
+        error: unconfirmedAccountMessage,
+        errorEn: unconfirmedAccountMessageEn,
+        code: 'email_not_confirmed',
+      }, 409);
+    }
+
+    if (isEmailDeliveryError(signUpError)) {
+      return json({
+        ok: false,
+        error: confirmationEmailErrorMessage,
+        errorEn: confirmationEmailErrorMessageEn,
+        code: 'confirmation_email_failed',
+      }, 503);
+    }
+
+    return json({ ok: false, error: 'Registrazione non disponibile. Riprova più tardi.' }, 400);
   }
 
   const user = signUpData.user;
 
   if (!user) {
     return json({ ok: false, error: 'Registrazione non completata.' }, 500);
+  }
+
+  if (Array.isArray(user.identities) && user.identities.length === 0) {
+    const error = isConfirmedAuthUser(user)
+      ? 'Questo indirizzo email è già registrato. Accedi con il tuo account.'
+      : unconfirmedAccountMessage;
+
+    return json({
+      ok: false,
+      error,
+      errorEn: isConfirmedAuthUser(user) ? undefined : unconfirmedAccountMessageEn,
+      code: isConfirmedAuthUser(user) ? 'email_already_registered' : 'email_not_confirmed',
+    }, 409);
+  }
+
+  const { data: existingUserProfile, error: existingUserProfileError } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (existingUserProfileError) {
+    logApiError('auth-register.profile-user-check', existingUserProfileError);
+    return json({ ok: false, error: 'Registrazione non disponibile. Riprova più tardi.' }, 500);
+  }
+
+  if (existingUserProfile) {
+    return json({
+      ok: false,
+      error: unconfirmedAccountMessage,
+      errorEn: unconfirmedAccountMessageEn,
+      code: 'email_not_confirmed',
+    }, 409);
   }
 
   const { error: insertProfileError } = await supabaseAdmin
@@ -171,7 +306,8 @@ export const POST: APIRoute = async ({ request }) => {
 
   return json({
     ok: true,
-    message: 'Registrazione completata. Controlla la tua email per confermare l’account.',
+    message: registrationReceivedMessage,
+    messageEn: registrationReceivedMessageEn,
     user: {
       id: user.id,
       email: user.email,

@@ -120,12 +120,20 @@ const socialProviders = [
         Hai già un account?
         <a href="/account/login/">Accedi</a>
       </p>
+
+      <p class="account-resend-confirmation">
+        <button type="button" data-resend-confirmation>
+          Non hai ricevuto la mail? Reinvia conferma
+        </button>
+      </p>
     </section>
   </main>
 
   <script>
     const form = document.querySelector('[data-register-form]');
     const message = document.querySelector('[data-account-message]');
+    const resendButton = document.querySelector('[data-resend-confirmation]');
+    let lastConfirmationEmail = '';
 
     const showMessage = (text, type = 'ok') => {
       if (!message) return;
@@ -143,11 +151,13 @@ const socialProviders = [
       if (button) button.disabled = true;
 
       try {
+        const email = String(formData.get('email') || '').trim();
+
         const response = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: String(formData.get('email') || ''),
+            email,
             password: String(formData.get('password') || ''),
             username: String(formData.get('username') || ''),
             displayName: String(formData.get('displayName') || ''),
@@ -158,16 +168,55 @@ const socialProviders = [
         const result = await response.json();
 
         if (!result.ok) {
+          if (result.code === 'email_not_confirmed') {
+            lastConfirmationEmail = email;
+          }
+
           showMessage(result.error || 'Registrazione non riuscita.', 'error');
           return;
         }
 
-        showMessage('Account creato. Controlla la tua email per confermare la registrazione.', 'ok');
+        lastConfirmationEmail = email;
+        showMessage(result.message || 'Registrazione ricevuta. Controlla la tua email per confermare l’account.', 'ok');
         form.reset();
       } catch {
         showMessage('Errore di connessione. Riprova.', 'error');
       } finally {
         if (button) button.disabled = false;
+      }
+    });
+
+    resendButton?.addEventListener('click', async () => {
+      const emailInput = form?.querySelector('input[name="email"]');
+      const typedEmail = emailInput instanceof HTMLInputElement ? emailInput.value.trim() : '';
+      const email = typedEmail || lastConfirmationEmail;
+
+      if (!email) {
+        showMessage('Inserisci la tua email nel campo sopra, poi richiedi un nuovo link.', 'error');
+        emailInput?.focus();
+        return;
+      }
+
+      resendButton.disabled = true;
+
+      try {
+        const response = await fetch('/api/auth/resend-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(result.error || 'Richiesta non completata. Riprova più tardi.', 'error');
+          return;
+        }
+
+        showMessage(result.message || 'Se l’indirizzo è valido, riceverai una nuova email di conferma.', 'ok');
+      } catch {
+        showMessage('Errore di connessione. Riprova.', 'error');
+      } finally {
+        resendButton.disabled = false;
       }
     });
   </script>

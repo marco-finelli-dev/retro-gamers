@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { logApiError } from '../../../lib/api-errors';
 import { supabasePublic } from '../../../lib/supabase/server';
 import { getUserProfileFromToken, setAuthSessionCookies } from '../../../lib/supabase/auth';
 
@@ -14,6 +15,12 @@ const json = (payload: unknown, status = 200) =>
       'Content-Type': 'application/json',
     },
   });
+
+const isEmailNotConfirmedError = (error: unknown) => {
+  const message = String((error as { message?: string } | null)?.message || '').toLowerCase();
+
+  return /email.*not.*confirm|confirm.*email|not.*confirmed/.test(message);
+};
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   let payload: LoginPayload;
@@ -37,7 +44,17 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   });
 
   if (authError) {
-    return json({ ok: false, error: authError.message }, 401);
+    logApiError('auth-login.sign-in', authError);
+
+    if (isEmailNotConfirmedError(authError)) {
+      return json({
+        ok: false,
+        error: 'Account non confermato. Controlla la tua email o richiedi un nuovo link di conferma.',
+        code: 'email_not_confirmed',
+      }, 401);
+    }
+
+    return json({ ok: false, error: 'Email o password non corretti.' }, 401);
   }
 
   const user = authData.user;

@@ -108,12 +108,19 @@ const socialProviders = [
         Non hai ancora un account?
         <a href="/account/register/">Registrati</a>
       </p>
+
+      <p class="account-resend-confirmation">
+        <button type="button" data-resend-confirmation>
+          Non hai ricevuto la mail? Reinvia conferma
+        </button>
+      </p>
     </section>
   </main>
 
   <script>
     const form = document.querySelector('[data-login-form]');
     const message = document.querySelector('[data-account-message]');
+    const resendButton = document.querySelector('[data-resend-confirmation]');
 
     const showMessage = (text, type = 'ok') => {
       if (!message) return;
@@ -157,6 +164,39 @@ const socialProviders = [
         showMessage('Errore di connessione. Riprova.', 'error');
       } finally {
         if (button) button.disabled = false;
+      }
+    });
+
+    resendButton?.addEventListener('click', async () => {
+      const emailInput = form?.querySelector('input[name="email"]');
+      const email = emailInput instanceof HTMLInputElement ? emailInput.value.trim() : '';
+
+      if (!email) {
+        showMessage('Inserisci la tua email nel campo sopra, poi richiedi un nuovo link.', 'error');
+        emailInput?.focus();
+        return;
+      }
+
+      resendButton.disabled = true;
+
+      try {
+        const response = await fetch('/api/auth/resend-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(result.error || 'Richiesta non completata. Riprova più tardi.', 'error');
+          return;
+        }
+
+        showMessage(result.message || 'Se l’indirizzo è valido, riceverai una nuova email di conferma.', 'ok');
+      } catch {
+        showMessage('Errore di connessione. Riprova.', 'error');
+      } finally {
+        resendButton.disabled = false;
       }
     });
   </script>
