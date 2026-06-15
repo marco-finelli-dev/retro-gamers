@@ -237,7 +237,7 @@ html:not([data-theme="light"]) .archive-strip::after {
   padding: 14px;
 }
 
-.archive-strip .archive-card__content span {
+.archive-strip .archive-card__content > span:not(.rg-comment-count) {
   display: block;
 
   margin-bottom: 7px;
@@ -250,6 +250,10 @@ html:not([data-theme="light"]) .archive-strip::after {
   letter-spacing: var(--home-section-eyebrow-letter-spacing);
 
   color: var(--home-section-eyebrow-color);
+}
+
+.archive-strip .archive-card__content .rg-comment-count {
+  margin-bottom: 8px;
 }
 
 .archive-strip .archive-card__content h3 {
@@ -375,7 +379,7 @@ html[data-theme="light"] .archive-strip .archive-card:hover img {
     saturate(1.08);
 }
 
-html[data-theme="light"] .archive-strip .archive-card__content span {
+html[data-theme="light"] .archive-strip .archive-card__content > span:not(.rg-comment-count) {
   color: var(--home-section-eyebrow-color);
 }
 

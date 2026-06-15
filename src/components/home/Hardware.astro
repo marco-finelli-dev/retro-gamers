@@ -2,6 +2,7 @@
 import '../../styles/components/hardware.css';
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const { posts = [], lang = 'it' } = Astro.props;
 
@@ -125,6 +126,7 @@ const getCta = (post) => {
 
             <div class="hardware-card__content">
               <span>{productLabel}</span>
+              <CommentCountBadge count={post.commentCount} lang={lang} />
               <h3>{post.title}</h3>
 
               {getExcerpt(post) && (

@@ -277,7 +277,7 @@ html:not([data-theme="light"]) .home-interviews-block::after {
   padding: 18px;
 }
 
-.home-interview-card__content span {
+.home-interview-card__content > span:not(.rg-comment-count) {
   display: inline-flex;
   align-items: center;
 
@@ -303,6 +303,10 @@ html:not([data-theme="light"]) .home-interviews-block::after {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.home-interview-card__content .rg-comment-count {
+  margin-bottom: 12px;
 }
 
 .home-interview-card__content h3 {

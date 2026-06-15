@@ -2,6 +2,7 @@
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
 import { getReviewRibbonBadge } from '../../lib/reviewBadges';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const {
   post,
@@ -129,9 +130,13 @@ const reviewBadge = getReviewRibbonBadge(score, lang);
     <div class="archive-card__footer">
       <span>{getTypeLabel(post.type)}</span>
 
-      {post.platforms?.[0]?.name && (
-        <small>{post.platforms[0].name}</small>
-      )}
+      <span class="archive-card__footer-meta">
+        <CommentCountBadge count={post.commentCount} lang={lang} />
+
+        {post.platforms?.[0]?.name && (
+          <small>{post.platforms[0].name}</small>
+        )}
+      </span>
     </div>
 
   </div>

@@ -2,6 +2,7 @@
 import '../../styles/components/archive-strip.css';
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const { posts = [], lang = 'it' } = Astro.props;
 
@@ -110,6 +111,7 @@ const getCategory = (post) => {
 
           <div class="archive-card__content">
             <span>{getCategory(post)}</span>
+            <CommentCountBadge count={post.commentCount} lang={lang} />
             <h3>{post.title}</h3>
 
             {getExcerpt(post) && (

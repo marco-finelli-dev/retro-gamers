@@ -1,6 +1,7 @@
 ---
 import { getPostUrl, getArchiveUrl, getPlatformUrl, getCategoryUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const {
   post,
@@ -257,6 +258,7 @@ const getTypeLabel = (item) =>
               <span class="article-sidebar-related__content">
                 <small>{getTypeLabel(item)}</small>
                 <strong>{item.title}</strong>
+                <CommentCountBadge count={item.commentCount} lang={lang} />
               </span>
 
             </a>

@@ -3,6 +3,7 @@ import { urlFor } from '../../lib/image';
 import { getFormatLabel } from '../../lib/formatLabels';
 import { getPostUrl } from '../../lib/routes';
 import { getReviewRibbonBadge } from '../../lib/reviewBadges';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const { post, lang = 'it' } = Astro.props;
 
@@ -117,6 +118,8 @@ const badges = genreBadges;
 
   <div class="rg-review-card__body">
     <h3>{post.title}</h3>
+
+    <CommentCountBadge count={post.commentCount} lang={lang} />
 
     {badges.length > 0 && (
       <div class="rg-review-card__badges">

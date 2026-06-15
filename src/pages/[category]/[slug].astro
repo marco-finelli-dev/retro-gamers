@@ -5,6 +5,10 @@ import ArticlePage from '../../components/article/ArticlePage.astro';
 import { getSanityClient } from '../../lib/sanity';
 import { getAllPosts, groupPosts, getRelatedPosts } from '../../lib/posts';
 import {
+  attachApprovedCommentCounts,
+  getApprovedCommentCountMap
+} from '../../lib/supabase/comment-counts';
+import {
   getCreatorRefsFromPortableText,
   getCreatorsReferencingArticle,
   mergeCreatorRefs
@@ -549,6 +553,12 @@ const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
 const relatedPosts = getRelatedPosts(hydratedPost, grouped.all, 3);
+const relatedCommentCountMap = await getApprovedCommentCountMap(relatedPosts, 'it');
+const relatedPostsWithCommentCounts = attachApprovedCommentCounts(
+  relatedPosts,
+  relatedCommentCountMap,
+  'it'
+);
 
 const siteUrl = 'https://www.retro-gamers.it';
 
@@ -614,7 +624,7 @@ const alternateLanguages = englishUrl
 
   <ArticlePage
     post={hydratedPost}
-    relatedPosts={relatedPosts}
+    relatedPosts={relatedPostsWithCommentCounts}
     seriesPosts={seriesPosts}
     comments={comments}
     languageSwitch={

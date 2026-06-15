@@ -4,12 +4,13 @@ import '../../styles/components/pagination.css';
 import ArchiveCard from './ArchiveCard.astro';
 import { getFormatFilterAliases, getFormatFilterValue, getFormatLabel } from '../../lib/formatLabels';
 import { PAGE_SIZE } from '../../lib/pagination';
+import { withApprovedCommentCounts } from '../../lib/supabase/comment-counts';
 
 const {
   title = 'Archivio',
   eyebrow = 'Retro-Gamers',
   description = '',
-  posts = [],
+  posts: rawPosts = [],
   showFilters = true,
   lang = 'it',
   emptyTitle = null,
@@ -17,6 +18,7 @@ const {
 } = Astro.props;
 
 const isEnglish = lang === 'en';
+const posts = await withApprovedCommentCounts(rawPosts, isEnglish ? 'en' : 'it');
 
 const ui = isEnglish
   ? {

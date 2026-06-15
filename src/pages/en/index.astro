@@ -12,6 +12,10 @@ import Hardware from '../../components/home/Hardware.astro';
 import '../../styles/pages/home.css';
 
 import { getAllPosts } from '../../lib/posts';
+import {
+  attachApprovedCommentCounts,
+  getApprovedCommentCountMap
+} from '../../lib/supabase/comment-counts';
 
 const allPosts = await getAllPosts();
 
@@ -125,6 +129,24 @@ const news = englishPosts.filter((post) => post.type === 'news');
 const latest = takeUnused(englishPosts, 6, {
   requireImage: true
 });
+
+const homeCommentCountMap = await getApprovedCommentCountMap(
+  [
+    ...hero,
+    ...reviews,
+    ...guides,
+    ...specials,
+    ...memories,
+    ...interviews,
+    ...archive,
+    ...hardware,
+    ...latest
+  ],
+  'en'
+);
+
+const withCommentCounts = (posts) =>
+  attachApprovedCommentCounts(posts, homeCommentCountMap, 'en');
 ---
 
 <BaseLayout
@@ -139,22 +161,22 @@ const latest = takeUnused(englishPosts, 6, {
 
   <section class="home-hero">
     <div class="container">
-      <Hero posts={hero} lang="en" />
+      <Hero posts={withCommentCounts(hero)} lang="en" />
     </div>
   </section>
 
   <section class="home-reviews">
     <div class="container">
-      <Reviews posts={reviews} lang="en" />
+      <Reviews posts={withCommentCounts(reviews)} lang="en" />
     </div>
   </section>
 
   <section class="home-editorial">
     <div class="container">
       <EditorialHub
-        specials={specials}
-        memories={memories}
-        guides={guides}
+        specials={withCommentCounts(specials)}
+        memories={withCommentCounts(memories)}
+        guides={withCommentCounts(guides)}
         lang="en"
       />
     </div>
@@ -162,27 +184,27 @@ const latest = takeUnused(englishPosts, 6, {
 
   <section class="home-archive">
     <div class="container">
-      <ArchiveStrip posts={archive} lang="en" />
+      <ArchiveStrip posts={withCommentCounts(archive)} lang="en" />
     </div>
   </section>
 
   {interviews.length > 0 && (
     <section class="home-interviews">
       <div class="container">
-        <Interviews posts={interviews} lang="en" />
+        <Interviews posts={withCommentCounts(interviews)} lang="en" />
       </div>
     </section>
   )}
 
   <section class="home-hardware">
     <div class="container">
-      <Hardware posts={hardware} lang="en" />
+      <Hardware posts={withCommentCounts(hardware)} lang="en" />
     </div>
   </section>
 
   <section class="home-latest">
     <div class="container">
-      <Latest posts={latest} lang="en" />
+      <Latest posts={withCommentCounts(latest)} lang="en" />
     </div>
   </section>
 

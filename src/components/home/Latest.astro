@@ -2,6 +2,7 @@
 import '../../styles/components/latest.css';
 import { getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const { posts = [], lang = 'it' } = Astro.props;
 
@@ -126,6 +127,8 @@ const getImage = (post, width = 420, height = 263) => {
             <span class="rg-latest-card__type">
               {getCategory(post)}
             </span>
+
+            <CommentCountBadge count={post.commentCount} lang={lang} />
 
             <h3>
               <a href={getPostUrl(post)}>

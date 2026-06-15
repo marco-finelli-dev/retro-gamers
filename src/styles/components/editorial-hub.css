@@ -207,9 +207,9 @@ html:not([data-theme="light"]) .editorial-hub::after {
    SHARED TYPOGRAPHY
 ======================================== */
 
-.editorial-list-card__content span,
-.memory-feature__content span,
-.memory-mini-card__content span {
+.editorial-list-card__content > span:not(.rg-comment-count),
+.memory-feature__content > span:not(.rg-comment-count),
+.memory-mini-card__content > span:not(.rg-comment-count) {
   display: block;
 
   margin-bottom: 6px;
@@ -222,13 +222,24 @@ html:not([data-theme="light"]) .editorial-hub::after {
   letter-spacing: var(--home-section-eyebrow-letter-spacing);
 }
 
-.editorial-list-card__content span {
+.editorial-list-card__content > span:not(.rg-comment-count) {
   color: var(--home-section-eyebrow-color);
 }
 
-.memory-feature__content span,
-.memory-mini-card__content span {
+.memory-feature__content > span:not(.rg-comment-count),
+.memory-mini-card__content > span:not(.rg-comment-count) {
   color: var(--home-section-eyebrow-color);
+}
+
+.editorial-list-card__content .rg-comment-count,
+.memory-feature__content .rg-comment-count,
+.memory-mini-card__content .rg-comment-count {
+  margin-bottom: 7px;
+}
+
+.quick-guide .rg-comment-count {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .editorial-list-card__content h3,
@@ -357,7 +368,7 @@ html:not([data-theme="light"]) .editorial-hub::after {
   min-width: 0;
 }
 
-.editorial-list-card__content span {
+.editorial-list-card__content > span:not(.rg-comment-count) {
   margin-bottom: 5px;
 }
 
@@ -841,12 +852,12 @@ html[data-theme="light"] .platform-shortcut__text small {
   color: rgba(42,48,62,0.62);
 }
 
-html[data-theme="light"] .editorial-list-card__content span {
+html[data-theme="light"] .editorial-list-card__content > span:not(.rg-comment-count) {
   color: var(--home-section-eyebrow-color);
 }
 
-html[data-theme="light"] .memory-feature__content span,
-html[data-theme="light"] .memory-mini-card__content span {
+html[data-theme="light"] .memory-feature__content > span:not(.rg-comment-count),
+html[data-theme="light"] .memory-mini-card__content > span:not(.rg-comment-count) {
   color: var(--home-section-eyebrow-color);
 }
 

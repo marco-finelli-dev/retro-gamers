@@ -1,0 +1,19 @@
+---
+const {
+  count = 0,
+  lang = 'it',
+  class: className = ''
+} = Astro.props;
+
+const value = Number(count || 0);
+const isEnglish = lang === 'en';
+const label = isEnglish
+  ? `${value} ${value === 1 ? 'comment' : 'comments'}`
+  : `${value} ${value === 1 ? 'commento' : 'commenti'}`;
+---
+
+{value > 0 && (
+  <span class:list={['rg-comment-count', className]} aria-label={label}>
+    {label}
+  </span>
+)}

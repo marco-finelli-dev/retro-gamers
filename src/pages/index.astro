@@ -12,6 +12,10 @@ import Hardware from '../components/home/Hardware.astro';
 import '../styles/pages/home.css';
 
 import { getAllPosts, groupPosts } from '../lib/posts';
+import {
+  attachApprovedCommentCounts,
+  getApprovedCommentCountMap
+} from '../lib/supabase/comment-counts';
 
 const allPosts = await getAllPosts();
 
@@ -27,6 +31,24 @@ const {
   interviews,
   guides
 } = groupPosts(allPosts);
+
+const homeCommentCountMap = await getApprovedCommentCountMap(
+  [
+    ...hero,
+    ...reviews,
+    ...specials,
+    ...memories,
+    ...guides,
+    ...archive,
+    ...interviews,
+    ...hardware,
+    ...latest
+  ],
+  'it'
+);
+
+const withCommentCounts = (posts) =>
+  attachApprovedCommentCounts(posts, homeCommentCountMap, 'it');
 ---
 
 <BaseLayout
@@ -40,49 +62,49 @@ const {
 
   <section class="home-hero">
     <div class="container">
-      <Hero posts={hero} />
+      <Hero posts={withCommentCounts(hero)} />
     </div>
   </section>
 
   <section class="home-reviews">
     <div class="container">
-      <Reviews posts={reviews} />
+      <Reviews posts={withCommentCounts(reviews)} />
     </div>
   </section>
 
   <section class="home-editorial">
     <div class="container">
       <EditorialHub
-        specials={specials}
-        memories={memories}
-        guides={guides}
+        specials={withCommentCounts(specials)}
+        memories={withCommentCounts(memories)}
+        guides={withCommentCounts(guides)}
       />
     </div>
   </section>
 
   <section class="home-archive">
     <div class="container">
-      <ArchiveStrip posts={archive} />
+      <ArchiveStrip posts={withCommentCounts(archive)} />
     </div>
   </section>
 
   {interviews.length > 0 && (
     <section class="home-interviews">
       <div class="container">
-        <Interviews posts={interviews} />
+        <Interviews posts={withCommentCounts(interviews)} />
       </div>
     </section>
   )}
 
   <section class="home-hardware">
     <div class="container">
-      <Hardware posts={hardware} />
+      <Hardware posts={withCommentCounts(hardware)} />
     </div>
   </section>
 
   <section class="home-latest">
     <div class="container">
-      <Latest posts={latest} />
+      <Latest posts={withCommentCounts(latest)} />
     </div>
   </section>
 

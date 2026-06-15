@@ -190,6 +190,47 @@
   --header-gap: 8px;
 }
 
+.rg-comment-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  width: fit-content;
+  max-width: 100%;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 820;
+
+  letter-spacing: 0;
+
+  color: var(--rg-badge-color);
+  background: var(--rg-badge-bg);
+  border: 1px solid var(--rg-badge-border);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.055),
+    0 0 14px rgba(34,240,255,0.055);
+
+  white-space: nowrap;
+}
+
+.rg-comment-count::before {
+  content: "";
+  flex: 0 0 auto;
+
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+
+  background: currentColor;
+  box-shadow: 0 0 8px rgba(34,240,255,0.22);
+  opacity: 0.82;
+}
+
 
 /* =========================
    ☀️ LIGHT THEME

@@ -2,6 +2,7 @@
 import '../../styles/components/editorial-hub.css';
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const {
   specials = [],
@@ -151,6 +152,7 @@ const getCategory = (post) => {
 
             <div class="editorial-list-card__content">
               <span>{getCategory(post)}</span>
+              <CommentCountBadge count={post.commentCount} lang={lang} />
               <h3>{post.title}</h3>
 
               {getExcerpt(post) && (
@@ -192,6 +194,7 @@ const getCategory = (post) => {
 
           <div class="memory-feature__content">
             <span>{getCategory(mainMemory)}</span>
+            <CommentCountBadge count={mainMemory.commentCount} lang={lang} />
             <h3>{mainMemory.title}</h3>
 
             {getExcerpt(mainMemory) && (
@@ -220,6 +223,7 @@ const getCategory = (post) => {
 
               <div class="memory-mini-card__content">
                 <span>{getCategory(post)}</span>
+                <CommentCountBadge count={post.commentCount} lang={lang} />
                 <strong>{post.title}</strong>
               </div>
 
@@ -259,6 +263,7 @@ const getCategory = (post) => {
         </span>
 
         <strong>{post.title}</strong>
+        <CommentCountBadge count={post.commentCount} lang={lang} />
 
       </a>
     ))

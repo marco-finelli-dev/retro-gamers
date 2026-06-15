@@ -3,6 +3,7 @@ import '../../styles/components/hero.css';
 import { getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 import { getReviewBadge } from '../../lib/reviewBadges';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const { posts = [], lang = 'it' } = Astro.props;
 
@@ -134,6 +135,8 @@ const getImage = (image, width = 960, height = null) => {
             {getCategory(main) && (
               <small>{getCategory(main)}</small>
             )}
+
+            <CommentCountBadge count={main.commentCount} lang={lang} />
           </div>
 
           <h2>{main.title}</h2>
@@ -177,6 +180,8 @@ const getImage = (image, width = 960, height = null) => {
                 {cat && (
                   <small>{cat}</small>
                 )}
+
+                <CommentCountBadge count={post.commentCount} lang={lang} />
               </div>
 
               <h3>{post.title}</h3>
