@@ -288,6 +288,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       reportSuccess: 'Segnalazione inviata. Grazie, la controlleremo.',
       reportDuplicate: 'Hai già segnalato questo commento.',
       reportError: 'Non è stato possibile inviare la segnalazione. Riprova.',
+      roleStaff: 'Staff Retro-Gamers',
+      roleModerator: 'Moderatore',
       sortLabel: 'Ordina',
       sortOldest: 'Meno recenti',
       sortNewest: 'Più recenti',
@@ -320,6 +322,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       reportSuccess: 'Report sent. Thank you, we will review it.',
       reportDuplicate: 'You have already reported this comment.',
       reportError: 'The report could not be sent. Please try again.',
+      roleStaff: 'Retro-Gamers Staff',
+      roleModerator: 'Moderator',
       sortLabel: 'Sort',
       sortOldest: 'Oldest first',
       sortNewest: 'Newest first',
@@ -428,6 +432,34 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     href
       ? `<a class="article-comment__author-link" href="${escapeHtml(href)}">${escapeHtml(authorName)}</a>`
       : escapeHtml(authorName);
+
+  const getRoleBadge = (profile, labels) => {
+    const role = String(profile?.role || '').trim().toLowerCase();
+
+    if (role === 'admin') {
+      return {
+        label: labels.roleStaff,
+        modifier: 'staff'
+      };
+    }
+
+    if (role === 'moderator') {
+      return {
+        label: labels.roleModerator,
+        modifier: 'moderator'
+      };
+    }
+
+    return null;
+  };
+
+  const renderRoleBadge = (profile, labels) => {
+    const badge = getRoleBadge(profile, labels);
+
+    return badge
+      ? `<span class="article-comment__role-badge article-comment__role-badge--${escapeHtml(badge.modifier)}">${escapeHtml(badge.label)}</span>`
+      : '';
+  };
 
   const getCommentAnchorId = (comment) =>
     comment?.id ? `comment-${String(comment.id)}` : '';
@@ -596,6 +628,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const profile = reply.profiles || {};
     const authorName = getAuthorName(profile, labels.reader);
     const badgeLabel = getBadgeLabel(profile, language);
+    const roleBadge = renderRoleBadge(profile, labels);
     const initial = getAvatarInitial(profile, labels.reader);
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
     const profileHref = getProfileHref(profile, language, Boolean(reply.isLegacy));
@@ -610,7 +643,10 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
           ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl)}
 
           <div class="article-comment__editor-reply-meta">
-            <strong>${renderAuthorName(authorName, profileHref)}</strong>
+            <strong class="article-comment__author-row">
+              ${renderAuthorName(authorName, profileHref)}
+              ${roleBadge}
+            </strong>
 
             <div class="article-comment__editor-reply-submeta">
               ${renderCommentTime(reply, language, labels)}
@@ -631,6 +667,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const profile = comment.profiles || {};
     const authorName = getAuthorName(profile, labels.reader);
     const badgeLabel = getBadgeLabel(profile, language);
+    const roleBadge = renderRoleBadge(profile, labels);
     const initial = getAvatarInitial(profile, labels.reader);
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
     const replies = Array.isArray(comment.replies) ? sortComments(comment.replies) : [];
@@ -648,7 +685,10 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
           ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl)}
 
           <div class="article-comment__meta">
-            <h3>${renderAuthorName(authorName, profileHref)}</h3>
+            <h3 class="article-comment__author-row">
+              ${renderAuthorName(authorName, profileHref)}
+              ${roleBadge}
+            </h3>
 
             ${renderCommentTime(comment, language, labels)}
 

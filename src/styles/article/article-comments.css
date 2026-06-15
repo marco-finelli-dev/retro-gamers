@@ -571,6 +571,46 @@
     color: var(--rg-action-hover-color);
     outline: none;
   }
+
+  .article-comment__author-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .article-comment__role-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 20px;
+    padding: 2px 8px;
+
+    border: 1px solid rgba(34,240,255,0.22);
+    border-radius: 999px;
+
+    background:
+      linear-gradient(135deg, rgba(34,240,255,0.070), rgba(168,85,247,0.040)),
+      rgba(4, 8, 16, 0.20);
+    color: rgba(166,245,255,0.88);
+
+    font-size: 0.64rem;
+    font-weight: 900;
+    letter-spacing: 0.075em;
+    line-height: 1.1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .article-comment__role-badge--moderator {
+    border-color: rgba(168,85,247,0.26);
+    background:
+      linear-gradient(135deg, rgba(168,85,247,0.070), rgba(34,240,255,0.034)),
+      rgba(4, 8, 16, 0.18);
+    color: rgba(221,205,255,0.88);
+  }
   
   .article-comment time {
     color: rgba(255, 255, 255, 0.52);
@@ -786,6 +826,13 @@
   
     color: var(--color-white, #fff);
     font-size: 0.9rem;
+  }
+
+  .article-comment__editor-reply .article-comment__author-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
   }
   
   .article-comment__editor-reply strong span {
@@ -1426,6 +1473,22 @@ html[data-theme="light"] .article-comment__avatar {
 
 html[data-theme="light"] .article-comment h3 {
   color: rgba(22,24,36,0.92);
+}
+
+html[data-theme="light"] .article-comment__role-badge {
+  border-color: rgba(0,142,163,0.20);
+  background:
+    linear-gradient(135deg, rgba(0,142,163,0.070), rgba(102,81,184,0.030)),
+    rgba(255,255,255,0.56);
+  color: rgba(0,96,112,0.88);
+}
+
+html[data-theme="light"] .article-comment__role-badge--moderator {
+  border-color: rgba(102,81,184,0.22);
+  background:
+    linear-gradient(135deg, rgba(102,81,184,0.070), rgba(0,142,163,0.026)),
+    rgba(255,255,255,0.56);
+  color: rgba(82,64,148,0.88);
 }
 
 html[data-theme="light"] .article-comment time {
