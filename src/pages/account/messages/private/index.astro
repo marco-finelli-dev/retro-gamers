@@ -8,6 +8,7 @@ import CommunitySidebarProfile from '../../../../components/community/CommunityS
 import CommunityStatList from '../../../../components/community/CommunityStatList.astro';
 import UserAvatar from '../../../../components/account/UserAvatar.astro';
 import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
+import { getUnreadAccountMessageCount } from '../../../../lib/supabase/account-messages';
 import { emptyCommunityStats, getCommunityStats } from '../../../../lib/supabase/community';
 import {
   getOrCreatePrivateConversationByUsername,
@@ -15,6 +16,7 @@ import {
   getPrivateMessageExcerpt,
   getPrivateProfileLabel,
   getPrivateProfileUrl,
+  getUnreadPrivateMessageCount,
   isPrivateMessagesUnavailable,
   type PrivateConversationSummary,
 } from '../../../../lib/supabase/private-messages';
@@ -25,9 +27,12 @@ const description = 'Conversazioni private tra lettori Retro-Gamers.it.';
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const toUsername = String(Astro.url.searchParams.get('to') || '').trim();
+const formatUnreadBadge = (count: number) => count > 99 ? '99+' : String(count);
 
 let conversations: PrivateConversationSummary[] = [];
 let conversationsError = '';
+let systemUnreadCount = 0;
+let privateUnreadCount = 0;
 let communityStats = { ...emptyCommunityStats };
 
 if (isLoggedIn && session.user && toUsername) {
@@ -41,11 +46,15 @@ if (isLoggedIn && session.user && toUsername) {
 }
 
 if (isLoggedIn && session.user) {
-  const [result, statsResult] = await Promise.all([
+  const [result, systemUnreadResult, privateUnreadResult, statsResult] = await Promise.all([
     getPrivateConversations(session.user.id),
+    getUnreadAccountMessageCount(session.user.id),
+    getUnreadPrivateMessageCount(session.user.id),
     getCommunityStats(session.user.id),
   ]);
   conversations = result.conversations;
+  systemUnreadCount = systemUnreadResult.error ? 0 : systemUnreadResult.count;
+  privateUnreadCount = privateUnreadResult.error ? 0 : privateUnreadResult.count;
   communityStats = statsResult;
 
   if (result.error && !conversationsError) {
@@ -108,8 +117,26 @@ const communityStatItems = [
       {isLoggedIn ? (
         <>
           <nav class="account-messages-tabs" aria-label="Sezioni messaggi">
-            <a href="/account/messages/?tab=system">Sistema</a>
-            <a href="/account/messages/private/" aria-current="page">Privati</a>
+            <a href="/account/messages/?tab=system">
+              Sistema
+              <span
+                class="account-messages-tab-badge"
+                hidden={systemUnreadCount <= 0}
+                aria-label={`${systemUnreadCount} messaggi di sistema non letti`}
+              >
+                {formatUnreadBadge(systemUnreadCount)}
+              </span>
+            </a>
+            <a href="/account/messages/private/" aria-current="page">
+              Privati
+              <span
+                class="account-messages-tab-badge"
+                hidden={privateUnreadCount <= 0}
+                aria-label={`${privateUnreadCount} messaggi privati non letti`}
+              >
+                {formatUnreadBadge(privateUnreadCount)}
+              </span>
+            </a>
           </nav>
 
           {conversationsError && (

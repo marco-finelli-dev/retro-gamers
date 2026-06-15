@@ -20,6 +20,7 @@ import { getPublicUserUrl } from '../../../lib/supabase/public-profiles';
 const title = 'Messaggi account | Retro-Gamers.it';
 const description = 'Centro notifiche e messaggi interni del profilo lettore Retro-Gamers.it.';
 const requestedTab = Astro.url.searchParams.get('tab') === 'system' ? 'system' : 'private';
+const formatUnreadBadge = (count: number) => count > 99 ? '99+' : String(count);
 
 if (requestedTab === 'private') {
   return Astro.redirect('/account/messages/private/', 303);
@@ -131,12 +132,26 @@ const communityStatItems = [
       {isLoggedIn ? (
         <>
           <nav class="account-messages-tabs" aria-label="Sezioni messaggi">
-            <a href="/account/messages/?tab=system" aria-current="page">Sistema</a>
+            <a href="/account/messages/?tab=system" aria-current="page">
+              Sistema
+              <span
+                class="account-messages-tab-badge"
+                data-system-tab-unread
+                hidden={unreadCount <= 0}
+                aria-label={`${unreadCount} messaggi di sistema non letti`}
+              >
+                {formatUnreadBadge(unreadCount)}
+              </span>
+            </a>
             <a href="/account/messages/?tab=private">
               Privati
-              {privateUnreadCount > 0 && (
-                <span>{privateUnreadCount > 99 ? '99+' : privateUnreadCount}</span>
-              )}
+              <span
+                class="account-messages-tab-badge"
+                hidden={privateUnreadCount <= 0}
+                aria-label={`${privateUnreadCount} messaggi privati non letti`}
+              >
+                {formatUnreadBadge(privateUnreadCount)}
+              </span>
             </a>
           </nav>
 
@@ -212,12 +227,14 @@ const communityStatItems = [
     const list = document.querySelector('[data-account-messages-list]');
     const countNode = document.querySelector('[data-account-messages-count]');
     const markAllButton = document.querySelector('[data-mark-all-read]');
+    const systemTabBadge = document.querySelector('[data-system-tab-unread]');
 
     const refreshUnreadCount = async () => {
       try {
         const response = await fetch('/api/account/messages/unread-count');
         const result = await response.json();
         const count = Number(result.systemUnreadCount || 0);
+        const formattedCount = count > 99 ? '99+' : String(count);
 
         if (countNode) {
           countNode.textContent = count === 1
@@ -227,6 +244,12 @@ const communityStatItems = [
 
         if (markAllButton) {
           markAllButton.hidden = count <= 0;
+        }
+
+        if (systemTabBadge) {
+          systemTabBadge.textContent = formattedCount;
+          systemTabBadge.hidden = count <= 0;
+          systemTabBadge.setAttribute('aria-label', `${count} messaggi di sistema non letti`);
         }
       } catch {
         // The page remains usable even if the counter refresh fails.
