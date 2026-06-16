@@ -199,12 +199,13 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
               <dt>Registrato</dt>
               <dd>${escapeHtml(formatDate(user.createdAt))}</dd>
             </div>
+            <div class="admin-user-row__action-cell">
+              ${publicProfileHref ? `<a class="admin-user-card__profile-link" href="${escapeHtml(publicProfileHref)}">Vedi profilo</a>` : '<span class="admin-user-row__action-placeholder" aria-hidden="true"></span>'}
+            </div>
+            <div class="admin-user-row__action-cell">
+              <a class="admin-user-card__profile-link admin-user-row__manage" href="${escapeHtml(manageHref)}">Gestisci</a>
+            </div>
           </dl>
-
-          <div class="admin-user-row__actions">
-            ${publicProfileHref ? `<a class="admin-user-card__profile-link" href="${escapeHtml(publicProfileHref)}">Vedi profilo</a>` : ''}
-            <a class="admin-user-card__profile-link admin-user-row__manage" href="${escapeHtml(manageHref)}">Gestisci</a>
-          </div>
         </article>
       `;
     };
