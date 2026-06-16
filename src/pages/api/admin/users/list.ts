@@ -20,6 +20,9 @@ const json = (payload: unknown, status = 200) =>
 const normalizeSearch = (value: string) =>
   value.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 80);
 
+const isUuid = (value: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
 const fetchAllAuthUsers = async () => {
   const users = [];
   const perPage = 1000;
@@ -187,14 +190,26 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   }
 
   const search = normalizeSearch(url.searchParams.get('q') || '');
+  const detailUserId = String(url.searchParams.get('userId') || '').trim();
+  const isDetailRequest = url.searchParams.get('detail') === '1';
+
+  if (detailUserId && !isUuid(detailUserId)) {
+    return json({ ok: false, error: 'Utente non valido.' }, 400);
+  }
 
   try {
     const [authUsers, profiles, commentStats, activeBadges, badgeAssignmentsResult] = await Promise.all([
       fetchAllAuthUsers(),
       fetchAllProfiles(),
       fetchCommentStats(),
-      getActiveReaderBadges({ fallback: false }),
-      fetchBadgeAssignments(),
+      isDetailRequest ? getActiveReaderBadges({ fallback: false }) : Promise.resolve([]),
+      isDetailRequest
+        ? fetchBadgeAssignments()
+        : Promise.resolve({
+            assignments: new Map<string, Set<string>>(),
+            available: false,
+            error: null,
+          }),
     ]);
 
     const authByUserId = new Map(authUsers.map((user) => [user.id, user]));
@@ -202,49 +217,63 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const viewerRole = session.profile.role === 'admin' ? 'admin' : 'moderator';
     const badgeManagementAvailable = badgeAssignmentsResult.available;
 
-    let users = profiles.map((profile) => {
-      const authUser = authByUserId.get(profile.user_id);
-      const comments = commentStats.get(profile.user_id) ?? {
-        total: 0,
-        pending: 0,
-        approved: 0,
-      };
-      const isSelf = profile.user_id === session.user?.id;
-      const role = profile.role || 'user';
-      const status = profile.status || 'active';
-      const assignedBadgeKeys = badgeManagementAvailable
-        ? [...(badgeAssignmentsResult.assignments.get(profile.user_id) ?? new Set<string>())]
-        : (profile.badge_key ? [profile.badge_key] : []);
-      const assignedBadges = assignedBadgeKeys
-        .map((badgeKey) => activeBadgeByKey.get(badgeKey))
-        .filter((badge): badge is ReaderBadge => Boolean(badge))
-        .map(serializeBadge);
-      const currentBadge = profile.badge_key
-        ? activeBadgeByKey.get(profile.badge_key)
-        : null;
+    let users = profiles
+      .filter((profile) => !detailUserId || profile.user_id === detailUserId)
+      .map((profile) => {
+        const authUser = authByUserId.get(profile.user_id);
+        const comments = commentStats.get(profile.user_id) ?? {
+          total: 0,
+          pending: 0,
+          approved: 0,
+        };
+        const isSelf = profile.user_id === session.user?.id;
+        const role = profile.role || 'user';
+        const status = profile.status || 'active';
+        const baseUser = {
+          id: profile.id,
+          userId: profile.user_id,
+          email: authUser?.email || '',
+          username: profile.username || '',
+          displayName: profile.display_name || '',
+          avatarUrl: getAvatarPublicUrl(profile.avatar_path),
+          role,
+          status,
+          createdAt: authUser?.created_at || null,
+          comments,
+          isSelf,
+        };
 
-      return {
-        id: profile.id,
-        userId: profile.user_id,
-        email: authUser?.email || '',
-        username: profile.username || '',
-        displayName: profile.display_name || '',
-        avatarUrl: getAvatarPublicUrl(profile.avatar_path),
-        role,
-        status,
-        currentBadgeKey: profile.badge_key || '',
-        currentBadge: currentBadge ? serializeBadge(currentBadge) : null,
-        assignedBadges,
-        createdAt: authUser?.created_at || null,
-        emailConfirmedAt: authUser?.email_confirmed_at || null,
-        comments,
-        isSelf,
-        canManageRole: viewerRole === 'admin' && !isSelf,
-        canManageStatus:
-          !isSelf && (viewerRole === 'admin' || (viewerRole === 'moderator' && role === 'user')),
-        canManageBadges: viewerRole === 'admin' && badgeManagementAvailable,
-      };
-    });
+        if (!isDetailRequest) {
+          return baseUser;
+        }
+
+        const assignedBadgeKeys = badgeManagementAvailable
+          ? [...(badgeAssignmentsResult.assignments.get(profile.user_id) ?? new Set<string>())]
+          : (profile.badge_key ? [profile.badge_key] : []);
+        const assignedBadges = assignedBadgeKeys
+          .map((badgeKey) => activeBadgeByKey.get(badgeKey))
+          .filter((badge): badge is ReaderBadge => Boolean(badge))
+          .map(serializeBadge);
+        const currentBadge = profile.badge_key
+          ? activeBadgeByKey.get(profile.badge_key)
+          : null;
+
+        return {
+          ...baseUser,
+          currentBadgeKey: profile.badge_key || '',
+          currentBadge: currentBadge ? serializeBadge(currentBadge) : null,
+          assignedBadges,
+          emailConfirmedAt: authUser?.email_confirmed_at || null,
+          canManageRole: viewerRole === 'admin' && !isSelf,
+          canManageStatus:
+            !isSelf && (viewerRole === 'admin' || (viewerRole === 'moderator' && role === 'user')),
+          canManageBadges: viewerRole === 'admin' && badgeManagementAvailable,
+        };
+      });
+
+    if (isDetailRequest && detailUserId && users.length === 0) {
+      return json({ ok: false, error: 'Utente non trovato.' }, 404);
+    }
 
     if (search) {
       users = users.filter((user) => {

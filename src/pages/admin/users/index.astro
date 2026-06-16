@@ -68,10 +68,6 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
     const filtersForm = document.querySelector('[data-admin-users-filters]');
     const resetButton = document.querySelector('[data-admin-users-reset]');
 
-    let viewerRole = 'moderator';
-    let availableBadges = [];
-    let badgeManagementAvailable = false;
-
     const escapeHtml = (value) =>
       String(value || '')
         .replaceAll('&', '&amp;')
@@ -93,10 +89,8 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
 
       return new Intl.DateTimeFormat('it-IT', {
         day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        month: 'short',
+        year: 'numeric'
       }).format(new Date(value));
     };
 
@@ -129,21 +123,6 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       banned: 'Bannato'
     };
 
-    const getBadgeLabel = (badge) =>
-      badge?.labelIt || badge?.labelEn || badge?.key || 'Badge';
-
-    const getBadgeImage = (badge) => {
-      const value = String(badge?.imagePath || '').trim();
-
-      if (!value) return '';
-
-      if (/^https?:\/\//i.test(value) || value.startsWith('/')) {
-        return value;
-      }
-
-      return `/${value.replace(/^\/+/, '')}`;
-    };
-
     const getFilterParams = () => {
       const params = new URLSearchParams();
 
@@ -157,105 +136,9 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       return params;
     };
 
-    const renderRoleActions = (user) => {
-      if (!user.canManageRole || viewerRole !== 'admin') {
-        return '';
-      }
-
-      return `
-        ${user.role !== 'admin' ? '<button type="button" data-role="admin" data-confirm="Promuovere questo utente ad admin?">Promuovi a admin</button>' : ''}
-        ${user.role !== 'moderator' ? '<button type="button" data-role="moderator">Promuovi a moderator</button>' : ''}
-        ${user.role !== 'user' ? '<button type="button" data-role="user">Riporta a user</button>' : ''}
-      `;
-    };
-
-    const renderStatusActions = (user) => {
-      if (!user.canManageStatus) {
-        return '';
-      }
-
-      return `
-        ${user.status !== 'active' ? '<button type="button" data-status="active">Riattiva</button>' : ''}
-        ${user.status !== 'suspended' ? '<button type="button" data-status="suspended" data-confirm="Sospendere questo utente?">Sospendi</button>' : ''}
-        ${user.status !== 'banned' ? '<button type="button" data-status="banned" data-confirm="Bannare questo utente?">Banna</button>' : ''}
-      `;
-    };
-
-    const renderBadgeManagement = (user) => {
-      const assignedBadges = user.assignedBadges || [];
-      const assignedKeys = new Set(assignedBadges.map((badge) => badge.key));
-      const assignableBadges = availableBadges.filter((badge) => !assignedKeys.has(badge.key));
-      const currentBadgeLabel = user.currentBadge
-        ? getBadgeLabel(user.currentBadge)
-        : user.currentBadgeKey || 'Non impostato';
-      const assignedMarkup = assignedBadges.length > 0
-        ? assignedBadges.map((badge) => {
-            const isCurrent = badge.key === user.currentBadgeKey;
-
-            return `
-              <span class="admin-user-badge${isCurrent ? ' is-current' : ''}">
-                ${getBadgeImage(badge) ? `<img src="${escapeHtml(getBadgeImage(badge))}" alt="" loading="lazy" decoding="async" />` : ''}
-                <span>${escapeHtml(getBadgeLabel(badge))}${isCurrent ? ' · attivo' : ''}</span>
-                ${user.canManageBadges ? `
-                  <button
-                    type="button"
-                    data-badge-action="remove"
-                    data-badge-key="${escapeHtml(badge.key)}"
-                    data-confirm="Rimuovere questo badge dall’utente?"
-                  >
-                    Rimuovi
-                  </button>
-                ` : ''}
-              </span>
-            `;
-          }).join('')
-        : '<p class="admin-user-card__notice">Nessun badge assegnato</p>';
-      const assignMarkup = user.canManageBadges
-        ? `
-          <div class="admin-user-card__badge-assign">
-            <select data-badge-select ${assignableBadges.length === 0 ? 'disabled' : ''}>
-              <option value="">Assegna badge</option>
-              ${assignableBadges.map((badge) => `
-                <option value="${escapeHtml(badge.key)}">${escapeHtml(getBadgeLabel(badge))}</option>
-              `).join('')}
-            </select>
-            <button
-              type="button"
-              data-badge-action="assign"
-              ${assignableBadges.length === 0 ? 'disabled' : ''}
-            >
-              Assegna badge
-            </button>
-          </div>
-        `
-        : badgeManagementAvailable
-          ? '<p class="admin-user-card__notice">Solo gli admin possono modificare i badge.</p>'
-          : '<p class="admin-user-card__notice">Gestione badge non disponibile: esegui lo SQL dedicato in Supabase.</p>';
-
-      return `
-        <section class="admin-user-card__badges" aria-label="Gestisci badge">
-          <div class="admin-user-card__badges-header">
-            <div>
-              <h3>Gestisci badge</h3>
-              <p>Badge attivo: ${escapeHtml(currentBadgeLabel)}</p>
-            </div>
-          </div>
-
-          <div class="admin-user-card__badge-list" aria-label="Badge assegnati">
-            ${assignedMarkup}
-          </div>
-
-          ${assignMarkup}
-        </section>
-      `;
-    };
-
     const renderUser = (user) => {
       const role = roleLabels[user.role] || user.role || 'User';
       const status = statusLabels[user.status] || user.status || 'Active';
-      const actions = [renderRoleActions(user), renderStatusActions(user)]
-        .filter(Boolean)
-        .join('');
       const displayName = user.displayName || 'Non impostato';
       const username = user.username || 'Non impostato';
       const email = user.email || 'Email non disponibile';
@@ -263,6 +146,7 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       const avatarInitial = getUserInitial(user);
       const avatarLabel = `Avatar di ${user.displayName || user.username || user.email || 'utente'}`;
       const publicProfileHref = getPublicProfileHref(user.username);
+      const manageHref = `/admin/users/${encodeURIComponent(user.userId)}/`;
       const avatarImage = user.avatarUrl
         ? `
           <img
@@ -276,55 +160,50 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
         : '';
 
       return `
-        <article class="admin-user-card" data-user-id="${escapeHtml(user.userId)}">
-          <header class="admin-user-card__header">
-            <div class="admin-user-card__identity">
-              <span class="admin-user-card__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
-                <span class="admin-user-card__avatar-fallback" aria-hidden="true">${escapeHtml(avatarInitial)}</span>
-                ${avatarImage}
-              </span>
-
-              <div>
-                <p class="admin-user-card__email">${escapeHtml(email)}</p>
-                <h2>${escapeHtml(displayName)}</h2>
-
-                <p class="admin-user-card__meta">
-                  <span>@${escapeHtml(username)}</span>
-                  <span class="admin-user-card__role" data-role="${escapeHtml(user.role || '')}">
-                    Ruolo: ${escapeHtml(role)}
-                  </span>
-                  <span class="admin-user-card__status" data-status="${escapeHtml(user.status || '')}">
-                    Stato: ${escapeHtml(status)}
-                  </span>
-                  <span>Registrato: ${escapeHtml(formatDate(user.createdAt))}</span>
-                </p>
-              </div>
-            </div>
-          </header>
-
-          <div class="admin-user-card__stats" aria-label="Commenti">
-            <div>
-              <span>Commenti</span>
-              <strong>${Number(comments.total || 0)}</strong>
-            </div>
+        <article class="admin-user-row" data-user-id="${escapeHtml(user.userId)}">
+          <div class="admin-user-row__identity">
+            <span class="admin-user-card__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
+              <span class="admin-user-card__avatar-fallback" aria-hidden="true">${escapeHtml(avatarInitial)}</span>
+              ${avatarImage}
+            </span>
 
             <div>
-              <span>Pending</span>
-              <strong>${Number(comments.pending || 0)}</strong>
-            </div>
-
-            <div>
-              <span>Approved</span>
-              <strong>${Number(comments.approved || 0)}</strong>
+              <h2>${escapeHtml(displayName)}</h2>
+              <p>@${escapeHtml(username)}</p>
+              <p class="admin-user-row__email">${escapeHtml(email)}</p>
             </div>
           </div>
 
-          ${renderBadgeManagement(user)}
+          <dl class="admin-user-row__facts">
+            <div>
+              <dt>Ruolo</dt>
+              <dd class="admin-user-card__role" data-role="${escapeHtml(user.role || '')}">${escapeHtml(role)}</dd>
+            </div>
+            <div>
+              <dt>Stato</dt>
+              <dd class="admin-user-card__status" data-status="${escapeHtml(user.status || '')}">${escapeHtml(status)}</dd>
+            </div>
+            <div>
+              <dt>Commenti</dt>
+              <dd>${Number(comments.total || 0)}</dd>
+            </div>
+            <div>
+              <dt>Pending</dt>
+              <dd>${Number(comments.pending || 0)}</dd>
+            </div>
+            <div>
+              <dt>Approved</dt>
+              <dd>${Number(comments.approved || 0)}</dd>
+            </div>
+            <div>
+              <dt>Registrato</dt>
+              <dd>${escapeHtml(formatDate(user.createdAt))}</dd>
+            </div>
+          </dl>
 
-          <div class="admin-user-card__actions">
+          <div class="admin-user-row__actions">
             ${publicProfileHref ? `<a class="admin-user-card__profile-link" href="${escapeHtml(publicProfileHref)}">Vedi profilo</a>` : ''}
-            ${user.isSelf ? '<span class="admin-user-card__notice">Il tuo account è protetto da modifiche dirette.</span>' : ''}
-            ${actions || (!user.isSelf ? '<span class="admin-user-card__notice">Nessuna azione disponibile per il tuo ruolo.</span>' : '')}
+            <a class="admin-user-card__profile-link admin-user-row__manage" href="${escapeHtml(manageHref)}">Gestisci</a>
           </div>
         </article>
       `;
@@ -344,9 +223,6 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
           return;
         }
 
-        viewerRole = result.viewerRole || 'moderator';
-        availableBadges = result.availableBadges || [];
-        badgeManagementAvailable = Boolean(result.badgeManagementAvailable);
         const users = result.users || [];
 
         if (countNode) {
@@ -376,108 +252,6 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       filtersForm?.reset();
       showMessage('');
       loadUsers();
-    });
-
-    listNode?.addEventListener('click', async (event) => {
-      const badgeButton = event.target.closest('button[data-badge-action]');
-
-      if (badgeButton) {
-        const card = badgeButton.closest('[data-user-id]');
-        const userId = card?.dataset.userId;
-        const action = badgeButton.dataset.badgeAction;
-        const badgeKey = action === 'assign'
-          ? card?.querySelector('[data-badge-select]')?.value
-          : badgeButton.dataset.badgeKey;
-
-        if (!userId || !badgeKey || (action !== 'assign' && action !== 'remove')) {
-          showMessage('Scegli un badge valido.', 'error');
-          return;
-        }
-
-        const confirmation = badgeButton.dataset.confirm;
-        if (confirmation && !window.confirm(confirmation)) {
-          return;
-        }
-
-        badgeButton.disabled = true;
-        showMessage('');
-
-        try {
-          const response = await fetch('/api/admin/users/badges/update', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              userId,
-              badgeKey,
-              action
-            })
-          });
-
-          const result = await response.json();
-
-          if (!result.ok) {
-            showMessage(result.error || 'Gestione badge non riuscita.', 'error');
-            badgeButton.disabled = false;
-            return;
-          }
-
-          showMessage(result.message || 'Badge aggiornato.', 'ok');
-          await loadUsers();
-        } catch {
-          showMessage('Errore di connessione.', 'error');
-          badgeButton.disabled = false;
-        }
-
-        return;
-      }
-
-      const button = event.target.closest('button[data-role], button[data-status]');
-      if (!button) return;
-
-      const card = button.closest('[data-user-id]');
-      const userId = card?.dataset.userId;
-      const role = button.dataset.role;
-      const status = button.dataset.status;
-
-      if (!userId || (!role && !status)) return;
-
-      const confirmation = button.dataset.confirm;
-      if (confirmation && !window.confirm(confirmation)) {
-        return;
-      }
-
-      button.disabled = true;
-      showMessage('');
-
-      try {
-        const response = await fetch('/api/admin/users/update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            userId,
-            ...(role ? { role } : {}),
-            ...(status ? { status } : {})
-          })
-        });
-
-        const result = await response.json();
-
-        if (!result.ok) {
-          showMessage(result.error || 'Azione non riuscita.', 'error');
-          button.disabled = false;
-          return;
-        }
-
-        showMessage('Utente aggiornato.', 'ok');
-        await loadUsers();
-      } catch {
-        showMessage('Errore di connessione.', 'error');
-        button.disabled = false;
-      }
     });
 
     loadUsers();

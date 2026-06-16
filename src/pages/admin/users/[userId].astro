@@ -1,0 +1,455 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../../components/community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
+import '../../../styles/pages/admin-users.css';
+
+const userId = String(Astro.params.userId || '').trim();
+const title = 'Dettaglio utente | Retro-Gamers.it';
+const description = 'Dettaglio gestione utente Retro-Gamers.it';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
+---
+
+<BaseLayout title={title} description={description}>
+  <CommunityLayout class="admin-users-page admin-users-detail-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title="Strumenti redazione">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/admin/comments/">Moderazione commenti</a>
+            <a class="community-action-link" href="/admin/comment-reports/">Segnalazioni commenti</a>
+            <a class="community-action-link" href="/admin/users/">Gestione utenti</a>
+            <a class="community-action-link" href="/admin/private-message-reports/">Segnalazioni messaggi</a>
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    <CommunityHero
+      kicker="Retro-Gamers.it"
+      title="Dettaglio utente"
+      description="Gestisci ruolo, stato e badge del lettore selezionato."
+    >
+      <span slot="aside" class="community-soft-badge" data-admin-user-detail-count>Caricamento...</span>
+    </CommunityHero>
+
+    <section class="community-card admin-users-panel admin-user-detail-panel" data-admin-user-detail data-user-id={userId}>
+      <div class="admin-user-detail-panel__nav">
+        <a class="admin-user-card__profile-link" href="/admin/users/">← Torna agli utenti</a>
+      </div>
+
+      <div class="admin-users-message" data-admin-users-message hidden></div>
+
+      <div class="admin-users-list" data-admin-user-detail-body>
+        <p class="admin-users-empty">Caricamento dettaglio utente...</p>
+      </div>
+    </section>
+  </CommunityLayout>
+
+  <script>
+    const detailRoot = document.querySelector('[data-admin-user-detail]');
+    const detailNode = document.querySelector('[data-admin-user-detail-body]');
+    const countNode = document.querySelector('[data-admin-user-detail-count]');
+    const messageNode = document.querySelector('[data-admin-users-message]');
+    const userId = detailRoot?.dataset.userId || '';
+
+    let viewerRole = 'moderator';
+    let availableBadges = [];
+    let badgeManagementAvailable = false;
+
+    const escapeHtml = (value) =>
+      String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    const showMessage = (text, type = 'ok') => {
+      if (!messageNode) return;
+
+      messageNode.textContent = text;
+      messageNode.dataset.type = type;
+      messageNode.hidden = !text;
+    };
+
+    const formatDate = (value) => {
+      if (!value) return 'Non disponibile';
+
+      return new Intl.DateTimeFormat('it-IT', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value));
+    };
+
+    const getUserInitial = (user) => {
+      const source = user.displayName || user.username || user.email || 'Utente';
+      const match = String(source || '').trim().match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/);
+
+      return (match?.[0] || '?').toUpperCase();
+    };
+
+    const getPublicProfileHref = (username) => {
+      const normalizedUsername = String(username || '').trim().toLowerCase();
+
+      if (!/^[a-z0-9_-]{3,24}$/.test(normalizedUsername)) {
+        return '';
+      }
+
+      return `/utenti/${encodeURIComponent(normalizedUsername)}/`;
+    };
+
+    const roleLabels = {
+      user: 'User',
+      moderator: 'Moderator',
+      admin: 'Admin'
+    };
+
+    const statusLabels = {
+      active: 'Active',
+      suspended: 'Sospeso',
+      banned: 'Bannato'
+    };
+
+    const getBadgeLabel = (badge) =>
+      badge?.labelIt || badge?.labelEn || badge?.key || 'Badge';
+
+    const getBadgeImage = (badge) => {
+      const value = String(badge?.imagePath || '').trim();
+
+      if (!value) return '';
+
+      if (/^https?:\/\//i.test(value) || value.startsWith('/')) {
+        return value;
+      }
+
+      return `/${value.replace(/^\/+/, '')}`;
+    };
+
+    const renderRoleActions = (user) => {
+      if (!user.canManageRole || viewerRole !== 'admin') {
+        return '';
+      }
+
+      return `
+        ${user.role !== 'admin' ? '<button type="button" data-role="admin" data-confirm="Promuovere questo utente ad admin?">Promuovi a admin</button>' : ''}
+        ${user.role !== 'moderator' ? '<button type="button" data-role="moderator">Promuovi a moderator</button>' : ''}
+        ${user.role !== 'user' ? '<button type="button" data-role="user">Riporta a user</button>' : ''}
+      `;
+    };
+
+    const renderStatusActions = (user) => {
+      if (!user.canManageStatus) {
+        return '';
+      }
+
+      return `
+        ${user.status !== 'active' ? '<button type="button" data-status="active">Riattiva</button>' : ''}
+        ${user.status !== 'suspended' ? '<button type="button" data-status="suspended" data-confirm="Sospendere questo utente?">Sospendi</button>' : ''}
+        ${user.status !== 'banned' ? '<button type="button" data-status="banned" data-confirm="Bannare questo utente?">Banna</button>' : ''}
+      `;
+    };
+
+    const renderBadgeManagement = (user) => {
+      const assignedBadges = user.assignedBadges || [];
+      const assignedKeys = new Set(assignedBadges.map((badge) => badge.key));
+      const assignableBadges = availableBadges.filter((badge) => !assignedKeys.has(badge.key));
+      const currentBadgeLabel = user.currentBadge
+        ? getBadgeLabel(user.currentBadge)
+        : user.currentBadgeKey || 'Non impostato';
+      const assignedMarkup = assignedBadges.length > 0
+        ? assignedBadges.map((badge) => {
+            const isCurrent = badge.key === user.currentBadgeKey;
+
+            return `
+              <span class="admin-user-badge${isCurrent ? ' is-current' : ''}">
+                ${getBadgeImage(badge) ? `<img src="${escapeHtml(getBadgeImage(badge))}" alt="" loading="lazy" decoding="async" />` : ''}
+                <span>${escapeHtml(getBadgeLabel(badge))}${isCurrent ? ' · attivo' : ''}</span>
+                ${user.canManageBadges ? `
+                  <button
+                    type="button"
+                    data-badge-action="remove"
+                    data-badge-key="${escapeHtml(badge.key)}"
+                    data-confirm="Rimuovere questo badge dall’utente?"
+                  >
+                    Rimuovi
+                  </button>
+                ` : ''}
+              </span>
+            `;
+          }).join('')
+        : '<p class="admin-user-card__notice">Nessun badge assegnato</p>';
+      const assignMarkup = user.canManageBadges
+        ? `
+          <div class="admin-user-card__badge-assign">
+            <select data-badge-select ${assignableBadges.length === 0 ? 'disabled' : ''}>
+              <option value="">Assegna badge</option>
+              ${assignableBadges.map((badge) => `
+                <option value="${escapeHtml(badge.key)}">${escapeHtml(getBadgeLabel(badge))}</option>
+              `).join('')}
+            </select>
+            <button
+              type="button"
+              data-badge-action="assign"
+              ${assignableBadges.length === 0 ? 'disabled' : ''}
+            >
+              Assegna badge
+            </button>
+          </div>
+        `
+        : badgeManagementAvailable
+          ? '<p class="admin-user-card__notice">Solo gli admin possono modificare i badge.</p>'
+          : '<p class="admin-user-card__notice">Gestione badge non disponibile: esegui lo SQL dedicato in Supabase.</p>';
+
+      return `
+        <section class="admin-user-card__badges" aria-label="Gestisci badge">
+          <div class="admin-user-card__badges-header">
+            <div>
+              <h3>Gestisci badge</h3>
+              <p>Badge attivo: ${escapeHtml(currentBadgeLabel)}</p>
+            </div>
+          </div>
+
+          <div class="admin-user-card__badge-list" aria-label="Badge assegnati">
+            ${assignedMarkup}
+          </div>
+
+          ${assignMarkup}
+        </section>
+      `;
+    };
+
+    const renderUser = (user) => {
+      const role = roleLabels[user.role] || user.role || 'User';
+      const status = statusLabels[user.status] || user.status || 'Active';
+      const actions = [renderRoleActions(user), renderStatusActions(user)]
+        .filter(Boolean)
+        .join('');
+      const displayName = user.displayName || 'Non impostato';
+      const username = user.username || 'Non impostato';
+      const email = user.email || 'Email non disponibile';
+      const comments = user.comments || { total: 0, pending: 0, approved: 0 };
+      const avatarInitial = getUserInitial(user);
+      const avatarLabel = `Avatar di ${user.displayName || user.username || user.email || 'utente'}`;
+      const publicProfileHref = getPublicProfileHref(user.username);
+      const avatarImage = user.avatarUrl
+        ? `
+          <img
+            src="${escapeHtml(user.avatarUrl)}"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onerror="this.hidden = true"
+          />
+        `
+        : '';
+
+      return `
+        <article class="admin-user-card admin-user-card--detail" data-user-id="${escapeHtml(user.userId)}">
+          <header class="admin-user-card__header">
+            <div class="admin-user-card__identity">
+              <span class="admin-user-card__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
+                <span class="admin-user-card__avatar-fallback" aria-hidden="true">${escapeHtml(avatarInitial)}</span>
+                ${avatarImage}
+              </span>
+
+              <div>
+                <p class="admin-user-card__email">${escapeHtml(email)}</p>
+                <h2>${escapeHtml(displayName)}</h2>
+
+                <p class="admin-user-card__meta">
+                  <span>@${escapeHtml(username)}</span>
+                  <span class="admin-user-card__role" data-role="${escapeHtml(user.role || '')}">
+                    Ruolo: ${escapeHtml(role)}
+                  </span>
+                  <span class="admin-user-card__status" data-status="${escapeHtml(user.status || '')}">
+                    Stato: ${escapeHtml(status)}
+                  </span>
+                  <span>Registrato: ${escapeHtml(formatDate(user.createdAt))}</span>
+                </p>
+              </div>
+            </div>
+          </header>
+
+          <div class="admin-user-card__stats" aria-label="Commenti">
+            <div>
+              <span>Commenti</span>
+              <strong>${Number(comments.total || 0)}</strong>
+            </div>
+
+            <div>
+              <span>Pending</span>
+              <strong>${Number(comments.pending || 0)}</strong>
+            </div>
+
+            <div>
+              <span>Approved</span>
+              <strong>${Number(comments.approved || 0)}</strong>
+            </div>
+          </div>
+
+          ${renderBadgeManagement(user)}
+
+          <div class="admin-user-card__actions">
+            ${publicProfileHref ? `<a class="admin-user-card__profile-link" href="${escapeHtml(publicProfileHref)}">Vedi profilo</a>` : ''}
+            ${user.isSelf ? '<span class="admin-user-card__notice">Il tuo account è protetto da modifiche dirette.</span>' : ''}
+            ${actions || (!user.isSelf ? '<span class="admin-user-card__notice">Nessuna azione disponibile per il tuo ruolo.</span>' : '')}
+          </div>
+        </article>
+      `;
+    };
+
+    const loadUser = async () => {
+      if (!detailNode) return;
+
+      try {
+        const params = new URLSearchParams({
+          detail: '1',
+          userId
+        });
+        const response = await fetch(`/api/admin/users/list?${params.toString()}`);
+        const result = await response.json();
+
+        if (!result.ok) {
+          detailNode.innerHTML = `<p class="admin-users-empty">${escapeHtml(result.error || 'Errore caricamento utente.')}</p>`;
+          if (countNode) countNode.textContent = 'Dettaglio non disponibile';
+          return;
+        }
+
+        viewerRole = result.viewerRole || 'moderator';
+        availableBadges = result.availableBadges || [];
+        badgeManagementAvailable = Boolean(result.badgeManagementAvailable);
+        const user = result.users?.[0];
+
+        if (!user) {
+          detailNode.innerHTML = '<p class="admin-users-empty">Utente non trovato.</p>';
+          if (countNode) countNode.textContent = 'Utente non trovato';
+          return;
+        }
+
+        if (countNode) {
+          countNode.textContent = user.email || user.username || 'Utente selezionato';
+        }
+
+        detailNode.innerHTML = renderUser(user);
+      } catch {
+        detailNode.innerHTML = '<p class="admin-users-empty">Errore di connessione.</p>';
+      }
+    };
+
+    detailNode?.addEventListener('click', async (event) => {
+      const target = event.target;
+      const badgeButton = target instanceof Element
+        ? target.closest('button[data-badge-action]')
+        : null;
+
+      if (badgeButton) {
+        const card = badgeButton.closest('[data-user-id]');
+        const targetUserId = card?.dataset.userId;
+        const action = badgeButton.dataset.badgeAction;
+        const badgeKey = action === 'assign'
+          ? card?.querySelector('[data-badge-select]')?.value
+          : badgeButton.dataset.badgeKey;
+
+        if (!targetUserId || !badgeKey || (action !== 'assign' && action !== 'remove')) {
+          showMessage('Scegli un badge valido.', 'error');
+          return;
+        }
+
+        const confirmation = badgeButton.dataset.confirm;
+        if (confirmation && !window.confirm(confirmation)) {
+          return;
+        }
+
+        badgeButton.disabled = true;
+        showMessage('');
+
+        try {
+          const response = await fetch('/api/admin/users/badges/update', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              userId: targetUserId,
+              badgeKey,
+              action
+            })
+          });
+
+          const result = await response.json();
+
+          if (!result.ok) {
+            showMessage(result.error || 'Gestione badge non riuscita.', 'error');
+            badgeButton.disabled = false;
+            return;
+          }
+
+          showMessage(result.message || 'Badge aggiornato.', 'ok');
+          await loadUser();
+        } catch {
+          showMessage('Errore di connessione.', 'error');
+          badgeButton.disabled = false;
+        }
+
+        return;
+      }
+
+      const button = target instanceof Element
+        ? target.closest('button[data-role], button[data-status]')
+        : null;
+      if (!button) return;
+
+      const card = button.closest('[data-user-id]');
+      const targetUserId = card?.dataset.userId;
+      const role = button.dataset.role;
+      const status = button.dataset.status;
+
+      if (!targetUserId || (!role && !status)) return;
+
+      const confirmation = button.dataset.confirm;
+      if (confirmation && !window.confirm(confirmation)) {
+        return;
+      }
+
+      button.disabled = true;
+      showMessage('');
+
+      try {
+        const response = await fetch('/api/admin/users/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: targetUserId,
+            ...(role ? { role } : {}),
+            ...(status ? { status } : {})
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(result.error || 'Azione non riuscita.', 'error');
+          button.disabled = false;
+          return;
+        }
+
+        showMessage('Utente aggiornato.', 'ok');
+        await loadUser();
+      } catch {
+        showMessage('Errore di connessione.', 'error');
+        button.disabled = false;
+      }
+    });
+
+    loadUser();
+  </script>
+</BaseLayout>
