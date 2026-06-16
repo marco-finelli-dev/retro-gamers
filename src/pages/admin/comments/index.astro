@@ -175,16 +175,6 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
                 <h2>${escapeHtml(author)}</h2>
                 ${parent ? `<span class="admin-comment-card__reply-label">Risposta a ${escapeHtml(parentAuthor)}</span>` : ''}
               </div>
-
-              <p class="admin-comment-card__meta">
-                <span class="admin-comment-card__status" data-status="${escapeHtml(comment.status || '')}">
-                  ${escapeHtml(status)}
-                </span>
-                ${role ? `<span>${escapeHtml(role)}</span>` : ''}
-                ${badge ? `<span>${escapeHtml(badge)}</span>` : ''}
-                ${comment.article_language ? `<span>${escapeHtml(comment.article_language.toUpperCase())}</span>` : ''}
-                ${comment.created_at ? `<span>${escapeHtml(formatDate(comment.created_at))}</span>` : ''}
-              </p>
             </div>
 
             <div class="admin-comment-card__quick-actions">
@@ -199,6 +189,16 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
               </button>
             </div>
           </header>
+
+          <p class="admin-comment-card__meta">
+            <span class="admin-comment-card__status" data-status="${escapeHtml(comment.status || '')}">
+              ${escapeHtml(status)}
+            </span>
+            ${role ? `<span>${escapeHtml(role)}</span>` : ''}
+            ${badge ? `<span>${escapeHtml(badge)}</span>` : ''}
+            ${comment.article_language ? `<span>${escapeHtml(comment.article_language.toUpperCase())}</span>` : ''}
+            ${comment.created_at ? `<span>${escapeHtml(formatDate(comment.created_at))}</span>` : ''}
+          </p>
 
           <div class="admin-comment-card__preview">
             ${escapeHtml(comment.body)}
