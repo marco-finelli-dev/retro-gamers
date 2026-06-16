@@ -1411,29 +1411,26 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       }
     };
 
-    const loadCurrentUser = async () => {
-      try {
-        const response = await fetch('/api/auth/me');
-        const result = await response.json();
+    const applyViewerState = (viewer = null) => {
+      const canComment = Boolean(viewer?.canComment);
+      currentProfile = canComment
+        ? {
+            id: viewer.profileId || '',
+            user_id: viewer.userId || '',
+            username: viewer.username || '',
+            display_name: viewer.displayName || '',
+            role: viewer.role || '',
+            status: viewer.status || ''
+          }
+        : null;
 
-        if (!result.ok || !result.profile) {
-          if (authBox) authBox.hidden = false;
-          if (composer) composer.hidden = true;
-          currentProfile = null;
-          return;
-        }
+      if (authBox) authBox.hidden = canComment;
+      if (composer) composer.hidden = !canComment;
 
-        currentProfile = result.profile;
-        if (authBox) authBox.hidden = true;
-        if (composer) composer.hidden = false;
-
-        if (currentUserNode) {
-          currentUserNode.textContent = `${labels.loggedAs} ${getAuthorName(currentProfile, labels.reader)}`;
-        }
-      } catch {
-        currentProfile = null;
-        if (authBox) authBox.hidden = false;
-        if (composer) composer.hidden = true;
+      if (currentUserNode) {
+        currentUserNode.textContent = canComment
+          ? `${labels.loggedAs} ${getAuthorName(currentProfile, labels.reader)}`
+          : '';
       }
     };
 
@@ -1452,9 +1449,11 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
           return;
         }
 
+        applyViewerState(result.viewer);
         loadedComments = Array.isArray(result.comments) ? result.comments : [];
         renderComments(loadedComments);
       } catch {
+        applyViewerState(null);
         listNode.innerHTML = `<p class="article-comments__empty">${escapeHtml(labels.error)}</p>`;
         updateCount(legacyComments.length);
       }
@@ -1634,7 +1633,6 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     jumpToCommentsForCommentHash();
 
     Promise.resolve()
-      .then(loadCurrentUser)
       .then(loadComments)
       .catch(() => {
         renderComments([]);

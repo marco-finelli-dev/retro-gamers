@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
-import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
+import { getUserSessionFromCookies, isBlockedProfileStatus, isStaffProfile } from '../../../lib/supabase/auth';
 import { getAvatarPublicUrl, isMissingAvatarColumnError } from '../../../lib/supabase/avatars';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
@@ -25,6 +25,38 @@ const emptyReactionSummary = (): CommentReactionSummary => ({
 });
 
 const COMMENT_EDIT_WINDOW_MS = 10 * 60 * 1000;
+
+const getViewerState = (session: Awaited<ReturnType<typeof getUserSessionFromCookies>>) => {
+  const profile = session.profile;
+  const isAuthenticated = Boolean(session.user && profile && !session.error);
+  const canComment = Boolean(isAuthenticated && !isBlockedProfileStatus(profile?.status));
+
+  if (!isAuthenticated || !profile) {
+    return {
+      isAuthenticated: false,
+      profileId: null,
+      userId: null,
+      username: '',
+      displayName: '',
+      role: '',
+      status: '',
+      canComment: false,
+      canAutoApprove: false,
+    };
+  }
+
+  return {
+    isAuthenticated: true,
+    profileId: profile.id,
+    userId: session.user?.id ?? null,
+    username: profile.username ?? '',
+    displayName: profile.display_name ?? '',
+    role: profile.role ?? '',
+    status: profile.status ?? '',
+    canComment,
+    canAutoApprove: isStaffProfile(profile),
+  };
+};
 
 const getCommentsSelect = (includeAvatar = true) => `
       id,
@@ -71,7 +103,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   }
 
   const session = await getUserSessionFromCookies(cookies);
-  const currentUserId = session.user?.id ?? null;
+  const viewer = getViewerState(session);
+  const currentUserId = viewer.canComment ? session.user?.id ?? null : null;
 
   const fetchArticleComments = async (includeAvatar = true) => {
     const { data: approvedComments, error: approvedError } = await supabaseAdmin
@@ -155,7 +188,16 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   }
 
   const roots = comments.filter((comment) => !comment.parent_id);
-  const replies = comments.filter((comment) => comment.parent_id);
+  const repliesByParentId = new Map<string, typeof comments>();
+
+  for (const comment of comments) {
+    if (!comment.parent_id) continue;
+
+    const parentId = String(comment.parent_id);
+    const replies = repliesByParentId.get(parentId) ?? [];
+    replies.push(comment);
+    repliesByParentId.set(parentId, replies);
+  }
   const canEditComment = (comment: (typeof comments)[number]) => {
     if (!currentUserId || comment.user_id !== currentUserId) {
       return false;
@@ -190,13 +232,13 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
   const threadedComments = roots.map((comment) => ({
     ...withReactionSummary(comment),
-    replies: replies
-      .filter((reply) => reply.parent_id === comment.id)
+    replies: (repliesByParentId.get(String(comment.id)) ?? [])
       .map(withReactionSummary),
   }));
 
   return json({
     ok: true,
+    viewer,
     comments: threadedComments,
   });
 };
