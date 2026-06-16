@@ -198,7 +198,7 @@
   margin: 0;
 }
 
-.admin-user-row__facts div {
+.admin-user-row__facts > div:not(.admin-user-row__action-cell) {
   min-width: 0;
   padding: 5px 8px;
   border: 1px solid color-mix(in srgb, var(--rg-card-border) 72%, transparent);
@@ -242,6 +242,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .admin-user-row__action-cell .admin-user-card__profile-link {
