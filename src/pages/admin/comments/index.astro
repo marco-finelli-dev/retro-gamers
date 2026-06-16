@@ -125,6 +125,12 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       deleted: 'Eliminato'
     };
 
+    const roleLabels = {
+      admin: 'Admin',
+      moderator: 'Moderatore',
+      user: 'Lettore'
+    };
+
     const getFilterParams = () => {
       const params = new URLSearchParams();
 
@@ -147,52 +153,76 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       const author = profile.display_name || profile.username || 'Utente';
       const badge = profile.user_badges?.label_it || profile.user_badges?.label_en || '';
       const articleUrl = comment.article_url || '#';
+      const articleLabel = comment.article_title || comment.article_slug || 'Articolo';
       const status = statusLabels[comment.status] || comment.status || 'Stato sconosciuto';
+      const role = roleLabels[profile.role] || profile.role || '';
       const parent = comment.parent || null;
       const parentProfile = parent?.profiles || {};
       const parentAuthor = parentProfile.display_name || parentProfile.username || 'Commento originale';
+      const detailId = `admin-comment-detail-${comment.id}`;
 
       return `
         <article class="admin-comment-card" data-comment-id="${escapeHtml(comment.id)}">
           <header class="admin-comment-card__header">
-            <div>
+            <div class="admin-comment-card__summary">
               <p class="admin-comment-card__article">
                 <a href="${escapeHtml(articleUrl)}" target="_blank" rel="noreferrer">
-                  ${escapeHtml(comment.article_title || comment.article_slug)}
+                  ${escapeHtml(articleLabel)}
                 </a>
               </p>
 
-              <h2>${escapeHtml(author)}</h2>
+              <div class="admin-comment-card__title-row">
+                <h2>${escapeHtml(author)}</h2>
+                ${parent ? `<span class="admin-comment-card__reply-label">Risposta a ${escapeHtml(parentAuthor)}</span>` : ''}
+              </div>
 
               <p class="admin-comment-card__meta">
                 <span class="admin-comment-card__status" data-status="${escapeHtml(comment.status || '')}">
                   ${escapeHtml(status)}
                 </span>
+                ${role ? `<span>${escapeHtml(role)}</span>` : ''}
                 ${badge ? `<span>${escapeHtml(badge)}</span>` : ''}
                 ${comment.article_language ? `<span>${escapeHtml(comment.article_language.toUpperCase())}</span>` : ''}
                 ${comment.created_at ? `<span>${escapeHtml(formatDate(comment.created_at))}</span>` : ''}
               </p>
             </div>
+
+            <div class="admin-comment-card__quick-actions">
+              <a href="${escapeHtml(articleUrl)}" target="_blank" rel="noreferrer">Apri articolo</a>
+              <button
+                type="button"
+                data-admin-comment-toggle
+                aria-expanded="false"
+                aria-controls="${escapeHtml(detailId)}"
+              >
+                Gestisci
+              </button>
+            </div>
           </header>
 
-          ${parent ? `
-            <div class="admin-comment-card__parent">
-              <strong>Risposta a ${escapeHtml(parentAuthor)}</strong>
-              <p>${escapeHtml(parent.body || '').slice(0, 220)}</p>
-            </div>
-          ` : ''}
-
-          <div class="admin-comment-card__body">
+          <div class="admin-comment-card__preview">
             ${escapeHtml(comment.body)}
           </div>
 
-          <div class="admin-comment-card__actions">
-            <a href="${escapeHtml(articleUrl)}" target="_blank" rel="noreferrer">Apri articolo</a>
-            ${comment.status !== 'approved' ? '<button type="button" data-action="approve">Approva</button>' : ''}
-            ${comment.status !== 'rejected' ? '<button type="button" data-action="reject">Rifiuta</button>' : ''}
-            ${comment.status !== 'spam' ? '<button type="button" data-action="spam" data-confirm="Segnare questo commento come spam?">Spam</button>' : ''}
-            ${comment.status !== 'deleted' ? '<button type="button" data-action="delete" data-confirm="Eliminare questo commento dalla moderazione pubblica?">Elimina</button>' : ''}
-            ${comment.status !== 'pending' ? '<button type="button" data-action="restore">Rimetti in coda</button>' : ''}
+          <div class="admin-comment-card__details" id="${escapeHtml(detailId)}" data-admin-comment-details hidden>
+            ${parent ? `
+              <div class="admin-comment-card__parent">
+                <strong>Risposta a ${escapeHtml(parentAuthor)}</strong>
+                <p>${escapeHtml(parent.body || '').slice(0, 220)}</p>
+              </div>
+            ` : ''}
+
+            <div class="admin-comment-card__body">
+              ${escapeHtml(comment.body)}
+            </div>
+
+            <div class="admin-comment-card__actions">
+              ${comment.status !== 'approved' ? '<button type="button" data-action="approve">Approva</button>' : ''}
+              ${comment.status !== 'rejected' ? '<button type="button" data-action="reject">Rifiuta</button>' : ''}
+              ${comment.status !== 'spam' ? '<button type="button" data-action="spam" data-confirm="Segnare questo commento come spam?">Spam</button>' : ''}
+              ${comment.status !== 'deleted' ? '<button type="button" data-action="delete" data-confirm="Eliminare questo commento dalla moderazione pubblica?">Elimina</button>' : ''}
+              ${comment.status !== 'pending' ? '<button type="button" data-action="restore">Rimetti in coda</button>' : ''}
+            </div>
           </div>
         </article>
       `;
@@ -244,6 +274,21 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
     });
 
     listNode?.addEventListener('click', async (event) => {
+      const toggleButton = event.target.closest('button[data-admin-comment-toggle]');
+      if (toggleButton) {
+        const card = toggleButton.closest('[data-comment-id]');
+        const details = card?.querySelector('[data-admin-comment-details]');
+
+        if (details) {
+          const isOpening = details.hidden;
+          details.hidden = !isOpening;
+          toggleButton.setAttribute('aria-expanded', String(isOpening));
+          toggleButton.textContent = isOpening ? 'Chiudi' : 'Gestisci';
+        }
+
+        return;
+      }
+
       const button = event.target.closest('button[data-action]');
       if (!button) return;
 
