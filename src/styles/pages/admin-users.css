@@ -647,17 +647,49 @@ html[data-theme="light"] .admin-user-card__avatar {
   }
 
   .admin-user-row {
+    flex: none;
     flex-direction: column;
     align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .admin-user-row__identity {
+    flex: none;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .admin-user-row__identity h2 {
+    white-space: normal;
   }
 
   .admin-user-row__facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex: none;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .admin-user-row__facts > div {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .admin-user-row__facts dd {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .admin-user-row__action-cell .admin-user-card__profile-link {
+    max-width: 100%;
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .admin-user-card__stats {
