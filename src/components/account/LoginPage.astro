@@ -1,83 +1,79 @@
 ---
 import '../../styles/pages/account.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getActiveReaderBadges } from '../../lib/badges';
 
 const { lang = 'it' } = Astro.props;
 const isEnglish = lang === 'en';
 
 const copy = isEnglish
   ? {
-      title: 'Register on Retro-Gamers.it',
-      description: 'Create a reader profile to comment on Retro-Gamers.it articles.',
+      title: 'Sign in to Retro-Gamers.it',
+      description: 'Sign in to your reader profile to comment on Retro-Gamers.it articles.',
       kicker: 'Reader profile',
-      heading: 'Register',
-      intro: 'Choose a nickname, pick a badge and join the discussions below the articles.',
-      socialAria: 'Social registration',
-      divider: 'or',
+      heading: 'Sign in',
+      intro: 'Sign in with your account to join the discussions below the articles.',
+      socialAria: 'Social sign in',
+      divider: 'OR',
       email: 'Email',
       password: 'Password',
-      username: 'Username',
-      displayName: 'Display name',
-      badge: 'Reader badge',
-      badgePlaceholder: 'Choose a badge',
-      submit: 'Create account',
-      switchText: 'Already have an account?',
-      switchLink: 'Sign in',
-      switchHref: '/en/account/login/',
+      submit: 'Sign in',
+      switchText: 'Don’t have an account yet?',
+      switchLink: 'Create one',
+      switchHref: '/en/account/register/',
       resend: 'Did not receive the email? Resend confirmation',
       google: 'Continue with Google',
       apple: 'Continue with Apple',
       facebook: 'Continue with Facebook',
+      oauthError: 'Social sign in was not completed. Try again or use email and password.',
     }
   : {
-      title: 'Registrati su Retro-Gamers.it',
-      description: 'Crea un profilo lettore per commentare gli articoli di Retro-Gamers.it.',
+      title: 'Accedi a Retro-Gamers.it',
+      description: 'Accedi al tuo profilo lettore per commentare gli articoli di Retro-Gamers.it.',
       kicker: 'Profilo lettore',
-      heading: 'Registrati',
-      intro: 'Scegli un nickname, un badge e partecipa alle discussioni sotto gli articoli.',
-      socialAria: 'Registrazione social',
+      heading: 'Accedi',
+      intro: 'Entra con il tuo account per partecipare alle discussioni sotto gli articoli.',
+      socialAria: 'Accesso social',
       divider: 'oppure',
       email: 'Email',
       password: 'Password',
-      username: 'Username',
-      displayName: 'Nome visualizzato',
-      badge: 'Badge lettore',
-      badgePlaceholder: 'Scegli un badge',
-      submit: 'Crea account',
-      switchText: 'Hai già un account?',
-      switchLink: 'Accedi',
-      switchHref: '/account/login/',
+      submit: 'Accedi',
+      switchText: 'Non hai ancora un account?',
+      switchLink: 'Registrati',
+      switchHref: '/account/register/',
       resend: 'Non hai ricevuto la mail? Reinvia conferma',
       google: 'Continua con Google',
       apple: 'Continua con Apple',
       facebook: 'Continua con Facebook',
+      oauthError: 'Accesso social non completato. Riprova oppure usa email e password.',
     };
 
 const clientCopy = isEnglish
   ? {
       lang: 'en',
-      registerFailed: 'Registration failed. Please check your details and try again.',
-      successFallback: 'Registration received. Check your email to confirm your account.',
+      loginFailed: 'Sign in failed. Check your email and password.',
+      loginSuccess: 'Signed in. You can return to the article and comment.',
+      emailNotConfirmed: 'Account not confirmed. Check your email or request a new confirmation link.',
       connectionError: 'Connection error. Please try again.',
       missingResendEmail: 'Enter your email in the field above, then request a new link.',
       resendFailed: 'The request could not be completed. Please try again later.',
       resendSuccess: 'If the address is valid, you will receive a new confirmation email.',
-      loginSuccess: '',
     }
   : {
       lang: 'it',
-      registerFailed: 'Registrazione non riuscita.',
-      successFallback: 'Registrazione ricevuta. Controlla la tua email per confermare l’account.',
+      loginFailed: 'Login non riuscito.',
+      loginSuccess: 'Login effettuato. Puoi tornare all’articolo e commentare.',
+      emailNotConfirmed: 'Account non confermato. Controlla la tua email o richiedi un nuovo link di conferma.',
       connectionError: 'Errore di connessione. Riprova.',
       missingResendEmail: 'Inserisci la tua email nel campo sopra, poi richiedi un nuovo link.',
       resendFailed: 'Richiesta non completata. Riprova più tardi.',
       resendSuccess: 'Se l’indirizzo è valido, riceverai una nuova email di conferma.',
-      loginSuccess: '',
     };
 
-const badges = await getActiveReaderBadges();
-const encodedReturnTo = encodeURIComponent('/account/');
+const defaultReturnTo = isEnglish ? '/en/' : '/';
+const returnTo = Astro.url.searchParams.get('returnTo') || defaultReturnTo;
+const encodedReturnTo = encodeURIComponent(returnTo);
+const oauthError = Astro.url.searchParams.get('oauthError');
+const oauthErrorMessage = oauthError ? copy.oauthError : '';
 const enableAppleLogin = false;
 const enableFacebookLogin = false;
 const socialProviders = [
@@ -110,13 +106,13 @@ const socialProviders = [
 ];
 
 const alternateLanguages = [
-  { lang: 'it', url: 'https://www.retro-gamers.it/account/register/' },
-  { lang: 'en', url: 'https://www.retro-gamers.it/en/account/register/' },
-  { lang: 'x-default', url: 'https://www.retro-gamers.it/account/register/' },
+  { lang: 'it', url: 'https://www.retro-gamers.it/account/login/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/account/login/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/account/login/' },
 ];
 
 const languageSwitch = {
-  url: isEnglish ? '/account/register/' : '/en/account/register/',
+  url: isEnglish ? '/account/login/' : '/en/account/login/',
 };
 ---
 
@@ -162,11 +158,17 @@ const languageSwitch = {
         ))}
       </div>
 
+      {oauthErrorMessage && (
+        <p class="account-message" data-type="error">{oauthErrorMessage}</p>
+      )}
+
       <div class="account-divider" aria-hidden="true">
         <span>{copy.divider}</span>
       </div>
 
-      <form class="account-form" data-register-form>
+      <form class="account-form" data-login-form>
+        <input type="hidden" name="returnTo" value={returnTo} />
+
         <label>
           <span>{copy.email}</span>
           <input type="email" name="email" required autocomplete="email" />
@@ -174,31 +176,7 @@ const languageSwitch = {
 
         <label>
           <span>{copy.password}</span>
-          <input type="password" name="password" required minlength="8" autocomplete="new-password" />
-        </label>
-
-        <label>
-          <span>{copy.username}</span>
-          <input type="text" name="username" required minlength="3" maxlength="24" autocomplete="username" />
-        </label>
-
-        <label>
-          <span>{copy.displayName}</span>
-          <input type="text" name="displayName" required minlength="2" maxlength="40" />
-        </label>
-
-        <label>
-          <span>{copy.badge}</span>
-          <select name="badgeKey" required>
-            <option value="">{copy.badgePlaceholder}</option>
-            {badges.map((badge) => (
-              <option value={badge.key}>
-                {isEnglish
-                  ? badge.label_en || badge.label_it || badge.key
-                  : badge.label_it || badge.label_en || badge.key}
-              </option>
-            ))}
-          </select>
+          <input type="password" name="password" required autocomplete="current-password" />
         </label>
 
         <p class="account-message" data-account-message hidden></p>
@@ -220,16 +198,25 @@ const languageSwitch = {
   </main>
 
   <script define:vars={{ clientCopy }}>
-    const form = document.querySelector('[data-register-form]');
+    const form = document.querySelector('[data-login-form]');
     const message = document.querySelector('[data-account-message]');
     const resendButton = document.querySelector('[data-resend-confirmation]');
-    let lastConfirmationEmail = '';
 
     const showMessage = (text, type = 'ok') => {
       if (!message) return;
       message.textContent = text;
       message.hidden = false;
       message.dataset.type = type;
+    };
+
+    const errorMessage = (result) => {
+      if (clientCopy.lang === 'en') {
+        return result?.code === 'email_not_confirmed'
+          ? clientCopy.emailNotConfirmed
+          : clientCopy.loginFailed;
+      }
+
+      return result?.error || clientCopy.loginFailed;
     };
 
     const resultMessage = (result, key, fallback) => {
@@ -249,34 +236,28 @@ const languageSwitch = {
       if (button) button.disabled = true;
 
       try {
-        const email = String(formData.get('email') || '').trim();
-
-        const response = await fetch('/api/auth/register', {
+        const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email,
-            password: String(formData.get('password') || ''),
-            username: String(formData.get('username') || ''),
-            displayName: String(formData.get('displayName') || ''),
-            badgeKey: String(formData.get('badgeKey') || '')
+            email: String(formData.get('email') || ''),
+            password: String(formData.get('password') || '')
           })
         });
 
         const result = await response.json();
 
         if (!result.ok) {
-          if (result.code === 'email_not_confirmed') {
-            lastConfirmationEmail = email;
-          }
-
-          showMessage(resultMessage(result, 'error', clientCopy.registerFailed), 'error');
+          showMessage(errorMessage(result), 'error');
           return;
         }
 
-        lastConfirmationEmail = email;
-        showMessage(resultMessage(result, 'message', clientCopy.successFallback), 'ok');
-        form.reset();
+        showMessage(clientCopy.loginSuccess, 'ok');
+
+        setTimeout(() => {
+          const returnTo = String(formData.get('returnTo') || '/');
+          window.location.href = returnTo.startsWith('/') ? returnTo : '/';
+        }, 700);
       } catch {
         showMessage(clientCopy.connectionError, 'error');
       } finally {
@@ -286,8 +267,7 @@ const languageSwitch = {
 
     resendButton?.addEventListener('click', async () => {
       const emailInput = form?.querySelector('input[name="email"]');
-      const typedEmail = emailInput instanceof HTMLInputElement ? emailInput.value.trim() : '';
-      const email = typedEmail || lastConfirmationEmail;
+      const email = emailInput instanceof HTMLInputElement ? emailInput.value.trim() : '';
 
       if (!email) {
         showMessage(clientCopy.missingResendEmail, 'error');

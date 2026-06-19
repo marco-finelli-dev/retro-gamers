@@ -11,8 +11,9 @@ const rawSlug =
 const articleSlug = rawSlug;
 const articleTitle = post?.title || '';
 const articleUrl = Astro.url.pathname;
-const loginHref = `/account/login/?returnTo=${encodeURIComponent(`${articleUrl}#comments`)}`;
-const registerHref = '/account/register/';
+const accountLoginHref = lang === 'en' ? '/en/account/login/' : '/account/login/';
+const registerHref = lang === 'en' ? '/en/account/register/' : '/account/register/';
+const loginHref = `${accountLoginHref}?returnTo=${encodeURIComponent(`${articleUrl}#comments`)}`;
 
 const labels = {
   it: {

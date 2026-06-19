@@ -61,6 +61,8 @@ const flagSrc = isEnglish
 const flagAlt = isEnglish
   ? 'Italiano'
   : 'English';
+
+const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
 ---
 
 <header class="site-header">
@@ -203,7 +205,7 @@ const flagAlt = isEnglish
           hidden
         >
           <div class="site-header__account-group" data-account-guest>
-            <a href="/account/login/" role="menuitem">
+            <a href={accountLoginHref} role="menuitem">
               {isEnglish ? 'Log in / Register' : 'Accedi / Registrati'}
             </a>
           </div>

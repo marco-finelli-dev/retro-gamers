@@ -72,6 +72,8 @@ const accountLabels = isEnglish
       editorialTools: 'Area redazione',
       signOut: 'Esci'
     };
+
+const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
 ---
 
 <div class="mobile-menu" id="mobile-menu" aria-hidden="true" data-mobile-menu>
@@ -97,7 +99,7 @@ const accountLabels = isEnglish
 
       <div class="mobile-menu__links">
         <div data-account-guest data-mobile-account-guest>
-          <a href="/account/login/">{accountLabels.signIn}</a>
+          <a href={accountLoginHref}>{accountLabels.signIn}</a>
         </div>
 
         <div data-account-auth data-mobile-account-auth hidden>
