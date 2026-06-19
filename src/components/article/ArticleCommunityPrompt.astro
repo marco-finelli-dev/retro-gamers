@@ -1,0 +1,187 @@
+---
+import '../../styles/article/article-community-prompt.css';
+
+const { lang = 'it' } = Astro.props;
+const isEnglish = lang === 'en';
+
+const copy = isEnglish
+  ? {
+      title: 'Is a memory coming back?',
+      body: 'On Retro-Gamers.it we are collecting readers’ memories below the articles, so they do not disappear in the flow of social media.\n\nCreate your reader profile to comment, reply to other fans and keep your contributions in your personal space.',
+      register: 'Create reader profile',
+      keepReading: 'Keep reading',
+      close: 'Close community prompt',
+      registerHref: '/account/register/'
+    }
+  : {
+      title: 'Ti sta tornando in mente un ricordo?',
+      body: 'Su Retro-Gamers.it stiamo raccogliendo le memorie dei lettori sotto gli articoli, così non si perdono nel flusso dei social.\n\nCrea il tuo profilo lettore per commentare, rispondere agli altri appassionati e ritrovare i tuoi interventi nel tuo spazio personale.',
+      register: 'Crea profilo lettore',
+      keepReading: 'Continua a leggere',
+      close: 'Chiudi invito community',
+      registerHref: '/account/register/'
+    };
+---
+
+<aside
+  class="article-community-prompt"
+  data-article-community-prompt
+  hidden
+  role="dialog"
+  aria-modal="false"
+  aria-labelledby="article-community-prompt-title"
+>
+  <button
+    type="button"
+    class="article-community-prompt__close"
+    data-article-community-prompt-dismiss
+    aria-label={copy.close}
+  >
+    ×
+  </button>
+
+  <div class="article-community-prompt__content">
+    <p class="article-community-prompt__eyebrow">Retro-Gamers.it Community</p>
+    <h2 id="article-community-prompt-title">{copy.title}</h2>
+    {copy.body.split('\n\n').map((paragraph) => (
+      <p>{paragraph}</p>
+    ))}
+  </div>
+
+  <div class="article-community-prompt__actions">
+    <a href={copy.registerHref} data-article-community-prompt-register>
+      {copy.register}
+    </a>
+    <button type="button" data-article-community-prompt-dismiss>
+      {copy.keepReading}
+    </button>
+  </div>
+</aside>
+
+<script is:inline>
+  (() => {
+    const prompt = document.querySelector('[data-article-community-prompt]');
+
+    if (!prompt) return;
+
+    const dismissButtons = prompt.querySelectorAll('[data-article-community-prompt-dismiss]');
+    const registerLink = prompt.querySelector('[data-article-community-prompt-register]');
+    const dismissedKey = 'retroGamersCommunityPromptDismissedAt';
+    const shownKey = 'retroGamersCommunityPromptShown';
+    const dismissDurationMs = 7 * 24 * 60 * 60 * 1000;
+    const showDelayMs = 55 * 1000;
+
+    const storage = {
+      getLocal(key) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      },
+      setLocal(key, value) {
+        try {
+          window.localStorage.setItem(key, value);
+        } catch {
+          // Ignore storage failures: the prompt remains dismissible for the page session.
+        }
+      },
+      getSession(key) {
+        try {
+          return window.sessionStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      },
+      setSession(key, value) {
+        try {
+          window.sessionStorage.setItem(key, value);
+        } catch {
+          // Ignore storage failures.
+        }
+      }
+    };
+
+    const wasDismissedRecently = () => {
+      const dismissedAt = Number(storage.getLocal(dismissedKey) || 0);
+
+      if (!Number.isFinite(dismissedAt) || dismissedAt <= 0) {
+        return false;
+      }
+
+      return Date.now() - dismissedAt < dismissDurationMs;
+    };
+
+    const shouldSkipPrompt = () =>
+      storage.getSession(shownKey) === '1' || wasDismissedRecently();
+
+    const markDismissed = () => {
+      storage.setLocal(dismissedKey, String(Date.now()));
+      storage.setSession(shownKey, '1');
+    };
+
+    const hidePrompt = ({ remember = true } = {}) => {
+      prompt.hidden = true;
+      prompt.dataset.state = 'hidden';
+
+      if (remember) {
+        markDismissed();
+      }
+    };
+
+    const showPrompt = () => {
+      if (shouldSkipPrompt()) return;
+
+      prompt.hidden = false;
+      prompt.dataset.state = 'visible';
+      storage.setSession(shownKey, '1');
+    };
+
+    const isLoggedIn = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'same-origin',
+          headers: {
+            Accept: 'application/json'
+          }
+        });
+
+        if (!response.ok) return false;
+
+        const result = await response.json();
+        return Boolean(result?.ok && result?.user);
+      } catch {
+        return false;
+      }
+    };
+
+    const maybeShowPrompt = async () => {
+      if (shouldSkipPrompt()) return;
+
+      if (await isLoggedIn()) {
+        storage.setSession(shownKey, '1');
+        return;
+      }
+
+      showPrompt();
+    };
+
+    const timer = window.setTimeout(maybeShowPrompt, showDelayMs);
+
+    dismissButtons.forEach((button) => {
+      button.addEventListener('click', () => hidePrompt());
+    });
+
+    registerLink?.addEventListener('click', markDismissed);
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !prompt.hidden) {
+        hidePrompt();
+      }
+    });
+
+    window.addEventListener('pagehide', () => {
+      window.clearTimeout(timer);
+    }, { once: true });
+  })();
+</script>

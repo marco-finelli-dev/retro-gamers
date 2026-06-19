@@ -1,0 +1,161 @@
+.article-community-prompt {
+  position: fixed;
+  right: clamp(16px, 3vw, 28px);
+  bottom: clamp(16px, 4vw, 28px);
+  z-index: 80;
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid rgba(45,240,255,0.20);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(12,15,24,0.92), rgba(13,20,32,0.84)),
+    radial-gradient(circle at 18% 0%, rgba(45,240,255,0.15), transparent 36%),
+    radial-gradient(circle at 88% 100%, rgba(130,90,255,0.14), transparent 34%);
+  box-shadow:
+    0 22px 54px rgba(0,0,0,0.40),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  color: var(--color-text);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+.article-community-prompt[hidden] {
+  display: none;
+}
+
+.article-community-prompt__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  color: var(--color-text-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.article-community-prompt__close:hover,
+.article-community-prompt__close:focus-visible {
+  border-color: rgba(45,240,255,0.34);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.article-community-prompt__content {
+  padding-right: 26px;
+}
+
+.article-community-prompt__eyebrow {
+  margin: 0 0 8px;
+  color: var(--rg-eyebrow-color);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.article-community-prompt h2 {
+  margin: 0 0 10px;
+  color: var(--rg-section-title-color);
+  font-family: var(--font-base);
+  font-size: clamp(1.14rem, 2.4vw, 1.35rem);
+  line-height: 1.12;
+}
+
+.article-community-prompt p {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.94rem;
+  line-height: 1.55;
+}
+
+.article-community-prompt p + p {
+  margin-top: 8px;
+}
+
+.article-community-prompt__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.article-community-prompt__actions a,
+.article-community-prompt__actions button {
+  min-height: 40px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 16px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.article-community-prompt__actions button {
+  border-color: rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: var(--color-text);
+}
+
+.article-community-prompt__actions a:hover,
+.article-community-prompt__actions a:focus-visible,
+.article-community-prompt__actions button:hover,
+.article-community-prompt__actions button:focus-visible {
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+}
+
+html[data-theme="light"] .article-community-prompt {
+  border-color: rgba(8,124,142,0.24);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.94), rgba(242,247,251,0.88)),
+    radial-gradient(circle at 18% 0%, rgba(8,124,142,0.12), transparent 36%),
+    radial-gradient(circle at 88% 100%, rgba(102,81,184,0.10), transparent 34%);
+  box-shadow:
+    0 20px 46px rgba(24,32,48,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.72);
+}
+
+html[data-theme="light"] .article-community-prompt__close,
+html[data-theme="light"] .article-community-prompt__actions button {
+  border-color: rgba(18,24,38,0.12);
+  background: rgba(255,255,255,0.54);
+}
+
+@media (max-width: 640px) {
+  .article-community-prompt {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    max-height: calc(100vh - 24px);
+    padding: 18px;
+    overflow: auto;
+  }
+
+  .article-community-prompt__actions {
+    flex-direction: column;
+  }
+
+  .article-community-prompt__actions a,
+  .article-community-prompt__actions button {
+    width: 100%;
+  }
+}
