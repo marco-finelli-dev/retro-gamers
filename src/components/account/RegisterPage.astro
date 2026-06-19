@@ -1,0 +1,321 @@
+---
+import '../../styles/pages/account.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getActiveReaderBadges } from '../../lib/badges';
+
+const { lang = 'it' } = Astro.props;
+const isEnglish = lang === 'en';
+
+const copy = isEnglish
+  ? {
+      title: 'Register on Retro-Gamers.it',
+      description: 'Create a reader profile to comment on Retro-Gamers.it articles.',
+      kicker: 'Reader profile',
+      heading: 'Register',
+      intro: 'Choose a nickname, pick a badge and join the discussions below the articles.',
+      socialAria: 'Social registration',
+      divider: 'or',
+      email: 'Email',
+      password: 'Password',
+      username: 'Username',
+      displayName: 'Display name',
+      badge: 'Reader badge',
+      badgePlaceholder: 'Choose a badge',
+      submit: 'Create account',
+      switchText: 'Already have an account?',
+      switchLink: 'Log in',
+      switchHref: '/account/login/',
+      resend: 'Did not receive the email? Resend confirmation',
+      google: 'Continue with Google',
+      apple: 'Continue with Apple',
+      facebook: 'Continue with Facebook',
+    }
+  : {
+      title: 'Registrati su Retro-Gamers.it',
+      description: 'Crea un profilo lettore per commentare gli articoli di Retro-Gamers.it.',
+      kicker: 'Profilo lettore',
+      heading: 'Registrati',
+      intro: 'Scegli un nickname, un badge e partecipa alle discussioni sotto gli articoli.',
+      socialAria: 'Registrazione social',
+      divider: 'oppure',
+      email: 'Email',
+      password: 'Password',
+      username: 'Username',
+      displayName: 'Nome visualizzato',
+      badge: 'Badge lettore',
+      badgePlaceholder: 'Scegli un badge',
+      submit: 'Crea account',
+      switchText: 'Hai già un account?',
+      switchLink: 'Accedi',
+      switchHref: '/account/login/',
+      resend: 'Non hai ricevuto la mail? Reinvia conferma',
+      google: 'Continua con Google',
+      apple: 'Continua con Apple',
+      facebook: 'Continua con Facebook',
+    };
+
+const clientCopy = isEnglish
+  ? {
+      lang: 'en',
+      registerFailed: 'Registration failed. Please check your details and try again.',
+      successFallback: 'Registration received. Check your email to confirm your account.',
+      connectionError: 'Connection error. Please try again.',
+      missingResendEmail: 'Enter your email in the field above, then request a new link.',
+      resendFailed: 'The request could not be completed. Please try again later.',
+      resendSuccess: 'If the address is valid, you will receive a new confirmation email.',
+      loginSuccess: '',
+    }
+  : {
+      lang: 'it',
+      registerFailed: 'Registrazione non riuscita.',
+      successFallback: 'Registrazione ricevuta. Controlla la tua email per confermare l’account.',
+      connectionError: 'Errore di connessione. Riprova.',
+      missingResendEmail: 'Inserisci la tua email nel campo sopra, poi richiedi un nuovo link.',
+      resendFailed: 'Richiesta non completata. Riprova più tardi.',
+      resendSuccess: 'Se l’indirizzo è valido, riceverai una nuova email di conferma.',
+      loginSuccess: '',
+    };
+
+const badges = await getActiveReaderBadges();
+const encodedReturnTo = encodeURIComponent('/account/');
+const enableAppleLogin = false;
+const enableFacebookLogin = false;
+const socialProviders = [
+  {
+    provider: 'google',
+    label: copy.google,
+    iconLight: '/icons/oauth/google-light.webp',
+    iconDark: '/icons/oauth/google-dark.webp',
+  },
+  ...(enableAppleLogin
+    ? [
+        {
+          provider: 'apple',
+          label: copy.apple,
+          iconLight: '/icons/oauth/apple-light.webp',
+          iconDark: '/icons/oauth/apple-dark.webp',
+        },
+      ]
+    : []),
+  ...(enableFacebookLogin
+    ? [
+        {
+          provider: 'facebook',
+          label: copy.facebook,
+          iconLight: '/icons/oauth/facebook-light.webp',
+          iconDark: '/icons/oauth/facebook-dark.webp',
+        },
+      ]
+    : []),
+];
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/account/register/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/account/register/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/account/register/' },
+];
+
+const languageSwitch = {
+  url: isEnglish ? '/account/register/' : '/en/account/register/',
+};
+---
+
+<BaseLayout
+  title={copy.title}
+  description={copy.description}
+  lang={lang}
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <main class="account-page">
+    <section class="account-card">
+      <p class="account-kicker">{copy.kicker}</p>
+      <h1>{copy.heading}</h1>
+      <p>{copy.intro}</p>
+
+      <div class:list={['account-social-auth', socialProviders.length === 1 && 'account-social-auth--single']} aria-label={copy.socialAria}>
+        {socialProviders.map((provider) => (
+          <a
+            href={`/api/auth/oauth/start?provider=${provider.provider}&returnTo=${encodedReturnTo}`}
+            aria-label={provider.label}
+          >
+            <span class="account-social-auth__icons" aria-hidden="true">
+              <img
+                class="account-social-auth__icon account-social-auth__icon--light"
+                src={provider.iconLight}
+                alt=""
+                width="24"
+                height="24"
+                loading="lazy"
+              />
+              <img
+                class="account-social-auth__icon account-social-auth__icon--dark"
+                src={provider.iconDark}
+                alt=""
+                width="24"
+                height="24"
+                loading="lazy"
+              />
+            </span>
+            <span>{provider.label}</span>
+          </a>
+        ))}
+      </div>
+
+      <div class="account-divider" aria-hidden="true">
+        <span>{copy.divider}</span>
+      </div>
+
+      <form class="account-form" data-register-form>
+        <label>
+          <span>{copy.email}</span>
+          <input type="email" name="email" required autocomplete="email" />
+        </label>
+
+        <label>
+          <span>{copy.password}</span>
+          <input type="password" name="password" required minlength="8" autocomplete="new-password" />
+        </label>
+
+        <label>
+          <span>{copy.username}</span>
+          <input type="text" name="username" required minlength="3" maxlength="24" autocomplete="username" />
+        </label>
+
+        <label>
+          <span>{copy.displayName}</span>
+          <input type="text" name="displayName" required minlength="2" maxlength="40" />
+        </label>
+
+        <label>
+          <span>{copy.badge}</span>
+          <select name="badgeKey" required>
+            <option value="">{copy.badgePlaceholder}</option>
+            {badges.map((badge) => (
+              <option value={badge.key}>
+                {isEnglish
+                  ? badge.label_en || badge.label_it || badge.key
+                  : badge.label_it || badge.label_en || badge.key}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <p class="account-message" data-account-message hidden></p>
+
+        <button type="submit">{copy.submit}</button>
+      </form>
+
+      <p class="account-switch">
+        {copy.switchText}
+        <a href={copy.switchHref}>{copy.switchLink}</a>
+      </p>
+
+      <p class="account-resend-confirmation">
+        <button type="button" data-resend-confirmation>
+          {copy.resend}
+        </button>
+      </p>
+    </section>
+  </main>
+
+  <script define:vars={{ clientCopy }}>
+    const form = document.querySelector('[data-register-form]');
+    const message = document.querySelector('[data-account-message]');
+    const resendButton = document.querySelector('[data-resend-confirmation]');
+    let lastConfirmationEmail = '';
+
+    const showMessage = (text, type = 'ok') => {
+      if (!message) return;
+      message.textContent = text;
+      message.hidden = false;
+      message.dataset.type = type;
+    };
+
+    const resultMessage = (result, key, fallback) => {
+      if (clientCopy.lang === 'en') {
+        return result?.[`${key}En`] || fallback;
+      }
+
+      return result?.[key] || fallback;
+    };
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(form);
+      const button = form.querySelector('button[type="submit"]');
+
+      if (button) button.disabled = true;
+
+      try {
+        const email = String(formData.get('email') || '').trim();
+
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password: String(formData.get('password') || ''),
+            username: String(formData.get('username') || ''),
+            displayName: String(formData.get('displayName') || ''),
+            badgeKey: String(formData.get('badgeKey') || '')
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          if (result.code === 'email_not_confirmed') {
+            lastConfirmationEmail = email;
+          }
+
+          showMessage(resultMessage(result, 'error', clientCopy.registerFailed), 'error');
+          return;
+        }
+
+        lastConfirmationEmail = email;
+        showMessage(resultMessage(result, 'message', clientCopy.successFallback), 'ok');
+        form.reset();
+      } catch {
+        showMessage(clientCopy.connectionError, 'error');
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+
+    resendButton?.addEventListener('click', async () => {
+      const emailInput = form?.querySelector('input[name="email"]');
+      const typedEmail = emailInput instanceof HTMLInputElement ? emailInput.value.trim() : '';
+      const email = typedEmail || lastConfirmationEmail;
+
+      if (!email) {
+        showMessage(clientCopy.missingResendEmail, 'error');
+        emailInput?.focus();
+        return;
+      }
+
+      resendButton.disabled = true;
+
+      try {
+        const response = await fetch('/api/auth/resend-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(resultMessage(result, 'error', clientCopy.resendFailed), 'error');
+          return;
+        }
+
+        showMessage(resultMessage(result, 'message', clientCopy.resendSuccess), 'ok');
+      } catch {
+        showMessage(clientCopy.connectionError, 'error');
+      } finally {
+        resendButton.disabled = false;
+      }
+    });
+  </script>
+</BaseLayout>
