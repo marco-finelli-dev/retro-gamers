@@ -7,7 +7,7 @@ const isEnglish = lang === 'en';
 const copy = isEnglish
   ? {
       title: 'Has this brought back a memory?',
-      body: 'On Retro-Gamers.it, readers’ memories stay with the articles instead of disappearing into the social media flow.\n\nCreate a reader profile to comment, reply to other fans and find your contributions again in your personal space.',
+      body: 'On Retro-Gamers.it, readers’ memories stay with the articles so they do not get lost in the flow of social media.\n\nCreate a reader profile to comment, reply to other fans and find your contributions again in your personal space.',
       register: 'Create reader profile',
       keepReading: 'Keep reading',
       close: 'Close community prompt',
@@ -70,6 +70,7 @@ const copy = isEnglish
     const shownKey = 'retroGamersCommunityPromptShown';
     const dismissDurationMs = 7 * 24 * 60 * 60 * 1000;
     const showDelayMs = 55 * 1000;
+    let footerObserver = null;
 
     const storage = {
       getLocal(key) {
@@ -168,6 +169,32 @@ const copy = isEnglish
 
     const timer = window.setTimeout(maybeShowPrompt, showDelayMs);
 
+    const setupFooterObserver = () => {
+      const footer = document.querySelector('.site-footer') || document.querySelector('footer');
+
+      if (!footer || footerObserver || !('IntersectionObserver' in window)) return;
+
+      footerObserver = new IntersectionObserver((entries) => {
+        const isNearFooter = entries.some((entry) => entry.isIntersecting);
+
+        prompt.classList.toggle('is-hidden-near-footer', isNearFooter);
+
+        if (!prompt.hidden) {
+          prompt.dataset.state = isNearFooter ? 'near-footer' : 'visible';
+        }
+      }, {
+        threshold: 0.01
+      });
+
+      footerObserver.observe(footer);
+    };
+
+    setupFooterObserver();
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupFooterObserver, { once: true });
+    }
+
     dismissButtons.forEach((button) => {
       button.addEventListener('click', () => hidePrompt());
     });
@@ -182,6 +209,7 @@ const copy = isEnglish
 
     window.addEventListener('pagehide', () => {
       window.clearTimeout(timer);
+      footerObserver?.disconnect();
     }, { once: true });
   })();
 </script>
