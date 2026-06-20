@@ -43,12 +43,19 @@ export type PlatformRef = {
     year?: number;
     releaseYear?: number;
     cpu?: string;
+    cpuEn?: string;
     ram?: string;
+    ramEn?: string;
     gpu?: string;
+    gpuEn?: string;
     graphics?: string;
+    graphicsEn?: string;
     audio?: string;
+    audioEn?: string;
     resolution?: string;
+    resolutionEn?: string;
     media?: string;
+    mediaEn?: string;
   };
 };
 

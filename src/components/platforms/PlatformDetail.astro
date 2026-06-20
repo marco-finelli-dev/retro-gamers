@@ -97,20 +97,34 @@ const logoAlt =
   platform.logoLight?.alt ||
   platform.name;
 
+const specValue = (itValue, enValue) =>
+  isEn
+    ? enValue || itValue
+    : itValue;
+
+const localizedSpecs = {
+  cpu: specValue(platform.specs?.cpu, platform.specs?.cpuEn),
+  ram: specValue(platform.specs?.ram, platform.specs?.ramEn),
+  graphics: specValue(platform.specs?.gpu, platform.specs?.gpuEn),
+  audio: specValue(platform.specs?.audio, platform.specs?.audioEn),
+  resolution: specValue(platform.specs?.resolution, platform.specs?.resolutionEn),
+  media: specValue(platform.specs?.media, platform.specs?.mediaEn)
+};
+
 const chips = [
   typeLabel,
   platform.badgeLabel,
-  platform.specs?.media
+  localizedSpecs.media
 ].filter(Boolean);
 
 const specs = [
   { label: labels.year, value: platform.specs?.year },
-  { label: labels.cpu, value: platform.specs?.cpu },
-  { label: labels.ram, value: platform.specs?.ram },
-  { label: labels.graphics, value: platform.specs?.gpu },
-  { label: labels.audio, value: platform.specs?.audio },
-  { label: labels.resolution, value: platform.specs?.resolution },
-  { label: labels.media, value: platform.specs?.media }
+  { label: labels.cpu, value: localizedSpecs.cpu },
+  { label: labels.ram, value: localizedSpecs.ram },
+  { label: labels.graphics, value: localizedSpecs.graphics },
+  { label: labels.audio, value: localizedSpecs.audio },
+  { label: labels.resolution, value: localizedSpecs.resolution },
+  { label: labels.media, value: localizedSpecs.media }
 ].filter((item) => item.value);
 
 const historyText = isEn

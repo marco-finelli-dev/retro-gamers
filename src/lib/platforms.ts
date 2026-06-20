@@ -53,11 +53,17 @@ export type Platform = {
   specs?: {
     year?: number;
     cpu?: string;
+    cpuEn?: string;
     ram?: string;
+    ramEn?: string;
     gpu?: string;
+    gpuEn?: string;
     audio?: string;
+    audioEn?: string;
     resolution?: string;
+    resolutionEn?: string;
     media?: string;
+    mediaEn?: string;
   };
 };
 
@@ -110,7 +116,21 @@ manufacturer->{
   }
 },
 
-  specs
+  specs {
+    year,
+    cpu,
+    cpuEn,
+    ram,
+    ramEn,
+    gpu,
+    gpuEn,
+    audio,
+    audioEn,
+    resolution,
+    resolutionEn,
+    media,
+    mediaEn
+  }
 `;
 
 export async function getAllPlatforms(): Promise<Platform[]> {
