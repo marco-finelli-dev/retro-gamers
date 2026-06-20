@@ -1,0 +1,242 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../../components/community/CommunitySidebarSection.astro';
+import { getAllPosts, type Post } from '../../../lib/posts';
+import { getPostUrl } from '../../../lib/routes.js';
+import {
+  formatReviewRatingScore,
+  getReviewMetadataMap,
+  roundReviewRatingScore,
+} from '../../../lib/review-ratings';
+import { getUserSessionFromCookies, isStaffProfile } from '../../../lib/supabase/auth';
+import { supabaseAdmin } from '../../../lib/supabase/server';
+import '../../../styles/pages/admin-ratings.css';
+
+type RatingRow = {
+  post_id: string;
+  score: number | string;
+  updated_at: string | null;
+  created_at: string | null;
+};
+
+type RatingGroup = {
+  postId: string;
+  averageScore: number | null;
+  totalVotes: number;
+  latestVoteAt: string;
+  post?: Post;
+};
+
+const title = 'Voti lettori | Retro-Gamers.it';
+const description = 'Panoramica dei voti lettori lasciati sulle recensioni Retro-Gamers.it.';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = isStaffProfile(session.profile);
+const dateFormatter = new Intl.DateTimeFormat('it-IT', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+let ratingsError = '';
+let ratingGroups: RatingGroup[] = [];
+
+if (isStaff) {
+  const { data, error } = await supabaseAdmin
+    .from('review_ratings')
+    .select('post_id, score, updated_at, created_at')
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    ratingsError = error.message;
+  } else {
+    const rows = (data ?? []) as RatingRow[];
+    const grouped = new Map<string, { scores: number[]; latestVoteAt: string }>();
+
+    for (const row of rows) {
+      const postId = row.post_id;
+
+      if (!postId) {
+        continue;
+      }
+
+      const current = grouped.get(postId) ?? { scores: [], latestVoteAt: '' };
+      const score = Number(row.score);
+
+      if (Number.isFinite(score)) {
+        current.scores.push(score);
+      }
+
+      const updatedAt = row.updated_at || row.created_at || '';
+
+      if (!current.latestVoteAt || (updatedAt && new Date(updatedAt) > new Date(current.latestVoteAt))) {
+        current.latestVoteAt = updatedAt;
+      }
+
+      grouped.set(postId, current);
+    }
+
+    const allPosts = await getAllPosts();
+    const postMap = getReviewMetadataMap(allPosts, 'it');
+
+    ratingGroups = Array.from(grouped.entries())
+      .map(([postId, group]) => {
+        const totalVotes = group.scores.length;
+        const averageScore = totalVotes > 0
+          ? roundReviewRatingScore(group.scores.reduce((sum, score) => sum + score, 0) / totalVotes)
+          : null;
+
+        return {
+          postId,
+          averageScore,
+          totalVotes,
+          latestVoteAt: group.latestVoteAt,
+          post: postMap.get(postId),
+        };
+      })
+      .sort((a, b) => {
+        const latestA = a.latestVoteAt ? new Date(a.latestVoteAt).getTime() : 0;
+        const latestB = b.latestVoteAt ? new Date(b.latestVoteAt).getTime() : 0;
+
+        return latestB - latestA;
+      });
+  }
+}
+
+const formatVoteCount = (count: number) =>
+  count === 1 ? '1 voto' : `${count} voti`;
+
+const getDifference = (group: RatingGroup) => {
+  const editorialScore = Number(group.post?.rating?.overall);
+
+  if (!Number.isFinite(editorialScore) || group.averageScore === null) {
+    return null;
+  }
+
+  return roundReviewRatingScore(group.averageScore - editorialScore);
+};
+
+const formatDifference = (difference: number | null) => {
+  if (difference === null) {
+    return '—';
+  }
+
+  if (difference > 0) {
+    return `+${formatReviewRatingScore(difference)}`;
+  }
+
+  return formatReviewRatingScore(difference);
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <CommunityLayout class="admin-ratings-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title="Strumenti redazione">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/admin/comments/">Moderazione commenti</a>
+            <a class="community-action-link" href="/admin/comment-reports/">Segnalazioni commenti</a>
+            <a class="community-action-link" href="/admin/users/">Gestione utenti</a>
+            <a class="community-action-link" href="/admin/private-message-reports/">Segnalazioni messaggi</a>
+            <a class="community-action-link" href="/admin/ratings/">Voti lettori</a>
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    {isStaff ? (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title="Voti lettori"
+          description="Controlla l’andamento dei voti lasciati dagli utenti sulle recensioni."
+        >
+          <span slot="aside" class="community-soft-badge">
+            {formatVoteCount(ratingGroups.reduce((sum, group) => sum + group.totalVotes, 0))}
+          </span>
+        </CommunityHero>
+
+        <section class="community-card admin-ratings-panel">
+          {ratingsError ? (
+            <p class="admin-ratings-empty">
+              Voti lettori non disponibili. Verifica che reader-ratings.sql sia stato eseguito in Supabase.
+            </p>
+          ) : ratingGroups.length > 0 ? (
+            <div class="admin-ratings-list">
+              {ratingGroups.map((group) => {
+                const post = group.post;
+                const reviewHref = post ? getPostUrl(post) : '';
+                const editorialScore = post?.rating?.overall;
+                const difference = getDifference(group);
+
+                return (
+                  <article class="admin-rating-card">
+                    <div class="admin-rating-card__main">
+                      <span>Recensione</span>
+                      <h2>{post?.title || 'Recensione non trovata'}</h2>
+                      <small>{post?.slug || group.postId}</small>
+                    </div>
+
+                    <dl class="admin-rating-card__stats">
+                      <div>
+                        <dt>Voto RG</dt>
+                        <dd>{formatReviewRatingScore(editorialScore)}</dd>
+                      </div>
+
+                      <div>
+                        <dt>Voto lettori</dt>
+                        <dd>{formatReviewRatingScore(group.averageScore)}</dd>
+                      </div>
+
+                      <div>
+                        <dt>Voti</dt>
+                        <dd>{group.totalVotes}</dd>
+                      </div>
+
+                      <div class:list={['admin-rating-card__difference', difference !== null && difference > 0 && 'is-positive', difference !== null && difference < 0 && 'is-negative']}>
+                        <dt>Scarto</dt>
+                        <dd>{formatDifference(difference)}</dd>
+                      </div>
+                    </dl>
+
+                    <footer>
+                      {group.latestVoteAt && (
+                        <time datetime={group.latestVoteAt}>
+                          Ultimo voto: {dateFormatter.format(new Date(group.latestVoteAt))}
+                        </time>
+                      )}
+
+                      {reviewHref && (
+                        <a href={reviewHref}>Apri recensione</a>
+                      )}
+                    </footer>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <p class="admin-ratings-empty">Nessun voto lettore registrato per ora.</p>
+          )}
+        </section>
+      </>
+    ) : (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title="Accesso redazione"
+          description="Questa pagina è riservata allo staff Retro-Gamers.it."
+        />
+
+        <section class="community-card">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/account/login/">Accedi</a>
+          </div>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
+</BaseLayout>

@@ -1,0 +1,335 @@
+---
+import '../../styles/article/article-reader-rating.css';
+
+const {
+  postId = '',
+  editorialScore = null,
+  lang = 'it'
+} = Astro.props;
+
+const isEn = lang === 'en';
+
+const labels = isEn
+  ? {
+      title: 'Readers’ rating',
+      editorial: 'Retro-Gamers',
+      yours: 'Your score',
+      readers: 'Readers',
+      promptTitle: 'Played this game?',
+      promptText: 'Leave your score and compare it with the editorial verdict.',
+      loginText: 'Log in or register to vote.',
+      noVotes: 'No votes yet',
+      voteSingular: 'vote',
+      votePlural: 'votes',
+      updated: 'Score updated',
+      login: 'Log in',
+      register: 'Register',
+      save: 'Save score',
+      minus: 'Decrease score',
+      plus: 'Increase score'
+    }
+  : {
+      title: 'Il voto dei lettori',
+      editorial: 'Retro-Gamers',
+      yours: 'Il tuo voto',
+      readers: 'Lettori',
+      promptTitle: 'Hai giocato questo titolo?',
+      promptText: 'Lascia il tuo voto e confrontalo con quello della redazione.',
+      loginText: 'Accedi o registrati per votare.',
+      noVotes: 'Nessun voto ancora',
+      voteSingular: 'voto',
+      votePlural: 'voti',
+      updated: 'Voto aggiornato',
+      login: 'Accedi',
+      register: 'Registrati',
+      save: 'Salva voto',
+      minus: 'Diminuisci voto',
+      plus: 'Aumenta voto'
+    };
+
+const loginHref = isEn ? '/en/account/login/' : '/account/login/';
+const registerHref = isEn ? '/en/account/register/' : '/account/register/';
+
+const formatScore = (value) => {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return '—';
+  }
+
+  return Number.isInteger(number)
+    ? String(number)
+    : number.toFixed(1);
+};
+
+const clampScore = (value) => {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return 8;
+  }
+
+  const halfStep = Math.round(number * 2) / 2;
+  return Math.min(10, Math.max(1, halfStep));
+};
+
+const initialScore = clampScore(editorialScore);
+const editorialDisplay = formatScore(editorialScore);
+---
+
+{postId && (
+  <section
+    class="article-reader-rating"
+    data-reader-rating
+    data-post-id={postId}
+    data-default-score={initialScore}
+    data-updated-label={labels.updated}
+    data-no-votes-label={labels.noVotes}
+    data-vote-singular={labels.voteSingular}
+    data-vote-plural={labels.votePlural}
+  >
+    <div class="article-reader-rating__intro">
+      <span>{labels.title}</span>
+      <h3>{labels.promptTitle}</h3>
+      <p>{labels.promptText}</p>
+    </div>
+
+    <div class="article-reader-rating__grid">
+      <div class="article-reader-rating__stat">
+        <span>{labels.editorial}</span>
+        <strong>{editorialDisplay}</strong>
+      </div>
+
+      <div class="article-reader-rating__stat">
+        <span>{labels.yours}</span>
+        <strong data-reader-rating-my-score>—</strong>
+      </div>
+
+      <div class="article-reader-rating__stat">
+        <span>{labels.readers}</span>
+        <strong data-reader-rating-average>—</strong>
+      </div>
+    </div>
+
+    <p class="article-reader-rating__count" data-reader-rating-count>
+      {labels.noVotes}
+    </p>
+
+    <div class="article-reader-rating__vote" data-reader-rating-controls hidden>
+      <span class="article-reader-rating__vote-label">{labels.yours}</span>
+
+      <div class="article-reader-rating__stepper" role="group" aria-label={labels.yours}>
+        <button type="button" data-reader-rating-minus aria-label={labels.minus}>−</button>
+        <output data-reader-rating-selected>{formatScore(initialScore)}</output>
+        <button type="button" data-reader-rating-plus aria-label={labels.plus}>+</button>
+      </div>
+
+      <button type="button" class="article-reader-rating__save" data-reader-rating-save>
+        {labels.save}
+      </button>
+    </div>
+
+    <div class="article-reader-rating__auth" data-reader-rating-auth hidden>
+      <p>{labels.loginText}</p>
+      <div>
+        <a href={loginHref}>{labels.login}</a>
+        <a href={registerHref}>{labels.register}</a>
+      </div>
+    </div>
+
+    <p class="article-reader-rating__status" data-reader-rating-status aria-live="polite" hidden></p>
+  </section>
+)}
+
+<script is:inline>
+  (() => {
+    const formatScore = (value) => {
+      const number = Number(value);
+
+      if (!Number.isFinite(number)) {
+        return '—';
+      }
+
+      return Number.isInteger(number)
+        ? String(number)
+        : number.toFixed(1);
+    };
+
+    const clampScore = (value) => {
+      const number = Number(value);
+
+      if (!Number.isFinite(number)) {
+        return 8;
+      }
+
+      const halfStep = Math.round(number * 2) / 2;
+      return Math.min(10, Math.max(1, halfStep));
+    };
+
+    const updateVoteCount = (root, totalVotes) => {
+      const count = root.querySelector('[data-reader-rating-count]');
+      const noVotesLabel = root.dataset.noVotesLabel || 'No votes yet';
+      const voteSingular = root.dataset.voteSingular || 'vote';
+      const votePlural = root.dataset.votePlural || 'votes';
+
+      if (!count) return;
+
+      if (!totalVotes) {
+        count.textContent = noVotesLabel;
+        return;
+      }
+
+      count.textContent = `${totalVotes} ${totalVotes === 1 ? voteSingular : votePlural}`;
+    };
+
+    const initReaderRating = (root) => {
+      if (root.dataset.readerRatingReady === 'true') {
+        return;
+      }
+
+      root.dataset.readerRatingReady = 'true';
+
+      const postId = root.dataset.postId || '';
+      const controls = root.querySelector('[data-reader-rating-controls]');
+      const auth = root.querySelector('[data-reader-rating-auth]');
+      const minus = root.querySelector('[data-reader-rating-minus]');
+      const plus = root.querySelector('[data-reader-rating-plus]');
+      const selected = root.querySelector('[data-reader-rating-selected]');
+      const save = root.querySelector('[data-reader-rating-save]');
+      const average = root.querySelector('[data-reader-rating-average]');
+      const myScore = root.querySelector('[data-reader-rating-my-score]');
+      const status = root.querySelector('[data-reader-rating-status]');
+      const updatedLabel = root.dataset.updatedLabel || 'Updated';
+
+      let selectedScore = clampScore(root.dataset.defaultScore);
+      let savedScore = null;
+
+      const setStatus = (message, isError = false) => {
+        if (!status) return;
+
+        status.textContent = message;
+        status.hidden = !message;
+        status.classList.toggle('is-error', Boolean(isError));
+      };
+
+      const renderSelected = () => {
+        if (selected) {
+          selected.textContent = formatScore(selectedScore);
+        }
+
+        if (minus) {
+          minus.disabled = selectedScore <= 1;
+        }
+
+        if (plus) {
+          plus.disabled = selectedScore >= 10;
+        }
+      };
+
+      const renderSummary = (data) => {
+        if (average) {
+          average.textContent = data.averageScore === null || data.averageScore === undefined
+            ? '—'
+            : formatScore(data.averageScore);
+        }
+
+        updateVoteCount(root, Number(data.totalVotes || 0));
+
+        savedScore = data.myScore === null || data.myScore === undefined
+          ? null
+          : Number(data.myScore);
+
+        if (myScore) {
+          myScore.textContent = savedScore === null
+            ? '—'
+            : formatScore(savedScore);
+        }
+
+        selectedScore = savedScore === null
+          ? selectedScore
+          : clampScore(savedScore);
+
+        renderSelected();
+
+        if (data.isAuthenticated) {
+          if (controls) controls.hidden = false;
+          if (auth) auth.hidden = true;
+        } else {
+          if (controls) controls.hidden = true;
+          if (auth) auth.hidden = false;
+        }
+      };
+
+      const loadSummary = async () => {
+        try {
+          const response = await fetch(`/api/review-ratings?postId=${encodeURIComponent(postId)}`, {
+            headers: {
+              Accept: 'application/json'
+            }
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data?.error || 'Rating unavailable.');
+          }
+
+          renderSummary(data);
+        } catch (error) {
+          setStatus(error?.message || 'Rating unavailable.', true);
+          if (controls) controls.hidden = true;
+          if (auth) auth.hidden = true;
+        }
+      };
+
+      minus?.addEventListener('click', () => {
+        selectedScore = clampScore(selectedScore - 0.5);
+        setStatus('');
+        renderSelected();
+      });
+
+      plus?.addEventListener('click', () => {
+        selectedScore = clampScore(selectedScore + 0.5);
+        setStatus('');
+        renderSelected();
+      });
+
+      save?.addEventListener('click', async () => {
+        save.disabled = true;
+        setStatus('');
+
+        try {
+          const response = await fetch('/api/review-ratings', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json'
+            },
+            body: JSON.stringify({
+              postId,
+              score: selectedScore
+            })
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data?.error || 'Rating not updated.');
+          }
+
+          renderSummary(data);
+          setStatus(updatedLabel);
+        } catch (error) {
+          setStatus(error?.message || 'Rating not updated.', true);
+        } finally {
+          save.disabled = false;
+        }
+      });
+
+      renderSelected();
+      loadSummary();
+    };
+
+    document
+      .querySelectorAll('[data-reader-rating]')
+      .forEach(initReaderRating);
+  })();
+</script>

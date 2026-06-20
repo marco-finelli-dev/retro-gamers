@@ -1,0 +1,304 @@
+---
+import '../../styles/pages/account.css';
+import '../../styles/pages/account-ratings.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../community/CommunityHero.astro';
+import CommunityLayout from '../community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../community/CommunitySidebarProfile.astro';
+import CommunityStatList from '../community/CommunityStatList.astro';
+import { getAllPosts, type Post } from '../../lib/posts';
+import { getPostUrl } from '../../lib/routes.js';
+import {
+  formatReviewRatingScore,
+  getReviewMetadataMap,
+  roundReviewRatingScore,
+} from '../../lib/review-ratings';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
+import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
+import { supabaseAdmin } from '../../lib/supabase/server';
+
+type RatingRow = {
+  post_id: string;
+  score: number | string;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+type SummaryRow = {
+  post_id: string;
+  score: number | string;
+};
+
+const { lang = 'it' } = Astro.props;
+const isEn = lang === 'en';
+
+const copy = isEn
+  ? {
+      title: 'My ratings | Retro-Gamers.it',
+      description: 'Find the Retro-Gamers.it reviews you have rated.',
+      label: 'Reader profile',
+      heading: 'My ratings',
+      intro: 'Find the reviews you have rated and compare your score with the editorial verdict and other readers.',
+      empty: 'You have not rated any reviews yet.',
+      unavailable: 'Reader ratings are not available yet. Please try again later.',
+      openReview: 'Open review',
+      yourScore: 'Your score',
+      editorialScore: 'Retro-Gamers score',
+      readersScore: 'Readers’ rating',
+      voteSingular: 'vote',
+      votePlural: 'votes',
+      updatedOn: 'Updated on',
+      login: 'Log in',
+      register: 'Register',
+      loginIntro: 'Log in to see the reviews you have rated.',
+      sidebarProfile: 'Reader profile',
+      publicProfile: 'Public profile',
+      messages: 'Messages',
+      memories: 'My memories',
+      account: 'My account',
+      statsTitle: 'Community stats',
+      statsApproved: 'Published comments',
+      statsPending: 'Pending',
+      statsLikes: 'Likes received',
+      statsDislikes: 'Dislikes received',
+      noPlatform: 'Review',
+      missingReview: 'Review unavailable',
+    }
+  : {
+      title: 'I miei voti | Retro-Gamers.it',
+      description: 'Ritrova le recensioni Retro-Gamers.it che hai votato.',
+      label: 'Profilo lettore',
+      heading: 'I miei voti',
+      intro: 'Ritrova le recensioni che hai votato e confronta il tuo giudizio con quello della redazione e degli altri lettori.',
+      empty: 'Non hai ancora votato nessuna recensione.',
+      unavailable: 'I voti lettori non sono ancora disponibili. Riprova più tardi.',
+      openReview: 'Apri recensione',
+      yourScore: 'Il tuo voto',
+      editorialScore: 'Voto Retro-Gamers',
+      readersScore: 'Voto lettori',
+      voteSingular: 'voto',
+      votePlural: 'voti',
+      updatedOn: 'Aggiornato il',
+      login: 'Accedi',
+      register: 'Registrati',
+      loginIntro: 'Accedi per vedere le recensioni che hai votato.',
+      sidebarProfile: 'Profilo community',
+      publicProfile: 'Profilo pubblico',
+      messages: 'Messaggi',
+      memories: 'Le mie memorie',
+      account: 'Il mio account',
+      statsTitle: 'Statistiche community',
+      statsApproved: 'Commenti pubblicati',
+      statsPending: 'In attesa',
+      statsLikes: 'Like ricevuti',
+      statsDislikes: 'Dislike ricevuti',
+      noPlatform: 'Recensione',
+      missingReview: 'Recensione non disponibile',
+    };
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/account/ratings/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/account/ratings/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/account/ratings/' },
+];
+
+const languageSwitch = {
+  url: isEn ? '/account/ratings/' : '/en/account/ratings/',
+};
+
+const loginHref = isEn ? '/en/account/login/' : '/account/login/';
+const registerHref = isEn ? '/en/account/register/' : '/account/register/';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isLoggedIn = Boolean(!session.error && session.user && session.profile);
+const profile = session.profile;
+const user = session.user;
+const accountDisplayName =
+  profile?.display_name || profile?.username || user?.email || 'Utente Retro-Gamers';
+const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, lang) : '';
+const dateFormatter = new Intl.DateTimeFormat(isEn ? 'en-US' : 'it-IT', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+let ratings: RatingRow[] = [];
+let ratingsError = '';
+let communityStats = { ...emptyCommunityStats };
+const summaries = new Map<string, { averageScore: number | null; totalVotes: number }>();
+let postsByRatingId = new Map<string, Post>();
+
+if (isLoggedIn && user?.id) {
+  const ratingsQuery = supabaseAdmin
+    .from('review_ratings')
+    .select('post_id, score, created_at, updated_at')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false });
+
+  const [ratingsResult, statsResult] = await Promise.all([
+    ratingsQuery,
+    getCommunityStats(user.id),
+  ]);
+
+  communityStats = statsResult;
+
+  if (ratingsResult.error) {
+    ratingsError = ratingsResult.error.message;
+  } else {
+    ratings = (ratingsResult.data ?? []) as RatingRow[];
+  }
+
+  const postIds = Array.from(new Set(ratings.map((rating) => rating.post_id).filter(Boolean)));
+
+  if (postIds.length > 0) {
+    const [allPosts, summaryResult] = await Promise.all([
+      getAllPosts(),
+      supabaseAdmin
+        .from('review_ratings')
+        .select('post_id, score')
+        .in('post_id', postIds),
+    ]);
+
+    postsByRatingId = getReviewMetadataMap(allPosts, lang);
+
+    if (summaryResult.error) {
+      ratingsError = summaryResult.error.message;
+    } else {
+      const summaryRows = (summaryResult.data ?? []) as SummaryRow[];
+
+      for (const postId of postIds) {
+        const postRatings = summaryRows.filter((row) => row.post_id === postId);
+        const totalVotes = postRatings.length;
+        const averageScore = totalVotes > 0
+          ? roundReviewRatingScore(
+              postRatings.reduce((sum, row) => sum + Number(row.score || 0), 0) / totalVotes
+            )
+          : null;
+
+        summaries.set(postId, { averageScore, totalVotes });
+      }
+    }
+  }
+}
+
+const communityStatItems = [
+  { label: copy.statsApproved, value: communityStats.approved },
+  { label: copy.statsPending, value: communityStats.pending },
+  { label: copy.statsLikes, value: communityStats.likesReceived },
+  { label: copy.statsDislikes, value: communityStats.dislikesReceived },
+];
+
+const formatVoteCount = (count: number) =>
+  `${count} ${count === 1 ? copy.voteSingular : copy.votePlural}`;
+
+const getPlatformLabel = (post?: Post | null) => {
+  const platform = post?.platforms?.[0];
+
+  return platform?.name || platform?.badgeLabel || copy.noPlatform;
+};
+---
+
+<BaseLayout
+  title={copy.title}
+  description={copy.description}
+  lang={lang}
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <CommunityLayout class="account-ratings-page" sidebar={isLoggedIn}>
+    <Fragment slot="sidebar">
+      {isLoggedIn && (
+        <>
+          <CommunitySidebarProfile
+            name={accountDisplayName}
+            username={profile?.username}
+            email={user?.email}
+            avatarUrl={profile?.avatar_url}
+            label={copy.sidebarProfile}
+          >
+            <a href="/account/">{copy.account}</a>
+            {publicProfileHref && <a href={publicProfileHref}>{copy.publicProfile}</a>}
+            <a href="/account/messages/">{copy.messages}</a>
+            <a href="/account/memories/">{copy.memories}</a>
+          </CommunitySidebarProfile>
+
+          <CommunityStatList title={copy.statsTitle} items={communityStatItems} />
+        </>
+      )}
+    </Fragment>
+
+    <CommunityHero
+      kicker={copy.label}
+      title={copy.heading}
+      description={isLoggedIn ? copy.intro : copy.loginIntro}
+    />
+
+    <section class="community-card account-ratings-panel">
+      {isLoggedIn ? (
+        <>
+          {ratingsError ? (
+            <p class="account-message" data-type="error">{copy.unavailable}</p>
+          ) : ratings.length > 0 ? (
+            <div class="account-ratings-list">
+              {ratings.map((rating) => {
+                const post = postsByRatingId.get(rating.post_id);
+                const summary = summaries.get(rating.post_id);
+                const reviewHref = post ? getPostUrl(post) : '';
+                const updatedAt = rating.updated_at || rating.created_at || '';
+
+                return (
+                  <article class="account-rating-card">
+                    <div class="account-rating-card__main">
+                      <span>{getPlatformLabel(post)}</span>
+                      <h2>{post?.title || copy.missingReview}</h2>
+                    </div>
+
+                    <dl class="account-rating-card__scores">
+                      <div>
+                        <dt>{copy.yourScore}</dt>
+                        <dd>{formatReviewRatingScore(rating.score)}</dd>
+                      </div>
+
+                      <div>
+                        <dt>{copy.editorialScore}</dt>
+                        <dd>{formatReviewRatingScore(post?.rating?.overall)}</dd>
+                      </div>
+
+                      <div>
+                        <dt>{copy.readersScore}</dt>
+                        <dd>{formatReviewRatingScore(summary?.averageScore)}</dd>
+                      </div>
+                    </dl>
+
+                    <footer>
+                      <span>
+                        {formatVoteCount(summary?.totalVotes ?? 0)}
+                      </span>
+
+                      {updatedAt && (
+                        <time datetime={updatedAt}>
+                          {copy.updatedOn} {dateFormatter.format(new Date(updatedAt))}
+                        </time>
+                      )}
+
+                      {reviewHref && (
+                        <a href={reviewHref}>{copy.openReview}</a>
+                      )}
+                    </footer>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <p class="account-ratings-empty">{copy.empty}</p>
+          )}
+        </>
+      ) : (
+        <div class="account-actions account-actions--standalone">
+          <a href={loginHref}>{copy.login}</a>
+          <a href={registerHref}>{copy.register}</a>
+        </div>
+      )}
+    </section>
+  </CommunityLayout>
+</BaseLayout>

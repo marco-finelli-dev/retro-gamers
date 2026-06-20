@@ -1,7 +1,8 @@
 ---
 import { getReviewBadge } from '../../lib/reviewBadges';
+import ArticleReaderRating from './ArticleReaderRating.astro';
 
-const { rating, lang = 'it' } = Astro.props;
+const { rating, lang = 'it', readerRatingPostId = '' } = Astro.props;
 
 const score = rating?.overall;
 const numericScore = Number(score);
@@ -64,6 +65,14 @@ const reviewBadge = getReviewBadge(numericScore, lang);
 
         <p>{rating.summary}</p>
       </div>
+    )}
+
+    {readerRatingPostId && (
+      <ArticleReaderRating
+        postId={readerRatingPostId}
+        editorialScore={numericScore}
+        lang={lang}
+      />
     )}
 
   </div>

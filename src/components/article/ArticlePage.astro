@@ -12,6 +12,7 @@ import SupportButton from '../common/SupportButton.astro';
 import ArticleSeriesBox from './ArticleSeriesBox.astro';
 import ArticleComments from './ArticleComments.astro';
 import ArticleCommunityPrompt from './ArticleCommunityPrompt.astro';
+import { getCanonicalReviewRatingPostId } from '../../lib/review-ratings';
 import '../../styles/article/article.css';
 
 const {
@@ -31,6 +32,9 @@ const reviewCons = Array.isArray(post?.cons)
   ? post.cons.filter((item) => typeof item === 'string' && item.trim())
   : [];
 const hasReviewProsCons = isReview && (reviewPros.length > 0 || reviewCons.length > 0);
+const reviewRatingPostId = isReview
+  ? getCanonicalReviewRatingPostId(post)
+  : '';
 
 const articlePageClass = [
   'article-page',
@@ -89,7 +93,11 @@ const switchCta =
 
       {isReview && post.rating && (
 
-        <ArticleFinalRating rating={post.rating} lang={currentLang} />
+        <ArticleFinalRating
+          rating={post.rating}
+          lang={currentLang}
+          readerRatingPostId={reviewRatingPostId}
+        />
 
       )}
 

@@ -1,0 +1,177 @@
+.account-ratings-panel {
+  overflow: visible;
+}
+
+.account-ratings-list {
+  display: grid;
+  gap: 12px;
+}
+
+.account-rating-card,
+.account-ratings-empty {
+  border: 1px solid var(--rg-card-border);
+  border-radius: 20px;
+  background: var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.account-rating-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.95fr);
+  gap: 14px 18px;
+  align-items: start;
+  padding: 16px 18px;
+}
+
+.account-rating-card__main {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.account-rating-card__main > span {
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.74rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.account-rating-card h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1.08rem, 2vw, 1.32rem);
+  line-height: 1.16;
+  overflow-wrap: anywhere;
+}
+
+.account-rating-card__scores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.account-rating-card__scores div {
+  min-width: 0;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 15px;
+  padding: 10px;
+  background: color-mix(in srgb, var(--rg-card-bg) 76%, transparent);
+}
+
+.account-rating-card__scores dt {
+  overflow: hidden;
+  margin: 0 0 6px;
+  color: var(--color-text-soft);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.account-rating-card__scores dd {
+  margin: 0;
+  color: var(--color-primary);
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 900;
+  line-height: 0.95;
+}
+
+.account-rating-card footer {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  color: var(--color-text-soft);
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
+.account-rating-card footer > span {
+  color: var(--rg-badge-color);
+}
+
+.account-rating-card footer a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.account-rating-card footer a:hover,
+.account-rating-card footer a:focus-visible {
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.account-ratings-empty {
+  margin: 0;
+  padding: 18px 20px;
+  color: var(--color-text-soft);
+  font-weight: 850;
+  line-height: 1.6;
+}
+
+@media (max-width: 820px) {
+  .account-rating-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-rating-card__scores {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .account-rating-card {
+    padding: 14px;
+  }
+
+  .account-rating-card__scores {
+    grid-template-columns: 1fr;
+  }
+
+  .account-rating-card__scores div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .account-rating-card__scores dt {
+    margin: 0;
+    white-space: normal;
+  }
+
+  .account-rating-card footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .account-rating-card footer a {
+    width: 100%;
+  }
+}
