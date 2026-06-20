@@ -7,6 +7,38 @@ const {
 } = Astro.props;
 
 const series = post.editorialSeries?.[0];
+const lang = post?.language === 'en' ? 'en' : 'it';
+const isEnglish = lang === 'en';
+const labels = isEnglish
+  ? {
+      eyebrow: 'Editorial series',
+      read: 'Read',
+      current: 'Current chapter',
+      chapter: 'Chapter'
+    }
+  : {
+      eyebrow: 'Serie editoriale',
+      read: 'Leggi',
+      current: 'Stai leggendo',
+      chapter: 'Parte'
+    };
+const seriesName = isEnglish
+  ? series?.nameEn || series?.name
+  : series?.name;
+
+const getSeriesLabel = (item, index) => {
+  const fallbackOrder = item.seriesOrder || index + 1;
+  const fallbackLabel = `${labels.chapter} ${fallbackOrder}`;
+  const label = item.seriesLabel || fallbackLabel;
+
+  if (!isEnglish) {
+    return label;
+  }
+
+  return label
+    .replace(/^Capitolo(\s+\d+)/i, `${labels.chapter}$1`)
+    .replace(/^Parte(\s+\d+)/i, `${labels.chapter}$1`);
+};
 
 const items = seriesPosts
   .filter((item) => item?._id)
@@ -30,17 +62,15 @@ const shouldRender =
   <aside class="article-series-box">
 
     <div class="article-series-box__header">
-      <span>Serie editoriale</span>
-      <h2>{series.name}</h2>
+      <span>{labels.eyebrow}</span>
+      <h2>{seriesName}</h2>
     </div>
 
     <div class="article-series-box__list">
       {items.map((item, index) => {
         const isCurrent = item._id === post._id;
 
-        const label =
-          item.seriesLabel ||
-          (item.seriesOrder ? `Parte ${item.seriesOrder}` : `Parte ${index + 1}`);
+        const label = getSeriesLabel(item, index);
 
         return (
           isCurrent ? (
@@ -49,7 +79,7 @@ const shouldRender =
 
               <strong>{item.title}</strong>
 
-              <small>Stai leggendo</small>
+              <small>{labels.current}</small>
             </div>
           ) : (
             <a href={getPostUrl(item)} class="article-series-box__item">
@@ -57,7 +87,7 @@ const shouldRender =
 
               <strong>{item.title}</strong>
 
-              <small>Leggi</small>
+              <small>{labels.read}</small>
             </a>
           )
         );
