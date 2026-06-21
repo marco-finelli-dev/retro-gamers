@@ -13,6 +13,7 @@ import {
   isPrivateMessagesUnavailable,
   markPrivateConversationRead,
 } from '../../../../../lib/supabase/private-messages';
+import { touchUserActivity } from '../../../../../lib/supabase/user-activity';
 
 const conversationId = String(Astro.params.conversationId || '');
 const session = await getUserSessionFromCookies(Astro.cookies);
@@ -24,7 +25,10 @@ let thread = null;
 let threadError = '';
 
 if (isLoggedIn && session.user) {
-  const result = await getPrivateConversationThread(conversationId, session.user.id);
+  const [result] = await Promise.all([
+    getPrivateConversationThread(conversationId, session.user.id),
+    touchUserActivity(session.user.id, 'account-private-thread-load'),
+  ]);
   thread = result.thread;
 
   if (result.error) {

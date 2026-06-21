@@ -9,6 +9,7 @@ import {
 } from '../../../../lib/supabase/avatars';
 import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
+import { touchUserActivity } from '../../../../lib/supabase/user-activity';
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -90,6 +91,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       logApiError('account-avatar-upload.remove-previous', removeError);
     }
   }
+
+  await touchUserActivity(session.user.id, 'account-avatar-upload');
 
   return json({
     ok: true,

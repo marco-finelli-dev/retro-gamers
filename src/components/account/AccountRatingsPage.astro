@@ -17,6 +17,7 @@ import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { supabaseAdmin } from '../../lib/supabase/server';
+import { touchUserActivity } from '../../lib/supabase/user-activity';
 
 type RatingRow = {
   post_id: string;
@@ -138,6 +139,7 @@ if (isLoggedIn && user?.id) {
   const [ratingsResult, statsResult] = await Promise.all([
     ratingsQuery,
     getCommunityStats(user.id),
+    touchUserActivity(user.id, 'account-ratings-load'),
   ]);
 
   communityStats = statsResult;

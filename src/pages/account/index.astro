@@ -11,6 +11,7 @@ import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
 import { supabaseAdmin } from '../../lib/supabase/server';
+import { touchUserActivity } from '../../lib/supabase/user-activity';
 
 const title = 'Profilo lettore | Retro-Gamers.it';
 const description = 'Gestisci il tuo profilo lettore, il nome visualizzato e il badge community.';
@@ -64,7 +65,8 @@ const getProfileBio = async (userId: string) => {
 let commentActivity = { ...emptyCommunityStats };
 
 if (isLoggedIn && user?.id) {
-  const [ownedBadges, profileBio, stats] = await Promise.all([
+  const [, ownedBadges, profileBio, stats] = await Promise.all([
+    touchUserActivity(user.id, 'account-load'),
     getOwnedReaderBadges(user.id),
     getProfileBio(user.id),
     getCommunityStats(user.id),

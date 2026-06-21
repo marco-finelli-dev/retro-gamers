@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
 import { sendPrivateMessage } from '../../../../lib/supabase/private-messages';
+import { touchUserActivity } from '../../../../lib/supabase/user-activity';
 
 type SendPayload = {
   conversationId?: string;
@@ -39,6 +40,8 @@ export const POST: APIRoute = async ({ cookies, request }) => {
   if (!result.message) {
     return json({ ok: false, error: result.error || 'Messaggio non inviato.' }, result.status || 500);
   }
+
+  await touchUserActivity(session.user.id, 'private-message-send');
 
   return json({ ok: true, message: result.message }, result.status || 201);
 };

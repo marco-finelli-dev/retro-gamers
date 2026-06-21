@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
 import { supabasePublic } from '../../../lib/supabase/server';
 import { getUserProfileFromToken, setAuthSessionCookies } from '../../../lib/supabase/auth';
+import { touchUserActivity } from '../../../lib/supabase/user-activity';
 
 type LoginPayload = {
   email?: string;
@@ -71,6 +72,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   setAuthSessionCookies(cookies, session);
+  await touchUserActivity(user.id, 'auth-login');
 
   return json({
     ok: true,

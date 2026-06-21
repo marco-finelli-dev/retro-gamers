@@ -89,6 +89,36 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       }).format(new Date(value));
     };
 
+    const formatLastActivity = (value) => {
+      if (!value) return 'Mai dopo la registrazione';
+
+      const date = new Date(value);
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfYesterday = new Date(startOfToday);
+      startOfYesterday.setDate(startOfToday.getDate() - 1);
+      const startOfTomorrow = new Date(startOfToday);
+      startOfTomorrow.setDate(startOfToday.getDate() + 1);
+      const time = new Intl.DateTimeFormat('it-IT', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+
+      if (date >= startOfToday && date < startOfTomorrow) {
+        return `Oggi alle ${time}`;
+      }
+
+      if (date >= startOfYesterday && date < startOfToday) {
+        return `Ieri alle ${time}`;
+      }
+
+      return new Intl.DateTimeFormat('it-IT', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }).format(date);
+    };
+
     const getUserInitial = (user) => {
       const source = user.displayName || user.username || user.email || 'Utente';
       const match = String(source || '').trim().match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/);
@@ -236,6 +266,14 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       const username = user.username || 'Non impostato';
       const email = user.email || 'Email non disponibile';
       const comments = user.comments || { total: 0, pending: 0, approved: 0 };
+      const ratings = user.ratings || { total: 0 };
+      const communityPoints = Number(user.communityPoints || 0);
+      const pointsBreakdown = user.communityPointsBreakdown || {
+        reviewRatings: ratings.total || 0,
+        approvedComments: comments.approved || 0,
+        receivedLikes: comments.likesReceived || 0,
+        memories: null,
+      };
       const avatarInitial = getUserInitial(user);
       const avatarLabel = `Avatar di ${user.displayName || user.username || user.email || 'utente'}`;
       const publicProfileHref = getPublicProfileHref(user.username);
@@ -273,6 +311,7 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
                     Stato: ${escapeHtml(status)}
                   </span>
                   <span>Registrato: ${escapeHtml(formatDate(user.createdAt))}</span>
+                  <span>Ultima attività: ${escapeHtml(formatLastActivity(user.lastActivityAt))}</span>
                 </p>
               </div>
             </div>
@@ -293,6 +332,22 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
               <span>Approved</span>
               <strong>${Number(comments.approved || 0)}</strong>
             </div>
+
+            <div>
+              <span>Voti</span>
+              <strong>${Number(ratings.total || 0)}</strong>
+            </div>
+
+            <div>
+              <span>Punti community</span>
+              <strong>${communityPoints}</strong>
+            </div>
+          </div>
+
+          <div class="admin-user-card__points-breakdown" aria-label="Dettaglio punti community">
+            <span>Voti recensioni: ${Number(pointsBreakdown.reviewRatings || 0)}</span>
+            <span>Commenti approvati: ${Number(pointsBreakdown.approvedComments || 0)}</span>
+            <span>Like ricevuti: ${Number(pointsBreakdown.receivedLikes || 0)}</span>
           </div>
 
           ${renderBadgeManagement(user)}

@@ -34,9 +34,12 @@ export function isMissingAvatarColumnError(
   const message = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`.toLowerCase();
 
   return (
-    error.code === '42703' ||
-    error.code === 'PGRST204' ||
-    (message.includes('avatar_path') &&
-      (message.includes('column') || message.includes('schema cache')))
+    message.includes('avatar_path') &&
+    (
+      error.code === '42703' ||
+      error.code === 'PGRST204' ||
+      message.includes('column') ||
+      message.includes('schema cache')
+    )
   );
 }

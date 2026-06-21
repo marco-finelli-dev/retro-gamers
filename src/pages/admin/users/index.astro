@@ -38,7 +38,7 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
 
     <section class="community-card admin-users-panel">
       <form class="admin-users-filters" data-admin-users-filters>
-        <label>
+        <label class="admin-users-filters__search">
           <span>Ricerca</span>
           <input
             type="search"
@@ -46,6 +46,48 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
             placeholder="Email, username, nome..."
             autocomplete="off"
           />
+        </label>
+
+        <label>
+          <span>Ruolo</span>
+          <select name="role">
+            <option value="all">Tutti</option>
+            <option value="user">User</option>
+            <option value="moderator">Moderator</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Stato</span>
+          <select name="status">
+            <option value="all">Tutti</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="banned">Banned</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Ordina per</span>
+          <select name="sortBy">
+            <option value="last_activity">Ultima attività</option>
+            <option value="registration">Registrazione</option>
+            <option value="comments">Commenti</option>
+            <option value="approved">Approvati</option>
+            <option value="pending">In attesa</option>
+            <option value="community_points">Punti community</option>
+            <option value="username">Username</option>
+            <option value="role">Ruolo</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Direzione</span>
+          <select name="direction">
+            <option value="desc">Decrescente</option>
+            <option value="asc">Crescente</option>
+          </select>
         </label>
 
         <div class="admin-users-filters__actions">
@@ -95,21 +137,41 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       }).format(new Date(value));
     };
 
+    const formatLastActivity = (value) => {
+      if (!value) return 'Mai dopo la registrazione';
+
+      const date = new Date(value);
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfYesterday = new Date(startOfToday);
+      startOfYesterday.setDate(startOfToday.getDate() - 1);
+      const startOfTomorrow = new Date(startOfToday);
+      startOfTomorrow.setDate(startOfToday.getDate() + 1);
+      const time = new Intl.DateTimeFormat('it-IT', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+
+      if (date >= startOfToday && date < startOfTomorrow) {
+        return `Oggi alle ${time}`;
+      }
+
+      if (date >= startOfYesterday && date < startOfToday) {
+        return `Ieri alle ${time}`;
+      }
+
+      return new Intl.DateTimeFormat('it-IT', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }).format(date);
+    };
+
     const getUserInitial = (user) => {
       const source = user.displayName || user.username || user.email || 'Utente';
       const match = String(source || '').trim().match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/);
 
       return (match?.[0] || '?').toUpperCase();
-    };
-
-    const getPublicProfileHref = (username) => {
-      const normalizedUsername = String(username || '').trim().toLowerCase();
-
-      if (!/^[a-z0-9_-]{3,24}$/.test(normalizedUsername)) {
-        return '';
-      }
-
-      return `/utenti/${encodeURIComponent(normalizedUsername)}/`;
     };
 
     const roleLabels = {
@@ -124,6 +186,90 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       banned: 'Bannato'
     };
 
+    const filterDefaults = {
+      q: '',
+      role: 'all',
+      status: 'all',
+      sortBy: 'last_activity',
+      direction: 'desc',
+      legacySort: 'last_activity_desc'
+    };
+    const filterOptions = {
+      role: new Set(['all', 'user', 'moderator', 'admin']),
+      status: new Set(['all', 'active', 'suspended', 'banned']),
+      sortBy: new Set([
+        'registration',
+        'last_activity',
+        'comments',
+        'approved',
+        'pending',
+        'community_points',
+        'username',
+        'role'
+      ]),
+      direction: new Set(['asc', 'desc']),
+      legacySort: new Set([
+        'last_activity_desc',
+        'last_activity_asc',
+        'registered_desc',
+        'registered_asc',
+        'comments_desc',
+        'comments_asc',
+        'approved_desc',
+        'approved_asc',
+        'pending_desc',
+        'pending_asc',
+        'community_points_desc',
+        'community_points_asc',
+        'username_asc',
+        'username_desc',
+        'role_asc',
+        'role_desc'
+      ])
+    };
+
+    const getSafeOption = (value, key) => {
+      const normalized = String(value || '').trim().toLowerCase();
+
+      return filterOptions[key]?.has(normalized) ? normalized : filterDefaults[key];
+    };
+
+    const getSortPartsFromUrl = (params) => {
+      if (params.has('sort')) {
+        const legacySort = getSafeOption(params.get('sort'), 'legacySort');
+        const direction = legacySort.endsWith('_asc') ? 'asc' : 'desc';
+        const field = legacySort.replace(/_(asc|desc)$/, '');
+
+        return {
+          sortBy: field === 'registered' ? 'registration' : getSafeOption(field, 'sortBy'),
+          direction
+        };
+      }
+
+      return {
+        sortBy: getSafeOption(params.get('sortBy'), 'sortBy'),
+        direction: getSafeOption(params.get('direction'), 'direction')
+      };
+    };
+
+    const setFormFromUrl = () => {
+      if (!filtersForm) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const sortParts = getSortPartsFromUrl(params);
+      const qInput = filtersForm.elements.namedItem('q');
+      const roleInput = filtersForm.elements.namedItem('role');
+      const statusInput = filtersForm.elements.namedItem('status');
+      const sortInput = filtersForm.elements.namedItem('sortBy');
+      const directionInput = filtersForm.elements.namedItem('direction');
+
+      if (qInput instanceof HTMLInputElement) qInput.value = String(params.get('q') || filterDefaults.q);
+      if (roleInput instanceof HTMLSelectElement) roleInput.value = getSafeOption(params.get('role'), 'role');
+      if (statusInput instanceof HTMLSelectElement) statusInput.value = getSafeOption(params.get('status'), 'status');
+      if (sortInput instanceof HTMLSelectElement) sortInput.value = sortParts.sortBy;
+      if (directionInput instanceof HTMLSelectElement) directionInput.value = sortParts.direction;
+    };
+
     const getFilterParams = () => {
       const params = new URLSearchParams();
 
@@ -131,10 +277,25 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
 
       const formData = new FormData(filtersForm);
       const q = String(formData.get('q') || '').trim();
+      const role = getSafeOption(formData.get('role'), 'role');
+      const status = getSafeOption(formData.get('status'), 'status');
+      const sortBy = getSafeOption(formData.get('sortBy'), 'sortBy');
+      const direction = getSafeOption(formData.get('direction'), 'direction');
 
       if (q) params.set('q', q);
+      if (role !== filterDefaults.role) params.set('role', role);
+      if (status !== filterDefaults.status) params.set('status', status);
+      if (sortBy !== filterDefaults.sortBy) params.set('sortBy', sortBy);
+      if (direction !== filterDefaults.direction) params.set('direction', direction);
 
       return params;
+    };
+
+    const updateUrl = (params, replace = false) => {
+      const query = params.toString();
+      const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash || ''}`;
+
+      window.history[replace ? 'replaceState' : 'pushState']({}, '', nextUrl);
     };
 
     const renderUser = (user) => {
@@ -144,9 +305,10 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       const username = user.username || 'Non impostato';
       const email = user.email || 'Email non disponibile';
       const comments = user.comments || { total: 0, pending: 0, approved: 0 };
+      const ratings = user.ratings || { total: 0 };
+      const communityPoints = Number(user.communityPoints || 0);
       const avatarInitial = getUserInitial(user);
       const avatarLabel = `Avatar di ${user.displayName || user.username || user.email || 'utente'}`;
-      const publicProfileHref = getPublicProfileHref(user.username);
       const manageHref = `/admin/users/${encodeURIComponent(user.userId)}/`;
       const avatarImage = user.avatarUrl
         ? `
@@ -163,16 +325,18 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       return `
         <article class="admin-user-row" data-user-id="${escapeHtml(user.userId)}">
           <div class="admin-user-row__identity">
-            <span class="admin-user-card__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
-              <span class="admin-user-card__avatar-fallback" aria-hidden="true">${escapeHtml(avatarInitial)}</span>
-              ${avatarImage}
-            </span>
+            <a class="admin-user-row__identity-link" href="${escapeHtml(manageHref)}">
+              <span class="admin-user-card__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
+                <span class="admin-user-card__avatar-fallback" aria-hidden="true">${escapeHtml(avatarInitial)}</span>
+                ${avatarImage}
+              </span>
 
-            <div>
-              <h2>${escapeHtml(displayName)}</h2>
-              <p>@${escapeHtml(username)}</p>
-              <p class="admin-user-row__email">${escapeHtml(email)}</p>
-            </div>
+              <span class="admin-user-row__identity-content">
+                <strong>${escapeHtml(displayName)}</strong>
+                <span>@${escapeHtml(username)}</span>
+                <span class="admin-user-row__email">${escapeHtml(email)}</span>
+              </span>
+            </a>
           </div>
 
           <dl class="admin-user-row__facts">
@@ -189,34 +353,32 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
               <dd>${Number(comments.total || 0)}</dd>
             </div>
             <div>
-              <dt>Pending</dt>
-              <dd>${Number(comments.pending || 0)}</dd>
-            </div>
-            <div>
-              <dt>Approved</dt>
+              <dt>Approvati</dt>
               <dd>${Number(comments.approved || 0)}</dd>
             </div>
             <div>
-              <dt>Registrato</dt>
-              <dd>${escapeHtml(formatDate(user.createdAt))}</dd>
+              <dt>Voti</dt>
+              <dd>${Number(ratings.total || 0)}</dd>
             </div>
-            <div class="admin-user-row__action-cell">
-              ${publicProfileHref ? `<a class="admin-user-card__profile-link" href="${escapeHtml(publicProfileHref)}">Vedi profilo</a>` : '<span class="admin-user-row__action-placeholder" aria-hidden="true"></span>'}
+            <div>
+              <dt>Punti</dt>
+              <dd>${communityPoints}</dd>
             </div>
-            <div class="admin-user-row__action-cell">
-              <a class="admin-user-card__profile-link admin-user-row__manage" href="${escapeHtml(manageHref)}">Gestisci</a>
+            <div class="admin-user-row__fact--wide">
+              <dt>Ultima attività</dt>
+              <dd>${escapeHtml(formatLastActivity(user.lastActivityAt))}</dd>
             </div>
           </dl>
         </article>
       `;
     };
 
-    const loadUsers = async () => {
+    const loadUsers = async (params = getFilterParams()) => {
       if (!listNode) return;
 
       try {
-        const params = getFilterParams();
-        const response = await fetch(`/api/admin/users/list?${params.toString()}`);
+        const query = params.toString();
+        const response = await fetch(`/api/admin/users/list${query ? `?${query}` : ''}`);
         const result = await response.json();
 
         if (!result.ok) {
@@ -247,15 +409,26 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
     filtersForm?.addEventListener('submit', (event) => {
       event.preventDefault();
       showMessage('');
-      loadUsers();
+      const params = getFilterParams();
+      updateUrl(params);
+      loadUsers(params);
     });
 
     resetButton?.addEventListener('click', () => {
       filtersForm?.reset();
       showMessage('');
+      const params = new URLSearchParams();
+      updateUrl(params);
+      loadUsers(params);
+    });
+
+    window.addEventListener('popstate', () => {
+      setFormFromUrl();
+      showMessage('');
       loadUsers();
     });
 
+    setFormFromUrl();
     loadUsers();
   </script>
 </BaseLayout>

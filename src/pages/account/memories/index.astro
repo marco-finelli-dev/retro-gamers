@@ -15,6 +15,7 @@ import {
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../../lib/supabase/community';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { touchUserActivity } from '../../../lib/supabase/user-activity';
 
 type MemoryStatus = 'approved' | 'pending' | 'rejected' | 'spam';
 
@@ -105,6 +106,7 @@ const getArticleHref = (memory: ReaderMemory) => {
 
 if (isLoggedIn && session.user) {
   const communityStatsPromise = getCommunityStats(session.user.id);
+  const activityPromise = touchUserActivity(session.user.id, 'account-memories-load');
   let query = supabaseAdmin
     .from('comments')
     .select(`
@@ -136,6 +138,7 @@ if (isLoggedIn && session.user) {
   const [{ data, count, error }, statsResult] = await Promise.all([
     query,
     communityStatsPromise,
+    activityPromise,
   ]);
   communityStats = statsResult;
 

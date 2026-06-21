@@ -11,6 +11,7 @@ import {
   buildUnsubscribeUrl,
   createUnsubscribeToken,
 } from '../../../lib/supabase/comment-subscriptions';
+import { touchUserActivity } from '../../../lib/supabase/user-activity';
 
 type CreateCommentPayload = {
   articleSlug?: string;
@@ -336,6 +337,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     if (subscriptionError) {
       logApiError('comments-create.subscriptions', subscriptionError);
+      await touchUserActivity(user.id, 'comments-create');
+
       return json({
         ok: true,
         warning: 'Preferenze di notifica non salvate.',
@@ -350,6 +353,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (isStaff) {
     await createInternalReplyMessage(comment);
     await notifyParentAuthorAboutApprovedReply(comment);
+    await touchUserActivity(user.id, 'comments-create');
 
     return json({
       ok: true,
@@ -368,6 +372,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       commentId: comment.id,
     });
   } catch {
+    await touchUserActivity(user.id, 'comments-create');
+
     return json({
       ok: true,
       warning: 'Commento inviato, ma la notifica email alla redazione non è partita.',
@@ -375,6 +381,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       comment,
     });
   }
+
+  await touchUserActivity(user.id, 'comments-create');
 
   return json({
     ok: true,

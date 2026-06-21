@@ -21,6 +21,7 @@ import {
   type PrivateConversationSummary,
 } from '../../../../lib/supabase/private-messages';
 import { getPublicUserUrl } from '../../../../lib/supabase/public-profiles';
+import { touchUserActivity } from '../../../../lib/supabase/user-activity';
 
 const title = 'Messaggi privati | Retro-Gamers.it';
 const description = 'Conversazioni private tra lettori Retro-Gamers.it.';
@@ -36,7 +37,10 @@ let privateUnreadCount = 0;
 let communityStats = { ...emptyCommunityStats };
 
 if (isLoggedIn && session.user && toUsername) {
-  const result = await getOrCreatePrivateConversationByUsername(session.user.id, toUsername);
+  const [result] = await Promise.all([
+    getOrCreatePrivateConversationByUsername(session.user.id, toUsername),
+    touchUserActivity(session.user.id, 'account-private-messages-start'),
+  ]);
 
   if (result.conversation) {
     return Astro.redirect(`/account/messages/private/${result.conversation.id}/`, 303);
@@ -51,6 +55,7 @@ if (isLoggedIn && session.user) {
     getUnreadAccountMessageCount(session.user.id),
     getUnreadPrivateMessageCount(session.user.id),
     getCommunityStats(session.user.id),
+    touchUserActivity(session.user.id, 'account-private-messages-load'),
   ]);
   conversations = result.conversations;
   systemUnreadCount = systemUnreadResult.error ? 0 : systemUnreadResult.count;

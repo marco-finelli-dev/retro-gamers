@@ -3,6 +3,7 @@ import { logApiError } from '../../../lib/api-errors';
 import { readerOwnsBadge } from '../../../lib/badges';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
+import { touchUserActivity } from '../../../lib/supabase/user-activity';
 
 type UpdateProfilePayload = {
   displayName?: string;
@@ -158,6 +159,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     logApiError('account-update-profile.update', updateError);
     return json({ ok: false, error: 'Profilo non aggiornato. Riprova più tardi.' }, 500);
   }
+
+  await touchUserActivity(session.user.id, 'account-update-profile');
 
   return json({
     ok: true,

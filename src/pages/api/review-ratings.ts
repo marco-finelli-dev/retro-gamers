@@ -7,6 +7,7 @@ import {
 } from '../../lib/review-ratings';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { supabaseAdmin } from '../../lib/supabase/server';
+import { touchUserActivity } from '../../lib/supabase/user-activity';
 
 type RatingRow = {
   score: number | string;
@@ -137,6 +138,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const summary = await getRatingSummary(postId, session.user.id);
+    await touchUserActivity(session.user.id, 'review-rating-save');
 
     return json({
       averageScore: summary.averageScore,

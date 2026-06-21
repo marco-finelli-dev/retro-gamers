@@ -11,6 +11,7 @@ import {
   authRefreshCookie,
   authRefreshCookieMaxAge,
 } from '../../../../lib/supabase/auth';
+import { touchUserActivity } from '../../../../lib/supabase/user-activity';
 
 const authCookieOptions = {
   path: '/',
@@ -119,6 +120,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       deleteCookie(authRefreshCookie, '/'),
     ]);
   }
+
+  await touchUserActivity(user.id, 'auth-oauth-callback');
 
   const setCookies = [
     deleteCookie(oauthCodeVerifierCookie, '/api/auth/oauth'),
