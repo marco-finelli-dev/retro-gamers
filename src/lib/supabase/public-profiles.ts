@@ -15,6 +15,7 @@ export type PublicReaderProfile = {
   username: string;
   display_name: string | null;
   bio?: string | null;
+  bio_en?: string | null;
   avatar_path?: string | null;
   avatar_url?: string | null;
   created_at?: string | null;
@@ -81,12 +82,18 @@ export const getCommentExcerpt = (body: string | null, maxLength = 180) => {
   return `${normalized.slice(0, maxLength - 1).trim()}...`;
 };
 
-const getProfileSelect = (includeBio = true, includeAvatar = true, includeCreatedAt = true) => `
+const getProfileSelect = (
+  includeBio = true,
+  includeBioEn = true,
+  includeAvatar = true,
+  includeCreatedAt = true
+) => `
   id,
   user_id,
   username,
   display_name,
   ${includeBio ? 'bio,' : ''}
+  ${includeBioEn ? 'bio_en,' : ''}
   ${includeAvatar ? 'avatar_path,' : ''}
   ${includeCreatedAt ? 'created_at,' : ''}
   badge_key,
@@ -107,6 +114,23 @@ const isMissingBioColumnError = (error: { code?: string; message?: string; detai
 
   return (
     message.includes('bio') &&
+    !message.includes('bio_en') &&
+    (
+      error.code === '42703' ||
+      error.code === 'PGRST204' ||
+      message.includes('column') ||
+      message.includes('schema cache')
+    )
+  );
+};
+
+const isMissingBioEnColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    message.includes('bio_en') &&
     (
       error.code === '42703' ||
       error.code === 'PGRST204' ||
@@ -237,27 +261,30 @@ export async function getPublicReaderProfile(
   }
 
   let includeBio = true;
+  let includeBioEn = true;
   let includeAvatar = true;
   let includeCreatedAt = true;
   let { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select(getProfileSelect(includeBio, includeAvatar, includeCreatedAt))
+    .select(getProfileSelect(includeBio, includeBioEn, includeAvatar, includeCreatedAt))
     .eq('username', normalizedUsername)
     .eq('status', 'active')
     .maybeSingle();
 
   if (
     isMissingBioColumnError(profileError) ||
+    isMissingBioEnColumnError(profileError) ||
     isMissingAvatarColumnError(profileError) ||
     isMissingCreatedAtColumnError(profileError)
   ) {
     includeBio = !isMissingBioColumnError(profileError);
+    includeBioEn = !isMissingBioEnColumnError(profileError);
     includeAvatar = !isMissingAvatarColumnError(profileError);
     includeCreatedAt = !isMissingCreatedAtColumnError(profileError);
 
     const fallbackResult = await supabaseAdmin
       .from('profiles')
-      .select(getProfileSelect(includeBio, includeAvatar, includeCreatedAt))
+      .select(getProfileSelect(includeBio, includeBioEn, includeAvatar, includeCreatedAt))
       .eq('username', normalizedUsername)
       .eq('status', 'active')
       .maybeSingle();
@@ -268,12 +295,13 @@ export async function getPublicReaderProfile(
 
   if (
     isMissingBioColumnError(profileError) ||
+    isMissingBioEnColumnError(profileError) ||
     isMissingAvatarColumnError(profileError) ||
     isMissingCreatedAtColumnError(profileError)
   ) {
     const fallbackResult = await supabaseAdmin
       .from('profiles')
-      .select(getProfileSelect(false, false, false))
+      .select(getProfileSelect(false, false, false, false))
       .eq('username', normalizedUsername)
       .eq('status', 'active')
       .maybeSingle();

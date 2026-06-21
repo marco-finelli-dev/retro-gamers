@@ -39,7 +39,7 @@ const badge = profile?.user_badges;
 const badgeLabel = badge?.label_en || badge?.label_it || profile?.badge_key || '';
 const badgeImageSrc = getReaderBadgeImageSrcForBadge(badge || { key: profile?.badge_key || '' });
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
-const bio = profile?.bio?.trim() || '';
+const bio = profile?.bio_en?.trim() || profile?.bio?.trim() || '';
 const isOwnProfile = Boolean(isViewerLoggedIn && viewerSession.user?.id === profile?.user_id);
 const canSendPrivateMessage = Boolean(profile && isViewerLoggedIn && !isOwnProfile && profile.status === 'active');
 const privateMessageHref = profile

@@ -28,30 +28,70 @@ const accountDisplayName =
 const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
 let badges = [] as Awaited<ReturnType<typeof getOwnedReaderBadges>>;
 let currentBio = '';
+let currentBioEn = '';
 const isMissingBioColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
   if (!error) return false;
 
   const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
 
   return (
-    error.code === '42703' ||
-    error.code === 'PGRST204' ||
-    (message.includes('bio') && (message.includes('column') || message.includes('schema cache')))
+    message.includes('bio') &&
+    !message.includes('bio_en') &&
+    (
+      error.code === '42703' ||
+      error.code === 'PGRST204' ||
+      message.includes('column') ||
+      message.includes('schema cache')
+    )
+  );
+};
+
+const isMissingBioEnColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    message.includes('bio_en') &&
+    (
+      error.code === '42703' ||
+      error.code === 'PGRST204' ||
+      message.includes('column') ||
+      message.includes('schema cache')
+    )
   );
 };
 
 const getProfileBio = async (userId: string) => {
   const { data: profileBio, error: profileBioError } = await supabaseAdmin
     .from('profiles')
-    .select('bio')
+    .select('bio, bio_en')
     .eq('user_id', userId)
     .maybeSingle();
 
   if (!profileBioError) {
-    return profileBio?.bio || '';
+    return {
+      bio: profileBio?.bio || '',
+      bioEn: profileBio?.bio_en || '',
+    };
   }
 
-  if (!isMissingBioColumnError(profileBioError)) {
+  if (isMissingBioEnColumnError(profileBioError)) {
+    const { data: fallbackProfileBio, error: fallbackProfileBioError } = await supabaseAdmin
+      .from('profiles')
+      .select('bio')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!fallbackProfileBioError) {
+      return {
+        bio: fallbackProfileBio?.bio || '',
+        bioEn: '',
+      };
+    }
+  }
+
+  if (!isMissingBioColumnError(profileBioError) && !isMissingBioEnColumnError(profileBioError)) {
     console.error('Profile bio query failed:', {
       code: profileBioError.code,
       message: profileBioError.message,
@@ -59,7 +99,10 @@ const getProfileBio = async (userId: string) => {
     });
   }
 
-  return '';
+  return {
+    bio: '',
+    bioEn: '',
+  };
 };
 
 let commentActivity = { ...emptyCommunityStats };
@@ -73,7 +116,8 @@ if (isLoggedIn && user?.id) {
   ]);
 
   badges = ownedBadges;
-  currentBio = profileBio;
+  currentBio = profileBio.bio;
+  currentBioEn = profileBio.bioEn;
   commentActivity = stats;
 }
 
@@ -212,7 +256,7 @@ const communityStatItems = [
 
               <form class="account-form account-form--bio" data-account-bio-form>
                 <label>
-                  <span>Bio</span>
+                  <span>Bio in italiano</span>
                   <textarea
                     name="bio"
                     maxlength="500"
@@ -224,6 +268,24 @@ const communityStatItems = [
                 <small class="account-character-count" data-account-bio-counter>
                   {currentBio.length}/500
                 </small>
+
+                <label>
+                  <span>Bio in inglese</span>
+                  <textarea
+                    name="bioEn"
+                    maxlength="500"
+                    rows="5"
+                    placeholder="Example: raised on Amiga, arcades and worn-out gaming magazines."
+                  >{currentBioEn}</textarea>
+                </label>
+
+                <small class="account-character-count" data-account-bio-en-counter>
+                  {currentBioEn.length}/500
+                </small>
+
+                <p class="account-field-help">
+                  La bio inglese è opzionale. Se lasciata vuota, nella versione inglese del profilo verrà usata la bio italiana.
+                </p>
 
                 <p class="account-message" data-account-bio-message hidden></p>
 
@@ -325,7 +387,9 @@ const communityStatItems = [
     const bioForm = document.querySelector('[data-account-bio-form]');
     const bioMessage = document.querySelector('[data-account-bio-message]');
     const bioTextarea = document.querySelector('[data-account-bio-form] textarea[name="bio"]');
+    const bioEnTextarea = document.querySelector('[data-account-bio-form] textarea[name="bioEn"]');
     const bioCounter = document.querySelector('[data-account-bio-counter]');
+    const bioEnCounter = document.querySelector('[data-account-bio-en-counter]');
     const avatarForm = document.querySelector('[data-account-avatar-form]');
     const avatarInput = document.querySelector('[data-account-avatar-input]');
     const avatarMessage = document.querySelector('[data-account-avatar-message]');
@@ -349,8 +413,15 @@ const communityStatItems = [
       bioCounter.textContent = `${bioTextarea.value.length}/500`;
     };
 
+    const updateBioEnCounter = () => {
+      if (!bioEnTextarea || !bioEnCounter) return;
+      bioEnCounter.textContent = `${bioEnTextarea.value.length}/500`;
+    };
+
     updateBioCounter();
+    updateBioEnCounter();
     bioTextarea?.addEventListener('input', updateBioCounter);
+    bioEnTextarea?.addEventListener('input', updateBioEnCounter);
 
     const validAvatarTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
@@ -539,9 +610,15 @@ const communityStatItems = [
       const formData = new FormData(bioForm);
       const button = bioForm.querySelector('button[type="submit"]');
       const bio = String(formData.get('bio') || '');
+      const bioEn = String(formData.get('bioEn') || '');
 
       if (bio.length > 500) {
         showMessage(bioMessage, 'La bio non può superare 500 caratteri.', 'error');
+        return;
+      }
+
+      if (bioEn.length > 500) {
+        showMessage(bioMessage, 'La bio inglese non può superare 500 caratteri.', 'error');
         return;
       }
 
@@ -551,7 +628,7 @@ const communityStatItems = [
         const response = await fetch('/api/account/update-profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bio })
+          body: JSON.stringify({ bio, bioEn })
         });
 
         const result = await response.json();

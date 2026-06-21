@@ -9,6 +9,7 @@ type UpdateProfilePayload = {
   displayName?: string;
   badgeKey?: string;
   bio?: string;
+  bioEn?: string;
 };
 
 const json = (payload: unknown, status = 200) =>
@@ -40,13 +41,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const hasBadgeKey = typeof payload.badgeKey === 'string';
   const hasProfileFields = hasDisplayName || hasBadgeKey;
   const hasBio = typeof payload.bio === 'string';
+  const hasBioEn = typeof payload.bioEn === 'string';
   const updatePayload: {
     display_name?: string;
     badge_key?: string;
     bio?: string | null;
+    bio_en?: string | null;
   } = {};
 
-  if (!hasProfileFields && !hasBio) {
+  if (!hasProfileFields && !hasBio && !hasBioEn) {
     return json({ ok: false, error: 'Nessun dato da aggiornare.' }, 400);
   }
 
@@ -101,12 +104,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
   }
 
-  if (hasBio) {
-    const bio = String(payload.bio || '')
+  const normalizeBio = (value: string) =>
+    String(value || '')
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
       .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
       .trim();
+
+  if (hasBio) {
+    const bio = normalizeBio(payload.bio || '');
 
     if (bio.length > 500) {
       return json({ ok: false, error: 'La bio non può superare 500 caratteri.' }, 400);
@@ -115,13 +121,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     updatePayload.bio = bio || null;
   }
 
-  const selectFields = hasBio
+  if (hasBioEn) {
+    const bioEn = normalizeBio(payload.bioEn || '');
+
+    if (bioEn.length > 500) {
+      return json({ ok: false, error: 'La bio inglese non può superare 500 caratteri.' }, 400);
+    }
+
+    updatePayload.bio_en = bioEn || null;
+  }
+
+  const selectFields = hasBio || hasBioEn
     ? `
       id,
       user_id,
       username,
       display_name,
       bio,
+      bio_en,
       badge_key,
       role,
       status,
@@ -164,7 +181,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   return json({
     ok: true,
-    message: hasBio && !hasProfileFields ? 'Bio aggiornata.' : 'Profilo aggiornato.',
+    message: (hasBio || hasBioEn) && !hasProfileFields ? 'Bio aggiornata.' : 'Profilo aggiornato.',
     profile,
   });
 };
