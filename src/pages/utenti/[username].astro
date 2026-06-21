@@ -53,6 +53,20 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   month: 'long',
   year: 'numeric',
 });
+const memberSinceFormatter = new Intl.DateTimeFormat('it-IT', {
+  month: 'short',
+  year: 'numeric',
+});
+const memberSince = profile?.created_at
+  ? memberSinceFormatter.format(new Date(profile.created_at))
+  : '—';
+const publicStats = [
+  { label: 'Commenti', value: result.approvedCount },
+  { label: 'Voti', value: result.ratingsCount },
+  { label: 'Punti', value: result.communityPoints },
+  { label: 'Like', value: result.likesReceived },
+];
+const pointsBadgeLabel = `Punti community: ${result.communityPoints}`;
 ---
 
 <BaseLayout
@@ -78,13 +92,23 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
           description={`@${profile.username}`}
         >
           <Fragment slot="leading">
-            <UserAvatar
-              name={displayName}
-              src={profile.avatar_url}
-              size="lg"
-              label={`Avatar di ${displayName}`}
-              class="public-user-hero__avatar"
-            />
+            <span class="public-user-hero__avatar-frame">
+              <UserAvatar
+                name={displayName}
+                src={profile.avatar_url}
+                size="lg"
+                label={`Avatar di ${displayName}`}
+                class="public-user-hero__avatar"
+              />
+
+              <span
+                class="community-points-badge public-user-hero__points-badge"
+                aria-label={pointsBadgeLabel}
+                title={pointsBadgeLabel}
+              >
+                {result.communityPoints}
+              </span>
+            </span>
           </Fragment>
 
           <div class="public-user-badges" aria-label="Badge e ruolo">
@@ -100,9 +124,20 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
           {bio && <p class="public-user-bio">{bio}</p>}
 
           <Fragment slot="aside">
-            <div class="public-user-stat">
-              <span>Commenti pubblicati</span>
-              <strong>{result.approvedCount}</strong>
+            <div class="public-user-stats" aria-label="Statistiche pubbliche">
+              <div class="public-user-stats__grid">
+                {publicStats.map((stat) => (
+                  <div class="public-user-stat">
+                    <span>{stat.label}</span>
+                    <strong>{stat.value}</strong>
+                  </div>
+                ))}
+              </div>
+
+              <p class="public-user-member-since">
+                <span>Membro dal</span>
+                <strong>{memberSince}</strong>
+              </p>
             </div>
 
             {!isOwnProfile && (

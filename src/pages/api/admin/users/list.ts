@@ -5,6 +5,7 @@ import {
   isBadgeAssignmentsUnavailable,
   type ReaderBadge,
 } from '../../../../lib/badges';
+import { calculateCommunityPoints } from '../../../../lib/community-points';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supabase/auth';
 import { getAvatarPublicUrl, isMissingAvatarColumnError } from '../../../../lib/supabase/avatars';
@@ -71,19 +72,6 @@ const chunkArray = <T>(items: T[], size: number) => {
 
   return chunks;
 };
-
-const calculateCommunityPoints = ({
-  approvedComments,
-  receivedLikes,
-  reviewRatings,
-}: {
-  approvedComments: number;
-  receivedLikes: number;
-  reviewRatings: number;
-}) =>
-  Math.floor(reviewRatings / 3) +
-  Math.floor(approvedComments / 5) +
-  Math.floor(receivedLikes / 5);
 
 const fetchAllAuthUsers = async () => {
   const users = [];

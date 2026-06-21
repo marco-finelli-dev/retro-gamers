@@ -218,6 +218,37 @@
   white-space: nowrap;
 }
 
+.community-points-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+
+  border: 1px solid rgba(34,240,255,0.34);
+  border-radius: 999px;
+
+  background:
+    linear-gradient(180deg, rgba(16,22,32,0.96), rgba(5,7,14,0.98)),
+    radial-gradient(circle at 20% 10%, rgba(34,240,255,0.28), transparent 48%);
+  color: var(--color-primary);
+
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 1;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    0 0 0 2px rgba(5,7,14,0.82),
+    0 8px 18px rgba(0,0,0,0.28),
+    0 0 16px rgba(34,240,255,0.12);
+
+  white-space: nowrap;
+}
+
 .rg-comment-count::before {
   content: "";
   flex: 0 0 auto;
@@ -755,6 +786,18 @@ html[data-theme="light"] .article-comments button {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.70),
     0 8px 18px rgba(24,32,48,0.07);
+}
+
+html[data-theme="light"] .community-points-badge {
+  border-color: rgba(8,124,142,0.28);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(230,244,248,0.98)),
+    radial-gradient(circle at 20% 10%, rgba(8,124,142,0.16), transparent 48%);
+  color: #065F6F;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.74),
+    0 0 0 2px rgba(245,248,252,0.90),
+    0 8px 18px rgba(24,32,48,0.12);
 }
 
 /* Hover light più editoriale, meno laser */

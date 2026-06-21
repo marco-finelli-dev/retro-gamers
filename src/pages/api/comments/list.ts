@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
+import { calculateCommunityPoints } from '../../../lib/community-points';
 import { getUserSessionFromCookies, isBlockedProfileStatus, isStaffProfile } from '../../../lib/supabase/auth';
 import { getAvatarPublicUrl, isMissingAvatarColumnError } from '../../../lib/supabase/avatars';
 import { supabaseAdmin } from '../../../lib/supabase/server';
@@ -25,6 +26,159 @@ const emptyReactionSummary = (): CommentReactionSummary => ({
 });
 
 const COMMENT_EDIT_WINDOW_MS = 10 * 60 * 1000;
+
+type AuthorCommunityStats = {
+  approvedComments: number;
+  receivedLikes: number;
+  reviewRatings: number;
+  communityPoints: number;
+};
+
+const getEmptyAuthorStats = (): AuthorCommunityStats => ({
+  approvedComments: 0,
+  receivedLikes: 0,
+  reviewRatings: 0,
+  communityPoints: calculateCommunityPoints({}),
+});
+
+const chunkArray = <T>(items: T[], size: number) => {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+};
+
+const isReviewRatingsUnavailable = (error: { code?: string; message?: string; details?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    error.code === '42P01' ||
+    error.code === 'PGRST205' ||
+    error.code === 'PGRST204' ||
+    message.includes('review_ratings')
+  );
+};
+
+const fetchAuthorCommunityStats = async (userIds: string[]) => {
+  const uniqueUserIds = [...new Set(userIds.map((userId) => String(userId || '').trim()).filter(Boolean))];
+  const stats = new Map<string, AuthorCommunityStats>();
+
+  for (const userId of uniqueUserIds) {
+    stats.set(userId, getEmptyAuthorStats());
+  }
+
+  if (uniqueUserIds.length === 0) {
+    return stats;
+  }
+
+  const approvedCommentOwnerById = new Map<string, string>();
+  const pageSize = 1000;
+
+  for (const userIdChunk of chunkArray(uniqueUserIds, 100)) {
+    for (let from = 0; from < 20000; from += pageSize) {
+      const { data, error } = await supabaseAdmin
+        .from('comments')
+        .select('id, user_id')
+        .eq('status', 'approved')
+        .in('user_id', userIdChunk)
+        .range(from, from + pageSize - 1);
+
+      if (error) {
+        throw error;
+      }
+
+      for (const comment of data ?? []) {
+        const userId = String(comment.user_id || '');
+        const commentId = String(comment.id || '');
+
+        if (!userId) continue;
+
+        const current = stats.get(userId) ?? getEmptyAuthorStats();
+        current.approvedComments += 1;
+        stats.set(userId, current);
+
+        if (commentId) {
+          approvedCommentOwnerById.set(commentId, userId);
+        }
+      }
+
+      if ((data ?? []).length < pageSize) {
+        break;
+      }
+    }
+  }
+
+  for (const commentIdChunk of chunkArray([...approvedCommentOwnerById.keys()], 500)) {
+    const { data, error } = await supabaseAdmin
+      .from('comment_reactions')
+      .select('comment_id')
+      .eq('reaction', 'like')
+      .in('comment_id', commentIdChunk);
+
+    if (error) {
+      throw error;
+    }
+
+    for (const reaction of data ?? []) {
+      const commentId = String(reaction.comment_id || '');
+      const userId = approvedCommentOwnerById.get(commentId);
+
+      if (!userId) continue;
+
+      const current = stats.get(userId) ?? getEmptyAuthorStats();
+      current.receivedLikes += 1;
+      stats.set(userId, current);
+    }
+  }
+
+  for (const userIdChunk of chunkArray(uniqueUserIds, 100)) {
+    for (let from = 0; from < 20000; from += pageSize) {
+      const { data, error } = await supabaseAdmin
+        .from('review_ratings')
+        .select('user_id')
+        .in('user_id', userIdChunk)
+        .range(from, from + pageSize - 1);
+
+      if (error) {
+        if (isReviewRatingsUnavailable(error)) {
+          break;
+        }
+
+        throw error;
+      }
+
+      for (const rating of data ?? []) {
+        const userId = String(rating.user_id || '');
+
+        if (!userId) continue;
+
+        const current = stats.get(userId) ?? getEmptyAuthorStats();
+        current.reviewRatings += 1;
+        stats.set(userId, current);
+      }
+
+      if ((data ?? []).length < pageSize) {
+        break;
+      }
+    }
+  }
+
+  for (const [userId, current] of stats.entries()) {
+    current.communityPoints = calculateCommunityPoints({
+      approvedComments: current.approvedComments,
+      receivedLikes: current.receivedLikes,
+      reviewRatings: current.reviewRatings,
+    });
+    stats.set(userId, current);
+  }
+
+  return stats;
+};
 
 const getViewerState = (session: Awaited<ReturnType<typeof getUserSessionFromCookies>>) => {
   const profile = session.profile;
@@ -156,8 +310,19 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   }
 
   const comments = data ?? [];
+  const authorUserIds = comments.map((comment) => String(comment.user_id || '')).filter(Boolean);
   const commentIds = comments.map((comment) => comment.id).filter(Boolean);
   const reactionSummaries = new Map<string, CommentReactionSummary>();
+  let authorCommunityStats = new Map<string, AuthorCommunityStats>();
+
+  try {
+    authorCommunityStats = await fetchAuthorCommunityStats(authorUserIds);
+  } catch (statsError) {
+    logApiError('comments-list.author-community-stats', statsError);
+    authorCommunityStats = new Map(
+      [...new Set(authorUserIds)].map((userId) => [userId, getEmptyAuthorStats()])
+    );
+  }
 
   if (commentIds.length > 0) {
     const { data: reactionRows, error: reactionError } = await supabaseAdmin
@@ -218,10 +383,17 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   const withReactionSummary = (comment: (typeof comments)[number]) => {
     const { user_id: userId, ...publicComment } = comment;
     const isOwnComment = Boolean(currentUserId && userId === currentUserId);
+    const profileWithAvatar = withAvatarUrl(publicComment.profiles);
+    const authorStats = userId ? authorCommunityStats.get(String(userId)) : null;
 
     return {
       ...publicComment,
-      profiles: withAvatarUrl(publicComment.profiles),
+      profiles: profileWithAvatar
+        ? {
+            ...profileWithAvatar,
+            community_points: authorStats?.communityPoints ?? calculateCommunityPoints({}),
+          }
+        : profileWithAvatar,
       ...(reactionSummaries.get(comment.id) ?? emptyReactionSummary()),
       isOwnComment,
       canReact: Boolean(currentUserId && !isOwnComment && comment.status === 'approved'),

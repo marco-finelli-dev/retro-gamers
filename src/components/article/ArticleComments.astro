@@ -418,6 +418,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       reportError: 'Non è stato possibile inviare la segnalazione. Riprova.',
       roleStaff: 'Staff Retro-Gamers',
       roleModerator: 'Moderatore',
+      communityPoints: 'Punti community: {points}',
       pendingStatus: 'In attesa',
       edit: 'Modifica',
       editLabel: 'Modifica commento',
@@ -460,6 +461,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       reportError: 'The report could not be sent. Please try again.',
       roleStaff: 'Retro-Gamers Staff',
       roleModerator: 'Moderator',
+      communityPoints: 'Community points: {points}',
       pendingStatus: 'Pending',
       edit: 'Edit',
       editLabel: 'Edit comment',
@@ -551,19 +553,45 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       : `/utenti/${encodedUsername}/`;
   };
 
-  const renderAvatar = (initial, avatarLabel, href = '', src = '') => {
+  const getCommunityPoints = (profile) => {
+    const points = Number(profile?.community_points || 0);
+
+    return Number.isFinite(points) && points > 0 ? Math.floor(points) : 0;
+  };
+
+  const renderCommunityPointsBadge = (points, labels) => {
+    if (!points) return '';
+
+    const label = labels.communityPoints.replace('{points}', String(points));
+
+    return `
+      <span
+        class="community-points-badge article-comment__points-badge"
+        aria-label="${escapeHtml(label)}"
+        title="${escapeHtml(label)}"
+      >
+        ${escapeHtml(points)}
+      </span>
+    `;
+  };
+
+  const renderAvatar = (initial, avatarLabel, href = '', src = '', communityPoints = 0, labels = commentLabels.it) => {
     const avatar = `
-      <span class="article-comment__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
-        <span class="article-comment__avatar-fallback" aria-hidden="true">${escapeHtml(initial)}</span>
-        ${src ? `
-          <img
-            src="${escapeHtml(src)}"
-            alt=""
-            loading="lazy"
-            decoding="async"
-            onerror="this.hidden = true"
-          />
-        ` : ''}
+      <span class="article-comment__avatar-frame">
+        <span class="article-comment__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
+          <span class="article-comment__avatar-fallback" aria-hidden="true">${escapeHtml(initial)}</span>
+          ${src ? `
+            <img
+              src="${escapeHtml(src)}"
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onerror="this.hidden = true"
+            />
+          ` : ''}
+        </span>
+
+        ${renderCommunityPointsBadge(communityPoints, labels)}
       </span>
     `;
 
@@ -822,6 +850,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
     const profileHref = getProfileHref(profile, language, Boolean(reply.isLegacy));
     const avatarUrl = profile.avatar_url || '';
+    const communityPoints = reply.isLegacy ? 0 : getCommunityPoints(profile);
 
     return `
       <div
@@ -829,7 +858,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         ${reply.id ? `id="${escapeHtml(getCommentAnchorId(reply))}" data-comment-id="${escapeHtml(reply.id)}"` : ''}
       >
         <div class="article-comment__editor-reply-header">
-          ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl)}
+          ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl, communityPoints, labels)}
 
           <div class="article-comment__editor-reply-meta">
             <strong class="article-comment__author-row">
@@ -867,6 +896,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const profileHref = getProfileHref(profile, language, isLegacy);
     const highlightedClass = comment.isHighlighted ? ' article-comment--highlighted' : '';
     const avatarUrl = profile.avatar_url || '';
+    const communityPoints = isLegacy ? 0 : getCommunityPoints(profile);
 
     const canReplyToComment = canReply && !isLegacy && comment.status === 'approved';
 
@@ -876,7 +906,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         ${comment.id ? `id="${escapeHtml(getCommentAnchorId(comment))}" data-comment-id="${escapeHtml(comment.id)}"` : ''}
       >
         <header class="article-comment__header">
-          ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl)}
+          ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl, communityPoints, labels)}
 
           <div class="article-comment__meta">
             <h3 class="article-comment__author-row">

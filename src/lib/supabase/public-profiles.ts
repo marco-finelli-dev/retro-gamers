@@ -1,5 +1,6 @@
 import { supabaseAdmin } from './server';
 import { getAvatarPublicUrl, isMissingAvatarColumnError } from './avatars';
+import { calculateCommunityPoints } from '../community-points';
 
 export type PublicReaderBadge = {
   key?: string | null;
@@ -16,6 +17,7 @@ export type PublicReaderProfile = {
   bio?: string | null;
   avatar_path?: string | null;
   avatar_url?: string | null;
+  created_at?: string | null;
   role: string | null;
   status: string | null;
   badge_key: string | null;
@@ -36,6 +38,9 @@ export type PublicReaderProfileResult = {
   profile: PublicReaderProfile | null;
   comments: PublicReaderComment[];
   approvedCount: number;
+  ratingsCount: number;
+  likesReceived: number;
+  communityPoints: number;
   error: string | null;
 };
 
@@ -76,13 +81,14 @@ export const getCommentExcerpt = (body: string | null, maxLength = 180) => {
   return `${normalized.slice(0, maxLength - 1).trim()}...`;
 };
 
-const getProfileSelect = (includeBio = true, includeAvatar = true) => `
+const getProfileSelect = (includeBio = true, includeAvatar = true, includeCreatedAt = true) => `
   id,
   user_id,
   username,
   display_name,
   ${includeBio ? 'bio,' : ''}
   ${includeAvatar ? 'avatar_path,' : ''}
+  ${includeCreatedAt ? 'created_at,' : ''}
   badge_key,
   role,
   status,
@@ -100,10 +106,116 @@ const isMissingBioColumnError = (error: { code?: string; message?: string; detai
   const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
 
   return (
-    error.code === '42703' ||
-    error.code === 'PGRST204' ||
-    (message.includes('bio') && (message.includes('column') || message.includes('schema cache')))
+    message.includes('bio') &&
+    (
+      error.code === '42703' ||
+      error.code === 'PGRST204' ||
+      message.includes('column') ||
+      message.includes('schema cache')
+    )
   );
+};
+
+const isMissingCreatedAtColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    message.includes('created_at') &&
+    (
+      error.code === '42703' ||
+      error.code === 'PGRST204' ||
+      message.includes('column') ||
+      message.includes('schema cache')
+    )
+  );
+};
+
+const isReviewRatingsUnavailable = (error: { code?: string; message?: string; details?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    error.code === '42P01' ||
+    error.code === 'PGRST205' ||
+    error.code === 'PGRST204' ||
+    message.includes('review_ratings')
+  );
+};
+
+const chunkArray = <T>(items: T[], size: number) => {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+};
+
+const fetchApprovedCommentIds = async (profileId: string) => {
+  const ids: string[] = [];
+  const pageSize = 1000;
+
+  for (let from = 0; from < 20000; from += pageSize) {
+    const { data, error } = await supabaseAdmin
+      .from('comments')
+      .select('id')
+      .eq('profile_id', profileId)
+      .eq('status', 'approved')
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      return { ids: [], error };
+    }
+
+    ids.push(...(data ?? []).map((comment) => String(comment.id)).filter(Boolean));
+
+    if ((data ?? []).length < pageSize) {
+      break;
+    }
+  }
+
+  return { ids, error: null };
+};
+
+const fetchReviewRatingsCount = async (userId: string) => {
+  const { count, error } = await supabaseAdmin
+    .from('review_ratings')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (error) {
+    if (isReviewRatingsUnavailable(error)) {
+      return { count: 0, error: null };
+    }
+
+    return { count: 0, error };
+  }
+
+  return { count: count ?? 0, error: null };
+};
+
+const fetchLikesReceived = async (approvedCommentIds: string[]) => {
+  let likesReceived = 0;
+
+  for (const commentIdChunk of chunkArray(approvedCommentIds, 500)) {
+    const { count, error } = await supabaseAdmin
+      .from('comment_reactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('reaction', 'like')
+      .in('comment_id', commentIdChunk);
+
+    if (error) {
+      return { count: 0, error };
+    }
+
+    likesReceived += count ?? 0;
+  }
+
+  return { count: likesReceived, error: null };
 };
 
 export async function getPublicReaderProfile(
@@ -117,26 +229,35 @@ export async function getPublicReaderProfile(
       profile: null,
       comments: [],
       approvedCount: 0,
+      ratingsCount: 0,
+      likesReceived: 0,
+      communityPoints: 0,
       error: 'Profilo non disponibile.',
     };
   }
 
   let includeBio = true;
   let includeAvatar = true;
+  let includeCreatedAt = true;
   let { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select(getProfileSelect(includeBio, includeAvatar))
+    .select(getProfileSelect(includeBio, includeAvatar, includeCreatedAt))
     .eq('username', normalizedUsername)
     .eq('status', 'active')
     .maybeSingle();
 
-  if (isMissingBioColumnError(profileError) || isMissingAvatarColumnError(profileError)) {
+  if (
+    isMissingBioColumnError(profileError) ||
+    isMissingAvatarColumnError(profileError) ||
+    isMissingCreatedAtColumnError(profileError)
+  ) {
     includeBio = !isMissingBioColumnError(profileError);
     includeAvatar = !isMissingAvatarColumnError(profileError);
+    includeCreatedAt = !isMissingCreatedAtColumnError(profileError);
 
     const fallbackResult = await supabaseAdmin
       .from('profiles')
-      .select(getProfileSelect(includeBio, includeAvatar))
+      .select(getProfileSelect(includeBio, includeAvatar, includeCreatedAt))
       .eq('username', normalizedUsername)
       .eq('status', 'active')
       .maybeSingle();
@@ -145,10 +266,14 @@ export async function getPublicReaderProfile(
     profileError = fallbackResult.error;
   }
 
-  if (isMissingBioColumnError(profileError) || isMissingAvatarColumnError(profileError)) {
+  if (
+    isMissingBioColumnError(profileError) ||
+    isMissingAvatarColumnError(profileError) ||
+    isMissingCreatedAtColumnError(profileError)
+  ) {
     const fallbackResult = await supabaseAdmin
       .from('profiles')
-      .select(getProfileSelect(false, false))
+      .select(getProfileSelect(false, false, false))
       .eq('username', normalizedUsername)
       .eq('status', 'active')
       .maybeSingle();
@@ -162,6 +287,9 @@ export async function getPublicReaderProfile(
       profile: null,
       comments: [],
       approvedCount: 0,
+      ratingsCount: 0,
+      likesReceived: 0,
+      communityPoints: 0,
       error: profileError.message,
     };
   }
@@ -171,42 +299,69 @@ export async function getPublicReaderProfile(
       profile: null,
       comments: [],
       approvedCount: 0,
+      ratingsCount: 0,
+      likesReceived: 0,
+      communityPoints: 0,
       error: 'Profilo non disponibile.',
     };
   }
 
-  const [{ count, error: countError }, { data: comments, error: commentsError }] =
-    await Promise.all([
-      supabaseAdmin
-        .from('comments')
-        .select('id', { count: 'exact', head: true })
-        .eq('profile_id', profile.id)
-        .eq('status', 'approved'),
-      supabaseAdmin
-        .from('comments')
-        .select(`
-          id,
-          body,
-          created_at,
-          article_title,
-          article_url,
-          article_slug,
-          article_language
-        `)
-        .eq('profile_id', profile.id)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(commentLimit),
-    ]);
+  const [
+    approvedCommentIdsResult,
+    ratingsCountResult,
+    { data: comments, error: commentsError },
+  ] = await Promise.all([
+    fetchApprovedCommentIds(profile.id),
+    fetchReviewRatingsCount(profile.user_id),
+    supabaseAdmin
+      .from('comments')
+      .select(`
+        id,
+        body,
+        created_at,
+        article_title,
+        article_url,
+        article_slug,
+        article_language
+      `)
+      .eq('profile_id', profile.id)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(commentLimit),
+  ]);
 
-  if (countError || commentsError) {
+  if (approvedCommentIdsResult.error || ratingsCountResult.error || commentsError) {
     return {
       profile,
       comments: [],
       approvedCount: 0,
-      error: countError?.message || commentsError?.message || 'Commenti non disponibili.',
+      ratingsCount: 0,
+      likesReceived: 0,
+      communityPoints: calculateCommunityPoints({}),
+      error: approvedCommentIdsResult.error?.message ||
+        ratingsCountResult.error?.message ||
+        commentsError?.message ||
+        'Statistiche non disponibili.',
     };
   }
+
+  const likesResult = await fetchLikesReceived(approvedCommentIdsResult.ids);
+
+  if (likesResult.error) {
+    return {
+      profile,
+      comments: [],
+      approvedCount: 0,
+      ratingsCount: 0,
+      likesReceived: 0,
+      communityPoints: calculateCommunityPoints({}),
+      error: likesResult.error.message || 'Statistiche non disponibili.',
+    };
+  }
+
+  const approvedCount = approvedCommentIdsResult.ids.length;
+  const ratingsCount = ratingsCountResult.count;
+  const likesReceived = likesResult.count;
 
   return {
     profile: {
@@ -214,7 +369,14 @@ export async function getPublicReaderProfile(
       avatar_url: getAvatarPublicUrl(profile.avatar_path),
     },
     comments: comments ?? [],
-    approvedCount: count ?? 0,
+    approvedCount,
+    ratingsCount,
+    likesReceived,
+    communityPoints: calculateCommunityPoints({
+      approvedComments: approvedCount,
+      receivedLikes: likesReceived,
+      reviewRatings: ratingsCount,
+    }),
     error: null,
   };
 }

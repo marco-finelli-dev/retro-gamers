@@ -306,7 +306,12 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       const email = user.email || 'Email non disponibile';
       const comments = user.comments || { total: 0, pending: 0, approved: 0 };
       const ratings = user.ratings || { total: 0 };
-      const communityPoints = Number(user.communityPoints || 0);
+      const communityPointsValue = user.communityPoints == null
+        ? Number.NaN
+        : Number(user.communityPoints);
+      const communityPoints = Number.isFinite(communityPointsValue)
+        ? communityPointsValue
+        : 1;
       const avatarInitial = getUserInitial(user);
       const avatarLabel = `Avatar di ${user.displayName || user.username || user.email || 'utente'}`;
       const manageHref = `/admin/users/${encodeURIComponent(user.userId)}/`;
