@@ -11,7 +11,7 @@ import Hardware from '../../components/home/Hardware.astro';
 
 import '../../styles/pages/home.css';
 
-import { getAllPosts } from '../../lib/posts';
+import { getActiveFeaturedPost, getAllPosts } from '../../lib/posts';
 import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
@@ -34,6 +34,7 @@ const englishPosts = allPosts
 
 const headerReviews = englishPosts.filter((post) => post.type === 'review');
 const headerNews = englishPosts.filter((post) => post.type === 'news');
+const featuredPost = getActiveFeaturedPost(englishPosts);
 
 const usedIds = new Set();
 
@@ -62,11 +63,27 @@ const takeUnused = (source, limit, options = {}) => {
   return picked;
 };
 
-const hero = takeUnused(
-  englishPosts.filter(hasImage),
-  4,
-  { requireImage: true }
-);
+const hero = [];
+
+if (featuredPost) {
+  const featuredKey = getPostKey(featuredPost);
+
+  hero.push(featuredPost);
+
+  if (featuredKey) {
+    usedIds.add(featuredKey);
+  }
+}
+
+const remainingHeroSlots = Math.max(0, 4 - hero.length);
+
+if (remainingHeroSlots > 0) {
+  hero.push(...takeUnused(
+    englishPosts.filter(hasImage),
+    remainingHeroSlots,
+    { requireImage: true }
+  ));
+}
 
 const reviewsSource = englishPosts
   .filter((post) => post.type === 'review')

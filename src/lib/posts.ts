@@ -93,6 +93,7 @@ export type Post = {
   cardExcerpt?: string;
   publishedAt?: string;
   lastUpdated?: string;
+  featuredUntil?: string;
   type?: string;
 
   language?: 'it' | 'en';
@@ -192,6 +193,7 @@ export async function getAllPosts(): Promise<Post[]> {
       seoTitle,
      publishedAt,
       lastUpdated,
+      featuredUntil,
       type,
       language,
 
@@ -430,6 +432,29 @@ function isAffiliateHardwareArea(post: Post) {
   ].includes(post.monetization.productType || '');
 }
 
+export function getActiveFeaturedPost(posts: Post[] = [], today = new Date()) {
+  const todayKey = today.toISOString().slice(0, 10);
+
+  return posts
+    .filter((post) => {
+      const featuredUntil = String(post.featuredUntil || '').slice(0, 10);
+
+      return /^\d{4}-\d{2}-\d{2}$/.test(featuredUntil) && featuredUntil >= todayKey;
+    })
+    .sort((a, b) => {
+      const aFeaturedUntil = String(a.featuredUntil || '').slice(0, 10);
+      const bFeaturedUntil = String(b.featuredUntil || '').slice(0, 10);
+      const featuredUntilComparison = aFeaturedUntil.localeCompare(bFeaturedUntil);
+
+      if (featuredUntilComparison !== 0) {
+        return featuredUntilComparison;
+      }
+
+      return new Date(b.publishedAt || 0).getTime() -
+        new Date(a.publishedAt || 0).getTime();
+    })[0] || null;
+}
+
 export function groupPosts(posts: Post[] = []) {
   const normalized = uniqueById(posts)
     .map((post) => ({
@@ -447,15 +472,32 @@ export function groupPosts(posts: Post[] = []) {
   const usedIds = new Set<string>();
 
   const allWithImage = italianPosts.filter(hasImage);
+  const featuredPost = getActiveFeaturedPost(italianPosts);
 
   /*
     HERO:
     prende gli ultimi contenuti italiani con immagine.
     Qui NON filtriamo per type, così la hero resta editoriale.
   */
-  const hero = takeUnused(allWithImage, usedIds, 4, {
-    requireImage: true
-  });
+  const hero: Post[] = [];
+
+  if (featuredPost) {
+    const featuredKey = getHomePostKey(featuredPost);
+
+    hero.push(featuredPost);
+
+    if (featuredKey) {
+      usedIds.add(featuredKey);
+    }
+  }
+
+  const remainingHeroSlots = Math.max(0, 4 - hero.length);
+
+  if (remainingHeroSlots > 0) {
+    hero.push(...takeUnused(allWithImage, usedIds, remainingHeroSlots, {
+      requireImage: true
+    }));
+  }
 
   /*
     RECENSIONI:
