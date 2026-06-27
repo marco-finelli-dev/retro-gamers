@@ -10,6 +10,16 @@ type ReactionPayload = {
   reaction?: CommentReaction;
 };
 
+type CommentReactionSummary = {
+  likeCount: number;
+  dislikeCount: number;
+  userReaction: CommentReaction | null;
+  likeUsers: string[];
+  dislikeUsers: string[];
+};
+
+const MAX_REACTION_TOOLTIP_USERS = 9;
+
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
     status,
@@ -24,27 +34,71 @@ const isUuid = (value: string) =>
 const isReaction = (value: unknown): value is CommentReaction =>
   value === 'like' || value === 'dislike';
 
-const getReactionCounts = async (commentId: string, userId: string) => {
+const getPublicReactionName = (profile: Record<string, unknown> | null | undefined) =>
+  String(profile?.display_name || profile?.username || '').trim();
+
+const getReactionCounts = async (commentId: string, userId: string): Promise<CommentReactionSummary> => {
   const { data, error } = await supabaseAdmin
     .from('comment_reactions')
-    .select('reaction, user_id')
-    .eq('comment_id', commentId);
+    .select('reaction, user_id, created_at')
+    .eq('comment_id', commentId)
+    .order('created_at', { ascending: true });
 
   if (error) {
     throw error;
   }
 
+  const reactionProfilesByUserId = new Map<string, string>();
+  const reactionUserIds = [
+    ...new Set((data ?? [])
+      .map((row) => String(row.user_id || '').trim())
+      .filter(Boolean))
+  ];
+
+  if (reactionUserIds.length > 0) {
+    const { data: reactionProfiles, error: reactionProfilesError } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id, username, display_name')
+      .in('user_id', reactionUserIds);
+
+    if (reactionProfilesError) {
+      logApiError('comments-reaction.profiles', reactionProfilesError);
+    } else {
+      for (const profile of reactionProfiles ?? []) {
+        const reactionUserId = String(profile.user_id || '');
+        const name = getPublicReactionName(profile);
+
+        if (reactionUserId && name) {
+          reactionProfilesByUserId.set(reactionUserId, name);
+        }
+      }
+    }
+  }
+
   let likeCount = 0;
   let dislikeCount = 0;
   let userReaction: CommentReaction | null = null;
+  const likeUsers: string[] = [];
+  const dislikeUsers: string[] = [];
 
   for (const row of data ?? []) {
+    const reactionUserId = String(row.user_id || '');
+    const reactionUserName = reactionProfilesByUserId.get(reactionUserId) || '';
+
     if (row.reaction === 'like') {
       likeCount += 1;
+
+      if (reactionUserName && likeUsers.length < MAX_REACTION_TOOLTIP_USERS) {
+        likeUsers.push(reactionUserName);
+      }
     }
 
     if (row.reaction === 'dislike') {
       dislikeCount += 1;
+
+      if (reactionUserName && dislikeUsers.length < MAX_REACTION_TOOLTIP_USERS) {
+        dislikeUsers.push(reactionUserName);
+      }
     }
 
     if (row.user_id === userId) {
@@ -56,6 +110,8 @@ const getReactionCounts = async (commentId: string, userId: string) => {
     likeCount,
     dislikeCount,
     userReaction,
+    likeUsers,
+    dislikeUsers,
   };
 };
 

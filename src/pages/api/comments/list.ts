@@ -17,15 +17,20 @@ type CommentReactionSummary = {
   likeCount: number;
   dislikeCount: number;
   userReaction: 'like' | 'dislike' | null;
+  likeUsers: string[];
+  dislikeUsers: string[];
 };
 
 const emptyReactionSummary = (): CommentReactionSummary => ({
   likeCount: 0,
   dislikeCount: 0,
   userReaction: null,
+  likeUsers: [],
+  dislikeUsers: [],
 });
 
 const COMMENT_EDIT_WINDOW_MS = 10 * 60 * 1000;
+const MAX_REACTION_TOOLTIP_USERS = 9;
 
 type AuthorCommunityStats = {
   approvedComments: number;
@@ -248,6 +253,9 @@ const withAvatarUrl = (profile: Record<string, unknown> | null | undefined) => {
   };
 };
 
+const getPublicReactionName = (profile: Record<string, unknown> | null | undefined) =>
+  String(profile?.display_name || profile?.username || '').trim();
+
 export const GET: APIRoute = async ({ url, cookies }) => {
   const articleSlug = url.searchParams.get('articleSlug')?.trim() ?? '';
   const articleLanguage = url.searchParams.get('articleLanguage') === 'en' ? 'en' : 'it';
@@ -327,20 +335,59 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   if (commentIds.length > 0) {
     const { data: reactionRows, error: reactionError } = await supabaseAdmin
       .from('comment_reactions')
-      .select('comment_id, user_id, reaction')
-      .in('comment_id', commentIds);
+      .select('comment_id, user_id, reaction, created_at')
+      .in('comment_id', commentIds)
+      .order('created_at', { ascending: true });
 
     if (!reactionError) {
+      const reactionProfilesByUserId = new Map<string, string>();
+      const reactionUserIds = [
+        ...new Set((reactionRows ?? [])
+          .map((row) => String(row.user_id || '').trim())
+          .filter(Boolean))
+      ];
+
+      for (const userIdChunk of chunkArray(reactionUserIds, 100)) {
+        const { data: reactionProfiles, error: reactionProfilesError } = await supabaseAdmin
+          .from('profiles')
+          .select('user_id, username, display_name')
+          .in('user_id', userIdChunk);
+
+        if (reactionProfilesError) {
+          logApiError('comments-list.reaction-profiles', reactionProfilesError);
+          break;
+        }
+
+        for (const profile of reactionProfiles ?? []) {
+          const userId = String(profile.user_id || '');
+          const name = getPublicReactionName(profile);
+
+          if (userId && name) {
+            reactionProfilesByUserId.set(userId, name);
+          }
+        }
+      }
+
       for (const row of reactionRows ?? []) {
         const commentId = String(row.comment_id || '');
+        const userId = String(row.user_id || '');
+        const reactionUserName = reactionProfilesByUserId.get(userId) || '';
         const summary = reactionSummaries.get(commentId) ?? emptyReactionSummary();
 
         if (row.reaction === 'like') {
           summary.likeCount += 1;
+
+          if (reactionUserName && summary.likeUsers.length < MAX_REACTION_TOOLTIP_USERS) {
+            summary.likeUsers.push(reactionUserName);
+          }
         }
 
         if (row.reaction === 'dislike') {
           summary.dislikeCount += 1;
+
+          if (reactionUserName && summary.dislikeUsers.length < MAX_REACTION_TOOLTIP_USERS) {
+            summary.dislikeUsers.push(reactionUserName);
+          }
         }
 
         if (currentUserId && row.user_id === currentUserId) {

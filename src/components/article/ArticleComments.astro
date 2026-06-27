@@ -405,6 +405,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       loginToReact: 'Accedi o registrati per votare un commento.',
       ownReactionError: 'Non puoi votare un tuo commento.',
       reactionError: 'Non è stato possibile aggiornare il voto. Riprova.',
+      reactionOtherSingular: 'altro',
+      reactionOtherPlural: 'altri',
       avatarOf: 'Avatar di {name}',
       directLink: 'Link diretto al commento',
       targetLoading: 'Caricamento commento...',
@@ -448,6 +450,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       loginToReact: 'Sign in or create an account to react to a comment.',
       ownReactionError: 'You cannot react to your own comment.',
       reactionError: 'The reaction could not be updated. Please try again.',
+      reactionOtherSingular: 'other',
+      reactionOtherPlural: 'others',
       avatarOf: 'Avatar for {name}',
       directLink: 'Direct link to comment',
       targetLoading: 'Loading comment...',
@@ -705,11 +709,45 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     return Number.isFinite(value) && value > 0 ? value : 0;
   };
 
+  const getReactionUsers = (comment, key) =>
+    Array.isArray(comment?.[key])
+      ? comment[key].map((name) => String(name || '').trim()).filter(Boolean)
+      : [];
+
+  const renderReactionTooltip = (title, users, totalCount, labels) => {
+    const names = Array.isArray(users)
+      ? users.map((name) => String(name || '').trim()).filter(Boolean)
+      : [];
+
+    if (totalCount <= 0 || names.length === 0) return '';
+
+    const remainingCount = Math.max(0, totalCount - names.length);
+    const otherLabel = remainingCount === 1
+      ? labels.reactionOtherSingular
+      : labels.reactionOtherPlural;
+
+    return `
+      <span class="comment-reaction-tooltip" role="tooltip">
+        <strong>${escapeHtml(title)}</strong>
+        <span class="comment-reaction-tooltip__list">
+          ${names.map((name) => `
+            <span class="comment-reaction-tooltip__user">${escapeHtml(name)}</span>
+          `).join('')}
+          ${remainingCount > 0 ? `
+            <span class="comment-reaction-tooltip__more">+ ${remainingCount} ${escapeHtml(otherLabel)}</span>
+          ` : ''}
+        </span>
+      </span>
+    `;
+  };
+
   const renderReactionControls = (comment, labels) => {
     if (comment.isLegacy || !comment.id) return '';
 
     const likeCount = getReactionCount(comment, 'likeCount');
     const dislikeCount = getReactionCount(comment, 'dislikeCount');
+    const likeUsers = getReactionUsers(comment, 'likeUsers');
+    const dislikeUsers = getReactionUsers(comment, 'dislikeUsers');
     const isOwnComment = Boolean(comment.isOwnComment);
 
     const userReaction = !isOwnComment && comment.userReaction === 'dislike'
@@ -720,36 +758,44 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const disabledClass = isOwnComment ? ' is-disabled' : '';
     const disabledAttributes = isOwnComment ? 'disabled aria-disabled="true"' : '';
     const ownCommentValue = isOwnComment ? 'true' : 'false';
+    const likeTooltip = renderReactionTooltip(labels.like, likeUsers, likeCount, labels);
+    const dislikeTooltip = renderReactionTooltip(labels.dislike, dislikeUsers, dislikeCount, labels);
+    const likeWrapperFocus = isOwnComment && likeTooltip ? ' tabindex="0"' : '';
+    const dislikeWrapperFocus = isOwnComment && dislikeTooltip ? ' tabindex="0"' : '';
 
     return `
       <div class="article-comment__reaction-controls" data-comment-reactions="${escapeHtml(comment.id)}">
-        <button
-          class="comment-reaction comment-reaction--like${userReaction === 'like' ? ' is-active' : ''}${disabledClass}"
-          type="button"
-          data-comment-id="${escapeHtml(comment.id)}"
-          data-comment-reaction="like"
-          data-own-comment="${ownCommentValue}"
-          aria-pressed="${userReaction === 'like' ? 'true' : 'false'}"
-          ${disabledAttributes}
-          aria-label="${escapeHtml(labels.like)}"
-          title="${escapeHtml(labels.like)}"
-        >
-          <span class="comment-reaction__count" data-reaction-count>${likeCount}</span>
-        </button>
+        <span class="comment-reaction-wrap"${likeWrapperFocus}>
+          <button
+            class="comment-reaction comment-reaction--like${userReaction === 'like' ? ' is-active' : ''}${disabledClass}"
+            type="button"
+            data-comment-id="${escapeHtml(comment.id)}"
+            data-comment-reaction="like"
+            data-own-comment="${ownCommentValue}"
+            aria-pressed="${userReaction === 'like' ? 'true' : 'false'}"
+            ${disabledAttributes}
+            aria-label="${escapeHtml(labels.like)}"
+          >
+            <span class="comment-reaction__count" data-reaction-count>${likeCount}</span>
+          </button>
+          ${likeTooltip}
+        </span>
 
-        <button
-          class="comment-reaction comment-reaction--dislike${userReaction === 'dislike' ? ' is-active' : ''}${disabledClass}"
-          type="button"
-          data-comment-id="${escapeHtml(comment.id)}"
-          data-comment-reaction="dislike"
-          data-own-comment="${ownCommentValue}"
-          aria-pressed="${userReaction === 'dislike' ? 'true' : 'false'}"
-          ${disabledAttributes}
-          aria-label="${escapeHtml(labels.dislike)}"
-          title="${escapeHtml(labels.dislike)}"
-        >
-          <span class="comment-reaction__count" data-reaction-count>${dislikeCount}</span>
-        </button>
+        <span class="comment-reaction-wrap"${dislikeWrapperFocus}>
+          <button
+            class="comment-reaction comment-reaction--dislike${userReaction === 'dislike' ? ' is-active' : ''}${disabledClass}"
+            type="button"
+            data-comment-id="${escapeHtml(comment.id)}"
+            data-comment-reaction="dislike"
+            data-own-comment="${ownCommentValue}"
+            aria-pressed="${userReaction === 'dislike' ? 'true' : 'false'}"
+            ${disabledAttributes}
+            aria-label="${escapeHtml(labels.dislike)}"
+          >
+            <span class="comment-reaction__count" data-reaction-count>${dislikeCount}</span>
+          </button>
+          ${dislikeTooltip}
+        </span>
       </div>
     `;
   };
@@ -1157,13 +1203,42 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       queueCommentHashScroll();
     };
 
-    const updateReactionGroup = (group, userReaction, likeCount, dislikeCount) => {
+    const updateReactionTooltip = (button, title, users, totalCount) => {
+      const wrapper = button?.closest('.comment-reaction-wrap');
+
+      if (!wrapper) return;
+
+      const nextTooltip = renderReactionTooltip(title, users, Number(totalCount || 0), labels);
+      const currentTooltip = wrapper.querySelector('.comment-reaction-tooltip');
+
+      if (!nextTooltip) {
+        currentTooltip?.remove();
+        return;
+      }
+
+      if (currentTooltip) {
+        currentTooltip.outerHTML = nextTooltip;
+      } else {
+        wrapper.insertAdjacentHTML('beforeend', nextTooltip);
+      }
+    };
+
+    const updateReactionGroup = (
+      group,
+      userReaction,
+      likeCount,
+      dislikeCount,
+      likeUsers = null,
+      dislikeUsers = null
+    ) => {
       if (!group) return;
 
       group.querySelectorAll('[data-comment-reaction]').forEach((reactionButton) => {
         const reaction = reactionButton.dataset.commentReaction;
         const isActive = reaction === userReaction;
         const count = reaction === 'dislike' ? dislikeCount : likeCount;
+        const users = reaction === 'dislike' ? dislikeUsers : likeUsers;
+        const title = reaction === 'dislike' ? labels.dislike : labels.like;
         const countNode = reactionButton.querySelector('[data-reaction-count]');
 
         reactionButton.classList.toggle('is-active', isActive);
@@ -1171,6 +1246,10 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
         if (countNode) {
           countNode.textContent = String(Number(count || 0));
+        }
+
+        if (Array.isArray(users)) {
+          updateReactionTooltip(reactionButton, title, users, count);
         }
       });
     };
@@ -1229,7 +1308,9 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
           group,
           result.userReaction || null,
           result.likeCount,
-          result.dislikeCount
+          result.dislikeCount,
+          result.likeUsers,
+          result.dislikeUsers
         );
       } catch {
         setStatus(labels.reactionError, 'error');
