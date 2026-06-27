@@ -712,23 +712,25 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const dislikeCount = getReactionCount(comment, 'dislikeCount');
     const isOwnComment = Boolean(comment.isOwnComment);
 
-    if (isOwnComment) return '';
-
-    const userReaction = comment.userReaction === 'dislike'
+    const userReaction = !isOwnComment && comment.userReaction === 'dislike'
       ? 'dislike'
-      : comment.userReaction === 'like'
+      : !isOwnComment && comment.userReaction === 'like'
         ? 'like'
         : '';
+    const disabledClass = isOwnComment ? ' is-disabled' : '';
+    const disabledAttributes = isOwnComment ? 'disabled aria-disabled="true"' : '';
+    const ownCommentValue = isOwnComment ? 'true' : 'false';
 
     return `
       <div class="article-comment__reaction-controls" data-comment-reactions="${escapeHtml(comment.id)}">
         <button
-          class="comment-reaction comment-reaction--like${userReaction === 'like' ? ' is-active' : ''}"
+          class="comment-reaction comment-reaction--like${userReaction === 'like' ? ' is-active' : ''}${disabledClass}"
           type="button"
           data-comment-id="${escapeHtml(comment.id)}"
           data-comment-reaction="like"
-          data-own-comment="false"
+          data-own-comment="${ownCommentValue}"
           aria-pressed="${userReaction === 'like' ? 'true' : 'false'}"
+          ${disabledAttributes}
           aria-label="${escapeHtml(labels.like)}"
           title="${escapeHtml(labels.like)}"
         >
@@ -736,12 +738,13 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         </button>
 
         <button
-          class="comment-reaction comment-reaction--dislike${userReaction === 'dislike' ? ' is-active' : ''}"
+          class="comment-reaction comment-reaction--dislike${userReaction === 'dislike' ? ' is-active' : ''}${disabledClass}"
           type="button"
           data-comment-id="${escapeHtml(comment.id)}"
           data-comment-reaction="dislike"
-          data-own-comment="false"
+          data-own-comment="${ownCommentValue}"
           aria-pressed="${userReaction === 'dislike' ? 'true' : 'false'}"
+          ${disabledAttributes}
           aria-label="${escapeHtml(labels.dislike)}"
           title="${escapeHtml(labels.dislike)}"
         >
