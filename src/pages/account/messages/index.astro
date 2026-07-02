@@ -231,6 +231,9 @@ const communityStatItems = [
     const countNode = document.querySelector('[data-account-messages-count]');
     const markAllButton = document.querySelector('[data-mark-all-read]');
     const systemTabBadge = document.querySelector('[data-system-tab-unread]');
+    const requestGlobalUnreadRefresh = () => {
+      window.dispatchEvent(new Event('retro-gamers:refresh-unread'));
+    };
 
     const refreshUnreadCount = async () => {
       try {
@@ -287,6 +290,7 @@ const communityStatItems = [
         card.classList.remove('is-unread');
         button.remove();
         refreshUnreadCount();
+        requestGlobalUnreadRefresh();
       } catch {
         button.disabled = false;
       }
@@ -312,6 +316,7 @@ const communityStatItems = [
         });
 
         refreshUnreadCount();
+        requestGlobalUnreadRefresh();
       } catch {
         markAllButton.disabled = false;
       }

@@ -35,6 +35,8 @@ type CommentReference = {
   id: string;
   user_id?: string | null;
   parent_id?: string | null;
+  article_slug?: string | null;
+  article_language?: string | null;
   article_title?: string | null;
   article_url?: string | null;
 };
@@ -83,12 +85,27 @@ const isMissingMetadataColumnError = (error: { code?: string; message?: string; 
   );
 };
 
-export const getCommentActionUrl = (comment: { id?: string | null; article_url?: string | null }) => {
+export const getCommentActionUrl = (comment: {
+  id?: string | null;
+  article_url?: string | null;
+  article_slug?: string | null;
+  article_language?: string | null;
+}) => {
   if (!comment.id) {
     return comment.article_url || '/';
   }
 
-  const baseUrl = comment.article_url ? comment.article_url.split('#')[0] : '/';
+  let baseUrl = comment.article_url ? comment.article_url.split('#')[0] : '';
+
+  if (!baseUrl && comment.article_slug) {
+    baseUrl = comment.article_language === 'en'
+      ? `/en/articles/${comment.article_slug}/`
+      : `/articoli/${comment.article_slug}/`;
+  }
+
+  if (!baseUrl) {
+    baseUrl = '/';
+  }
 
   return `${baseUrl}#comment-${comment.id}`;
 };
@@ -303,6 +320,7 @@ export async function createCommentLikeAccountMessage(
     metadata: {
       commentId: comment.id,
       parentCommentId: comment.parent_id || null,
+      articleSlug: comment.article_slug || null,
       articleTitle: comment.article_title || null,
       actorId: actor.userId,
       actorName: actor.name || null,
@@ -315,7 +333,7 @@ export async function getCommentById(commentId?: string | null): Promise<Comment
 
   const { data, error } = await supabaseAdmin
     .from('comments')
-    .select('id, user_id, parent_id, article_title, article_url')
+    .select('id, user_id, parent_id, article_slug, article_language, article_title, article_url')
     .eq('id', commentId)
     .maybeSingle();
 

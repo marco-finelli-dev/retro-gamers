@@ -19,7 +19,23 @@ type CommentReactionSummary = {
   dislikeUsers: string[];
 };
 
+type ReactionCommentRow = {
+  id: string;
+  status: string | null;
+  user_id?: string | null;
+  profile_id?: string | null;
+  parent_id?: string | null;
+  article_slug?: string | null;
+  article_language?: string | null;
+  article_title?: string | null;
+  article_url?: string | null;
+  profiles?: {
+    user_id?: string | null;
+  } | null;
+};
+
 const MAX_REACTION_TOOLTIP_USERS = 9;
+const REACTION_EDIT_WINDOW_MS = 15 * 60 * 1000;
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -37,6 +53,58 @@ const isReaction = (value: unknown): value is CommentReaction =>
 
 const getPublicReactionName = (profile: Record<string, unknown> | null | undefined) =>
   String(profile?.display_name || profile?.username || '').trim();
+
+const isReactionEditExpired = (createdAt?: string | null) => {
+  if (!createdAt) {
+    return true;
+  }
+
+  const createdAtMs = new Date(createdAt).getTime();
+
+  if (!Number.isFinite(createdAtMs)) {
+    return true;
+  }
+
+  return Date.now() - createdAtMs > REACTION_EDIT_WINDOW_MS;
+};
+
+const getCommentAuthorUserId = (comment: ReactionCommentRow | null | undefined) =>
+  String(comment?.user_id || comment?.profiles?.user_id || '').trim();
+
+const getNotificationComment = async (comment: ReactionCommentRow) => {
+  const authorUserId = getCommentAuthorUserId(comment);
+  let articleSlug = comment.article_slug || null;
+  let articleLanguage = comment.article_language || null;
+  let articleTitle = comment.article_title || null;
+  let articleUrl = comment.article_url || null;
+
+  if (comment.parent_id && (!articleSlug || !articleTitle || !articleUrl)) {
+    const { data: parentComment, error: parentError } = await supabaseAdmin
+      .from('comments')
+      .select('article_slug, article_language, article_title, article_url')
+      .eq('id', comment.parent_id)
+      .maybeSingle();
+
+    if (parentError) {
+      logApiError('comments-reaction.parent-comment', parentError);
+    } else if (parentComment) {
+      articleSlug = articleSlug || parentComment.article_slug || null;
+      articleLanguage = articleLanguage || parentComment.article_language || null;
+      articleTitle = articleTitle || parentComment.article_title || null;
+      articleUrl = articleUrl || parentComment.article_url || null;
+    }
+  }
+
+  return {
+    id: comment.id,
+    user_id: authorUserId || null,
+    parent_id: comment.parent_id || null,
+    article_slug: articleSlug,
+    article_language: articleLanguage,
+    article_title: articleTitle,
+    article_url: articleUrl,
+  };
+};
 
 const getReactionCounts = async (commentId: string, userId: string): Promise<CommentReactionSummary> => {
   const { data, error } = await supabaseAdmin
@@ -144,9 +212,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const { data: comment, error: commentError } = await supabaseAdmin
     .from('comments')
-    .select('id, status, user_id, parent_id, article_title, article_url')
+    .select(`
+      id,
+      status,
+      user_id,
+      profile_id,
+      parent_id,
+      article_slug,
+      article_language,
+      article_title,
+      article_url,
+      profiles:profile_id (
+        user_id
+      )
+    `)
     .eq('id', commentId)
-    .maybeSingle();
+    .maybeSingle<ReactionCommentRow>();
 
   if (commentError) {
     logApiError('comments-reaction.comment', commentError);
@@ -161,7 +242,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'Puoi votare solo commenti approvati.' }, 400);
   }
 
-  if (comment.user_id === session.user.id) {
+  const targetAuthorUserId = getCommentAuthorUserId(comment);
+
+  if (targetAuthorUserId === session.user.id) {
     return json({
       ok: false,
       code: 'own_comment',
@@ -171,7 +254,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const { data: existingReaction, error: existingReactionError } = await supabaseAdmin
     .from('comment_reactions')
-    .select('id, reaction')
+    .select('id, reaction, created_at')
     .eq('comment_id', commentId)
     .eq('user_id', session.user.id)
     .maybeSingle();
@@ -184,6 +267,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const shouldNotifyLike = reaction === 'like' && existingReaction?.reaction !== 'like';
 
   if (existingReaction?.reaction === reaction) {
+    if (isReactionEditExpired(existingReaction.created_at)) {
+      return json({
+        ok: false,
+        code: 'reaction_expired',
+        error: 'Non puoi più modificare questa reazione.',
+      }, 409);
+    }
+
     const { error } = await supabaseAdmin
       .from('comment_reactions')
       .delete()
@@ -195,6 +286,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return json({ ok: false, error: 'Reazione non aggiornata. Riprova più tardi.' }, 500);
     }
   } else if (existingReaction) {
+    if (isReactionEditExpired(existingReaction.created_at)) {
+      return json({
+        ok: false,
+        code: 'reaction_expired',
+        error: 'Non puoi più modificare questa reazione.',
+      }, 409);
+    }
+
     const { error } = await supabaseAdmin
       .from('comment_reactions')
       .update({ reaction })
@@ -222,7 +321,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   if (shouldNotifyLike) {
     try {
-      const result = await createCommentLikeAccountMessage(comment, {
+      const notificationComment = await getNotificationComment(comment);
+      const result = await createCommentLikeAccountMessage(notificationComment, {
         userId: session.user.id,
         name: getPublicReactionName(session.profile),
       });

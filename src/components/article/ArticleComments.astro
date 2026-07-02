@@ -48,6 +48,7 @@ const labels = {
     dislike: 'Non mi piace',
     loginToReact: 'Accedi o registrati per votare un commento.',
     ownReactionError: 'Non puoi votare un tuo commento.',
+    reactionExpired: 'Non puoi più modificare questa reazione.',
     reactionError: 'Non è stato possibile aggiornare il voto. Riprova.',
     report: 'Segnala',
     reportReason: 'Motivo della segnalazione (opzionale)',
@@ -94,6 +95,7 @@ const labels = {
     dislike: 'Dislike',
     loginToReact: 'Sign in or create an account to react to a comment.',
     ownReactionError: 'You cannot react to your own comment.',
+    reactionExpired: 'You can no longer change this reaction.',
     reactionError: 'The reaction could not be updated. Please try again.',
     report: 'Report',
     reportReason: 'Reason for the report (optional)',
@@ -404,6 +406,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       dislike: 'Non mi piace',
       loginToReact: 'Accedi o registrati per votare un commento.',
       ownReactionError: 'Non puoi votare un tuo commento.',
+      reactionExpired: 'Non puoi più modificare questa reazione.',
       reactionError: 'Non è stato possibile aggiornare il voto. Riprova.',
       reactionOtherSingular: 'altro',
       reactionOtherPlural: 'altri',
@@ -449,6 +452,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       dislike: 'Dislike',
       loginToReact: 'Sign in or create an account to react to a comment.',
       ownReactionError: 'You cannot react to your own comment.',
+      reactionExpired: 'You can no longer change this reaction.',
       reactionError: 'The reaction could not be updated. Please try again.',
       reactionOtherSingular: 'other',
       reactionOtherPlural: 'others',
@@ -1298,6 +1302,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
           setStatus(
             result.code === 'own_comment'
               ? labels.ownReactionError
+              : result.code === 'reaction_expired'
+                ? labels.reactionExpired
               : result.error || labels.reactionError,
             'error'
           );

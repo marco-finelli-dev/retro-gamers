@@ -287,6 +287,10 @@ const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
   const panel = root?.querySelector('[data-account-menu-panel]');
   const isEnglish = root?.dataset.lang === 'en';
   const staffRoles = new Set(['admin', 'moderator']);
+  const unreadPollingIntervalMs = 55_000;
+  let isAccountLoggedIn = false;
+  let unreadPollingTimer = 0;
+  let unreadRefreshInFlight = false;
 
   const getAccountName = (profile, user) =>
     profile?.display_name || profile?.username || user?.email || '';
@@ -325,11 +329,37 @@ const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
     });
   };
 
+  const stopUnreadPolling = () => {
+    if (!unreadPollingTimer) return;
+    window.clearTimeout(unreadPollingTimer);
+    unreadPollingTimer = 0;
+  };
+
+  const scheduleUnreadPolling = () => {
+    stopUnreadPolling();
+
+    if (!isAccountLoggedIn || document.hidden) {
+      return;
+    }
+
+    unreadPollingTimer = window.setTimeout(async () => {
+      await refreshUnreadCount(isAccountLoggedIn);
+      scheduleUnreadPolling();
+    }, unreadPollingIntervalMs);
+  };
+
   const refreshUnreadCount = async (isLoggedIn) => {
     if (!isLoggedIn) {
       setUnreadCount(0);
+      stopUnreadPolling();
       return;
     }
+
+    if (unreadRefreshInFlight) {
+      return;
+    }
+
+    unreadRefreshInFlight = true;
 
     try {
       const response = await fetch('/api/account/messages/unread-count');
@@ -338,6 +368,8 @@ const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
       setUnreadCount(result?.unreadCount || 0);
     } catch {
       setUnreadCount(0);
+    } finally {
+      unreadRefreshInFlight = false;
     }
   };
 
@@ -403,6 +435,7 @@ const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
   };
 
   const setAccountState = (isLoggedIn, isStaff = false, profile = null, user = null) => {
+    isAccountLoggedIn = Boolean(isLoggedIn);
     root?.classList.toggle('is-authenticated', isLoggedIn);
     root?.classList.toggle('is-staff', isLoggedIn && isStaff);
     setAccountAvatar(isLoggedIn, profile, user);
@@ -455,7 +488,7 @@ const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
         result.profile,
         result.user
       );
-      refreshUnreadCount(true);
+      refreshUnreadCount(true).then(scheduleUnreadPolling);
     } catch {
       setAccountState(false);
       refreshUnreadCount(false);
@@ -489,6 +522,29 @@ const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
 
   document.querySelectorAll('[data-account-logout]').forEach((button) => {
     button.addEventListener('click', logout);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopUnreadPolling();
+      return;
+    }
+
+    if (isAccountLoggedIn) {
+      refreshUnreadCount(true).then(scheduleUnreadPolling);
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    if (isAccountLoggedIn) {
+      refreshUnreadCount(true).then(scheduleUnreadPolling);
+    }
+  });
+
+  window.addEventListener('retro-gamers:refresh-unread', () => {
+    if (isAccountLoggedIn) {
+      refreshUnreadCount(true).then(scheduleUnreadPolling);
+    }
   });
 
   refreshAccountState();
