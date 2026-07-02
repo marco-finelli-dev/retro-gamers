@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
+import { isSavedArticlesUnavailableError } from '../../../lib/supabase/saved-articles';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { touchUserActivity } from '../../../lib/supabase/user-activity';
 
@@ -50,23 +51,6 @@ const cleanArticleUrl = (value: unknown) => {
   return '';
 };
 
-const isSavedArticlesUnavailable = (error: { code?: string; message?: string; details?: string } | null | undefined) => {
-  if (!error) return false;
-
-  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
-
-  return (
-    message.includes('saved_articles') &&
-    (
-      error.code === '42P01' ||
-      error.code === 'PGRST205' ||
-      error.code === 'PGRST204' ||
-      message.includes('schema cache') ||
-      message.includes('does not exist')
-    )
-  );
-};
-
 export const GET: APIRoute = async ({ url, cookies }) => {
   const articleId = cleanText(url.searchParams.get('articleId'), 240);
 
@@ -93,7 +77,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     .maybeSingle();
 
   if (error) {
-    if (!isSavedArticlesUnavailable(error)) {
+    if (!isSavedArticlesUnavailableError(error)) {
       logApiError('saved-articles.lookup', error);
     }
 
@@ -195,7 +179,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       isSaved: true,
     });
   } catch (error) {
-    if (!isSavedArticlesUnavailable(error as { code?: string; message?: string; details?: string })) {
+    if (!isSavedArticlesUnavailableError(error as { code?: string; message?: string; details?: string })) {
       logApiError('saved-articles.toggle', error);
     }
 
@@ -246,7 +230,7 @@ export const DELETE: APIRoute = async ({ url, request, cookies }) => {
       isSaved: false,
     });
   } catch (error) {
-    if (!isSavedArticlesUnavailable(error as { code?: string; message?: string; details?: string })) {
+    if (!isSavedArticlesUnavailableError(error as { code?: string; message?: string; details?: string })) {
       logApiError('saved-articles.delete', error);
     }
 

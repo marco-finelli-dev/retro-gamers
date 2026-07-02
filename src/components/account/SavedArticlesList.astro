@@ -1,0 +1,226 @@
+---
+import type { SavedArticleRow } from '../../lib/supabase/saved-articles';
+
+type Props = {
+  articles?: SavedArticleRow[];
+  unavailable?: boolean;
+  lang?: 'it' | 'en' | string;
+  title?: string;
+  kicker?: string;
+};
+
+const {
+  articles = [],
+  unavailable = false,
+  lang = 'it',
+  title,
+  kicker,
+} = Astro.props as Props;
+
+const isEn = lang === 'en';
+
+const copy = isEn
+  ? {
+      title: title || 'Saved articles',
+      empty: 'You haven’t saved any articles yet.',
+      unavailable: 'Saved articles are not available. Please try again later.',
+      open: 'Open article',
+      remove: 'Remove',
+      removing: 'Removing...',
+      removeError: 'Could not remove the saved article.',
+      removeAria: 'Remove from saved articles',
+      savedOn: 'Saved on',
+      locale: 'en-US',
+    }
+  : {
+      title: title || 'Articoli salvati',
+      empty: 'Non hai ancora salvato articoli.',
+      unavailable: 'Articoli salvati non disponibili. Riprova più tardi.',
+      open: 'Apri articolo',
+      remove: 'Rimuovi',
+      removing: 'Rimozione…',
+      removeError: 'Impossibile rimuovere l’articolo salvato.',
+      removeAria: 'Rimuovi dai salvati',
+      savedOn: 'Salvato il',
+      locale: 'it-IT',
+    };
+
+const savedArticleDateFormatter = new Intl.DateTimeFormat(copy.locale, {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+
+const formatSavedArticleDate = (value?: string) => {
+  if (!value) return '';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return savedArticleDateFormatter.format(date);
+};
+---
+
+<section
+  class="account-saved-articles"
+  aria-labelledby="account-saved-articles-title"
+  data-account-saved-articles
+  data-remove-label={copy.remove}
+  data-removing-label={copy.removing}
+  data-remove-error={copy.removeError}
+>
+  <div class="account-saved-articles__heading">
+    {kicker && <p class="account-kicker">{kicker}</p>}
+    <h2 id="account-saved-articles-title">{copy.title}</h2>
+  </div>
+
+  {unavailable ? (
+    <p class="account-message" data-type="error">
+      {copy.unavailable}
+    </p>
+  ) : (
+    <>
+      <div
+        class="account-saved-articles__list"
+        data-account-saved-articles-list
+        hidden={articles.length === 0}
+      >
+        {articles.map((article) => (
+          <article
+            class="account-saved-article"
+            data-saved-article
+            data-article-id={article.article_id}
+          >
+            <div class="account-saved-article__body">
+              {article.article_category && (
+                <span>{article.article_category}</span>
+              )}
+
+              <h3>
+                <a href={article.article_url || '/'}>
+                  {article.article_title}
+                </a>
+              </h3>
+
+              {formatSavedArticleDate(article.saved_at) && (
+                <time datetime={article.saved_at}>
+                  {copy.savedOn} {formatSavedArticleDate(article.saved_at)}
+                </time>
+              )}
+            </div>
+
+            <div class="account-saved-article__actions">
+              <a class="account-saved-article__link" href={article.article_url || '/'}>
+                {copy.open}
+              </a>
+
+              <button
+                class="account-saved-article__remove"
+                type="button"
+                data-saved-article-remove
+                data-article-id={article.article_id}
+                aria-label={`${copy.removeAria}: ${article.article_title}`}
+              >
+                {copy.remove}
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <p
+        class="account-saved-articles__empty"
+        data-account-saved-articles-empty
+        hidden={articles.length > 0}
+      >
+        {copy.empty}
+      </p>
+
+      <p class="account-message" data-account-saved-articles-message hidden></p>
+    </>
+  )}
+</section>
+
+<script>
+  const initSavedArticlesLists = () => {
+    document
+      .querySelectorAll('[data-account-saved-articles]:not([data-saved-articles-ready])')
+      .forEach((root) => {
+        root.dataset.savedArticlesReady = 'true';
+
+        const savedArticlesList = root.querySelector('[data-account-saved-articles-list]');
+        const savedArticlesEmpty = root.querySelector('[data-account-saved-articles-empty]');
+        const savedArticlesMessage = root.querySelector('[data-account-saved-articles-message]');
+        const removeLabel = root.dataset.removeLabel || 'Rimuovi';
+        const removingLabel = root.dataset.removingLabel || 'Rimozione…';
+        const removeError = root.dataset.removeError || 'Impossibile rimuovere l’articolo salvato.';
+
+        const showMessage = (text, type = 'ok') => {
+          if (!savedArticlesMessage) return;
+          savedArticlesMessage.textContent = text;
+          savedArticlesMessage.hidden = false;
+          savedArticlesMessage.dataset.type = type;
+        };
+
+        const updateEmptyState = () => {
+          if (!savedArticlesList || !savedArticlesEmpty) return;
+
+          const hasArticles = Boolean(savedArticlesList.querySelector('[data-saved-article]'));
+          savedArticlesList.hidden = !hasArticles;
+          savedArticlesEmpty.hidden = hasArticles;
+        };
+
+        root.querySelectorAll('[data-saved-article-remove]').forEach((button) => {
+          button.addEventListener('click', async () => {
+            const articleId = button.dataset.articleId || '';
+            const card = button.closest('[data-saved-article]');
+            const defaultLabel = button.textContent || removeLabel;
+
+            if (!articleId) {
+              showMessage(removeError, 'error');
+              return;
+            }
+
+            button.disabled = true;
+            button.textContent = removingLabel;
+
+            try {
+              const response = await fetch(`/api/account/saved-articles?articleId=${encodeURIComponent(articleId)}`, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: {
+                  Accept: 'application/json'
+                }
+              });
+              const result = await response.json();
+
+              if (!response.ok || !result.ok) {
+                showMessage(result.error || removeError, 'error');
+                button.disabled = false;
+                button.textContent = defaultLabel;
+                return;
+              }
+
+              if (savedArticlesMessage) {
+                savedArticlesMessage.hidden = true;
+              }
+
+              card?.remove();
+              updateEmptyState();
+            } catch {
+              showMessage(removeError, 'error');
+              button.disabled = false;
+              button.textContent = defaultLabel;
+            }
+          });
+        });
+
+        updateEmptyState();
+      });
+  };
+
+  initSavedArticlesLists();
+</script>

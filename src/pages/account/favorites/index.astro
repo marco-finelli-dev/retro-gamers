@@ -1,0 +1,98 @@
+---
+import '../../../styles/pages/account.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../../../components/community/CommunitySidebarProfile.astro';
+import CommunityStatList from '../../../components/community/CommunityStatList.astro';
+import SavedArticlesList from '../../../components/account/SavedArticlesList.astro';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
+import { emptyCommunityStats, getCommunityStats } from '../../../lib/supabase/community';
+import { getPublicUserUrl } from '../../../lib/supabase/public-profiles';
+import { getSavedArticlesForUser, type SavedArticleRow } from '../../../lib/supabase/saved-articles';
+import { touchUserActivity } from '../../../lib/supabase/user-activity';
+
+const title = 'I tuoi preferiti | Retro-Gamers.it';
+const description = 'Ritrova gli articoli salvati nel tuo profilo lettore Retro-Gamers.it.';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isLoggedIn = Boolean(!session.error && session.user && session.profile);
+const profile = session.profile;
+const user = session.user;
+const accountDisplayName =
+  profile?.display_name || profile?.username || user?.email || 'Utente Retro-Gamers';
+const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
+
+let savedArticles: SavedArticleRow[] = [];
+let savedArticlesUnavailable = false;
+let communityStats = { ...emptyCommunityStats };
+
+if (isLoggedIn && user?.id) {
+  const [stats, savedArticlesResult] = await Promise.all([
+    getCommunityStats(user.id),
+    getSavedArticlesForUser(user.id, 'account-favorites.saved-articles'),
+    touchUserActivity(user.id, 'account-favorites-load'),
+  ]);
+
+  communityStats = stats;
+  savedArticles = savedArticlesResult.articles;
+  savedArticlesUnavailable = savedArticlesResult.unavailable;
+}
+
+const communityStatItems = [
+  { label: 'Commenti pubblicati', value: communityStats.approved },
+  { label: 'In attesa', value: communityStats.pending },
+  { label: 'Like ricevuti', value: communityStats.likesReceived },
+  { label: 'Dislike ricevuti', value: communityStats.dislikesReceived },
+];
+---
+
+<BaseLayout title={title} description={description}>
+  <CommunityLayout class="account-favorites-page" sidebar={isLoggedIn}>
+    <Fragment slot="sidebar">
+      {isLoggedIn && (
+        <>
+          <CommunitySidebarProfile
+            name={accountDisplayName}
+            username={profile?.username}
+            email={user?.email}
+            avatarUrl={profile?.avatar_url}
+          >
+            <a href="/account/">Il mio account</a>
+            {publicProfileHref && <a href={publicProfileHref}>Profilo pubblico</a>}
+            <a href="/account/messages/">Messaggi</a>
+            <a href="/account/memories/">Le mie memorie</a>
+            <a href="/account/ratings/">I miei voti</a>
+          </CommunitySidebarProfile>
+
+          <CommunityStatList title="Statistiche community" items={communityStatItems} />
+        </>
+      )}
+    </Fragment>
+
+    <CommunityHero
+      kicker="Preferiti"
+      title="I tuoi preferiti"
+      description={isLoggedIn
+        ? 'Ritrova gli articoli che hai salvato e, più avanti, i tuoi interessi retro.'
+        : 'Accedi per ritrovare gli articoli che hai salvato e i tuoi interessi retro.'}
+    />
+
+    {isLoggedIn ? (
+      <div class="community-content-stack">
+        <SavedArticlesList
+          articles={savedArticles}
+          unavailable={savedArticlesUnavailable}
+          lang="it"
+          title="Articoli salvati"
+        />
+      </div>
+    ) : (
+      <section class="community-card">
+        <div class="account-actions account-actions--standalone">
+          <a href="/account/login/">Accedi</a>
+          <a href="/account/register/">Registrati</a>
+        </div>
+      </section>
+    )}
+  </CommunityLayout>
+</BaseLayout>

@@ -6,13 +6,14 @@ import CommunityLayout from '../../components/community/CommunityLayout.astro';
 import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
 import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
 import CommunityStatList from '../../components/community/CommunityStatList.astro';
+import SavedArticlesList from '../../components/account/SavedArticlesList.astro';
 import { getOwnedReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
+import { getSavedArticlesForUser, type SavedArticleRow } from '../../lib/supabase/saved-articles';
 import { supabaseAdmin } from '../../lib/supabase/server';
 import { touchUserActivity } from '../../lib/supabase/user-activity';
-import { logApiError } from '../../lib/api-errors';
 
 const title = 'Profilo lettore | Retro-Gamers.it';
 const description = 'Gestisci il tuo profilo lettore, il nome visualizzato e il badge community.';
@@ -30,36 +31,8 @@ const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username,
 let badges = [] as Awaited<ReturnType<typeof getOwnedReaderBadges>>;
 let currentBio = '';
 let currentBioEn = '';
-type SavedArticleRow = {
-  id: string;
-  article_id: string;
-  article_title: string;
-  article_category: string | null;
-  article_url: string;
-  article_language: string;
-  saved_at: string;
-};
-
 let savedArticles: SavedArticleRow[] = [];
 let savedArticlesUnavailable = false;
-
-const isSavedArticlesUnavailableError = (error: { code?: string; message?: string; details?: string } | null) => {
-  if (!error) return false;
-
-  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
-
-  return (
-    message.includes('saved_articles') &&
-    (
-      error.code === '42P01' ||
-      error.code === 'PGRST205' ||
-      error.code === 'PGRST204' ||
-      message.includes('schema cache') ||
-      message.includes('does not exist')
-    )
-  );
-};
-
 const isMissingBioColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
   if (!error) return false;
 
@@ -136,30 +109,6 @@ const getProfileBio = async (userId: string) => {
   };
 };
 
-const getSavedArticles = async (userId: string) => {
-  const { data, error } = await supabaseAdmin
-    .from('saved_articles')
-    .select('id, article_id, article_title, article_category, article_url, article_language, saved_at')
-    .eq('user_id', userId)
-    .order('saved_at', { ascending: false });
-
-  if (!error) {
-    return {
-      articles: (data ?? []) as SavedArticleRow[],
-      unavailable: false,
-    };
-  }
-
-  if (!isSavedArticlesUnavailableError(error)) {
-    logApiError('account.saved-articles', error);
-  }
-
-  return {
-    articles: [] as SavedArticleRow[],
-    unavailable: true,
-  };
-};
-
 let commentActivity = { ...emptyCommunityStats };
 
 if (isLoggedIn && user?.id) {
@@ -168,7 +117,7 @@ if (isLoggedIn && user?.id) {
     getOwnedReaderBadges(user.id),
     getProfileBio(user.id),
     getCommunityStats(user.id),
-    getSavedArticles(user.id),
+    getSavedArticlesForUser(user.id, 'account.saved-articles'),
   ]);
 
   badges = ownedBadges;
@@ -186,23 +135,6 @@ const communityStatItems = [
   { label: 'Dislike ricevuti', value: commentActivity.dislikesReceived },
 ];
 
-const savedArticleDateFormatter = new Intl.DateTimeFormat('it-IT', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
-
-const formatSavedArticleDate = (value?: string) => {
-  if (!value) return '';
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  return savedArticleDateFormatter.format(date);
-};
 ---
 
 <BaseLayout title={title} description={description}>
@@ -274,82 +206,13 @@ const formatSavedArticleDate = (value?: string) => {
         />
 
         <div class="community-content-stack">
-            <section
-              class="account-saved-articles"
-              aria-labelledby="account-saved-articles-title"
-              data-account-saved-articles
-            >
-              <div class="account-saved-articles__heading">
-                <p class="account-kicker">Profilo lettore</p>
-                <h2 id="account-saved-articles-title">Articoli salvati</h2>
-              </div>
-
-              {savedArticlesUnavailable ? (
-                <p class="account-message" data-type="error">
-                  Articoli salvati non disponibili. Riprova più tardi.
-                </p>
-              ) : (
-                <>
-                <div
-                  class="account-saved-articles__list"
-                  data-account-saved-articles-list
-                  hidden={savedArticles.length === 0}
-                >
-                  {savedArticles.map((article) => (
-                    <article
-                      class="account-saved-article"
-                      data-saved-article
-                      data-article-id={article.article_id}
-                    >
-                      <div class="account-saved-article__body">
-                        {article.article_category && (
-                          <span>{article.article_category}</span>
-                        )}
-
-                        <h3>
-                          <a href={article.article_url || '/'}>
-                            {article.article_title}
-                          </a>
-                        </h3>
-
-                        {formatSavedArticleDate(article.saved_at) && (
-                          <time datetime={article.saved_at}>
-                            Salvato il {formatSavedArticleDate(article.saved_at)}
-                          </time>
-                        )}
-                      </div>
-
-                      <div class="account-saved-article__actions">
-                        <a class="account-saved-article__link" href={article.article_url || '/'}>
-                          Apri articolo
-                        </a>
-
-                        <button
-                          class="account-saved-article__remove"
-                          type="button"
-                          data-saved-article-remove
-                          data-article-id={article.article_id}
-                          aria-label={`Rimuovi dai salvati: ${article.article_title}`}
-                        >
-                          Rimuovi
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                <p
-                  class="account-saved-articles__empty"
-                  data-account-saved-articles-empty
-                  hidden={savedArticles.length > 0}
-                >
-                  Non hai ancora salvato articoli.
-                </p>
-
-                <p class="account-message" data-account-saved-articles-message hidden></p>
-                </>
-              )}
-            </section>
+            <SavedArticlesList
+              articles={savedArticles}
+              unavailable={savedArticlesUnavailable}
+              lang="it"
+              kicker="Profilo lettore"
+              title="Articoli salvati"
+            />
 
             <section class="account-avatar-section" aria-labelledby="account-avatar-title">
               <div class="account-avatar-section__content">
@@ -551,9 +414,6 @@ const formatSavedArticleDate = (value?: string) => {
     const avatarDropzoneLabel = document.querySelector('[data-account-avatar-dropzone-label]');
     const avatarFilename = document.querySelector('[data-account-avatar-filename]');
     const logoutButton = document.querySelector('[data-account-logout]');
-    const savedArticlesList = document.querySelector('[data-account-saved-articles-list]');
-    const savedArticlesEmpty = document.querySelector('[data-account-saved-articles-empty]');
-    const savedArticlesMessage = document.querySelector('[data-account-saved-articles-message]');
     const avatarDefaultDropzoneText = avatarDropzoneLabel?.textContent?.trim() || '';
     let selectedAvatarFile = null;
 
@@ -578,59 +438,6 @@ const formatSavedArticleDate = (value?: string) => {
     updateBioEnCounter();
     bioTextarea?.addEventListener('input', updateBioCounter);
     bioEnTextarea?.addEventListener('input', updateBioEnCounter);
-
-    const updateSavedArticlesEmptyState = () => {
-      if (!savedArticlesList || !savedArticlesEmpty) return;
-
-      const hasArticles = Boolean(savedArticlesList.querySelector('[data-saved-article]'));
-      savedArticlesList.hidden = !hasArticles;
-      savedArticlesEmpty.hidden = hasArticles;
-    };
-
-    document.querySelectorAll('[data-saved-article-remove]').forEach((button) => {
-      button.addEventListener('click', async () => {
-        const articleId = button.dataset.articleId || '';
-        const card = button.closest('[data-saved-article]');
-        const defaultLabel = button.textContent || 'Rimuovi';
-
-        if (!articleId) {
-          showMessage(savedArticlesMessage, 'Impossibile rimuovere l’articolo salvato.', 'error');
-          return;
-        }
-
-        button.disabled = true;
-        button.textContent = 'Rimozione…';
-
-        try {
-          const response = await fetch(`/api/account/saved-articles?articleId=${encodeURIComponent(articleId)}`, {
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: {
-              Accept: 'application/json'
-            }
-          });
-          const result = await response.json();
-
-          if (!response.ok || !result.ok) {
-            showMessage(savedArticlesMessage, result.error || 'Impossibile rimuovere l’articolo salvato.', 'error');
-            button.disabled = false;
-            button.textContent = defaultLabel;
-            return;
-          }
-
-          if (savedArticlesMessage) {
-            savedArticlesMessage.hidden = true;
-          }
-
-          card?.remove();
-          updateSavedArticlesEmptyState();
-        } catch {
-          showMessage(savedArticlesMessage, 'Impossibile rimuovere l’articolo salvato.', 'error');
-          button.disabled = false;
-          button.textContent = defaultLabel;
-        }
-      });
-    });
 
     const validAvatarTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
