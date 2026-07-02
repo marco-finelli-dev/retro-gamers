@@ -80,6 +80,10 @@ const isAdmin = session.profile?.role === 'admin';
         </div>
       </form>
 
+      <p class="admin-comments-filter-help">
+        Da revisionare: coda manuale. Rifiutati: non pubblici ma recuperabili. Nascosti: rimossi dal pubblico.
+      </p>
+
       <div class="admin-comments-message" data-admin-comments-message hidden></div>
 
       <div class="admin-comments-list" data-admin-comments-list>
@@ -133,6 +137,15 @@ const isAdmin = session.profile?.role === 'admin';
       deleted: 'Nascosto'
     };
 
+    const emptyMessages = {
+      all: 'Nessun commento trovato con questi filtri.',
+      pending: 'Nessun commento da revisionare.',
+      approved: 'Nessun commento approvato con questi filtri.',
+      rejected: 'Nessun commento rifiutato con questi filtri.',
+      spam: 'Nessun commento spam con questi filtri.',
+      deleted: 'Nessun commento nascosto con questi filtri.'
+    };
+
     const roleLabels = {
       admin: 'Admin',
       moderator: 'Moderatore',
@@ -171,6 +184,19 @@ const isAdmin = session.profile?.role === 'admin';
       const moderationReason = comment.moderation_reason || '';
       const isHidden = Boolean(comment.deleted_at);
       const displayStatus = isHidden ? statusLabels.deleted : status;
+      const actionButtons = isHidden
+        ? `
+            <button type="button" data-action="approve">Approva</button>
+            <button type="button" data-action="pending">Rimetti in revisione</button>
+            ${canHardDelete ? '<button type="button" class="admin-comment-card__danger-action" data-action="hard_delete" data-confirm="Questa azione cancellerà definitivamente il commento. Continuare?">Cancella definitivamente</button>' : ''}
+          `
+        : `
+            ${comment.status !== 'approved' ? '<button type="button" data-action="approve">Approva</button>' : ''}
+            ${comment.status !== 'rejected' ? '<button type="button" data-action="reject">Rifiuta</button>' : ''}
+            ${comment.status !== 'pending' ? '<button type="button" data-action="pending">Rimetti in revisione</button>' : ''}
+            <button type="button" data-action="soft_delete" data-confirm="Nascondere questo commento dal sito pubblico?">Nascondi</button>
+            ${canHardDelete ? '<button type="button" class="admin-comment-card__danger-action" data-action="hard_delete" data-confirm="Questa azione cancellerà definitivamente il commento. Continuare?">Cancella definitivamente</button>' : ''}
+          `;
 
       return `
         <article class="admin-comment-card" data-comment-id="${escapeHtml(comment.id)}">
@@ -235,11 +261,7 @@ const isAdmin = session.profile?.role === 'admin';
             ` : ''}
 
             <div class="admin-comment-card__actions">
-              ${(comment.status !== 'approved' || isHidden) ? '<button type="button" data-action="approve">Approva</button>' : ''}
-              ${(comment.status !== 'rejected' || isHidden) ? '<button type="button" data-action="reject">Rifiuta</button>' : ''}
-              ${(comment.status !== 'pending' || isHidden) ? '<button type="button" data-action="pending">Rimetti in revisione</button>' : ''}
-              ${!isHidden ? '<button type="button" data-action="soft_delete" data-confirm="Nascondere questo commento dal sito pubblico?">Nascondi</button>' : ''}
-              ${canHardDelete ? '<button type="button" class="admin-comment-card__danger-action" data-action="hard_delete" data-confirm="Questa azione cancellerà definitivamente il commento. Continuare?">Cancella definitivamente</button>' : ''}
+              ${actionButtons}
             </div>
           </div>
         </article>
@@ -269,7 +291,8 @@ const isAdmin = session.profile?.role === 'admin';
         }
 
         if (comments.length === 0) {
-          listNode.innerHTML = '<p class="admin-comments-empty">Nessun commento trovato con questi filtri.</p>';
+          const status = String(params.get('status') || 'all');
+          listNode.innerHTML = `<p class="admin-comments-empty">${escapeHtml(emptyMessages[status] || emptyMessages.all)}</p>`;
           return;
         }
 

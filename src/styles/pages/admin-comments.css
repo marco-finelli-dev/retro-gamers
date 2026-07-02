@@ -138,6 +138,13 @@
   color: var(--color-primary);
 }
 
+.admin-comments-filter-help {
+  margin: -4px 0 18px;
+  color: var(--color-text-soft);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
 .admin-comments-list {
   display: grid;
   gap: 10px;
@@ -286,10 +293,15 @@
 }
 
 .admin-comment-card__status[data-status="rejected"],
-.admin-comment-card__status[data-status="spam"],
-.admin-comment-card__status[data-status="deleted"] {
+.admin-comment-card__status[data-status="spam"] {
   border-color: rgba(248,113,113,0.24);
   background: rgba(248,113,113,0.10);
+}
+
+.admin-comment-card__status[data-status="deleted"] {
+  border-color: color-mix(in srgb, var(--color-text-soft) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-text-soft) 8%, var(--rg-badge-bg));
+  color: var(--color-text-soft);
 }
 
 .admin-comment-card__parent {
@@ -394,6 +406,7 @@
 }
 
 .admin-comment-card__actions .admin-comment-card__danger-action {
+  margin-left: auto;
   border-color: color-mix(in srgb, #b42318 44%, var(--color-border));
   background: color-mix(in srgb, #b42318 8%, var(--color-glass));
   color: color-mix(in srgb, #b42318 82%, var(--color-text));
@@ -460,5 +473,10 @@
 
   .admin-comment-card__actions button {
     flex: 1 1 auto;
+  }
+
+  .admin-comment-card__actions .admin-comment-card__danger-action {
+    flex-basis: 100%;
+    margin-left: 0;
   }
 }
