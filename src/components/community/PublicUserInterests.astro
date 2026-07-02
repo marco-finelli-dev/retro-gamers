@@ -1,0 +1,88 @@
+---
+import type { UserInterestRow, UserInterestType } from '../../lib/supabase/user-interests';
+
+type Props = {
+  interests?: UserInterestRow[];
+  lang?: 'it' | 'en' | string;
+};
+
+const { interests = [], lang = 'it' } = Astro.props as Props;
+const isEn = lang === 'en';
+
+const copy = isEn
+  ? {
+      kicker: 'Community',
+      title: 'Retro interests',
+      platforms: 'Platforms',
+      creators: 'Creators',
+      companies: 'Companies',
+    }
+  : {
+      kicker: 'Community',
+      title: 'Interessi retro',
+      platforms: 'Piattaforme',
+      creators: 'Creator',
+      companies: 'Aziende',
+    };
+
+const sortInterests = (items: UserInterestRow[]) =>
+  [...items].sort((a, b) =>
+    (a.target_name || '').localeCompare(b.target_name || '', isEn ? 'en' : 'it', {
+      sensitivity: 'base',
+    })
+  );
+
+const groups: Array<{ type: UserInterestType; label: string; items: UserInterestRow[] }> = [
+  {
+    type: 'platform',
+    label: copy.platforms,
+    items: sortInterests(interests.filter((interest) => interest.target_type === 'platform')),
+  },
+  {
+    type: 'creator',
+    label: copy.creators,
+    items: sortInterests(interests.filter((interest) => interest.target_type === 'creator')),
+  },
+  {
+    type: 'company',
+    label: copy.companies,
+    items: sortInterests(interests.filter((interest) => interest.target_type === 'company')),
+  },
+].filter((group) => group.items.length > 0);
+
+const getInterestHref = (interest: UserInterestRow) =>
+  isEn ? interest.target_url_en : interest.target_url_it;
+---
+
+{groups.length > 0 && (
+  <section class="community-card public-user-panel public-user-interests" aria-labelledby="public-user-interests-title">
+    <div class="public-user-section-heading">
+      <p class="public-user-kicker">{copy.kicker}</p>
+      <h2 id="public-user-interests-title">{copy.title}</h2>
+    </div>
+
+    <div class="public-user-interests__groups">
+      {groups.map((group) => (
+        <section class="public-user-interest-group" aria-labelledby={`public-user-interest-${group.type}`}>
+          <h3 id={`public-user-interest-${group.type}`}>{group.label}</h3>
+
+          <ul class="public-user-interest-list">
+            {group.items.map((interest) => {
+              const href = getInterestHref(interest);
+
+              return (
+                <li>
+                  {href ? (
+                    <a href={href}>{interest.target_name}</a>
+                  ) : (
+                    <span>{interest.target_name}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+    </div>
+  </section>
+)}

@@ -275,6 +275,68 @@
   margin-bottom: 20px;
 }
 
+.public-user-interests__groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(16px, 3vw, 24px);
+}
+
+.public-user-interest-group {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-width: 0;
+}
+
+.public-user-interest-group h3 {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.public-user-interest-list {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.public-user-interest-list li {
+  min-width: 0;
+}
+
+.public-user-interest-list a,
+.public-user-interest-list span {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.9rem;
+  font-weight: 850;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.public-user-interest-list a:hover,
+.public-user-interest-list a:focus-visible {
+  border-color: var(--rg-cta-border);
+  color: var(--rg-action-hover-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(34, 240, 255, 0.14);
+}
+
 .public-user-comments {
   display: grid;
   overflow: hidden;
@@ -379,5 +441,14 @@
 
   .public-user-actions a {
     width: 100%;
+  }
+
+  .public-user-interests__groups {
+    grid-template-columns: 1fr;
+  }
+
+  .public-user-interest-list a,
+  .public-user-interest-list span {
+    width: fit-content;
   }
 }

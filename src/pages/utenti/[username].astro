@@ -4,6 +4,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import UserAvatar from '../../components/account/UserAvatar.astro';
 import CommunityHero from '../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../components/community/CommunityLayout.astro';
+import PublicUserInterests from '../../components/community/PublicUserInterests.astro';
 import {
   getCommentArticleHref,
   getCommentExcerpt,
@@ -151,6 +152,8 @@ const pointsBadgeLabel = `Punti community: ${result.communityPoints}`;
             )}
           </Fragment>
         </CommunityHero>
+
+        <PublicUserInterests interests={result.interests} lang="it" />
 
         <section class="community-card public-user-panel" aria-labelledby="latest-comments-title">
           <div class="public-user-section-heading">

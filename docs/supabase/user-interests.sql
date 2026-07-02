@@ -23,8 +23,16 @@ create index if not exists user_interests_user_target_type_idx
 
 alter table public.user_interests enable row level security;
 
-grant select, insert, delete on table public.user_interests to authenticated;
+grant select on table public.user_interests to anon, authenticated;
+grant insert, delete on table public.user_interests to authenticated;
 grant all on table public.user_interests to service_role;
+
+drop policy if exists "Public can read profile interests" on public.user_interests;
+create policy "Public can read profile interests"
+  on public.user_interests
+  for select
+  to anon, authenticated
+  using (true);
 
 drop policy if exists "Users can read own interests" on public.user_interests;
 create policy "Users can read own interests"

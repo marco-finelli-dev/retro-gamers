@@ -1,6 +1,9 @@
 import { supabaseAdmin } from './server';
 import { getAvatarPublicUrl, isMissingAvatarColumnError } from './avatars';
 import { calculateCommunityPoints } from '../community-points';
+import { getUserInterestsForUser, type UserInterestRow } from './user-interests';
+import { client as sanityClient } from '../sanity';
+import { getCompanyUrl, getPlatformUrl } from '../routes.js';
 
 export type PublicReaderBadge = {
   key?: string | null;
@@ -38,6 +41,7 @@ export type PublicReaderComment = {
 export type PublicReaderProfileResult = {
   profile: PublicReaderProfile | null;
   comments: PublicReaderComment[];
+  interests: UserInterestRow[];
   approvedCount: number;
   ratingsCount: number;
   likesReceived: number;
@@ -242,6 +246,95 @@ const fetchLikesReceived = async (approvedCommentIds: string[]) => {
   return { count: likesReceived, error: null };
 };
 
+const getCreatorUrl = (slug: string | null | undefined, lang: 'it' | 'en') => {
+  const safeSlug = String(slug || '').trim();
+
+  if (!safeSlug) return null;
+
+  return lang === 'en'
+    ? `/en/creators/${safeSlug}/`
+    : `/creatori/${safeSlug}/`;
+};
+
+const getCompanyInterestUrl = (slug: string | null | undefined, lang: 'it' | 'en') => {
+  const safeSlug = String(slug || '').trim();
+
+  if (!safeSlug) return null;
+
+  return getCompanyUrl({ slug: safeSlug }, lang);
+};
+
+const enrichPublicInterests = async (interests: UserInterestRow[]) => {
+  const platformIds = interests
+    .filter((interest) => interest.target_type === 'platform' && interest.target_id)
+    .map((interest) => interest.target_id);
+
+  const platformUrls = new Map<string, { it: string | null; en: string | null }>();
+
+  if (platformIds.length > 0) {
+    try {
+      const platforms = await sanityClient.fetch(`
+        *[
+          _type == "platform" &&
+          _id in $ids &&
+          defined(slug.current) &&
+          defined(platformType) &&
+          !(_id in path("drafts.**"))
+        ] {
+          _id,
+          "slug": slug.current,
+          platformType,
+          manufacturer->{
+            "slug": slug.current
+          }
+        }
+      `, { ids: platformIds });
+
+      for (const platform of platforms ?? []) {
+        const itUrl = getPlatformUrl(platform, 'it');
+        const enUrl = getPlatformUrl(platform, 'en');
+
+        platformUrls.set(platform._id, {
+          it: itUrl === '/piattaforme/' ? null : itUrl,
+          en: enUrl === '/en/platforms/' ? null : enUrl,
+        });
+      }
+    } catch (error) {
+      console.error('[public-profile.interests] Could not resolve platform URLs', error);
+    }
+  }
+
+  return interests.map((interest) => {
+    if (interest.target_type === 'platform') {
+      const urls = platformUrls.get(interest.target_id);
+
+      return {
+        ...interest,
+        target_url_it: urls?.it ?? null,
+        target_url_en: urls?.en ?? null,
+      };
+    }
+
+    if (interest.target_type === 'creator') {
+      return {
+        ...interest,
+        target_url_it: getCreatorUrl(interest.target_slug, 'it'),
+        target_url_en: getCreatorUrl(interest.target_slug, 'en'),
+      };
+    }
+
+    if (interest.target_type === 'company') {
+      return {
+        ...interest,
+        target_url_it: getCompanyInterestUrl(interest.target_slug, 'it'),
+        target_url_en: getCompanyInterestUrl(interest.target_slug, 'en'),
+      };
+    }
+
+    return interest;
+  });
+};
+
 export async function getPublicReaderProfile(
   username: string,
   commentLimit = 8
@@ -252,6 +345,7 @@ export async function getPublicReaderProfile(
     return {
       profile: null,
       comments: [],
+      interests: [],
       approvedCount: 0,
       ratingsCount: 0,
       likesReceived: 0,
@@ -314,6 +408,7 @@ export async function getPublicReaderProfile(
     return {
       profile: null,
       comments: [],
+      interests: [],
       approvedCount: 0,
       ratingsCount: 0,
       likesReceived: 0,
@@ -326,6 +421,7 @@ export async function getPublicReaderProfile(
     return {
       profile: null,
       comments: [],
+      interests: [],
       approvedCount: 0,
       ratingsCount: 0,
       likesReceived: 0,
@@ -337,10 +433,12 @@ export async function getPublicReaderProfile(
   const [
     approvedCommentIdsResult,
     ratingsCountResult,
+    interestsResult,
     { data: comments, error: commentsError },
   ] = await Promise.all([
     fetchApprovedCommentIds(profile.id),
     fetchReviewRatingsCount(profile.user_id),
+    getUserInterestsForUser(profile.user_id, 'public-profile.interests'),
     supabaseAdmin
       .from('comments')
       .select(`
@@ -362,6 +460,7 @@ export async function getPublicReaderProfile(
     return {
       profile,
       comments: [],
+      interests: await enrichPublicInterests(interestsResult.interests),
       approvedCount: 0,
       ratingsCount: 0,
       likesReceived: 0,
@@ -379,6 +478,7 @@ export async function getPublicReaderProfile(
     return {
       profile,
       comments: [],
+      interests: await enrichPublicInterests(interestsResult.interests),
       approvedCount: 0,
       ratingsCount: 0,
       likesReceived: 0,
@@ -390,6 +490,7 @@ export async function getPublicReaderProfile(
   const approvedCount = approvedCommentIdsResult.ids.length;
   const ratingsCount = ratingsCountResult.count;
   const likesReceived = likesResult.count;
+  const interests = await enrichPublicInterests(interestsResult.interests);
 
   return {
     profile: {
@@ -397,6 +498,7 @@ export async function getPublicReaderProfile(
       avatar_url: getAvatarPublicUrl(profile.avatar_path),
     },
     comments: comments ?? [],
+    interests,
     approvedCount,
     ratingsCount,
     likesReceived,
