@@ -49,6 +49,7 @@ const copy = isEn
       noAvailable: 'No interests available.',
       noResults: 'No results.',
       removeAria: 'Remove interest',
+      removeInterestAria: 'Remove {name} from interests',
       addAria: 'Add interest',
     }
   : {
@@ -78,6 +79,7 @@ const copy = isEn
       noAvailable: 'Nessun interesse disponibile.',
       noResults: 'Nessun risultato.',
       removeAria: 'Rimuovi interesse',
+      removeInterestAria: 'Rimuovi {name} dagli interessi',
       addAria: 'Aggiungi interesse',
     };
 
@@ -103,10 +105,17 @@ const selectedKeys = new Set(
   interests.map((interest) => `${interest.target_type}:${interest.target_id}`)
 );
 
+const sortInterests = (items: UserInterestRow[]) =>
+  [...items].sort((a, b) =>
+    (a.target_name || '').localeCompare(b.target_name || '', isEn ? 'en' : 'it', {
+      sensitivity: 'base',
+    })
+  );
+
 const interestsByType = {
-  platform: interests.filter((interest) => interest.target_type === 'platform'),
-  creator: interests.filter((interest) => interest.target_type === 'creator'),
-  company: interests.filter((interest) => interest.target_type === 'company'),
+  platform: sortInterests(interests.filter((interest) => interest.target_type === 'platform')),
+  creator: sortInterests(interests.filter((interest) => interest.target_type === 'creator')),
+  company: sortInterests(interests.filter((interest) => interest.target_type === 'company')),
 };
 ---
 
@@ -125,6 +134,7 @@ const interestsByType = {
   data-limit-message={copy.limit}
   data-no-available={copy.noAvailable}
   data-no-results={copy.noResults}
+  data-remove-interest-aria={copy.removeInterestAria}
 >
   <div class="account-interests__heading">
     <p class="account-kicker">{copy.kicker}</p>
@@ -167,10 +177,7 @@ const interestsByType = {
                     data-type={interest.target_type}
                     data-target-id={interest.target_id}
                   >
-                    <span>
-                      <strong>{interest.target_name}</strong>
-                      {interest.target_extra && <small>{interest.target_extra}</small>}
-                    </span>
+                    <strong>{interest.target_name}</strong>
 
                     <button
                       type="button"
@@ -178,9 +185,9 @@ const interestsByType = {
                       data-interest-id={interest.id}
                       data-type={interest.target_type}
                       data-target-id={interest.target_id}
-                      aria-label={`${copy.removeAria}: ${interest.target_name}`}
+                      aria-label={copy.removeInterestAria.replace('{name}', interest.target_name)}
                     >
-                      {copy.remove}
+                      ×
                     </button>
                   </article>
                 ))}
@@ -286,6 +293,7 @@ const interestsByType = {
           limit: root.dataset.limitMessage || 'Hai raggiunto il limite di 15 interessi.',
           noAvailable: root.dataset.noAvailable || 'Nessun interesse disponibile.',
           noResults: root.dataset.noResults || 'Nessun risultato.',
+          removeInterestAria: root.dataset.removeInterestAria || 'Rimuovi {name} dagli interessi',
         };
 
         const message = root.querySelector('[data-interest-message]');
@@ -423,17 +431,8 @@ const interestsByType = {
           article.dataset.type = item.target_type || item.targetType || '';
           article.dataset.targetId = item.target_id || item.targetId || '';
 
-          const body = document.createElement('span');
           const name = document.createElement('strong');
           name.textContent = item.target_name || item.targetName || '';
-          body.append(name);
-
-          const extraValue = item.target_extra || item.targetExtra || '';
-          if (extraValue) {
-            const extra = document.createElement('small');
-            extra.textContent = extraValue;
-            body.append(extra);
-          }
 
           const remove = document.createElement('button');
           remove.type = 'button';
@@ -441,10 +440,10 @@ const interestsByType = {
           remove.dataset.interestId = item.id || '';
           remove.dataset.type = article.dataset.type || '';
           remove.dataset.targetId = article.dataset.targetId || '';
-          remove.setAttribute('aria-label', `${labels.remove}: ${name.textContent}`);
-          remove.textContent = labels.remove;
+          remove.setAttribute('aria-label', labels.removeInterestAria.replace('{name}', name.textContent || ''));
+          remove.textContent = '×';
 
-          article.append(body, remove);
+          article.append(name, remove);
           bindRemoveButton(remove);
 
           return article;
@@ -464,7 +463,15 @@ const interestsByType = {
             return;
           }
 
-          list.prepend(createInterestItem(item));
+          list.append(createInterestItem(item));
+          Array.from(list.querySelectorAll('[data-interest-item]'))
+            .sort((a, b) => {
+              const aName = a.querySelector('strong')?.textContent || '';
+              const bName = b.querySelector('strong')?.textContent || '';
+
+              return aName.localeCompare(bName, undefined, { sensitivity: 'base' });
+            })
+            .forEach((node) => list.append(node));
           updateGroups();
           updateAddFormState();
         };
@@ -480,7 +487,8 @@ const interestsByType = {
             const defaultLabel = button.textContent || labels.remove;
 
             button.disabled = true;
-            button.textContent = labels.removing;
+            button.setAttribute('aria-busy', 'true');
+            item?.setAttribute('data-removing', 'true');
 
             try {
               const params = new URLSearchParams();
@@ -504,6 +512,8 @@ const interestsByType = {
                 showMessage(result.error || labels.removeError, 'error');
                 button.disabled = false;
                 button.textContent = defaultLabel;
+                button.removeAttribute('aria-busy');
+                item?.removeAttribute('data-removing');
                 return;
               }
 
@@ -514,6 +524,8 @@ const interestsByType = {
               showMessage(labels.removeError, 'error');
               button.disabled = false;
               button.textContent = defaultLabel;
+              button.removeAttribute('aria-busy');
+              item?.removeAttribute('data-removing');
             }
           });
         };
