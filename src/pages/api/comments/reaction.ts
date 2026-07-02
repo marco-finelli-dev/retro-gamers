@@ -29,6 +29,7 @@ type ReactionCommentRow = {
   article_language?: string | null;
   article_title?: string | null;
   article_url?: string | null;
+  deleted_at?: string | null;
   profiles?: {
     user_id?: string | null;
   } | null;
@@ -50,6 +51,11 @@ const isUuid = (value: string) =>
 
 const isReaction = (value: unknown): value is CommentReaction =>
   value === 'like' || value === 'dislike';
+
+const unavailableCommentMessage = (language?: string | null) =>
+  language === 'en'
+    ? 'This comment is no longer available.'
+    : 'Questo commento non è più disponibile.';
 
 const getPublicReactionName = (profile: Record<string, unknown> | null | undefined) =>
   String(profile?.display_name || profile?.username || '').trim();
@@ -222,6 +228,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       article_language,
       article_title,
       article_url,
+      deleted_at,
       profiles:profile_id (
         user_id
       )
@@ -236,6 +243,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   if (!comment) {
     return json({ ok: false, error: 'Commento non trovato.' }, 404);
+  }
+
+  if (comment.deleted_at) {
+    return json({ ok: false, error: unavailableCommentMessage(comment.article_language) }, 410);
   }
 
   if (comment.status !== 'approved') {

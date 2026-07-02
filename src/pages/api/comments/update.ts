@@ -13,6 +13,8 @@ type EditableComment = {
   user_id: string | null;
   status: string | null;
   created_at: string | null;
+  article_language?: string | null;
+  deleted_at?: string | null;
   edit_count?: number | null;
 };
 
@@ -31,6 +33,11 @@ const json = (payload: unknown, status = 200) =>
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 
+const unavailableCommentMessage = (language?: string | null) =>
+  language === 'en'
+    ? 'This comment is no longer available.'
+    : 'Questo commento non è più disponibile.';
+
 const isMissingCommentEditColumnError = (
   error: { code?: string; message?: string; details?: string; hint?: string } | null | undefined
 ) => {
@@ -48,8 +55,8 @@ const isMissingCommentEditColumnError = (
 
 const getEditableComment = async (commentId: string, includeEditColumns = true) => {
   const select = includeEditColumns
-    ? 'id, user_id, status, created_at, edit_count'
-    : 'id, user_id, status, created_at';
+    ? 'id, user_id, status, created_at, article_language, deleted_at, edit_count'
+    : 'id, user_id, status, created_at, article_language, deleted_at';
 
   return supabaseAdmin
     .from('comments')
@@ -114,6 +121,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   if (!editableComment) {
     return json({ ok: false, error: 'Commento non trovato.' }, 404);
+  }
+
+  if (editableComment.deleted_at) {
+    return json({ ok: false, error: unavailableCommentMessage(editableComment.article_language) }, 410);
   }
 
   if (editableComment.user_id !== session.user.id) {

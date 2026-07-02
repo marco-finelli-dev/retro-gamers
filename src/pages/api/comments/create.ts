@@ -54,6 +54,11 @@ const rejectedMessage = (language: 'it' | 'en') =>
     ? 'This comment cannot be published.'
     : 'Il commento non può essere pubblicato.';
 
+const unavailableCommentMessage = (language: 'it' | 'en') =>
+  language === 'en'
+    ? 'This comment is no longer available.'
+    : 'Questo commento non è più disponibile.';
+
 const normalizeUrl = (value: string) => {
   const trimmed = value.trim();
 
@@ -265,7 +270,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (parentId) {
     const { data: parentComment, error: parentError } = await supabaseAdmin
       .from('comments')
-      .select('id, parent_id, article_slug, article_language, status')
+      .select('id, parent_id, article_slug, article_language, status, deleted_at')
       .eq('id', parentId)
       .maybeSingle();
 
@@ -274,7 +279,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return json({ ok: false, error: 'Risposta non disponibile. Riprova più tardi.' }, 500);
     }
 
-    if (!parentComment || parentComment.status !== 'approved') {
+    if (!parentComment || parentComment.deleted_at) {
+      return json({ ok: false, error: unavailableCommentMessage(articleLanguage) }, 410);
+    }
+
+    if (parentComment.status !== 'approved') {
       return json({ ok: false, error: 'Il commento a cui vuoi rispondere non è disponibile.' }, 400);
     }
 

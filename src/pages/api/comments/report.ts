@@ -19,6 +19,11 @@ const json = (payload: unknown, status = 200) =>
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(value);
 
+const unavailableCommentMessage = (language?: string | null) =>
+  language === 'en'
+    ? 'This comment is no longer available.'
+    : 'Questo commento non è più disponibile.';
+
 const isDuplicateReportError = (error: unknown) =>
   (error as { code?: string } | null)?.code === '23505';
 
@@ -59,7 +64,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const { data: comment, error: commentError } = await supabaseAdmin
     .from('comments')
-    .select('id, status, user_id')
+    .select('id, status, user_id, article_language, deleted_at')
     .eq('id', commentId)
     .maybeSingle();
 
@@ -70,6 +75,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   if (!comment) {
     return json({ ok: false, error: 'Commento non trovato.' }, 404);
+  }
+
+  if (comment.deleted_at) {
+    return json({ ok: false, error: unavailableCommentMessage(comment.article_language) }, 410);
   }
 
   if (comment.status !== 'approved') {
