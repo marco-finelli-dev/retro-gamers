@@ -10,6 +10,7 @@ const title = 'Segnalazioni commenti | Retro-Gamers.it';
 const description = 'Pannello segnalazioni commenti pubblici Retro-Gamers.it';
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
+const isAdmin = session.profile?.role === 'admin';
 ---
 
 <BaseLayout title={title} description={description}>
@@ -36,14 +37,18 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       <span slot="aside" class="community-soft-badge" data-comment-reports-count>Caricamento...</span>
     </CommunityHero>
 
-    <section class="community-card admin-comment-reports-panel">
+    <section
+      class="community-card admin-comment-reports-panel"
+      data-comment-reports-panel
+      data-can-hard-delete={isAdmin ? 'true' : 'false'}
+    >
       <form class="admin-comment-reports-filters" data-comment-reports-filters>
         <label>
           <span>Stato</span>
           <select name="status">
             <option value="open" selected>Aperte</option>
-            <option value="resolved">Risolte</option>
-            <option value="archived">Archiviate</option>
+            <option value="resolved">Gestite</option>
+            <option value="archived">Ignorate</option>
             <option value="all">Tutte</option>
           </select>
         </label>
@@ -63,6 +68,8 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
     const countNode = document.querySelector('[data-comment-reports-count]');
     const messageNode = document.querySelector('[data-comment-reports-message]');
     const filtersForm = document.querySelector('[data-comment-reports-filters]');
+    const panelNode = document.querySelector('[data-comment-reports-panel]');
+    const canHardDelete = panelNode?.dataset.canHardDelete === 'true';
 
     const escapeHtml = (value) =>
       String(value || '')
@@ -86,8 +93,15 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
 
     const statusLabels = {
       open: 'Aperta',
-      resolved: 'Risolta',
-      archived: 'Archiviata'
+      resolved: 'Gestita',
+      archived: 'Ignorata'
+    };
+
+    const emptyMessages = {
+      open: 'Nessuna segnalazione aperta.',
+      resolved: 'Nessuna segnalazione gestita con questi filtri.',
+      archived: 'Nessuna segnalazione ignorata con questi filtri.',
+      all: 'Nessuna segnalazione con questi filtri.'
     };
 
     const getProfileName = (profile) =>
@@ -128,16 +142,33 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       const reason = report.reason || 'Nessun motivo specificato.';
       const commentBody = comment.body || 'Commento non disponibile.';
       const commentUrl = report.commentUrl || '';
+      const articleUrl = report.articleUrl || comment.article_url || '';
+      const adminCommentUrl = report.adminCommentUrl || '/admin/comments/';
+      const isHidden = Boolean(comment.deleted_at);
+      const commentStatus = isHidden
+        ? 'Nascosto'
+        : comment.status === 'approved'
+          ? 'Approvato'
+          : comment.status === 'pending'
+            ? 'Da revisionare'
+            : comment.status === 'rejected'
+              ? 'Rifiutato'
+              : comment.status || 'Stato non disponibile';
+      const moderationActions = `
+        ${!isHidden ? '<button type="button" data-report-moderate="soft_delete" data-confirm="Nascondere questo commento dal sito pubblico?">Nascondi commento</button>' : '<span class="admin-comment-report-card__muted">Commento già nascosto</span>'}
+        ${canHardDelete ? '<button type="button" class="admin-comment-report-card__danger-action" data-report-moderate="hard_delete" data-confirm="Questa azione cancellerà definitivamente il commento. Continuare?">Cancella definitivamente</button>' : ''}
+      `;
 
       return `
         <article
           class="admin-comment-report-card"
           data-report-id="${escapeHtml(report.id)}"
+          data-comment-id="${escapeHtml(report.commentId || '')}"
           data-current-status="${escapeHtml(status)}"
         >
           <header>
             <div>
-              <span>${escapeHtml(statusLabels[status] || status)}</span>
+              <span data-status="${escapeHtml(status)}">${escapeHtml(statusLabels[status] || status)}</span>
               <h2>${escapeHtml(articleTitle)}</h2>
             </div>
 
@@ -147,13 +178,16 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
           <div class="admin-comment-report-card__meta">
             ${renderProfileLink('Autore commento', report.reportedUser)}
             ${renderProfileLink('Segnalato da', report.reporter)}
-            ${commentUrl ? `<a href="${escapeHtml(commentUrl)}">Apri commento</a>` : '<span>Link commento non disponibile</span>'}
+            <span>Stato commento: ${escapeHtml(commentStatus)}</span>
           </div>
 
-          <blockquote>${escapeHtml(commentBody)}</blockquote>
+          <section class="admin-comment-report-card__comment">
+            <h3>Commento segnalato</h3>
+            <blockquote>${escapeHtml(commentBody)}</blockquote>
+          </section>
 
           <section class="admin-comment-report-card__reason">
-            <h3>Motivo</h3>
+            <h3>Motivo segnalazione</h3>
             <p>${escapeHtml(reason)}</p>
           </section>
 
@@ -163,10 +197,22 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
           </label>
 
           <footer>
-            ${status !== 'resolved' ? '<button type="button" data-report-status="resolved">Segna risolta</button>' : ''}
-            ${status !== 'archived' ? '<button type="button" data-report-status="archived">Archivia</button>' : ''}
-            ${status !== 'open' ? '<button type="button" data-report-status="open">Riapri</button>' : ''}
-            <button type="button" data-report-save-note>Salva nota</button>
+            <div class="admin-comment-report-card__link-actions">
+              ${articleUrl ? `<a href="${escapeHtml(articleUrl)}" target="_blank" rel="noreferrer">Apri articolo</a>` : ''}
+              ${commentUrl ? `<a href="${escapeHtml(commentUrl)}" target="_blank" rel="noreferrer">Vai al commento</a>` : ''}
+              <a href="${escapeHtml(adminCommentUrl)}">Gestisci in moderazione</a>
+            </div>
+
+            <div class="admin-comment-report-card__status-actions">
+              ${status !== 'resolved' ? '<button type="button" data-report-status="resolved">Segna come gestita</button>' : ''}
+              ${status !== 'archived' ? '<button type="button" data-report-status="archived">Ignora</button>' : ''}
+              ${status !== 'open' ? '<button type="button" data-report-status="open">Riapri</button>' : ''}
+              <button type="button" data-report-save-note>Salva nota</button>
+            </div>
+
+            <div class="admin-comment-report-card__moderation-actions">
+              ${moderationActions}
+            </div>
           </footer>
         </article>
       `;
@@ -195,7 +241,8 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
         }
 
         if (reports.length === 0) {
-          listNode.innerHTML = '<p class="admin-comment-reports-empty">Nessuna segnalazione con questi filtri.</p>';
+          const status = String(params.get('status') || 'open');
+          listNode.innerHTML = `<p class="admin-comment-reports-empty">${escapeHtml(emptyMessages[status] || emptyMessages.all)}</p>`;
           return;
         }
 
@@ -237,7 +284,56 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
         }
 
         showMessage('Segnalazione aggiornata.', 'ok');
-        loadReports();
+        await loadReports();
+        return true;
+      } catch {
+        showMessage('Errore di connessione.', 'error');
+        buttons.forEach((button) => {
+          button.disabled = false;
+        });
+      }
+
+      return false;
+    };
+
+    const moderateComment = async (card, action) => {
+      const commentId = card?.dataset.commentId;
+
+      if (!commentId || !action) return;
+
+      const buttons = Array.from(card.querySelectorAll('button'));
+      buttons.forEach((button) => {
+        button.disabled = true;
+      });
+
+      try {
+        const response = await fetch('/api/admin/comments/moderate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commentId,
+            action,
+            note: `Moderazione da segnalazione commento: ${action}`,
+          }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(result.error || 'Commento non aggiornato.', 'error');
+          buttons.forEach((button) => {
+            button.disabled = false;
+          });
+          return;
+        }
+
+        if (action === 'soft_delete') {
+          await updateReport(card, 'resolved');
+          showMessage('Commento nascosto e segnalazione segnata come gestita.', 'ok');
+          return;
+        }
+
+        showMessage('Commento aggiornato.', 'ok');
+        await loadReports();
       } catch {
         showMessage('Errore di connessione.', 'error');
         buttons.forEach((button) => {
@@ -260,10 +356,25 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       const noteButton = target instanceof Element
         ? target.closest('[data-report-save-note]')
         : null;
+      const moderationButton = target instanceof Element
+        ? target.closest('button[data-report-moderate]')
+        : null;
 
-      if (!statusButton && !noteButton) return;
+      if (!statusButton && !noteButton && !moderationButton) return;
 
-      const card = (statusButton || noteButton).closest('[data-report-id]');
+      const card = (statusButton || noteButton || moderationButton).closest('[data-report-id]');
+      const moderationAction = moderationButton?.dataset.reportModerate;
+
+      if (moderationAction) {
+        const confirmation = moderationButton.dataset.confirm;
+        if (confirmation && !window.confirm(confirmation)) {
+          return;
+        }
+
+        moderateComment(card, moderationAction);
+        return;
+      }
+
       const status = statusButton?.dataset.reportStatus || card?.dataset.currentStatus;
 
       updateReport(card, status);

@@ -19,8 +19,10 @@
 
 .admin-comment-reports-filters,
 .admin-comment-report-card header,
-.admin-comment-report-card footer,
-.admin-comment-report-card__meta {
+.admin-comment-report-card__meta,
+.admin-comment-report-card__link-actions,
+.admin-comment-report-card__status-actions,
+.admin-comment-report-card__moderation-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
@@ -44,6 +46,7 @@
 
 .admin-comment-reports-filters span,
 .admin-comment-report-card__note span,
+.admin-comment-report-card__comment h3,
 .admin-comment-report-card__reason h3 {
   color: var(--color-text-soft);
   font-size: var(--text-xs);
@@ -93,6 +96,12 @@
   opacity: 0.62;
 }
 
+.admin-comment-report-card__danger-action {
+  border-color: rgba(255, 99, 132, 0.38) !important;
+  background: rgba(255, 99, 132, 0.1) !important;
+  color: #ff9fb2 !important;
+}
+
 .admin-comment-reports-message,
 .admin-comment-reports-empty,
 .admin-comment-report-card {
@@ -133,6 +142,14 @@
   text-transform: uppercase;
 }
 
+.admin-comment-report-card header span[data-status="resolved"] {
+  color: #8dd9b8;
+}
+
+.admin-comment-report-card header span[data-status="archived"] {
+  color: var(--color-text-soft);
+}
+
 .admin-comment-report-card h2 {
   margin: 4px 0 0;
   color: var(--rg-section-title-color);
@@ -153,11 +170,17 @@
   font-weight: 780;
 }
 
+.admin-comment-report-card__comment,
 .admin-comment-report-card blockquote,
 .admin-comment-report-card__reason p {
   margin: 0;
   color: var(--color-text);
   line-height: 1.65;
+}
+
+.admin-comment-report-card__comment {
+  display: grid;
+  gap: 8px;
 }
 
 .admin-comment-report-card blockquote {
@@ -183,7 +206,26 @@
 }
 
 .admin-comment-report-card footer {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-comment-report-card__link-actions,
+.admin-comment-report-card__status-actions,
+.admin-comment-report-card__moderation-actions {
   justify-content: flex-start;
+  gap: 10px;
+}
+
+.admin-comment-report-card__moderation-actions {
+  padding-top: 10px;
+  border-top: 1px solid var(--rg-card-border);
+}
+
+.admin-comment-report-card__muted {
+  color: var(--color-text-soft);
+  font-size: var(--text-sm);
+  font-weight: 800;
 }
 
 @media (max-width: 640px) {
@@ -196,5 +238,10 @@
   .admin-comment-report-card button,
   .admin-comment-report-card a {
     width: 100%;
+  }
+
+  .admin-comment-report-card__muted {
+    width: 100%;
+    text-align: center;
   }
 }

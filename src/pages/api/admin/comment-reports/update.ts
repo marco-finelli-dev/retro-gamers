@@ -68,14 +68,20 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     updatePayload.resolved_at = now;
   }
 
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('comment_reports')
     .update(updatePayload)
-    .eq('id', reportId);
+    .eq('id', reportId)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     logApiError('admin-comment-reports.update', error);
     return json({ ok: false, error: 'Segnalazione non aggiornata. Riprova più tardi.' }, 500);
+  }
+
+  if (!data) {
+    return json({ ok: false, error: 'Segnalazione non trovata.' }, 404);
   }
 
   return json({ ok: true });

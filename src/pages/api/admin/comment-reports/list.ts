@@ -34,6 +34,20 @@ const buildCommentUrl = (comment: { article_url?: string | null } | null, commen
   return `${stripHash(articleUrl)}#comment-${commentId}`;
 };
 
+const buildArticleUrl = (comment: { article_url?: string | null } | null) => {
+  const articleUrl = String(comment?.article_url || '').trim();
+
+  return articleUrl ? stripHash(articleUrl) : '';
+};
+
+const buildAdminCommentUrl = (comment: { status?: string | null; deleted_at?: string | null } | null) => {
+  const status = comment?.deleted_at
+    ? 'deleted'
+    : String(comment?.status || 'all').trim() || 'all';
+
+  return `/admin/comments/?status=${encodeURIComponent(status)}`;
+};
+
 const getRelatedComment = (value: unknown): Record<string, any> | null => {
   if (Array.isArray(value)) {
     return value[0] ?? null;
@@ -97,6 +111,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         parent_id,
         body,
         status,
+        deleted_at,
         user_id,
         created_at
       )
@@ -140,7 +155,9 @@ export const GET: APIRoute = async ({ cookies, url }) => {
         createdAt: report.created_at,
         updatedAt: report.updated_at,
         resolvedAt: report.resolved_at,
+        articleUrl: buildArticleUrl(comment),
         commentUrl: buildCommentUrl(comment, report.comment_id),
+        adminCommentUrl: buildAdminCommentUrl(comment),
         comment,
         reporter: profiles.get(report.reporter_id) ?? null,
         reportedUser: reportedUserId ? profiles.get(reportedUserId) ?? null : null,
