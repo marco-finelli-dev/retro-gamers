@@ -1,6 +1,7 @@
 ---
-import { getArchiveUrl } from '../../lib/routes';
+import { getArchiveUrl, getPostUrl } from '../../lib/routes';
 import ArticleShare from './ArticleShare.astro';
+import ArticleSaveButton from './ArticleSaveButton.astro';
 
 const { post } = Astro.props;
 
@@ -144,6 +145,20 @@ const infoItems = [
   showUpdated && updatedDate ? `${updatedLabel} ${updatedDate}` : '',
   readingTime ? `${readingTimeLabel}: ${readingTime} ${minuteLabel}` : '',
 ].filter(Boolean);
+
+const articleSlug =
+  typeof post.slug === 'string'
+    ? post.slug
+    : post.slug?.current || '';
+
+const articleUrl = getPostUrl({
+  ...post,
+  slug: articleSlug,
+});
+
+const articleId =
+  String(post._id || post.id || `${lang}:${post.type || 'article'}:${articleSlug}`)
+    .replace(/^drafts\./, '');
 ---
 
 <section class="article-hero">
@@ -246,7 +261,18 @@ const infoItems = [
         </div>
       )}
 
-      <ArticleShare post={post} compact />
+      <div class="article-hero__actions">
+        <ArticleSaveButton
+          articleId={articleId}
+          articleSlug={articleSlug}
+          articleTitle={post.title}
+          articleLanguage={lang}
+          articleCategory={typeLabel}
+          articleUrl={articleUrl}
+        />
+
+        <ArticleShare post={post} compact />
+      </div>
 
     </div>
 

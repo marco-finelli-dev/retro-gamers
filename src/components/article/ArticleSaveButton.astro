@@ -1,0 +1,212 @@
+---
+const {
+  articleId,
+  articleSlug,
+  articleTitle,
+  articleLanguage = 'it',
+  articleCategory = '',
+  articleUrl,
+} = Astro.props;
+
+const lang = articleLanguage === 'en' ? 'en' : 'it';
+const isEnglish = lang === 'en';
+const loginHref = isEnglish
+  ? `/en/account/login/?returnTo=${encodeURIComponent(articleUrl || '/')}`
+  : `/account/login/?returnTo=${encodeURIComponent(articleUrl || '/')}`;
+
+const labels = {
+  login: isEnglish ? 'Sign in to save this article 💾' : 'Accedi per salvare l’articolo 💾',
+  unsaved: isEnglish ? '💾 Save article' : '💾 Salva articolo',
+  saved: isEnglish ? '💾 Saved' : '💾 Salvato',
+  loading: isEnglish ? 'Updating...' : 'Aggiornamento...',
+  error: isEnglish
+    ? 'Saved articles could not be updated.'
+    : 'Non è stato possibile aggiornare gli articoli salvati.',
+};
+---
+
+<div
+  class="article-save"
+  data-article-save
+  data-article-id={articleId}
+  data-article-slug={articleSlug}
+  data-article-title={articleTitle}
+  data-article-language={lang}
+  data-article-category={articleCategory}
+  data-article-url={articleUrl}
+  data-label-unsaved={labels.unsaved}
+  data-label-saved={labels.saved}
+  data-label-loading={labels.loading}
+  data-label-error={labels.error}
+>
+  <a class="article-save__login" href={loginHref} data-article-save-login hidden>
+    {labels.login}
+  </a>
+
+  <button
+    class="article-save__button"
+    type="button"
+    data-article-save-button
+    aria-label={labels.unsaved}
+    aria-pressed="false"
+    hidden
+  >
+    {labels.unsaved}
+  </button>
+
+  <p class="article-save__message" data-article-save-message hidden></p>
+</div>
+
+<script>
+  const initArticleSaveButtons = () => {
+    const saveBlocks = document.querySelectorAll('[data-article-save]:not([data-article-save-ready])');
+
+    saveBlocks.forEach((block) => {
+      block.dataset.articleSaveReady = 'true';
+
+      const loginLink = block.querySelector('[data-article-save-login]');
+      const button = block.querySelector('[data-article-save-button]');
+      const message = block.querySelector('[data-article-save-message]');
+      const articleId = block.dataset.articleId || '';
+      let isSaved = false;
+
+      const labels = {
+        unsaved: block.dataset.labelUnsaved || '💾 Salva articolo',
+        saved: block.dataset.labelSaved || '💾 Salvato',
+        loading: block.dataset.labelLoading || 'Aggiornamento...',
+        error: block.dataset.labelError || 'Non è stato possibile aggiornare gli articoli salvati.',
+      };
+
+      const showMessage = (text, type = 'error') => {
+        if (!message) return;
+        message.textContent = text;
+        message.dataset.type = type;
+        message.hidden = false;
+      };
+
+      const hideMessage = () => {
+        if (!message) return;
+        message.textContent = '';
+        message.hidden = true;
+      };
+
+      const updateButton = () => {
+        if (!button) return;
+        button.textContent = isSaved ? labels.saved : labels.unsaved;
+        button.setAttribute('aria-label', isSaved ? labels.saved : labels.unsaved);
+        button.setAttribute('aria-pressed', String(isSaved));
+      };
+
+      const showLoadingState = () => {
+        if (loginLink) loginLink.hidden = true;
+        if (button) button.hidden = true;
+      };
+
+      const showLoggedInControls = () => {
+        if (loginLink) loginLink.hidden = true;
+        if (button) button.hidden = false;
+        updateButton();
+      };
+
+      const showGuestControls = () => {
+        if (loginLink) loginLink.hidden = false;
+        if (button) button.hidden = true;
+      };
+
+      const loadState = async () => {
+        if (!articleId) {
+          showGuestControls();
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/account/saved-articles?articleId=${encodeURIComponent(articleId)}`, {
+            credentials: 'same-origin',
+            headers: {
+              Accept: 'application/json',
+            },
+          });
+          const result = await response.json();
+
+          if (!response.ok || !result.ok) {
+            if (result?.isAuthenticated) {
+              isSaved = Boolean(result.isSaved);
+              showLoggedInControls();
+            } else {
+              showGuestControls();
+            }
+
+            showMessage(result.error || labels.error);
+            return;
+          }
+
+          if (!result.isAuthenticated) {
+            showGuestControls();
+            return;
+          }
+
+          isSaved = Boolean(result.isSaved);
+          showLoggedInControls();
+        } catch {
+          showLoadingState();
+          showMessage(labels.error);
+        }
+      };
+
+      button?.addEventListener('click', async () => {
+        hideMessage();
+        button.disabled = true;
+        const previousLabel = button.textContent;
+        button.textContent = labels.loading;
+
+        try {
+          const response = await fetch('/api/account/saved-articles', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            body: JSON.stringify({
+              articleId: block.dataset.articleId || '',
+              articleSlug: block.dataset.articleSlug || '',
+              articleTitle: block.dataset.articleTitle || '',
+              articleLanguage: block.dataset.articleLanguage || 'it',
+              articleCategory: block.dataset.articleCategory || '',
+              articleUrl: block.dataset.articleUrl || '',
+            }),
+          });
+          const result = await response.json();
+
+          if (response.status === 401) {
+            showGuestControls();
+            showMessage(result.error || labels.error);
+            return;
+          }
+
+          if (!response.ok || !result.ok) {
+            showMessage(result.error || labels.error);
+            return;
+          }
+
+          isSaved = Boolean(result.isSaved);
+          updateButton();
+        } catch {
+          showMessage(labels.error);
+        } finally {
+          button.disabled = false;
+
+          if (button.textContent === labels.loading) {
+            button.textContent = previousLabel;
+            updateButton();
+          }
+        }
+      });
+
+      showLoadingState();
+      loadState();
+    });
+  };
+
+  initArticleSaveButtons();
+</script>

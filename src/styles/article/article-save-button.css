@@ -1,0 +1,124 @@
+/* ========================================
+   ARTICLE SAVE BUTTON
+======================================== */
+
+.article-hero__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.article-hero__actions .article-share {
+  margin: 0;
+}
+
+.article-save {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.article-save [hidden] {
+  display: none !important;
+}
+
+.article-save__login,
+.article-save__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  max-width: 100%;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 999px;
+  padding: 0 15px;
+  background: var(--rg-card-bg);
+  color: var(--rg-action-color);
+  box-shadow: var(--rg-card-shadow);
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.article-save__button[aria-pressed="true"] {
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+}
+
+.article-save__login:hover,
+.article-save__login:focus-visible,
+.article-save__button:hover,
+.article-save__button:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--rg-badge-border);
+  background: var(--rg-cta-hover-bg);
+  color: var(--rg-action-hover-color);
+  box-shadow: var(--rg-card-hover-shadow);
+  outline: none;
+}
+
+.article-save__button:disabled {
+  opacity: 0.66;
+  cursor: wait;
+  transform: none;
+}
+
+.article-save__message {
+  max-width: 260px;
+  margin: 0;
+  color: #fecaca;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
+html[data-theme="light"] .article-save__message {
+  color: #991b1b;
+}
+
+@media (max-width: 768px) {
+  .article-hero__actions {
+    justify-content: flex-start;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .article-save {
+    justify-items: start;
+  }
+
+  .article-save__message {
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .article-hero__actions {
+    gap: 8px;
+  }
+
+  .article-save__login,
+  .article-save__button {
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 0.78rem;
+  }
+}
