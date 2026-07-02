@@ -1,0 +1,101 @@
+---
+import type { InterestArticle } from '../../lib/interest-articles';
+
+type Props = {
+  articles?: InterestArticle[];
+  hasInterests?: boolean;
+  lang?: 'it' | 'en' | string;
+};
+
+const { articles = [], hasInterests = false, lang = 'it' } = Astro.props as Props;
+const isEn = lang === 'en';
+
+const copy = isEn
+  ? {
+      kicker: 'For you',
+      title: 'From your interests',
+      description: 'Latest articles connected to the platforms, creators and companies you follow.',
+      emptyNoInterests: 'Choose at least one retro interest to see related articles here.',
+      emptyNoArticles: 'There are no articles connected to your interests yet.',
+      read: 'Read article',
+      relatedTo: 'Connected to',
+    }
+  : {
+      kicker: 'Per te',
+      title: 'Dai tuoi interessi',
+      description: 'Ultimi articoli collegati alle piattaforme, ai creator e alle aziende che segui.',
+      emptyNoInterests: 'Scegli almeno un interesse retro per vedere qui articoli collegati.',
+      emptyNoArticles: 'Non ci sono ancora articoli collegati ai tuoi interessi.',
+      read: 'Leggi articolo',
+      relatedTo: 'Collegato a',
+    };
+
+const dateFormatter = new Intl.DateTimeFormat(isEn ? 'en-US' : 'it-IT', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+---
+
+<section class="community-card account-interest-articles" aria-labelledby="account-interest-articles-title">
+  <div class="account-section-heading">
+    <p class="account-kicker">{copy.kicker}</p>
+    <h2 id="account-interest-articles-title">{copy.title}</h2>
+    <p>{copy.description}</p>
+  </div>
+
+  {articles.length > 0 ? (
+    <div class="account-interest-articles__grid">
+      {articles.map((article) => (
+        <article class="account-interest-article-card">
+          {article.imageUrl && (
+            <a class="account-interest-article-card__image" href={article.href} aria-label={article.title}>
+              <img
+                src={article.imageUrl}
+                alt={article.imageAlt || article.title}
+                width="640"
+                height="400"
+                loading="lazy"
+                decoding="async"
+              />
+            </a>
+          )}
+
+          <div class="account-interest-article-card__body">
+            <div class="account-interest-article-card__meta">
+              {article.categoryLabel && <span>{article.categoryLabel}</span>}
+              {article.publishedAt && (
+                <time datetime={article.publishedAt}>
+                  {dateFormatter.format(new Date(article.publishedAt))}
+                </time>
+              )}
+            </div>
+
+            <h3>
+              <a href={article.href}>{article.title}</a>
+            </h3>
+
+            {article.excerpt && <p>{article.excerpt}</p>}
+
+            {article.matches.length > 0 && (
+              <div class="account-interest-article-card__matches" aria-label={copy.relatedTo}>
+                <span>{copy.relatedTo}:</span>
+                {article.matches.map((match) => (
+                  <strong>{match}</strong>
+                ))}
+              </div>
+            )}
+
+            <a class="account-interest-article-card__link" href={article.href}>
+              {copy.read}
+            </a>
+          </div>
+        </article>
+      ))}
+    </div>
+  ) : (
+    <p class="account-interest-articles__empty">
+      {hasInterests ? copy.emptyNoArticles : copy.emptyNoInterests}
+    </p>
+  )}
+</section>

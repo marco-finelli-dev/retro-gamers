@@ -5,10 +5,12 @@ import CommunityHero from '../../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../../components/community/CommunityLayout.astro';
 import CommunitySidebarProfile from '../../../components/community/CommunitySidebarProfile.astro';
 import CommunityStatList from '../../../components/community/CommunityStatList.astro';
+import InterestArticles from '../../../components/account/InterestArticles.astro';
 import SavedArticlesList from '../../../components/account/SavedArticlesList.astro';
 import UserInterests from '../../../components/account/UserInterests.astro';
 import { getAllCompanies, companyTypeLabels, getCompanyName } from '../../../lib/companies';
 import { getAllCreators } from '../../../lib/creators';
+import { getInterestArticles, type InterestArticle } from '../../../lib/interest-articles';
 import { getAllPlatforms, platformTypeLabels } from '../../../lib/platforms';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../../lib/supabase/community';
@@ -35,6 +37,7 @@ let savedArticles: SavedArticleRow[] = [];
 let savedArticlesUnavailable = false;
 let userInterests: UserInterestRow[] = [];
 let userInterestsUnavailable = false;
+let interestArticles: InterestArticle[] = [];
 let communityStats = { ...emptyCommunityStats };
 let interestOptions: InterestOptions = {
   platforms: [],
@@ -65,6 +68,7 @@ if (isLoggedIn && user?.id) {
   savedArticlesUnavailable = savedArticlesResult.unavailable;
   userInterests = userInterestsResult.interests;
   userInterestsUnavailable = userInterestsResult.unavailable;
+  interestArticles = await getInterestArticles(userInterests, 'it', 4);
 
   interestOptions = {
     platforms: platforms
@@ -154,6 +158,12 @@ const communityStatItems = [
           interests={userInterests}
           options={interestOptions}
           unavailable={userInterestsUnavailable}
+          lang="it"
+        />
+
+        <InterestArticles
+          articles={interestArticles}
+          hasInterests={userInterests.length > 0}
           lang="it"
         />
       </div>

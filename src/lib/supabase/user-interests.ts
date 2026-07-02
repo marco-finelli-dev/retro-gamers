@@ -15,6 +15,8 @@ export type UserInterestRow = {
   target_name: string;
   target_extra: string | null;
   created_at: string;
+  target_url_it?: string | null;
+  target_url_en?: string | null;
 };
 
 export type InterestOption = {
