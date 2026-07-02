@@ -32,6 +32,11 @@ const json = (payload: unknown, status = 200) =>
     },
   });
 
+const duplicateReplyMessage = (language: 'it' | 'en') =>
+  language === 'en'
+    ? 'You have already replied to this comment. You can edit your existing reply.'
+    : 'Hai già risposto a questo commento. Puoi modificare la tua risposta esistente.';
+
 const normalizeUrl = (value: string) => {
   const trimmed = value.trim();
 
@@ -265,6 +270,27 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       parentComment.article_language !== articleLanguage
     ) {
       return json({ ok: false, error: 'Risposta non coerente con l’articolo.' }, 400);
+    }
+
+    const { data: existingReply, error: existingReplyError } = await supabaseAdmin
+      .from('comments')
+      .select('id')
+      .eq('parent_id', parentId)
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .limit(1);
+
+    if (existingReplyError) {
+      logApiError('comments-create.duplicate-reply', existingReplyError);
+      return json({ ok: false, error: 'Risposta non inviata. Riprova più tardi.' }, 500);
+    }
+
+    if ((existingReply ?? []).length > 0) {
+      return json({
+        ok: false,
+        code: 'duplicate_reply',
+        error: duplicateReplyMessage(articleLanguage),
+      }, 409);
     }
   }
 
