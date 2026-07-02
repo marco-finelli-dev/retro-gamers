@@ -5,15 +5,26 @@
 create table if not exists public.account_messages (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  type text not null check (type in ('comment_approved', 'comment_reply', 'badge_unlocked', 'system')),
+  type text not null check (type in ('comment_approved', 'comment_reply', 'comment_like', 'badge_unlocked', 'system')),
   title text not null,
   body text not null,
   action_label text null,
   action_url text null,
+  metadata jsonb null,
   is_read boolean not null default false,
   created_at timestamptz not null default now(),
   read_at timestamptz null
 );
+
+alter table public.account_messages
+  add column if not exists metadata jsonb null;
+
+alter table public.account_messages
+  drop constraint if exists account_messages_type_check;
+
+alter table public.account_messages
+  add constraint account_messages_type_check
+  check (type in ('comment_approved', 'comment_reply', 'comment_like', 'badge_unlocked', 'system'));
 
 create index if not exists account_messages_user_created_idx
   on public.account_messages (user_id, created_at desc);

@@ -3,6 +3,7 @@ import { supabaseAdmin } from './server';
 export type AccountMessageType =
   | 'comment_approved'
   | 'comment_reply'
+  | 'comment_like'
   | 'badge_unlocked'
   | 'system';
 
@@ -26,6 +27,8 @@ type AccountMessageInput = {
   body: string;
   actionLabel?: string | null;
   actionUrl?: string | null;
+  metadata?: Record<string, unknown> | null;
+  dedupe?: boolean;
 };
 
 type CommentReference = {
@@ -34,6 +37,11 @@ type CommentReference = {
   parent_id?: string | null;
   article_title?: string | null;
   article_url?: string | null;
+};
+
+type CommentLikeActor = {
+  userId?: string | null;
+  name?: string | null;
 };
 
 type WelcomeMessageInput = {
@@ -59,6 +67,22 @@ const logAccountMessagesError = (context: string, error: { code?: string; messag
   });
 };
 
+const isMissingMetadataColumnError = (error: { code?: string; message?: string; details?: string; hint?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`.toLowerCase();
+
+  return (
+    message.includes('metadata') &&
+    (
+      error.code === '42703' ||
+      error.code === 'PGRST204' ||
+      message.includes('schema cache') ||
+      message.includes('column')
+    )
+  );
+};
+
 export const getCommentActionUrl = (comment: { id?: string | null; article_url?: string | null }) => {
   if (!comment.id) {
     return comment.article_url || '/';
@@ -76,7 +100,7 @@ export async function createAccountMessage(input: AccountMessageInput) {
 
   const actionUrl = input.actionUrl || null;
 
-  if (actionUrl) {
+  if (actionUrl && input.dedupe !== false) {
     const { data: existing, error: existingError } = await supabaseAdmin
       .from('account_messages')
       .select('id')
@@ -96,18 +120,37 @@ export async function createAccountMessage(input: AccountMessageInput) {
     }
   }
 
-  const { data, error } = await supabaseAdmin
+  const insertPayload: Record<string, unknown> = {
+    user_id: input.userId,
+    type: input.type,
+    title: input.title,
+    body: input.body,
+    action_label: input.actionLabel || null,
+    action_url: actionUrl,
+  };
+
+  if (input.metadata !== undefined) {
+    insertPayload.metadata = input.metadata || null;
+  }
+
+  let { data, error } = await supabaseAdmin
     .from('account_messages')
-    .insert({
-      user_id: input.userId,
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      action_label: input.actionLabel || null,
-      action_url: actionUrl,
-    })
+    .insert(insertPayload)
     .select('id')
     .single();
+
+  if (error && isMissingMetadataColumnError(error) && 'metadata' in insertPayload) {
+    delete insertPayload.metadata;
+
+    const retryResult = await supabaseAdmin
+      .from('account_messages')
+      .insert(insertPayload)
+      .select('id')
+      .single();
+
+    data = retryResult.data;
+    error = retryResult.error;
+  }
 
   if (error) {
     logAccountMessagesError('insert', error);
@@ -182,6 +225,88 @@ export async function createReplyAccountMessage(
     body: 'Qualcuno ha risposto a un tuo commento su Retro-Gamers.it.',
     actionLabel: 'Apri risposta',
     actionUrl: getCommentActionUrl(reply),
+  });
+}
+
+async function hasRecentCommentLikeMessage(
+  recipientUserId: string,
+  commentId: string,
+  actorUserId: string,
+  actionUrl: string
+) {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabaseAdmin
+    .from('account_messages')
+    .select('id')
+    .eq('user_id', recipientUserId)
+    .eq('type', 'comment_like')
+    .eq('metadata->>commentId', commentId)
+    .eq('metadata->>actorId', actorUserId)
+    .gte('created_at', since)
+    .limit(1);
+
+  if (!error) {
+    return Boolean(data?.[0]?.id);
+  }
+
+  if (!isMissingMetadataColumnError(error)) {
+    logAccountMessagesError('comment-like-dedupe', error);
+    return false;
+  }
+
+  const fallback = await supabaseAdmin
+    .from('account_messages')
+    .select('id')
+    .eq('user_id', recipientUserId)
+    .eq('type', 'comment_like')
+    .eq('action_url', actionUrl)
+    .gte('created_at', since)
+    .limit(1);
+
+  if (fallback.error) {
+    logAccountMessagesError('comment-like-dedupe-fallback', fallback.error);
+    return false;
+  }
+
+  return Boolean(fallback.data?.[0]?.id);
+}
+
+export async function createCommentLikeAccountMessage(
+  comment: CommentReference,
+  actor: CommentLikeActor
+) {
+  if (!comment.user_id || !actor.userId || comment.user_id === actor.userId) {
+    return { ok: false, skipped: true, error: 'No recipient.' };
+  }
+
+  const actionUrl = getCommentActionUrl(comment);
+  const alreadyNotified = await hasRecentCommentLikeMessage(
+    comment.user_id,
+    comment.id,
+    actor.userId,
+    actionUrl
+  );
+
+  if (alreadyNotified) {
+    return { ok: true, skipped: true };
+  }
+
+  return createAccountMessage({
+    userId: comment.user_id,
+    type: 'comment_like',
+    title: 'Il tuo commento ha ricevuto un like',
+    body: 'Qualcuno ha apprezzato il tuo commento.',
+    actionLabel: 'Apri commento',
+    actionUrl,
+    dedupe: false,
+    metadata: {
+      commentId: comment.id,
+      parentCommentId: comment.parent_id || null,
+      articleTitle: comment.article_title || null,
+      actorId: actor.userId,
+      actorName: actor.name || null,
+    },
   });
 }
 

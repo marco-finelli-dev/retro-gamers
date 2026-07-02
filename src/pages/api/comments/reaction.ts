@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
+import { createCommentLikeAccountMessage } from '../../../lib/supabase/account-messages';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
@@ -143,7 +144,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const { data: comment, error: commentError } = await supabaseAdmin
     .from('comments')
-    .select('id, status, user_id')
+    .select('id, status, user_id, parent_id, article_title, article_url')
     .eq('id', commentId)
     .maybeSingle();
 
@@ -180,6 +181,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'Reazione non aggiornata. Riprova più tardi.' }, 500);
   }
 
+  const shouldNotifyLike = reaction === 'like' && existingReaction?.reaction !== 'like';
+
   if (existingReaction?.reaction === reaction) {
     const { error } = await supabaseAdmin
       .from('comment_reactions')
@@ -214,6 +217,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (error) {
       logApiError('comments-reaction.insert', error);
       return json({ ok: false, error: 'Reazione non aggiornata. Riprova più tardi.' }, 500);
+    }
+  }
+
+  if (shouldNotifyLike) {
+    try {
+      const result = await createCommentLikeAccountMessage(comment, {
+        userId: session.user.id,
+        name: getPublicReactionName(session.profile),
+      });
+
+      if (!result.ok && !result.skipped) {
+        console.error('Account message for comment like failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Account message for comment like failed:', error);
     }
   }
 
