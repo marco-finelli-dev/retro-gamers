@@ -55,12 +55,7 @@ const isReview = post.type === 'review';
 
 const platforms =
   isReview
-    ? post.platforms?.map((platform) => {
-        const manufacturer = platform.manufacturer?.name || '';
-        const name = platform.name || '';
-
-        return [manufacturer, name].filter(Boolean).join(' ');
-      }).filter(Boolean) || []
+    ? post.platforms?.map((platform) => platform.name || '').filter(Boolean) || []
     : [];
 
 const developer =
@@ -79,7 +74,9 @@ const metaItems = [
   developer,
   ...platforms,
   year
-].filter(Boolean);
+]
+  .filter(Boolean)
+  .filter((item, index, items) => items.indexOf(item) === index);
 
 const dateLocale = lang === 'en' ? 'en-US' : 'it-IT';
 
