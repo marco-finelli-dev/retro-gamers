@@ -4,6 +4,7 @@ export type AccountMessageType =
   | 'comment_approved'
   | 'comment_reply'
   | 'comment_like'
+  | 'comment_pending'
   | 'badge_unlocked'
   | 'system';
 
@@ -326,6 +327,64 @@ export async function createCommentLikeAccountMessage(
       actorName: actor.name || null,
     },
   });
+}
+
+export async function createPendingCommentAccountMessages(comment: CommentReference) {
+  const { data: moderators, error } = await supabaseAdmin
+    .from('profiles')
+    .select('user_id, role, status')
+    .in('role', ['admin', 'moderator']);
+
+  if (error) {
+    logAccountMessagesError('pending-comment-recipients', error);
+    return { ok: false, sent: 0, error: error.message };
+  }
+
+  const recipients = (moderators ?? [])
+    .filter((profile) => profile.user_id && profile.user_id !== comment.user_id)
+    .filter((profile) => !['blocked', 'suspended', 'banned'].includes(String(profile.status || '')));
+
+  if (recipients.length === 0) {
+    return { ok: true, sent: 0 };
+  }
+
+  const language = comment.article_language === 'en' ? 'en' : 'it';
+  const title = language === 'en'
+    ? 'New comment awaiting moderation'
+    : 'Nuovo commento da moderare';
+  const body = language === 'en'
+    ? 'A comment is waiting for review.'
+    : 'Un commento è in attesa di revisione.';
+  const actionLabel = language === 'en' ? 'Open moderation' : 'Apri moderazione';
+
+  const results = await Promise.all(
+    recipients.map((recipient) =>
+      createAccountMessage({
+        userId: recipient.user_id,
+        type: 'comment_pending',
+        title,
+        body,
+        actionLabel,
+        actionUrl: '/admin/comments/?status=pending',
+        dedupe: false,
+        metadata: {
+          commentId: comment.id,
+          articleSlug: comment.article_slug || null,
+          articleTitle: comment.article_title || null,
+          authorUserId: comment.user_id || null,
+          status: 'pending',
+        },
+      })
+    )
+  );
+
+  const failed = results.filter((result) => !result.ok && !result.skipped);
+
+  if (failed.length > 0) {
+    return { ok: false, sent: results.length - failed.length, error: 'Some pending comment notifications failed.' };
+  }
+
+  return { ok: true, sent: results.length };
 }
 
 export async function getCommentById(commentId?: string | null): Promise<CommentReference | null> {

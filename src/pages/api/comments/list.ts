@@ -90,6 +90,7 @@ const fetchAuthorCommunityStats = async (userIds: string[]) => {
         .from('comments')
         .select('id, user_id')
         .eq('status', 'approved')
+        .is('deleted_at', null)
         .in('user_id', userIdChunk)
         .range(from, from + pageSize - 1);
 
@@ -275,6 +276,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       .eq('article_slug', articleSlug)
       .eq('article_language', articleLanguage)
       .eq('status', 'approved')
+      .is('deleted_at', null)
       .order('created_at', { ascending: true });
 
     if (approvedError) {
@@ -292,6 +294,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       .eq('article_language', articleLanguage)
       .eq('status', 'pending')
       .eq('user_id', currentUserId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: true });
 
     if (pendingError) {

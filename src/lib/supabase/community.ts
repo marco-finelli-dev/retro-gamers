@@ -23,7 +23,8 @@ export async function getCommunityStats(userId?: string | null): Promise<Communi
   const { data: userComments, error: userCommentsError } = await supabaseAdmin
     .from('comments')
     .select('id, status')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .is('deleted_at', null);
 
   if (userCommentsError) {
     console.error('Community stats comments query failed:', {

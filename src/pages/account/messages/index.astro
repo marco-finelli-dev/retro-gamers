@@ -22,6 +22,7 @@ const title = 'Messaggi account | Retro-Gamers.it';
 const description = 'Centro notifiche e messaggi interni del profilo lettore Retro-Gamers.it.';
 const requestedTab = Astro.url.searchParams.get('tab') === 'system' ? 'system' : 'private';
 const formatUnreadBadge = (count: number) => count > 99 ? '99+' : String(count);
+const RECENT_MESSAGE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 if (requestedTab === 'private') {
   return Astro.redirect('/account/messages/private/', 303);
@@ -35,6 +36,7 @@ let unreadCount = 0;
 let privateUnreadCount = 0;
 let messagesError = false;
 let communityStats = { ...emptyCommunityStats };
+let unreadMessageIdsAtLoad = new Set<string>();
 
 if (isLoggedIn && session.user) {
   const [messagesResult, unreadResult, privateUnreadResult, statsResult] = await Promise.all([
@@ -54,6 +56,7 @@ if (isLoggedIn && session.user) {
   const unreadMessageIds = messages
     .filter((message) => !message.is_read)
     .map((message) => message.id);
+  unreadMessageIdsAtLoad = new Set(unreadMessageIds);
 
   if (!messagesError && unreadMessageIds.length > 0) {
     const markReadResult = await markAccountMessagesRead(session.user.id, unreadMessageIds);
@@ -78,6 +81,7 @@ const typeLabels: Record<string, string> = {
   comment_approved: 'Commento approvato',
   comment_reply: 'Risposta',
   comment_like: 'Like',
+  comment_pending: 'Moderazione',
   badge_unlocked: 'Badge',
   system: 'Sistema',
 };
@@ -89,6 +93,12 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   hour: '2-digit',
   minute: '2-digit',
 });
+const nowMs = Date.now();
+const isRecentMessage = (message: AccountMessage) => {
+  const createdAtMs = new Date(message.created_at).getTime();
+
+  return Number.isFinite(createdAtMs) && nowMs - createdAtMs <= RECENT_MESSAGE_WINDOW_MS;
+};
 const profile = session.profile;
 const accountDisplayName =
   profile?.display_name || profile?.username || session.user?.email || 'Utente Retro-Gamers';
@@ -180,11 +190,14 @@ const communityStatItems = [
             <div class="account-messages-list" data-account-messages-list>
               {messages.map((message) => (
                 <article
-                  class={`account-message-card${message.is_read ? '' : ' is-unread'}`}
+                  class={`account-message-card${unreadMessageIdsAtLoad.has(message.id) ? ' is-unread' : ''}${isRecentMessage(message) ? ' is-recent' : ''}`}
                   data-message-id={message.id}
                 >
                   <header>
                     <span>{typeLabels[message.type] || message.type}</span>
+                    {isRecentMessage(message) && (
+                      <span class="account-message-card__new-badge">Nuova</span>
+                    )}
                     <time datetime={message.created_at}>
                       {dateFormatter.format(new Date(message.created_at))}
                     </time>

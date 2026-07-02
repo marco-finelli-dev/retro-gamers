@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { logApiError } from '../../../../lib/api-errors';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supabase/auth';
+import { isMissingCommentModerationColumnError } from '../../../../lib/supabase/comment-moderation';
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -11,7 +12,7 @@ const json = (payload: unknown, status = 200) =>
     },
   });
 
-const allowedStatuses = new Set(['all', 'pending', 'approved', 'rejected', 'spam', 'deleted']);
+const allowedStatuses = new Set(['all', 'pending', 'pending_review', 'approved', 'rejected', 'spam', 'deleted']);
 const allowedLanguages = new Set(['all', 'it', 'en']);
 
 const normalizeSearch = (value: string) =>
@@ -30,13 +31,12 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
   const statusParam = url.searchParams.get('status') || 'all';
   const languageParam = url.searchParams.get('language') || 'all';
-  const status = allowedStatuses.has(statusParam) ? statusParam : 'all';
+  const requestedStatus = allowedStatuses.has(statusParam) ? statusParam : 'all';
+  const status = requestedStatus === 'pending_review' ? 'pending' : requestedStatus;
   const language = allowedLanguages.has(languageParam) ? languageParam : 'all';
   const search = normalizeSearch(url.searchParams.get('q') || '');
 
-  let query = supabaseAdmin
-    .from('comments')
-    .select(`
+  const selectFields = (includeModeration: boolean) => `
       id,
       article_slug,
       article_language,
@@ -45,6 +45,8 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       parent_id,
       body,
       status,
+      ${includeModeration ? 'moderation_reason, moderated_at,' : ''}
+      deleted_at,
       created_at,
       profiles:profile_id (
         id,
@@ -59,19 +61,39 @@ export const GET: APIRoute = async ({ cookies, url }) => {
           image_path
         )
       )
-    `)
-    .order('created_at', { ascending: false })
-    .limit(120);
+    `;
 
-  if (status !== 'all') {
-    query = query.eq('status', status);
+  const buildQuery = (includeModeration: boolean) => {
+    let query = supabaseAdmin
+      .from('comments')
+      .select(selectFields(includeModeration))
+      .order('created_at', { ascending: false })
+      .limit(120);
+
+    if (status === 'deleted') {
+      query = query.not('deleted_at', 'is', null);
+    } else if (status !== 'all') {
+      query = query.eq('status', status).is('deleted_at', null);
+    }
+
+    if (language !== 'all') {
+      query = query.eq('article_language', language);
+    }
+
+    return query;
+  };
+
+  let { data, error } = await buildQuery(true);
+
+  if (isMissingCommentModerationColumnError(error)) {
+    const fallbackResult = await buildQuery(false);
+    data = fallbackResult.data?.map((comment) => ({
+      ...comment,
+      moderation_reason: null,
+      moderated_at: null,
+    })) ?? null;
+    error = fallbackResult.error;
   }
-
-  if (language !== 'all') {
-    query = query.eq('article_language', language);
-  }
-
-  const { data, error } = await query;
 
   if (error) {
     logApiError('admin-comments-pending.comments', error);
@@ -136,7 +158,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   return json({
     ok: true,
     filters: {
-      status,
+      status: requestedStatus,
       language,
       q: search,
     },

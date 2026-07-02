@@ -52,6 +52,7 @@ export async function getApprovedCommentCountMap(
           .from('comments')
           .select('article_slug, article_language')
           .eq('status', 'approved')
+          .is('deleted_at', null)
           .eq('article_language', language)
           .in('article_slug', slugs);
 

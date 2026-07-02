@@ -2,7 +2,10 @@ import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { getUserSessionFromCookies, isBlockedProfileStatus, isStaffProfile } from '../../../lib/supabase/auth';
-import { createReplyAccountMessage } from '../../../lib/supabase/account-messages';
+import {
+  createPendingCommentAccountMessages,
+  createReplyAccountMessage,
+} from '../../../lib/supabase/account-messages';
 import {
   sendNewCommentAdminEmail,
   sendReplyApprovedEmail,
@@ -11,6 +14,10 @@ import {
   buildUnsubscribeUrl,
   createUnsubscribeToken,
 } from '../../../lib/supabase/comment-subscriptions';
+import {
+  assessCommentModeration,
+  isMissingCommentModerationColumnError,
+} from '../../../lib/supabase/comment-moderation';
 import { touchUserActivity } from '../../../lib/supabase/user-activity';
 
 type CreateCommentPayload = {
@@ -36,6 +43,16 @@ const duplicateReplyMessage = (language: 'it' | 'en') =>
   language === 'en'
     ? 'You have already replied to this comment. You can edit your existing reply.'
     : 'Hai già risposto a questo commento. Puoi modificare la tua risposta esistente.';
+
+const reviewMessage = (language: 'it' | 'en') =>
+  language === 'en'
+    ? 'Your comment has been submitted and is awaiting moderation.'
+    : 'Il commento è stato inviato ed è in attesa di moderazione.';
+
+const rejectedMessage = (language: 'it' | 'en') =>
+  language === 'en'
+    ? 'This comment cannot be published.'
+    : 'Il commento non può essere pubblicato.';
 
 const normalizeUrl = (value: string) => {
   const trimmed = value.trim();
@@ -294,11 +311,40 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
   }
 
-  const nextStatus = isStaff ? 'approved' : 'pending';
+  const duplicateThreshold = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+  const { count: recentDuplicateCount, error: recentDuplicateError } = await supabaseAdmin
+    .from('comments')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('body', body)
+    .gte('created_at', duplicateThreshold)
+    .is('deleted_at', null);
+
+  if (recentDuplicateError) {
+    logApiError('comments-create.duplicate-body', recentDuplicateError);
+    return json({ ok: false, error: 'Commento non inviato. Riprova più tardi.' }, 500);
+  }
+
+  const { count: approvedCount, error: approvedCountError } = await supabaseAdmin
+    .from('comments')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('status', 'approved');
+
+  if (approvedCountError) {
+    logApiError('comments-create.approved-count', approvedCountError);
+    return json({ ok: false, error: 'Commento non inviato. Riprova più tardi.' }, 500);
+  }
+
+  const moderationDecision = assessCommentModeration(body, {
+    hasApprovedComments: (approvedCount ?? 0) > 0,
+    hasRecentDuplicate: (recentDuplicateCount ?? 0) > 0,
+  });
+
+  const nextStatus = moderationDecision.status;
   const publishedMessage = articleLanguage === 'en' ? 'Comment published.' : 'Commento pubblicato.';
-  const pendingMessage = articleLanguage === 'en'
-    ? 'Comment sent. It will appear after moderation.'
-    : 'Commento inviato. Sarà visibile dopo la moderazione.';
+  const pendingMessage = reviewMessage(articleLanguage);
+  const moderationTimestamp = new Date().toISOString();
 
   const insertPayload: Record<string, unknown> = {
     article_slug: articleSlug,
@@ -310,18 +356,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     parent_id: parentId,
     body,
     status: nextStatus,
+    moderation_reason: moderationDecision.reason,
+    moderated_at: moderationDecision.status === 'approved' ? null : moderationTimestamp,
+    moderated_by: null,
   };
 
-  if (isStaff) {
-    insertPayload.approved_at = new Date().toISOString();
-    insertPayload.approved_by = user.id;
+  if (nextStatus === 'approved') {
+    insertPayload.approved_at = moderationTimestamp;
+    if (isStaff) {
+      insertPayload.approved_by = user.id;
+    }
   }
 
-  const { data: comment, error: insertError } = await supabaseAdmin
+  let { data: comment, error: insertError } = await supabaseAdmin
     .from('comments')
     .insert(insertPayload)
-    .select('id, user_id, parent_id, status, created_at, article_title, article_url, article_language')
+    .select('id, user_id, parent_id, status, created_at, article_slug, article_title, article_url, article_language')
     .single();
+
+  if (isMissingCommentModerationColumnError(insertError)) {
+    const fallbackPayload = { ...insertPayload };
+    delete fallbackPayload.moderation_reason;
+    delete fallbackPayload.moderated_at;
+    delete fallbackPayload.moderated_by;
+
+    const fallbackResult = await supabaseAdmin
+      .from('comments')
+      .insert(fallbackPayload)
+      .select('id, user_id, parent_id, status, created_at, article_slug, article_title, article_url, article_language')
+      .single();
+
+    comment = fallbackResult.data;
+    insertError = fallbackResult.error;
+  }
 
   if (insertError) {
     logApiError('comments-create.insert', insertError);
@@ -330,7 +397,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const subscriptionsToCreate: Array<Record<string, unknown>> = [];
 
-  if (notifyReplies) {
+  if (nextStatus !== 'rejected' && notifyReplies) {
     subscriptionsToCreate.push({
       user_id: user.id,
       article_slug: articleSlug,
@@ -342,7 +409,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     });
   }
 
-  if (notifyThread) {
+  if (nextStatus !== 'rejected' && notifyThread) {
     subscriptionsToCreate.push({
       user_id: user.id,
       article_slug: articleSlug,
@@ -368,7 +435,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return json({
         ok: true,
         warning: 'Preferenze di notifica non salvate.',
-        message: isStaff
+        message: nextStatus === 'approved'
           ? `${publishedMessage} Non è stato possibile salvare le preferenze di notifica.`
           : 'Commento inviato, ma non è stato possibile salvare le preferenze di notifica.',
         comment,
@@ -376,7 +443,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
   }
 
-  if (isStaff) {
+  if (nextStatus === 'approved') {
     await createInternalReplyMessage(comment);
     await notifyParentAuthorAboutApprovedReply(comment);
     await touchUserActivity(user.id, 'comments-create');
@@ -386,6 +453,22 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       message: publishedMessage,
       comment,
     });
+  }
+
+  if (nextStatus === 'rejected') {
+    await touchUserActivity(user.id, 'comments-create');
+
+    return json({
+      ok: true,
+      message: rejectedMessage(articleLanguage),
+      comment,
+    });
+  }
+
+  const pendingNotificationResult = await createPendingCommentAccountMessages(comment);
+
+  if (!pendingNotificationResult.ok) {
+    console.error('Pending comment moderation notification failed:', pendingNotificationResult.error);
   }
 
   try {

@@ -193,6 +193,7 @@ const fetchApprovedCommentIds = async (profileId: string) => {
       .select('id')
       .eq('profile_id', profileId)
       .eq('status', 'approved')
+      .is('deleted_at', null)
       .range(from, from + pageSize - 1);
 
     if (error) {
@@ -452,6 +453,7 @@ export async function getPublicReaderProfile(
       `)
       .eq('profile_id', profile.id)
       .eq('status', 'approved')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(commentLimit),
   ]);

@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { logApiError } from '../../../../lib/api-errors';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supabase/auth';
+import { isMissingCommentModerationColumnError } from '../../../../lib/supabase/comment-moderation';
 import {
   createCommentApprovedAccountMessage,
   createReplyAccountMessage,
@@ -17,7 +18,7 @@ import {
 
 type ModeratePayload = {
   commentId?: string;
-  action?: 'approve' | 'reject' | 'spam' | 'delete' | 'restore';
+  action?: 'approve' | 'reject' | 'pending' | 'soft_delete' | 'hard_delete' | 'spam' | 'delete' | 'restore';
   note?: string;
 };
 
@@ -35,7 +36,40 @@ const actionToStatus = {
   spam: 'spam',
   delete: 'deleted',
   restore: 'pending',
+  pending: 'pending',
 } as const;
+
+const normalizeAction = (action?: ModeratePayload['action']) => {
+  if (action === 'restore') return 'pending';
+  if (action === 'delete') return 'soft_delete';
+
+  return action;
+};
+
+const getDefaultModerationReason = (action: string) => {
+  if (action === 'reject') return 'Rifiutato da moderazione.';
+  if (action === 'pending') return 'Rimesso in revisione.';
+  if (action === 'soft_delete') return 'Nascosto da moderazione.';
+  if (action === 'spam') return 'Segnato come spam.';
+
+  return `Moderazione manuale: ${action}`;
+};
+
+const isMissingOptionalModerationTableError = (
+  error: { code?: string; message?: string; details?: string; hint?: string } | null
+) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`.toLowerCase();
+
+  return (
+    error.code === '42P01' ||
+    error.code === 'PGRST205' ||
+    error.code === 'PGRST204' ||
+    message.includes('does not exist') ||
+    message.includes('schema cache')
+  );
+};
 
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -160,6 +194,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'Permessi insufficienti.' }, 403);
   }
 
+  const isAdmin = session.profile.role === 'admin';
+
   let payload: ModeratePayload;
 
   try {
@@ -169,7 +205,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   const commentId = payload.commentId?.trim() ?? '';
-  const action = payload.action;
+  const action = normalizeAction(payload.action);
 
   if (!commentId) {
     return json({ ok: false, error: 'Commento mancante.' }, 400);
@@ -179,15 +215,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'ID commento non valido.' }, 400);
   }
 
-  if (!action || !(action in actionToStatus)) {
+  if (!action || (
+    !(action in actionToStatus) &&
+    action !== 'soft_delete' &&
+    action !== 'hard_delete'
+  )) {
     return json({ ok: false, error: 'Azione non valida.' }, 400);
   }
 
-  const nextStatus = actionToStatus[action];
+  if (action === 'hard_delete' && !isAdmin) {
+    return json({ ok: false, error: 'Solo gli admin possono cancellare definitivamente un commento.' }, 403);
+  }
+
+  const nextStatus = action in actionToStatus
+    ? actionToStatus[action as keyof typeof actionToStatus]
+    : null;
 
   const { data: existingComment, error: existingCommentError } = await supabaseAdmin
     .from('comments')
-    .select('id, user_id, parent_id, status, article_title, article_url, article_language')
+    .select('id, user_id, parent_id, status, article_title, article_url, article_language, deleted_at')
     .eq('id', commentId)
     .maybeSingle();
 
@@ -200,8 +246,74 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'Commento non trovato.' }, 404);
   }
 
+  if (action === 'hard_delete') {
+    const { data: childComments, error: childrenError } = await supabaseAdmin
+      .from('comments')
+      .select('id')
+      .eq('parent_id', commentId);
+
+    if (childrenError) {
+      logApiError('admin-comments-moderate.hard-delete-children', childrenError);
+      return json({ ok: false, error: 'Cancellazione non disponibile. Riprova più tardi.' }, 500);
+    }
+
+    const commentIds = [
+      ...(childComments ?? []).map((comment) => comment.id).filter(Boolean),
+      commentId,
+    ];
+
+    for (const table of ['comment_subscriptions', 'moderation_events']) {
+      const { error } = await supabaseAdmin
+        .from(table)
+        .delete()
+        .in('comment_id', commentIds);
+
+      if (error && !isMissingOptionalModerationTableError(error)) {
+        logApiError(`admin-comments-moderate.hard-delete-${table}`, error);
+        return json({ ok: false, error: 'Cancellazione non completata. Riprova più tardi.' }, 500);
+      }
+    }
+
+    const childIds = commentIds.filter((id) => id !== commentId);
+
+    if (childIds.length > 0) {
+      const { error: childDeleteError } = await supabaseAdmin
+        .from('comments')
+        .delete()
+        .in('id', childIds);
+
+      if (childDeleteError) {
+        logApiError('admin-comments-moderate.hard-delete-child-comments', childDeleteError);
+        return json({ ok: false, error: 'Cancellazione delle risposte non completata.' }, 500);
+      }
+    }
+
+    const { error: hardDeleteError } = await supabaseAdmin
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (hardDeleteError) {
+      logApiError('admin-comments-moderate.hard-delete-comment', hardDeleteError);
+      return json({ ok: false, error: 'Commento non cancellato definitivamente.' }, 500);
+    }
+
+    return json({
+      ok: true,
+      comment: {
+        id: commentId,
+        deleted: true,
+      },
+    });
+  }
+
   const updatePayload: Record<string, unknown> = {
-    status: nextStatus,
+    ...(nextStatus ? { status: nextStatus } : {}),
+    moderation_reason: action === 'approve'
+      ? null
+      : payload.note?.trim() || getDefaultModerationReason(action),
+    moderated_at: new Date().toISOString(),
+    moderated_by: session.user.id,
   };
 
   if (action === 'approve') {
@@ -210,22 +322,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     updatePayload.deleted_at = null;
   }
 
-  if (action === 'delete') {
+  if (action === 'soft_delete') {
     updatePayload.deleted_at = new Date().toISOString();
   }
 
-  if (action === 'restore') {
+  if (action === 'pending') {
     updatePayload.approved_at = null;
     updatePayload.approved_by = null;
     updatePayload.deleted_at = null;
   }
 
-  const { data: comment, error: updateError } = await supabaseAdmin
+  let { data: comment, error: updateError } = await supabaseAdmin
     .from('comments')
     .update(updatePayload)
     .eq('id', commentId)
     .select('id, status, approved_at, deleted_at')
     .single();
+
+  if (isMissingCommentModerationColumnError(updateError)) {
+    const fallbackPayload = { ...updatePayload };
+    delete fallbackPayload.moderation_reason;
+    delete fallbackPayload.moderated_at;
+    delete fallbackPayload.moderated_by;
+
+    const fallbackResult = await supabaseAdmin
+      .from('comments')
+      .update(fallbackPayload)
+      .eq('id', commentId)
+      .select('id, status, approved_at, deleted_at')
+      .single();
+
+    comment = fallbackResult.data;
+    updateError = fallbackResult.error;
+  }
 
   if (updateError) {
     logApiError('admin-comments-moderate.update', updateError);

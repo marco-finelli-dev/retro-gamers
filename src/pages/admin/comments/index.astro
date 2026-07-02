@@ -10,6 +10,7 @@ const title = 'Moderazione commenti | Retro-Gamers.it';
 const description = 'Pannello moderazione commenti Retro-Gamers.it';
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
+const isAdmin = session.profile?.role === 'admin';
 ---
 
 <BaseLayout title={title} description={description}>
@@ -36,17 +37,21 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       <span slot="aside" class="community-soft-badge" data-admin-comments-count>Caricamento...</span>
     </CommunityHero>
 
-    <section class="community-card admin-comments-panel">
+    <section
+      class="community-card admin-comments-panel"
+      data-admin-comments-panel
+      data-can-hard-delete={isAdmin ? 'true' : 'false'}
+    >
       <form class="admin-comments-filters" data-admin-comments-filters>
         <label>
           <span>Stato</span>
           <select name="status">
             <option value="all" selected>Tutti</option>
-            <option value="pending">In attesa</option>
+            <option value="pending">Da revisionare</option>
             <option value="approved">Approvati</option>
             <option value="rejected">Rifiutati</option>
             <option value="spam">Spam</option>
-            <option value="deleted">Eliminati</option>
+            <option value="deleted">Nascosti</option>
           </select>
         </label>
 
@@ -89,6 +94,8 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
     const messageNode = document.querySelector('[data-admin-comments-message]');
     const filtersForm = document.querySelector('[data-admin-comments-filters]');
     const resetButton = document.querySelector('[data-admin-comments-reset]');
+    const panelNode = document.querySelector('[data-admin-comments-panel]');
+    const canHardDelete = panelNode?.dataset.canHardDelete === 'true';
 
     const escapeHtml = (value) =>
       String(value || '')
@@ -119,11 +126,11 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
     };
 
     const statusLabels = {
-      pending: 'In attesa',
+      pending: 'Da revisionare',
       approved: 'Approvato',
       rejected: 'Rifiutato',
       spam: 'Spam',
-      deleted: 'Eliminato'
+      deleted: 'Nascosto'
     };
 
     const roleLabels = {
@@ -161,6 +168,9 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       const parentProfile = parent?.profiles || {};
       const parentAuthor = parentProfile.display_name || parentProfile.username || 'Commento originale';
       const detailId = `admin-comment-detail-${comment.id}`;
+      const moderationReason = comment.moderation_reason || '';
+      const isHidden = Boolean(comment.deleted_at);
+      const displayStatus = isHidden ? statusLabels.deleted : status;
 
       return `
         <article class="admin-comment-card" data-comment-id="${escapeHtml(comment.id)}">
@@ -192,8 +202,8 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
           </header>
 
           <p class="admin-comment-card__meta">
-            <span class="admin-comment-card__status" data-status="${escapeHtml(comment.status || '')}">
-              ${escapeHtml(status)}
+            <span class="admin-comment-card__status" data-status="${escapeHtml(isHidden ? 'deleted' : comment.status || '')}">
+              ${escapeHtml(displayStatus)}
             </span>
             ${role ? `<span>${escapeHtml(role)}</span>` : ''}
             ${badge ? `<span>${escapeHtml(badge)}</span>` : ''}
@@ -217,12 +227,19 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
               ${escapeHtml(comment.body)}
             </div>
 
+            ${moderationReason ? `
+              <p class="admin-comment-card__moderation-reason">
+                <strong>Motivo revisione</strong>
+                <span>${escapeHtml(moderationReason)}</span>
+              </p>
+            ` : ''}
+
             <div class="admin-comment-card__actions">
-              ${comment.status !== 'approved' ? '<button type="button" data-action="approve">Approva</button>' : ''}
-              ${comment.status !== 'rejected' ? '<button type="button" data-action="reject">Rifiuta</button>' : ''}
-              ${comment.status !== 'spam' ? '<button type="button" data-action="spam" data-confirm="Segnare questo commento come spam?">Spam</button>' : ''}
-              ${comment.status !== 'deleted' ? '<button type="button" data-action="delete" data-confirm="Eliminare questo commento dalla moderazione pubblica?">Elimina</button>' : ''}
-              ${comment.status !== 'pending' ? '<button type="button" data-action="restore">Rimetti in coda</button>' : ''}
+              ${(comment.status !== 'approved' || isHidden) ? '<button type="button" data-action="approve">Approva</button>' : ''}
+              ${(comment.status !== 'rejected' || isHidden) ? '<button type="button" data-action="reject">Rifiuta</button>' : ''}
+              ${(comment.status !== 'pending' || isHidden) ? '<button type="button" data-action="pending">Rimetti in revisione</button>' : ''}
+              ${!isHidden ? '<button type="button" data-action="soft_delete" data-confirm="Nascondere questo commento dal sito pubblico?">Nascondi</button>' : ''}
+              ${canHardDelete ? '<button type="button" class="admin-comment-card__danger-action" data-action="hard_delete" data-confirm="Questa azione cancellerà definitivamente il commento. Continuare?">Cancella definitivamente</button>' : ''}
             </div>
           </div>
         </article>

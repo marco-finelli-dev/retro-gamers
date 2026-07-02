@@ -153,10 +153,14 @@
 }
 
 .account-message-card.is-unread {
-  border-color: rgba(34,240,255,0.24);
+  border-color: rgba(34,240,255,0.42);
   background:
-    linear-gradient(135deg, rgba(34,240,255,0.075), rgba(168,85,247,0.04)),
+    linear-gradient(135deg, rgba(34,240,255,0.12), rgba(168,85,247,0.055)),
     var(--rg-card-bg);
+  box-shadow:
+    var(--rg-card-shadow),
+    0 0 0 1px rgba(34,240,255,0.08),
+    0 12px 34px rgba(34,240,255,0.08);
 }
 
 .account-message-card.is-unread::before {
@@ -164,12 +168,16 @@
   position: absolute;
   top: 20px;
   right: 20px;
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
-  border: 1px solid rgba(34,240,255,0.36);
-  background: rgba(34,240,255,0.42);
-  box-shadow: 0 0 10px rgba(34,240,255,0.14);
+  border: 1px solid rgba(34,240,255,0.52);
+  background: rgba(34,240,255,0.76);
+  box-shadow: 0 0 14px rgba(34,240,255,0.22);
+}
+
+.account-message-card.is-recent:not(.is-unread) {
+  border-color: color-mix(in srgb, var(--rg-card-border) 72%, rgba(34,240,255,0.36));
 }
 
 .account-message-card header {
@@ -183,11 +191,29 @@
   font-weight: 850;
 }
 
-.account-message-card header span {
+.account-message-card header span:not(.account-message-card__new-badge) {
   color: var(--rg-eyebrow-color);
   font-weight: 950;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.account-message-card__new-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  border: 1px solid rgba(34,240,255,0.34);
+  border-radius: 999px;
+  padding: 0 8px;
+  background:
+    linear-gradient(180deg, rgba(34,240,255,0.14), rgba(34,240,255,0.045)),
+    color-mix(in srgb, var(--rg-badge-bg) 72%, transparent);
+  color: var(--rg-badge-color);
+  font-size: 0.72rem;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 0 10px rgba(34,240,255,0.08);
 }
 
 .account-message-card h2 {
