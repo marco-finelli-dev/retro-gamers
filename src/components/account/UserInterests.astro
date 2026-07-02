@@ -1,0 +1,603 @@
+---
+import {
+  userInterestsLimit,
+  type InterestOptions,
+  type UserInterestRow,
+} from '../../lib/supabase/user-interests';
+
+type Props = {
+  interests?: UserInterestRow[];
+  options?: InterestOptions;
+  unavailable?: boolean;
+  lang?: 'it' | 'en' | string;
+};
+
+const {
+  interests = [],
+  options = { platforms: [], creators: [], companies: [] },
+  unavailable = false,
+  lang = 'it',
+} = Astro.props as Props;
+
+const isEn = lang === 'en';
+
+const copy = isEn
+  ? {
+      kicker: 'Retro interests',
+      title: 'Your interests',
+      description: 'Choose platforms, creators and companies you want to follow on Retro-Gamers.it.',
+      platforms: 'Platforms',
+      creators: 'Creators',
+      companies: 'Companies',
+      chooseDescription: 'Choose a category and select an interest to add.',
+      categoryLabel: 'Category',
+      interestLabel: 'Interest',
+      filterLabel: 'Search',
+      interestPlaceholder: 'Search or choose an interest...',
+      add: 'Add',
+      added: 'Added',
+      adding: 'Adding...',
+      remove: 'Remove',
+      removing: 'Removing...',
+      empty: 'You haven’t chosen any retro interests yet.',
+      unavailable: 'Retro interests are not available. Please try again later.',
+      addError: 'Could not add this interest.',
+      removeError: 'Could not remove this interest.',
+      limit: 'You have reached the limit of 15 interests.',
+      savedTitle: 'Selected interests',
+      chooseTitle: 'Add interest',
+      noAvailable: 'No interests available.',
+      noResults: 'No results.',
+      removeAria: 'Remove interest',
+      addAria: 'Add interest',
+    }
+  : {
+      kicker: 'Interessi retro',
+      title: 'I tuoi interessi',
+      description: 'Scegli piattaforme, creator e aziende che vuoi seguire su Retro-Gamers.it.',
+      platforms: 'Piattaforme',
+      creators: 'Creator',
+      companies: 'Aziende',
+      chooseDescription: 'Scegli una categoria e seleziona un interesse da aggiungere.',
+      categoryLabel: 'Categoria',
+      interestLabel: 'Interesse',
+      filterLabel: 'Cerca',
+      interestPlaceholder: 'Cerca o seleziona un interesse…',
+      add: 'Aggiungi',
+      added: 'Aggiunto',
+      adding: 'Aggiunta…',
+      remove: 'Rimuovi',
+      removing: 'Rimozione…',
+      empty: 'Non hai ancora scelto interessi retro.',
+      unavailable: 'Interessi retro non disponibili. Riprova più tardi.',
+      addError: 'Impossibile aggiungere l’interesse.',
+      removeError: 'Impossibile rimuovere l’interesse.',
+      limit: 'Hai raggiunto il limite di 15 interessi.',
+      savedTitle: 'Interessi scelti',
+      chooseTitle: 'Aggiungi interesse',
+      noAvailable: 'Nessun interesse disponibile.',
+      noResults: 'Nessun risultato.',
+      removeAria: 'Rimuovi interesse',
+      addAria: 'Aggiungi interesse',
+    };
+
+const typeConfig = [
+  {
+    type: 'platform',
+    label: copy.platforms,
+    options: options.platforms,
+  },
+  {
+    type: 'creator',
+    label: copy.creators,
+    options: options.creators,
+  },
+  {
+    type: 'company',
+    label: copy.companies,
+    options: options.companies,
+  },
+] as const;
+
+const selectedKeys = new Set(
+  interests.map((interest) => `${interest.target_type}:${interest.target_id}`)
+);
+
+const interestsByType = {
+  platform: interests.filter((interest) => interest.target_type === 'platform'),
+  creator: interests.filter((interest) => interest.target_type === 'creator'),
+  company: interests.filter((interest) => interest.target_type === 'company'),
+};
+---
+
+<section
+  class="account-interests"
+  aria-labelledby="account-interests-title"
+  data-user-interests
+  data-limit={userInterestsLimit}
+  data-add-label={copy.add}
+  data-added-label={copy.added}
+  data-adding-label={copy.adding}
+  data-remove-label={copy.remove}
+  data-removing-label={copy.removing}
+  data-add-error={copy.addError}
+  data-remove-error={copy.removeError}
+  data-limit-message={copy.limit}
+  data-no-available={copy.noAvailable}
+  data-no-results={copy.noResults}
+>
+  <div class="account-interests__heading">
+    <p class="account-kicker">{copy.kicker}</p>
+    <h2 id="account-interests-title">{copy.title}</h2>
+    <p>{copy.description}</p>
+  </div>
+
+  {unavailable ? (
+    <p class="account-message" data-type="error">
+      {copy.unavailable}
+    </p>
+  ) : (
+    <>
+      <div class="account-interests__chosen">
+        <h3>{copy.savedTitle}</h3>
+
+        <p
+          class="account-interests__empty"
+          data-interest-empty
+          hidden={interests.length > 0}
+        >
+          {copy.empty}
+        </p>
+
+        <div class="account-interests__groups">
+          {typeConfig.map((group) => (
+            <section
+              class="account-interest-group"
+              data-interest-group={group.type}
+              hidden={interestsByType[group.type].length === 0}
+            >
+              <h4>{group.label}</h4>
+
+              <div class="account-interest-list" data-interest-list={group.type}>
+                {interestsByType[group.type].map((interest) => (
+                  <article
+                    class="account-interest-chip"
+                    data-interest-item
+                    data-interest-id={interest.id}
+                    data-type={interest.target_type}
+                    data-target-id={interest.target_id}
+                  >
+                    <span>
+                      <strong>{interest.target_name}</strong>
+                      {interest.target_extra && <small>{interest.target_extra}</small>}
+                    </span>
+
+                    <button
+                      type="button"
+                      data-interest-remove
+                      data-interest-id={interest.id}
+                      data-type={interest.target_type}
+                      data-target-id={interest.target_id}
+                      aria-label={`${copy.removeAria}: ${interest.target_name}`}
+                    >
+                      {copy.remove}
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
+
+      <div class="account-interests__chooser">
+        <div class="account-interests__chooser-heading">
+          <h3>{copy.chooseTitle}</h3>
+          <p>{copy.chooseDescription}</p>
+        </div>
+
+        <div class="account-interest-form">
+          <label class="account-interest-field">
+            <span>{copy.categoryLabel}</span>
+            <select data-interest-category aria-label={copy.categoryLabel}>
+              {typeConfig.map((group) => (
+                <option value={group.type}>{group.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <label class="account-interest-field">
+            <span>{copy.filterLabel}</span>
+            <input
+              type="search"
+              data-interest-filter
+              placeholder={copy.interestPlaceholder}
+            />
+          </label>
+
+          <label class="account-interest-field account-interest-field--select">
+            <span>{copy.interestLabel}</span>
+            <select data-interest-select aria-label={copy.interestLabel}>
+              <option value="">{copy.interestPlaceholder}</option>
+              {typeConfig.map((group) => (
+                group.options.map((option) => {
+                  const key = `${option.targetType}:${option.targetId}`;
+                  const isAdded = selectedKeys.has(key);
+
+                  return (
+                    <option
+                      value={key}
+                      data-interest-choice
+                      data-type={option.targetType}
+                      data-target-id={option.targetId}
+                      data-target-slug={option.targetSlug}
+                      data-target-name={option.targetName}
+                      data-target-extra={option.targetExtra || ''}
+                      data-search={`${option.targetName} ${option.targetExtra || ''}`.toLowerCase()}
+                      data-added={isAdded ? 'true' : 'false'}
+                    >
+                      {option.targetExtra
+                        ? `${option.targetName} · ${option.targetExtra}`
+                        : option.targetName}
+                    </option>
+                  );
+                })
+              ))}
+            </select>
+          </label>
+
+          <button
+            class="account-interest-add"
+            type="button"
+            data-interest-add
+            aria-label={copy.addAria}
+            disabled
+          >
+            {copy.add}
+          </button>
+        </div>
+
+        <p class="account-interests__no-results" data-interest-no-results hidden>
+          {copy.noResults}
+        </p>
+      </div>
+
+      <p class="account-message" data-interest-message hidden></p>
+    </>
+  )}
+</section>
+
+<script>
+  const initUserInterests = () => {
+    document
+      .querySelectorAll('[data-user-interests]:not([data-user-interests-ready])')
+      .forEach((root) => {
+        root.dataset.userInterestsReady = 'true';
+
+        const limit = Number(root.dataset.limit || 15);
+        const labels = {
+          add: root.dataset.addLabel || 'Aggiungi',
+          added: root.dataset.addedLabel || 'Aggiunto',
+          adding: root.dataset.addingLabel || 'Aggiunta…',
+          remove: root.dataset.removeLabel || 'Rimuovi',
+          removing: root.dataset.removingLabel || 'Rimozione…',
+          addError: root.dataset.addError || 'Impossibile aggiungere l’interesse.',
+          removeError: root.dataset.removeError || 'Impossibile rimuovere l’interesse.',
+          limit: root.dataset.limitMessage || 'Hai raggiunto il limite di 15 interessi.',
+          noAvailable: root.dataset.noAvailable || 'Nessun interesse disponibile.',
+          noResults: root.dataset.noResults || 'Nessun risultato.',
+        };
+
+        const message = root.querySelector('[data-interest-message]');
+        const empty = root.querySelector('[data-interest-empty]');
+        const categorySelect = root.querySelector('[data-interest-category]');
+        const filter = root.querySelector('[data-interest-filter]');
+        const interestSelect = root.querySelector('[data-interest-select]');
+        const addButton = root.querySelector('[data-interest-add]');
+        const noResults = root.querySelector('[data-interest-no-results]');
+        const choiceOptions = Array.from(root.querySelectorAll('[data-interest-choice]'));
+
+        const showMessage = (text, type = 'ok') => {
+          if (!message) return;
+          message.textContent = text;
+          message.dataset.type = type;
+          message.hidden = false;
+        };
+
+        const hideMessage = () => {
+          if (!message) return;
+          message.textContent = '';
+          message.hidden = true;
+        };
+
+        const getInterestItems = () =>
+          Array.from(root.querySelectorAll('[data-interest-item]'));
+
+        const getSelectedKeys = () =>
+          new Set(getInterestItems().map((item) => `${item.dataset.type}:${item.dataset.targetId}`));
+
+        const updateGroups = () => {
+          let hasInterests = false;
+
+          root.querySelectorAll('[data-interest-group]').forEach((group) => {
+            const type = group.dataset.interestGroup || '';
+            const list = root.querySelector(`[data-interest-list="${type}"]`);
+            const hasItems = Boolean(list?.querySelector('[data-interest-item]'));
+            group.hidden = !hasItems;
+            hasInterests = hasInterests || hasItems;
+          });
+
+          if (empty) {
+            empty.hidden = hasInterests;
+          }
+        };
+
+        const getSelectedChoice = () => {
+          const option = interestSelect?.selectedOptions?.[0];
+
+          if (!option || !option.hasAttribute('data-interest-choice')) {
+            return null;
+          }
+
+          return option;
+        };
+
+        const updateAddFormState = () => {
+          if (!addButton) return;
+
+          const selectedKeys = getSelectedKeys();
+          const selectedChoice = getSelectedChoice();
+          const reachedLimit = getInterestItems().length >= limit;
+
+          if (reachedLimit) {
+            addButton.disabled = true;
+            addButton.textContent = labels.add;
+            showMessage(labels.limit, 'error');
+            return;
+          }
+
+          if (message?.textContent === labels.limit) {
+            hideMessage();
+          }
+
+          if (!selectedChoice) {
+            addButton.disabled = true;
+            addButton.textContent = labels.add;
+            return;
+          }
+
+          const key = `${selectedChoice.dataset.type}:${selectedChoice.dataset.targetId}`;
+          const isAdded = selectedKeys.has(key);
+
+          addButton.disabled = isAdded;
+          addButton.textContent = isAdded ? labels.added : labels.add;
+        };
+
+        const updateInterestChoices = (resetSelection = false) => {
+          if (!interestSelect || !categorySelect) return;
+
+          if (resetSelection) {
+            interestSelect.value = '';
+          }
+
+          const selectedType = categorySelect.value || 'platform';
+          const query = String(filter?.value || '').trim().toLowerCase();
+          let categoryCount = 0;
+          let visibleCount = 0;
+
+          choiceOptions.forEach((option) => {
+            const matchesType = option.dataset.type === selectedType;
+            const matchesQuery = !query || String(option.dataset.search || '').includes(query);
+            const isVisible = matchesType && matchesQuery;
+
+            option.hidden = !isVisible;
+            option.disabled = !isVisible;
+
+            if (matchesType) {
+              categoryCount += 1;
+            }
+
+            if (isVisible) {
+              visibleCount += 1;
+            }
+          });
+
+          const selectedOption = getSelectedChoice();
+          if (selectedOption?.disabled || selectedOption?.hidden) {
+            interestSelect.value = '';
+          }
+
+          if (noResults) {
+            noResults.textContent = categoryCount === 0 ? labels.noAvailable : labels.noResults;
+            noResults.hidden = visibleCount > 0;
+          }
+
+          updateAddFormState();
+        };
+
+        const createInterestItem = (item) => {
+          const article = document.createElement('article');
+          article.className = 'account-interest-chip';
+          article.dataset.interestItem = '';
+          article.dataset.interestId = item.id || '';
+          article.dataset.type = item.target_type || item.targetType || '';
+          article.dataset.targetId = item.target_id || item.targetId || '';
+
+          const body = document.createElement('span');
+          const name = document.createElement('strong');
+          name.textContent = item.target_name || item.targetName || '';
+          body.append(name);
+
+          const extraValue = item.target_extra || item.targetExtra || '';
+          if (extraValue) {
+            const extra = document.createElement('small');
+            extra.textContent = extraValue;
+            body.append(extra);
+          }
+
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.dataset.interestRemove = '';
+          remove.dataset.interestId = item.id || '';
+          remove.dataset.type = article.dataset.type || '';
+          remove.dataset.targetId = article.dataset.targetId || '';
+          remove.setAttribute('aria-label', `${labels.remove}: ${name.textContent}`);
+          remove.textContent = labels.remove;
+
+          article.append(body, remove);
+          bindRemoveButton(remove);
+
+          return article;
+        };
+
+        const addInterestToGroup = (item) => {
+          const type = item.target_type || item.targetType;
+          const list = root.querySelector(`[data-interest-list="${type}"]`);
+
+          if (!list) return;
+
+          const key = `${type}:${item.target_id || item.targetId}`;
+          const exists = Array.from(list.querySelectorAll('[data-interest-item]'))
+            .some((node) => `${node.dataset.type}:${node.dataset.targetId}` === key);
+
+          if (exists) {
+            return;
+          }
+
+          list.prepend(createInterestItem(item));
+          updateGroups();
+          updateAddFormState();
+        };
+
+        const bindRemoveButton = (button) => {
+          button.addEventListener('click', async () => {
+            hideMessage();
+
+            const item = button.closest('[data-interest-item]');
+            const id = button.dataset.interestId || item?.dataset.interestId || '';
+            const targetType = button.dataset.type || item?.dataset.type || '';
+            const targetId = button.dataset.targetId || item?.dataset.targetId || '';
+            const defaultLabel = button.textContent || labels.remove;
+
+            button.disabled = true;
+            button.textContent = labels.removing;
+
+            try {
+              const params = new URLSearchParams();
+              if (id) {
+                params.set('id', id);
+              } else {
+                params.set('targetType', targetType);
+                params.set('targetId', targetId);
+              }
+
+              const response = await fetch(`/api/account/interests?${params.toString()}`, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: {
+                  Accept: 'application/json'
+                }
+              });
+              const result = await response.json();
+
+              if (!response.ok || !result.ok) {
+                showMessage(result.error || labels.removeError, 'error');
+                button.disabled = false;
+                button.textContent = defaultLabel;
+                return;
+              }
+
+              item?.remove();
+              updateGroups();
+              updateAddFormState();
+            } catch {
+              showMessage(labels.removeError, 'error');
+              button.disabled = false;
+              button.textContent = defaultLabel;
+            }
+          });
+        };
+
+        categorySelect?.addEventListener('change', () => {
+          if (filter) {
+            filter.value = '';
+          }
+
+          updateInterestChoices(true);
+        });
+
+        filter?.addEventListener('input', () => {
+          updateInterestChoices(true);
+        });
+
+        interestSelect?.addEventListener('change', updateAddFormState);
+
+        addButton?.addEventListener('click', async () => {
+          hideMessage();
+
+          if (getInterestItems().length >= limit) {
+            showMessage(labels.limit, 'error');
+            return;
+          }
+
+          const option = getSelectedChoice();
+          const defaultLabel = addButton.textContent || labels.add;
+
+          if (!option) {
+            showMessage(labels.addError, 'error');
+            return;
+          }
+
+          addButton.disabled = true;
+          addButton.textContent = labels.adding;
+
+          try {
+            const payload = {
+              targetType: option.dataset.type || '',
+              targetId: option.dataset.targetId || '',
+              targetSlug: option.dataset.targetSlug || '',
+              targetName: option.dataset.targetName || '',
+              targetExtra: option.dataset.targetExtra || '',
+            };
+
+            const response = await fetch('/api/account/interests', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+              },
+              body: JSON.stringify(payload),
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.ok) {
+              showMessage(result.code === 'limit_reached' ? labels.limit : (result.error || labels.addError), 'error');
+              addButton.disabled = false;
+              addButton.textContent = defaultLabel;
+              return;
+            }
+
+            addInterestToGroup(result.item || payload);
+            if (interestSelect) {
+              interestSelect.value = '';
+            }
+            updateAddFormState();
+          } catch {
+            showMessage(labels.addError, 'error');
+            addButton.disabled = false;
+            addButton.textContent = defaultLabel;
+          }
+        });
+
+        root
+          .querySelectorAll('[data-interest-remove]')
+          .forEach(bindRemoveButton);
+
+        updateGroups();
+        updateInterestChoices(true);
+      });
+  };
+
+  initUserInterests();
+</script>

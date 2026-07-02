@@ -6,12 +6,10 @@ import CommunityLayout from '../../components/community/CommunityLayout.astro';
 import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
 import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
 import CommunityStatList from '../../components/community/CommunityStatList.astro';
-import SavedArticlesList from '../../components/account/SavedArticlesList.astro';
 import { getOwnedReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
-import { getSavedArticlesForUser, type SavedArticleRow } from '../../lib/supabase/saved-articles';
 import { supabaseAdmin } from '../../lib/supabase/server';
 import { touchUserActivity } from '../../lib/supabase/user-activity';
 
@@ -31,8 +29,6 @@ const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username,
 let badges = [] as Awaited<ReturnType<typeof getOwnedReaderBadges>>;
 let currentBio = '';
 let currentBioEn = '';
-let savedArticles: SavedArticleRow[] = [];
-let savedArticlesUnavailable = false;
 const isMissingBioColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
   if (!error) return false;
 
@@ -112,20 +108,17 @@ const getProfileBio = async (userId: string) => {
 let commentActivity = { ...emptyCommunityStats };
 
 if (isLoggedIn && user?.id) {
-  const [, ownedBadges, profileBio, stats, savedArticlesResult] = await Promise.all([
+  const [, ownedBadges, profileBio, stats] = await Promise.all([
     touchUserActivity(user.id, 'account-load'),
     getOwnedReaderBadges(user.id),
     getProfileBio(user.id),
     getCommunityStats(user.id),
-    getSavedArticlesForUser(user.id, 'account.saved-articles'),
   ]);
 
   badges = ownedBadges;
   currentBio = profileBio.bio;
   currentBioEn = profileBio.bioEn;
   commentActivity = stats;
-  savedArticles = savedArticlesResult.articles;
-  savedArticlesUnavailable = savedArticlesResult.unavailable;
 }
 
 const communityStatItems = [
@@ -206,13 +199,17 @@ const communityStatItems = [
         />
 
         <div class="community-content-stack">
-            <SavedArticlesList
-              articles={savedArticles}
-              unavailable={savedArticlesUnavailable}
-              lang="it"
-              kicker="Profilo lettore"
-              title="Articoli salvati"
-            />
+            <section class="account-favorites-card" aria-labelledby="account-favorites-title">
+              <div>
+                <p class="account-kicker">Preferiti</p>
+                <h2 id="account-favorites-title">I tuoi preferiti</h2>
+                <p>
+                  Ritrova gli articoli che hai salvato e gestisci i tuoi interessi retro.
+                </p>
+              </div>
+
+              <a href="/account/favorites/">Apri preferiti</a>
+            </section>
 
             <section class="account-avatar-section" aria-labelledby="account-avatar-title">
               <div class="account-avatar-section__content">

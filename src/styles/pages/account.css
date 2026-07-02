@@ -318,6 +318,70 @@ html[data-theme="light"] .account-social-auth__icon--dark {
   box-shadow: var(--rg-card-shadow);
 }
 
+.account-favorites-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(64,224,255,0.08), transparent 62%),
+    var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.account-favorites-card > div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.account-favorites-card h2 {
+  margin: 0;
+  color: var(--rg-section-title-color);
+  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+}
+
+.account-favorites-card p:not(.account-kicker) {
+  max-width: 620px;
+  margin: 0;
+  color: var(--color-text-soft);
+  line-height: 1.55;
+}
+
+.account-favorites-card > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 42px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 16px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  font-size: 0.88rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    transform var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.account-favorites-card > a:hover,
+.account-favorites-card > a:focus-visible {
+  transform: translateY(-1px);
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+}
+
 .account-saved-articles {
   display: grid;
   gap: 16px;
@@ -464,6 +528,212 @@ html[data-theme="light"] .account-social-auth__icon--dark {
   opacity: 0.6;
   cursor: wait;
   transform: none;
+}
+
+.account-interests {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 22px;
+  background: var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.account-interests__heading,
+.account-interests__chosen,
+.account-interests__chooser {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.account-interests__heading h2,
+.account-interests__chosen h3,
+.account-interests__chooser h3 {
+  margin: 0;
+  color: var(--rg-section-title-color);
+}
+
+.account-interests__heading h2 {
+  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+}
+
+.account-interests__heading p:not(.account-kicker),
+.account-interests__empty,
+.account-interests__no-results {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.92rem;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.account-interests__groups {
+  display: grid;
+  gap: 12px;
+}
+
+.account-interest-group {
+  display: grid;
+  gap: 8px;
+}
+
+.account-interest-group h4 {
+  margin: 0;
+  color: var(--rg-eyebrow-color);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.account-interest-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.account-interest-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 999px;
+  padding: 6px 8px 6px 12px;
+  background: var(--color-glass);
+}
+
+.account-interest-chip > span {
+  display: inline-grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.account-interest-chip strong {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.15;
+}
+
+.account-interest-chip small {
+  color: var(--color-text-soft);
+  font-size: 0.76rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.account-interest-chip button,
+.account-interest-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--color-text-soft);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.account-interest-chip button:hover,
+.account-interest-chip button:focus-visible,
+.account-interest-add:hover,
+.account-interest-add:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.account-interest-chip button:disabled,
+.account-interest-add:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.account-interests__chooser {
+  border-top: 1px solid var(--rg-card-border);
+  padding-top: 16px;
+}
+
+.account-interests__chooser-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.account-interests__chooser-heading p {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.92rem;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.account-interest-form {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.75fr) minmax(170px, 1fr) minmax(220px, 1.35fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(64,224,255,0.06), transparent 62%),
+    var(--color-glass);
+}
+
+.account-interest-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.account-interest-field span {
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.account-interest-field input,
+.account-interest-field select {
+  width: 100%;
+  min-height: 42px;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: var(--rg-card-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.account-interest-field input:focus,
+.account-interest-field select:focus {
+  outline: none;
+  border-color: var(--rg-cta-border);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+
+.account-interest-add {
+  min-height: 42px;
+  padding: 0 16px;
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
 }
 
 .account-public-profile__heading {
@@ -773,6 +1043,15 @@ html[data-theme="light"] .account-message[data-type="error"] {
     grid-template-columns: 1fr;
   }
 
+  .account-favorites-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .account-favorites-card > a {
+    width: 100%;
+  }
+
   .account-editorial-tools__actions {
     grid-template-columns: 1fr;
   }
@@ -789,6 +1068,14 @@ html[data-theme="light"] .account-message[data-type="error"] {
   .account-saved-article__link,
   .account-saved-article__remove {
     flex: 1 1 140px;
+    width: 100%;
+  }
+
+  .account-interest-form {
+    grid-template-columns: 1fr;
+  }
+
+  .account-interest-add {
     width: 100%;
   }
 }
