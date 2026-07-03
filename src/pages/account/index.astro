@@ -220,7 +220,7 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
                 <p class="account-kicker">Community</p>
                 <h2 id="account-community-rank-title">Livello community</h2>
                 <p>
-                  Il livello è calcolato automaticamente dai tuoi punti community, senza classifiche pubbliche.
+                  Il livello cresce con la partecipazione alla community, senza classifiche pubbliche.
                 </p>
               </div>
 
@@ -236,6 +236,9 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
                     <span>Prossimo livello: {communityRank.nextRank.label}</span>
                     <strong>{commentActivity.communityPoints} punti</strong>
                   </div>
+                  <p class="account-community-rank__progress-note">
+                    Progresso: {communityRankProgress}%
+                  </p>
                   <div
                     class="account-community-rank__bar"
                     aria-label={`Progresso verso ${communityRank.nextRank.label}`}
@@ -249,7 +252,7 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
                 </div>
               ) : (
                 <p class="account-community-rank__max">
-                  Hai raggiunto il livello più alto della community.
+                  Hai raggiunto il livello massimo.
                 </p>
               )}
             </section>
