@@ -1,0 +1,1632 @@
+---
+import '../../styles/pages/account.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../components/community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
+import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
+import CommunityStatList from '../../components/community/CommunityStatList.astro';
+import { getActiveReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
+import { getCommunityRank } from '../../lib/community-rank';
+import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
+import { getNewsletterSubscriptionForUser } from '../../lib/supabase/newsletter';
+import { supabaseAdmin } from '../../lib/supabase/server';
+import { touchUserActivity } from '../../lib/supabase/user-activity';
+
+type AccountLang = 'it' | 'en';
+
+const { lang = 'it' } = Astro.props as { lang?: AccountLang };
+const currentLang: AccountLang = lang === 'en' ? 'en' : 'it';
+
+const copy = {
+  it: {
+    pageTitle: 'Profilo lettore | Retro-Gamers.it',
+    pageDescription: 'Gestisci il tuo profilo lettore, il nome visualizzato e il badge community.',
+    fallbackName: 'Utente Retro-Gamers',
+    publicProfile: 'Profilo pubblico',
+    messages: 'Messaggi',
+    memories: 'Le mie memorie',
+    ratings: 'I miei voti',
+    accountData: 'Dati account',
+    role: 'Ruolo',
+    status: 'Stato',
+    badge: 'Badge',
+    notSet: 'Non impostato',
+    communityStats: 'Statistiche community',
+    communityPoints: 'Punti community',
+    publishedComments: 'Commenti pubblicati',
+    pending: 'In attesa',
+    likesReceived: 'Like ricevuti',
+    dislikesReceived: 'Dislike ricevuti',
+    goPublicProfile: 'Vai al profilo pubblico',
+    goPublishedComments: 'Vai ai commenti pubblicati',
+    heroKicker: 'Profilo lettore',
+    heroTitle: 'Area account',
+    heroDescription:
+      'Gestisci il nome con cui compari nei commenti, il profilo pubblico e il badge che racconta meglio il tuo angolo di retro-gaming.',
+    guestDescription:
+      'Accedi per gestire il tuo profilo lettore, scegliere il badge e partecipare alle discussioni sotto gli articoli.',
+    login: 'Accedi',
+    register: 'Registrati',
+    favoritesKicker: 'Preferiti',
+    favoritesTitle: 'I tuoi preferiti',
+    favoritesDescription:
+      'Ritrova gli articoli che hai salvato e gestisci i tuoi interessi retro.',
+    favoritesCta: 'Apri preferiti',
+    newsletterDescription:
+      'Ricevi aggiornamenti su nuovi articoli, recensioni, speciali e iniziative della community.',
+    newsletterActive: 'Sei iscritto alla newsletter.',
+    newsletterPending: 'Iscrizione in attesa di conferma. Controlla la tua email.',
+    newsletterPendingNote: 'La newsletter sarà attiva solo dopo la conferma.',
+    newsletterUnsubscribed:
+      'Hai disattivato la newsletter. Puoi iscriverti di nuovo quando vuoi.',
+    newsletterNone: 'Non sei iscritto alla newsletter.',
+    preferredLanguage: 'Lingua preferita',
+    newsletterConsent: 'Acconsento a ricevere la newsletter e dichiaro di aver letto la',
+    newsletterOperationalNote:
+      'La disiscrizione dalla newsletter non modifica le email operative legate all’account, alla sicurezza o ai commenti.',
+    newsletterSubscribe: 'Iscrivimi',
+    newsletterResubscribe: 'Iscrivimi di nuovo',
+    newsletterUnsubscribe: 'Disiscrivimi',
+    communityKicker: 'Community',
+    communityLevel: 'Livello community',
+    communityLevelDescription:
+      'Il livello cresce con commenti approvati, voti alle recensioni e like ricevuti sui commenti. Ogni profilo parte da 1 punto, senza classifiche pubbliche.',
+    currentLevel: 'Livello attuale',
+    nextLevel: 'Prossimo livello',
+    points: 'punti',
+    progress: 'Progresso',
+    progressAria: 'Progresso verso',
+    maxLevel: 'Hai raggiunto il livello massimo.',
+    avatar: 'Avatar',
+    avatarLoaded:
+      'Avatar attuale caricato. Puoi sostituirlo caricando una nuova immagine.',
+    avatarEmpty:
+      'Carica un’immagine per rendere riconoscibile il tuo profilo nella community.',
+    avatarDropReplace: 'Rilascia l’immagine per sostituire l’avatar',
+    avatarDropUpload: 'Rilascia l’immagine per caricarla',
+    avatarChooseReplace: 'Scegli una nuova immagine per sostituire l’avatar',
+    avatarChooseUpload: 'Trascina qui la tua immagine oppure scegli un file',
+    avatarHelpReplace:
+      'JPG, PNG o WebP. Max 2 MB. L’avatar attuale resterà attivo finché non carichi il nuovo file.',
+    avatarHelpUpload: 'JPG, PNG o WebP. Max 2 MB.',
+    avatarReplace: 'Sostituisci avatar',
+    avatarUpload: 'Carica avatar',
+    avatarRemove: 'Rimuovi avatar',
+    publicProfileTitle: 'Profilo pubblico',
+    publicProfileDescription:
+      'Racconta in poche righe chi sei come lettore, giocatore o appassionato retro.',
+    bioIt: 'Bio in italiano',
+    bioEn: 'Bio in inglese',
+    bioEnFallback:
+      'Bio inglese non impostata. Nella versione inglese verrà usata la bio italiana.',
+    editBio: 'Modifica bio',
+    emptyBioTitle: 'Non hai ancora scritto una bio pubblica.',
+    emptyBioDescription:
+      'Racconta in poche righe chi sei come lettore, giocatore o appassionato retro.',
+    writeBio: 'Scrivi bio',
+    bioItPlaceholder:
+      'Esempio: cresciuto tra Amiga, sale giochi e riviste consumate fino all’ultima pagina.',
+    bioEnPlaceholder: 'Example: raised on Amiga, arcades and worn-out gaming magazines.',
+    bioHelp:
+      'La bio inglese è opzionale. Se lasciata vuota, nella versione inglese del profilo verrà usata la bio italiana.',
+    saveBio: 'Salva bio',
+    cancel: 'Annulla',
+    editorialTools: 'Pannello redazione',
+    editorialToolsDescription:
+      'Gestisci commenti in moderazione, utenti registrati e strumenti community.',
+    moderationComments: 'Moderazione commenti',
+    commentReports: 'Segnalazioni commenti',
+    userManagement: 'Gestione utenti',
+    messageReports: 'Segnalazioni messaggi',
+    readerRatings: 'Voti lettori',
+    settingsKicker: 'Impostazioni',
+    profile: 'Profilo',
+    profileHintAdmin:
+      'Nome e badge sono già visibili nel tuo profilo pubblico. Modificali qui quando vuoi aggiornarli.',
+    profileHintReader:
+      'Nome e badge sono già visibili nel tuo profilo pubblico. Puoi scegliere qui il badge da mostrare.',
+    displayName: 'Nome visualizzato',
+    currentBadge: 'Badge attuale',
+    noMainBadge: 'Non hai ancora scelto un badge principale.',
+    badgeSummaryHelpSelected: 'Questo è il badge mostrato nel tuo profilo e nei commenti.',
+    badgeSummaryHelpEmpty: 'Quando scegli un badge, apparirà nel profilo e nei commenti.',
+    editProfile: 'Modifica profilo',
+    discoverBadges: 'Scopri tutti i badge',
+    displayNameReadonly:
+      'Il nome visualizzato viene scelto alla registrazione. Per modificarlo, contatta la redazione.',
+    readerBadge: 'Badge lettore',
+    noBadgesAvailable: 'Nessun badge disponibile al momento.',
+    noBadgesDescription:
+      'Quando il catalogo badge sarà disponibile, potrai scegliere quale mostrare nel profilo e nei commenti.',
+    chooseBadge: 'Scegli un badge',
+    chooseBadgeHelp: 'Scegli quale badge mostrare nel profilo e nei commenti.',
+    saveProfile: 'Salva profilo',
+    privacyPolicy: 'Privacy Policy',
+  },
+  en: {
+    pageTitle: 'Reader profile | Retro-Gamers.it',
+    pageDescription: 'Manage your reader profile, display name and community badge.',
+    fallbackName: 'Retro-Gamers user',
+    publicProfile: 'Public profile',
+    messages: 'Messages',
+    memories: 'My memories',
+    ratings: 'My ratings',
+    accountData: 'Account data',
+    role: 'Role',
+    status: 'Status',
+    badge: 'Badge',
+    notSet: 'Not set',
+    communityStats: 'Community stats',
+    communityPoints: 'Community points',
+    publishedComments: 'Published comments',
+    pending: 'Pending',
+    likesReceived: 'Likes received',
+    dislikesReceived: 'Dislikes received',
+    goPublicProfile: 'Go to public profile',
+    goPublishedComments: 'Go to published comments',
+    heroKicker: 'Reader profile',
+    heroTitle: 'My account',
+    heroDescription:
+      'Manage your profile, favorites, notifications and community activity.',
+    guestDescription:
+      'Sign in to manage your reader profile, choose your badge and join article discussions.',
+    login: 'Log in',
+    register: 'Register',
+    favoritesKicker: 'Favorites',
+    favoritesTitle: 'Favorites and interests',
+    favoritesDescription:
+      'Find the articles you saved and manage your retro interests.',
+    favoritesCta: 'Go to favorites',
+    newsletterDescription:
+      'Get updates about new articles, reviews, features and community initiatives.',
+    newsletterActive: 'You are subscribed to the newsletter.',
+    newsletterPending: 'Subscription awaiting confirmation. Check your email.',
+    newsletterPendingNote: 'The newsletter will become active only after confirmation.',
+    newsletterUnsubscribed:
+      'You have turned off the newsletter. You can subscribe again whenever you want.',
+    newsletterNone: 'You are not subscribed to the newsletter.',
+    preferredLanguage: 'Preferred language',
+    newsletterConsent: 'I agree to receive the newsletter and confirm that I have read the',
+    newsletterOperationalNote:
+      'Unsubscribing from the newsletter does not affect operational emails related to your account, security or comments.',
+    newsletterSubscribe: 'Subscribe',
+    newsletterResubscribe: 'Subscribe again',
+    newsletterUnsubscribe: 'Unsubscribe',
+    communityKicker: 'Community',
+    communityLevel: 'Community level',
+    communityLevelDescription:
+      'Your level grows with approved comments, review ratings and likes received on comments. Every profile starts with 1 point, with no public rankings.',
+    currentLevel: 'Current level',
+    nextLevel: 'Next level',
+    points: 'points',
+    progress: 'Progress',
+    progressAria: 'Progress toward',
+    maxLevel: 'You have reached the highest level.',
+    avatar: 'Avatar',
+    avatarLoaded:
+      'Current avatar uploaded. You can replace it by uploading a new image.',
+    avatarEmpty:
+      'Upload an image to make your community profile recognizable.',
+    avatarDropReplace: 'Drop the image to replace your avatar',
+    avatarDropUpload: 'Drop the image to upload it',
+    avatarChooseReplace: 'Choose a new image to replace your avatar',
+    avatarChooseUpload: 'Drag your image here or choose a file',
+    avatarHelpReplace:
+      'JPG, PNG or WebP. Max 2 MB. Your current avatar stays active until you upload the new file.',
+    avatarHelpUpload: 'JPG, PNG or WebP. Max 2 MB.',
+    avatarReplace: 'Replace avatar',
+    avatarUpload: 'Upload avatar',
+    avatarRemove: 'Remove avatar',
+    publicProfileTitle: 'Public profile',
+    publicProfileDescription:
+      'Tell the community who you are as a reader, player or retro enthusiast.',
+    bioIt: 'Italian bio',
+    bioEn: 'English bio',
+    bioEnFallback:
+      'English bio not set. The English profile will use the Italian bio.',
+    editBio: 'Edit bio',
+    emptyBioTitle: 'You have not written a public bio yet.',
+    emptyBioDescription:
+      'Tell the community who you are as a reader, player or retro enthusiast.',
+    writeBio: 'Write bio',
+    bioItPlaceholder:
+      'Example: grew up with Amiga, arcades and worn-out gaming magazines.',
+    bioEnPlaceholder: 'Example: raised on Amiga, arcades and worn-out gaming magazines.',
+    bioHelp:
+      'The English bio is optional. If left empty, the Italian bio will be used on the English profile.',
+    saveBio: 'Save bio',
+    cancel: 'Cancel',
+    editorialTools: 'Editorial tools',
+    editorialToolsDescription:
+      'Manage comment moderation, registered users and community tools.',
+    moderationComments: 'Comment moderation',
+    commentReports: 'Comment reports',
+    userManagement: 'User management',
+    messageReports: 'Message reports',
+    readerRatings: 'Reader ratings',
+    settingsKicker: 'Settings',
+    profile: 'Profile',
+    profileHintAdmin:
+      'Name and badge are already visible on your public profile. Update them here whenever you want.',
+    profileHintReader:
+      'Name and badge are already visible on your public profile. You can choose which badge to show here.',
+    displayName: 'Display name',
+    currentBadge: 'Current badge',
+    noMainBadge: 'You have not chosen a main badge yet.',
+    badgeSummaryHelpSelected: 'This badge appears on your profile and comments.',
+    badgeSummaryHelpEmpty: 'When you choose a badge, it will appear on your profile and comments.',
+    editProfile: 'Edit profile',
+    discoverBadges: 'Explore all badges',
+    displayNameReadonly:
+      'The display name is chosen during registration. To change it, contact the editorial team.',
+    readerBadge: 'Reader badge',
+    noBadgesAvailable: 'No badges available right now.',
+    noBadgesDescription:
+      'When the badge catalog is available, you will be able to choose which one to show on your profile and comments.',
+    chooseBadge: 'Choose a badge',
+    chooseBadgeHelp: 'Choose which badge to show on your profile and comments.',
+    saveProfile: 'Save profile',
+    privacyPolicy: 'Privacy Policy',
+  },
+} as const;
+
+const ui = copy[currentLang];
+const title = ui.pageTitle;
+const description = ui.pageDescription;
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isLoggedIn = Boolean(!session.error && session.user && session.profile);
+const profile = session.profile;
+const user = session.user;
+const currentBadge = profile?.user_badges;
+const currentBadgeImageSrc = getReaderBadgeImageSrcForBadge(currentBadge || { key: profile?.badge_key || '' });
+const avatarUrl = profile?.avatar_url || '';
+const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
+const canEditDisplayName = profile?.role === 'admin';
+const accountDisplayName =
+  profile?.display_name || profile?.username || user?.email || ui.fallbackName;
+const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, currentLang) : '';
+const loginHref = currentLang === 'en' ? '/en/account/login/' : '/account/login/';
+const registerHref = currentLang === 'en' ? '/en/account/register/' : '/account/register/';
+const ratingsHref = currentLang === 'en' ? '/en/account/ratings/' : '/account/ratings/';
+const privacyHref = currentLang === 'en' ? '/en/privacy-policy/' : '/privacy-policy/';
+const favoritesHref = '/account/favorites/';
+const messagesHref = '/account/messages/';
+const memoriesHref = '/account/memories/';
+const badgesHref = '/badges/';
+const getBadgeLabel = (
+  badge: { label_it?: string | null; label_en?: string | null; key?: string | null } | null | undefined
+) => {
+  if (!badge) return '';
+  return currentLang === 'en'
+    ? badge.label_en || badge.label_it || badge.key || ''
+    : badge.label_it || badge.label_en || badge.key || '';
+};
+let badges = [] as Awaited<ReturnType<typeof getActiveReaderBadges>>;
+let currentBio = '';
+let currentBioEn = '';
+let newsletterStatus: 'none' | 'pending' | 'active' | 'unsubscribed' = 'none';
+let newsletterLanguage: 'it' | 'en' = 'it';
+const isMissingBioColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    message.includes('bio') &&
+    !message.includes('bio_en') &&
+    (
+      error.code === '42703' ||
+      error.code === 'PGRST204' ||
+      message.includes('column') ||
+      message.includes('schema cache')
+    )
+  );
+};
+
+const isMissingBioEnColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    message.includes('bio_en') &&
+    (
+      error.code === '42703' ||
+      error.code === 'PGRST204' ||
+      message.includes('column') ||
+      message.includes('schema cache')
+    )
+  );
+};
+
+const getProfileBio = async (userId: string) => {
+  const { data: profileBio, error: profileBioError } = await supabaseAdmin
+    .from('profiles')
+    .select('bio, bio_en')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!profileBioError) {
+    return {
+      bio: profileBio?.bio || '',
+      bioEn: profileBio?.bio_en || '',
+    };
+  }
+
+  if (isMissingBioEnColumnError(profileBioError)) {
+    const { data: fallbackProfileBio, error: fallbackProfileBioError } = await supabaseAdmin
+      .from('profiles')
+      .select('bio')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!fallbackProfileBioError) {
+      return {
+        bio: fallbackProfileBio?.bio || '',
+        bioEn: '',
+      };
+    }
+  }
+
+  if (!isMissingBioColumnError(profileBioError) && !isMissingBioEnColumnError(profileBioError)) {
+    console.error('Profile bio query failed:', {
+      code: profileBioError.code,
+      message: profileBioError.message,
+      hint: profileBioError.hint,
+    });
+  }
+
+  return {
+    bio: '',
+    bioEn: '',
+  };
+};
+
+let commentActivity = { ...emptyCommunityStats };
+
+if (isLoggedIn && user?.id) {
+  const [, activeBadges, profileBio, stats, newsletter] = await Promise.all([
+    touchUserActivity(user.id, 'account-load'),
+    getActiveReaderBadges({ fallback: false }),
+    getProfileBio(user.id),
+    getCommunityStats(user.id),
+    getNewsletterSubscriptionForUser(user.id, user.email),
+  ]);
+
+  badges = activeBadges;
+  currentBio = profileBio.bio;
+  currentBioEn = profileBio.bioEn;
+  commentActivity = stats;
+  newsletterStatus = newsletter.status;
+  newsletterLanguage = newsletter.language;
+}
+
+const communityStatItems = [
+  {
+    label: ui.communityPoints,
+    value: commentActivity.communityPoints,
+    href: publicProfileHref || undefined,
+    ariaLabel: ui.goPublicProfile,
+  },
+  {
+    label: ui.publishedComments,
+    value: commentActivity.approved,
+    href: publicProfileHref ? `${publicProfileHref}#latest-comments-title` : undefined,
+    ariaLabel: ui.goPublishedComments,
+  },
+  { label: ui.pending, value: commentActivity.pending },
+  { label: ui.likesReceived, value: commentActivity.likesReceived },
+  { label: ui.dislikesReceived, value: commentActivity.dislikesReceived },
+];
+const communityRank = getCommunityRank(commentActivity.communityPoints);
+const communityRankProgress = Math.round(communityRank.progressToNext);
+const newsletterLanguageLabel = newsletterLanguage === 'en' ? 'English' : 'Italiano';
+const hasPublicBio = currentBio.trim().length > 0;
+const hasPublicBioEn = currentBioEn.trim().length > 0;
+const profileDisplayName = profile?.display_name || profile?.username || '';
+const currentBadgeFromCatalog = badges.find((badge) => badge.key === profile?.badge_key);
+const currentProfileBadge = currentBadgeFromCatalog || currentBadge || null;
+const currentProfileBadgeLabel =
+  getBadgeLabel(currentProfileBadge) || profile?.badge_key || '';
+const currentProfileBadgeImageSrc = getReaderBadgeImageSrcForBadge(
+  currentProfileBadge || { key: profile?.badge_key || '' }
+);
+const editableBadgeKey = badges.some((badge) => badge.key === profile?.badge_key)
+  ? profile?.badge_key || ''
+  : badges.length === 1
+    ? badges[0].key
+    : '';
+const editableBadge = badges.find((badge) => badge.key === editableBadgeKey) || null;
+const editableBadgeLabel = getBadgeLabel(editableBadge);
+const editableBadgeImageSrc = getReaderBadgeImageSrcForBadge(editableBadge);
+const editableBadgePreviewImageSrc = editableBadgeImageSrc || getReaderBadgeImageSrcForBadge(badges[0]);
+const profileSummaryBadgeImageSrc = currentProfileBadgeImageSrc || editableBadgePreviewImageSrc;
+const isNewsletterActive = newsletterStatus === 'active';
+const isNewsletterPending = newsletterStatus === 'pending';
+const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus === 'unsubscribed';
+const communityRankDescription = currentLang === 'en'
+  ? communityRank.descriptionEn
+  : communityRank.descriptionIt;
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/account/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/account/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/account/' },
+];
+const clientCopy = currentLang === 'en'
+  ? {
+      lang: 'en',
+      notSet: ui.notSet,
+      badgeSummaryHelpSelected: ui.badgeSummaryHelpSelected,
+      badgeSummaryHelpEmpty: ui.badgeSummaryHelpEmpty,
+      newsletterConsentRequired: 'To subscribe, you need to accept the privacy notice.',
+      newsletterUpdateFailed: 'Could not update the newsletter.',
+      newsletterConfirmEmail: 'Check your email to confirm the subscription.',
+      newsletterDisabled: 'Newsletter turned off.',
+      fileSelected: 'Selected file',
+      invalidFile: 'Invalid file. Use JPG, PNG or WebP.',
+      fileTooLarge: 'The file is too large. Maximum size: 2 MB.',
+      uploadFailed: 'Upload failed.',
+      avatarUpdated: 'Avatar updated.',
+      connectionError: 'Connection error. Please try again.',
+      removeFailed: 'Removal failed.',
+      avatarRemoved: 'Avatar removed.',
+      profileUpdateFailed: 'Update failed.',
+      profileUpdated: 'Profile updated.',
+      bioTooLong: 'The bio cannot exceed 500 characters.',
+      bioEnTooLong: 'The English bio cannot exceed 500 characters.',
+      bioUpdated: 'Bio updated.',
+    }
+  : {
+      lang: 'it',
+      notSet: ui.notSet,
+      badgeSummaryHelpSelected: ui.badgeSummaryHelpSelected,
+      badgeSummaryHelpEmpty: ui.badgeSummaryHelpEmpty,
+      newsletterConsentRequired: 'Per iscriverti devi accettare l’informativa privacy.',
+      newsletterUpdateFailed: 'Impossibile aggiornare la newsletter.',
+      newsletterConfirmEmail: 'Controlla la tua email per confermare l’iscrizione.',
+      newsletterDisabled: 'Newsletter disattivata.',
+      fileSelected: 'File selezionato',
+      invalidFile: 'File non valido. Usa JPG, PNG o WebP.',
+      fileTooLarge: 'Il file è troppo grande. Dimensione massima: 2 MB.',
+      uploadFailed: 'Upload non riuscito.',
+      avatarUpdated: 'Avatar aggiornato.',
+      connectionError: 'Errore di connessione. Riprova.',
+      removeFailed: 'Rimozione non riuscita.',
+      avatarRemoved: 'Avatar rimosso.',
+      profileUpdateFailed: 'Aggiornamento non riuscito.',
+      profileUpdated: 'Profilo aggiornato.',
+      bioTooLong: 'La bio non può superare 500 caratteri.',
+      bioEnTooLong: 'La bio inglese non può superare 500 caratteri.',
+      bioUpdated: 'Bio aggiornata.',
+    };
+
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  lang={currentLang}
+  languageSwitch={{ url: currentLang === 'en' ? '/account/' : '/en/account/' }}
+  alternateLanguages={alternateLanguages}
+>
+  <CommunityLayout class="account-community-page" sidebar={isLoggedIn}>
+    <Fragment slot="sidebar">
+      {isLoggedIn && (
+        <>
+          <CommunitySidebarProfile
+            name={accountDisplayName}
+            username={profile?.username}
+            email={user?.email}
+            avatarUrl={avatarUrl}
+            label={ui.communityKicker}
+          >
+            {publicProfileHref && <a href={publicProfileHref}>{ui.publicProfile}</a>}
+            <a href={messagesHref}>{ui.messages}</a>
+            <a href={memoriesHref}>{ui.memories}</a>
+            <a href={ratingsHref}>{ui.ratings}</a>
+          </CommunitySidebarProfile>
+
+          <CommunitySidebarSection title={ui.accountData}>
+            <dl class="community-detail-list" id="memories">
+              <div>
+                <dt>Email</dt>
+                <dd>{user?.email}</dd>
+              </div>
+
+              <div>
+                <dt>Username</dt>
+                <dd>{profile?.username}</dd>
+              </div>
+
+              <div>
+                <dt>{ui.role}</dt>
+                <dd>{profile?.role || 'reader'}</dd>
+              </div>
+
+              <div>
+                <dt>{ui.status}</dt>
+                <dd>{profile?.status || 'active'}</dd>
+              </div>
+
+              <div>
+                <dt>{ui.badge}</dt>
+                <dd>
+                  {currentBadgeImageSrc ? (
+                    <span class="account-reader-badge">
+                      <img src={currentBadgeImageSrc} alt="" loading="lazy" decoding="async" />
+                      <span>{getBadgeLabel(currentBadge) || profile?.badge_key}</span>
+                    </span>
+                  ) : (
+                    getBadgeLabel(currentBadge) || profile?.badge_key || ui.notSet
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </CommunitySidebarSection>
+
+          <CommunityStatList title={ui.communityStats} items={communityStatItems} />
+        </>
+      )}
+    </Fragment>
+
+    {isLoggedIn ? (
+      <>
+        <CommunityHero
+          kicker={ui.heroKicker}
+          title={ui.heroTitle}
+          description={ui.heroDescription}
+        />
+
+        <div class="community-content-stack">
+            <section class="account-favorites-card" aria-labelledby="account-favorites-title">
+              <div>
+                <p class="account-kicker">{ui.favoritesKicker}</p>
+                <h2 id="account-favorites-title">{ui.favoritesTitle}</h2>
+                <p>
+                  {ui.favoritesDescription}
+                </p>
+              </div>
+
+              <a href={favoritesHref}>{ui.favoritesCta}</a>
+            </section>
+
+            <section
+              class="account-newsletter-card"
+              aria-labelledby="account-newsletter-title"
+              data-account-newsletter
+              data-status={newsletterStatus}
+            >
+              <div class="account-newsletter-card__heading">
+                <p class="account-kicker">Newsletter</p>
+                <h2 id="account-newsletter-title">Newsletter</h2>
+                <p>
+                  {ui.newsletterDescription}
+                </p>
+              </div>
+
+              {isNewsletterActive && (
+                <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                  <p class="account-newsletter-status">{ui.newsletterActive}</p>
+
+                  <p class="account-newsletter-language-summary">
+                    <span>{ui.preferredLanguage}:</span>
+                    <strong>{newsletterLanguageLabel}</strong>
+                  </p>
+
+                  <p class="account-field-help">
+                    {ui.newsletterOperationalNote}
+                  </p>
+
+                  <p class="account-message" data-account-newsletter-message hidden></p>
+
+                  <div class="account-actions">
+                    <button type="button" data-account-newsletter-unsubscribe>
+                      {ui.newsletterUnsubscribe}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {isNewsletterPending && (
+                <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                  <p class="account-newsletter-status">
+                    {ui.newsletterPending}
+                  </p>
+
+                  <p class="account-newsletter-language-summary">
+                    <span>{ui.preferredLanguage}:</span>
+                    <strong>{newsletterLanguageLabel}</strong>
+                  </p>
+
+                  <p class="account-field-help">
+                    {ui.newsletterPendingNote}
+                  </p>
+
+                  <p class="account-field-help">
+                    {ui.newsletterOperationalNote}
+                  </p>
+
+                  <p class="account-message" data-account-newsletter-message hidden></p>
+
+                  <div class="account-actions">
+                    <button type="button" data-account-newsletter-unsubscribe>
+                      {ui.newsletterUnsubscribe}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {isNewsletterSubscribable && (
+                <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                  <p class="account-newsletter-status">
+                    {newsletterStatus === 'unsubscribed'
+                      ? ui.newsletterUnsubscribed
+                      : ui.newsletterNone}
+                  </p>
+
+                  <label>
+                    <span>{ui.preferredLanguage}</span>
+                    <select
+                      name="language"
+                      data-account-newsletter-language
+                    >
+                      <option value="it" selected={newsletterLanguage !== 'en'}>Italiano</option>
+                      <option value="en" selected={newsletterLanguage === 'en'}>English</option>
+                    </select>
+                  </label>
+
+                  <label class="account-newsletter-consent" data-account-newsletter-consent>
+                    <input type="checkbox" name="consent" />
+                    <span>
+                      {ui.newsletterConsent}
+                      {' '}
+                      <a href={privacyHref}>{ui.privacyPolicy}</a>.
+                    </span>
+                  </label>
+
+                  <p class="account-message" data-account-newsletter-message hidden></p>
+
+                  <div class="account-actions">
+                    <button type="button" data-account-newsletter-subscribe>
+                      {newsletterStatus === 'unsubscribed' ? ui.newsletterResubscribe : ui.newsletterSubscribe}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </section>
+
+            <section class="account-community-rank" aria-labelledby="account-community-rank-title">
+              <div>
+                <p class="account-kicker">{ui.communityKicker}</p>
+                <h2 id="account-community-rank-title">{ui.communityLevel}</h2>
+                <p>
+                  {ui.communityLevelDescription}
+                </p>
+              </div>
+
+              <div class="account-community-rank__summary">
+                <span>{ui.currentLevel}</span>
+                <strong>{communityRank.label}</strong>
+                <p>{communityRankDescription}</p>
+              </div>
+
+              {communityRank.nextRank ? (
+                <div class="account-community-rank__progress">
+                  <div>
+                    <span>{ui.nextLevel}: {communityRank.nextRank.label}</span>
+                    <strong>{commentActivity.communityPoints} {ui.points}</strong>
+                  </div>
+                  <p class="account-community-rank__progress-note">
+                    {ui.progress}: {communityRankProgress}%
+                  </p>
+                  <div
+                    class="account-community-rank__bar"
+                    aria-label={`${ui.progressAria} ${communityRank.nextRank.label}`}
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow={communityRankProgress}
+                    role="progressbar"
+                  >
+                    <span style={`width: ${communityRankProgress}%`}></span>
+                  </div>
+                </div>
+              ) : (
+                <p class="account-community-rank__max">
+                  {ui.maxLevel}
+                </p>
+              )}
+            </section>
+
+            <section class="account-avatar-section" aria-labelledby="account-avatar-title">
+              <div class="account-avatar-section__content">
+                <p class="account-kicker">{ui.communityKicker}</p>
+                <h2 id="account-avatar-title">{ui.avatar}</h2>
+                <p>
+                  {avatarUrl
+                    ? ui.avatarLoaded
+                    : ui.avatarEmpty}
+                </p>
+
+                <form class="account-form account-avatar-form" data-account-avatar-form>
+                  <label
+                    class="account-avatar-dropzone"
+                    data-account-avatar-dropzone
+                    data-replace-label={avatarUrl ? ui.avatarDropReplace : ui.avatarDropUpload}
+                  >
+                    <input
+                      class="account-avatar-input"
+                      type="file"
+                      name="avatar"
+                      accept="image/jpeg,image/png,image/webp"
+                      data-account-avatar-input
+                    />
+                    <span class="account-avatar-dropzone__label" data-account-avatar-dropzone-label>
+                      {avatarUrl
+                        ? ui.avatarChooseReplace
+                        : ui.avatarChooseUpload}
+                    </span>
+                    <span class="account-avatar-dropzone__help">
+                      {avatarUrl
+                        ? ui.avatarHelpReplace
+                        : ui.avatarHelpUpload}
+                    </span>
+                    <span
+                      class="account-avatar-dropzone__filename"
+                      data-account-avatar-filename
+                      hidden
+                    ></span>
+                  </label>
+
+                  <p class="account-message" data-account-avatar-message hidden></p>
+
+                  <div class="account-actions">
+                    <button type="submit">{avatarUrl ? ui.avatarReplace : ui.avatarUpload}</button>
+                    <button
+                      type="button"
+                      data-account-avatar-remove
+                      hidden={!avatarUrl}
+                    >
+                      {ui.avatarRemove}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </section>
+
+            <section class="account-public-profile" aria-labelledby="account-public-profile-title">
+              <div class="account-public-profile__heading">
+                <p class="account-kicker">{ui.communityKicker}</p>
+                <h2 id="account-public-profile-title">{ui.publicProfileTitle}</h2>
+                <p>
+                  {ui.publicProfileDescription}
+                </p>
+              </div>
+
+              <div
+                class="account-public-profile__summary"
+                data-account-bio-summary
+                hidden={!hasPublicBio}
+              >
+                <div class="account-profile-summary">
+                  <span>{ui.bioIt}</span>
+                  <p data-account-bio-summary-it>{currentBio}</p>
+                </div>
+
+                <div
+                  class="account-profile-summary"
+                  data-account-bio-summary-en
+                  hidden={!hasPublicBioEn}
+                >
+                  <span>{ui.bioEn}</span>
+                  <p data-account-bio-summary-en-text>{currentBioEn}</p>
+                </div>
+
+                <p
+                  class="account-field-help"
+                  data-account-bio-en-fallback
+                  hidden={hasPublicBioEn}
+                >
+                  {ui.bioEnFallback}
+                </p>
+
+                <div class="account-actions">
+                  <button type="button" data-account-bio-edit>{ui.editBio}</button>
+                </div>
+              </div>
+
+              <div
+                class="account-public-profile__empty"
+                data-account-bio-empty
+                hidden={hasPublicBio}
+              >
+                <p>{ui.emptyBioTitle}</p>
+                <p>
+                  {ui.emptyBioDescription}
+                </p>
+
+                <div class="account-actions">
+                  <button type="button" data-account-bio-edit>{ui.writeBio}</button>
+                </div>
+              </div>
+
+              <form class="account-form account-form--bio" data-account-bio-form hidden>
+                <label>
+                  <span>{ui.bioIt}</span>
+                  <textarea
+                    name="bio"
+                    maxlength="500"
+                    rows="5"
+                    placeholder={ui.bioItPlaceholder}
+                  >{currentBio}</textarea>
+                </label>
+
+                <small class="account-character-count" data-account-bio-counter>
+                  {currentBio.length}/500
+                </small>
+
+                <label>
+                  <span>{ui.bioEn}</span>
+                  <textarea
+                    name="bioEn"
+                    maxlength="500"
+                    rows="5"
+                    placeholder={ui.bioEnPlaceholder}
+                  >{currentBioEn}</textarea>
+                </label>
+
+                <small class="account-character-count" data-account-bio-en-counter>
+                  {currentBioEn.length}/500
+                </small>
+
+                <p class="account-field-help">
+                  {ui.bioHelp}
+                </p>
+
+                <div class="account-actions">
+                  <button type="submit">{ui.saveBio}</button>
+                  <button type="button" data-account-bio-cancel>{ui.cancel}</button>
+                </div>
+              </form>
+
+              <p class="account-message" data-account-bio-message hidden></p>
+            </section>
+
+            {isStaff && (
+              <section class="account-editorial-tools" aria-labelledby="account-editorial-tools-title">
+                <div>
+                  <h2 id="account-editorial-tools-title">{ui.editorialTools}</h2>
+                  <p>{ui.editorialToolsDescription}</p>
+                </div>
+
+                <div class="account-editorial-tools__actions">
+                  <a href="/admin/comments/">{ui.moderationComments}</a>
+                  <a href="/admin/comment-reports/">{ui.commentReports}</a>
+                  <a href="/admin/users/">{ui.userManagement}</a>
+                  <a href="/admin/private-message-reports/">{ui.messageReports}</a>
+                  <a href="/admin/ratings/">{ui.readerRatings}</a>
+                </div>
+              </section>
+            )}
+
+            <section class="account-settings-section" aria-labelledby="account-settings-title">
+              <div class="account-settings-section__heading">
+                <p class="account-kicker">{ui.settingsKicker}</p>
+                <h2 id="account-settings-title">{ui.profile}</h2>
+                <p class="account-settings-section__hint">
+                  {canEditDisplayName
+                    ? ui.profileHintAdmin
+                    : ui.profileHintReader}
+                </p>
+              </div>
+
+              <div class="account-profile-overview" data-account-profile-summary>
+                <div class="account-profile-summary">
+                  <span>{ui.displayName}</span>
+                  <p data-account-profile-summary-name>{profileDisplayName || ui.notSet}</p>
+                </div>
+
+                <div class="account-profile-summary">
+                  <span>{ui.currentBadge}</span>
+
+                  <div
+                    class="account-badge-preview"
+                    data-account-profile-summary-badge
+                    hidden={!currentProfileBadgeLabel}
+                  >
+                    {profileSummaryBadgeImageSrc && (
+                      <img
+                        src={profileSummaryBadgeImageSrc}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        hidden={!currentProfileBadgeImageSrc}
+                      />
+                    )}
+                    <strong data-account-profile-summary-badge-label>
+                      {currentProfileBadgeLabel}
+                    </strong>
+                  </div>
+
+                  <p
+                    class="account-badge-preview__empty"
+                    data-account-profile-summary-badge-empty
+                    hidden={Boolean(currentProfileBadgeLabel)}
+                  >
+                    {ui.noMainBadge}
+                  </p>
+
+                  <p
+                    class="account-field-help"
+                    data-account-profile-summary-badge-help
+                  >
+                    {currentProfileBadgeLabel
+                      ? ui.badgeSummaryHelpSelected
+                      : ui.badgeSummaryHelpEmpty}
+                  </p>
+                </div>
+
+                <div class="account-actions">
+                  <button type="button" data-account-profile-edit>{ui.editProfile}</button>
+                  <a href={badgesHref}>{ui.discoverBadges}</a>
+                </div>
+              </div>
+
+              <form class="account-form" data-account-profile-form hidden>
+                {canEditDisplayName ? (
+                  <label>
+                    <span>{ui.displayName}</span>
+                    <input
+                      type="text"
+                      name="displayName"
+                      required
+                      minlength="2"
+                      maxlength="40"
+                      value={profile?.display_name || profile?.username || ''}
+                    />
+                  </label>
+                ) : (
+                  <div class="account-profile-readonly">
+                    <span>{ui.displayName}</span>
+                    <p>{profileDisplayName || ui.notSet}</p>
+                    <small class="account-field-help">
+                      {ui.displayNameReadonly}
+                    </small>
+                  </div>
+                )}
+
+                {badges.length === 0 && (
+                  <div class="account-badge-empty">
+                    <span>{ui.readerBadge}</span>
+                    <p>{ui.noBadgesAvailable}</p>
+                    <p>{ui.noBadgesDescription}</p>
+                    <a class="account-field-link" href={badgesHref}>{ui.discoverBadges}</a>
+                  </div>
+                )}
+
+                {badges.length > 0 && (
+                  <label>
+                    <span>{ui.readerBadge}</span>
+                    <select name="badgeKey" required data-account-badge-select>
+                      <option value="">{ui.chooseBadge}</option>
+                      {badges.map((badge) => (
+                        <option
+                          value={badge.key}
+                          selected={badge.key === editableBadgeKey}
+                          data-badge-label={getBadgeLabel(badge)}
+                          data-badge-image={getReaderBadgeImageSrcForBadge(badge)}
+                        >
+                          {getBadgeLabel(badge)}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div
+                      class="account-badge-preview"
+                      data-account-badge-preview
+                      hidden={!editableBadgeLabel}
+                    >
+                      <img
+                        src={editableBadgePreviewImageSrc}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        hidden={!editableBadgeImageSrc}
+                        data-account-badge-preview-image
+                      />
+                      <strong data-account-badge-preview-label>{editableBadgeLabel}</strong>
+                    </div>
+
+                    <small class="account-field-help">
+                      {ui.chooseBadgeHelp}
+                    </small>
+
+                    <a class="account-field-link" href={badgesHref}>{ui.discoverBadges}</a>
+                  </label>
+                )}
+
+                <div class="account-actions">
+                  <button type="submit">{ui.saveProfile}</button>
+                  <button type="button" data-account-profile-cancel>{ui.cancel}</button>
+                </div>
+              </form>
+
+              <p class="account-message" data-account-message hidden></p>
+            </section>
+        </div>
+      </>
+    ) : (
+      <>
+        <CommunityHero
+          kicker={ui.heroKicker}
+          title={ui.heroTitle}
+          description={ui.guestDescription}
+        />
+
+        <section class="community-card">
+          <div class="account-actions account-actions--standalone">
+            <a href={loginHref}>{ui.login}</a>
+            <a href={registerHref}>{ui.register}</a>
+          </div>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
+
+  <script define:vars={{ clientCopy }}>
+    const form = document.querySelector('[data-account-profile-form]');
+    const profileMessage = document.querySelector('[data-account-message]');
+    const profileSummary = document.querySelector('[data-account-profile-summary]');
+    const profileEditButton = document.querySelector('[data-account-profile-edit]');
+    const profileCancelButton = document.querySelector('[data-account-profile-cancel]');
+    const profileDisplayNameInput = document.querySelector('[data-account-profile-form] input[name="displayName"]');
+    const profileBadgeInput = document.querySelector('[data-account-profile-form] [name="badgeKey"]');
+    const profileBadgeSelect = document.querySelector('[data-account-badge-select]');
+    const profileSummaryName = document.querySelector('[data-account-profile-summary-name]');
+    const profileSummaryBadge = document.querySelector('[data-account-profile-summary-badge]');
+    const profileSummaryBadgeLabel = document.querySelector('[data-account-profile-summary-badge-label]');
+    const profileSummaryBadgeEmpty = document.querySelector('[data-account-profile-summary-badge-empty]');
+    const profileSummaryBadgeHelp = document.querySelector('[data-account-profile-summary-badge-help]');
+    const badgePreview = document.querySelector('[data-account-badge-preview]');
+    const badgePreviewImage = document.querySelector('[data-account-badge-preview-image]');
+    const badgePreviewLabel = document.querySelector('[data-account-badge-preview-label]');
+    const bioForm = document.querySelector('[data-account-bio-form]');
+    const bioMessage = document.querySelector('[data-account-bio-message]');
+    const bioTextarea = document.querySelector('[data-account-bio-form] textarea[name="bio"]');
+    const bioEnTextarea = document.querySelector('[data-account-bio-form] textarea[name="bioEn"]');
+    const bioCounter = document.querySelector('[data-account-bio-counter]');
+    const bioEnCounter = document.querySelector('[data-account-bio-en-counter]');
+    const bioSummary = document.querySelector('[data-account-bio-summary]');
+    const bioEmpty = document.querySelector('[data-account-bio-empty]');
+    const bioSummaryIt = document.querySelector('[data-account-bio-summary-it]');
+    const bioSummaryEn = document.querySelector('[data-account-bio-summary-en]');
+    const bioSummaryEnText = document.querySelector('[data-account-bio-summary-en-text]');
+    const bioSummaryEnFallback = document.querySelector('[data-account-bio-en-fallback]');
+    const bioEditButtons = document.querySelectorAll('[data-account-bio-edit]');
+    const bioCancelButton = document.querySelector('[data-account-bio-cancel]');
+    const avatarForm = document.querySelector('[data-account-avatar-form]');
+    const avatarInput = document.querySelector('[data-account-avatar-input]');
+    const avatarMessage = document.querySelector('[data-account-avatar-message]');
+    const avatarRemoveButton = document.querySelector('[data-account-avatar-remove]');
+    const avatarDropzone = document.querySelector('[data-account-avatar-dropzone]');
+    const avatarDropzoneLabel = document.querySelector('[data-account-avatar-dropzone-label]');
+    const avatarFilename = document.querySelector('[data-account-avatar-filename]');
+    const newsletterConsent = document.querySelector('[data-account-newsletter-consent]');
+    const newsletterLanguage = document.querySelector('[data-account-newsletter-language]');
+    const newsletterSubscribeButton = document.querySelector('[data-account-newsletter-subscribe]');
+    const newsletterUnsubscribeButton = document.querySelector('[data-account-newsletter-unsubscribe]');
+    const newsletterMessage = document.querySelector('[data-account-newsletter-message]');
+    const avatarDefaultDropzoneText = avatarDropzoneLabel?.textContent?.trim() || '';
+    const avatarReplaceDropzoneText = avatarDropzone?.dataset.replaceLabel || '';
+    let selectedAvatarFile = null;
+    let savedDisplayName = profileDisplayNameInput?.value || '';
+    let savedBadgeKey = profileBadgeInput?.value || '';
+    let savedBadgeLabel = profileSummaryBadgeLabel?.textContent?.trim() || '';
+    let savedBadgeImage = profileSummaryBadge?.querySelector('img')?.getAttribute('src') || '';
+    let savedBio = bioTextarea?.value || '';
+    let savedBioEn = bioEnTextarea?.value || '';
+
+    const showMessage = (target, text, type = 'ok') => {
+      if (!target) return;
+      target.textContent = text;
+      target.hidden = false;
+      target.dataset.type = type;
+    };
+
+    const localizedMessage = (apiMessage, fallback) => {
+      if (clientCopy.lang === 'en') return fallback;
+      return apiMessage || fallback;
+    };
+
+    const setNewsletterLoading = (isLoading) => {
+      if (newsletterSubscribeButton) {
+        newsletterSubscribeButton.disabled = isLoading;
+      }
+
+      if (newsletterUnsubscribeButton) {
+        newsletterUnsubscribeButton.disabled = isLoading;
+      }
+    };
+
+    const reloadNewsletterState = () => {
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 700);
+    };
+
+    const getSelectedBadgeData = () => {
+      if (profileBadgeSelect) {
+        const selectedOption = profileBadgeSelect.selectedOptions?.[0];
+        const key = profileBadgeSelect.value || '';
+
+        if (!key || !selectedOption) {
+          return { key: '', label: '', image: '' };
+        }
+
+        return {
+          key,
+          label: selectedOption.dataset.badgeLabel || selectedOption.textContent?.trim() || key,
+          image: selectedOption.dataset.badgeImage || '',
+        };
+      }
+
+      if (profileBadgeInput?.value) {
+        return {
+          key: profileBadgeInput.value,
+          label: profileBadgeInput.dataset.badgeLabel || savedBadgeLabel,
+          image: profileBadgeInput.dataset.badgeImage || savedBadgeImage,
+        };
+      }
+
+      return { key: '', label: '', image: '' };
+    };
+
+    const updateBadgePreview = () => {
+      const badge = getSelectedBadgeData();
+
+      if (badgePreview) badgePreview.hidden = !badge.label;
+      if (badgePreviewLabel) badgePreviewLabel.textContent = badge.label;
+
+      if (badgePreviewImage) {
+        if (badge.image) {
+          badgePreviewImage.setAttribute('src', badge.image);
+          badgePreviewImage.hidden = false;
+        } else {
+          badgePreviewImage.hidden = true;
+        }
+      }
+    };
+
+    const updateProfileSummary = () => {
+      if (profileSummaryName) {
+        profileSummaryName.textContent = savedDisplayName || clientCopy.notSet;
+      }
+
+      if (profileSummaryBadge) profileSummaryBadge.hidden = !savedBadgeLabel;
+      if (profileSummaryBadgeLabel) profileSummaryBadgeLabel.textContent = savedBadgeLabel;
+      if (profileSummaryBadgeEmpty) profileSummaryBadgeEmpty.hidden = Boolean(savedBadgeLabel);
+
+      const existingSummaryImage = profileSummaryBadge?.querySelector('img');
+
+      if (existingSummaryImage) {
+        if (savedBadgeImage) {
+          existingSummaryImage.setAttribute('src', savedBadgeImage);
+          existingSummaryImage.hidden = false;
+        } else {
+          existingSummaryImage.hidden = true;
+        }
+      }
+
+      if (profileSummaryBadgeHelp) {
+        profileSummaryBadgeHelp.textContent = savedBadgeLabel
+          ? clientCopy.badgeSummaryHelpSelected
+          : clientCopy.badgeSummaryHelpEmpty;
+      }
+    };
+
+    const setProfileEditMode = (isEditing, shouldFocus = false) => {
+      if (profileSummary) profileSummary.hidden = isEditing;
+      if (form) form.hidden = !isEditing;
+
+      if (isEditing) {
+        if (profileMessage) profileMessage.hidden = true;
+        if (shouldFocus) {
+          window.setTimeout(() => {
+            if (profileDisplayNameInput) {
+              profileDisplayNameInput.focus();
+              return;
+            }
+
+            profileBadgeSelect?.focus();
+          }, 0);
+        }
+        updateBadgePreview();
+        return;
+      }
+
+      updateProfileSummary();
+    };
+
+    profileEditButton?.addEventListener('click', () => {
+      if (profileDisplayNameInput) profileDisplayNameInput.value = savedDisplayName;
+      if (profileBadgeSelect) profileBadgeSelect.value = savedBadgeKey;
+      updateBadgePreview();
+      setProfileEditMode(true, true);
+    });
+
+    profileCancelButton?.addEventListener('click', () => {
+      if (profileDisplayNameInput) profileDisplayNameInput.value = savedDisplayName;
+      if (profileBadgeSelect) profileBadgeSelect.value = savedBadgeKey;
+      if (!profileBadgeSelect && profileBadgeInput) profileBadgeInput.value = savedBadgeKey;
+      updateBadgePreview();
+      if (profileMessage) profileMessage.hidden = true;
+      setProfileEditMode(false);
+    });
+
+    profileBadgeSelect?.addEventListener('change', updateBadgePreview);
+
+    newsletterSubscribeButton?.addEventListener('click', async () => {
+      const consentInput = newsletterConsent?.querySelector('input[name="consent"]');
+
+      if (!consentInput?.checked) {
+        showMessage(newsletterMessage, clientCopy.newsletterConsentRequired, 'error');
+        consentInput?.focus();
+        return;
+      }
+
+      setNewsletterLoading(true);
+
+      try {
+        const response = await fetch('/api/account/newsletter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'subscribe',
+            language: newsletterLanguage?.value === 'en' ? 'en' : 'it',
+            consent: true
+          })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(newsletterMessage, localizedMessage(result.error, clientCopy.newsletterUpdateFailed), 'error');
+          return;
+        }
+
+        showMessage(newsletterMessage, localizedMessage(result.message, clientCopy.newsletterConfirmEmail), 'ok');
+        reloadNewsletterState();
+
+        if (consentInput) {
+          consentInput.checked = false;
+        }
+      } catch {
+        showMessage(newsletterMessage, clientCopy.newsletterUpdateFailed, 'error');
+      } finally {
+        setNewsletterLoading(false);
+      }
+    });
+
+    newsletterUnsubscribeButton?.addEventListener('click', async () => {
+      setNewsletterLoading(true);
+
+      try {
+        const response = await fetch('/api/account/newsletter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'unsubscribe' })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(newsletterMessage, localizedMessage(result.error, clientCopy.newsletterUpdateFailed), 'error');
+          return;
+        }
+
+        showMessage(newsletterMessage, localizedMessage(result.message, clientCopy.newsletterDisabled), 'ok');
+        reloadNewsletterState();
+      } catch {
+        showMessage(newsletterMessage, clientCopy.newsletterUpdateFailed, 'error');
+      } finally {
+        setNewsletterLoading(false);
+      }
+    });
+
+    const updateBioCounter = () => {
+      if (!bioTextarea || !bioCounter) return;
+      bioCounter.textContent = `${bioTextarea.value.length}/500`;
+    };
+
+    const updateBioEnCounter = () => {
+      if (!bioEnTextarea || !bioEnCounter) return;
+      bioEnCounter.textContent = `${bioEnTextarea.value.length}/500`;
+    };
+
+    const updateBioSummary = () => {
+      const hasBio = savedBio.trim().length > 0;
+      const hasBioEn = savedBioEn.trim().length > 0;
+
+      if (bioSummary) bioSummary.hidden = !hasBio;
+      if (bioEmpty) bioEmpty.hidden = hasBio;
+      if (bioSummaryIt) bioSummaryIt.textContent = savedBio;
+      if (bioSummaryEn) bioSummaryEn.hidden = !hasBioEn;
+      if (bioSummaryEnText) bioSummaryEnText.textContent = savedBioEn;
+      if (bioSummaryEnFallback) bioSummaryEnFallback.hidden = hasBioEn;
+    };
+
+    const setBioEditMode = (isEditing, shouldFocus = false) => {
+      if (bioForm) bioForm.hidden = !isEditing;
+
+      if (isEditing) {
+        if (bioSummary) bioSummary.hidden = true;
+        if (bioEmpty) bioEmpty.hidden = true;
+        if (bioMessage) bioMessage.hidden = true;
+        if (shouldFocus) {
+          window.setTimeout(() => bioTextarea?.focus(), 0);
+        }
+        return;
+      }
+
+      updateBioSummary();
+    };
+
+    updateBioCounter();
+    updateBioEnCounter();
+    bioTextarea?.addEventListener('input', updateBioCounter);
+    bioEnTextarea?.addEventListener('input', updateBioEnCounter);
+    bioEditButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        if (bioTextarea) bioTextarea.value = savedBio;
+        if (bioEnTextarea) bioEnTextarea.value = savedBioEn;
+        updateBioCounter();
+        updateBioEnCounter();
+        setBioEditMode(true, true);
+      });
+    });
+    bioCancelButton?.addEventListener('click', () => {
+      if (bioTextarea) bioTextarea.value = savedBio;
+      if (bioEnTextarea) bioEnTextarea.value = savedBioEn;
+      updateBioCounter();
+      updateBioEnCounter();
+      if (bioMessage) bioMessage.hidden = true;
+      setBioEditMode(false);
+    });
+
+    const validAvatarTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+    const updateAvatarFilename = (file) => {
+      if (!avatarFilename) return;
+
+      if (!file) {
+        avatarFilename.textContent = '';
+        avatarFilename.hidden = true;
+        return;
+      }
+
+      avatarFilename.textContent = `${clientCopy.fileSelected}: ${file.name}`;
+      avatarFilename.hidden = false;
+    };
+
+    const handleAvatarFile = (file) => {
+      selectedAvatarFile = null;
+      updateAvatarFilename(file);
+
+      if (!file) {
+        return;
+      }
+
+      if (!validAvatarTypes.has(file.type)) {
+        showMessage(avatarMessage, clientCopy.invalidFile, 'error');
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        showMessage(avatarMessage, clientCopy.fileTooLarge, 'error');
+        return;
+      }
+
+      selectedAvatarFile = file;
+      if (avatarMessage) avatarMessage.hidden = true;
+    };
+
+    avatarInput?.addEventListener('change', () => {
+      handleAvatarFile(avatarInput.files?.[0]);
+    });
+
+    if (avatarDropzone && avatarInput) {
+      ['dragenter', 'dragover'].forEach((eventName) => {
+        avatarDropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          avatarDropzone.dataset.dragActive = 'true';
+
+          if (avatarDropzoneLabel) {
+            avatarDropzoneLabel.textContent = avatarReplaceDropzoneText;
+          }
+        });
+      });
+
+      ['dragleave', 'drop'].forEach((eventName) => {
+        avatarDropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          delete avatarDropzone.dataset.dragActive;
+
+          if (avatarDropzoneLabel) {
+            avatarDropzoneLabel.textContent = avatarDefaultDropzoneText;
+          }
+        });
+      });
+
+      avatarDropzone.addEventListener('drop', (event) => {
+        const file = event.dataTransfer?.files?.[0];
+
+        if (!file) {
+          return;
+        }
+
+        try {
+          avatarInput.files = event.dataTransfer.files;
+        } catch {
+          // Some browsers keep file inputs read-only for dropped files.
+        }
+
+        handleAvatarFile(file);
+      });
+    }
+
+    avatarForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const file = selectedAvatarFile || avatarInput?.files?.[0];
+      const button = avatarForm.querySelector('button[type="submit"]');
+
+      if (!file || !validAvatarTypes.has(file.type)) {
+        showMessage(avatarMessage, clientCopy.invalidFile, 'error');
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        showMessage(avatarMessage, clientCopy.fileTooLarge, 'error');
+        return;
+      }
+
+      if (button) button.disabled = true;
+
+      try {
+        const payload = new FormData();
+        payload.set('avatar', file);
+
+        const response = await fetch('/api/account/avatar/upload', {
+          method: 'POST',
+          body: payload
+        });
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(avatarMessage, localizedMessage(result.error, clientCopy.uploadFailed), 'error');
+          return;
+        }
+
+        showMessage(avatarMessage, clientCopy.avatarUpdated, 'ok');
+        window.setTimeout(() => window.location.reload(), 450);
+      } catch {
+        showMessage(avatarMessage, clientCopy.connectionError, 'error');
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+
+    avatarRemoveButton?.addEventListener('click', async () => {
+      avatarRemoveButton.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/avatar/remove', {
+          method: 'POST'
+        });
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(avatarMessage, localizedMessage(result.error, clientCopy.removeFailed), 'error');
+          avatarRemoveButton.disabled = false;
+          return;
+        }
+
+        showMessage(avatarMessage, clientCopy.avatarRemoved, 'ok');
+        window.setTimeout(() => window.location.reload(), 450);
+      } catch {
+        showMessage(avatarMessage, clientCopy.connectionError, 'error');
+        avatarRemoveButton.disabled = false;
+      }
+    });
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(form);
+      const button = form.querySelector('button[type="submit"]');
+      const nextBadge = getSelectedBadgeData();
+      const payload = {
+        ...(formData.has('displayName') ? { displayName: String(formData.get('displayName') || '') } : {}),
+        ...(formData.has('badgeKey') ? { badgeKey: String(formData.get('badgeKey') || '') } : {})
+      };
+
+      if (button) button.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/update-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(profileMessage, localizedMessage(result.error, clientCopy.profileUpdateFailed), 'error');
+          return;
+        }
+
+        showMessage(profileMessage, clientCopy.profileUpdated, 'ok');
+        savedDisplayName = result.profile?.display_name || payload.displayName?.trim() || savedDisplayName;
+        savedBadgeKey = nextBadge.key;
+        savedBadgeLabel = nextBadge.label;
+        savedBadgeImage = nextBadge.image;
+        setProfileEditMode(false);
+      } catch {
+        showMessage(profileMessage, clientCopy.connectionError, 'error');
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+
+    bioForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(bioForm);
+      const button = bioForm.querySelector('button[type="submit"]');
+      const bio = String(formData.get('bio') || '');
+      const bioEn = String(formData.get('bioEn') || '');
+
+      if (bio.length > 500) {
+        showMessage(bioMessage, clientCopy.bioTooLong, 'error');
+        return;
+      }
+
+      if (bioEn.length > 500) {
+        showMessage(bioMessage, clientCopy.bioEnTooLong, 'error');
+        return;
+      }
+
+      if (button) button.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/update-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bio, bioEn })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(bioMessage, localizedMessage(result.error, clientCopy.profileUpdateFailed), 'error');
+          return;
+        }
+
+        savedBio = typeof result.profile?.bio === 'string' ? result.profile.bio : bio.trim();
+        savedBioEn = typeof result.profile?.bio_en === 'string' ? result.profile.bio_en : bioEn.trim();
+
+        if (bioTextarea) bioTextarea.value = savedBio;
+        if (bioEnTextarea) bioEnTextarea.value = savedBioEn;
+        updateBioCounter();
+        updateBioEnCounter();
+        setBioEditMode(false);
+        showMessage(bioMessage, clientCopy.bioUpdated, 'ok');
+      } catch {
+        showMessage(bioMessage, clientCopy.connectionError, 'error');
+      } finally {
+        if (button) button.disabled = false;
+      }
+    });
+  </script>
+</BaseLayout>

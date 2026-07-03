@@ -63,6 +63,7 @@ const flagAlt = isEnglish
   : 'English';
 
 const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
+const accountHref = isEnglish ? '/en/account/' : '/account/';
 ---
 
 <header class="site-header">
@@ -211,7 +212,7 @@ const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
           </div>
 
           <div class="site-header__account-group" data-account-auth hidden>
-            <a href="/account/" role="menuitem">
+            <a href={accountHref} role="menuitem">
               {isEnglish ? 'My account' : 'Il mio account'}
             </a>
 
@@ -228,7 +229,7 @@ const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
               <span class="site-header__account-unread" data-account-unread hidden></span>
             </a>
 
-            <a href="/account/" role="menuitem" data-account-public-profile hidden>
+            <a href={accountHref} role="menuitem" data-account-public-profile hidden>
               {isEnglish ? 'Public profile' : 'Profilo pubblico'}
             </a>
 
