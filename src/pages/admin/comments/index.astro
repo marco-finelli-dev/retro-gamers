@@ -19,6 +19,7 @@ const isAdmin = session.profile?.role === 'admin';
       {isStaff && (
         <CommunitySidebarSection title="Strumenti redazione">
           <div class="community-staff-links">
+            <a class="community-action-link" href="/admin/">Area redazione</a>
             <a class="community-action-link" href="/admin/comments/">Moderazione commenti</a>
             <a class="community-action-link" href="/admin/comment-reports/">Segnalazioni commenti</a>
             <a class="community-action-link" href="/admin/users/">Gestione utenti</a>
@@ -167,6 +168,32 @@ const isAdmin = session.profile?.role === 'admin';
       if (q) params.set('q', q);
 
       return params;
+    };
+
+    const initializeFiltersFromUrl = () => {
+      if (!filtersForm) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const allowedStatuses = new Set(['all', 'pending', 'approved', 'rejected', 'spam', 'deleted']);
+      const allowedLanguages = new Set(['all', 'it', 'en']);
+      const status = params.get('status');
+      const language = params.get('language');
+      const q = params.get('q');
+
+      if (status && allowedStatuses.has(status)) {
+        const statusField = filtersForm.querySelector('[name="status"]');
+        if (statusField instanceof HTMLSelectElement) statusField.value = status;
+      }
+
+      if (language && allowedLanguages.has(language)) {
+        const languageField = filtersForm.querySelector('[name="language"]');
+        if (languageField instanceof HTMLSelectElement) languageField.value = language;
+      }
+
+      if (q) {
+        const searchField = filtersForm.querySelector('[name="q"]');
+        if (searchField instanceof HTMLInputElement) searchField.value = q;
+      }
     };
 
     const renderComment = (comment) => {
@@ -376,6 +403,7 @@ const isAdmin = session.profile?.role === 'admin';
       }
     });
 
+    initializeFiltersFromUrl();
     loadComments();
   </script>
 </BaseLayout>
