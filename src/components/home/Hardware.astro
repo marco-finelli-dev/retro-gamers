@@ -125,8 +125,10 @@ const getCta = (post) => {
             </div>
 
             <div class="hardware-card__content">
-              <span>{productLabel}</span>
-              <CommentCountBadge count={post.commentCount} lang={lang} />
+              <div class="rg-card-meta-inline">
+                <span>{productLabel}</span>
+                <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
+              </div>
               <h3>{post.title}</h3>
 
               {getExcerpt(post) && (

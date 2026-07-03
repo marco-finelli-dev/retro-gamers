@@ -151,8 +151,10 @@ const getCategory = (post) => {
             </div>
 
             <div class="editorial-list-card__content">
-              <span>{getCategory(post)}</span>
-              <CommentCountBadge count={post.commentCount} lang={lang} />
+              <div class="rg-card-meta-inline">
+                <span>{getCategory(post)}</span>
+                <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
+              </div>
               <h3>{post.title}</h3>
 
               {getExcerpt(post) && (
@@ -193,8 +195,10 @@ const getCategory = (post) => {
           </div>
 
           <div class="memory-feature__content">
-            <span>{getCategory(mainMemory)}</span>
-            <CommentCountBadge count={mainMemory.commentCount} lang={lang} />
+            <div class="rg-card-meta-inline">
+              <span>{getCategory(mainMemory)}</span>
+              <CommentCountBadge count={mainMemory.commentCount} lang={lang} variant="compact" />
+            </div>
             <h3>{mainMemory.title}</h3>
 
             {getExcerpt(mainMemory) && (
@@ -214,17 +218,19 @@ const getCategory = (post) => {
                 <img
                   src={getImage(post, 220, 140)}
                   alt={post.featuredImage?.alt || post.title}
-                  width="220"
-                  height="140"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
+                width="220"
+                height="140"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
 
-              <div class="memory-mini-card__content">
+            <div class="memory-mini-card__content">
+              <div class="rg-card-meta-inline">
                 <span>{getCategory(post)}</span>
-                <CommentCountBadge count={post.commentCount} lang={lang} />
-                <strong>{post.title}</strong>
+                <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
+              </div>
+              <strong>{post.title}</strong>
               </div>
 
             </a>
@@ -263,7 +269,7 @@ const getCategory = (post) => {
         </span>
 
         <strong>{post.title}</strong>
-        <CommentCountBadge count={post.commentCount} lang={lang} />
+        <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
 
       </a>
     ))

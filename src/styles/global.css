@@ -262,6 +262,80 @@
   opacity: 0.82;
 }
 
+.rg-comment-count--compact {
+  gap: 4px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--home-section-eyebrow-color, var(--color-primary));
+  font-size: 11px;
+  font-weight: 900;
+  text-shadow: none;
+}
+
+.rg-comment-count--compact::before {
+  content: none;
+}
+
+.rg-comment-count__icon {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  background: currentColor;
+  mask: url("/icons/comment.svg") center / contain no-repeat;
+  -webkit-mask: url("/icons/comment.svg") center / contain no-repeat;
+  opacity: 0.95;
+}
+
+.rg-comment-count__value {
+  line-height: 1;
+}
+
+.rg-card-meta-inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  margin-bottom: 7px;
+
+  color: var(--home-section-eyebrow-color);
+  font-size: 10px;
+  line-height: 1;
+  font-weight: var(--home-section-eyebrow-weight, 850);
+  letter-spacing: var(--home-section-eyebrow-letter-spacing, 0.08em);
+  text-transform: uppercase;
+}
+
+.rg-card-meta-inline > span:not(.rg-comment-count) {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rg-card-meta-inline .rg-comment-count {
+  margin: 0;
+  color: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.rg-card-meta-inline .rg-comment-count--compact::before {
+  content: "";
+  width: 3px;
+  height: 3px;
+  flex: 0 0 3px;
+  margin: 0 1px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: none;
+  opacity: 0.58;
+}
+
 
 /* =========================
    ☀️ LIGHT THEME

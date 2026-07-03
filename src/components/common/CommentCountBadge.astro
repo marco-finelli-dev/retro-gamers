@@ -2,10 +2,12 @@
 const {
   count = 0,
   lang = 'it',
+  variant = 'default',
   class: className = ''
 } = Astro.props;
 
 const value = Number(count || 0);
+const isCompact = variant === 'compact' || variant === 'meta';
 const isEnglish = lang === 'en';
 const label = isEnglish
   ? `${value} ${value === 1 ? 'comment' : 'comments'}`
@@ -13,7 +15,22 @@ const label = isEnglish
 ---
 
 {value > 0 && (
-  <span class:list={['rg-comment-count', className]} aria-label={label}>
-    {label}
+  <span
+    class:list={[
+      'rg-comment-count',
+      isCompact && 'rg-comment-count--compact',
+      className
+    ]}
+    aria-label={label}
+    title={label}
+  >
+    {isCompact ? (
+      <>
+        <span class="rg-comment-count__icon" aria-hidden="true"></span>
+        <span class="rg-comment-count__value">{value}</span>
+      </>
+    ) : (
+      label
+    )}
   </span>
 )}

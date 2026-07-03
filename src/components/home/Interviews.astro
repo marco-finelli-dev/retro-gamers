@@ -79,8 +79,10 @@ const getImage = (post, width = 760, height = 475) => {
           </div>
 
           <div class="home-interview-card__content">
-            <span>{labels.category}</span>
-            <CommentCountBadge count={mainInterview.commentCount} lang={lang} />
+            <div class="rg-card-meta-inline">
+              <span>{labels.category}</span>
+              <CommentCountBadge count={mainInterview.commentCount} lang={lang} variant="compact" />
+            </div>
             <h3>{mainInterview.title}</h3>
 
             {getExcerpt(mainInterview, 170) && (
@@ -98,17 +100,19 @@ const getImage = (post, width = 760, height = 475) => {
                 <img
                   src={getImage(post, 460, 288)}
                   alt={post.featuredImage?.alt || post.title}
-                  width="460"
-                  height="288"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
+                width="460"
+                height="288"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
 
-              <div class="home-interview-card__content">
+            <div class="home-interview-card__content">
+              <div class="rg-card-meta-inline">
                 <span>{labels.category}</span>
-                <CommentCountBadge count={post.commentCount} lang={lang} />
-                <h3>{post.title}</h3>
+                <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
+              </div>
+              <h3>{post.title}</h3>
 
                 {getExcerpt(post, 118) && (
                   <p>{getExcerpt(post, 118)}</p>

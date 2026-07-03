@@ -124,11 +124,12 @@ const getImage = (post, width = 420, height = 263) => {
 
           <div class="rg-latest-card__content">
 
-            <span class="rg-latest-card__type">
-              {getCategory(post)}
-            </span>
-
-            <CommentCountBadge count={post.commentCount} lang={lang} />
+            <div class="rg-card-meta-inline">
+              <span class="rg-latest-card__type">
+                {getCategory(post)}
+              </span>
+              <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
+            </div>
 
             <h3>
               <a href={getPostUrl(post)}>

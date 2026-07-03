@@ -81,8 +81,6 @@ const metaItems = [
   year
 ].filter(Boolean);
 
-const badges = genreBadges;
-
 ---
 
 <a href={getPostUrl(post)} class="rg-review-card">
@@ -117,17 +115,12 @@ const badges = genreBadges;
   </div>
 
   <div class="rg-review-card__body">
+    <div class="rg-card-meta-inline">
+      <span>{genreBadges[0]?.label || (isEn ? 'Review' : 'Recensione')}</span>
+      <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
+    </div>
+
     <h3>{post.title}</h3>
-
-    <CommentCountBadge count={post.commentCount} lang={lang} />
-
-    {badges.length > 0 && (
-      <div class="rg-review-card__badges">
-        {badges.map((badge) => (
-          <span title={badge.title}>{badge.label}</span>
-        ))}
-      </div>
-    )}
   </div>
 
   <div class="rg-review-card__footer">
