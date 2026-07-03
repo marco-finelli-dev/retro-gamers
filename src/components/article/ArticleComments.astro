@@ -390,6 +390,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 </section>
 
 <script>
+  import { getCommunityRank } from '../../lib/community-rank';
+
   const commentLabels = {
     it: {
       commentSingular: 'commento',
@@ -424,6 +426,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       roleStaff: 'Staff Retro-Gamers',
       roleModerator: 'Moderatore',
       communityPoints: 'Punti community: {points}',
+      communityLevel: 'Livello: {level}',
       pendingStatus: 'In attesa',
       edit: 'Modifica',
       editLabel: 'Modifica commento',
@@ -470,6 +473,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       roleStaff: 'Retro-Gamers Staff',
       roleModerator: 'Moderator',
       communityPoints: 'Community points: {points}',
+      communityLevel: 'Level: {level}',
       pendingStatus: 'Pending',
       edit: 'Edit',
       editLabel: 'Edit comment',
@@ -639,6 +643,25 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     return badge
       ? `<span class="article-comment__role-badge article-comment__role-badge--${escapeHtml(badge.modifier)}">${escapeHtml(badge.label)}</span>`
       : '';
+  };
+
+  const renderCommunityLevel = (profile, labels) => {
+    const points = getCommunityPoints(profile);
+
+    if (!points) return '';
+
+    const rank = getCommunityRank(points);
+    const label = labels.communityLevel.replace('{level}', rank.label);
+
+    return `
+      <span
+        class="article-comment__level-pill"
+        aria-label="${escapeHtml(label)}"
+        title="${escapeHtml(label)}"
+      >
+        ${escapeHtml(label)}
+      </span>
+    `;
   };
 
   const renderStatusBadge = (comment, labels) =>
@@ -898,6 +921,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const authorName = getAuthorName(profile, labels.reader);
     const badgeLabel = getBadgeLabel(profile, language);
     const roleBadge = renderRoleBadge(profile, labels);
+    const communityLevel = renderCommunityLevel(profile, labels);
     const statusBadge = renderStatusBadge(reply, labels);
     const initial = getAvatarInitial(profile, labels.reader);
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
@@ -917,6 +941,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
             <strong class="article-comment__author-row">
               ${renderAuthorName(authorName, profileHref)}
               ${roleBadge}
+              ${communityLevel}
             </strong>
 
             <div class="article-comment__editor-reply-submeta">
@@ -941,6 +966,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const authorName = getAuthorName(profile, labels.reader);
     const badgeLabel = getBadgeLabel(profile, language);
     const roleBadge = renderRoleBadge(profile, labels);
+    const communityLevel = renderCommunityLevel(profile, labels);
     const statusBadge = renderStatusBadge(comment, labels);
     const initial = getAvatarInitial(profile, labels.reader);
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
@@ -966,6 +992,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
             <h3 class="article-comment__author-row">
               ${renderAuthorName(authorName, profileHref)}
               ${roleBadge}
+              ${communityLevel}
             </h3>
 
             ${renderCommentTime(comment, language, labels)}
