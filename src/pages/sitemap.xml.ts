@@ -192,6 +192,11 @@ export async function GET() {
       priority: '0.4'
     },
     {
+      loc: absoluteUrl('/newsletter/'),
+      changefreq: 'monthly',
+      priority: '0.4'
+    },
+    {
       loc: absoluteUrl('/privacy-policy/'),
       changefreq: 'yearly',
       priority: '0.2'
@@ -299,6 +304,11 @@ export async function GET() {
     },
     {
       loc: absoluteUrl('/en/contact/'),
+      changefreq: 'monthly',
+      priority: '0.4'
+    },
+    {
+      loc: absoluteUrl('/en/newsletter/'),
       changefreq: 'monthly',
       priority: '0.4'
     },

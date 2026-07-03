@@ -1,0 +1,223 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+type NewsletterSignupLang = 'it' | 'en';
+
+const { lang = 'it' } = Astro.props as { lang?: NewsletterSignupLang };
+const isEnglish = lang === 'en';
+
+const copy = isEnglish
+  ? {
+      pageTitle: 'Retro-Gamers Newsletter',
+      pageDescription: 'Get updates about new articles, reviews, features and community initiatives.',
+      canonical: 'https://www.retro-gamers.it/en/newsletter/',
+      languageSwitch: '/newsletter/',
+      kicker: 'Newsletter',
+      title: 'Retro-Gamers Newsletter',
+      subtitle: 'Get updates about new articles, reviews, features and community initiatives.',
+      emailLabel: 'Email',
+      emailPlaceholder: 'you@example.com',
+      languageLabel: 'Preferred language',
+      italian: 'Italiano',
+      english: 'English',
+      consent: 'I agree to receive the Retro-Gamers.it newsletter and confirm that I have read the Privacy Policy.',
+      privacyLabel: 'Privacy Policy',
+      privacyHref: '/en/privacy-policy/',
+      submit: 'Subscribe',
+      sending: 'Subscribing...',
+      success: 'If the address is valid, you will receive a confirmation email.',
+      invalidEmail: 'Enter a valid email address.',
+      missingConsent: 'To subscribe, you must accept the privacy policy.',
+      genericError: 'Newsletter subscription is temporarily unavailable. Please try again later.',
+      alternateLanguages: [
+        { lang: 'it', url: 'https://www.retro-gamers.it/newsletter/' },
+        { lang: 'en', url: 'https://www.retro-gamers.it/en/newsletter/' },
+        { lang: 'x-default', url: 'https://www.retro-gamers.it/newsletter/' },
+      ],
+    }
+  : {
+      pageTitle: 'Newsletter Retro-Gamers',
+      pageDescription: 'Ricevi aggiornamenti su nuovi articoli, recensioni, speciali e iniziative della community.',
+      canonical: 'https://www.retro-gamers.it/newsletter/',
+      languageSwitch: '/en/newsletter/',
+      kicker: 'Newsletter',
+      title: 'Newsletter Retro-Gamers',
+      subtitle: 'Ricevi aggiornamenti su nuovi articoli, recensioni, speciali e iniziative della community.',
+      emailLabel: 'Email',
+      emailPlaceholder: 'tuo@email.it',
+      languageLabel: 'Lingua preferita',
+      italian: 'Italiano',
+      english: 'English',
+      consent: 'Acconsento a ricevere la newsletter di Retro-Gamers.it e dichiaro di aver letto la Privacy Policy.',
+      privacyLabel: 'Privacy Policy',
+      privacyHref: '/privacy-policy/',
+      submit: 'Iscrivimi',
+      sending: 'Iscrizione...',
+      success: 'Se l’indirizzo è valido, riceverai una email di conferma.',
+      invalidEmail: 'Inserisci un indirizzo email valido.',
+      missingConsent: 'Per iscriverti devi accettare l’informativa privacy.',
+      genericError: 'Iscrizione newsletter temporaneamente non disponibile. Riprova più tardi.',
+      alternateLanguages: [
+        { lang: 'it', url: 'https://www.retro-gamers.it/newsletter/' },
+        { lang: 'en', url: 'https://www.retro-gamers.it/en/newsletter/' },
+        { lang: 'x-default', url: 'https://www.retro-gamers.it/newsletter/' },
+      ],
+    };
+---
+
+<BaseLayout
+  title={copy.pageTitle}
+  description={copy.pageDescription}
+  canonical={copy.canonical}
+  lang={lang}
+  languageSwitch={{ url: copy.languageSwitch }}
+  alternateLanguages={copy.alternateLanguages}
+>
+  <main class="legal-page newsletter-page">
+    <div class="container">
+      <section class="legal-hero">
+        <span>{copy.kicker}</span>
+        <h1>{copy.title}</h1>
+        <p>{copy.subtitle}</p>
+      </section>
+
+      <article class="legal-content newsletter-panel">
+        <form
+          class="newsletter-form"
+          data-newsletter-form
+          data-success={copy.success}
+          data-invalid-email={copy.invalidEmail}
+          data-missing-consent={copy.missingConsent}
+          data-generic-error={copy.genericError}
+          data-submit-label={copy.submit}
+          data-sending-label={copy.sending}
+          novalidate
+        >
+          <label class="newsletter-form__field">
+            <span>{copy.emailLabel}</span>
+            <input
+              type="email"
+              name="email"
+              placeholder={copy.emailPlaceholder}
+              autocomplete="email"
+              required
+            />
+          </label>
+
+          <label class="newsletter-form__field">
+            <span>{copy.languageLabel}</span>
+            <select name="language" required>
+              <option value="it" selected={!isEnglish}>{copy.italian}</option>
+              <option value="en" selected={isEnglish}>{copy.english}</option>
+            </select>
+          </label>
+
+          <label class="newsletter-form__consent">
+            <input type="checkbox" name="consent" required />
+            <span>
+              {copy.consent}
+              <a href={copy.privacyHref}>{copy.privacyLabel}</a>
+            </span>
+          </label>
+
+          <input type="hidden" name="source" value="newsletter-page" />
+
+          <div class="newsletter-form__actions">
+            <button type="submit">{copy.submit}</button>
+            <p class="newsletter-form__message" data-newsletter-message aria-live="polite"></p>
+          </div>
+        </form>
+      </article>
+    </div>
+  </main>
+
+  <script>
+    const form = document.querySelector('[data-newsletter-form]');
+
+    if (form instanceof HTMLFormElement) {
+      const message = form.querySelector('[data-newsletter-message]');
+      const submitButton = form.querySelector('button[type="submit"]');
+      const emailInput = form.elements.namedItem('email');
+      const languageInput = form.elements.namedItem('language');
+      const consentInput = form.elements.namedItem('consent');
+      const sourceInput = form.elements.namedItem('source');
+
+      const setMessage = (text, type) => {
+        if (!(message instanceof HTMLElement)) return;
+
+        message.textContent = text;
+        message.dataset.type = type;
+      };
+
+      const setLoading = (isLoading) => {
+        if (!(submitButton instanceof HTMLButtonElement)) return;
+
+        submitButton.disabled = isLoading;
+        submitButton.textContent = isLoading
+          ? form.dataset.sendingLabel || submitButton.textContent || ''
+          : form.dataset.submitLabel || submitButton.textContent || '';
+      };
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        if (!(emailInput instanceof HTMLInputElement)) return;
+        if (!(languageInput instanceof HTMLSelectElement)) return;
+        if (!(consentInput instanceof HTMLInputElement)) return;
+
+        const email = emailInput.value.trim();
+        const language = languageInput.value === 'en' ? 'en' : 'it';
+        const source = sourceInput instanceof HTMLInputElement
+          ? sourceInput.value
+          : 'newsletter-page';
+
+        if (!email || !emailInput.validity.valid) {
+          setMessage(form.dataset.invalidEmail || 'Invalid email.', 'error');
+          emailInput.focus();
+          return;
+        }
+
+        if (!consentInput.checked) {
+          setMessage(form.dataset.missingConsent || 'Consent required.', 'error');
+          consentInput.focus();
+          return;
+        }
+
+        setLoading(true);
+        setMessage('', '');
+
+        try {
+          const response = await fetch('/api/newsletter/subscribe', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email,
+              language,
+              consent: true,
+              source,
+            }),
+          });
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || result?.ok === false) {
+            setMessage(
+              result?.error || form.dataset.genericError || 'Newsletter unavailable.',
+              'error'
+            );
+            return;
+          }
+
+          setMessage(result?.message || form.dataset.success || '', 'success');
+          form.reset();
+          languageInput.value = language;
+        } catch {
+          setMessage(form.dataset.genericError || 'Newsletter unavailable.', 'error');
+        } finally {
+          setLoading(false);
+        }
+      });
+    }
+  </script>
+</BaseLayout>
