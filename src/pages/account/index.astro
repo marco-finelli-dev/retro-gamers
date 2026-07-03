@@ -6,7 +6,7 @@ import CommunityLayout from '../../components/community/CommunityLayout.astro';
 import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
 import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
 import CommunityStatList from '../../components/community/CommunityStatList.astro';
-import { getOwnedReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
+import { getActiveReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
 import { getCommunityRank } from '../../lib/community-rank';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
@@ -25,10 +25,11 @@ const currentBadge = profile?.user_badges;
 const currentBadgeImageSrc = getReaderBadgeImageSrcForBadge(currentBadge || { key: profile?.badge_key || '' });
 const avatarUrl = profile?.avatar_url || '';
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
+const canEditDisplayName = profile?.role === 'admin';
 const accountDisplayName =
   profile?.display_name || profile?.username || user?.email || 'Utente Retro-Gamers';
 const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
-let badges = [] as Awaited<ReturnType<typeof getOwnedReaderBadges>>;
+let badges = [] as Awaited<ReturnType<typeof getActiveReaderBadges>>;
 let currentBio = '';
 let currentBioEn = '';
 let newsletterStatus: 'none' | 'pending' | 'active' | 'unsubscribed' = 'none';
@@ -112,15 +113,15 @@ const getProfileBio = async (userId: string) => {
 let commentActivity = { ...emptyCommunityStats };
 
 if (isLoggedIn && user?.id) {
-  const [, ownedBadges, profileBio, stats, newsletter] = await Promise.all([
+  const [, activeBadges, profileBio, stats, newsletter] = await Promise.all([
     touchUserActivity(user.id, 'account-load'),
-    getOwnedReaderBadges(user.id),
+    getActiveReaderBadges({ fallback: false }),
     getProfileBio(user.id),
     getCommunityStats(user.id),
     getNewsletterSubscriptionForUser(user.id, user.email),
   ]);
 
-  badges = ownedBadges;
+  badges = activeBadges;
   currentBio = profileBio.bio;
   currentBioEn = profileBio.bioEn;
   commentActivity = stats;
@@ -129,8 +130,18 @@ if (isLoggedIn && user?.id) {
 }
 
 const communityStatItems = [
-  { label: 'Punti community', value: commentActivity.communityPoints },
-  { label: 'Commenti pubblicati', value: commentActivity.approved },
+  {
+    label: 'Punti community',
+    value: commentActivity.communityPoints,
+    href: publicProfileHref || undefined,
+    ariaLabel: 'Vai al profilo pubblico',
+  },
+  {
+    label: 'Commenti pubblicati',
+    value: commentActivity.approved,
+    href: publicProfileHref ? `${publicProfileHref}#latest-comments-title` : undefined,
+    ariaLabel: 'Vai ai commenti pubblicati',
+  },
   { label: 'In attesa', value: commentActivity.pending },
   { label: 'Like ricevuti', value: commentActivity.likesReceived },
   { label: 'Dislike ricevuti', value: commentActivity.dislikesReceived },
@@ -138,6 +149,29 @@ const communityStatItems = [
 const communityRank = getCommunityRank(commentActivity.communityPoints);
 const communityRankProgress = Math.round(communityRank.progressToNext);
 const newsletterLanguageLabel = newsletterLanguage === 'en' ? 'English' : 'Italiano';
+const hasPublicBio = currentBio.trim().length > 0;
+const hasPublicBioEn = currentBioEn.trim().length > 0;
+const profileDisplayName = profile?.display_name || profile?.username || '';
+const currentBadgeFromCatalog = badges.find((badge) => badge.key === profile?.badge_key);
+const currentProfileBadge = currentBadgeFromCatalog || currentBadge || null;
+const currentProfileBadgeLabel =
+  currentProfileBadge?.label_it ||
+  currentProfileBadge?.label_en ||
+  profile?.badge_key ||
+  '';
+const currentProfileBadgeImageSrc = getReaderBadgeImageSrcForBadge(
+  currentProfileBadge || { key: profile?.badge_key || '' }
+);
+const editableBadgeKey = badges.some((badge) => badge.key === profile?.badge_key)
+  ? profile?.badge_key || ''
+  : badges.length === 1
+    ? badges[0].key
+    : '';
+const editableBadge = badges.find((badge) => badge.key === editableBadgeKey) || null;
+const editableBadgeLabel = editableBadge?.label_it || editableBadge?.label_en || editableBadge?.key || '';
+const editableBadgeImageSrc = getReaderBadgeImageSrcForBadge(editableBadge);
+const editableBadgePreviewImageSrc = editableBadgeImageSrc || getReaderBadgeImageSrcForBadge(badges[0]);
+const profileSummaryBadgeImageSrc = currentProfileBadgeImageSrc || editableBadgePreviewImageSrc;
 const isNewsletterActive = newsletterStatus === 'active';
 const isNewsletterPending = newsletterStatus === 'pending';
 const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus === 'unsubscribed';
@@ -437,7 +471,54 @@ const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus
                 </p>
               </div>
 
-              <form class="account-form account-form--bio" data-account-bio-form>
+              <div
+                class="account-public-profile__summary"
+                data-account-bio-summary
+                hidden={!hasPublicBio}
+              >
+                <div class="account-profile-summary">
+                  <span>Bio in italiano</span>
+                  <p data-account-bio-summary-it>{currentBio}</p>
+                </div>
+
+                <div
+                  class="account-profile-summary"
+                  data-account-bio-summary-en
+                  hidden={!hasPublicBioEn}
+                >
+                  <span>Bio in inglese</span>
+                  <p data-account-bio-summary-en-text>{currentBioEn}</p>
+                </div>
+
+                <p
+                  class="account-field-help"
+                  data-account-bio-en-fallback
+                  hidden={hasPublicBioEn}
+                >
+                  Bio inglese non impostata. Nella versione inglese verrà usata la bio italiana.
+                </p>
+
+                <div class="account-actions">
+                  <button type="button" data-account-bio-edit>Modifica bio</button>
+                </div>
+              </div>
+
+              <div
+                class="account-public-profile__empty"
+                data-account-bio-empty
+                hidden={hasPublicBio}
+              >
+                <p>Non hai ancora scritto una bio pubblica.</p>
+                <p>
+                  Racconta in poche righe chi sei come lettore, giocatore o appassionato retro.
+                </p>
+
+                <div class="account-actions">
+                  <button type="button" data-account-bio-edit>Scrivi bio</button>
+                </div>
+              </div>
+
+              <form class="account-form account-form--bio" data-account-bio-form hidden>
                 <label>
                   <span>Bio in italiano</span>
                   <textarea
@@ -470,12 +551,13 @@ const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus
                   La bio inglese è opzionale. Se lasciata vuota, nella versione inglese del profilo verrà usata la bio italiana.
                 </p>
 
-                <p class="account-message" data-account-bio-message hidden></p>
-
                 <div class="account-actions">
                   <button type="submit">Salva bio</button>
+                  <button type="button" data-account-bio-cancel>Annulla</button>
                 </div>
               </form>
+
+              <p class="account-message" data-account-bio-message hidden></p>
             </section>
 
             {isStaff && (
@@ -499,55 +581,145 @@ const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus
               <div class="account-settings-section__heading">
                 <p class="account-kicker">Impostazioni</p>
                 <h2 id="account-settings-title">Profilo</h2>
+                <p class="account-settings-section__hint">
+                  {canEditDisplayName
+                    ? 'Nome e badge sono già visibili nel tuo profilo pubblico. Modificali qui quando vuoi aggiornarli.'
+                    : 'Nome e badge sono già visibili nel tuo profilo pubblico. Puoi scegliere qui il badge da mostrare.'}
+                </p>
               </div>
 
-              <form class="account-form" data-account-profile-form>
-                <label>
+              <div class="account-profile-overview" data-account-profile-summary>
+                <div class="account-profile-summary">
                   <span>Nome visualizzato</span>
-                  <input
-                    type="text"
-                    name="displayName"
-                    required
-                    minlength="2"
-                    maxlength="40"
-                    value={profile?.display_name || profile?.username || ''}
-                  />
-                </label>
+                  <p data-account-profile-summary-name>{profileDisplayName || 'Non impostato'}</p>
+                </div>
 
-                {badges.length > 0 ? (
+                <div class="account-profile-summary">
+                  <span>Badge attuale</span>
+
+                  <div
+                    class="account-badge-preview"
+                    data-account-profile-summary-badge
+                    hidden={!currentProfileBadgeLabel}
+                  >
+                    {profileSummaryBadgeImageSrc && (
+                      <img
+                        src={profileSummaryBadgeImageSrc}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        hidden={!currentProfileBadgeImageSrc}
+                      />
+                    )}
+                    <strong data-account-profile-summary-badge-label>
+                      {currentProfileBadgeLabel}
+                    </strong>
+                  </div>
+
+                  <p
+                    class="account-badge-preview__empty"
+                    data-account-profile-summary-badge-empty
+                    hidden={Boolean(currentProfileBadgeLabel)}
+                  >
+                    Non hai ancora scelto un badge principale.
+                  </p>
+
+                  <p
+                    class="account-field-help"
+                    data-account-profile-summary-badge-help
+                  >
+                    {currentProfileBadgeLabel
+                      ? 'Questo è il badge mostrato nel tuo profilo e nei commenti.'
+                      : 'Quando scegli un badge, apparirà nel profilo e nei commenti.'}
+                  </p>
+                </div>
+
+                <div class="account-actions">
+                  <button type="button" data-account-profile-edit>Modifica profilo</button>
+                  <a href="/badges/">Scopri tutti i badge</a>
+                </div>
+              </div>
+
+              <form class="account-form" data-account-profile-form hidden>
+                {canEditDisplayName ? (
+                  <label>
+                    <span>Nome visualizzato</span>
+                    <input
+                      type="text"
+                      name="displayName"
+                      required
+                      minlength="2"
+                      maxlength="40"
+                      value={profile?.display_name || profile?.username || ''}
+                    />
+                  </label>
+                ) : (
+                  <div class="account-profile-readonly">
+                    <span>Nome visualizzato</span>
+                    <p>{profileDisplayName || 'Non impostato'}</p>
+                    <small class="account-field-help">
+                      Il nome visualizzato viene scelto alla registrazione. Per modificarlo, contatta la redazione.
+                    </small>
+                  </div>
+                )}
+
+                {badges.length === 0 && (
+                  <div class="account-badge-empty">
+                    <span>Badge lettore</span>
+                    <p>Nessun badge disponibile al momento.</p>
+                    <p>Quando il catalogo badge sarà disponibile, potrai scegliere quale mostrare nel profilo e nei commenti.</p>
+                    <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
+                  </div>
+                )}
+
+                {badges.length > 0 && (
                   <label>
                     <span>Badge lettore</span>
-                    <select name="badgeKey" required>
+                    <select name="badgeKey" required data-account-badge-select>
                       <option value="">Scegli un badge</option>
                       {badges.map((badge) => (
-                        <option value={badge.key} selected={badge.key === profile?.badge_key}>
+                        <option
+                          value={badge.key}
+                          selected={badge.key === editableBadgeKey}
+                          data-badge-label={badge.label_it || badge.label_en || badge.key}
+                          data-badge-image={getReaderBadgeImageSrcForBadge(badge)}
+                        >
                           {badge.label_it || badge.label_en || badge.key}
                         </option>
                       ))}
                     </select>
 
+                    <div
+                      class="account-badge-preview"
+                      data-account-badge-preview
+                      hidden={!editableBadgeLabel}
+                    >
+                      <img
+                        src={editableBadgePreviewImageSrc}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        hidden={!editableBadgeImageSrc}
+                        data-account-badge-preview-image
+                      />
+                      <strong data-account-badge-preview-label>{editableBadgeLabel}</strong>
+                    </div>
+
                     <small class="account-field-help">
-                      Il badge è il simbolo che scegli di mostrare accanto al tuo profilo. Il livello community, invece, cresce automaticamente con la partecipazione.
+                      Scegli quale badge mostrare nel profilo e nei commenti.
                     </small>
 
                     <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
                   </label>
-                ) : (
-                  <div class="account-badge-empty">
-                    <span>Badge lettore</span>
-                    <p>Non hai ancora scelto un badge principale.</p>
-                    <p>Quando sblocchi o selezioni un badge, apparirà nel profilo e nei commenti.</p>
-                    <a class="account-field-link" href="/badges/">Scopri tutti i badge</a>
-                  </div>
                 )}
-
-                <p class="account-message" data-account-message hidden></p>
 
                 <div class="account-actions">
                   <button type="submit">Salva profilo</button>
-                  <button type="button" data-account-logout>Esci</button>
+                  <button type="button" data-account-profile-cancel>Annulla</button>
                 </div>
               </form>
+
+              <p class="account-message" data-account-message hidden></p>
             </section>
         </div>
       </>
@@ -572,12 +744,34 @@ const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus
   <script>
     const form = document.querySelector('[data-account-profile-form]');
     const profileMessage = document.querySelector('[data-account-message]');
+    const profileSummary = document.querySelector('[data-account-profile-summary]');
+    const profileEditButton = document.querySelector('[data-account-profile-edit]');
+    const profileCancelButton = document.querySelector('[data-account-profile-cancel]');
+    const profileDisplayNameInput = document.querySelector('[data-account-profile-form] input[name="displayName"]');
+    const profileBadgeInput = document.querySelector('[data-account-profile-form] [name="badgeKey"]');
+    const profileBadgeSelect = document.querySelector('[data-account-badge-select]');
+    const profileSummaryName = document.querySelector('[data-account-profile-summary-name]');
+    const profileSummaryBadge = document.querySelector('[data-account-profile-summary-badge]');
+    const profileSummaryBadgeLabel = document.querySelector('[data-account-profile-summary-badge-label]');
+    const profileSummaryBadgeEmpty = document.querySelector('[data-account-profile-summary-badge-empty]');
+    const profileSummaryBadgeHelp = document.querySelector('[data-account-profile-summary-badge-help]');
+    const badgePreview = document.querySelector('[data-account-badge-preview]');
+    const badgePreviewImage = document.querySelector('[data-account-badge-preview-image]');
+    const badgePreviewLabel = document.querySelector('[data-account-badge-preview-label]');
     const bioForm = document.querySelector('[data-account-bio-form]');
     const bioMessage = document.querySelector('[data-account-bio-message]');
     const bioTextarea = document.querySelector('[data-account-bio-form] textarea[name="bio"]');
     const bioEnTextarea = document.querySelector('[data-account-bio-form] textarea[name="bioEn"]');
     const bioCounter = document.querySelector('[data-account-bio-counter]');
     const bioEnCounter = document.querySelector('[data-account-bio-en-counter]');
+    const bioSummary = document.querySelector('[data-account-bio-summary]');
+    const bioEmpty = document.querySelector('[data-account-bio-empty]');
+    const bioSummaryIt = document.querySelector('[data-account-bio-summary-it]');
+    const bioSummaryEn = document.querySelector('[data-account-bio-summary-en]');
+    const bioSummaryEnText = document.querySelector('[data-account-bio-summary-en-text]');
+    const bioSummaryEnFallback = document.querySelector('[data-account-bio-en-fallback]');
+    const bioEditButtons = document.querySelectorAll('[data-account-bio-edit]');
+    const bioCancelButton = document.querySelector('[data-account-bio-cancel]');
     const avatarForm = document.querySelector('[data-account-avatar-form]');
     const avatarInput = document.querySelector('[data-account-avatar-input]');
     const avatarMessage = document.querySelector('[data-account-avatar-message]');
@@ -590,10 +784,15 @@ const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus
     const newsletterSubscribeButton = document.querySelector('[data-account-newsletter-subscribe]');
     const newsletterUnsubscribeButton = document.querySelector('[data-account-newsletter-unsubscribe]');
     const newsletterMessage = document.querySelector('[data-account-newsletter-message]');
-    const logoutButton = document.querySelector('[data-account-logout]');
     const avatarDefaultDropzoneText = avatarDropzoneLabel?.textContent?.trim() || '';
     const avatarReplaceDropzoneText = avatarDropzone?.dataset.replaceLabel || 'Rilascia l’immagine per caricarla';
     let selectedAvatarFile = null;
+    let savedDisplayName = profileDisplayNameInput?.value || '';
+    let savedBadgeKey = profileBadgeInput?.value || '';
+    let savedBadgeLabel = profileSummaryBadgeLabel?.textContent?.trim() || '';
+    let savedBadgeImage = profileSummaryBadge?.querySelector('img')?.getAttribute('src') || '';
+    let savedBio = bioTextarea?.value || '';
+    let savedBioEn = bioEnTextarea?.value || '';
 
     const showMessage = (target, text, type = 'ok') => {
       if (!target) return;
@@ -617,6 +816,117 @@ const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus
         window.location.reload();
       }, 700);
     };
+
+    const getSelectedBadgeData = () => {
+      if (profileBadgeSelect) {
+        const selectedOption = profileBadgeSelect.selectedOptions?.[0];
+        const key = profileBadgeSelect.value || '';
+
+        if (!key || !selectedOption) {
+          return { key: '', label: '', image: '' };
+        }
+
+        return {
+          key,
+          label: selectedOption.dataset.badgeLabel || selectedOption.textContent?.trim() || key,
+          image: selectedOption.dataset.badgeImage || '',
+        };
+      }
+
+      if (profileBadgeInput?.value) {
+        return {
+          key: profileBadgeInput.value,
+          label: profileBadgeInput.dataset.badgeLabel || savedBadgeLabel,
+          image: profileBadgeInput.dataset.badgeImage || savedBadgeImage,
+        };
+      }
+
+      return { key: '', label: '', image: '' };
+    };
+
+    const updateBadgePreview = () => {
+      const badge = getSelectedBadgeData();
+
+      if (badgePreview) badgePreview.hidden = !badge.label;
+      if (badgePreviewLabel) badgePreviewLabel.textContent = badge.label;
+
+      if (badgePreviewImage) {
+        if (badge.image) {
+          badgePreviewImage.setAttribute('src', badge.image);
+          badgePreviewImage.hidden = false;
+        } else {
+          badgePreviewImage.hidden = true;
+        }
+      }
+    };
+
+    const updateProfileSummary = () => {
+      if (profileSummaryName) {
+        profileSummaryName.textContent = savedDisplayName || 'Non impostato';
+      }
+
+      if (profileSummaryBadge) profileSummaryBadge.hidden = !savedBadgeLabel;
+      if (profileSummaryBadgeLabel) profileSummaryBadgeLabel.textContent = savedBadgeLabel;
+      if (profileSummaryBadgeEmpty) profileSummaryBadgeEmpty.hidden = Boolean(savedBadgeLabel);
+
+      const existingSummaryImage = profileSummaryBadge?.querySelector('img');
+
+      if (existingSummaryImage) {
+        if (savedBadgeImage) {
+          existingSummaryImage.setAttribute('src', savedBadgeImage);
+          existingSummaryImage.hidden = false;
+        } else {
+          existingSummaryImage.hidden = true;
+        }
+      }
+
+      if (profileSummaryBadgeHelp) {
+        profileSummaryBadgeHelp.textContent = savedBadgeLabel
+          ? 'Questo è il badge mostrato nel tuo profilo e nei commenti.'
+          : 'Quando scegli un badge, apparirà nel profilo e nei commenti.';
+      }
+    };
+
+    const setProfileEditMode = (isEditing, shouldFocus = false) => {
+      if (profileSummary) profileSummary.hidden = isEditing;
+      if (form) form.hidden = !isEditing;
+
+      if (isEditing) {
+        if (profileMessage) profileMessage.hidden = true;
+        if (shouldFocus) {
+          window.setTimeout(() => {
+            if (profileDisplayNameInput) {
+              profileDisplayNameInput.focus();
+              return;
+            }
+
+            profileBadgeSelect?.focus();
+          }, 0);
+        }
+        updateBadgePreview();
+        return;
+      }
+
+      updateProfileSummary();
+    };
+
+    profileEditButton?.addEventListener('click', () => {
+      if (profileDisplayNameInput) profileDisplayNameInput.value = savedDisplayName;
+      if (profileBadgeSelect) profileBadgeSelect.value = savedBadgeKey;
+      updateBadgePreview();
+      setProfileEditMode(true, true);
+    });
+
+    profileCancelButton?.addEventListener('click', () => {
+      if (profileDisplayNameInput) profileDisplayNameInput.value = savedDisplayName;
+      if (profileBadgeSelect) profileBadgeSelect.value = savedBadgeKey;
+      if (!profileBadgeSelect && profileBadgeInput) profileBadgeInput.value = savedBadgeKey;
+      updateBadgePreview();
+      if (profileMessage) profileMessage.hidden = true;
+      setProfileEditMode(false);
+    });
+
+    profileBadgeSelect?.addEventListener('change', updateBadgePreview);
 
     newsletterSubscribeButton?.addEventListener('click', async () => {
       const consentInput = newsletterConsent?.querySelector('input[name="consent"]');
@@ -694,10 +1004,55 @@ const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus
       bioEnCounter.textContent = `${bioEnTextarea.value.length}/500`;
     };
 
+    const updateBioSummary = () => {
+      const hasBio = savedBio.trim().length > 0;
+      const hasBioEn = savedBioEn.trim().length > 0;
+
+      if (bioSummary) bioSummary.hidden = !hasBio;
+      if (bioEmpty) bioEmpty.hidden = hasBio;
+      if (bioSummaryIt) bioSummaryIt.textContent = savedBio;
+      if (bioSummaryEn) bioSummaryEn.hidden = !hasBioEn;
+      if (bioSummaryEnText) bioSummaryEnText.textContent = savedBioEn;
+      if (bioSummaryEnFallback) bioSummaryEnFallback.hidden = hasBioEn;
+    };
+
+    const setBioEditMode = (isEditing, shouldFocus = false) => {
+      if (bioForm) bioForm.hidden = !isEditing;
+
+      if (isEditing) {
+        if (bioSummary) bioSummary.hidden = true;
+        if (bioEmpty) bioEmpty.hidden = true;
+        if (bioMessage) bioMessage.hidden = true;
+        if (shouldFocus) {
+          window.setTimeout(() => bioTextarea?.focus(), 0);
+        }
+        return;
+      }
+
+      updateBioSummary();
+    };
+
     updateBioCounter();
     updateBioEnCounter();
     bioTextarea?.addEventListener('input', updateBioCounter);
     bioEnTextarea?.addEventListener('input', updateBioEnCounter);
+    bioEditButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        if (bioTextarea) bioTextarea.value = savedBio;
+        if (bioEnTextarea) bioEnTextarea.value = savedBioEn;
+        updateBioCounter();
+        updateBioEnCounter();
+        setBioEditMode(true, true);
+      });
+    });
+    bioCancelButton?.addEventListener('click', () => {
+      if (bioTextarea) bioTextarea.value = savedBio;
+      if (bioEnTextarea) bioEnTextarea.value = savedBioEn;
+      updateBioCounter();
+      updateBioEnCounter();
+      if (bioMessage) bioMessage.hidden = true;
+      setBioEditMode(false);
+    });
 
     const validAvatarTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
@@ -850,10 +1205,10 @@ const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus
 
       const formData = new FormData(form);
       const button = form.querySelector('button[type="submit"]');
-      const badgeSelect = form.querySelector('select[name="badgeKey"]');
+      const nextBadge = getSelectedBadgeData();
       const payload = {
-        displayName: String(formData.get('displayName') || ''),
-        ...(badgeSelect ? { badgeKey: String(formData.get('badgeKey') || '') } : {})
+        ...(formData.has('displayName') ? { displayName: String(formData.get('displayName') || '') } : {}),
+        ...(formData.has('badgeKey') ? { badgeKey: String(formData.get('badgeKey') || '') } : {})
       };
 
       if (button) button.disabled = true;
@@ -873,6 +1228,11 @@ const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus
         }
 
         showMessage(profileMessage, 'Profilo aggiornato.', 'ok');
+        savedDisplayName = result.profile?.display_name || payload.displayName?.trim() || savedDisplayName;
+        savedBadgeKey = nextBadge.key;
+        savedBadgeLabel = nextBadge.label;
+        savedBadgeImage = nextBadge.image;
+        setProfileEditMode(false);
       } catch {
         showMessage(profileMessage, 'Errore di connessione. Riprova.', 'error');
       } finally {
@@ -914,23 +1274,19 @@ const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus
           return;
         }
 
+        savedBio = typeof result.profile?.bio === 'string' ? result.profile.bio : bio.trim();
+        savedBioEn = typeof result.profile?.bio_en === 'string' ? result.profile.bio_en : bioEn.trim();
+
+        if (bioTextarea) bioTextarea.value = savedBio;
+        if (bioEnTextarea) bioEnTextarea.value = savedBioEn;
+        updateBioCounter();
+        updateBioEnCounter();
+        setBioEditMode(false);
         showMessage(bioMessage, 'Bio aggiornata.', 'ok');
       } catch {
         showMessage(bioMessage, 'Errore di connessione. Riprova.', 'error');
       } finally {
         if (button) button.disabled = false;
-      }
-    });
-
-    logoutButton?.addEventListener('click', async () => {
-      logoutButton.disabled = true;
-
-      try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        window.location.href = '/';
-      } catch {
-        showMessage(profileMessage, 'Logout non riuscito. Riprova.', 'error');
-        logoutButton.disabled = false;
       }
     });
   </script>

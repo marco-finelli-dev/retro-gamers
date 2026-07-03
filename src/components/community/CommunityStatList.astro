@@ -2,6 +2,8 @@
 interface StatItem {
   label: string;
   value: string | number;
+  href?: string;
+  ariaLabel?: string;
 }
 
 interface Props {
@@ -17,10 +19,17 @@ const { title = '', items } = Astro.props;
 
   <div class="community-stat-list">
     {items.map((item) => (
-      <div>
-        <strong>{item.value}</strong>
-        <span>{item.label}</span>
-      </div>
+      item.href ? (
+        <a href={item.href} aria-label={item.ariaLabel}>
+          <strong>{item.value}</strong>
+          <span>{item.label}</span>
+        </a>
+      ) : (
+        <div>
+          <strong>{item.value}</strong>
+          <span>{item.label}</span>
+        </div>
+      )
     ))}
   </div>
 </section>

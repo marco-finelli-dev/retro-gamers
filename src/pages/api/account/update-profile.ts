@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../lib/api-errors';
-import { readerOwnsBadge } from '../../../lib/badges';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { touchUserActivity } from '../../../lib/supabase/user-activity';
@@ -39,6 +38,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const badgeKey = payload.badgeKey?.trim() ?? '';
   const hasDisplayName = typeof payload.displayName === 'string';
   const hasBadgeKey = typeof payload.badgeKey === 'string';
+  const canEditDisplayName = session.profile.role === 'admin';
   const hasProfileFields = hasDisplayName || hasBadgeKey;
   const hasBio = typeof payload.bio === 'string';
   const hasBioEn = typeof payload.bioEn === 'string';
@@ -54,7 +54,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   if (hasProfileFields) {
-    if (hasDisplayName && (displayName.length < 2 || displayName.length > 40)) {
+    if (hasDisplayName && canEditDisplayName && (displayName.length < 2 || displayName.length > 40)) {
       return json({
         ok: false,
         error: 'Il nome visualizzato deve contenere 2-40 caratteri.',
@@ -82,24 +82,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         return json({ ok: false, error: 'Badge non valido.' }, 400);
       }
 
-      const ownership = await readerOwnsBadge(session.user.id, badgeKey);
-
-      if (ownership.error && ownership.assignmentsAvailable) {
-        logApiError('account-update-profile.badge-ownership', ownership.error);
-        return json({ ok: false, error: 'Badge non disponibile. Riprova più tardi.' }, 500);
-      }
-
-      if (ownership.assignmentsAvailable && !ownership.owns) {
-        return json({
-          ok: false,
-          error: 'Puoi scegliere solo un badge assegnato al tuo profilo.',
-        }, 403);
-      }
-
       updatePayload.badge_key = badgeKey;
     }
 
-    if (hasDisplayName) {
+    if (hasDisplayName && canEditDisplayName) {
       updatePayload.display_name = displayName;
     }
   }
@@ -164,6 +150,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         image_path
       )
     `;
+
+  if (Object.keys(updatePayload).length === 0) {
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select(selectFields)
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (profileError) {
+      logApiError('account-update-profile.noop-profile', profileError);
+      return json({ ok: false, error: 'Profilo non aggiornato. Riprova più tardi.' }, 500);
+    }
+
+    return json({
+      ok: true,
+      message: 'Nessun dato aggiornato.',
+      profile,
+    });
+  }
 
   const { data: profile, error: updateError } = await supabaseAdmin
     .from('profiles')

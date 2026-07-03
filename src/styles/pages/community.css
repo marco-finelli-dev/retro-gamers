@@ -299,7 +299,8 @@
   gap: 9px;
 }
 
-.community-stat-list div {
+.community-stat-list div,
+.community-stat-list a {
   display: grid;
   gap: 4px;
   min-width: 0;
@@ -307,6 +308,21 @@
   border: 1px solid var(--rg-badge-border);
   border-radius: 15px;
   background: color-mix(in srgb, var(--rg-card-bg) 82%, transparent);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.community-stat-list a:hover,
+.community-stat-list a:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-hover-bg);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .community-stat-list strong {
