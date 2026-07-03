@@ -11,6 +11,7 @@ import { getCommunityRank } from '../../lib/community-rank';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
+import { getNewsletterSubscriptionForUser } from '../../lib/supabase/newsletter';
 import { supabaseAdmin } from '../../lib/supabase/server';
 import { touchUserActivity } from '../../lib/supabase/user-activity';
 
@@ -30,6 +31,8 @@ const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username,
 let badges = [] as Awaited<ReturnType<typeof getOwnedReaderBadges>>;
 let currentBio = '';
 let currentBioEn = '';
+let newsletterStatus: 'none' | 'pending' | 'active' | 'unsubscribed' = 'none';
+let newsletterLanguage: 'it' | 'en' = 'it';
 const isMissingBioColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
   if (!error) return false;
 
@@ -109,17 +112,20 @@ const getProfileBio = async (userId: string) => {
 let commentActivity = { ...emptyCommunityStats };
 
 if (isLoggedIn && user?.id) {
-  const [, ownedBadges, profileBio, stats] = await Promise.all([
+  const [, ownedBadges, profileBio, stats, newsletter] = await Promise.all([
     touchUserActivity(user.id, 'account-load'),
     getOwnedReaderBadges(user.id),
     getProfileBio(user.id),
     getCommunityStats(user.id),
+    getNewsletterSubscriptionForUser(user.id, user.email),
   ]);
 
   badges = ownedBadges;
   currentBio = profileBio.bio;
   currentBioEn = profileBio.bioEn;
   commentActivity = stats;
+  newsletterStatus = newsletter.status;
+  newsletterLanguage = newsletter.language;
 }
 
 const communityStatItems = [
@@ -213,6 +219,79 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
               </div>
 
               <a href="/account/favorites/">Apri preferiti</a>
+            </section>
+
+            <section
+              class="account-newsletter-card"
+              aria-labelledby="account-newsletter-title"
+              data-account-newsletter
+              data-status={newsletterStatus}
+            >
+              <div class="account-newsletter-card__heading">
+                <p class="account-kicker">Newsletter</p>
+                <h2 id="account-newsletter-title">Newsletter</h2>
+                <p>
+                  Ricevi aggiornamenti su nuovi articoli, recensioni, speciali e iniziative della community.
+                </p>
+              </div>
+
+              <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                <p
+                  class="account-newsletter-status"
+                  data-account-newsletter-status
+                  data-none="Non sei iscritto alla newsletter."
+                  data-pending="Iscrizione in attesa di conferma. Controlla la tua email."
+                  data-active="Sei iscritto alla newsletter."
+                  data-unsubscribed="Hai disattivato la newsletter. Puoi iscriverti di nuovo quando vuoi."
+                >
+                  {newsletterStatus === 'active'
+                    ? 'Sei iscritto alla newsletter.'
+                    : newsletterStatus === 'pending'
+                      ? 'Iscrizione in attesa di conferma. Controlla la tua email.'
+                      : newsletterStatus === 'unsubscribed'
+                        ? 'Hai disattivato la newsletter. Puoi iscriverti di nuovo quando vuoi.'
+                        : 'Non sei iscritto alla newsletter.'}
+                </p>
+
+                <label>
+                  <span>Lingua preferita</span>
+                  <select name="language" data-account-newsletter-language>
+                    <option value="it" selected={newsletterLanguage !== 'en'}>Italiano</option>
+                    <option value="en" selected={newsletterLanguage === 'en'}>English</option>
+                  </select>
+                </label>
+
+                <label class="account-newsletter-consent" data-account-newsletter-consent hidden={newsletterStatus === 'active'}>
+                  <input type="checkbox" name="consent" />
+                  <span>
+                    Acconsento a ricevere la newsletter e dichiaro di aver letto la
+                    <a href="/privacy-policy/">Privacy Policy</a>.
+                  </span>
+                </label>
+
+                <p class="account-field-help">
+                  La disiscrizione dalla newsletter non modifica le email operative legate all’account, alla sicurezza o ai commenti.
+                </p>
+
+                <p class="account-message" data-account-newsletter-message hidden></p>
+
+                <div class="account-actions">
+                  <button
+                    type="button"
+                    data-account-newsletter-subscribe
+                    hidden={newsletterStatus === 'active'}
+                  >
+                    Iscrivimi
+                  </button>
+                  <button
+                    type="button"
+                    data-account-newsletter-unsubscribe
+                    hidden={newsletterStatus !== 'active'}
+                  >
+                    Disiscrivimi
+                  </button>
+                </div>
+              </form>
             </section>
 
             <section class="account-community-rank" aria-labelledby="account-community-rank-title">
@@ -461,6 +540,13 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
     const avatarDropzone = document.querySelector('[data-account-avatar-dropzone]');
     const avatarDropzoneLabel = document.querySelector('[data-account-avatar-dropzone-label]');
     const avatarFilename = document.querySelector('[data-account-avatar-filename]');
+    const newsletterCard = document.querySelector('[data-account-newsletter]');
+    const newsletterStatus = document.querySelector('[data-account-newsletter-status]');
+    const newsletterConsent = document.querySelector('[data-account-newsletter-consent]');
+    const newsletterLanguage = document.querySelector('[data-account-newsletter-language]');
+    const newsletterSubscribeButton = document.querySelector('[data-account-newsletter-subscribe]');
+    const newsletterUnsubscribeButton = document.querySelector('[data-account-newsletter-unsubscribe]');
+    const newsletterMessage = document.querySelector('[data-account-newsletter-message]');
     const logoutButton = document.querySelector('[data-account-logout]');
     const avatarDefaultDropzoneText = avatarDropzoneLabel?.textContent?.trim() || '';
     let selectedAvatarFile = null;
@@ -471,6 +557,105 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
       target.hidden = false;
       target.dataset.type = type;
     };
+
+    const updateNewsletterUi = (status) => {
+      if (newsletterCard) {
+        newsletterCard.dataset.status = status;
+      }
+
+      if (newsletterStatus) {
+        newsletterStatus.textContent =
+          newsletterStatus.dataset[status] || newsletterStatus.dataset.none || '';
+      }
+
+      if (newsletterConsent) {
+        newsletterConsent.hidden = status === 'active';
+      }
+
+      if (newsletterSubscribeButton) {
+        newsletterSubscribeButton.hidden = status === 'active';
+      }
+
+      if (newsletterUnsubscribeButton) {
+        newsletterUnsubscribeButton.hidden = status !== 'active';
+      }
+    };
+
+    const setNewsletterLoading = (isLoading) => {
+      if (newsletterSubscribeButton) {
+        newsletterSubscribeButton.disabled = isLoading;
+      }
+
+      if (newsletterUnsubscribeButton) {
+        newsletterUnsubscribeButton.disabled = isLoading;
+      }
+    };
+
+    newsletterSubscribeButton?.addEventListener('click', async () => {
+      const consentInput = newsletterConsent?.querySelector('input[name="consent"]');
+
+      if (!consentInput?.checked) {
+        showMessage(newsletterMessage, 'Per iscriverti devi accettare l’informativa privacy.', 'error');
+        consentInput?.focus();
+        return;
+      }
+
+      setNewsletterLoading(true);
+
+      try {
+        const response = await fetch('/api/account/newsletter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'subscribe',
+            language: newsletterLanguage?.value === 'en' ? 'en' : 'it',
+            consent: true
+          })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(newsletterMessage, result.error || 'Impossibile aggiornare la newsletter.', 'error');
+          return;
+        }
+
+        updateNewsletterUi(result.status || 'pending');
+        showMessage(newsletterMessage, result.message || 'Controlla la tua email per confermare l’iscrizione.', 'ok');
+
+        if (consentInput) {
+          consentInput.checked = false;
+        }
+      } catch {
+        showMessage(newsletterMessage, 'Impossibile aggiornare la newsletter.', 'error');
+      } finally {
+        setNewsletterLoading(false);
+      }
+    });
+
+    newsletterUnsubscribeButton?.addEventListener('click', async () => {
+      setNewsletterLoading(true);
+
+      try {
+        const response = await fetch('/api/account/newsletter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'unsubscribe' })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(newsletterMessage, result.error || 'Impossibile aggiornare la newsletter.', 'error');
+          return;
+        }
+
+        updateNewsletterUi(result.status || 'unsubscribed');
+        showMessage(newsletterMessage, result.message || 'Newsletter disattivata.', 'ok');
+      } catch {
+        showMessage(newsletterMessage, 'Impossibile aggiornare la newsletter.', 'error');
+      } finally {
+        setNewsletterLoading(false);
+      }
+    });
 
     const updateBioCounter = () => {
       if (!bioTextarea || !bioCounter) return;

@@ -382,6 +382,83 @@ html[data-theme="light"] .account-social-auth__icon--dark {
   outline: none;
 }
 
+.account-newsletter-card {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(34,197,187,0.09), transparent 64%),
+    var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.account-newsletter-card__heading {
+  display: grid;
+  gap: 8px;
+}
+
+.account-newsletter-card h2 {
+  margin: 0;
+  color: var(--rg-section-title-color);
+  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+}
+
+.account-newsletter-card__heading p:not(.account-kicker),
+.account-newsletter-status {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.account-newsletter-status {
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.account-newsletter-form {
+  margin-top: 0;
+}
+
+.account-newsletter-consent {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  color: var(--color-text-soft);
+  font-size: 0.94rem;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.account-newsletter-consent input {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  accent-color: var(--color-primary);
+}
+
+.account-newsletter-consent a {
+  color: var(--rg-action-color);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.account-newsletter-consent a:hover,
+.account-newsletter-consent a:focus-visible {
+  color: var(--rg-action-hover-color);
+  outline: none;
+}
+
 .account-community-rank {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.8fr);

@@ -29,6 +29,12 @@ type SubscribeInput = {
   userId?: string | null;
 };
 
+type AccountNewsletterInput = {
+  userId: string;
+  email: string;
+  language?: string | null;
+};
+
 export class NewsletterValidationError extends Error {
   status: number;
   code: string;
@@ -254,6 +260,185 @@ export async function subscribeToNewsletter({
     unavailable: false,
     subscriber: inserted as NewsletterSubscriber,
     shouldSendConfirmation: true,
+  };
+}
+
+export async function getNewsletterSubscriptionForUser(userId: string, email?: string | null) {
+  const normalizedEmail = normalizeNewsletterEmail(email || '');
+
+  if (!userId && !normalizedEmail) {
+    return {
+      ok: true,
+      unavailable: false,
+      status: 'none' as const,
+      subscriber: null as NewsletterSubscriber | null,
+      language: 'it' as NewsletterLanguage,
+    };
+  }
+
+  let subscriber: NewsletterSubscriber | null = null;
+
+  if (userId) {
+    const { data, error } = await supabaseAdmin
+      .from('newsletter_subscribers')
+      .select(selectSubscriber)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      if (!isNewsletterUnavailableError(error)) {
+        logApiError('newsletter.account.lookup-user', error);
+      }
+
+      return {
+        ok: false,
+        unavailable: isNewsletterUnavailableError(error),
+        status: 'none' as const,
+        subscriber: null as NewsletterSubscriber | null,
+        language: 'it' as NewsletterLanguage,
+        error: error.message,
+      };
+    }
+
+    subscriber = data as NewsletterSubscriber | null;
+  }
+
+  if (!subscriber && normalizedEmail) {
+    const { data, error } = await supabaseAdmin
+      .from('newsletter_subscribers')
+      .select(selectSubscriber)
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (error) {
+      if (!isNewsletterUnavailableError(error)) {
+        logApiError('newsletter.account.lookup-email', error);
+      }
+
+      return {
+        ok: false,
+        unavailable: isNewsletterUnavailableError(error),
+        status: 'none' as const,
+        subscriber: null as NewsletterSubscriber | null,
+        language: 'it' as NewsletterLanguage,
+        error: error.message,
+      };
+    }
+
+    subscriber = data as NewsletterSubscriber | null;
+  }
+
+  if (!subscriber) {
+    return {
+      ok: true,
+      unavailable: false,
+      status: 'none' as const,
+      subscriber: null as NewsletterSubscriber | null,
+      language: 'it' as NewsletterLanguage,
+    };
+  }
+
+  if (!subscriber.user_id && userId && subscriber.email === normalizedEmail) {
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from('newsletter_subscribers')
+      .update({ user_id: userId })
+      .eq('id', subscriber.id)
+      .select(selectSubscriber)
+      .single();
+
+    if (!updateError && updated) {
+      const linked = updated as NewsletterSubscriber;
+
+      return {
+        ok: true,
+        unavailable: false,
+        status: linked.status,
+        subscriber: linked,
+        language: linked.language,
+      };
+    }
+
+    if (updateError && !isNewsletterUnavailableError(updateError)) {
+      logApiError('newsletter.account.link-existing', updateError);
+    }
+  }
+
+  return {
+    ok: true,
+    unavailable: false,
+    status: subscriber.status,
+    subscriber,
+    language: subscriber.language,
+  };
+}
+
+export async function subscribeLoggedUserToNewsletter({
+  userId,
+  email,
+  language,
+}: AccountNewsletterInput) {
+  return subscribeToNewsletter({
+    email,
+    language,
+    consent: true,
+    source: 'account',
+    userId,
+  });
+}
+
+export async function unsubscribeLoggedUserFromNewsletter({
+  userId,
+  email,
+}: Omit<AccountNewsletterInput, 'language'>) {
+  const current = await getNewsletterSubscriptionForUser(userId, email);
+
+  if (!current.subscriber) {
+    return {
+      ok: true,
+      unavailable: current.unavailable,
+      status: 'none' as const,
+      subscriber: null as NewsletterSubscriber | null,
+      language: current.language,
+      error: 'Newsletter subscription not found.',
+    };
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabaseAdmin
+    .from('newsletter_subscribers')
+    .update({
+      user_id: userId,
+      status: 'unsubscribed',
+      unsubscribed_at: now,
+      confirmation_token: null,
+    })
+    .eq('id', current.subscriber.id)
+    .select(selectSubscriber)
+    .single();
+
+  if (error) {
+    if (!isNewsletterUnavailableError(error)) {
+      logApiError('newsletter.account.unsubscribe', error);
+    }
+
+    return {
+      ok: false,
+      unavailable: isNewsletterUnavailableError(error),
+      status: current.status,
+      subscriber: current.subscriber,
+      language: current.language,
+      error: error.message,
+    };
+  }
+
+  const subscriber = data as NewsletterSubscriber;
+
+  return {
+    ok: true,
+    unavailable: false,
+    status: subscriber.status,
+    subscriber,
+    language: subscriber.language,
   };
 }
 
