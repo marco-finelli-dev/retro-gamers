@@ -1,0 +1,563 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../community/CommunityHero.astro';
+import CommunityLayout from '../community/CommunityLayout.astro';
+import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies, isStaffProfile } from '../../lib/supabase/auth';
+import { isNewsletterUnavailableError } from '../../lib/supabase/newsletter';
+import { listNewsletterCampaigns } from '../../lib/supabase/newsletter-campaigns';
+import { supabaseAdmin } from '../../lib/supabase/server';
+import '../../styles/pages/admin-newsletter.css';
+
+type Lang = 'it' | 'en';
+
+interface Props {
+  lang?: Lang;
+}
+
+type CountResult = {
+  value: number | null;
+  error: string;
+  unavailable: boolean;
+};
+
+type NewsletterAdminSubscriber = {
+  email: string;
+  status: string | null;
+  language: string | null;
+  source: string | null;
+  created_at: string | null;
+  consent_at: string | null;
+  confirmed_at: string | null;
+  unsubscribed_at: string | null;
+};
+
+const { lang = 'it' } = Astro.props;
+const isEnglish = lang === 'en';
+const adminBase = isEnglish ? '/en/admin' : '/admin';
+const accountLoginUrl = isEnglish ? '/en/account/login/' : '/account/login/';
+const statusParam = Astro.url.searchParams.get('status') || 'all';
+const languageParam = Astro.url.searchParams.get('language') || 'all';
+const statusOptions = new Set(['all', 'active', 'pending', 'unsubscribed']);
+const languageOptions = new Set(['all', 'it', 'en']);
+const statusFilter = statusOptions.has(statusParam) ? statusParam : 'all';
+const languageFilter = languageOptions.has(languageParam) ? languageParam : 'all';
+
+const copy = isEnglish
+  ? {
+      title: 'Newsletter | Retro-Gamers.it',
+      description: 'Monitor subscribers and manage editorial newsletter campaigns.',
+      sidebarTitle: 'Editorial tools',
+      heroTitle: 'Newsletter',
+      heroDescription: 'Monitor subscribers, confirmations, unsubscriptions and editorial campaigns.',
+      readOnly: 'Subscribers read-only',
+      subscriberStatsLabel: 'Newsletter subscriber statistics',
+      subscribersTitle: 'Subscribers',
+      campaignsTitle: 'Newsletter campaigns',
+      campaignsDescription: 'Prepare drafts, preview emails, send tests and launch explicit editorial sends.',
+      newCampaign: 'New campaign',
+      dataUnavailable: 'Data unavailable',
+      countUnavailable: 'Count unavailable',
+      subscribersUnavailable: 'Newsletter data is unavailable. Check that the newsletter-v1.sql schema has been applied.',
+      campaignsUnavailable: 'Campaign data is unavailable. Check that newsletter-campaigns-v2.sql has been applied.',
+      loadSubscribersError: 'Could not load newsletter subscribers.',
+      noSubscribers: 'No subscribers found with these filters.',
+      noCampaigns: 'No campaigns yet.',
+      filters: {
+        status: 'Status',
+        language: 'Language',
+        all: 'All',
+        active: 'Active',
+        pending: 'Pending',
+        unsubscribed: 'Unsubscribed',
+        filter: 'Filter',
+        reset: 'Reset',
+      },
+      subscriberColumns: {
+        email: 'Email',
+        status: 'Status',
+        language: 'Language',
+        source: 'Source',
+        subscribed: 'Subscribed',
+        confirmed: 'Confirmed',
+        unsubscribed: 'Unsubscribed',
+      },
+      statCards: {
+        active: 'Active',
+        pending: 'Pending',
+        unsubscribed: 'Unsubscribed',
+        total: 'Total subscribers',
+      },
+      campaignColumns: {
+        title: 'Internal title',
+        subject: 'Subject',
+        status: 'Status',
+        language: 'Language',
+        created: 'Created',
+        sent: 'Sent',
+        actions: 'Actions',
+      },
+      actions: {
+        edit: 'Edit',
+        preview: 'Preview',
+      },
+      statusLabels: {
+        active: 'Active',
+        pending: 'Pending',
+        unsubscribed: 'Unsubscribed',
+        draft: 'Draft',
+        test_sent: 'Test sent',
+        sending: 'Sending',
+        sent: 'Sent',
+        cancelled: 'Cancelled',
+      },
+      accessTitle: 'Editorial access',
+      accessDescription: 'This page is reserved for Retro-Gamers.it staff.',
+      login: 'Sign in',
+      nav: {
+        dashboard: 'Editorial dashboard',
+        comments: 'Comment moderation',
+        commentReports: 'Comment reports',
+        users: 'Users',
+        privateMessageReports: 'Message reports',
+        ratings: 'Reader ratings',
+        newsletter: 'Newsletter',
+      },
+    }
+  : {
+      title: 'Newsletter | Retro-Gamers.it',
+      description: 'Monitoraggio iscritti e gestione campagne editoriali newsletter.',
+      sidebarTitle: 'Strumenti redazione',
+      heroTitle: 'Newsletter',
+      heroDescription: 'Controlla iscritti, conferme, disiscrizioni e campagne editoriali.',
+      readOnly: 'Iscritti read-only',
+      subscriberStatsLabel: 'Statistiche iscritti newsletter',
+      subscribersTitle: 'Iscritti newsletter',
+      campaignsTitle: 'Campagne newsletter',
+      campaignsDescription: 'Prepara bozze, anteprime, invii test e invii editoriali espliciti.',
+      newCampaign: 'Nuova campagna',
+      dataUnavailable: 'Dato non disponibile',
+      countUnavailable: 'Conteggio non disponibile',
+      subscribersUnavailable: 'Dati newsletter non disponibili. Verifica che lo schema SQL newsletter-v1.sql sia stato applicato.',
+      campaignsUnavailable: 'Dati campagne non disponibili. Verifica che newsletter-campaigns-v2.sql sia stato applicato.',
+      loadSubscribersError: 'Impossibile caricare gli iscritti newsletter.',
+      noSubscribers: 'Nessun iscritto newsletter trovato con questi filtri.',
+      noCampaigns: 'Nessuna campagna ancora creata.',
+      filters: {
+        status: 'Stato',
+        language: 'Lingua',
+        all: 'Tutti',
+        active: 'Attivi',
+        pending: 'In attesa',
+        unsubscribed: 'Disiscritti',
+        filter: 'Filtra',
+        reset: 'Reset',
+      },
+      subscriberColumns: {
+        email: 'Email',
+        status: 'Stato',
+        language: 'Lingua',
+        source: 'Fonte',
+        subscribed: 'Iscrizione',
+        confirmed: 'Conferma',
+        unsubscribed: 'Disiscrizione',
+      },
+      statCards: {
+        active: 'Attivi',
+        pending: 'In attesa',
+        unsubscribed: 'Disiscritti',
+        total: 'Totale iscritti',
+      },
+      campaignColumns: {
+        title: 'Titolo interno',
+        subject: 'Oggetto',
+        status: 'Stato',
+        language: 'Lingua',
+        created: 'Creata',
+        sent: 'Invio',
+        actions: 'Azioni',
+      },
+      actions: {
+        edit: 'Modifica',
+        preview: 'Anteprima',
+      },
+      statusLabels: {
+        active: 'Attivo',
+        pending: 'In attesa',
+        unsubscribed: 'Disiscritto',
+        draft: 'Draft',
+        test_sent: 'Test inviato',
+        sending: 'Invio in corso',
+        sent: 'Inviata',
+        cancelled: 'Annullata',
+      },
+      accessTitle: 'Accesso redazione',
+      accessDescription: 'Questa pagina è riservata allo staff Retro-Gamers.it.',
+      login: 'Accedi',
+      nav: {
+        dashboard: 'Area redazione',
+        comments: 'Moderazione commenti',
+        commentReports: 'Segnalazioni commenti',
+        users: 'Gestione utenti',
+        privateMessageReports: 'Segnalazioni messaggi',
+        ratings: 'Voti lettori',
+        newsletter: 'Newsletter',
+      },
+    };
+
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = isStaffProfile(session.profile);
+const dateFormatter = new Intl.DateTimeFormat(isEnglish ? 'en-US' : 'it-IT', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+const staffLinks = [
+  { href: `${adminBase}/`, label: copy.nav.dashboard },
+  { href: `${adminBase}/comments/`, label: copy.nav.comments },
+  { href: `${adminBase}/comment-reports/`, label: copy.nav.commentReports },
+  { href: `${adminBase}/users/`, label: copy.nav.users },
+  { href: `${adminBase}/private-message-reports/`, label: copy.nav.privateMessageReports },
+  { href: `${adminBase}/ratings/`, label: copy.nav.ratings },
+  { href: `${adminBase}/newsletter/`, label: copy.nav.newsletter },
+];
+
+const emptyCount = (): CountResult => ({ value: null, error: '', unavailable: false });
+
+const safeCount = async (callback: () => PromiseLike<{ count: number | null; error: any }>): Promise<CountResult> => {
+  try {
+    const { count, error } = await callback();
+
+    if (error) {
+      const unavailable = isNewsletterUnavailableError(error);
+
+      return {
+        value: null,
+        error: unavailable ? copy.dataUnavailable : copy.countUnavailable,
+        unavailable,
+      };
+    }
+
+    return { value: count ?? 0, error: '', unavailable: false };
+  } catch {
+    return { value: null, error: copy.countUnavailable, unavailable: false };
+  }
+};
+
+const formatCount = (count: CountResult) =>
+  count.value === null ? '—' : new Intl.NumberFormat(isEnglish ? 'en-US' : 'it-IT').format(count.value);
+
+const formatDate = (value?: string | null) => {
+  if (!value) return '—';
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date);
+};
+
+const getStatusLabel = (status?: string | null) => {
+  const key = String(status || '') as keyof typeof copy.statusLabels;
+
+  return copy.statusLabels[key] || status || '—';
+};
+
+const getLanguageLabel = (language?: string | null) =>
+  language === 'en' ? 'EN' : language === 'it' ? 'IT' : '—';
+
+let activeCount = emptyCount();
+let pendingCount = emptyCount();
+let unsubscribedCount = emptyCount();
+let totalCount = emptyCount();
+let italianCount = emptyCount();
+let englishCount = emptyCount();
+let subscribers: NewsletterAdminSubscriber[] = [];
+let newsletterError = '';
+let newsletterUnavailable = false;
+let campaigns = [];
+let campaignsError = '';
+
+if (isStaff) {
+  [
+    activeCount,
+    pendingCount,
+    unsubscribedCount,
+    totalCount,
+    italianCount,
+    englishCount,
+  ] = await Promise.all([
+    safeCount(() =>
+      supabaseAdmin
+        .from('newsletter_subscribers')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active')
+    ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('newsletter_subscribers')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending')
+    ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('newsletter_subscribers')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'unsubscribed')
+    ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('newsletter_subscribers')
+        .select('id', { count: 'exact', head: true })
+    ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('newsletter_subscribers')
+        .select('id', { count: 'exact', head: true })
+        .eq('language', 'it')
+    ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('newsletter_subscribers')
+        .select('id', { count: 'exact', head: true })
+        .eq('language', 'en')
+    ),
+  ]);
+
+  newsletterUnavailable = [
+    activeCount,
+    pendingCount,
+    unsubscribedCount,
+    totalCount,
+    italianCount,
+    englishCount,
+  ].some((count) => count.unavailable);
+
+  if (!newsletterUnavailable) {
+    let query = supabaseAdmin
+      .from('newsletter_subscribers')
+      .select('email, status, language, source, created_at, consent_at, confirmed_at, unsubscribed_at')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
+    }
+
+    if (languageFilter !== 'all') {
+      query = query.eq('language', languageFilter);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      newsletterUnavailable = isNewsletterUnavailableError(error);
+      newsletterError = newsletterUnavailable
+        ? copy.subscribersUnavailable
+        : copy.loadSubscribersError;
+    } else {
+      subscribers = (data ?? []) as NewsletterAdminSubscriber[];
+    }
+  } else {
+    newsletterError = copy.subscribersUnavailable;
+  }
+
+  const campaignResult = await listNewsletterCampaigns();
+  if (campaignResult.ok) {
+    campaigns = campaignResult.campaigns;
+  } else {
+    campaignsError = campaignResult.unavailable ? copy.campaignsUnavailable : (campaignResult.error || copy.dataUnavailable);
+  }
+}
+
+const statCards = [
+  { label: copy.statCards.active, count: activeCount },
+  { label: copy.statCards.pending, count: pendingCount },
+  { label: copy.statCards.unsubscribed, count: unsubscribedCount },
+  { label: copy.statCards.total, count: totalCount },
+  { label: 'IT', count: italianCount },
+  { label: 'EN', count: englishCount },
+];
+---
+
+<BaseLayout title={copy.title} description={copy.description} lang={lang}>
+  <CommunityLayout class="admin-newsletter-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title={copy.sidebarTitle}>
+          <div class="community-staff-links">
+            {staffLinks.map((link) => (
+              <a class="community-action-link" href={link.href}>{link.label}</a>
+            ))}
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    {isStaff ? (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title={copy.heroTitle}
+          description={copy.heroDescription}
+        >
+          <span slot="aside" class="community-soft-badge">{copy.readOnly}</span>
+        </CommunityHero>
+
+        <section class="admin-newsletter-stats" aria-label={copy.subscriberStatsLabel}>
+          {statCards.map((card) => (
+            <article class="community-card admin-newsletter-stat">
+              <span>{card.label}</span>
+              <strong>{formatCount(card.count)}</strong>
+              {card.count.error && <small>{card.count.error}</small>}
+            </article>
+          ))}
+        </section>
+
+        <section class="community-card admin-newsletter-panel">
+          <div class="admin-newsletter-section-head">
+            <div>
+              <h2>{copy.subscribersTitle}</h2>
+            </div>
+          </div>
+
+          <form class="admin-newsletter-filters" method="get">
+            <label>
+              <span>{copy.filters.status}</span>
+              <select name="status">
+                <option value="all" selected={statusFilter === 'all'}>{copy.filters.all}</option>
+                <option value="active" selected={statusFilter === 'active'}>{copy.filters.active}</option>
+                <option value="pending" selected={statusFilter === 'pending'}>{copy.filters.pending}</option>
+                <option value="unsubscribed" selected={statusFilter === 'unsubscribed'}>{copy.filters.unsubscribed}</option>
+              </select>
+            </label>
+
+            <label>
+              <span>{copy.filters.language}</span>
+              <select name="language">
+                <option value="all" selected={languageFilter === 'all'}>{copy.filters.all}</option>
+                <option value="it" selected={languageFilter === 'it'}>IT</option>
+                <option value="en" selected={languageFilter === 'en'}>EN</option>
+              </select>
+            </label>
+
+            <div class="admin-newsletter-filters__actions">
+              <button type="submit">{copy.filters.filter}</button>
+              <a href={`${adminBase}/newsletter/`}>{copy.filters.reset}</a>
+            </div>
+          </form>
+
+          {newsletterError ? (
+            <p class="admin-newsletter-empty">{newsletterError}</p>
+          ) : subscribers.length > 0 ? (
+            <div class="admin-newsletter-table-wrap">
+              <table class="admin-newsletter-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{copy.subscriberColumns.email}</th>
+                    <th scope="col">{copy.subscriberColumns.status}</th>
+                    <th scope="col">{copy.subscriberColumns.language}</th>
+                    <th scope="col">{copy.subscriberColumns.source}</th>
+                    <th scope="col">{copy.subscriberColumns.subscribed}</th>
+                    <th scope="col">{copy.subscriberColumns.confirmed}</th>
+                    <th scope="col">{copy.subscriberColumns.unsubscribed}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subscribers.map((subscriber) => (
+                    <tr>
+                      <td data-label={copy.subscriberColumns.email}>{subscriber.email}</td>
+                      <td data-label={copy.subscriberColumns.status}>
+                        <span class="admin-newsletter-status" data-status={subscriber.status || ''}>
+                          {getStatusLabel(subscriber.status)}
+                        </span>
+                      </td>
+                      <td data-label={copy.subscriberColumns.language}>{getLanguageLabel(subscriber.language)}</td>
+                      <td data-label={copy.subscriberColumns.source}>{subscriber.source || '—'}</td>
+                      <td data-label={copy.subscriberColumns.subscribed}>{formatDate(subscriber.consent_at || subscriber.created_at)}</td>
+                      <td data-label={copy.subscriberColumns.confirmed}>{formatDate(subscriber.confirmed_at)}</td>
+                      <td data-label={copy.subscriberColumns.unsubscribed}>{formatDate(subscriber.unsubscribed_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p class="admin-newsletter-empty">{copy.noSubscribers}</p>
+          )}
+        </section>
+
+        <section class="community-card admin-newsletter-panel">
+          <div class="admin-newsletter-section-head">
+            <div>
+              <h2>{copy.campaignsTitle}</h2>
+              <p>{copy.campaignsDescription}</p>
+            </div>
+            <a class="admin-newsletter-primary" href={`${adminBase}/newsletter/campaigns/new/`}>
+              {copy.newCampaign}
+            </a>
+          </div>
+
+          {campaignsError ? (
+            <p class="admin-newsletter-empty">{campaignsError}</p>
+          ) : campaigns.length > 0 ? (
+            <div class="admin-newsletter-table-wrap">
+              <table class="admin-newsletter-table admin-newsletter-campaign-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{copy.campaignColumns.title}</th>
+                    <th scope="col">{copy.campaignColumns.subject}</th>
+                    <th scope="col">{copy.campaignColumns.status}</th>
+                    <th scope="col">{copy.campaignColumns.language}</th>
+                    <th scope="col">{copy.campaignColumns.created}</th>
+                    <th scope="col">{copy.campaignColumns.sent}</th>
+                    <th scope="col">{copy.campaignColumns.actions}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map((campaign) => (
+                    <tr>
+                      <td data-label={copy.campaignColumns.title}>{campaign.title}</td>
+                      <td data-label={copy.campaignColumns.subject}>{campaign.subject}</td>
+                      <td data-label={copy.campaignColumns.status}>
+                        <span class="admin-newsletter-status" data-status={campaign.status}>
+                          {getStatusLabel(campaign.status)}
+                        </span>
+                      </td>
+                      <td data-label={copy.campaignColumns.language}>{getLanguageLabel(campaign.language)}</td>
+                      <td data-label={copy.campaignColumns.created}>{formatDate(campaign.created_at)}</td>
+                      <td data-label={copy.campaignColumns.sent}>{formatDate(campaign.sent_at)}</td>
+                      <td data-label={copy.campaignColumns.actions}>
+                        <div class="admin-newsletter-row-actions">
+                          <a href={`${adminBase}/newsletter/campaigns/${campaign.id}/`}>{copy.actions.edit}</a>
+                          <a href={`${adminBase}/newsletter/campaigns/${campaign.id}/preview/`}>{copy.actions.preview}</a>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p class="admin-newsletter-empty">{copy.noCampaigns}</p>
+          )}
+        </section>
+      </>
+    ) : (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title={copy.accessTitle}
+          description={copy.accessDescription}
+        />
+
+        <section class="community-card">
+          <div class="community-staff-links">
+            <a class="community-action-link" href={accountLoginUrl}>{copy.login}</a>
+          </div>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
+</BaseLayout>

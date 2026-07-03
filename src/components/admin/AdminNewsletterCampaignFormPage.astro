@@ -1,0 +1,680 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../community/CommunityHero.astro';
+import CommunityLayout from '../community/CommunityLayout.astro';
+import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies, isStaffProfile } from '../../lib/supabase/auth';
+import {
+  getActiveSubscribersForCampaign,
+  getNewsletterCampaignById,
+  isEditableNewsletterCampaign,
+  type NewsletterCampaign,
+  type NewsletterCampaignItem,
+} from '../../lib/supabase/newsletter-campaigns';
+import '../../styles/pages/admin-newsletter.css';
+
+type Lang = 'it' | 'en';
+
+interface Props {
+  lang?: Lang;
+  campaignId?: string;
+  mode?: 'new' | 'edit';
+}
+
+const { lang = 'it', campaignId = '', mode = 'new' } = Astro.props;
+const isEnglish = lang === 'en';
+const isNew = mode === 'new';
+const adminBase = isEnglish ? '/en/admin' : '/admin';
+const accountLoginUrl = isEnglish ? '/en/account/login/' : '/account/login/';
+
+const copy = isEnglish
+  ? {
+      title: isNew ? 'New campaign | Newsletter' : 'Edit campaign | Newsletter',
+      description: 'Prepare editorial newsletter campaigns safely.',
+      sidebarTitle: 'Editorial tools',
+      heroTitle: isNew ? 'New campaign' : 'Edit campaign',
+      heroDescription: 'Build the email content, send a test and launch only with explicit confirmation.',
+      accessTitle: 'Editorial access',
+      accessDescription: 'This page is reserved for Retro-Gamers.it staff.',
+      login: 'Sign in',
+      back: 'Back to newsletter',
+      preview: 'Preview',
+      save: isNew ? 'Create campaign' : 'Save campaign',
+      deleteDraft: 'Delete draft',
+      campaignNotFound: 'Campaign not found.',
+      unavailable: 'Campaign data is unavailable. Check that newsletter-campaigns-v2.sql has been applied.',
+      sentLocked: 'Sent campaigns can no longer be edited.',
+      cancelledLocked: 'This campaign can no longer be edited.',
+      contentHelp: 'Before sending, add at least an intro, content text or one editorial block.',
+      fields: {
+        language: 'Language',
+        title: 'Internal title',
+        subject: 'Email subject',
+        preheader: 'Preheader',
+        intro: 'Intro',
+        contentHtml: 'Simple HTML content',
+        contentText: 'Plain text content',
+        ctaLabel: 'CTA label',
+        ctaUrl: 'CTA URL',
+      },
+      placeholders: {
+        title: 'July editorial newsletter',
+        subject: 'New retro stories from Retro-Gamers.it',
+        preheader: 'A short preview shown by email clients.',
+        intro: 'Opening paragraph for the newsletter.',
+        contentHtml: '<p>Optional simple HTML content.</p>',
+        contentText: 'Optional plain text paragraphs.',
+        ctaLabel: 'Read more',
+        ctaUrl: 'https://www.retro-gamers.it/',
+      },
+      itemsTitle: 'Editorial blocks',
+      itemsDescription: 'Add recommended links or articles. Empty rows are ignored.',
+      item: {
+        type: 'Type',
+        position: 'Order',
+        title: 'Title',
+        description: 'Description',
+        url: 'URL',
+        imageUrl: 'Image URL',
+      },
+      testTitle: 'Test send',
+      testDescription: 'Send one test email without contacting subscribers.',
+      testEmail: 'Test email',
+      sendTest: 'Send test',
+      realTitle: 'Real send',
+      realDescription: 'Sends only to active subscribers in the campaign language. No automatic sends are scheduled.',
+      recipients: 'Active recipients',
+      confirmSend: 'I confirm I want to send this newsletter now.',
+      sendReal: 'Send newsletter',
+      status: {
+        draft: 'Draft',
+        test_sent: 'Test sent',
+        sending: 'Sending',
+        sent: 'Sent',
+        cancelled: 'Cancelled',
+      },
+      messages: {
+        saved: 'Campaign saved.',
+        saveError: 'Could not save campaign.',
+        testSent: 'Test email sent.',
+        testError: 'Could not send test email.',
+        realSent: 'Newsletter sent.',
+        realError: 'Could not send newsletter.',
+        confirmRequired: 'Confirm the real send before continuing.',
+        deleted: 'Draft deleted.',
+        deleteError: 'Could not delete draft.',
+      },
+      nav: {
+        dashboard: 'Editorial dashboard',
+        comments: 'Comment moderation',
+        commentReports: 'Comment reports',
+        users: 'Users',
+        privateMessageReports: 'Message reports',
+        ratings: 'Reader ratings',
+        newsletter: 'Newsletter',
+      },
+    }
+  : {
+      title: isNew ? 'Nuova campagna | Newsletter' : 'Modifica campagna | Newsletter',
+      description: 'Prepara campagne newsletter editoriali in modo sicuro.',
+      sidebarTitle: 'Strumenti redazione',
+      heroTitle: isNew ? 'Nuova campagna' : 'Modifica campagna',
+      heroDescription: 'Costruisci il contenuto email, invia un test e lancia solo con conferma esplicita.',
+      accessTitle: 'Accesso redazione',
+      accessDescription: 'Questa pagina è riservata allo staff Retro-Gamers.it.',
+      login: 'Accedi',
+      back: 'Torna alla newsletter',
+      preview: 'Anteprima',
+      save: isNew ? 'Crea campagna' : 'Salva campagna',
+      deleteDraft: 'Elimina draft',
+      campaignNotFound: 'Campagna non trovata.',
+      unavailable: 'Dati campagne non disponibili. Verifica che newsletter-campaigns-v2.sql sia stato applicato.',
+      sentLocked: 'Le campagne inviate non possono più essere modificate.',
+      cancelledLocked: 'Questa campagna non può più essere modificata.',
+      contentHelp: 'Prima dell’invio aggiungi almeno intro, contenuto testuale o un blocco editoriale.',
+      fields: {
+        language: 'Lingua',
+        title: 'Titolo interno',
+        subject: 'Oggetto email',
+        preheader: 'Preheader',
+        intro: 'Intro',
+        contentHtml: 'Contenuto HTML semplice',
+        contentText: 'Contenuto testuale',
+        ctaLabel: 'Etichetta CTA',
+        ctaUrl: 'URL CTA',
+      },
+      placeholders: {
+        title: 'Newsletter editoriale di luglio',
+        subject: 'Nuove storie retro da Retro-Gamers.it',
+        preheader: 'Breve anteprima mostrata dai client email.',
+        intro: 'Paragrafo di apertura della newsletter.',
+        contentHtml: '<p>Contenuto HTML semplice opzionale.</p>',
+        contentText: 'Paragrafi testuali opzionali.',
+        ctaLabel: 'Leggi di più',
+        ctaUrl: 'https://www.retro-gamers.it/',
+      },
+      itemsTitle: 'Blocchi editoriali',
+      itemsDescription: 'Aggiungi link o articoli consigliati. Le righe vuote vengono ignorate.',
+      item: {
+        type: 'Tipo',
+        position: 'Ordine',
+        title: 'Titolo',
+        description: 'Descrizione',
+        url: 'URL',
+        imageUrl: 'URL immagine',
+      },
+      testTitle: 'Invio test',
+      testDescription: 'Invia una sola email di test senza contattare gli iscritti.',
+      testEmail: 'Email test',
+      sendTest: 'Invia test',
+      realTitle: 'Invio reale',
+      realDescription: 'Invia solo agli iscritti attivi nella lingua della campagna. Non ci sono invii automatici.',
+      recipients: 'Destinatari attivi',
+      confirmSend: 'Confermo di voler inviare questa newsletter ora.',
+      sendReal: 'Invia newsletter',
+      status: {
+        draft: 'Draft',
+        test_sent: 'Test inviato',
+        sending: 'Invio in corso',
+        sent: 'Inviata',
+        cancelled: 'Annullata',
+      },
+      messages: {
+        saved: 'Campagna salvata.',
+        saveError: 'Impossibile salvare la campagna.',
+        testSent: 'Email di test inviata.',
+        testError: 'Impossibile inviare il test.',
+        realSent: 'Newsletter inviata.',
+        realError: 'Impossibile inviare la newsletter.',
+        confirmRequired: 'Conferma l’invio reale prima di continuare.',
+        deleted: 'Draft eliminato.',
+        deleteError: 'Impossibile eliminare il draft.',
+      },
+      nav: {
+        dashboard: 'Area redazione',
+        comments: 'Moderazione commenti',
+        commentReports: 'Segnalazioni commenti',
+        users: 'Gestione utenti',
+        privateMessageReports: 'Segnalazioni messaggi',
+        ratings: 'Voti lettori',
+        newsletter: 'Newsletter',
+      },
+    };
+
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = isStaffProfile(session.profile);
+const staffLinks = [
+  { href: `${adminBase}/`, label: copy.nav.dashboard },
+  { href: `${adminBase}/comments/`, label: copy.nav.comments },
+  { href: `${adminBase}/comment-reports/`, label: copy.nav.commentReports },
+  { href: `${adminBase}/users/`, label: copy.nav.users },
+  { href: `${adminBase}/private-message-reports/`, label: copy.nav.privateMessageReports },
+  { href: `${adminBase}/ratings/`, label: copy.nav.ratings },
+  { href: `${adminBase}/newsletter/`, label: copy.nav.newsletter },
+];
+
+let campaign: NewsletterCampaign | null = null;
+let campaignError = '';
+let unavailable = false;
+let recipientCount: number | null = null;
+
+if (isStaff && !isNew) {
+  const result = await getNewsletterCampaignById(campaignId);
+
+  if (result.ok) {
+    campaign = result.campaign;
+  } else {
+    unavailable = result.unavailable;
+    campaignError = result.unavailable ? copy.unavailable : result.error || copy.campaignNotFound;
+  }
+
+  if (!campaign && !campaignError) {
+    campaignError = copy.campaignNotFound;
+  }
+}
+
+const draftCampaign: NewsletterCampaign = campaign || {
+  id: '',
+  language: 'it',
+  status: 'draft',
+  title: '',
+  subject: '',
+  preheader: null,
+  intro: null,
+  content_html: null,
+  content_text: null,
+  cta_label: null,
+  cta_url: null,
+  created_by: null,
+  updated_by: null,
+  test_sent_at: null,
+  sent_at: null,
+  created_at: '',
+  updated_at: '',
+  items: [],
+};
+
+if (isStaff && (isNew || campaign)) {
+  const recipientResult = await getActiveSubscribersForCampaign(draftCampaign.language);
+  if (recipientResult.ok) {
+    recipientCount = recipientResult.subscribers.length;
+  }
+}
+
+const canEdit = isNew || isEditableNewsletterCampaign(campaign);
+const canDelete = campaign?.status === 'draft';
+const canSend = Boolean(campaign && isEditableNewsletterCampaign(campaign));
+const selectedLanguage = draftCampaign.language || 'it';
+const normalizedItems: NewsletterCampaignItem[] = [
+  ...(draftCampaign.items || []),
+  ...Array.from({ length: Math.max(0, 6 - (draftCampaign.items || []).length) }, (_, index) => ({
+    id: `empty-${index}`,
+    campaign_id: draftCampaign.id,
+    position: (draftCampaign.items || []).length + index,
+    type: 'external_link' as const,
+    title: '',
+    description: null,
+    url: null,
+    image_url: null,
+    created_at: '',
+  })),
+].slice(0, 12);
+
+const statusLabel = campaign ? copy.status[campaign.status] || campaign.status : copy.status.draft;
+const disabledReason = campaign?.status === 'sent'
+  ? copy.sentLocked
+  : campaign && !canEdit
+    ? copy.cancelledLocked
+    : '';
+---
+
+<BaseLayout title={`${copy.title} | Retro-Gamers.it`} description={copy.description} lang={lang}>
+  <CommunityLayout class="admin-newsletter-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title={copy.sidebarTitle}>
+          <div class="community-staff-links">
+            {staffLinks.map((link) => (
+              <a class="community-action-link" href={link.href}>{link.label}</a>
+            ))}
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    {isStaff ? (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title={copy.heroTitle}
+          description={copy.heroDescription}
+        >
+          {!isNew && <span slot="aside" class="community-soft-badge">{statusLabel}</span>}
+        </CommunityHero>
+
+        <div class="admin-newsletter-page-actions">
+          <a class="admin-newsletter-secondary" href={`${adminBase}/newsletter/`}>{copy.back}</a>
+          {!isNew && campaign && (
+            <a class="admin-newsletter-secondary" href={`${adminBase}/newsletter/campaigns/${campaign.id}/preview/`}>
+              {copy.preview}
+            </a>
+          )}
+        </div>
+
+        {campaignError ? (
+          <p class="admin-newsletter-empty">{campaignError}</p>
+        ) : (
+          <section class="community-card admin-newsletter-panel">
+            {disabledReason && <p class="admin-newsletter-empty">{disabledReason}</p>}
+            <p class="admin-newsletter-helper">{copy.contentHelp}</p>
+
+            <form
+              class="admin-newsletter-campaign-form"
+              data-newsletter-campaign-form
+              data-mode={isNew ? 'new' : 'edit'}
+              data-campaign-id={draftCampaign.id}
+              data-admin-base={adminBase}
+              data-api-base="/api/admin/newsletter/campaigns"
+              data-save-success={copy.messages.saved}
+              data-save-error={copy.messages.saveError}
+              data-delete-success={copy.messages.deleted}
+              data-delete-error={copy.messages.deleteError}
+            >
+              <div class="admin-newsletter-form-grid">
+                <label>
+                  <span>{copy.fields.language}</span>
+                  <select name="language" disabled={!canEdit}>
+                    <option value="it" selected={selectedLanguage === 'it'}>IT</option>
+                    <option value="en" selected={selectedLanguage === 'en'}>EN</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>{copy.fields.title}</span>
+                  <input name="title" type="text" value={draftCampaign.title} placeholder={copy.placeholders.title} required disabled={!canEdit} />
+                </label>
+
+                <label class="admin-newsletter-wide">
+                  <span>{copy.fields.subject}</span>
+                  <input name="subject" type="text" value={draftCampaign.subject} placeholder={copy.placeholders.subject} required disabled={!canEdit} />
+                </label>
+
+                <label class="admin-newsletter-wide">
+                  <span>{copy.fields.preheader}</span>
+                  <input name="preheader" type="text" value={draftCampaign.preheader || ''} placeholder={copy.placeholders.preheader} disabled={!canEdit} />
+                </label>
+
+                <label class="admin-newsletter-wide">
+                  <span>{copy.fields.intro}</span>
+                  <textarea name="intro" rows="4" placeholder={copy.placeholders.intro} disabled={!canEdit}>{draftCampaign.intro || ''}</textarea>
+                </label>
+
+                <label class="admin-newsletter-wide">
+                  <span>{copy.fields.contentHtml}</span>
+                  <textarea name="contentHtml" rows="6" placeholder={copy.placeholders.contentHtml} disabled={!canEdit}>{draftCampaign.content_html || ''}</textarea>
+                </label>
+
+                <label class="admin-newsletter-wide">
+                  <span>{copy.fields.contentText}</span>
+                  <textarea name="contentText" rows="6" placeholder={copy.placeholders.contentText} disabled={!canEdit}>{draftCampaign.content_text || ''}</textarea>
+                </label>
+
+                <label>
+                  <span>{copy.fields.ctaLabel}</span>
+                  <input name="ctaLabel" type="text" value={draftCampaign.cta_label || ''} placeholder={copy.placeholders.ctaLabel} disabled={!canEdit} />
+                </label>
+
+                <label>
+                  <span>{copy.fields.ctaUrl}</span>
+                  <input name="ctaUrl" type="url" value={draftCampaign.cta_url || ''} placeholder={copy.placeholders.ctaUrl} disabled={!canEdit} />
+                </label>
+              </div>
+
+              <div class="admin-newsletter-section-head">
+                <div>
+                  <h2>{copy.itemsTitle}</h2>
+                  <p>{copy.itemsDescription}</p>
+                </div>
+              </div>
+
+              <div class="admin-newsletter-items">
+                {normalizedItems.map((item, index) => (
+                  <fieldset class="admin-newsletter-item" data-campaign-item disabled={!canEdit}>
+                    <legend>{`${copy.itemsTitle} ${index + 1}`}</legend>
+                    <label>
+                      <span>{copy.item.position}</span>
+                      <input name="position" type="number" value={item.position} min="0" />
+                    </label>
+                    <label>
+                      <span>{copy.item.type}</span>
+                      <select name="type">
+                        <option value="article" selected={item.type === 'article'}>Article</option>
+                        <option value="review" selected={item.type === 'review'}>Review</option>
+                        <option value="feature" selected={item.type === 'feature'}>Feature</option>
+                        <option value="guide" selected={item.type === 'guide'}>Guide</option>
+                        <option value="external_link" selected={item.type === 'external_link'}>Link</option>
+                        <option value="text" selected={item.type === 'text'}>Text</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>{copy.item.title}</span>
+                      <input name="title" type="text" value={item.title} />
+                    </label>
+                    <label>
+                      <span>{copy.item.url}</span>
+                      <input name="url" type="url" value={item.url || ''} />
+                    </label>
+                    <label class="admin-newsletter-wide">
+                      <span>{copy.item.description}</span>
+                      <textarea name="description" rows="2">{item.description || ''}</textarea>
+                    </label>
+                    <label class="admin-newsletter-wide">
+                      <span>{copy.item.imageUrl}</span>
+                      <input name="imageUrl" type="url" value={item.image_url || ''} />
+                    </label>
+                  </fieldset>
+                ))}
+              </div>
+
+              <div class="admin-newsletter-actions">
+                <button type="submit" class="admin-newsletter-primary" disabled={!canEdit}>{copy.save}</button>
+                {canDelete && (
+                  <button type="button" class="admin-newsletter-danger" data-delete-campaign>
+                    {copy.deleteDraft}
+                  </button>
+                )}
+              </div>
+              <p class="admin-newsletter-form-message" data-campaign-message aria-live="polite"></p>
+            </form>
+          </section>
+        )}
+
+        {!isNew && campaign && (
+          <section class="community-card admin-newsletter-panel">
+            <div class="admin-newsletter-section-head">
+              <div>
+                <h2>{copy.testTitle}</h2>
+                <p>{copy.testDescription}</p>
+              </div>
+            </div>
+            <form
+              class="admin-newsletter-send-panel"
+              data-newsletter-test-form
+              data-campaign-id={campaign.id}
+              data-api-base="/api/admin/newsletter/campaigns"
+              data-success={copy.messages.testSent}
+              data-error={copy.messages.testError}
+            >
+              <label>
+                <span>{copy.testEmail}</span>
+                <input type="email" name="email" value={session.user?.email || ''} />
+              </label>
+              <button type="submit" class="admin-newsletter-primary" disabled={!canSend}>{copy.sendTest}</button>
+              <p class="admin-newsletter-form-message" data-test-message aria-live="polite"></p>
+            </form>
+          </section>
+        )}
+
+        {!isNew && campaign && (
+          <section class="community-card admin-newsletter-panel">
+            <div class="admin-newsletter-section-head">
+              <div>
+                <h2>{copy.realTitle}</h2>
+                <p>{copy.realDescription}</p>
+              </div>
+              <span class="community-soft-badge">
+                {copy.recipients}: {recipientCount === null ? '—' : recipientCount}
+              </span>
+            </div>
+            <form
+              class="admin-newsletter-send-panel"
+              data-newsletter-real-form
+              data-campaign-id={campaign.id}
+              data-api-base="/api/admin/newsletter/campaigns"
+              data-success={copy.messages.realSent}
+              data-error={copy.messages.realError}
+              data-confirm-error={copy.messages.confirmRequired}
+            >
+              <label class="admin-newsletter-confirm">
+                <input type="checkbox" name="confirm" />
+                <span>{copy.confirmSend}</span>
+              </label>
+              <button type="submit" class="admin-newsletter-danger" disabled={!canSend}>{copy.sendReal}</button>
+              <p class="admin-newsletter-form-message" data-real-message aria-live="polite"></p>
+            </form>
+          </section>
+        )}
+      </>
+    ) : (
+      <>
+        <CommunityHero kicker="Retro-Gamers.it" title={copy.accessTitle} description={copy.accessDescription} />
+        <section class="community-card">
+          <div class="community-staff-links">
+            <a class="community-action-link" href={accountLoginUrl}>{copy.login}</a>
+          </div>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
+</BaseLayout>
+
+<script>
+  const getFieldValue = (scope, name) =>
+    scope.querySelector(`[name="${name}"]`)?.value || '';
+
+  const getFormJson = (form) => {
+    const itemRows = [...form.querySelectorAll('[data-campaign-item]')];
+
+    return {
+      language: getFieldValue(form, 'language') || 'it',
+      title: getFieldValue(form, 'title'),
+      subject: getFieldValue(form, 'subject'),
+      preheader: getFieldValue(form, 'preheader'),
+      intro: getFieldValue(form, 'intro'),
+      contentHtml: getFieldValue(form, 'contentHtml'),
+      contentText: getFieldValue(form, 'contentText'),
+      ctaLabel: getFieldValue(form, 'ctaLabel'),
+      ctaUrl: getFieldValue(form, 'ctaUrl'),
+      items: itemRows.map((row) => ({
+        position: getFieldValue(row, 'position'),
+        type: getFieldValue(row, 'type') || 'external_link',
+        title: getFieldValue(row, 'title'),
+        description: getFieldValue(row, 'description'),
+        url: getFieldValue(row, 'url'),
+        imageUrl: getFieldValue(row, 'imageUrl'),
+      })),
+    };
+  };
+
+  const setMessage = (target, message, kind = 'info') => {
+    if (!target) return;
+    target.textContent = message || '';
+    target.dataset.kind = kind;
+  };
+
+  const campaignForm = document.querySelector('[data-newsletter-campaign-form]');
+  if (campaignForm) {
+    const message = campaignForm.querySelector('[data-campaign-message]');
+    const mode = campaignForm.dataset.mode;
+    const campaignId = campaignForm.dataset.campaignId;
+    const apiBase = campaignForm.dataset.apiBase;
+    const adminBase = campaignForm.dataset.adminBase;
+
+    campaignForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submitter = campaignForm.querySelector('button[type="submit"]');
+      submitter?.setAttribute('disabled', 'disabled');
+      setMessage(message, '');
+
+      try {
+        const response = await fetch(mode === 'new' ? apiBase : `${apiBase}/${campaignId}`, {
+          method: mode === 'new' ? 'POST' : 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(getFormJson(campaignForm)),
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || campaignForm.dataset.saveError);
+        }
+
+        if (mode === 'new' && payload.campaign?.id) {
+          window.location.href = `${adminBase}/newsletter/campaigns/${payload.campaign.id}/`;
+          return;
+        }
+
+        setMessage(message, campaignForm.dataset.saveSuccess, 'success');
+      } catch (error) {
+        setMessage(message, error instanceof Error ? error.message : campaignForm.dataset.saveError, 'error');
+      } finally {
+        submitter?.removeAttribute('disabled');
+      }
+    });
+
+    const deleteButton = campaignForm.querySelector('[data-delete-campaign]');
+    deleteButton?.addEventListener('click', async () => {
+      if (!campaignId || !window.confirm(deleteButton.textContent?.trim() || 'Delete draft?')) return;
+      deleteButton.setAttribute('disabled', 'disabled');
+
+      try {
+        const response = await fetch(`${apiBase}/${campaignId}`, { method: 'DELETE' });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || campaignForm.dataset.deleteError);
+        }
+
+        window.location.href = `${adminBase}/newsletter/`;
+      } catch (error) {
+        setMessage(message, error instanceof Error ? error.message : campaignForm.dataset.deleteError, 'error');
+        deleteButton.removeAttribute('disabled');
+      }
+    });
+  }
+
+  const testForm = document.querySelector('[data-newsletter-test-form]');
+  if (testForm) {
+    const message = testForm.querySelector('[data-test-message]');
+    testForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = testForm.querySelector('button[type="submit"]');
+      button?.setAttribute('disabled', 'disabled');
+      setMessage(message, '');
+
+      try {
+        const response = await fetch(`${testForm.dataset.apiBase}/${testForm.dataset.campaignId}/test-send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: getFieldValue(testForm, 'email') }),
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || testForm.dataset.error);
+        }
+
+        setMessage(message, testForm.dataset.success, 'success');
+        window.setTimeout(() => window.location.reload(), 650);
+      } catch (error) {
+        setMessage(message, error instanceof Error ? error.message : testForm.dataset.error, 'error');
+        button?.removeAttribute('disabled');
+      }
+    });
+  }
+
+  const realForm = document.querySelector('[data-newsletter-real-form]');
+  if (realForm) {
+    const message = realForm.querySelector('[data-real-message]');
+    realForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (!realForm.querySelector('[name="confirm"]')?.checked) {
+        setMessage(message, realForm.dataset.confirmError, 'error');
+        return;
+      }
+
+      const button = realForm.querySelector('button[type="submit"]');
+      button?.setAttribute('disabled', 'disabled');
+      setMessage(message, '');
+
+      try {
+        const response = await fetch(`${realForm.dataset.apiBase}/${realForm.dataset.campaignId}/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ confirm: true }),
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || realForm.dataset.error);
+        }
+
+        setMessage(message, `${realForm.dataset.success} (${payload.sentCount || 0} ok, ${payload.failedCount || 0} failed)`, 'success');
+        window.setTimeout(() => window.location.reload(), 800);
+      } catch (error) {
+        setMessage(message, error instanceof Error ? error.message : realForm.dataset.error, 'error');
+        button?.removeAttribute('disabled');
+      }
+    });
+  }
+</script>

@@ -1,0 +1,170 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../community/CommunityHero.astro';
+import CommunityLayout from '../community/CommunityLayout.astro';
+import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies, isStaffProfile } from '../../lib/supabase/auth';
+import { renderNewsletterCampaignEmail } from '../../lib/supabase/newsletter-campaign-emails';
+import { getNewsletterCampaignById } from '../../lib/supabase/newsletter-campaigns';
+import '../../styles/pages/admin-newsletter.css';
+
+type Lang = 'it' | 'en';
+
+interface Props {
+  lang?: Lang;
+  campaignId: string;
+}
+
+const { lang = 'it', campaignId } = Astro.props;
+const isEnglish = lang === 'en';
+const adminBase = isEnglish ? '/en/admin' : '/admin';
+const accountLoginUrl = isEnglish ? '/en/account/login/' : '/account/login/';
+
+const copy = isEnglish
+  ? {
+      title: 'Campaign preview | Newsletter',
+      description: 'Preview the final email without sending it.',
+      sidebarTitle: 'Editorial tools',
+      heroTitle: 'Campaign preview',
+      heroDescription: 'Review subject, preheader and rendered email before sending tests or real newsletters.',
+      back: 'Back to campaign',
+      newsletter: 'Back to newsletter',
+      subject: 'Subject',
+      preheader: 'Preheader',
+      previewNote: 'Unsubscribe links are placeholders in this preview. No email is sent from this page.',
+      notFound: 'Campaign not found.',
+      unavailable: 'Campaign data is unavailable. Check that newsletter-campaigns-v2.sql has been applied.',
+      accessTitle: 'Editorial access',
+      accessDescription: 'This page is reserved for Retro-Gamers.it staff.',
+      login: 'Sign in',
+      nav: {
+        dashboard: 'Editorial dashboard',
+        comments: 'Comment moderation',
+        commentReports: 'Comment reports',
+        users: 'Users',
+        privateMessageReports: 'Message reports',
+        ratings: 'Reader ratings',
+        newsletter: 'Newsletter',
+      },
+    }
+  : {
+      title: 'Anteprima campagna | Newsletter',
+      description: 'Anteprima dell’email finale senza invio.',
+      sidebarTitle: 'Strumenti redazione',
+      heroTitle: 'Anteprima campagna',
+      heroDescription: 'Controlla oggetto, preheader e resa email prima di inviare test o newsletter reali.',
+      back: 'Torna alla campagna',
+      newsletter: 'Torna alla newsletter',
+      subject: 'Oggetto',
+      preheader: 'Preheader',
+      previewNote: 'I link di disiscrizione sono placeholder in questa anteprima. Da questa pagina non parte nessuna email.',
+      notFound: 'Campagna non trovata.',
+      unavailable: 'Dati campagne non disponibili. Verifica che newsletter-campaigns-v2.sql sia stato applicato.',
+      accessTitle: 'Accesso redazione',
+      accessDescription: 'Questa pagina è riservata allo staff Retro-Gamers.it.',
+      login: 'Accedi',
+      nav: {
+        dashboard: 'Area redazione',
+        comments: 'Moderazione commenti',
+        commentReports: 'Segnalazioni commenti',
+        users: 'Gestione utenti',
+        privateMessageReports: 'Segnalazioni messaggi',
+        ratings: 'Voti lettori',
+        newsletter: 'Newsletter',
+      },
+    };
+
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = isStaffProfile(session.profile);
+const staffLinks = [
+  { href: `${adminBase}/`, label: copy.nav.dashboard },
+  { href: `${adminBase}/comments/`, label: copy.nav.comments },
+  { href: `${adminBase}/comment-reports/`, label: copy.nav.commentReports },
+  { href: `${adminBase}/users/`, label: copy.nav.users },
+  { href: `${adminBase}/private-message-reports/`, label: copy.nav.privateMessageReports },
+  { href: `${adminBase}/ratings/`, label: copy.nav.ratings },
+  { href: `${adminBase}/newsletter/`, label: copy.nav.newsletter },
+];
+
+let campaign = null;
+let previewHtml = '';
+let pageError = '';
+
+if (isStaff) {
+  const result = await getNewsletterCampaignById(campaignId);
+  if (result.ok && result.campaign) {
+    campaign = result.campaign;
+    previewHtml = renderNewsletterCampaignEmail({ campaign, isTest: true });
+  } else {
+    pageError = result.unavailable ? copy.unavailable : copy.notFound;
+  }
+}
+---
+
+<BaseLayout title={`${copy.title} | Retro-Gamers.it`} description={copy.description} lang={lang}>
+  <CommunityLayout class="admin-newsletter-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title={copy.sidebarTitle}>
+          <div class="community-staff-links">
+            {staffLinks.map((link) => (
+              <a class="community-action-link" href={link.href}>{link.label}</a>
+            ))}
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    {isStaff ? (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title={copy.heroTitle}
+          description={copy.heroDescription}
+        />
+
+        <div class="admin-newsletter-page-actions">
+          <a class="admin-newsletter-secondary" href={`${adminBase}/newsletter/campaigns/${campaignId}/`}>{copy.back}</a>
+          <a class="admin-newsletter-secondary" href={`${adminBase}/newsletter/`}>{copy.newsletter}</a>
+        </div>
+
+        {pageError ? (
+          <p class="admin-newsletter-empty">{pageError}</p>
+        ) : campaign ? (
+          <>
+            <section class="community-card admin-newsletter-panel">
+              <div class="admin-newsletter-preview-meta">
+                <div>
+                  <span>{copy.subject}</span>
+                  <strong>{campaign.subject}</strong>
+                </div>
+                <div>
+                  <span>{copy.preheader}</span>
+                  <strong>{campaign.preheader || '—'}</strong>
+                </div>
+              </div>
+              <p class="admin-newsletter-helper">{copy.previewNote}</p>
+            </section>
+
+            <section class="community-card admin-newsletter-panel">
+              <iframe
+                class="admin-newsletter-preview-frame"
+                title={copy.heroTitle}
+                srcdoc={previewHtml}
+              ></iframe>
+            </section>
+          </>
+        ) : null}
+      </>
+    ) : (
+      <>
+        <CommunityHero kicker="Retro-Gamers.it" title={copy.accessTitle} description={copy.accessDescription} />
+        <section class="community-card">
+          <div class="community-staff-links">
+            <a class="community-action-link" href={accountLoginUrl}>{copy.login}</a>
+          </div>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
+</BaseLayout>
