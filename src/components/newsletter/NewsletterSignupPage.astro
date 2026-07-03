@@ -1,5 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import { getNewsletterSubscriptionForUser } from '../../lib/supabase/newsletter';
 
 type NewsletterSignupLang = 'it' | 'en';
 
@@ -8,13 +10,37 @@ const isEnglish = lang === 'en';
 
 const copy = isEnglish
   ? {
-      pageTitle: 'Retro-Gamers Newsletter',
-      pageDescription: 'Get updates about new articles, reviews, features and community initiatives.',
+      pageTitle: 'Newsletter | Retro-Gamers.it',
+      pageDescription: 'Subscribe to the Retro-Gamers.it newsletter for articles, reviews, features and community updates.',
       canonical: 'https://www.retro-gamers.it/en/newsletter/',
       languageSwitch: '/newsletter/',
       kicker: 'Newsletter',
-      title: 'Retro-Gamers Newsletter',
-      subtitle: 'Get updates about new articles, reviews, features and community initiatives.',
+      title: 'The best of Retro-Gamers, without the noise',
+      subtitle: 'A periodic email with new articles, reviews, features and community updates. No spam, just carefully selected retro-gaming.',
+      benefitsTitle: 'What you’ll get',
+      benefits: [
+        {
+          title: 'New articles and reviews',
+          description: 'A selection of the latest content published on Retro-Gamers.it.',
+        },
+        {
+          title: 'Features and guides',
+          description: 'Stories, platforms, creators and useful guides for retro-gaming fans.',
+        },
+        {
+          title: 'Community',
+          description: 'Updates on features, comments, reader ratings and site initiatives.',
+        },
+      ],
+      trustNote: 'No miracle promises, no daily emails. Just updates when there is something worth sharing.',
+      formTitle: 'Subscribe to the newsletter',
+      formDescription: 'You can unsubscribe at any time. Newsletter emails are separate from operational account emails.',
+      pendingTitle: 'Your subscription is waiting for confirmation',
+      pendingText: 'We sent you a confirmation email. Please also check spam or promotions. From your account you can resend the confirmation or cancel the subscription.',
+      activeTitle: 'You are already subscribed to the newsletter',
+      activeText: 'You will receive updates in your selected language. You can manage or cancel your subscription from your account.',
+      accountCta: 'Manage subscription in your account',
+      accountHref: '/en/account/',
       emailLabel: 'Email',
       emailPlaceholder: 'you@example.com',
       languageLabel: 'Preferred language',
@@ -36,13 +62,37 @@ const copy = isEnglish
       ],
     }
   : {
-      pageTitle: 'Newsletter Retro-Gamers',
-      pageDescription: 'Ricevi aggiornamenti su nuovi articoli, recensioni, speciali e iniziative della community.',
+      pageTitle: 'Newsletter | Retro-Gamers.it',
+      pageDescription: 'Iscriviti alla newsletter di Retro-Gamers.it per ricevere articoli, recensioni, speciali e aggiornamenti dalla community.',
       canonical: 'https://www.retro-gamers.it/newsletter/',
       languageSwitch: '/en/newsletter/',
       kicker: 'Newsletter',
-      title: 'Newsletter Retro-Gamers',
-      subtitle: 'Ricevi aggiornamenti su nuovi articoli, recensioni, speciali e iniziative della community.',
+      title: 'Il meglio di Retro-Gamers, senza rumore',
+      subtitle: 'Una mail periodica con nuovi articoli, recensioni, speciali e aggiornamenti dalla community. Niente spam, solo retro-gaming scelto con cura.',
+      benefitsTitle: 'Cosa riceverai',
+      benefits: [
+        {
+          title: 'Nuovi articoli e recensioni',
+          description: 'Una selezione dei contenuti più recenti pubblicati su Retro-Gamers.it.',
+        },
+        {
+          title: 'Speciali e guide',
+          description: 'Approfondimenti, storie, piattaforme, autori e guide utili per chi ama il retro-gaming.',
+        },
+        {
+          title: 'Community',
+          description: 'Aggiornamenti su funzioni, commenti, voti lettori e iniziative del sito.',
+        },
+      ],
+      trustNote: 'Nessuna promessa miracolosa, nessuna email quotidiana. Solo aggiornamenti quando c’è qualcosa che vale la pena segnalare.',
+      formTitle: 'Iscriviti alla newsletter',
+      formDescription: 'Puoi disiscriverti in qualsiasi momento. L’iscrizione alla newsletter è separata dalle email operative dell’account.',
+      pendingTitle: 'La tua iscrizione è in attesa di conferma',
+      pendingText: 'Ti abbiamo inviato una email di conferma. Controlla anche spam o promozioni. Dall’account puoi reinviare la conferma o annullare l’iscrizione.',
+      activeTitle: 'Sei già iscritto alla newsletter',
+      activeText: 'Riceverai gli aggiornamenti nella lingua scelta. Puoi modificare o annullare l’iscrizione dal tuo account.',
+      accountCta: 'Gestisci iscrizione nell’account',
+      accountHref: '/account/',
       emailLabel: 'Email',
       emailPlaceholder: 'tuo@email.it',
       languageLabel: 'Lingua preferita',
@@ -63,6 +113,21 @@ const copy = isEnglish
         { lang: 'x-default', url: 'https://www.retro-gamers.it/newsletter/' },
       ],
     };
+
+const session = await getUserSessionFromCookies(Astro.cookies);
+const currentUser = !session.error && session.user ? session.user : null;
+let newsletterStatus: 'none' | 'pending' | 'active' | 'unsubscribed' = 'none';
+let newsletterLanguage: NewsletterSignupLang = lang;
+
+if (currentUser) {
+  const subscription = await getNewsletterSubscriptionForUser(currentUser.id, currentUser.email);
+  newsletterStatus = subscription.status;
+  newsletterLanguage = subscription.language === 'en' ? 'en' : 'it';
+}
+
+const isPending = currentUser && newsletterStatus === 'pending';
+const isActive = currentUser && newsletterStatus === 'active';
+const prefilledEmail = currentUser?.email || '';
 ---
 
 <BaseLayout
@@ -73,61 +138,99 @@ const copy = isEnglish
   languageSwitch={{ url: copy.languageSwitch }}
   alternateLanguages={copy.alternateLanguages}
 >
-  <main class="legal-page newsletter-page">
+  <main class="legal-page newsletter-page newsletter-landing">
     <div class="container">
-      <section class="legal-hero">
+      <section class="legal-hero newsletter-hero">
         <span>{copy.kicker}</span>
         <h1>{copy.title}</h1>
         <p>{copy.subtitle}</p>
       </section>
 
-      <article class="legal-content newsletter-panel">
-        <form
-          class="newsletter-form"
-          data-newsletter-form
-          data-success={copy.success}
-          data-invalid-email={copy.invalidEmail}
-          data-missing-consent={copy.missingConsent}
-          data-generic-error={copy.genericError}
-          data-submit-label={copy.submit}
-          data-sending-label={copy.sending}
-          novalidate
-        >
-          <label class="newsletter-form__field">
-            <span>{copy.emailLabel}</span>
-            <input
-              type="email"
-              name="email"
-              placeholder={copy.emailPlaceholder}
-              autocomplete="email"
-              required
-            />
-          </label>
+      <section class="newsletter-benefits" aria-labelledby="newsletter-benefits-title">
+        <div class="newsletter-section-heading">
+          <h2 id="newsletter-benefits-title">{copy.benefitsTitle}</h2>
+        </div>
 
-          <label class="newsletter-form__field">
-            <span>{copy.languageLabel}</span>
-            <select name="language" required>
-              <option value="it" selected={!isEnglish}>{copy.italian}</option>
-              <option value="en" selected={isEnglish}>{copy.english}</option>
-            </select>
-          </label>
+        <div class="newsletter-benefit-grid">
+          {copy.benefits.map((benefit) => (
+            <article class="legal-content newsletter-benefit-card">
+              <h3>{benefit.title}</h3>
+              <p>{benefit.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
-          <label class="newsletter-form__consent">
-            <input type="checkbox" name="consent" required />
-            <span>
-              {copy.consent}
-              <a href={copy.privacyHref}>{copy.privacyLabel}</a>
-            </span>
-          </label>
+      <aside class="newsletter-trust-note">
+        <p>{copy.trustNote}</p>
+      </aside>
 
-          <input type="hidden" name="source" value="newsletter-page" />
-
-          <div class="newsletter-form__actions">
-            <button type="submit">{copy.submit}</button>
-            <p class="newsletter-form__message" data-newsletter-message aria-live="polite"></p>
+      {isPending || isActive ? (
+        <article class="legal-content newsletter-status-panel" data-status={newsletterStatus}>
+          <span class="newsletter-status-panel__badge">
+            {newsletterLanguage === 'en' ? copy.english : copy.italian}
+          </span>
+          <h2>{isActive ? copy.activeTitle : copy.pendingTitle}</h2>
+          <p>{isActive ? copy.activeText : copy.pendingText}</p>
+          <a class="newsletter-status-panel__cta" href={copy.accountHref}>
+            {copy.accountCta}
+          </a>
+        </article>
+      ) : (
+        <article class="legal-content newsletter-panel">
+          <div class="newsletter-form-heading">
+            <h2>{copy.formTitle}</h2>
+            <p>{copy.formDescription}</p>
           </div>
-        </form>
-      </article>
+
+          <form
+            class="newsletter-form"
+            data-newsletter-form
+            data-success={copy.success}
+            data-invalid-email={copy.invalidEmail}
+            data-missing-consent={copy.missingConsent}
+            data-generic-error={copy.genericError}
+            data-submit-label={copy.submit}
+            data-sending-label={copy.sending}
+            novalidate
+          >
+            <label class="newsletter-form__field">
+              <span>{copy.emailLabel}</span>
+              <input
+                type="email"
+                name="email"
+                value={prefilledEmail}
+                placeholder={copy.emailPlaceholder}
+                autocomplete="email"
+                required
+              />
+            </label>
+
+            <label class="newsletter-form__field">
+              <span>{copy.languageLabel}</span>
+              <select name="language" required>
+                <option value="it" selected={newsletterLanguage !== 'en'}>{copy.italian}</option>
+                <option value="en" selected={newsletterLanguage === 'en'}>{copy.english}</option>
+              </select>
+            </label>
+
+            <label class="newsletter-form__consent">
+              <input type="checkbox" name="consent" required />
+              <span>
+                {copy.consent}
+                <a href={copy.privacyHref}>{copy.privacyLabel}</a>
+              </span>
+            </label>
+
+            <input type="hidden" name="source" value="newsletter-page" />
+
+            <div class="newsletter-form__actions">
+              <button type="submit">{copy.submit}</button>
+              <p class="newsletter-form__message" data-newsletter-message aria-live="polite"></p>
+            </div>
+          </form>
+        </article>
+      )}
     </div>
   </main>
 
