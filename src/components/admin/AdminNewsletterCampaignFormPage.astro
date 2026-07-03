@@ -67,6 +67,7 @@ const copy = isEnglish
         ctaLabel: 'Read more',
         ctaUrl: 'https://www.retro-gamers.it/',
       },
+      contentTextHelp: 'Plain-text fallback for the email. It is not shown in the HTML preview when HTML content is present.',
       itemsTitle: 'Editorial blocks',
       itemsDescription: 'Add recommended links or articles. Empty rows are ignored.',
       item: {
@@ -153,6 +154,7 @@ const copy = isEnglish
         ctaLabel: 'Leggi di più',
         ctaUrl: 'https://www.retro-gamers.it/',
       },
+      contentTextHelp: 'Versione testuale/fallback dell’email. Non viene mostrata nella preview HTML se è presente contenuto HTML.',
       itemsTitle: 'Blocchi editoriali',
       itemsDescription: 'Aggiungi link o articoli consigliati. Le righe vuote vengono ignorate.',
       item: {
@@ -377,6 +379,7 @@ const disabledReason = campaign?.status === 'sent'
                 <label class="admin-newsletter-wide">
                   <span>{copy.fields.contentText}</span>
                   <textarea name="contentText" rows="6" placeholder={copy.placeholders.contentText} disabled={!canEdit}>{draftCampaign.content_text || ''}</textarea>
+                  <small class="admin-newsletter-field-help">{copy.contentTextHelp}</small>
                 </label>
 
                 <label>

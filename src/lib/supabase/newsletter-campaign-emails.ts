@@ -107,14 +107,15 @@ export function renderNewsletterCampaignEmail({
       ? 'The unsubscribe link is a preview placeholder in test emails.'
       : 'Il link di disiscrizione è un placeholder nelle email di test.'
     : '';
+  const contentHtml = String(campaign.content_html || '').trim();
+  const contentTextFallback = String(campaign.content_text || '').trim();
   const bodyHtml = `
     ${testNotice ? `
       <div style="border:1px solid #f4c857; border-radius:12px; padding:12px 14px; margin:0 0 18px 0; background:#fff7d6; color:#6d5400; font-weight:700;">
         ${escapeEmailHtml(testNotice)}
       </div>
     ` : ''}
-    ${campaign.content_html || ''}
-    ${campaign.content_text ? renderTextContent(campaign.content_text) : ''}
+    ${contentHtml || (contentTextFallback ? renderTextContent(contentTextFallback) : '')}
     ${(campaign.items || []).map(renderCampaignItem).join('')}
   `;
 
