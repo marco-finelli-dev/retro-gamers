@@ -429,22 +429,45 @@ html[data-theme="light"] .account-social-auth__icon--dark {
   margin-top: 0;
 }
 
-.account-newsletter-consent {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
+.account-form .account-newsletter-consent {
+  display: flex;
   align-items: start;
+  gap: 12px;
   color: var(--color-text-soft);
+  cursor: pointer;
   font-size: 0.94rem;
   font-weight: 750;
   line-height: 1.55;
 }
 
-.account-newsletter-consent input {
+.account-form .account-newsletter-consent input[type="checkbox"] {
   width: 18px;
+  min-width: 18px;
   height: 18px;
-  margin-top: 3px;
+  min-height: 18px;
+  margin: 3px 0 0;
+  padding: 0;
+  flex: 0 0 18px;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
   accent-color: var(--color-primary);
+}
+
+.account-form .account-newsletter-consent input[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.account-form .account-newsletter-consent input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.account-form .account-newsletter-consent > span {
+  min-width: 0;
+  color: var(--color-text-soft);
+  font-weight: 750;
 }
 
 .account-newsletter-consent a {
