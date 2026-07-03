@@ -70,6 +70,10 @@ const copy = isEnglish
       contentTextHelp: 'Plain-text fallback for the email. It is not shown in the HTML preview when HTML content is present.',
       itemsTitle: 'Editorial blocks',
       itemsDescription: 'Add recommended links or articles. Empty rows are ignored.',
+      contentSearch: 'Search content',
+      contentSearchPlaceholder: 'Start typing the title...',
+      contentSearchEmpty: 'No content found',
+      contentSearchError: 'Search unavailable',
       item: {
         type: 'Type',
         position: 'Order',
@@ -157,6 +161,10 @@ const copy = isEnglish
       contentTextHelp: 'Versione testuale/fallback dell’email. Non viene mostrata nella preview HTML se è presente contenuto HTML.',
       itemsTitle: 'Blocchi editoriali',
       itemsDescription: 'Aggiungi link o articoli consigliati. Le righe vuote vengono ignorate.',
+      contentSearch: 'Cerca contenuto',
+      contentSearchPlaceholder: 'Inizia a digitare il titolo...',
+      contentSearchEmpty: 'Nessun contenuto trovato',
+      contentSearchError: 'Ricerca non disponibile',
       item: {
         type: 'Tipo',
         position: 'Ordine',
@@ -341,6 +349,8 @@ const disabledReason = campaign?.status === 'sent'
               data-save-error={copy.messages.saveError}
               data-delete-success={copy.messages.deleted}
               data-delete-error={copy.messages.deleteError}
+              data-search-empty={copy.contentSearchEmpty}
+              data-search-error={copy.contentSearchError}
             >
               <div class="admin-newsletter-form-grid">
                 <label>
@@ -415,9 +425,20 @@ const disabledReason = campaign?.status === 'sent'
                         <option value="review" selected={item.type === 'review'}>Review</option>
                         <option value="feature" selected={item.type === 'feature'}>Feature</option>
                         <option value="guide" selected={item.type === 'guide'}>Guide</option>
+                        <option value="news" selected={item.type === 'news'}>News</option>
                         <option value="external_link" selected={item.type === 'external_link'}>Link</option>
                         <option value="text" selected={item.type === 'text'}>Text</option>
                       </select>
+                    </label>
+                    <label class="admin-newsletter-wide admin-newsletter-content-search" data-content-search-wrap hidden>
+                      <span>{copy.contentSearch}</span>
+                      <input
+                        type="search"
+                        data-content-search
+                        placeholder={copy.contentSearchPlaceholder}
+                        autocomplete="off"
+                      />
+                      <div class="admin-newsletter-search-results" data-content-search-results hidden></div>
                     </label>
                     <label>
                       <span>{copy.item.title}</span>
@@ -562,6 +583,146 @@ const disabledReason = campaign?.status === 'sent'
     const campaignId = campaignForm.dataset.campaignId;
     const apiBase = campaignForm.dataset.apiBase;
     const adminBase = campaignForm.dataset.adminBase;
+    const internalContentTypes = new Set(['review', 'feature', 'guide', 'news']);
+    const languageSelect = campaignForm.querySelector('[name="language"]');
+
+    const setSearchResults = (resultsElement, items, row) => {
+      if (!resultsElement) return;
+      resultsElement.innerHTML = '';
+      resultsElement.hidden = false;
+
+      if (!items.length) {
+        const empty = document.createElement('p');
+        empty.className = 'admin-newsletter-search-empty';
+        empty.textContent = campaignForm.dataset.searchEmpty || 'No content found';
+        resultsElement.append(empty);
+        return;
+      }
+
+      for (const item of items) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'admin-newsletter-search-result';
+
+        const title = document.createElement('strong');
+        title.textContent = item.title || '';
+
+        const meta = document.createElement('span');
+        meta.textContent = [String(item.type || '').replace('_', ' '), String(item.language || '').toUpperCase()]
+          .filter(Boolean)
+          .join(' · ');
+
+        const excerpt = document.createElement('small');
+        excerpt.textContent = item.excerpt || '';
+
+        button.append(title, meta);
+        if (item.excerpt) {
+          button.append(excerpt);
+        }
+
+        button.addEventListener('click', () => {
+          const typeSelect = row.querySelector('[name="type"]');
+          const titleInput = row.querySelector('[name="title"]');
+          const descriptionInput = row.querySelector('[name="description"]');
+          const urlInput = row.querySelector('[name="url"]');
+          const imageInput = row.querySelector('[name="imageUrl"]');
+          const searchInput = row.querySelector('[data-content-search]');
+
+          if (typeSelect && item.type) typeSelect.value = item.type;
+          if (titleInput) titleInput.value = item.title || '';
+          if (descriptionInput) descriptionInput.value = item.excerpt || '';
+          if (urlInput) urlInput.value = item.url || '';
+          if (imageInput) imageInput.value = item.imageUrl || '';
+          if (searchInput) searchInput.value = item.title || '';
+
+          resultsElement.hidden = true;
+        });
+
+        resultsElement.append(button);
+      }
+    };
+
+    const setSearchUnavailable = (resultsElement) => {
+      if (!resultsElement) return;
+      resultsElement.innerHTML = '';
+      resultsElement.hidden = false;
+
+      const error = document.createElement('p');
+      error.className = 'admin-newsletter-search-empty';
+      error.textContent = campaignForm.dataset.searchError || 'Search unavailable';
+      resultsElement.append(error);
+    };
+
+    const initContentSearch = (row) => {
+      const typeSelect = row.querySelector('[name="type"]');
+      const searchWrap = row.querySelector('[data-content-search-wrap]');
+      const searchInput = row.querySelector('[data-content-search]');
+      const resultsElement = row.querySelector('[data-content-search-results]');
+      let debounceTimer = 0;
+
+      const updateVisibility = () => {
+        const isInternal = internalContentTypes.has(typeSelect?.value || '');
+        if (searchWrap) {
+          searchWrap.hidden = !isInternal;
+        }
+        if (!isInternal && resultsElement) {
+          resultsElement.hidden = true;
+          resultsElement.innerHTML = '';
+        }
+      };
+
+      typeSelect?.addEventListener('change', updateVisibility);
+      searchInput?.addEventListener('input', () => {
+        window.clearTimeout(debounceTimer);
+        const query = searchInput.value.trim();
+
+        if (query.length < 2) {
+          if (resultsElement) {
+            resultsElement.hidden = true;
+            resultsElement.innerHTML = '';
+          }
+          return;
+        }
+
+        debounceTimer = window.setTimeout(async () => {
+          const params = new URLSearchParams({
+            q: query,
+            lang: languageSelect?.value === 'en' ? 'en' : 'it',
+            type: typeSelect?.value || '',
+          });
+
+          try {
+            const response = await fetch(`/api/admin/newsletter/content-search?${params.toString()}`);
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok || !payload.ok) {
+              throw new Error('search_unavailable');
+            }
+
+            setSearchResults(resultsElement, Array.isArray(payload.items) ? payload.items : [], row);
+          } catch {
+            setSearchUnavailable(resultsElement);
+          }
+        }, 280);
+      });
+
+      updateVisibility();
+    };
+
+    campaignForm.querySelectorAll('[data-campaign-item]').forEach(initContentSearch);
+    languageSelect?.addEventListener('change', () => {
+      campaignForm.querySelectorAll('[data-content-search-results]').forEach((resultsElement) => {
+        resultsElement.hidden = true;
+        resultsElement.innerHTML = '';
+      });
+    });
+
+    document.addEventListener('click', (event) => {
+      if (campaignForm.contains(event.target)) return;
+      campaignForm.querySelectorAll('[data-content-search-results]').forEach((resultsElement) => {
+        resultsElement.hidden = true;
+      });
+    });
 
     campaignForm.addEventListener('submit', async (event) => {
       event.preventDefault();
