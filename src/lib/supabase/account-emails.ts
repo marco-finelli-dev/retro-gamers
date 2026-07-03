@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { escapeEmailHtml, renderRetroGamersEmail } from '../email-template';
 import { supabaseAdmin } from './server';
 
 type NewReaderRegistrationPayload = {
@@ -16,14 +17,6 @@ const resend = import.meta.env.RESEND_API_KEY
 const fallbackNotifyEmail = String(import.meta.env.COMMENTS_NOTIFY_EMAIL || '').trim();
 const fromEmail = String(import.meta.env.COMMENTS_FROM_EMAIL || 'Retro-Gamers <noreply@retro-gamers.it>');
 const siteUrl = String(import.meta.env.PUBLIC_SITE_URL || 'https://www.retro-gamers.it').replace(/\/$/, '');
-
-const escapeHtml = (value = '') =>
-  String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 
 const formatDate = (value?: string | null) => {
   if (!value) return new Date().toLocaleString('it-IT');
@@ -99,23 +92,37 @@ export async function sendNewReaderRegistrationAdminEmail({
 
   const adminUsersUrl = `${siteUrl}/admin/users/`;
   const subject = 'Nuovo utente registrato su Retro-Gamers.it';
-  const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
-      <h2>Nuovo utente registrato su Retro-Gamers.it</h2>
-
-      <p>
-        <strong>Email:</strong> ${escapeHtml(email || 'Non disponibile')}<br>
-        <strong>Username:</strong> ${escapeHtml(username)}<br>
-        <strong>Display name:</strong> ${escapeHtml(displayName)}<br>
-        <strong>Data registrazione:</strong> ${escapeHtml(formatDate(createdAt))}
+  const html = renderRetroGamersEmail({
+    title: 'Nuovo utente registrato',
+    intro: 'È stato creato un nuovo profilo lettore su Retro-Gamers.it.',
+    bodyHtml: `
+      <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%; border-collapse:collapse; margin:0;">
+        <tr>
+          <td style="padding:8px 0; color:#647883; width:150px;">Email</td>
+          <td style="padding:8px 0; color:#10202a;"><strong>${escapeEmailHtml(email || 'Non disponibile')}</strong></td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0; color:#647883;">Username</td>
+          <td style="padding:8px 0; color:#10202a;"><strong>${escapeEmailHtml(username)}</strong></td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0; color:#647883;">Display name</td>
+          <td style="padding:8px 0; color:#10202a;"><strong>${escapeEmailHtml(displayName)}</strong></td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0; color:#647883;">Data registrazione</td>
+          <td style="padding:8px 0; color:#10202a;"><strong>${escapeEmailHtml(formatDate(createdAt))}</strong></td>
+        </tr>
+      </table>
+      <p style="margin:18px 0 0 0; color:#647883;">
+        Puoi gestire ruolo e stato dal pannello utenti.
       </p>
-
-      <p>
-        Puoi gestire ruolo e stato dal pannello utenti:<br>
-        <a href="${escapeHtml(adminUsersUrl)}" style="color: #0070f3;">${escapeHtml(adminUsersUrl)}</a>
-      </p>
-    </div>
-  `;
+    `,
+    ctaLabel: 'Apri gestione utenti',
+    ctaUrl: adminUsersUrl,
+    language: 'it',
+    previewText: 'Nuovo utente registrato su Retro-Gamers.it.',
+  });
 
   try {
     await resend.emails.send({
