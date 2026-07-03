@@ -22,7 +22,9 @@ const isEn = lang === 'en';
 const copy = isEn
   ? {
       title: title || 'Saved articles',
-      empty: 'You haven’t saved any articles yet.',
+      empty: 'You haven’t saved any articles yet. Use the “Save article” button in reviews and features to find them here.',
+      exploreReviews: 'Explore reviews',
+      exploreReviewsHref: '/en/reviews/',
       unavailable: 'Saved articles are not available. Please try again later.',
       open: 'Open article',
       remove: 'Remove',
@@ -34,7 +36,9 @@ const copy = isEn
     }
   : {
       title: title || 'Articoli salvati',
-      empty: 'Non hai ancora salvato articoli.',
+      empty: 'Non hai ancora salvato articoli. Usa il pulsante ‘Salva articolo’ nelle recensioni e negli speciali per ritrovarli qui.',
+      exploreReviews: 'Esplora recensioni',
+      exploreReviewsHref: '/recensioni/',
       unavailable: 'Articoli salvati non disponibili. Riprova più tardi.',
       open: 'Apri articolo',
       remove: 'Rimuovi',
@@ -131,13 +135,14 @@ const formatSavedArticleDate = (value?: string) => {
         ))}
       </div>
 
-      <p
+      <div
         class="account-saved-articles__empty"
         data-account-saved-articles-empty
         hidden={articles.length > 0}
       >
-        {copy.empty}
-      </p>
+        <p>{copy.empty}</p>
+        <a href={copy.exploreReviewsHref}>{copy.exploreReviews}</a>
+      </div>
 
       <p class="account-message" data-account-saved-articles-message hidden></p>
     </>

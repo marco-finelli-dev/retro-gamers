@@ -23,8 +23,8 @@ import {
 } from '../../../lib/supabase/user-interests';
 import { touchUserActivity } from '../../../lib/supabase/user-activity';
 
-const title = 'I tuoi preferiti | Retro-Gamers.it';
-const description = 'Ritrova gli articoli salvati nel tuo profilo lettore Retro-Gamers.it.';
+const title = 'Preferiti e interessi | Retro-Gamers.it';
+const description = 'Ritrova gli articoli salvati, scegli i tuoi interessi retro e scopri contenuti collegati.';
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const profile = session.profile;
@@ -139,9 +139,9 @@ const communityStatItems = [
 
     <CommunityHero
       kicker="Preferiti"
-      title="I tuoi preferiti"
+      title="Preferiti e interessi"
       description={isLoggedIn
-        ? 'Ritrova gli articoli che hai salvato e, più avanti, i tuoi interessi retro.'
+        ? 'Ritrova gli articoli salvati, scegli i tuoi interessi retro e scopri contenuti collegati.'
         : 'Accedi per ritrovare gli articoli che hai salvato e i tuoi interessi retro.'}
     />
 

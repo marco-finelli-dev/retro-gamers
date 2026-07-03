@@ -468,6 +468,49 @@ html[data-theme="light"] .account-social-auth__icon--dark {
   font-weight: 750;
 }
 
+.account-saved-articles__empty {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.account-saved-articles__empty[hidden] {
+  display: none;
+}
+
+.account-saved-articles__empty p {
+  margin: 0;
+}
+
+.account-saved-articles__empty a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  font-size: 0.84rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-decoration: none;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.account-saved-articles__empty a:hover,
+.account-saved-articles__empty a:focus-visible {
+  transform: translateY(-1px);
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+}
+
 .account-saved-article__actions {
   display: flex;
   align-items: center;
@@ -1231,12 +1274,22 @@ html[data-theme="light"] .account-interest-article-card__image {
   color: #fecaca;
 }
 
+.account-message[data-type="warning"] {
+  border-color: rgba(20,184,166,0.28);
+  background: rgba(20,184,166,0.12);
+  color: #a7f3d0;
+}
+
 html[data-theme="light"] .account-message {
   color: #166534;
 }
 
 html[data-theme="light"] .account-message[data-type="error"] {
   color: #991b1b;
+}
+
+html[data-theme="light"] .account-message[data-type="warning"] {
+  color: #0f766e;
 }
 
 .account-switch {

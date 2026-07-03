@@ -43,7 +43,7 @@ const copy = isEn
       unavailable: 'Retro interests are not available. Please try again later.',
       addError: 'Could not add this interest.',
       removeError: 'Could not remove this interest.',
-      limit: 'You have reached the limit of 15 interests.',
+      limit: 'You have reached the limit of 15 interests. Remove one to add another.',
       savedTitle: 'Selected interests',
       chooseTitle: 'Add interest',
       noAvailable: 'No interests available.',
@@ -73,7 +73,7 @@ const copy = isEn
       unavailable: 'Interessi retro non disponibili. Riprova più tardi.',
       addError: 'Impossibile aggiungere l’interesse.',
       removeError: 'Impossibile rimuovere l’interesse.',
-      limit: 'Hai raggiunto il limite di 15 interessi.',
+      limit: 'Hai raggiunto il limite di 15 interessi. Rimuovine uno per aggiungerne un altro.',
       savedTitle: 'Interessi scelti',
       chooseTitle: 'Aggiungi interesse',
       noAvailable: 'Nessun interesse disponibile.',
@@ -290,7 +290,7 @@ const interestsByType = {
           removing: root.dataset.removingLabel || 'Rimozione…',
           addError: root.dataset.addError || 'Impossibile aggiungere l’interesse.',
           removeError: root.dataset.removeError || 'Impossibile rimuovere l’interesse.',
-          limit: root.dataset.limitMessage || 'Hai raggiunto il limite di 15 interessi.',
+          limit: root.dataset.limitMessage || 'Hai raggiunto il limite di 15 interessi. Rimuovine uno per aggiungerne un altro.',
           noAvailable: root.dataset.noAvailable || 'Nessun interesse disponibile.',
           noResults: root.dataset.noResults || 'Nessun risultato.',
           removeInterestAria: root.dataset.removeInterestAria || 'Rimuovi {name} dagli interessi',
@@ -360,7 +360,7 @@ const interestsByType = {
           if (reachedLimit) {
             addButton.disabled = true;
             addButton.textContent = labels.add;
-            showMessage(labels.limit, 'error');
+            showMessage(labels.limit, 'warning');
             return;
           }
 
@@ -548,7 +548,7 @@ const interestsByType = {
           hideMessage();
 
           if (getInterestItems().length >= limit) {
-            showMessage(labels.limit, 'error');
+            showMessage(labels.limit, 'warning');
             return;
           }
 
@@ -584,7 +584,11 @@ const interestsByType = {
             const result = await response.json();
 
             if (!response.ok || !result.ok) {
-              showMessage(result.code === 'limit_reached' ? labels.limit : (result.error || labels.addError), 'error');
+              const isLimitError = result.code === 'limit_reached';
+              showMessage(
+                isLimitError ? labels.limit : (result.error || labels.addError),
+                isLimitError ? 'warning' : 'error'
+              );
               addButton.disabled = false;
               addButton.textContent = defaultLabel;
               return;
