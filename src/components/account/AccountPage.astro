@@ -58,8 +58,9 @@ const copy = {
     newsletterDescription:
       'Ricevi aggiornamenti su nuovi articoli, recensioni, speciali e iniziative della community.',
     newsletterActive: 'Sei iscritto alla newsletter.',
-    newsletterPending: 'Iscrizione in attesa di conferma. Controlla la tua email.',
-    newsletterPendingNote: 'La newsletter sarà attiva solo dopo la conferma.',
+    newsletterPending: 'Conferma in attesa',
+    newsletterPendingNote:
+      'Ti abbiamo inviato una email di conferma. Controlla anche spam o promozioni.',
     newsletterUnsubscribed:
       'Hai disattivato la newsletter. Puoi iscriverti di nuovo quando vuoi.',
     newsletterNone: 'Non sei iscritto alla newsletter.',
@@ -69,6 +70,7 @@ const copy = {
       'La disiscrizione dalla newsletter non modifica le email operative legate all’account, alla sicurezza o ai commenti.',
     newsletterSubscribe: 'Iscrivimi',
     newsletterResubscribe: 'Iscrivimi di nuovo',
+    newsletterResendConfirmation: 'Reinvia email di conferma',
     newsletterUnsubscribe: 'Disiscrivimi',
     communityKicker: 'Community',
     communityLevel: 'Livello community',
@@ -183,8 +185,9 @@ const copy = {
     newsletterDescription:
       'Get updates about new articles, reviews, features and community initiatives.',
     newsletterActive: 'You are subscribed to the newsletter.',
-    newsletterPending: 'Subscription awaiting confirmation. Check your email.',
-    newsletterPendingNote: 'The newsletter will become active only after confirmation.',
+    newsletterPending: 'Confirmation pending',
+    newsletterPendingNote:
+      'We sent you a confirmation email. Please also check spam or promotions.',
     newsletterUnsubscribed:
       'You have turned off the newsletter. You can subscribe again whenever you want.',
     newsletterNone: 'You are not subscribed to the newsletter.',
@@ -194,6 +197,7 @@ const copy = {
       'Unsubscribing from the newsletter does not affect operational emails related to your account, security or comments.',
     newsletterSubscribe: 'Subscribe',
     newsletterResubscribe: 'Subscribe again',
+    newsletterResendConfirmation: 'Resend confirmation email',
     newsletterUnsubscribe: 'Unsubscribe',
     communityKicker: 'Community',
     communityLevel: 'Community level',
@@ -464,6 +468,8 @@ const clientCopy = currentLang === 'en'
       newsletterConsentRequired: 'To subscribe, you need to accept the privacy notice.',
       newsletterUpdateFailed: 'Could not update the newsletter.',
       newsletterConfirmEmail: 'Check your email to confirm the subscription.',
+      newsletterConfirmationResent: 'Confirmation email sent again.',
+      newsletterResendFailed: 'We could not resend the email. Please try again later.',
       newsletterDisabled: 'Newsletter turned off.',
       fileSelected: 'Selected file',
       invalidFile: 'Invalid file. Use JPG, PNG or WebP.',
@@ -487,6 +493,8 @@ const clientCopy = currentLang === 'en'
       newsletterConsentRequired: 'Per iscriverti devi accettare l’informativa privacy.',
       newsletterUpdateFailed: 'Impossibile aggiornare la newsletter.',
       newsletterConfirmEmail: 'Controlla la tua email per confermare l’iscrizione.',
+      newsletterConfirmationResent: 'Email di conferma inviata di nuovo.',
+      newsletterResendFailed: 'Non è stato possibile reinviare l’email. Riprova più tardi.',
       newsletterDisabled: 'Newsletter disattivata.',
       fileSelected: 'File selezionato',
       invalidFile: 'File non valido. Usa JPG, PNG o WebP.',
@@ -652,6 +660,10 @@ const clientCopy = currentLang === 'en'
                   <p class="account-message" data-account-newsletter-message hidden></p>
 
                   <div class="account-actions">
+                    <button type="button" data-account-newsletter-resend>
+                      {ui.newsletterResendConfirmation}
+                    </button>
+
                     <button type="button" data-account-newsletter-unsubscribe>
                       {ui.newsletterUnsubscribe}
                     </button>
@@ -1116,6 +1128,7 @@ const clientCopy = currentLang === 'en'
     const newsletterConsent = document.querySelector('[data-account-newsletter-consent]');
     const newsletterLanguage = document.querySelector('[data-account-newsletter-language]');
     const newsletterSubscribeButton = document.querySelector('[data-account-newsletter-subscribe]');
+    const newsletterResendButton = document.querySelector('[data-account-newsletter-resend]');
     const newsletterUnsubscribeButton = document.querySelector('[data-account-newsletter-unsubscribe]');
     const newsletterMessage = document.querySelector('[data-account-newsletter-message]');
     const avatarDefaultDropzoneText = avatarDropzoneLabel?.textContent?.trim() || '';
@@ -1147,6 +1160,10 @@ const clientCopy = currentLang === 'en'
 
       if (newsletterUnsubscribeButton) {
         newsletterUnsubscribeButton.disabled = isLoading;
+      }
+
+      if (newsletterResendButton) {
+        newsletterResendButton.disabled = isLoading;
       }
     };
 
@@ -1303,6 +1320,30 @@ const clientCopy = currentLang === 'en'
         }
       } catch {
         showMessage(newsletterMessage, clientCopy.newsletterUpdateFailed, 'error');
+      } finally {
+        setNewsletterLoading(false);
+      }
+    });
+
+    newsletterResendButton?.addEventListener('click', async () => {
+      setNewsletterLoading(true);
+
+      try {
+        const response = await fetch('/api/account/newsletter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'resend_confirmation' })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(newsletterMessage, localizedMessage(result.error, clientCopy.newsletterResendFailed), 'error');
+          return;
+        }
+
+        showMessage(newsletterMessage, localizedMessage(result.message, clientCopy.newsletterConfirmationResent), 'ok');
+      } catch {
+        showMessage(newsletterMessage, clientCopy.newsletterResendFailed, 'error');
       } finally {
         setNewsletterLoading(false);
       }

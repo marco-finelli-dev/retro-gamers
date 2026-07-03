@@ -5,6 +5,7 @@ import {
   NewsletterValidationError,
   getNewsletterSubscriptionForUser,
   normalizeNewsletterLanguage,
+  prepareNewsletterConfirmationResend,
   subscribeLoggedUserToNewsletter,
   unsubscribeLoggedUserFromNewsletter,
 } from '../../../lib/supabase/newsletter';
@@ -134,6 +135,97 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       message: 'Newsletter disattivata.',
       unavailable: result.unavailable,
     });
+  }
+
+  if (action === 'resend_confirmation') {
+    try {
+      const result = await prepareNewsletterConfirmationResend({
+        userId: session.user.id,
+        email: session.user.email || '',
+      });
+
+      if (result.status === 'active') {
+        return json({
+          ok: true,
+          status: 'active',
+          language: result.language,
+          code: 'already_active',
+          message: 'La newsletter è già attiva.',
+          unavailable: result.unavailable,
+        });
+      }
+
+      if (result.status === 'unsubscribed') {
+        return json({
+          ok: false,
+          status: 'unsubscribed',
+          language: result.language,
+          code: 'unsubscribed',
+          error: 'Iscriviti di nuovo per ricevere una nuova email di conferma.',
+          unavailable: result.unavailable,
+        }, 409);
+      }
+
+      if (!result.ok) {
+        return json({
+          ok: false,
+          status: result.status,
+          language: result.language,
+          code: result.code,
+          error: result.code === 'resend_throttled'
+            ? 'Hai già richiesto un reinvio da poco. Riprova tra qualche minuto.'
+            : 'Impossibile reinviare l’email di conferma.',
+          unavailable: result.unavailable,
+        }, result.code === 'resend_throttled' ? 429 : 500);
+      }
+
+      if (result.status === 'none' || !result.subscriber) {
+        return json({
+          ok: false,
+          status: 'none',
+          language: result.language,
+          code: 'not_found',
+          error: 'Nessuna iscrizione newsletter da confermare.',
+          unavailable: result.unavailable,
+        }, 404);
+      }
+
+      if (!result.shouldSendConfirmation) {
+        return json({
+          ok: false,
+          status: result.status,
+          language: result.language,
+          code: result.code,
+          error: 'Impossibile reinviare l’email di conferma.',
+          unavailable: result.unavailable,
+        }, 409);
+      }
+
+      const sent = await sendNewsletterConfirmationEmail(result.subscriber);
+
+      if (!sent) {
+        return json({
+          ok: false,
+          status: result.status,
+          language: result.language,
+          code: 'send_failed',
+          error: 'Impossibile reinviare l’email di conferma.',
+          unavailable: result.unavailable,
+        }, 500);
+      }
+
+      return json({
+        ok: true,
+        status: result.status,
+        language: result.language,
+        code: 'confirmation_resent',
+        message: 'Email di conferma inviata di nuovo.',
+        unavailable: result.unavailable,
+      });
+    } catch (resendError) {
+      logApiError('account-newsletter.resend-confirmation', resendError);
+      return json({ ok: false, error: 'Impossibile reinviare l’email di conferma.' }, 500);
+    }
   }
 
   return json({ ok: false, error: 'Azione newsletter non valida.' }, 400);

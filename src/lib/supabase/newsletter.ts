@@ -35,6 +35,8 @@ type AccountNewsletterInput = {
   language?: string | null;
 };
 
+const confirmationResendWindowMs = 10 * 60 * 1000;
+
 export class NewsletterValidationError extends Error {
   status: number;
   code: string;
@@ -439,6 +441,153 @@ export async function unsubscribeLoggedUserFromNewsletter({
     status: subscriber.status,
     subscriber,
     language: subscriber.language,
+  };
+}
+
+async function hasRecentNewsletterConfirmationDelivery(subscriberId: string) {
+  const cutoff = new Date(Date.now() - confirmationResendWindowMs).toISOString();
+
+  const { data, error } = await supabaseAdmin
+    .from('newsletter_delivery_logs')
+    .select('id, created_at')
+    .eq('subscriber_id', subscriberId)
+    .eq('email_type', 'confirmation')
+    .eq('status', 'sent')
+    .gte('created_at', cutoff)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    if (!isNewsletterUnavailableError(error)) {
+      logApiError('newsletter.resend-confirmation.throttle', error);
+    }
+
+    return false;
+  }
+
+  return Boolean(data?.id);
+}
+
+export async function prepareNewsletterConfirmationResend({
+  userId,
+  email,
+}: Omit<AccountNewsletterInput, 'language'>) {
+  const current = await getNewsletterSubscriptionForUser(userId, email);
+
+  if (!current.ok) {
+    return {
+      ok: false,
+      unavailable: current.unavailable,
+      status: current.status,
+      subscriber: current.subscriber,
+      language: current.language,
+      shouldSendConfirmation: false,
+      code: 'newsletter_unavailable',
+      error: current.error,
+    };
+  }
+
+  if (!current.subscriber) {
+    return {
+      ok: true,
+      unavailable: current.unavailable,
+      status: 'none' as const,
+      subscriber: null as NewsletterSubscriber | null,
+      language: current.language,
+      shouldSendConfirmation: false,
+      code: 'not_found',
+    };
+  }
+
+  if (current.subscriber.status === 'active') {
+    return {
+      ok: true,
+      unavailable: false,
+      status: current.subscriber.status,
+      subscriber: current.subscriber,
+      language: current.subscriber.language,
+      shouldSendConfirmation: false,
+      code: 'already_active',
+    };
+  }
+
+  if (current.subscriber.status === 'unsubscribed') {
+    return {
+      ok: true,
+      unavailable: false,
+      status: current.subscriber.status,
+      subscriber: current.subscriber,
+      language: current.subscriber.language,
+      shouldSendConfirmation: false,
+      code: 'unsubscribed',
+    };
+  }
+
+  const isThrottled = await hasRecentNewsletterConfirmationDelivery(current.subscriber.id);
+
+  if (isThrottled) {
+    return {
+      ok: false,
+      unavailable: false,
+      status: current.subscriber.status,
+      subscriber: current.subscriber,
+      language: current.subscriber.language,
+      shouldSendConfirmation: false,
+      code: 'resend_throttled',
+    };
+  }
+
+  if (current.subscriber.confirmation_token && current.subscriber.user_id === userId) {
+    return {
+      ok: true,
+      unavailable: false,
+      status: current.subscriber.status,
+      subscriber: current.subscriber,
+      language: current.subscriber.language,
+      shouldSendConfirmation: true,
+      code: 'pending',
+    };
+  }
+
+  const { confirmationToken } = createNewsletterTokens();
+  const { data, error } = await supabaseAdmin
+    .from('newsletter_subscribers')
+    .update({
+      user_id: userId,
+      confirmation_token: current.subscriber.confirmation_token || confirmationToken,
+    })
+    .eq('id', current.subscriber.id)
+    .select(selectSubscriber)
+    .single();
+
+  if (error) {
+    if (!isNewsletterUnavailableError(error)) {
+      logApiError('newsletter.resend-confirmation.prepare', error);
+    }
+
+    return {
+      ok: false,
+      unavailable: isNewsletterUnavailableError(error),
+      status: current.subscriber.status,
+      subscriber: current.subscriber,
+      language: current.subscriber.language,
+      shouldSendConfirmation: false,
+      code: 'update_failed',
+      error: error.message,
+    };
+  }
+
+  const subscriber = data as NewsletterSubscriber;
+
+  return {
+    ok: true,
+    unavailable: false,
+    status: subscriber.status,
+    subscriber,
+    language: subscriber.language,
+    shouldSendConfirmation: true,
+    code: 'pending',
   };
 }
 
