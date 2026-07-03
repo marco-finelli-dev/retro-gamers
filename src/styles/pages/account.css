@@ -382,6 +382,101 @@ html[data-theme="light"] .account-social-auth__icon--dark {
   outline: none;
 }
 
+.account-community-rank {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.8fr);
+  gap: 18px;
+  align-items: stretch;
+  padding: 20px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 22px;
+  background: var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.account-community-rank h2 {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.account-community-rank p {
+  margin: 8px 0 0;
+  color: var(--color-text-soft);
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.account-community-rank__summary {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 18px;
+  background: var(--rg-badge-bg);
+}
+
+.account-community-rank__summary span,
+.account-community-rank__progress span {
+  color: var(--color-text-soft);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.account-community-rank__summary strong {
+  color: var(--rg-badge-color);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.account-community-rank__summary p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.account-community-rank__progress,
+.account-community-rank__max {
+  grid-column: 1 / -1;
+}
+
+.account-community-rank__progress {
+  display: grid;
+  gap: 8px;
+}
+
+.account-community-rank__progress > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  justify-content: space-between;
+}
+
+.account-community-rank__progress strong {
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.account-community-rank__bar {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.account-community-rank__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(20,184,166,0.92), rgba(34,240,255,0.82));
+}
+
+.account-community-rank__max {
+  margin: 0;
+}
+
 .account-saved-articles {
   display: grid;
   gap: 16px;
@@ -1353,6 +1448,11 @@ html[data-theme="light"] .account-message[data-type="warning"] {
 
   .account-favorites-card > a {
     width: 100%;
+  }
+
+  .account-community-rank {
+    grid-template-columns: 1fr;
+    padding: 18px;
   }
 
   .account-editorial-tools__actions {

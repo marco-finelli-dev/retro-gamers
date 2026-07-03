@@ -1,10 +1,13 @@
 import { supabaseAdmin } from './server';
+import { calculateCommunityPoints } from '../community-points';
 
 export type CommunityStats = {
   approved: number;
   pending: number;
   likesReceived: number;
   dislikesReceived: number;
+  reviewRatings: number;
+  communityPoints: number;
 };
 
 export const emptyCommunityStats: CommunityStats = {
@@ -12,6 +15,21 @@ export const emptyCommunityStats: CommunityStats = {
   pending: 0,
   likesReceived: 0,
   dislikesReceived: 0,
+  reviewRatings: 0,
+  communityPoints: calculateCommunityPoints({}),
+};
+
+const isReviewRatingsUnavailable = (error: { code?: string; message?: string; details?: string } | null) => {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    error.code === '42P01' ||
+    error.code === 'PGRST205' ||
+    error.code === 'PGRST204' ||
+    message.includes('review_ratings')
+  );
 };
 
 export async function getCommunityStats(userId?: string | null): Promise<CommunityStats> {
@@ -20,6 +38,20 @@ export async function getCommunityStats(userId?: string | null): Promise<Communi
   }
 
   const stats = { ...emptyCommunityStats };
+  const { count: reviewRatingsCount, error: reviewRatingsError } = await supabaseAdmin
+    .from('review_ratings')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (reviewRatingsError && !isReviewRatingsUnavailable(reviewRatingsError)) {
+    console.error('Community stats review ratings query failed:', {
+      code: reviewRatingsError.code,
+      message: reviewRatingsError.message,
+    });
+  }
+
+  stats.reviewRatings = reviewRatingsError ? 0 : reviewRatingsCount ?? 0;
+
   const { data: userComments, error: userCommentsError } = await supabaseAdmin
     .from('comments')
     .select('id, status')
@@ -30,6 +62,9 @@ export async function getCommunityStats(userId?: string | null): Promise<Communi
     console.error('Community stats comments query failed:', {
       code: userCommentsError.code,
       message: userCommentsError.message,
+    });
+    stats.communityPoints = calculateCommunityPoints({
+      reviewRatings: stats.reviewRatings,
     });
     return stats;
   }
@@ -49,6 +84,9 @@ export async function getCommunityStats(userId?: string | null): Promise<Communi
   }
 
   if (commentIds.length === 0) {
+    stats.communityPoints = calculateCommunityPoints({
+      reviewRatings: stats.reviewRatings,
+    });
     return stats;
   }
 
@@ -62,6 +100,10 @@ export async function getCommunityStats(userId?: string | null): Promise<Communi
       code: reactionsError.code,
       message: reactionsError.message,
     });
+    stats.communityPoints = calculateCommunityPoints({
+      approvedComments: stats.approved,
+      reviewRatings: stats.reviewRatings,
+    });
     return stats;
   }
 
@@ -74,6 +116,12 @@ export async function getCommunityStats(userId?: string | null): Promise<Communi
       stats.dislikesReceived += 1;
     }
   }
+
+  stats.communityPoints = calculateCommunityPoints({
+    approvedComments: stats.approved,
+    receivedLikes: stats.likesReceived,
+    reviewRatings: stats.reviewRatings,
+  });
 
   return stats;
 }

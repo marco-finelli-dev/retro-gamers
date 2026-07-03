@@ -7,6 +7,7 @@ import CommunitySidebarProfile from '../../components/community/CommunitySidebar
 import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
 import CommunityStatList from '../../components/community/CommunityStatList.astro';
 import { getOwnedReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
+import { getCommunityRank } from '../../lib/community-rank';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
@@ -122,11 +123,14 @@ if (isLoggedIn && user?.id) {
 }
 
 const communityStatItems = [
+  { label: 'Punti community', value: commentActivity.communityPoints },
   { label: 'Commenti pubblicati', value: commentActivity.approved },
   { label: 'In attesa', value: commentActivity.pending },
   { label: 'Like ricevuti', value: commentActivity.likesReceived },
   { label: 'Dislike ricevuti', value: commentActivity.dislikesReceived },
 ];
+const communityRank = getCommunityRank(commentActivity.communityPoints);
+const communityRankProgress = Math.round(communityRank.progressToNext);
 
 ---
 
@@ -209,6 +213,45 @@ const communityStatItems = [
               </div>
 
               <a href="/account/favorites/">Apri preferiti</a>
+            </section>
+
+            <section class="account-community-rank" aria-labelledby="account-community-rank-title">
+              <div>
+                <p class="account-kicker">Community</p>
+                <h2 id="account-community-rank-title">Livello community</h2>
+                <p>
+                  Il livello è calcolato automaticamente dai tuoi punti community, senza classifiche pubbliche.
+                </p>
+              </div>
+
+              <div class="account-community-rank__summary">
+                <span>Livello attuale</span>
+                <strong>{communityRank.label}</strong>
+                <p>{communityRank.descriptionIt}</p>
+              </div>
+
+              {communityRank.nextRank ? (
+                <div class="account-community-rank__progress">
+                  <div>
+                    <span>Prossimo livello: {communityRank.nextRank.label}</span>
+                    <strong>{commentActivity.communityPoints} punti</strong>
+                  </div>
+                  <div
+                    class="account-community-rank__bar"
+                    aria-label={`Progresso verso ${communityRank.nextRank.label}`}
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow={communityRankProgress}
+                    role="progressbar"
+                  >
+                    <span style={`width: ${communityRankProgress}%`}></span>
+                  </div>
+                </div>
+              ) : (
+                <p class="account-community-rank__max">
+                  Hai raggiunto il livello più alto della community.
+                </p>
+              )}
             </section>
 
             <section class="account-avatar-section" aria-labelledby="account-avatar-title">

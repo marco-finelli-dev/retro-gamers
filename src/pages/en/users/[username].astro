@@ -12,6 +12,7 @@ import {
   getPublicUserUrl,
 } from '../../../lib/supabase/public-profiles';
 import { getReaderBadgeImageSrcForBadge } from '../../../lib/badges';
+import { getCommunityRank } from '../../../lib/community-rank';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 
 const username = String(Astro.params.username || '');
@@ -74,6 +75,7 @@ const publicStats = [
   { label: 'Likes', value: result.likesReceived },
 ];
 const pointsBadgeLabel = `Community points: ${result.communityPoints}`;
+const communityRank = getCommunityRank(result.communityPoints);
 ---
 
 <BaseLayout
@@ -150,6 +152,12 @@ const pointsBadgeLabel = `Community points: ${result.communityPoints}`;
                 <span>Member since</span>
                 <strong>{memberSince}</strong>
               </p>
+
+              <div class="public-user-rank-card" aria-label="Community rank">
+                <span>Community rank</span>
+                <strong>{communityRank.label}</strong>
+                <p>{communityRank.descriptionEn}</p>
+              </div>
             </div>
 
             {!isOwnProfile && (

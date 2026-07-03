@@ -12,6 +12,7 @@ import {
   getPublicUserUrl,
 } from '../../lib/supabase/public-profiles';
 import { getReaderBadgeImageSrcForBadge } from '../../lib/badges';
+import { getCommunityRank } from '../../lib/community-rank';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 
 const username = String(Astro.params.username || '');
@@ -74,6 +75,7 @@ const publicStats = [
   { label: 'Like', value: result.likesReceived },
 ];
 const pointsBadgeLabel = `Punti community: ${result.communityPoints}`;
+const communityRank = getCommunityRank(result.communityPoints);
 ---
 
 <BaseLayout
@@ -149,6 +151,12 @@ const pointsBadgeLabel = `Punti community: ${result.communityPoints}`;
                 <span>Membro dal</span>
                 <strong>{memberSince}</strong>
               </p>
+
+              <div class="public-user-rank-card" aria-label="Livello community">
+                <span>Livello community</span>
+                <strong>{communityRank.label}</strong>
+                <p>{communityRank.descriptionIt}</p>
+              </div>
             </div>
 
             {!isOwnProfile && (
