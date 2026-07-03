@@ -42,6 +42,12 @@ const badgeImageSrc = getReaderBadgeImageSrcForBadge(badge || { key: profile?.ba
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const bio = profile?.bio_en?.trim() || profile?.bio?.trim() || '';
 const isOwnProfile = Boolean(isViewerLoggedIn && viewerSession.user?.id === profile?.user_id);
+const emptyBioText = isOwnProfile
+  ? 'Add a bio from your account to share what you love about retrogaming.'
+  : 'This reader has not added a bio yet.';
+const emptyCommentsText = isOwnProfile
+  ? 'You have not published any public comments yet. When you join article discussions, they will appear here.'
+  : 'This reader has not published any comments yet.';
 const canSendPrivateMessage = Boolean(profile && isViewerLoggedIn && !isOwnProfile && profile.status === 'active');
 const privateMessageHref = profile
   ? `/account/messages/private/?to=${encodeURIComponent(profile.username)}`
@@ -123,7 +129,11 @@ const pointsBadgeLabel = `Community points: ${result.communityPoints}`;
             {isStaff && <span>Retro-Gamers staff</span>}
           </div>
 
-          {bio && <p class="public-user-bio">{bio}</p>}
+          {bio ? (
+            <p class="public-user-bio">{bio}</p>
+          ) : (
+            <p class="public-user-bio public-user-bio--empty">{emptyBioText}</p>
+          )}
 
           <Fragment slot="aside">
             <div class="public-user-stats" aria-label="Public stats">
@@ -192,7 +202,7 @@ const pointsBadgeLabel = `Community points: ${result.communityPoints}`;
             </div>
           ) : (
             <p class="public-user-empty">
-              This reader has not published any comments yet.
+              {emptyCommentsText}
             </p>
           )}
         </section>
