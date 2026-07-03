@@ -146,6 +146,11 @@
   --rg-warning-bg: rgba(255,217,61,0.075);
   --rg-warning-border: rgba(255,217,61,0.22);
   --rg-price-color: var(--color-accent);
+  --rg-select-caret-padding: 3rem;
+  --rg-select-caret-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%2322F0FF' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --rg-select-caret-icon-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%231F2937' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --rg-select-caret-position: right 1.1rem center;
+  --rg-select-caret-size: 0.75rem;
 
   /* ======================
      TYPOGRAPHY
@@ -493,6 +498,7 @@ html[data-theme="light"] {
   --rg-warning-bg: rgba(168,116,0,0.080);
   --rg-warning-border: rgba(168,116,0,0.18);
   --rg-price-color: #A87400;
+  --rg-select-caret-icon: var(--rg-select-caret-icon-light);
 }
 
 
@@ -662,6 +668,20 @@ h3 {
 p {
   margin: 0;
   color: inherit;
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: var(--rg-select-caret-padding);
+  background-image: var(--rg-select-caret-icon);
+  background-repeat: no-repeat;
+  background-position: var(--rg-select-caret-position);
+  background-size: var(--rg-select-caret-size);
+}
+
+select::-ms-expand {
+  display: none;
 }
 
 

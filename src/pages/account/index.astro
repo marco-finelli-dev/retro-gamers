@@ -137,6 +137,10 @@ const communityStatItems = [
 ];
 const communityRank = getCommunityRank(commentActivity.communityPoints);
 const communityRankProgress = Math.round(communityRank.progressToNext);
+const newsletterLanguageLabel = newsletterLanguage === 'en' ? 'English' : 'Italiano';
+const isNewsletterActive = newsletterStatus === 'active';
+const isNewsletterPending = newsletterStatus === 'pending';
+const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus === 'unsubscribed';
 
 ---
 
@@ -235,63 +239,94 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
                 </p>
               </div>
 
-              <form class="account-form account-newsletter-form" data-account-newsletter-form>
-                <p
-                  class="account-newsletter-status"
-                  data-account-newsletter-status
-                  data-none="Non sei iscritto alla newsletter."
-                  data-pending="Iscrizione in attesa di conferma. Controlla la tua email."
-                  data-active="Sei iscritto alla newsletter."
-                  data-unsubscribed="Hai disattivato la newsletter. Puoi iscriverti di nuovo quando vuoi."
-                >
-                  {newsletterStatus === 'active'
-                    ? 'Sei iscritto alla newsletter.'
-                    : newsletterStatus === 'pending'
-                      ? 'Iscrizione in attesa di conferma. Controlla la tua email.'
-                      : newsletterStatus === 'unsubscribed'
-                        ? 'Hai disattivato la newsletter. Puoi iscriverti di nuovo quando vuoi.'
-                        : 'Non sei iscritto alla newsletter.'}
-                </p>
+              {isNewsletterActive && (
+                <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                  <p class="account-newsletter-status">Sei iscritto alla newsletter.</p>
 
-                <label>
-                  <span>Lingua preferita</span>
-                  <select name="language" data-account-newsletter-language>
-                    <option value="it" selected={newsletterLanguage !== 'en'}>Italiano</option>
-                    <option value="en" selected={newsletterLanguage === 'en'}>English</option>
-                  </select>
-                </label>
+                  <p class="account-newsletter-language-summary">
+                    <span>Lingua preferita:</span>
+                    <strong>{newsletterLanguageLabel}</strong>
+                  </p>
 
-                <label class="account-newsletter-consent" data-account-newsletter-consent hidden={newsletterStatus === 'active'}>
-                  <input type="checkbox" name="consent" />
-                  <span>
-                    Acconsento a ricevere la newsletter e dichiaro di aver letto la
-                    <a href="/privacy-policy/">Privacy Policy</a>.
-                  </span>
-                </label>
+                  <p class="account-field-help">
+                    La disiscrizione dalla newsletter non modifica le email operative legate all’account, alla sicurezza o ai commenti.
+                  </p>
 
-                <p class="account-field-help">
-                  La disiscrizione dalla newsletter non modifica le email operative legate all’account, alla sicurezza o ai commenti.
-                </p>
+                  <p class="account-message" data-account-newsletter-message hidden></p>
 
-                <p class="account-message" data-account-newsletter-message hidden></p>
+                  <div class="account-actions">
+                    <button type="button" data-account-newsletter-unsubscribe>
+                      Disiscrivimi
+                    </button>
+                  </div>
+                </form>
+              )}
 
-                <div class="account-actions">
-                  <button
-                    type="button"
-                    data-account-newsletter-subscribe
-                    hidden={newsletterStatus === 'active'}
-                  >
-                    Iscrivimi
-                  </button>
-                  <button
-                    type="button"
-                    data-account-newsletter-unsubscribe
-                    hidden={newsletterStatus !== 'active'}
-                  >
-                    Disiscrivimi
-                  </button>
-                </div>
-              </form>
+              {isNewsletterPending && (
+                <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                  <p class="account-newsletter-status">
+                    Iscrizione in attesa di conferma. Controlla la tua email.
+                  </p>
+
+                  <p class="account-newsletter-language-summary">
+                    <span>Lingua preferita:</span>
+                    <strong>{newsletterLanguageLabel}</strong>
+                  </p>
+
+                  <p class="account-field-help">
+                    La newsletter sarà attiva solo dopo la conferma.
+                  </p>
+
+                  <p class="account-field-help">
+                    La disiscrizione dalla newsletter non modifica le email operative legate all’account, alla sicurezza o ai commenti.
+                  </p>
+
+                  <p class="account-message" data-account-newsletter-message hidden></p>
+
+                  <div class="account-actions">
+                    <button type="button" data-account-newsletter-unsubscribe>
+                      Disiscrivimi
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {isNewsletterSubscribable && (
+                <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                  <p class="account-newsletter-status">
+                    {newsletterStatus === 'unsubscribed'
+                      ? 'Hai disattivato la newsletter. Puoi iscriverti di nuovo quando vuoi.'
+                      : 'Non sei iscritto alla newsletter.'}
+                  </p>
+
+                  <label>
+                    <span>Lingua preferita</span>
+                    <select
+                      name="language"
+                      data-account-newsletter-language
+                    >
+                      <option value="it" selected={newsletterLanguage !== 'en'}>Italiano</option>
+                      <option value="en" selected={newsletterLanguage === 'en'}>English</option>
+                    </select>
+                  </label>
+
+                  <label class="account-newsletter-consent" data-account-newsletter-consent>
+                    <input type="checkbox" name="consent" />
+                    <span>
+                      Acconsento a ricevere la newsletter e dichiaro di aver letto la
+                      <a href="/privacy-policy/">Privacy Policy</a>.
+                    </span>
+                  </label>
+
+                  <p class="account-message" data-account-newsletter-message hidden></p>
+
+                  <div class="account-actions">
+                    <button type="button" data-account-newsletter-subscribe>
+                      {newsletterStatus === 'unsubscribed' ? 'Iscrivimi di nuovo' : 'Iscrivimi'}
+                    </button>
+                  </div>
+                </form>
+              )}
             </section>
 
             <section class="account-community-rank" aria-labelledby="account-community-rank-title">
@@ -341,11 +376,17 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
                 <p class="account-kicker">Community</p>
                 <h2 id="account-avatar-title">Avatar</h2>
                 <p>
-                  Carica un’immagine per rendere riconoscibile il tuo profilo nella community.
+                  {avatarUrl
+                    ? 'Avatar attuale caricato. Puoi sostituirlo caricando una nuova immagine.'
+                    : 'Carica un’immagine per rendere riconoscibile il tuo profilo nella community.'}
                 </p>
 
                 <form class="account-form account-avatar-form" data-account-avatar-form>
-                  <label class="account-avatar-dropzone" data-account-avatar-dropzone>
+                  <label
+                    class="account-avatar-dropzone"
+                    data-account-avatar-dropzone
+                    data-replace-label={avatarUrl ? 'Rilascia l’immagine per sostituire l’avatar' : 'Rilascia l’immagine per caricarla'}
+                  >
                     <input
                       class="account-avatar-input"
                       type="file"
@@ -354,10 +395,14 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
                       data-account-avatar-input
                     />
                     <span class="account-avatar-dropzone__label" data-account-avatar-dropzone-label>
-                      Trascina qui la tua immagine oppure scegli un file
+                      {avatarUrl
+                        ? 'Scegli una nuova immagine per sostituire l’avatar'
+                        : 'Trascina qui la tua immagine oppure scegli un file'}
                     </span>
                     <span class="account-avatar-dropzone__help">
-                      JPG, PNG o WebP. Max 2 MB.
+                      {avatarUrl
+                        ? 'JPG, PNG o WebP. Max 2 MB. L’avatar attuale resterà attivo finché non carichi il nuovo file.'
+                        : 'JPG, PNG o WebP. Max 2 MB.'}
                     </span>
                     <span
                       class="account-avatar-dropzone__filename"
@@ -369,7 +414,7 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
                   <p class="account-message" data-account-avatar-message hidden></p>
 
                   <div class="account-actions">
-                    <button type="submit">Carica avatar</button>
+                    <button type="submit">{avatarUrl ? 'Sostituisci avatar' : 'Carica avatar'}</button>
                     <button
                       type="button"
                       data-account-avatar-remove
@@ -540,8 +585,6 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
     const avatarDropzone = document.querySelector('[data-account-avatar-dropzone]');
     const avatarDropzoneLabel = document.querySelector('[data-account-avatar-dropzone-label]');
     const avatarFilename = document.querySelector('[data-account-avatar-filename]');
-    const newsletterCard = document.querySelector('[data-account-newsletter]');
-    const newsletterStatus = document.querySelector('[data-account-newsletter-status]');
     const newsletterConsent = document.querySelector('[data-account-newsletter-consent]');
     const newsletterLanguage = document.querySelector('[data-account-newsletter-language]');
     const newsletterSubscribeButton = document.querySelector('[data-account-newsletter-subscribe]');
@@ -549,6 +592,7 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
     const newsletterMessage = document.querySelector('[data-account-newsletter-message]');
     const logoutButton = document.querySelector('[data-account-logout]');
     const avatarDefaultDropzoneText = avatarDropzoneLabel?.textContent?.trim() || '';
+    const avatarReplaceDropzoneText = avatarDropzone?.dataset.replaceLabel || 'Rilascia l’immagine per caricarla';
     let selectedAvatarFile = null;
 
     const showMessage = (target, text, type = 'ok') => {
@@ -556,29 +600,6 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
       target.textContent = text;
       target.hidden = false;
       target.dataset.type = type;
-    };
-
-    const updateNewsletterUi = (status) => {
-      if (newsletterCard) {
-        newsletterCard.dataset.status = status;
-      }
-
-      if (newsletterStatus) {
-        newsletterStatus.textContent =
-          newsletterStatus.dataset[status] || newsletterStatus.dataset.none || '';
-      }
-
-      if (newsletterConsent) {
-        newsletterConsent.hidden = status === 'active';
-      }
-
-      if (newsletterSubscribeButton) {
-        newsletterSubscribeButton.hidden = status === 'active';
-      }
-
-      if (newsletterUnsubscribeButton) {
-        newsletterUnsubscribeButton.hidden = status !== 'active';
-      }
     };
 
     const setNewsletterLoading = (isLoading) => {
@@ -589,6 +610,12 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
       if (newsletterUnsubscribeButton) {
         newsletterUnsubscribeButton.disabled = isLoading;
       }
+    };
+
+    const reloadNewsletterState = () => {
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 700);
     };
 
     newsletterSubscribeButton?.addEventListener('click', async () => {
@@ -619,8 +646,8 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
           return;
         }
 
-        updateNewsletterUi(result.status || 'pending');
         showMessage(newsletterMessage, result.message || 'Controlla la tua email per confermare l’iscrizione.', 'ok');
+        reloadNewsletterState();
 
         if (consentInput) {
           consentInput.checked = false;
@@ -648,8 +675,8 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
           return;
         }
 
-        updateNewsletterUi(result.status || 'unsubscribed');
         showMessage(newsletterMessage, result.message || 'Newsletter disattivata.', 'ok');
+        reloadNewsletterState();
       } catch {
         showMessage(newsletterMessage, 'Impossibile aggiornare la newsletter.', 'error');
       } finally {
@@ -720,7 +747,7 @@ const communityRankProgress = Math.round(communityRank.progressToNext);
           avatarDropzone.dataset.dragActive = 'true';
 
           if (avatarDropzoneLabel) {
-            avatarDropzoneLabel.textContent = 'Rilascia l’immagine per caricarla';
+            avatarDropzoneLabel.textContent = avatarReplaceDropzoneText;
           }
         });
       });
