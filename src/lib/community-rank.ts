@@ -24,29 +24,29 @@ export const communityRankThresholds: CommunityRankDefinition[] = [
   {
     key: 'rookie',
     label: 'Rookie',
-    descriptionIt: 'Ha appena iniziato il suo percorso nella community.',
-    descriptionEn: 'Just starting their journey in the community.',
+    descriptionIt: 'Primo livello della community.',
+    descriptionEn: 'The first community level.',
     minPoints: 0,
   },
   {
     key: 'retro_fan',
     label: 'Retro Fan',
-    descriptionIt: 'Partecipa alla vita del sito con i primi commenti, voti e interessi.',
-    descriptionEn: 'Taking part in the site with early comments, ratings and interests.',
+    descriptionIt: 'Partecipa alla vita del sito con le prime attività.',
+    descriptionEn: 'Taking part in the site through early community activity.',
     minPoints: 25,
   },
   {
     key: 'memory_keeper',
     label: 'Memory Keeper',
-    descriptionIt: 'Contribuisce a tenere vivi ricordi, discussioni e passioni retro.',
-    descriptionEn: 'Helping keep retro memories, discussions and passions alive.',
+    descriptionIt: 'Contribuisce a mantenere vive discussioni e passioni retro.',
+    descriptionEn: 'Helping keep retro discussions and passions alive.',
     minPoints: 100,
   },
   {
     key: 'archive_expert',
     label: 'Archive Expert',
-    descriptionIt: 'Partecipa con continuità e conosce bene gli angoli dell’archivio.',
-    descriptionEn: 'Consistently active and familiar with the archive.',
+    descriptionIt: 'Partecipa con continuità alla community e ai contenuti del sito.',
+    descriptionEn: 'Consistently active across the community and the site.',
     minPoints: 250,
   },
   {
@@ -59,8 +59,8 @@ export const communityRankThresholds: CommunityRankDefinition[] = [
   {
     key: 'grand_master',
     label: 'Grand Master',
-    descriptionIt: 'Un membro storico e molto attivo della community.',
-    descriptionEn: 'A long-standing and highly active member of the community.',
+    descriptionIt: 'Uno dei livelli più alti della community.',
+    descriptionEn: 'One of the highest community levels.',
     minPoints: 1000,
   },
 ];
