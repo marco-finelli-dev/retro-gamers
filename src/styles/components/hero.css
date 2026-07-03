@@ -480,9 +480,38 @@ html:not([data-theme="light"]) .rg-hero::after {
   padding: 3px 7px;
 }
 
-.rg-hero__meta .rg-comment-count {
+.rg-hero__meta .hero-comment-pill {
+  gap: 6px;
+  color: var(--home-badge-muted-color);
+  background: var(--home-badge-muted-bg);
+  border: 1px solid var(--home-badge-muted-border);
   text-transform: none;
   letter-spacing: 0;
+}
+
+.hero-comment-pill i {
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  background: currentColor;
+  mask: url("/icons/comment.svg") center / contain no-repeat;
+  -webkit-mask: url("/icons/comment.svg") center / contain no-repeat;
+  opacity: 1;
+}
+
+.hero-comment-pill b {
+  display: block;
+  color: inherit;
+  font: inherit;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.rg-hero__meta.small .hero-comment-pill i {
+  width: 12px;
+  height: 12px;
+  flex-basis: 12px;
 }
 
 

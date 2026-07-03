@@ -1,5 +1,6 @@
 ---
 import { getArchiveUrl, getPostUrl } from '../../lib/routes';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 import ArticleShare from './ArticleShare.astro';
 import ArticleSaveButton from './ArticleSaveButton.astro';
 
@@ -143,6 +144,12 @@ const infoItems = [
   readingTime ? `${readingTimeLabel}: ${readingTime} ${minuteLabel}` : '',
 ].filter(Boolean);
 
+const commentCount = Number(post.commentCount || 0);
+const hasHeroCommentCount = commentCount > 0;
+const commentsAriaLabel = lang === 'en'
+  ? `Go to comments, ${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}`
+  : `Vai ai commenti, ${commentCount} ${commentCount === 1 ? 'commento' : 'commenti'}`;
+
 const articleSlug =
   typeof post.slug === 'string'
     ? post.slug
@@ -186,7 +193,7 @@ const articleId =
 
     <div class="article-hero__footer">
 
-      {(authorDisplayName || infoItems.length > 0) && (
+      {(authorDisplayName || infoItems.length > 0 || hasHeroCommentCount) && (
         <div class="article-hero__byline">
 
           {authorDisplayName && (
@@ -242,16 +249,36 @@ const articleId =
                   {[authorRole, ...infoItems].filter(Boolean).map((item) => (
                     <span>{item}</span>
                   ))}
+
+                  {hasHeroCommentCount && (
+                    <a
+                      href="#comments"
+                      class="article-hero__comments-link"
+                      aria-label={commentsAriaLabel}
+                    >
+                      <CommentCountBadge count={commentCount} lang={lang} variant="compact" />
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {!authorDisplayName && infoItems.length > 0 && (
+          {!authorDisplayName && (infoItems.length > 0 || hasHeroCommentCount) && (
             <div class="article-hero__info">
               {infoItems.map((item) => (
                 <span>{item}</span>
               ))}
+
+              {hasHeroCommentCount && (
+                <a
+                  href="#comments"
+                  class="article-hero__comments-link"
+                  aria-label={commentsAriaLabel}
+                >
+                  <CommentCountBadge count={commentCount} lang={lang} variant="compact" />
+                </a>
+              )}
             </div>
           )}
 

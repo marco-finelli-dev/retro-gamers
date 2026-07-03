@@ -470,7 +470,7 @@ const italianTranslation =
 
 const readingTime = getReadingTime(post.content);
 
-const hydratedPost = {
+let hydratedPost = {
   ...post,
   creators: articleCreators,
   language: post.language || 'en',
@@ -560,10 +560,11 @@ const englishNews = englishPosts.filter(
 );
 
 const relatedPosts = getRelatedPosts(hydratedPost, grouped.allLanguages, 3);
-const relatedCommentCountMap = await getApprovedCommentCountMap(relatedPosts, 'en');
+const commentCountMap = await getApprovedCommentCountMap([hydratedPost, ...relatedPosts], 'en');
+hydratedPost = attachApprovedCommentCounts([hydratedPost], commentCountMap, 'en')[0];
 const relatedPostsWithCommentCounts = attachApprovedCommentCounts(
   relatedPosts,
-  relatedCommentCountMap,
+  commentCountMap,
   'en'
 );
 

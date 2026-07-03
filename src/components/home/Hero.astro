@@ -3,7 +3,6 @@ import '../../styles/components/hero.css';
 import { getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 import { getReviewBadge } from '../../lib/reviewBadges';
-import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const { posts = [], lang = 'it' } = Astro.props;
 
@@ -81,6 +80,14 @@ const getImage = (image, width = 960, height = null) => {
 
   return builder.url();
 };
+
+const getCommentLabel = (count) => {
+  const value = Number(count || 0);
+
+  return isEn
+    ? `${value} ${value === 1 ? 'comment' : 'comments'}`
+    : `${value} ${value === 1 ? 'commento' : 'commenti'}`;
+};
 ---
 
 <div class="section-box rg-hero">
@@ -136,7 +143,12 @@ const getImage = (image, width = 960, height = null) => {
               <small>{getCategory(main)}</small>
             )}
 
-            <CommentCountBadge count={main.commentCount} lang={lang} variant="compact" />
+            {Number(main.commentCount || 0) > 0 && (
+              <span class="hero-comment-pill" aria-label={getCommentLabel(main.commentCount)}>
+                <i aria-hidden="true"></i>
+                <b>{main.commentCount}</b>
+              </span>
+            )}
           </div>
 
           <h2>{main.title}</h2>
@@ -181,7 +193,12 @@ const getImage = (image, width = 960, height = null) => {
                   <small>{cat}</small>
                 )}
 
-                <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
+                {Number(post.commentCount || 0) > 0 && (
+                  <span class="hero-comment-pill" aria-label={getCommentLabel(post.commentCount)}>
+                    <i aria-hidden="true"></i>
+                    <b>{post.commentCount}</b>
+                  </span>
+                )}
               </div>
 
               <h3>{post.title}</h3>
