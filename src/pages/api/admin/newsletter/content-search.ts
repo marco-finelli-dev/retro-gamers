@@ -25,6 +25,7 @@ type SanityNewsletterContent = {
 };
 
 const allowedTypes = new Set<NewsletterContentSearchType>(['review', 'feature', 'guide', 'news']);
+const siteUrl = String(import.meta.env.PUBLIC_SITE_URL || 'https://www.retro-gamers.it').replace(/\/$/, '');
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -55,6 +56,18 @@ const buildSearchPattern = (query: string) =>
     .split(/\s+/)
     .map((term) => `${term}*`)
     .join(' ');
+
+const toAbsoluteUrl = (value?: string | null) => {
+  const rawUrl = String(value || '').trim();
+
+  if (!rawUrl) return '';
+
+  try {
+    return new URL(rawUrl, siteUrl).toString();
+  } catch {
+    return '';
+  }
+};
 
 const getImageUrl = (post: SanityNewsletterContent) => {
   if (!post.featuredImage?.asset) return null;
@@ -150,7 +163,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
           id: post._id,
           title: post.title || '',
           excerpt: post.cardExcerpt || post.excerpt || post.subtitle || '',
-          url: getPostUrl(normalizedPost),
+          url: toAbsoluteUrl(getPostUrl(normalizedPost)),
           imageUrl: getImageUrl(post),
           type: allowedTypes.has(normalizedPost.type as NewsletterContentSearchType)
             ? normalizedPost.type
