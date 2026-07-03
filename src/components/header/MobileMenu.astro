@@ -77,6 +77,9 @@ const accountLabels = isEnglish
 
 const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
 const accountHref = isEnglish ? '/en/account/' : '/account/';
+const accountFavoritesHref = isEnglish ? '/en/account/favorites/' : '/account/favorites/';
+const accountMemoriesHref = isEnglish ? '/en/account/memories/' : '/account/memories/';
+const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/messages/';
 ---
 
 <div class="mobile-menu" id="mobile-menu" aria-hidden="true" data-mobile-menu>
@@ -117,9 +120,9 @@ const accountHref = isEnglish ? '/en/account/' : '/account/';
           </div>
 
           <a href={accountHref}>{accountLabels.account}</a>
-          <a href="/account/favorites/">{accountLabels.favorites}</a>
-          <a href="/account/memories/">{accountLabels.memories}</a>
-          <a href="/account/messages/">
+          <a href={accountFavoritesHref}>{accountLabels.favorites}</a>
+          <a href={accountMemoriesHref}>{accountLabels.memories}</a>
+          <a href={accountMessagesHref}>
             <span>{accountLabels.messages}</span>
             <span class="mobile-menu__account-unread" data-account-unread hidden></span>
           </a>

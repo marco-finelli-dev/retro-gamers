@@ -1,0 +1,444 @@
+---
+import '../../styles/pages/account.css';
+import '../../styles/pages/account-memories.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../components/community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
+import CommunityStatList from '../../components/community/CommunityStatList.astro';
+import {
+  getCommentArticleHref,
+  getCommentExcerpt,
+  getPublicUserUrl,
+  type PublicReaderComment,
+} from '../../lib/supabase/public-profiles';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
+import { supabaseAdmin } from '../../lib/supabase/server';
+import { touchUserActivity } from '../../lib/supabase/user-activity';
+
+type MemoryStatus = 'approved' | 'pending' | 'rejected' | 'spam';
+
+type ReaderMemory = PublicReaderComment & {
+  status: MemoryStatus | string | null;
+  parent_id: string | null;
+  likeCount: number;
+  dislikeCount: number;
+};
+
+type AccountLang = 'it' | 'en';
+
+const { lang = 'it' } = Astro.props as { lang?: AccountLang };
+const currentLang: AccountLang = lang === 'en' ? 'en' : 'it';
+const isEn = currentLang === 'en';
+
+const copy = isEn
+  ? {
+      title: 'My memories | Retro-Gamers.it',
+      description: 'Find the comments you left on Retro-Gamers.it and return to published discussions.',
+      fallbackName: 'Retro-Gamers user',
+      account: 'My account',
+      publicProfile: 'Public profile',
+      messages: 'Messages',
+      ratings: 'My ratings',
+      stats: 'Community stats',
+      comments: 'Published comments',
+      pendingStat: 'Pending',
+      likes: 'Likes received',
+      dislikes: 'Dislikes received',
+      filters: {
+        all: 'All',
+        approved: 'Published',
+        pending: 'Pending',
+        'not-approved': 'Not approved',
+      },
+      statusLabels: {
+        approved: 'Published',
+        pending: 'Awaiting moderation',
+        rejected: 'Not approved',
+        spam: 'Not approved',
+      },
+      unavailableStatus: 'Status unavailable',
+      reply: 'Reply',
+      unavailableDate: 'Date unavailable',
+      unavailableArticle: 'Article unavailable',
+      openComment: 'Open comment',
+      openArticle: 'Open article',
+      previous: 'Previous',
+      next: 'Next',
+      pageOf: (page: number, total: number) => `Page ${page} of ${total}`,
+      emptyAll:
+        'You have not left any comments yet. When you join article discussions, your memories will appear here.',
+      emptyFilter: 'No memories found with this filter.',
+      error: 'Memories are not available. Please try again later.',
+      kicker: 'Community',
+      heroTitle: 'My memories',
+      heroLogged:
+        'Find the comments you left on Retro-Gamers.it, check pending ones and return to published discussions.',
+      heroGuest:
+        'Sign in to find the comments you left below articles and follow moderation status.',
+      filtersAria: 'Filter memories',
+      paginationAria: 'Memories pagination',
+      login: 'Log in',
+      register: 'Register',
+      locale: 'en-US',
+    }
+  : {
+      title: 'Le mie memorie | Retro-Gamers.it',
+      description: 'Ritrova i commenti lasciati su Retro-Gamers.it e torna alle discussioni pubblicate.',
+      fallbackName: 'Utente Retro-Gamers',
+      account: 'Il mio account',
+      publicProfile: 'Profilo pubblico',
+      messages: 'Messaggi',
+      ratings: 'I miei voti',
+      stats: 'Statistiche community',
+      comments: 'Commenti pubblicati',
+      pendingStat: 'In attesa',
+      likes: 'Like ricevuti',
+      dislikes: 'Dislike ricevuti',
+      filters: {
+        all: 'Tutti',
+        approved: 'Pubblicati',
+        pending: 'In attesa',
+        'not-approved': 'Non approvati',
+      },
+      statusLabels: {
+        approved: 'Pubblicato',
+        pending: 'In attesa di moderazione',
+        rejected: 'Non approvato',
+        spam: 'Non approvato',
+      },
+      unavailableStatus: 'Stato non disponibile',
+      reply: 'Risposta',
+      unavailableDate: 'Data non disponibile',
+      unavailableArticle: 'Articolo non disponibile',
+      openComment: 'Apri commento',
+      openArticle: 'Apri articolo',
+      previous: 'Precedenti',
+      next: 'Successivi',
+      pageOf: (page: number, total: number) => `Pagina ${page} di ${total}`,
+      emptyAll:
+        'Non hai ancora lasciato commenti. Quando parteciperai agli articoli, le tue memorie appariranno qui.',
+      emptyFilter: 'Nessuna memoria trovata con questo filtro.',
+      error: 'Memorie non disponibili. Riprova più tardi.',
+      kicker: 'Community',
+      heroTitle: 'Le mie memorie',
+      heroLogged:
+        'Ritrova i commenti che hai lasciato su Retro-Gamers.it, controlla quelli in attesa e torna alle discussioni pubblicate.',
+      heroGuest:
+        'Accedi per ritrovare i commenti lasciati sotto gli articoli e seguire lo stato della moderazione.',
+      filtersAria: 'Filtra memorie',
+      paginationAria: 'Paginazione memorie',
+      login: 'Accedi',
+      register: 'Registrati',
+      locale: 'it-IT',
+    };
+
+const title = copy.title;
+const description = copy.description;
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isLoggedIn = Boolean(!session.error && session.user && session.profile);
+const currentUrl = new URL(Astro.url);
+const pageSize = 10;
+const requestedPage = Number(currentUrl.searchParams.get('page') || '1');
+const currentPage = Number.isFinite(requestedPage) && requestedPage > 0
+  ? Math.floor(requestedPage)
+  : 1;
+const filterParam = currentUrl.searchParams.get('filter') || 'all';
+const activeFilter = ['all', 'approved', 'pending', 'not-approved'].includes(filterParam)
+  ? filterParam
+  : 'all';
+const offset = (currentPage - 1) * pageSize;
+
+const filters = [
+  { key: 'all', label: copy.filters.all },
+  { key: 'approved', label: copy.filters.approved },
+  { key: 'pending', label: copy.filters.pending },
+  { key: 'not-approved', label: copy.filters['not-approved'] },
+];
+
+const statusLabels: Record<string, string> = copy.statusLabels;
+
+const dateFormatter = new Intl.DateTimeFormat(copy.locale, {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+let memories: ReaderMemory[] = [];
+let totalCount = 0;
+let memoriesError = '';
+let communityStats = { ...emptyCommunityStats };
+
+const getFilterHref = (filter: string) => {
+  const url = new URL(Astro.url);
+  url.searchParams.set('filter', filter);
+  url.searchParams.delete('page');
+
+  return `${url.pathname}${url.search}`;
+};
+
+const getPageHref = (page: number) => {
+  const url = new URL(Astro.url);
+  url.searchParams.set('page', String(page));
+
+  if (activeFilter === 'all') {
+    url.searchParams.delete('filter');
+  } else {
+    url.searchParams.set('filter', activeFilter);
+  }
+
+  return `${url.pathname}${url.search}`;
+};
+
+const getArticleHref = (memory: ReaderMemory) => {
+  if (memory.article_url) {
+    return memory.article_url.split('#')[0];
+  }
+
+  if (!memory.article_slug) {
+    return '';
+  }
+
+  return memory.article_language === 'en'
+    ? `/en/articles/${memory.article_slug}/`
+    : `/articoli/${memory.article_slug}/`;
+};
+
+if (isLoggedIn && session.user) {
+  const communityStatsPromise = getCommunityStats(session.user.id);
+  const activityPromise = touchUserActivity(session.user.id, 'account-memories-load');
+  let query = supabaseAdmin
+    .from('comments')
+    .select(`
+      id,
+      body,
+      created_at,
+      status,
+      parent_id,
+      article_title,
+      article_url,
+      article_slug,
+      article_language
+    `, { count: 'exact' })
+    .eq('user_id', session.user.id)
+    .neq('status', 'deleted')
+    .order('created_at', { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  if (activeFilter === 'approved') {
+    query = query.eq('status', 'approved');
+  } else if (activeFilter === 'pending') {
+    query = query.eq('status', 'pending');
+  } else if (activeFilter === 'not-approved') {
+    query = query.in('status', ['rejected', 'spam']);
+  } else {
+    query = query.in('status', ['approved', 'pending', 'rejected', 'spam']);
+  }
+
+  const [{ data, count, error }, statsResult] = await Promise.all([
+    query,
+    communityStatsPromise,
+    activityPromise,
+  ]);
+  communityStats = statsResult;
+
+  if (error) {
+    memoriesError = error.message;
+  } else {
+    const rows = (data ?? []) as ReaderMemory[];
+    const commentIds = rows.map((memory) => memory.id).filter(Boolean);
+    const reactionCounts = new Map<string, { likeCount: number; dislikeCount: number }>();
+
+    if (commentIds.length > 0) {
+      const { data: reactions, error: reactionsError } = await supabaseAdmin
+        .from('comment_reactions')
+        .select('comment_id, reaction')
+        .in('comment_id', commentIds);
+
+      if (!reactionsError) {
+        for (const reaction of reactions ?? []) {
+          const commentId = String(reaction.comment_id || '');
+          const current = reactionCounts.get(commentId) ?? { likeCount: 0, dislikeCount: 0 };
+
+          if (reaction.reaction === 'like') {
+            current.likeCount += 1;
+          }
+
+          if (reaction.reaction === 'dislike') {
+            current.dislikeCount += 1;
+          }
+
+          reactionCounts.set(commentId, current);
+        }
+      }
+    }
+
+    memories = rows.map((memory) => ({
+      ...memory,
+      likeCount: reactionCounts.get(memory.id)?.likeCount ?? 0,
+      dislikeCount: reactionCounts.get(memory.id)?.dislikeCount ?? 0,
+    }));
+    totalCount = count ?? 0;
+  }
+}
+
+const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+const hasPrevious = currentPage > 1;
+const hasNext = currentPage < totalPages;
+const profile = session.profile;
+const accountDisplayName =
+  profile?.display_name || profile?.username || session.user?.email || copy.fallbackName;
+const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, currentLang) : '';
+const accountHref = isEn ? '/en/account/' : '/account/';
+const messagesHref = isEn ? '/en/account/messages/' : '/account/messages/';
+const ratingsHref = isEn ? '/en/account/ratings/' : '/account/ratings/';
+const loginHref = isEn ? '/en/account/login/' : '/account/login/';
+const registerHref = isEn ? '/en/account/register/' : '/account/register/';
+const communityStatItems = [
+  { label: copy.comments, value: communityStats.approved },
+  { label: copy.pendingStat, value: communityStats.pending },
+  { label: copy.likes, value: communityStats.likesReceived },
+  { label: copy.dislikes, value: communityStats.dislikesReceived },
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  lang={currentLang}
+  languageSwitch={{ url: isEn ? '/account/memories/' : '/en/account/memories/' }}
+>
+  <CommunityLayout class="account-memories-page" sidebar={isLoggedIn}>
+    <Fragment slot="sidebar">
+      {isLoggedIn && (
+        <>
+          <CommunitySidebarProfile
+            name={accountDisplayName}
+            username={profile?.username}
+            email={session.user?.email}
+            avatarUrl={profile?.avatar_url}
+            label="Community"
+          >
+            <a href={accountHref}>{copy.account}</a>
+            {publicProfileHref && <a href={publicProfileHref}>{copy.publicProfile}</a>}
+            <a href={messagesHref}>{copy.messages}</a>
+            <a href={ratingsHref}>{copy.ratings}</a>
+          </CommunitySidebarProfile>
+
+          <CommunityStatList title={copy.stats} items={communityStatItems} />
+        </>
+      )}
+    </Fragment>
+
+    <CommunityHero
+      kicker={copy.kicker}
+      title={copy.heroTitle}
+      description={isLoggedIn
+        ? copy.heroLogged
+        : copy.heroGuest}
+    />
+
+    <section class="community-card">
+      {isLoggedIn ? (
+        <>
+
+          <nav class="account-memories-filters" aria-label={copy.filtersAria}>
+            {filters.map((filter) => (
+              <a
+                href={getFilterHref(filter.key)}
+                class={filter.key === activeFilter ? 'is-active' : ''}
+                aria-current={filter.key === activeFilter ? 'page' : undefined}
+              >
+                {filter.label}
+              </a>
+            ))}
+          </nav>
+
+          {memoriesError ? (
+            <p class="account-message" data-type="error">
+              {copy.error}
+            </p>
+          ) : memories.length > 0 ? (
+            <>
+              <div class="account-memories-list">
+                {memories.map((memory) => {
+                  const isApproved = memory.status === 'approved';
+                  const articleHref = getArticleHref(memory);
+                  const commentHref = isApproved ? getCommentArticleHref(memory) : '';
+
+                  return (
+                    <article class="account-memory-card" data-status={memory.status || ''}>
+                      <header>
+                        <span>{statusLabels[String(memory.status || '')] || memory.status || copy.unavailableStatus}</span>
+                        {memory.parent_id && <span>{copy.reply}</span>}
+                        <time datetime={memory.created_at || undefined}>
+                          {memory.created_at
+                            ? dateFormatter.format(new Date(memory.created_at))
+                            : copy.unavailableDate}
+                        </time>
+                      </header>
+
+                      <p>{getCommentExcerpt(memory.body, 220)}</p>
+
+                      <div class="account-memory-card__meta">
+                        <span>{memory.article_title || copy.unavailableArticle}</span>
+
+                        {(memory.likeCount > 0 || memory.dislikeCount > 0) && (
+                          <span>
+                            {memory.likeCount} like · {memory.dislikeCount} dislike
+                          </span>
+                        )}
+                      </div>
+
+                      <footer>
+                        {commentHref ? (
+                          <a href={commentHref}>{copy.openComment}</a>
+                        ) : articleHref ? (
+                          <a href={articleHref}>{copy.openArticle}</a>
+                        ) : null}
+                      </footer>
+                    </article>
+                  );
+                })}
+              </div>
+
+              {(hasPrevious || hasNext) && (
+                <nav class="account-memories-pagination" aria-label={copy.paginationAria}>
+                  {hasPrevious ? (
+                    <a href={getPageHref(currentPage - 1)}>{copy.previous}</a>
+                  ) : (
+                    <span>{copy.previous}</span>
+                  )}
+
+                  <strong>{copy.pageOf(currentPage, totalPages)}</strong>
+
+                  {hasNext ? (
+                    <a href={getPageHref(currentPage + 1)}>{copy.next}</a>
+                  ) : (
+                    <span>{copy.next}</span>
+                  )}
+                </nav>
+              )}
+            </>
+          ) : (
+            <p class="account-memories-empty">
+              {activeFilter === 'all'
+                ? copy.emptyAll
+                : copy.emptyFilter}
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <div class="account-actions account-actions--standalone">
+            <a href={loginHref}>{copy.login}</a>
+            <a href={registerHref}>{copy.register}</a>
+          </div>
+        </>
+      )}
+    </section>
+  </CommunityLayout>
+</BaseLayout>

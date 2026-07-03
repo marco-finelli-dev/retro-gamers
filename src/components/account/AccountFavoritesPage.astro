@@ -1,0 +1,247 @@
+---
+import '../../styles/pages/account.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../components/community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
+import CommunityStatList from '../../components/community/CommunityStatList.astro';
+import InterestArticles from '../../components/account/InterestArticles.astro';
+import SavedArticlesList from '../../components/account/SavedArticlesList.astro';
+import UserInterests from '../../components/account/UserInterests.astro';
+import { getAllCompanies, companyTypeLabels, getCompanyName } from '../../lib/companies';
+import { getAllCreators } from '../../lib/creators';
+import { getInterestArticles, type InterestArticle } from '../../lib/interest-articles';
+import { getAllPlatforms, platformTypeLabels } from '../../lib/platforms';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
+import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
+import { getSavedArticlesForUser, type SavedArticleRow } from '../../lib/supabase/saved-articles';
+import {
+  getUserInterestsForUser,
+  type InterestOptions,
+  type UserInterestRow,
+} from '../../lib/supabase/user-interests';
+import { touchUserActivity } from '../../lib/supabase/user-activity';
+
+type AccountLang = 'it' | 'en';
+
+const { lang = 'it' } = Astro.props as { lang?: AccountLang };
+const currentLang: AccountLang = lang === 'en' ? 'en' : 'it';
+const isEn = currentLang === 'en';
+
+const copy = isEn
+  ? {
+      title: 'Favorites and interests | Retro-Gamers.it',
+      description: 'Find the articles you saved, choose your retro interests and discover connected content.',
+      fallbackName: 'Retro-Gamers user',
+      account: 'My account',
+      publicProfile: 'Public profile',
+      messages: 'Messages',
+      memories: 'My memories',
+      ratings: 'My ratings',
+      stats: 'Community stats',
+      comments: 'Published comments',
+      pending: 'Pending',
+      likes: 'Likes received',
+      dislikes: 'Dislikes received',
+      kicker: 'Favorites',
+      heroTitle: 'Favorites and interests',
+      heroLogged:
+        'Find the articles you saved, choose your retro interests and discover connected content.',
+      heroGuest:
+        'Sign in to find the articles you saved and manage your retro interests.',
+      savedArticles: 'Saved articles',
+      login: 'Log in',
+      register: 'Register',
+    }
+  : {
+      title: 'Preferiti e interessi | Retro-Gamers.it',
+      description: 'Ritrova gli articoli salvati, scegli i tuoi interessi retro e scopri contenuti collegati.',
+      fallbackName: 'Utente Retro-Gamers',
+      account: 'Il mio account',
+      publicProfile: 'Profilo pubblico',
+      messages: 'Messaggi',
+      memories: 'Le mie memorie',
+      ratings: 'I miei voti',
+      stats: 'Statistiche community',
+      comments: 'Commenti pubblicati',
+      pending: 'In attesa',
+      likes: 'Like ricevuti',
+      dislikes: 'Dislike ricevuti',
+      kicker: 'Preferiti',
+      heroTitle: 'Preferiti e interessi',
+      heroLogged:
+        'Ritrova gli articoli salvati, scegli i tuoi interessi retro e scopri contenuti collegati.',
+      heroGuest:
+        'Accedi per ritrovare gli articoli che hai salvato e i tuoi interessi retro.',
+      savedArticles: 'Articoli salvati',
+      login: 'Accedi',
+      register: 'Registrati',
+    };
+
+const title = copy.title;
+const description = copy.description;
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isLoggedIn = Boolean(!session.error && session.user && session.profile);
+const profile = session.profile;
+const user = session.user;
+const accountDisplayName =
+  profile?.display_name || profile?.username || user?.email || copy.fallbackName;
+const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, currentLang) : '';
+const accountHref = isEn ? '/en/account/' : '/account/';
+const messagesHref = isEn ? '/en/account/messages/' : '/account/messages/';
+const memoriesHref = isEn ? '/en/account/memories/' : '/account/memories/';
+const ratingsHref = isEn ? '/en/account/ratings/' : '/account/ratings/';
+const loginHref = isEn ? '/en/account/login/' : '/account/login/';
+const registerHref = isEn ? '/en/account/register/' : '/account/register/';
+
+let savedArticles: SavedArticleRow[] = [];
+let savedArticlesUnavailable = false;
+let userInterests: UserInterestRow[] = [];
+let userInterestsUnavailable = false;
+let interestArticles: InterestArticle[] = [];
+let communityStats = { ...emptyCommunityStats };
+let interestOptions: InterestOptions = {
+  platforms: [],
+  creators: [],
+  companies: [],
+};
+
+if (isLoggedIn && user?.id) {
+  const [
+    stats,
+    savedArticlesResult,
+    userInterestsResult,
+    platforms,
+    creators,
+    companies,
+  ] = await Promise.all([
+    getCommunityStats(user.id),
+    getSavedArticlesForUser(user.id, 'account-favorites.saved-articles'),
+    getUserInterestsForUser(user.id, 'account-favorites.user-interests'),
+    getAllPlatforms(),
+    getAllCreators(),
+    getAllCompanies(),
+    touchUserActivity(user.id, 'account-favorites-load'),
+  ]);
+
+  communityStats = stats;
+  savedArticles = savedArticlesResult.articles;
+  savedArticlesUnavailable = savedArticlesResult.unavailable;
+  userInterests = userInterestsResult.interests;
+  userInterestsUnavailable = userInterestsResult.unavailable;
+  interestArticles = await getInterestArticles(userInterests, currentLang, 4);
+
+  interestOptions = {
+    platforms: platforms
+      .filter((platform) => platform._id && platform.slug && platform.name)
+      .map((platform) => ({
+        targetType: 'platform' as const,
+        targetId: platform._id,
+        targetSlug: platform.slug,
+        targetName: platform.name,
+        targetExtra: [
+          platformTypeLabels[platform.platformType],
+          platform.manufacturer?.name,
+        ].filter(Boolean).join(' · '),
+      })),
+    creators: creators
+      .filter((creator) => creator._id && creator.slug && creator.name)
+      .map((creator) => ({
+        targetType: 'creator' as const,
+        targetId: creator._id,
+        targetSlug: creator.slug,
+        targetName: creator.name,
+        targetExtra: creator.role || creator.creatorTypes?.join(' · ') || '',
+      })),
+    companies: companies
+      .filter((company) => company._id && company.slug && company.name)
+      .map((company) => ({
+        targetType: 'company' as const,
+        targetId: company._id,
+        targetSlug: company.slug,
+        targetName: getCompanyName(company, currentLang),
+        targetExtra: (company.type || [])
+          .map((type) => companyTypeLabels[currentLang][type] || type)
+          .join(' · '),
+      })),
+  };
+}
+
+const communityStatItems = [
+  { label: copy.comments, value: communityStats.approved },
+  { label: copy.pending, value: communityStats.pending },
+  { label: copy.likes, value: communityStats.likesReceived },
+  { label: copy.dislikes, value: communityStats.dislikesReceived },
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  lang={currentLang}
+  languageSwitch={{ url: isEn ? '/account/favorites/' : '/en/account/favorites/' }}
+>
+  <CommunityLayout class="account-favorites-page" sidebar={isLoggedIn}>
+    <Fragment slot="sidebar">
+      {isLoggedIn && (
+        <>
+          <CommunitySidebarProfile
+            name={accountDisplayName}
+            username={profile?.username}
+            email={user?.email}
+            avatarUrl={profile?.avatar_url}
+            label="Community"
+          >
+            <a href={accountHref}>{copy.account}</a>
+            {publicProfileHref && <a href={publicProfileHref}>{copy.publicProfile}</a>}
+            <a href={messagesHref}>{copy.messages}</a>
+            <a href={memoriesHref}>{copy.memories}</a>
+            <a href={ratingsHref}>{copy.ratings}</a>
+          </CommunitySidebarProfile>
+
+          <CommunityStatList title={copy.stats} items={communityStatItems} />
+        </>
+      )}
+    </Fragment>
+
+    <CommunityHero
+      kicker={copy.kicker}
+      title={copy.heroTitle}
+      description={isLoggedIn
+        ? copy.heroLogged
+        : copy.heroGuest}
+    />
+
+    {isLoggedIn ? (
+      <div class="community-content-stack">
+        <SavedArticlesList
+          articles={savedArticles}
+          unavailable={savedArticlesUnavailable}
+          lang={currentLang}
+          title={copy.savedArticles}
+        />
+
+        <UserInterests
+          interests={userInterests}
+          options={interestOptions}
+          unavailable={userInterestsUnavailable}
+          lang={currentLang}
+        />
+
+        <InterestArticles
+          articles={interestArticles}
+          hasInterests={userInterests.length > 0}
+          lang={currentLang}
+        />
+      </div>
+    ) : (
+      <section class="community-card">
+        <div class="account-actions account-actions--standalone">
+          <a href={loginHref}>{copy.login}</a>
+          <a href={registerHref}>{copy.register}</a>
+        </div>
+      </section>
+    )}
+  </CommunityLayout>
+</BaseLayout>

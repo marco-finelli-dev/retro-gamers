@@ -64,6 +64,9 @@ const flagAlt = isEnglish
 
 const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
 const accountHref = isEnglish ? '/en/account/' : '/account/';
+const accountFavoritesHref = isEnglish ? '/en/account/favorites/' : '/account/favorites/';
+const accountMemoriesHref = isEnglish ? '/en/account/memories/' : '/account/memories/';
+const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/messages/';
 ---
 
 <header class="site-header">
@@ -216,15 +219,15 @@ const accountHref = isEnglish ? '/en/account/' : '/account/';
               {isEnglish ? 'My account' : 'Il mio account'}
             </a>
 
-            <a href="/account/favorites/" role="menuitem">
+            <a href={accountFavoritesHref} role="menuitem">
               {isEnglish ? 'Favorites' : 'Preferiti'}
             </a>
 
-            <a href="/account/memories/" role="menuitem">
+            <a href={accountMemoriesHref} role="menuitem">
               {isEnglish ? 'My memories' : 'Le mie memorie'}
             </a>
 
-            <a href="/account/messages/" role="menuitem">
+            <a href={accountMessagesHref} role="menuitem">
               <span>{isEnglish ? 'Messages' : 'Messaggi'}</span>
               <span class="site-header__account-unread" data-account-unread hidden></span>
             </a>
@@ -500,7 +503,7 @@ const accountHref = isEnglish ? '/en/account/' : '/account/';
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } finally {
-      window.location.href = '/account/login/';
+      window.location.href = isEnglish ? '/en/account/login/' : '/account/login/';
     }
   };
 

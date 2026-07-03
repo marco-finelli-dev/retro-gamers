@@ -1,0 +1,16 @@
+---
+import AccountMessagesPage from '../../../../components/account/AccountMessagesPage.astro';
+import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
+
+const session = await getUserSessionFromCookies(Astro.cookies);
+
+if (session.error || !session.user || !session.profile) {
+  return Astro.redirect(`/en/account/login/?returnTo=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`, 303);
+}
+
+if (Astro.url.searchParams.get('tab') === 'private') {
+  return Astro.redirect('/en/account/messages/private/', 303);
+}
+---
+
+<AccountMessagesPage lang="en" />

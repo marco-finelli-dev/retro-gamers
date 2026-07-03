@@ -1,42 +1,19 @@
 ---
-import '../../../../styles/pages/account.css';
-import '../../../../styles/pages/account-messages.css';
-import BaseLayout from '../../../../layouts/BaseLayout.astro';
-import CommunityHero from '../../../../components/community/CommunityHero.astro';
-import CommunityLayout from '../../../../components/community/CommunityLayout.astro';
-import CommunitySidebarProfile from '../../../../components/community/CommunitySidebarProfile.astro';
-import CommunityStatList from '../../../../components/community/CommunityStatList.astro';
-import UserAvatar from '../../../../components/account/UserAvatar.astro';
+import PrivateMessagesPage from '../../../../components/account/PrivateMessagesPage.astro';
 import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
-import { getUnreadAccountMessageCount } from '../../../../lib/supabase/account-messages';
-import { emptyCommunityStats, getCommunityStats } from '../../../../lib/supabase/community';
-import {
-  getOrCreatePrivateConversationByUsername,
-  getPrivateConversations,
-  getPrivateMessageExcerpt,
-  getPrivateProfileLabel,
-  getPrivateProfileUrl,
-  getUnreadPrivateMessageCount,
-  isPrivateMessagesUnavailable,
-  type PrivateConversationSummary,
-} from '../../../../lib/supabase/private-messages';
-import { getPublicUserUrl } from '../../../../lib/supabase/public-profiles';
+import { getOrCreatePrivateConversationByUsername } from '../../../../lib/supabase/private-messages';
 import { touchUserActivity } from '../../../../lib/supabase/user-activity';
 
-const title = 'Messaggi privati | Retro-Gamers.it';
-const description = 'Conversazioni private tra lettori Retro-Gamers.it.';
 const session = await getUserSessionFromCookies(Astro.cookies);
-const isLoggedIn = Boolean(!session.error && session.user && session.profile);
+
+if (session.error || !session.user || !session.profile) {
+  return Astro.redirect(`/account/login/?returnTo=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`, 303);
+}
+
+let startConversationError = '';
 const toUsername = String(Astro.url.searchParams.get('to') || '').trim();
-const formatUnreadBadge = (count: number) => count > 99 ? '99+' : String(count);
 
-let conversations: PrivateConversationSummary[] = [];
-let conversationsError = '';
-let systemUnreadCount = 0;
-let privateUnreadCount = 0;
-let communityStats = { ...emptyCommunityStats };
-
-if (isLoggedIn && session.user && toUsername) {
+if (toUsername) {
   const [result] = await Promise.all([
     getOrCreatePrivateConversationByUsername(session.user.id, toUsername),
     touchUserActivity(session.user.id, 'account-private-messages-start'),
@@ -46,170 +23,8 @@ if (isLoggedIn && session.user && toUsername) {
     return Astro.redirect(`/account/messages/private/${result.conversation.id}/`, 303);
   }
 
-  conversationsError = result.error || 'Conversazione non disponibile.';
+  startConversationError = result.error || 'Conversazione non disponibile.';
 }
-
-if (isLoggedIn && session.user) {
-  const [result, systemUnreadResult, privateUnreadResult, statsResult] = await Promise.all([
-    getPrivateConversations(session.user.id),
-    getUnreadAccountMessageCount(session.user.id),
-    getUnreadPrivateMessageCount(session.user.id),
-    getCommunityStats(session.user.id),
-    touchUserActivity(session.user.id, 'account-private-messages-load'),
-  ]);
-  conversations = result.conversations;
-  systemUnreadCount = systemUnreadResult.error ? 0 : systemUnreadResult.count;
-  privateUnreadCount = privateUnreadResult.error ? 0 : privateUnreadResult.count;
-  communityStats = statsResult;
-
-  if (result.error && !conversationsError) {
-    conversationsError = isPrivateMessagesUnavailable(result.error)
-      ? 'Messaggi privati non disponibili. Esegui lo SQL private-messages.sql in Supabase.'
-      : 'Conversazioni non disponibili. Riprova più tardi.';
-  }
-}
-
-const dateFormatter = new Intl.DateTimeFormat('it-IT', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
-const profile = session.profile;
-const accountDisplayName =
-  profile?.display_name || profile?.username || session.user?.email || 'Utente Retro-Gamers';
-const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, 'it') : '';
-const communityStatItems = [
-  { label: 'Commenti pubblicati', value: communityStats.approved },
-  { label: 'In attesa', value: communityStats.pending },
-  { label: 'Like ricevuti', value: communityStats.likesReceived },
-  { label: 'Dislike ricevuti', value: communityStats.dislikesReceived },
-];
 ---
 
-<BaseLayout title={title} description={description}>
-  <CommunityLayout class="account-messages-page" sidebar={isLoggedIn}>
-    <Fragment slot="sidebar">
-      {isLoggedIn && (
-        <>
-          <CommunitySidebarProfile
-            name={accountDisplayName}
-            username={profile?.username}
-            email={session.user?.email}
-            avatarUrl={profile?.avatar_url}
-          >
-            <a href="/account/">Il mio account</a>
-            {publicProfileHref && <a href={publicProfileHref}>Profilo pubblico</a>}
-            <a href="/account/messages/?tab=system">Messaggi sistema</a>
-            <a href="/account/ratings/">I miei voti</a>
-          </CommunitySidebarProfile>
-
-          <CommunityStatList title="Statistiche community" items={communityStatItems} />
-        </>
-      )}
-    </Fragment>
-
-    <CommunityHero
-      kicker="Community"
-      title="Messaggi privati"
-      description={isLoggedIn
-        ? 'Conversazioni 1:1 con gli altri lettori. Usa questo spazio con calma, rispetto e senza trasformarlo in una chat rumorosa.'
-        : 'Accedi per leggere e inviare messaggi privati agli altri lettori.'}
-    />
-
-    <section class="community-card">
-      {isLoggedIn ? (
-        <>
-          <nav class="account-messages-tabs" aria-label="Sezioni messaggi">
-            <a href="/account/messages/?tab=system">
-              Sistema
-              <span
-                class="account-messages-tab-badge"
-                hidden={systemUnreadCount <= 0}
-                aria-label={`${systemUnreadCount} messaggi di sistema non letti`}
-              >
-                {formatUnreadBadge(systemUnreadCount)}
-              </span>
-            </a>
-            <a href="/account/messages/private/" aria-current="page">
-              Privati
-              <span
-                class="account-messages-tab-badge"
-                hidden={privateUnreadCount <= 0}
-                aria-label={`${privateUnreadCount} messaggi privati non letti`}
-              >
-                {formatUnreadBadge(privateUnreadCount)}
-              </span>
-            </a>
-          </nav>
-
-          {conversationsError && (
-            <p class="account-message" data-type="error">{conversationsError}</p>
-          )}
-
-          {conversations.length > 0 ? (
-            <div class="private-conversation-list">
-              {conversations.map((item) => {
-                const otherName = getPrivateProfileLabel(item.otherProfile);
-                const lastMessage = item.lastMessage;
-                const lastMessageText = lastMessage
-                  ? getPrivateMessageExcerpt(lastMessage.body)
-                  : 'Nessun messaggio ancora. Apri la conversazione per iniziare.';
-
-                return (
-                  <a
-                    class:list={[
-                      'private-conversation-card',
-                      item.unreadCount > 0 && 'is-unread',
-                    ]}
-                    href={`/account/messages/private/${item.conversation.id}/`}
-                  >
-                    <UserAvatar
-                      name={otherName}
-                      src={item.otherProfile.avatar_url}
-                      size="sm"
-                      label={`Avatar di ${otherName}`}
-                    />
-
-                    <span class="private-conversation-card__content">
-                      <strong>{otherName}</strong>
-                      <span>@{item.otherProfile.username}</span>
-                      <span>{lastMessageText}</span>
-                    </span>
-
-                    <span class="private-conversation-card__meta">
-                      {lastMessage ? (
-                        <time datetime={lastMessage.created_at}>
-                          {dateFormatter.format(new Date(lastMessage.created_at))}
-                        </time>
-                      ) : (
-                        <span>Nuova</span>
-                      )}
-
-                      {item.unreadCount > 0 && (
-                        <span class="private-conversation-card__unread">
-                          {item.unreadCount > 99 ? '99+' : item.unreadCount}
-                        </span>
-                      )}
-                    </span>
-                  </a>
-                );
-              })}
-            </div>
-          ) : !conversationsError ? (
-            <p class="account-messages-empty">
-              Nessuna conversazione privata per ora. Puoi scrivere a un lettore dal suo profilo pubblico.
-            </p>
-          ) : null}
-        </>
-      ) : (
-        <>
-          <div class="account-actions account-actions--standalone">
-            <a href={`/account/login/?returnTo=${encodeURIComponent('/account/messages/private/')}`}>Accedi</a>
-          </div>
-        </>
-      )}
-    </section>
-  </CommunityLayout>
-</BaseLayout>
+<PrivateMessagesPage lang="it" startConversationError={startConversationError} />

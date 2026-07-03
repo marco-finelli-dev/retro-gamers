@@ -1,0 +1,30 @@
+---
+import PrivateMessagesPage from '../../../../../components/account/PrivateMessagesPage.astro';
+import { getUserSessionFromCookies } from '../../../../../lib/supabase/auth';
+import { getOrCreatePrivateConversationByUsername } from '../../../../../lib/supabase/private-messages';
+import { touchUserActivity } from '../../../../../lib/supabase/user-activity';
+
+const session = await getUserSessionFromCookies(Astro.cookies);
+
+if (session.error || !session.user || !session.profile) {
+  return Astro.redirect(`/en/account/login/?returnTo=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`, 303);
+}
+
+let startConversationError = '';
+const toUsername = String(Astro.url.searchParams.get('to') || '').trim();
+
+if (toUsername) {
+  const [result] = await Promise.all([
+    getOrCreatePrivateConversationByUsername(session.user.id, toUsername),
+    touchUserActivity(session.user.id, 'account-private-messages-start'),
+  ]);
+
+  if (result.conversation) {
+    return Astro.redirect(`/en/account/messages/private/${result.conversation.id}/`, 303);
+  }
+
+  startConversationError = result.error || 'Conversation not available.';
+}
+---
+
+<PrivateMessagesPage lang="en" startConversationError={startConversationError} />

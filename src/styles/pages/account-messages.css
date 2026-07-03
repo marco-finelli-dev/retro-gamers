@@ -163,6 +163,22 @@
     0 12px 34px rgba(34,240,255,0.08);
 }
 
+.account-message-card.is-read {
+  border-color: color-mix(in srgb, var(--rg-card-border) 82%, transparent);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0)),
+    var(--rg-card-bg);
+  opacity: 0.84;
+}
+
+.account-message-card.is-read h2 {
+  color: color-mix(in srgb, var(--rg-section-title-color) 76%, var(--color-text-soft));
+}
+
+.account-message-card.is-read p {
+  color: color-mix(in srgb, var(--color-text-soft) 84%, transparent);
+}
+
 .account-message-card.is-unread::before {
   content: "";
   position: absolute;
@@ -176,10 +192,6 @@
   box-shadow: 0 0 14px rgba(34,240,255,0.22);
 }
 
-.account-message-card.is-recent:not(.is-unread) {
-  border-color: color-mix(in srgb, var(--rg-card-border) 72%, rgba(34,240,255,0.36));
-}
-
 .account-message-card header {
   display: flex;
   flex-wrap: wrap;
@@ -191,29 +203,38 @@
   font-weight: 850;
 }
 
-.account-message-card header span:not(.account-message-card__new-badge) {
+.account-message-card header span:not(.account-message-status) {
   color: var(--rg-eyebrow-color);
   font-weight: 950;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.account-message-card__new-badge {
+.account-message-status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 22px;
-  border: 1px solid rgba(34,240,255,0.34);
   border-radius: 999px;
   padding: 0 8px;
+  font-size: 0.72rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.account-message-status.is-unread {
+  border: 1px solid rgba(34,240,255,0.34);
   background:
     linear-gradient(180deg, rgba(34,240,255,0.14), rgba(34,240,255,0.045)),
     color-mix(in srgb, var(--rg-badge-bg) 72%, transparent);
   color: var(--rg-badge-color);
-  font-size: 0.72rem;
-  font-weight: 950;
-  line-height: 1;
   box-shadow: 0 0 10px rgba(34,240,255,0.08);
+}
+
+.account-message-status.is-read {
+  border: 1px solid color-mix(in srgb, var(--rg-card-border) 78%, transparent);
+  background: color-mix(in srgb, var(--rg-card-bg) 86%, transparent);
+  color: color-mix(in srgb, var(--color-text-soft) 78%, transparent);
 }
 
 .account-message-card h2 {
@@ -375,10 +396,28 @@ html[data-theme="light"] .account-message-card.is-unread {
     var(--rg-card-bg);
 }
 
+html[data-theme="light"] .account-message-card.is-read {
+  border-color: rgba(113,128,150,0.20);
+  opacity: 0.88;
+}
+
 html[data-theme="light"] .account-message-card.is-unread::before {
   border-color: rgba(8,124,142,0.26);
   background: rgba(8,124,142,0.30);
   box-shadow: 0 0 8px rgba(8,124,142,0.08);
+}
+
+html[data-theme="light"] .account-message-status.is-unread {
+  border-color: rgba(8,124,142,0.26);
+  background:
+    linear-gradient(180deg, rgba(229,250,253,0.92), rgba(210,238,244,0.72));
+  color: rgba(15,62,72,0.96);
+}
+
+html[data-theme="light"] .account-message-status.is-read {
+  border-color: rgba(113,128,150,0.20);
+  background: rgba(248,251,255,0.58);
+  color: rgba(71,85,105,0.78);
 }
 
 html[data-theme="light"] .private-conversation-card__unread {

@@ -108,14 +108,17 @@ const languageSwitch = {
   url: isEn ? '/account/ratings/' : '/en/account/ratings/',
 };
 
+const accountHref = isEn ? '/en/account/' : '/account/';
 const loginHref = isEn ? '/en/account/login/' : '/account/login/';
 const registerHref = isEn ? '/en/account/register/' : '/account/register/';
+const messagesHref = isEn ? '/en/account/messages/' : '/account/messages/';
+const memoriesHref = isEn ? '/en/account/memories/' : '/account/memories/';
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const profile = session.profile;
 const user = session.user;
 const accountDisplayName =
-  profile?.display_name || profile?.username || user?.email || 'Utente Retro-Gamers';
+  profile?.display_name || profile?.username || user?.email || (isEn ? 'Retro-Gamers user' : 'Utente Retro-Gamers');
 const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, lang) : '';
 const dateFormatter = new Intl.DateTimeFormat(isEn ? 'en-US' : 'it-IT', {
   day: 'numeric',
@@ -218,10 +221,10 @@ const getPlatformLabel = (post?: Post | null) => {
             avatarUrl={profile?.avatar_url}
             label={copy.sidebarProfile}
           >
-            <a href="/account/">{copy.account}</a>
+            <a href={accountHref}>{copy.account}</a>
             {publicProfileHref && <a href={publicProfileHref}>{copy.publicProfile}</a>}
-            <a href="/account/messages/">{copy.messages}</a>
-            <a href="/account/memories/">{copy.memories}</a>
+            <a href={messagesHref}>{copy.messages}</a>
+            <a href={memoriesHref}>{copy.memories}</a>
           </CommunitySidebarProfile>
 
           <CommunityStatList title={copy.statsTitle} items={communityStatItems} />

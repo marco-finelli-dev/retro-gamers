@@ -1,0 +1,12 @@
+---
+import PrivateConversationPage from '../../../../../../components/account/PrivateConversationPage.astro';
+import { getUserSessionFromCookies } from '../../../../../../lib/supabase/auth';
+
+const session = await getUserSessionFromCookies(Astro.cookies);
+
+if (session.error || !session.user || !session.profile) {
+  return Astro.redirect(`/en/account/login/?returnTo=${encodeURIComponent(Astro.url.pathname)}`, 303);
+}
+---
+
+<PrivateConversationPage lang="en" />

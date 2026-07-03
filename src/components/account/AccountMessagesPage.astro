@@ -1,0 +1,440 @@
+---
+import '../../styles/pages/account.css';
+import '../../styles/pages/account-messages.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../components/community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
+import CommunityStatList from '../../components/community/CommunityStatList.astro';
+import {
+  getAccountMessages,
+  getUnreadAccountMessageCount,
+  type AccountMessage,
+} from '../../lib/supabase/account-messages';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
+import { getUnreadPrivateMessageCount } from '../../lib/supabase/private-messages';
+import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
+import { touchUserActivity } from '../../lib/supabase/user-activity';
+
+type AccountLang = 'it' | 'en';
+
+const { lang = 'it' } = Astro.props as { lang?: AccountLang };
+const currentLang: AccountLang = lang === 'en' ? 'en' : 'it';
+const isEn = currentLang === 'en';
+
+const copy = isEn
+  ? {
+      title: 'Account messages | Retro-Gamers.it',
+      description: 'Notifications and internal messages for your Retro-Gamers.it reader profile.',
+      fallbackName: 'Retro-Gamers user',
+      account: 'My account',
+      publicProfile: 'Public profile',
+      privateMessages: 'Private messages',
+      ratings: 'My ratings',
+      stats: 'Community stats',
+      comments: 'Published comments',
+      pending: 'Pending',
+      likes: 'Likes received',
+      dislikes: 'Dislikes received',
+      kicker: 'Community',
+      heroTitle: 'Messages',
+      heroLogged:
+        'Find notifications and messages connected to your community activity: approved comments, replies and profile updates.',
+      heroGuest:
+        'Sign in to read your profile messages and follow community updates.',
+      tabsAria: 'Message sections',
+      system: 'System',
+      private: 'Private',
+      unreadSystemAria: (count: number) =>
+        count === 1 ? '1 unread system message' : `${count} unread system messages`,
+      unreadPrivateAria: (count: number) =>
+        count === 1 ? '1 unread private message' : `${count} unread private messages`,
+      unreadText: (count: number) => count === 1 ? '1 unread message' : `${count} unread messages`,
+      markAll: 'Mark all as read',
+      unavailable:
+        'Messages are not available. Check that the account_messages table has been created in Supabase.',
+      newBadge: 'New',
+      open: 'Open',
+      markRead: 'Mark as read',
+      readBadge: 'Read',
+      empty: 'No messages yet. Community notifications will appear here.',
+      login: 'Log in',
+      register: 'Register',
+      typeLabels: {
+        comment_approved: 'Comment approved',
+        comment_reply: 'Reply',
+        comment_like: 'Like',
+        comment_pending: 'Moderation',
+        badge_unlocked: 'Badge',
+        system: 'System',
+      },
+      locale: 'en-US',
+    }
+  : {
+      title: 'Messaggi account | Retro-Gamers.it',
+      description: 'Centro notifiche e messaggi interni del profilo lettore Retro-Gamers.it.',
+      fallbackName: 'Utente Retro-Gamers',
+      account: 'Il mio account',
+      publicProfile: 'Profilo pubblico',
+      privateMessages: 'Messaggi privati',
+      ratings: 'I miei voti',
+      stats: 'Statistiche community',
+      comments: 'Commenti pubblicati',
+      pending: 'In attesa',
+      likes: 'Like ricevuti',
+      dislikes: 'Dislike ricevuti',
+      kicker: 'Community',
+      heroTitle: 'Messaggi',
+      heroLogged:
+        'Qui trovi notifiche e messaggi legati alla tua attività nella community: commenti approvati, risposte ricevute e aggiornamenti del profilo.',
+      heroGuest:
+        'Accedi per leggere i messaggi del tuo profilo e seguire gli aggiornamenti della community.',
+      tabsAria: 'Sezioni messaggi',
+      system: 'Sistema',
+      private: 'Privati',
+      unreadSystemAria: (count: number) => `${count} messaggi di sistema non letti`,
+      unreadPrivateAria: (count: number) => `${count} messaggi privati non letti`,
+      unreadText: (count: number) => count === 1 ? '1 messaggio non letto' : `${count} messaggi non letti`,
+      markAll: 'Segna tutti come letti',
+      unavailable:
+        'Messaggi non disponibili. Verifica che la tabella account_messages sia stata creata in Supabase.',
+      newBadge: 'Nuova',
+      open: 'Apri',
+      markRead: 'Segna come letto',
+      readBadge: 'Letta',
+      empty: 'Nessun messaggio per ora. Le notifiche della community appariranno qui.',
+      login: 'Accedi',
+      register: 'Registrati',
+      typeLabels: {
+        comment_approved: 'Commento approvato',
+        comment_reply: 'Risposta',
+        comment_like: 'Like',
+        comment_pending: 'Moderazione',
+        badge_unlocked: 'Badge',
+        system: 'Sistema',
+      },
+      locale: 'it-IT',
+    };
+
+const title = copy.title;
+const description = copy.description;
+const formatUnreadBadge = (count: number) => count > 99 ? '99+' : String(count);
+const RECENT_MESSAGE_WINDOW_MS = 24 * 60 * 60 * 1000;
+const messagesHref = isEn ? '/en/account/messages/' : '/account/messages/';
+const privateMessagesHref = isEn ? '/en/account/messages/private/' : '/account/messages/private/';
+const accountHref = isEn ? '/en/account/' : '/account/';
+const ratingsHref = isEn ? '/en/account/ratings/' : '/account/ratings/';
+const loginHref = isEn ? '/en/account/login/' : '/account/login/';
+const registerHref = isEn ? '/en/account/register/' : '/account/register/';
+
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isLoggedIn = Boolean(!session.error && session.user && session.profile);
+
+let messages: AccountMessage[] = [];
+let unreadCount = 0;
+let privateUnreadCount = 0;
+let messagesError = false;
+let communityStats = { ...emptyCommunityStats };
+
+if (isLoggedIn && session.user) {
+  const [messagesResult, unreadResult, privateUnreadResult, statsResult] = await Promise.all([
+    getAccountMessages(session.user.id),
+    getUnreadAccountMessageCount(session.user.id),
+    getUnreadPrivateMessageCount(session.user.id),
+    getCommunityStats(session.user.id),
+    touchUserActivity(session.user.id, 'account-messages-load'),
+  ]);
+
+  messages = messagesResult.messages;
+  unreadCount = unreadResult.error ? 0 : unreadResult.count;
+  privateUnreadCount = privateUnreadResult.error ? 0 : privateUnreadResult.count;
+  communityStats = statsResult;
+  messagesError = Boolean(messagesResult.error);
+}
+
+const typeLabels: Record<string, string> = copy.typeLabels;
+
+const dateFormatter = new Intl.DateTimeFormat(copy.locale, {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const nowMs = Date.now();
+const isRecentMessage = (message: AccountMessage) => {
+  const createdAtMs = new Date(message.created_at).getTime();
+
+  return Number.isFinite(createdAtMs) && nowMs - createdAtMs <= RECENT_MESSAGE_WINDOW_MS;
+};
+const profile = session.profile;
+const accountDisplayName =
+  profile?.display_name || profile?.username || session.user?.email || copy.fallbackName;
+const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, currentLang) : '';
+const communityStatItems = [
+  { label: copy.comments, value: communityStats.approved },
+  { label: copy.pending, value: communityStats.pending },
+  { label: copy.likes, value: communityStats.likesReceived },
+  { label: copy.dislikes, value: communityStats.dislikesReceived },
+];
+const clientCopy = {
+  unreadTextSingular: copy.unreadText(1),
+  unreadTextPlural: isEn ? 'unread messages' : 'messaggi non letti',
+  systemUnreadAriaSingular: isEn ? '1 unread system message' : copy.unreadSystemAria(1),
+  systemUnreadAriaPlural: isEn ? 'unread system messages' : 'messaggi di sistema non letti',
+  readBadge: copy.readBadge,
+  lang: currentLang,
+};
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  lang={currentLang}
+  languageSwitch={{ url: isEn ? '/account/messages/?tab=system' : '/en/account/messages/?tab=system' }}
+>
+  <CommunityLayout class="account-messages-page" sidebar={isLoggedIn}>
+    <Fragment slot="sidebar">
+      {isLoggedIn && (
+        <>
+          <CommunitySidebarProfile
+            name={accountDisplayName}
+            username={profile?.username}
+            email={session.user?.email}
+            avatarUrl={profile?.avatar_url}
+            label="Community"
+          >
+            <a href={accountHref}>{copy.account}</a>
+            {publicProfileHref && <a href={publicProfileHref}>{copy.publicProfile}</a>}
+            <a href={privateMessagesHref}>{copy.privateMessages}</a>
+            <a href={ratingsHref}>{copy.ratings}</a>
+          </CommunitySidebarProfile>
+
+          <CommunityStatList title={copy.stats} items={communityStatItems} />
+        </>
+      )}
+    </Fragment>
+
+    <CommunityHero
+      kicker={copy.kicker}
+      title={copy.heroTitle}
+      description={isLoggedIn
+        ? copy.heroLogged
+        : copy.heroGuest}
+    />
+
+    <section class="community-card">
+      {isLoggedIn ? (
+        <>
+          <nav class="account-messages-tabs" aria-label={copy.tabsAria}>
+            <a href={`${messagesHref}?tab=system`} aria-current="page">
+              {copy.system}
+              <span
+                class="account-messages-tab-badge"
+                data-system-tab-unread
+                hidden={unreadCount <= 0}
+                aria-label={copy.unreadSystemAria(unreadCount)}
+              >
+                {formatUnreadBadge(unreadCount)}
+              </span>
+            </a>
+            <a href={privateMessagesHref}>
+              {copy.private}
+              <span
+                class="account-messages-tab-badge"
+                hidden={privateUnreadCount <= 0}
+                aria-label={copy.unreadPrivateAria(privateUnreadCount)}
+              >
+                {formatUnreadBadge(privateUnreadCount)}
+              </span>
+            </a>
+          </nav>
+
+          <div class="account-messages-toolbar">
+            <span data-account-messages-count>
+              {copy.unreadText(unreadCount)}
+            </span>
+
+            {unreadCount > 0 && (
+              <button type="button" data-mark-all-read>
+                {copy.markAll}
+              </button>
+            )}
+          </div>
+
+          {messagesError ? (
+            <p class="account-message" data-type="error">
+              {copy.unavailable}
+            </p>
+          ) : messages.length > 0 ? (
+            <div class="account-messages-list" data-account-messages-list>
+              {messages.map((message) => (
+                <article
+                  class={`account-message-card${message.is_read ? ' is-read' : ' is-unread'}${isRecentMessage(message) ? ' is-recent' : ''}`}
+                  data-message-id={message.id}
+                >
+                  <header>
+                    <span>{typeLabels[message.type] || message.type}</span>
+                    {!message.is_read ? (
+                      <span class="account-message-status is-unread">{copy.newBadge}</span>
+                    ) : (
+                      <span class="account-message-status is-read">{copy.readBadge}</span>
+                    )}
+                    <time datetime={message.created_at}>
+                      {dateFormatter.format(new Date(message.created_at))}
+                    </time>
+                  </header>
+
+                  <h2>{message.title}</h2>
+                  <p>{message.body}</p>
+
+                  <footer>
+                    {message.action_url && (
+                      <a href={message.action_url}>
+                        {message.action_label || copy.open}
+                      </a>
+                    )}
+
+                    {!message.is_read && (
+                      <button type="button" data-mark-message-read>
+                        {copy.markRead}
+                      </button>
+                    )}
+                  </footer>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p class="account-messages-empty">
+              {copy.empty}
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <div class="account-actions account-actions--standalone">
+            <a href={loginHref}>{copy.login}</a>
+            <a href={registerHref}>{copy.register}</a>
+          </div>
+        </>
+      )}
+    </section>
+  </CommunityLayout>
+
+  <script define:vars={{ clientCopy }}>
+    const list = document.querySelector('[data-account-messages-list]');
+    const countNode = document.querySelector('[data-account-messages-count]');
+    const markAllButton = document.querySelector('[data-mark-all-read]');
+    const systemTabBadge = document.querySelector('[data-system-tab-unread]');
+    const requestGlobalUnreadRefresh = () => {
+      window.dispatchEvent(new Event('retro-gamers:refresh-unread'));
+    };
+
+    const refreshUnreadCount = async () => {
+      try {
+        const response = await fetch('/api/account/messages/unread-count');
+        const result = await response.json();
+        const count = Number(result.systemUnreadCount || 0);
+        const formattedCount = count > 99 ? '99+' : String(count);
+
+        if (countNode) {
+          countNode.textContent = count === 1
+            ? clientCopy.unreadTextSingular
+            : `${count} ${clientCopy.unreadTextPlural}`;
+        }
+
+        if (markAllButton) {
+          markAllButton.hidden = count <= 0;
+        }
+
+        if (systemTabBadge) {
+          systemTabBadge.textContent = formattedCount;
+          systemTabBadge.hidden = count <= 0;
+          systemTabBadge.setAttribute(
+            'aria-label',
+            count === 1
+              ? clientCopy.systemUnreadAriaSingular
+              : `${count} ${clientCopy.systemUnreadAriaPlural}`
+          );
+        }
+      } catch {
+        // The page remains usable even if the counter refresh fails.
+      }
+    };
+
+    list?.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-mark-message-read]');
+      if (!button) return;
+
+      const card = button.closest('[data-message-id]');
+      const messageId = card?.dataset.messageId;
+
+      if (!messageId) return;
+
+      button.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/messages/mark-read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messageId }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          button.disabled = false;
+          return;
+        }
+
+        card.classList.remove('is-unread');
+        card.classList.add('is-read');
+        const status = card.querySelector('.account-message-status');
+        if (status) {
+          status.textContent = clientCopy.readBadge;
+          status.classList.remove('is-unread');
+          status.classList.add('is-read');
+        }
+        button.remove();
+        refreshUnreadCount();
+        requestGlobalUnreadRefresh();
+      } catch {
+        button.disabled = false;
+      }
+    });
+
+    markAllButton?.addEventListener('click', async () => {
+      markAllButton.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/messages/mark-all-read', {
+          method: 'POST',
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          markAllButton.disabled = false;
+          return;
+        }
+
+        document.querySelectorAll('.account-message-card.is-unread').forEach((card) => {
+          card.classList.remove('is-unread');
+          card.classList.add('is-read');
+          const status = card.querySelector('.account-message-status');
+          if (status) {
+            status.textContent = clientCopy.readBadge;
+            status.classList.remove('is-unread');
+            status.classList.add('is-read');
+          }
+          card.querySelector('[data-mark-message-read]')?.remove();
+        });
+
+        refreshUnreadCount();
+        requestGlobalUnreadRefresh();
+      } catch {
+        markAllButton.disabled = false;
+      }
+    });
+  </script>
+</BaseLayout>

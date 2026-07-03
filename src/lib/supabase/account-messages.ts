@@ -475,16 +475,20 @@ export async function markAccountMessagesRead(userId: string, messageIds: string
 }
 
 export async function markAllAccountMessagesRead(userId: string) {
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('account_messages')
     .update({
       is_read: true,
       read_at: new Date().toISOString(),
     })
     .eq('user_id', userId)
-    .eq('is_read', false);
+    .eq('is_read', false)
+    .select('id');
 
   logAccountMessagesError('mark-all-read', error);
 
-  return { error };
+  return {
+    error,
+    updatedCount: data?.length ?? 0,
+  };
 }

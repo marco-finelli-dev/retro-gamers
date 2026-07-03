@@ -17,11 +17,11 @@ export const POST: APIRoute = async ({ cookies }) => {
     return json({ ok: false, error: session.error }, session.status);
   }
 
-  const { error } = await markAllAccountMessagesRead(session.user.id);
+  const { error, updatedCount } = await markAllAccountMessagesRead(session.user.id);
 
   if (error) {
     return json({ ok: false, error: 'Messaggi non aggiornati.' }, 500);
   }
 
-  return json({ ok: true });
+  return json({ ok: true, updatedCount });
 };
