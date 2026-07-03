@@ -1,0 +1,86 @@
+---
+import '../../../styles/pages/account.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import {
+  isValidNewsletterToken,
+  normalizeNewsletterLanguage,
+  unsubscribeNewsletter,
+  type NewsletterLanguage,
+} from '../../../lib/supabase/newsletter';
+
+const token = Astro.url.searchParams.get('token')?.trim() ?? '';
+let language: NewsletterLanguage = normalizeNewsletterLanguage(Astro.url.searchParams.get('lang'));
+let status: 'missing' | 'invalid' | 'success' | 'error' = token ? 'invalid' : 'missing';
+
+if (token && isValidNewsletterToken(token)) {
+  const result = await unsubscribeNewsletter(token);
+  language = result.language;
+  status = result.ok ? 'success' : result.reason === 'error' ? 'error' : 'invalid';
+}
+
+const copy = language === 'en'
+  ? {
+      title: status === 'success'
+        ? 'Unsubscription completed'
+        : status === 'error'
+          ? 'Newsletter temporarily unavailable'
+          : 'Invalid link',
+      description: status === 'success'
+        ? 'You will no longer receive the Retro-Gamers.it newsletter at this address.'
+        : status === 'error'
+          ? 'We could not complete the unsubscription right now. Please try again later.'
+          : 'This newsletter unsubscribe link is not valid.',
+      secondary: 'This does not affect operational emails related to your account, security, comments or other features you requested.',
+      kicker: 'Newsletter',
+      action: 'Back to the site',
+      actionHref: '/en/',
+      pageTitle: 'Newsletter unsubscription | Retro-Gamers.it',
+      pageDescription: 'Unsubscribe from the Retro-Gamers.it newsletter.',
+    }
+  : {
+      title: status === 'success'
+        ? 'Disiscrizione completata'
+        : status === 'error'
+          ? 'Newsletter temporaneamente non disponibile'
+          : 'Link non valido',
+      description: status === 'success'
+        ? 'Non riceverai più la newsletter di Retro-Gamers.it a questo indirizzo.'
+        : status === 'error'
+          ? 'Non siamo riusciti a completare la disiscrizione in questo momento. Riprova più tardi.'
+          : 'Questo link di disiscrizione newsletter non è valido.',
+      secondary: 'Questa operazione non modifica le email operative legate all’account, alla sicurezza, ai commenti o ad altre funzioni richieste.',
+      kicker: 'Newsletter',
+      action: 'Torna al sito',
+      actionHref: '/',
+      pageTitle: 'Disiscrizione newsletter | Retro-Gamers.it',
+      pageDescription: 'Disiscriviti dalla newsletter di Retro-Gamers.it.',
+    };
+---
+
+<BaseLayout
+  title={copy.pageTitle}
+  description={copy.pageDescription}
+  lang={language}
+  noindex={true}
+>
+  <main class="account-page">
+    <section class="account-card">
+      <p class="account-kicker">{copy.kicker}</p>
+      <h1>{copy.title}</h1>
+      <p
+        class="account-message"
+        data-type={status === 'success' ? 'ok' : 'error'}
+      >
+        {copy.description}
+      </p>
+
+      <p class="account-switch">
+        {copy.secondary}
+      </p>
+
+      <div class="account-actions account-actions--standalone">
+        <a href={copy.actionHref}>{copy.action}</a>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

@@ -1,0 +1,80 @@
+---
+import '../../../styles/pages/account.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import {
+  confirmNewsletterSubscription,
+  isValidNewsletterToken,
+  normalizeNewsletterLanguage,
+  type NewsletterLanguage,
+} from '../../../lib/supabase/newsletter';
+
+const token = Astro.url.searchParams.get('token')?.trim() ?? '';
+let language: NewsletterLanguage = normalizeNewsletterLanguage(Astro.url.searchParams.get('lang'));
+let status: 'missing' | 'invalid' | 'success' | 'error' = token ? 'invalid' : 'missing';
+
+if (token && isValidNewsletterToken(token)) {
+  const result = await confirmNewsletterSubscription(token);
+  language = result.language;
+  status = result.ok ? 'success' : result.reason === 'error' ? 'error' : 'invalid';
+}
+
+const copy = language === 'en'
+  ? {
+      title: status === 'success'
+        ? 'Subscription confirmed'
+        : status === 'error'
+          ? 'Newsletter temporarily unavailable'
+          : 'Invalid or already used link',
+      description: status === 'success'
+        ? 'Thank you, your Retro-Gamers.it newsletter subscription is active.'
+        : status === 'error'
+          ? 'We could not confirm your subscription right now. Please try again later.'
+          : 'This confirmation link is not valid or has already been used.',
+      kicker: 'Newsletter',
+      action: 'Back to the site',
+      actionHref: '/en/',
+      pageTitle: 'Newsletter confirmation | Retro-Gamers.it',
+      pageDescription: 'Confirm your Retro-Gamers.it newsletter subscription.',
+    }
+  : {
+      title: status === 'success'
+        ? 'Iscrizione confermata'
+        : status === 'error'
+          ? 'Newsletter temporaneamente non disponibile'
+          : 'Link non valido o già utilizzato',
+      description: status === 'success'
+        ? 'Grazie, la tua iscrizione alla newsletter di Retro-Gamers.it è attiva.'
+        : status === 'error'
+          ? 'Non siamo riusciti a confermare l’iscrizione in questo momento. Riprova più tardi.'
+          : 'Questo link di conferma non è valido o è già stato utilizzato.',
+      kicker: 'Newsletter',
+      action: 'Torna al sito',
+      actionHref: '/',
+      pageTitle: 'Conferma newsletter | Retro-Gamers.it',
+      pageDescription: 'Conferma l’iscrizione alla newsletter di Retro-Gamers.it.',
+    };
+---
+
+<BaseLayout
+  title={copy.pageTitle}
+  description={copy.pageDescription}
+  lang={language}
+  noindex={true}
+>
+  <main class="account-page">
+    <section class="account-card">
+      <p class="account-kicker">{copy.kicker}</p>
+      <h1>{copy.title}</h1>
+      <p
+        class="account-message"
+        data-type={status === 'success' ? 'ok' : 'error'}
+      >
+        {copy.description}
+      </p>
+
+      <div class="account-actions account-actions--standalone">
+        <a href={copy.actionHref}>{copy.action}</a>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
