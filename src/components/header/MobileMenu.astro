@@ -80,6 +80,7 @@ const accountHref = isEnglish ? '/en/account/' : '/account/';
 const accountFavoritesHref = isEnglish ? '/en/account/favorites/' : '/account/favorites/';
 const accountMemoriesHref = isEnglish ? '/en/account/memories/' : '/account/memories/';
 const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/messages/';
+const adminHref = isEnglish ? '/en/admin/' : '/admin/';
 ---
 
 <div class="mobile-menu" id="mobile-menu" aria-hidden="true" data-mobile-menu>
@@ -129,7 +130,7 @@ const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/mess
           <a href={accountHref} data-account-public-profile hidden>
             {isEnglish ? 'Public profile' : 'Profilo pubblico'}
           </a>
-          <a href="/admin/" data-account-staff hidden>{accountLabels.editorialTools}</a>
+          <a href={adminHref} data-account-staff hidden>{accountLabels.editorialTools}</a>
           <button type="button" data-account-logout>{accountLabels.signOut}</button>
         </div>
       </div>

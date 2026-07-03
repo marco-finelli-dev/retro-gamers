@@ -1,0 +1,593 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import '../../styles/pages/admin-comment-reports.css';
+
+type Lang = 'it' | 'en';
+
+interface Props {
+  lang?: Lang;
+}
+
+const { lang = 'it' } = Astro.props;
+const isEnglish = lang === 'en';
+const adminBase = isEnglish ? '/en/admin' : '/admin';
+
+const copy = isEnglish
+  ? {
+      title: 'Comment reports | Retro-Gamers.it',
+      description: 'Retro-Gamers.it public comment reports panel',
+      sidebarTitle: 'Editorial tools',
+      kicker: 'Community',
+      heroTitle: 'Comment reports',
+      heroDescription: 'Review public comments reported by readers and keep the discussion tidy.',
+      accessTitle: 'Editorial access',
+      accessDescription: 'You do not have permission to access this section.',
+      login: 'Sign in',
+      loading: 'Loading...',
+      status: 'Status',
+      filter: 'Filter',
+      loadingReports: 'Loading reports...',
+      filters: {
+        open: 'Open',
+        resolved: 'Resolved',
+        archived: 'Ignored',
+        all: 'All',
+      },
+      nav: {
+        dashboard: 'Editorial dashboard',
+        comments: 'Comment moderation',
+        commentReports: 'Comment reports',
+        users: 'Users',
+        privateMessageReports: 'Message reports',
+        ratings: 'Reader ratings',
+        newsletter: 'Newsletter',
+      },
+      client: {
+        locale: 'en-US',
+        profileBase: '/en/users/',
+        unavailable: 'Unavailable',
+        statusLabels: {
+          open: 'Open',
+          resolved: 'Resolved',
+          archived: 'Ignored',
+        },
+        emptyMessages: {
+          open: 'No open reports.',
+          resolved: 'No resolved reports with these filters.',
+          archived: 'No ignored reports with these filters.',
+          all: 'No reports with these filters.',
+        },
+        userFallback: 'User',
+        articleUnavailable: 'Article unavailable',
+        noReason: 'No specific reason provided.',
+        commentUnavailable: 'Comment unavailable.',
+        adminCommentUrl: `${adminBase}/comments/`,
+        hidden: 'Hidden',
+        approved: 'Approved',
+        pending: 'Pending',
+        rejected: 'Rejected',
+        commentStatusUnavailable: 'Status unavailable',
+        hideComment: 'Hide comment',
+        alreadyHidden: 'Comment already hidden',
+        hardDelete: 'Permanently delete',
+        hideConfirm: 'Hide this comment from the public site?',
+        hardDeleteConfirm: 'This will permanently delete the comment. Continue?',
+        commentAuthor: 'Comment author',
+        reportedBy: 'Reported by',
+        commentStatus: 'Comment status',
+        reportedComment: 'Reported comment',
+        reportReason: 'Report reason',
+        staffNote: 'Staff note',
+        openArticle: 'Open article',
+        goToComment: 'Go to comment',
+        manageModeration: 'Review in moderation',
+        markResolved: 'Mark as resolved',
+        ignore: 'Ignore',
+        reopen: 'Reopen',
+        saveNote: 'Save note',
+        reportsUnavailable: 'Reports unavailable.',
+        accessUnavailable: 'Access unavailable',
+        reportsCountOne: '1 report',
+        reportsCountMany: 'reports',
+        connectionError: 'Connection error.',
+        reportUpdateFailed: 'Report not updated.',
+        reportUpdated: 'Report updated.',
+        commentUpdateFailed: 'Comment not updated.',
+        commentHiddenAndResolved: 'Comment hidden and report marked as resolved.',
+        commentUpdated: 'Comment updated.',
+        notePrefix: 'Moderation from comment report',
+      },
+    }
+  : {
+      title: 'Segnalazioni commenti | Retro-Gamers.it',
+      description: 'Pannello segnalazioni commenti pubblici Retro-Gamers.it',
+      sidebarTitle: 'Strumenti redazione',
+      kicker: 'Community',
+      heroTitle: 'Segnalazioni commenti',
+      heroDescription: 'Verifica i commenti pubblici segnalati dai lettori e tieni ordinata la discussione.',
+      accessTitle: 'Accesso redazione',
+      accessDescription: 'Non hai i permessi per accedere a questa sezione.',
+      login: 'Accedi',
+      loading: 'Caricamento...',
+      status: 'Stato',
+      filter: 'Filtra',
+      loadingReports: 'Caricamento segnalazioni...',
+      filters: {
+        open: 'Aperte',
+        resolved: 'Gestite',
+        archived: 'Ignorate',
+        all: 'Tutte',
+      },
+      nav: {
+        dashboard: 'Area redazione',
+        comments: 'Moderazione commenti',
+        commentReports: 'Segnalazioni commenti',
+        users: 'Gestione utenti',
+        privateMessageReports: 'Segnalazioni messaggi',
+        ratings: 'Voti lettori',
+        newsletter: 'Newsletter',
+      },
+      client: {
+        locale: 'it-IT',
+        profileBase: '/utenti/',
+        unavailable: 'Non disponibile',
+        statusLabels: {
+          open: 'Aperta',
+          resolved: 'Gestita',
+          archived: 'Ignorata',
+        },
+        emptyMessages: {
+          open: 'Nessuna segnalazione aperta.',
+          resolved: 'Nessuna segnalazione gestita con questi filtri.',
+          archived: 'Nessuna segnalazione ignorata con questi filtri.',
+          all: 'Nessuna segnalazione con questi filtri.',
+        },
+        userFallback: 'Utente',
+        articleUnavailable: 'Articolo non disponibile',
+        noReason: 'Nessun motivo specificato.',
+        commentUnavailable: 'Commento non disponibile.',
+        adminCommentUrl: `${adminBase}/comments/`,
+        hidden: 'Nascosto',
+        approved: 'Approvato',
+        pending: 'Da revisionare',
+        rejected: 'Rifiutato',
+        commentStatusUnavailable: 'Stato non disponibile',
+        hideComment: 'Nascondi commento',
+        alreadyHidden: 'Commento già nascosto',
+        hardDelete: 'Cancella definitivamente',
+        hideConfirm: 'Nascondere questo commento dal sito pubblico?',
+        hardDeleteConfirm: 'Questa azione cancellerà definitivamente il commento. Continuare?',
+        commentAuthor: 'Autore commento',
+        reportedBy: 'Segnalato da',
+        commentStatus: 'Stato commento',
+        reportedComment: 'Commento segnalato',
+        reportReason: 'Motivo segnalazione',
+        staffNote: 'Nota staff',
+        openArticle: 'Apri articolo',
+        goToComment: 'Vai al commento',
+        manageModeration: 'Gestisci in moderazione',
+        markResolved: 'Segna come gestita',
+        ignore: 'Ignora',
+        reopen: 'Riapri',
+        saveNote: 'Salva nota',
+        reportsUnavailable: 'Segnalazioni non disponibili.',
+        accessUnavailable: 'Accesso non disponibile',
+        reportsCountOne: '1 segnalazione',
+        reportsCountMany: 'segnalazioni',
+        connectionError: 'Errore di connessione.',
+        reportUpdateFailed: 'Segnalazione non aggiornata.',
+        reportUpdated: 'Segnalazione aggiornata.',
+        commentUpdateFailed: 'Commento non aggiornato.',
+        commentHiddenAndResolved: 'Commento nascosto e segnalazione segnata come gestita.',
+        commentUpdated: 'Commento aggiornato.',
+        notePrefix: 'Moderazione da segnalazione commento',
+      },
+    };
+
+const title = copy.title;
+const description = copy.description;
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
+const isAdmin = session.profile?.role === 'admin';
+const loginHref = isEnglish ? '/en/account/login/' : '/account/login/';
+
+const staffLinks = [
+  { href: `${adminBase}/`, label: copy.nav.dashboard },
+  { href: `${adminBase}/comments/`, label: copy.nav.comments },
+  { href: `${adminBase}/comment-reports/`, label: copy.nav.commentReports },
+  { href: `${adminBase}/users/`, label: copy.nav.users },
+  { href: `${adminBase}/private-message-reports/`, label: copy.nav.privateMessageReports },
+  { href: `${adminBase}/ratings/`, label: copy.nav.ratings },
+  { href: `${adminBase}/newsletter/`, label: copy.nav.newsletter },
+];
+---
+
+<BaseLayout title={title} description={description} lang={lang}>
+  <CommunityLayout class="admin-comment-reports-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title={copy.sidebarTitle}>
+          <div class="community-staff-links">
+            {staffLinks.map((link) => (
+              <a class="community-action-link" href={link.href}>{link.label}</a>
+            ))}
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    {isStaff ? (
+      <>
+        <CommunityHero
+          kicker={copy.kicker}
+          title={copy.heroTitle}
+          description={copy.heroDescription}
+        >
+          <span slot="aside" class="community-soft-badge" data-comment-reports-count>{copy.loading}</span>
+        </CommunityHero>
+
+        <section
+          class="community-card admin-comment-reports-panel"
+          data-comment-reports-panel
+          data-can-hard-delete={isAdmin ? 'true' : 'false'}
+        >
+          <form class="admin-comment-reports-filters" data-comment-reports-filters>
+            <label>
+              <span>{copy.status}</span>
+              <select name="status">
+                <option value="open" selected>{copy.filters.open}</option>
+                <option value="resolved">{copy.filters.resolved}</option>
+                <option value="archived">{copy.filters.archived}</option>
+                <option value="all">{copy.filters.all}</option>
+              </select>
+            </label>
+
+            <button type="submit">{copy.filter}</button>
+          </form>
+
+          <div class="admin-comment-reports-message" data-comment-reports-message hidden></div>
+          <div class="admin-comment-reports-list" data-comment-reports-list>
+            <p class="admin-comment-reports-empty">{copy.loadingReports}</p>
+          </div>
+        </section>
+      </>
+    ) : (
+      <>
+        <CommunityHero
+          kicker={copy.kicker}
+          title={copy.accessTitle}
+          description={copy.accessDescription}
+        />
+
+        <section class="community-card">
+          <div class="community-staff-links">
+            <a class="community-action-link" href={loginHref}>{copy.login}</a>
+          </div>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
+
+  <script define:vars={{ commentReportsCopy: copy.client }}>
+    const listNode = document.querySelector('[data-comment-reports-list]');
+    const countNode = document.querySelector('[data-comment-reports-count]');
+    const messageNode = document.querySelector('[data-comment-reports-message]');
+    const filtersForm = document.querySelector('[data-comment-reports-filters]');
+    const panelNode = document.querySelector('[data-comment-reports-panel]');
+    const canHardDelete = panelNode?.dataset.canHardDelete === 'true';
+    const labels = commentReportsCopy;
+
+    const escapeHtml = (value) =>
+      String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    const formatDate = (value) => {
+      if (!value) return labels.unavailable;
+
+      return new Intl.DateTimeFormat(labels.locale, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value));
+    };
+
+    const statusLabels = labels.statusLabels;
+    const emptyMessages = labels.emptyMessages;
+
+    const getProfileName = (profile) =>
+      profile?.display_name || profile?.username || labels.userFallback;
+
+    const getProfileUrl = (profile) => {
+      const username = String(profile?.username || '').trim().toLowerCase();
+
+      if (!/^[a-z0-9_-]{3,24}$/.test(username)) {
+        return '';
+      }
+
+      return `${labels.profileBase || '/utenti/'}${encodeURIComponent(username)}/`;
+    };
+
+    const showMessage = (text, type = 'ok') => {
+      if (!messageNode) return;
+
+      messageNode.textContent = text;
+      messageNode.dataset.type = type;
+      messageNode.hidden = !text;
+    };
+
+    const renderProfileLink = (label, profile) => {
+      const profileUrl = getProfileUrl(profile);
+      const name = getProfileName(profile);
+      const username = profile?.username ? `@${profile.username}` : name;
+
+      return profileUrl
+        ? `<a href="${escapeHtml(profileUrl)}">${escapeHtml(label)}: ${escapeHtml(username)}</a>`
+        : `<span>${escapeHtml(label)}: ${escapeHtml(name)}</span>`;
+    };
+
+    const normalizeAdminCommentUrl = (value) => {
+      const url = String(value || labels.adminCommentUrl);
+
+      return labels.adminCommentUrl.startsWith('/en/')
+        ? url.replace(/^\/admin\/comments(?=\/|\?|$)/, '/en/admin/comments')
+        : url;
+    };
+
+    const renderReport = (report) => {
+      const comment = report.comment || {};
+      const articleTitle = comment.article_title || comment.article_slug || labels.articleUnavailable;
+      const status = report.status || 'open';
+      const reason = report.reason || labels.noReason;
+      const commentBody = comment.body || labels.commentUnavailable;
+      const commentUrl = report.commentUrl || '';
+      const articleUrl = report.articleUrl || comment.article_url || '';
+      const adminCommentUrl = normalizeAdminCommentUrl(report.adminCommentUrl);
+      const isHidden = Boolean(comment.deleted_at);
+      const commentStatus = isHidden
+        ? labels.hidden
+        : comment.status === 'approved'
+          ? labels.approved
+          : comment.status === 'pending'
+            ? labels.pending
+            : comment.status === 'rejected'
+              ? labels.rejected
+              : comment.status || labels.commentStatusUnavailable;
+      const moderationActions = `
+        ${!isHidden ? `<button type="button" data-report-moderate="soft_delete" data-confirm="${escapeHtml(labels.hideConfirm)}">${escapeHtml(labels.hideComment)}</button>` : `<span class="admin-comment-report-card__muted">${escapeHtml(labels.alreadyHidden)}</span>`}
+        ${canHardDelete ? `<button type="button" class="admin-comment-report-card__danger-action" data-report-moderate="hard_delete" data-confirm="${escapeHtml(labels.hardDeleteConfirm)}">${escapeHtml(labels.hardDelete)}</button>` : ''}
+      `;
+
+      return `
+        <article
+          class="admin-comment-report-card"
+          data-report-id="${escapeHtml(report.id)}"
+          data-comment-id="${escapeHtml(report.commentId || '')}"
+          data-current-status="${escapeHtml(status)}"
+        >
+          <header>
+            <div>
+              <span data-status="${escapeHtml(status)}">${escapeHtml(statusLabels[status] || status)}</span>
+              <h2>${escapeHtml(articleTitle)}</h2>
+            </div>
+
+            <time datetime="${escapeHtml(report.createdAt)}">${escapeHtml(formatDate(report.createdAt))}</time>
+          </header>
+
+          <div class="admin-comment-report-card__meta">
+            ${renderProfileLink(labels.commentAuthor, report.reportedUser)}
+            ${renderProfileLink(labels.reportedBy, report.reporter)}
+            <span>${escapeHtml(labels.commentStatus)}: ${escapeHtml(commentStatus)}</span>
+          </div>
+
+          <section class="admin-comment-report-card__comment">
+            <h3>${escapeHtml(labels.reportedComment)}</h3>
+            <blockquote>${escapeHtml(commentBody)}</blockquote>
+          </section>
+
+          <section class="admin-comment-report-card__reason">
+            <h3>${escapeHtml(labels.reportReason)}</h3>
+            <p>${escapeHtml(reason)}</p>
+          </section>
+
+          <label class="admin-comment-report-card__note">
+            <span>${escapeHtml(labels.staffNote)}</span>
+            <textarea rows="3" maxlength="2000" data-report-note>${escapeHtml(report.adminNote || '')}</textarea>
+          </label>
+
+          <footer>
+            <div class="admin-comment-report-card__link-actions">
+              ${articleUrl ? `<a href="${escapeHtml(articleUrl)}" target="_blank" rel="noreferrer">${escapeHtml(labels.openArticle)}</a>` : ''}
+              ${commentUrl ? `<a href="${escapeHtml(commentUrl)}" target="_blank" rel="noreferrer">${escapeHtml(labels.goToComment)}</a>` : ''}
+              <a href="${escapeHtml(adminCommentUrl)}">${escapeHtml(labels.manageModeration)}</a>
+            </div>
+
+            <div class="admin-comment-report-card__status-actions">
+              ${status !== 'resolved' ? `<button type="button" data-report-status="resolved">${escapeHtml(labels.markResolved)}</button>` : ''}
+              ${status !== 'archived' ? `<button type="button" data-report-status="archived">${escapeHtml(labels.ignore)}</button>` : ''}
+              ${status !== 'open' ? `<button type="button" data-report-status="open">${escapeHtml(labels.reopen)}</button>` : ''}
+              <button type="button" data-report-save-note>${escapeHtml(labels.saveNote)}</button>
+            </div>
+
+            <div class="admin-comment-report-card__moderation-actions">
+              ${moderationActions}
+            </div>
+          </footer>
+        </article>
+      `;
+    };
+
+    const loadReports = async () => {
+      if (!listNode) return;
+
+      const params = new URLSearchParams(new FormData(filtersForm));
+
+      try {
+        const response = await fetch(`/api/admin/comment-reports/list?${params.toString()}`);
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          listNode.innerHTML = `<p class="admin-comment-reports-empty">${escapeHtml(result.error || labels.reportsUnavailable)}</p>`;
+          if (countNode) countNode.textContent = labels.accessUnavailable;
+          return;
+        }
+
+        const reports = result.reports || [];
+        if (countNode) {
+          countNode.textContent = reports.length === 1
+            ? labels.reportsCountOne
+            : `${reports.length} ${labels.reportsCountMany}`;
+        }
+
+        if (reports.length === 0) {
+          const status = String(params.get('status') || 'open');
+          listNode.innerHTML = `<p class="admin-comment-reports-empty">${escapeHtml(emptyMessages[status] || emptyMessages.all)}</p>`;
+          return;
+        }
+
+        listNode.innerHTML = reports.map(renderReport).join('');
+      } catch {
+        listNode.innerHTML = `<p class="admin-comment-reports-empty">${escapeHtml(labels.connectionError)}</p>`;
+      }
+    };
+
+    const updateReport = async (card, status) => {
+      const reportId = card?.dataset.reportId;
+      const adminNote = card?.querySelector('[data-report-note]')?.value || '';
+
+      if (!reportId || !status) return;
+
+      const buttons = Array.from(card.querySelectorAll('button'));
+      buttons.forEach((button) => {
+        button.disabled = true;
+      });
+
+      try {
+        const response = await fetch('/api/admin/comment-reports/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reportId,
+            status,
+            adminNote,
+          }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(result.error || labels.reportUpdateFailed, 'error');
+          buttons.forEach((button) => {
+            button.disabled = false;
+          });
+          return;
+        }
+
+        showMessage(labels.reportUpdated, 'ok');
+        await loadReports();
+        return true;
+      } catch {
+        showMessage(labels.connectionError, 'error');
+        buttons.forEach((button) => {
+          button.disabled = false;
+        });
+      }
+
+      return false;
+    };
+
+    const moderateComment = async (card, action) => {
+      const commentId = card?.dataset.commentId;
+
+      if (!commentId || !action) return;
+
+      const buttons = Array.from(card.querySelectorAll('button'));
+      buttons.forEach((button) => {
+        button.disabled = true;
+      });
+
+      try {
+        const response = await fetch('/api/admin/comments/moderate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commentId,
+            action,
+            note: `${labels.notePrefix}: ${action}`,
+          }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(result.error || labels.commentUpdateFailed, 'error');
+          buttons.forEach((button) => {
+            button.disabled = false;
+          });
+          return;
+        }
+
+        if (action === 'soft_delete') {
+          await updateReport(card, 'resolved');
+          showMessage(labels.commentHiddenAndResolved, 'ok');
+          return;
+        }
+
+        showMessage(labels.commentUpdated, 'ok');
+        await loadReports();
+      } catch {
+        showMessage(labels.connectionError, 'error');
+        buttons.forEach((button) => {
+          button.disabled = false;
+        });
+      }
+    };
+
+    filtersForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      showMessage('');
+      loadReports();
+    });
+
+    listNode?.addEventListener('click', (event) => {
+      const target = event.target;
+      const statusButton = target instanceof Element
+        ? target.closest('button[data-report-status]')
+        : null;
+      const noteButton = target instanceof Element
+        ? target.closest('[data-report-save-note]')
+        : null;
+      const moderationButton = target instanceof Element
+        ? target.closest('button[data-report-moderate]')
+        : null;
+
+      if (!statusButton && !noteButton && !moderationButton) return;
+
+      const card = (statusButton || noteButton || moderationButton).closest('[data-report-id]');
+      const moderationAction = moderationButton?.dataset.reportModerate;
+
+      if (moderationAction) {
+        const confirmation = moderationButton.dataset.confirm;
+        if (confirmation && !window.confirm(confirmation)) {
+          return;
+        }
+
+        moderateComment(card, moderationAction);
+        return;
+      }
+
+      const status = statusButton?.dataset.reportStatus || card?.dataset.currentStatus;
+
+      updateReport(card, status);
+    });
+
+    loadReports();
+  </script>
+</BaseLayout>

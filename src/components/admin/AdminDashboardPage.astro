@@ -1,0 +1,411 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies, isStaffProfile } from '../../lib/supabase/auth';
+import { supabaseAdmin } from '../../lib/supabase/server';
+import '../../styles/pages/admin-dashboard.css';
+
+type Lang = 'it' | 'en';
+
+interface Props {
+  lang?: Lang;
+}
+
+type CountResult = {
+  value: number | null;
+  error: string;
+};
+
+type RecentComment = {
+  id: string;
+  article_title?: string | null;
+  article_url?: string | null;
+  body?: string | null;
+  status?: string | null;
+  created_at?: string | null;
+  profiles?: {
+    username?: string | null;
+    display_name?: string | null;
+  } | null;
+};
+
+const { lang = 'it' } = Astro.props;
+const isEnglish = lang === 'en';
+const adminBase = isEnglish ? '/en/admin' : '/admin';
+
+const copy = isEnglish
+  ? {
+      title: 'Editorial dashboard | Retro-Gamers.it',
+      description: 'Editorial control room for comments, reports, users and community activity.',
+      sidebarTitle: 'Editorial tools',
+      dashboardLabel: 'Dashboard',
+      heroTitle: 'Editorial dashboard',
+      heroDescription: 'A quick overview of comments, reports, users and community activity.',
+      summaryLabel: 'Editorial tools summary',
+      optionalDataError: 'Data unavailable',
+      countError: 'Count unavailable',
+      recentCommentsUnavailable: 'Recent comments unavailable.',
+      recentCommentsLoadError: 'Could not load recent comments.',
+      recentKicker: 'Community',
+      recentTitle: 'Recent comments',
+      openTools: 'Open tools',
+      defaultArticle: 'Retro-Gamers.it article',
+      goToComment: 'Go to comment',
+      moderation: 'Moderation',
+      noRecentComments: 'No recent comments to show.',
+      accessTitle: 'Editorial access',
+      accessDescription: 'This page is reserved for Retro-Gamers.it staff.',
+      login: 'Sign in',
+      readerFallback: 'Reader',
+      statusPending: 'Pending',
+      statusApproved: 'Approved',
+      cards: {
+        pendingComments: 'Pending comments',
+        openCommentReports: 'Open comment reports',
+        openPrivateReports: 'Open message reports',
+        registeredUsers: 'Registered users',
+        readerRatings: 'Reader ratings',
+        moderateCta: 'Go to moderation',
+        reportsCta: 'View reports',
+        usersCta: 'Manage users',
+        ratingsCta: 'View ratings',
+      },
+      nav: {
+        dashboard: 'Editorial dashboard',
+        comments: 'Comment moderation',
+        commentReports: 'Comment reports',
+        users: 'Users',
+        privateMessageReports: 'Message reports',
+        ratings: 'Reader ratings',
+        newsletter: 'Newsletter',
+      },
+    }
+  : {
+      title: 'Area redazione | Retro-Gamers.it',
+      description: 'Cabina di controllo redazionale per commenti, segnalazioni, utenti e attività community.',
+      sidebarTitle: 'Strumenti redazione',
+      dashboardLabel: 'Dashboard',
+      heroTitle: 'Area redazione',
+      heroDescription: 'Una panoramica rapida su commenti, segnalazioni, utenti e attività della community.',
+      summaryLabel: 'Riepilogo strumenti redazione',
+      optionalDataError: 'Dato non disponibile',
+      countError: 'Conteggio non disponibile',
+      recentCommentsUnavailable: 'Commenti recenti non disponibili.',
+      recentCommentsLoadError: 'Impossibile caricare i commenti recenti.',
+      recentKicker: 'Community',
+      recentTitle: 'Commenti recenti',
+      openTools: 'Apri strumenti',
+      defaultArticle: 'Articolo Retro-Gamers.it',
+      goToComment: 'Vai al commento',
+      moderation: 'Moderazione',
+      noRecentComments: 'Nessun commento recente da mostrare.',
+      accessTitle: 'Accesso redazione',
+      accessDescription: 'Questa pagina è riservata allo staff Retro-Gamers.it.',
+      login: 'Accedi',
+      readerFallback: 'Lettore',
+      statusPending: 'Da revisionare',
+      statusApproved: 'Approvato',
+      cards: {
+        pendingComments: 'Commenti da revisionare',
+        openCommentReports: 'Segnalazioni commenti aperte',
+        openPrivateReports: 'Segnalazioni messaggi aperte',
+        registeredUsers: 'Utenti registrati',
+        readerRatings: 'Voti lettori',
+        moderateCta: 'Vai alla moderazione',
+        reportsCta: 'Vedi segnalazioni',
+        usersCta: 'Gestisci utenti',
+        ratingsCta: 'Vedi voti',
+      },
+      nav: {
+        dashboard: 'Area redazione',
+        comments: 'Moderazione commenti',
+        commentReports: 'Segnalazioni commenti',
+        users: 'Gestione utenti',
+        privateMessageReports: 'Segnalazioni messaggi',
+        ratings: 'Voti lettori',
+        newsletter: 'Newsletter',
+      },
+    };
+
+const title = copy.title;
+const description = copy.description;
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = isStaffProfile(session.profile);
+
+const dateFormatter = new Intl.DateTimeFormat(isEnglish ? 'en-US' : 'it-IT', {
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+const isOptionalDataError = (error: unknown) => {
+  const apiError = error as { code?: string; message?: string; details?: string; hint?: string } | null;
+  const message = `${apiError?.message || ''} ${apiError?.details || ''} ${apiError?.hint || ''}`.toLowerCase();
+
+  return (
+    apiError?.code === '42P01' ||
+    apiError?.code === '42703' ||
+    apiError?.code === 'PGRST204' ||
+    apiError?.code === 'PGRST205' ||
+    message.includes('does not exist') ||
+    message.includes('schema cache')
+  );
+};
+
+const safeCount = async (callback: () => PromiseLike<{ count: number | null; error: unknown }>): Promise<CountResult> => {
+  try {
+    const { count, error } = await callback();
+
+    if (error) {
+      return {
+        value: null,
+        error: isOptionalDataError(error) ? copy.optionalDataError : copy.countError,
+      };
+    }
+
+    return { value: count ?? 0, error: '' };
+  } catch {
+    return { value: null, error: copy.countError };
+  }
+};
+
+const formatCount = (count: CountResult) =>
+  count.value === null ? '—' : new Intl.NumberFormat(isEnglish ? 'en-US' : 'it-IT').format(count.value);
+
+let pendingComments: CountResult = { value: null, error: '' };
+let openCommentReports: CountResult = { value: null, error: '' };
+let openPrivateReports: CountResult = { value: null, error: '' };
+let registeredUsers: CountResult = { value: null, error: '' };
+let readerRatings: CountResult = { value: null, error: '' };
+let recentComments: RecentComment[] = [];
+let recentCommentsError = '';
+
+if (isStaff) {
+  [
+    pendingComments,
+    openCommentReports,
+    openPrivateReports,
+    registeredUsers,
+    readerRatings,
+  ] = await Promise.all([
+    safeCount(() =>
+      supabaseAdmin
+        .from('comments')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending')
+        .is('deleted_at', null)
+    ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('comment_reports')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'open')
+    ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('private_message_reports')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'open')
+    ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+    ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('review_ratings')
+        .select('id', { count: 'exact', head: true })
+    ),
+  ]);
+
+  const { data, error } = await supabaseAdmin
+    .from('comments')
+    .select(`
+      id,
+      article_title,
+      article_url,
+      body,
+      status,
+      created_at,
+      profiles:profile_id (
+        username,
+        display_name
+      )
+    `)
+    .in('status', ['approved', 'pending'])
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  if (error) {
+    recentCommentsError = isOptionalDataError(error)
+      ? copy.recentCommentsUnavailable
+      : copy.recentCommentsLoadError;
+  } else {
+    recentComments = (data ?? []) as RecentComment[];
+  }
+}
+
+const dashboardCards = [
+  {
+    label: copy.cards.pendingComments,
+    value: pendingComments,
+    href: `${adminBase}/comments/?status=pending`,
+    cta: copy.cards.moderateCta,
+  },
+  {
+    label: copy.cards.openCommentReports,
+    value: openCommentReports,
+    href: `${adminBase}/comment-reports/?status=open`,
+    cta: copy.cards.reportsCta,
+  },
+  {
+    label: copy.cards.openPrivateReports,
+    value: openPrivateReports,
+    href: `${adminBase}/private-message-reports/?status=open`,
+    cta: copy.cards.reportsCta,
+  },
+  {
+    label: copy.cards.registeredUsers,
+    value: registeredUsers,
+    href: `${adminBase}/users/`,
+    cta: copy.cards.usersCta,
+  },
+  {
+    label: copy.cards.readerRatings,
+    value: readerRatings,
+    href: `${adminBase}/ratings/`,
+    cta: copy.cards.ratingsCta,
+  },
+];
+
+const staffLinks = [
+  { href: `${adminBase}/`, label: copy.nav.dashboard },
+  { href: `${adminBase}/comments/`, label: copy.nav.comments },
+  { href: `${adminBase}/comment-reports/`, label: copy.nav.commentReports },
+  { href: `${adminBase}/users/`, label: copy.nav.users },
+  { href: `${adminBase}/private-message-reports/`, label: copy.nav.privateMessageReports },
+  { href: `${adminBase}/ratings/`, label: copy.nav.ratings },
+  { href: `${adminBase}/newsletter/`, label: copy.nav.newsletter },
+];
+
+const getCommentAuthor = (comment: RecentComment) =>
+  comment.profiles?.display_name || comment.profiles?.username || copy.readerFallback;
+
+const getCommentStatusLabel = (status?: string | null) =>
+  status === 'pending' ? copy.statusPending : copy.statusApproved;
+
+const truncate = (value = '', maxLength = 170) => {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+
+  return normalized.length > maxLength
+    ? `${normalized.slice(0, maxLength - 1).trim()}…`
+    : normalized;
+};
+---
+
+<BaseLayout title={title} description={description} lang={lang}>
+  <CommunityLayout class="admin-dashboard-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title={copy.sidebarTitle}>
+          <div class="community-staff-links">
+            {staffLinks.map((link) => (
+              <a class="community-action-link" href={link.href}>{link.label}</a>
+            ))}
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    {isStaff ? (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title={copy.heroTitle}
+          description={copy.heroDescription}
+        >
+          <span slot="aside" class="community-soft-badge">{copy.dashboardLabel}</span>
+        </CommunityHero>
+
+        <section class="admin-dashboard-grid" aria-label={copy.summaryLabel}>
+          {dashboardCards.map((card) => (
+            <article class="community-card admin-dashboard-card">
+              <span>{card.label}</span>
+              <strong>{formatCount(card.value)}</strong>
+              {card.value.error && <small>{card.value.error}</small>}
+              <a href={card.href}>{card.cta}</a>
+            </article>
+          ))}
+        </section>
+
+        <section class="community-card admin-dashboard-recent">
+          <div class="admin-dashboard-section-heading">
+            <div>
+              <p>{copy.recentKicker}</p>
+              <h2>{copy.recentTitle}</h2>
+            </div>
+
+            <a href={`${adminBase}/comments/`}>{copy.openTools}</a>
+          </div>
+
+          {recentCommentsError ? (
+            <p class="admin-dashboard-empty">{recentCommentsError}</p>
+          ) : recentComments.length > 0 ? (
+            <div class="admin-dashboard-comment-list">
+              {recentComments.map((comment) => (
+                <article class="admin-dashboard-comment">
+                  <header>
+                    <span data-status={comment.status || 'approved'}>
+                      {getCommentStatusLabel(comment.status)}
+                    </span>
+                    {comment.created_at && (
+                      <time datetime={comment.created_at}>
+                        {dateFormatter.format(new Date(comment.created_at))}
+                      </time>
+                    )}
+                  </header>
+
+                  <h3>{comment.article_title || copy.defaultArticle}</h3>
+                  <p>{truncate(comment.body || '')}</p>
+
+                  <footer>
+                    <span>{getCommentAuthor(comment)}</span>
+                    <div>
+                      {comment.article_url && (
+                        <a href={`${comment.article_url}#comment-${comment.id}`}>{copy.goToComment}</a>
+                      )}
+                      <a href={`${adminBase}/comments/?status=${comment.status === 'pending' ? 'pending' : 'approved'}`}>
+                        {copy.moderation}
+                      </a>
+                    </div>
+                  </footer>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p class="admin-dashboard-empty">{copy.noRecentComments}</p>
+          )}
+        </section>
+      </>
+    ) : (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title={copy.accessTitle}
+          description={copy.accessDescription}
+        />
+
+        <section class="community-card">
+          <div class="community-staff-links">
+            <a class="community-action-link" href={isEnglish ? '/en/account/login/' : '/account/login/'}>{copy.login}</a>
+          </div>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
+</BaseLayout>

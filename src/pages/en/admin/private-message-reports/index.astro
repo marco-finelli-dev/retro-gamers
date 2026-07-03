@@ -1,0 +1,217 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../../../components/community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
+import '../../../../styles/pages/admin-private-message-reports.css';
+
+const title = 'Message reports | Retro-Gamers.it';
+const description = 'Private message reports panel for Retro-Gamers.it';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
+---
+
+<BaseLayout title={title} description={description} lang="en">
+  <CommunityLayout class="admin-private-reports-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title="Editorial tools">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/en/admin/">Editorial dashboard</a>
+            <a class="community-action-link" href="/en/admin/comments/">Comment moderation</a>
+            <a class="community-action-link" href="/en/admin/comment-reports/">Comment reports</a>
+            <a class="community-action-link" href="/en/admin/users/">Users</a>
+            <a class="community-action-link" href="/en/admin/private-message-reports/">Message reports</a>
+            <a class="community-action-link" href="/en/admin/ratings/">Reader ratings</a>
+            <a class="community-action-link" href="/en/admin/newsletter/">Newsletter</a>
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    <CommunityHero
+      kicker="Community"
+      title="Message reports"
+      description="Review conversations reported by readers and close checks that have already been resolved."
+    >
+      <span slot="aside" class="community-soft-badge" data-private-reports-count>Loading...</span>
+    </CommunityHero>
+
+    <section class="community-card admin-private-reports-panel">
+      <form class="admin-private-reports-filters" data-private-reports-filters>
+        <label>
+          <span>Status</span>
+          <select name="status">
+            <option value="open">Open</option>
+            <option value="resolved">Resolved</option>
+            <option value="all">All</option>
+          </select>
+        </label>
+
+        <button type="submit">Filter</button>
+      </form>
+
+      <div class="admin-private-reports-message" data-private-reports-message hidden></div>
+      <div class="admin-private-reports-list" data-private-reports-list>
+        <p class="admin-private-reports-empty">Loading reports...</p>
+      </div>
+    </section>
+  </CommunityLayout>
+
+  <script>
+    const listNode = document.querySelector('[data-private-reports-list]');
+    const countNode = document.querySelector('[data-private-reports-count]');
+    const messageNode = document.querySelector('[data-private-reports-message]');
+    const filtersForm = document.querySelector('[data-private-reports-filters]');
+
+    const escapeHtml = (value) =>
+      String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    const formatDate = (value) => {
+      if (!value) return 'Unavailable';
+
+      return new Intl.DateTimeFormat('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value));
+    };
+
+    const getProfileName = (profile) =>
+      profile?.display_name || profile?.username || 'User';
+
+    const getProfileUrl = (profile) => {
+      const username = String(profile?.username || '').trim().toLowerCase();
+
+      if (!/^[a-z0-9_-]{3,24}$/.test(username)) {
+        return '';
+      }
+
+      return `/en/users/${encodeURIComponent(username)}/`;
+    };
+
+    const showMessage = (text, type = 'ok') => {
+      if (!messageNode) return;
+
+      messageNode.textContent = text;
+      messageNode.dataset.type = type;
+      messageNode.hidden = !text;
+    };
+
+    const renderReport = (report) => {
+      const reporter = report.reporter;
+      const reportedUser = report.reportedUser;
+      const reporterUrl = getProfileUrl(reporter);
+      const reportedUrl = getProfileUrl(reportedUser);
+      const messageBody = report.message?.body || 'Report about the conversation.';
+
+      return `
+        <article class="admin-private-report-card" data-report-id="${escapeHtml(report.id)}">
+          <header>
+            <div>
+              <span>${escapeHtml(report.status === 'resolved' ? 'Resolved' : 'Open')}</span>
+              <h2>${escapeHtml(getProfileName(reporter))} reported ${escapeHtml(getProfileName(reportedUser))}</h2>
+            </div>
+
+            <time datetime="${escapeHtml(report.created_at)}">${escapeHtml(formatDate(report.created_at))}</time>
+          </header>
+
+          <div class="admin-private-report-card__users">
+            ${reporterUrl ? `<a href="${escapeHtml(reporterUrl)}">Reporter: @${escapeHtml(reporter?.username || '')}</a>` : '<span>Reporter unavailable</span>'}
+            ${reportedUrl ? `<a href="${escapeHtml(reportedUrl)}">Reported user: @${escapeHtml(reportedUser?.username || '')}</a>` : '<span>Reported user unavailable</span>'}
+            <a href="/en/admin/users/">Users</a>
+          </div>
+
+          <blockquote>${escapeHtml(messageBody)}</blockquote>
+
+          ${report.reason ? `<p class="admin-private-report-card__reason">${escapeHtml(report.reason)}</p>` : ''}
+
+          <footer>
+            ${report.status !== 'resolved' ? '<button type="button" data-report-resolve>Mark as resolved</button>' : '<span>Report already resolved</span>'}
+          </footer>
+        </article>
+      `;
+    };
+
+    const loadReports = async () => {
+      if (!listNode) return;
+
+      const params = new URLSearchParams(new FormData(filtersForm));
+
+      try {
+        const response = await fetch(`/api/admin/private-message-reports/list?${params.toString()}`);
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          listNode.innerHTML = `<p class="admin-private-reports-empty">${escapeHtml(result.error || 'Reports unavailable.')}</p>`;
+          if (countNode) countNode.textContent = 'Access unavailable';
+          return;
+        }
+
+        const reports = result.reports || [];
+        if (countNode) {
+          countNode.textContent = reports.length === 1
+            ? '1 report'
+            : `${reports.length} reports`;
+        }
+
+        if (reports.length === 0) {
+          listNode.innerHTML = '<p class="admin-private-reports-empty">No reports with these filters.</p>';
+          return;
+        }
+
+        listNode.innerHTML = reports.map(renderReport).join('');
+      } catch {
+        listNode.innerHTML = '<p class="admin-private-reports-empty">Connection error.</p>';
+      }
+    };
+
+    filtersForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      showMessage('');
+      loadReports();
+    });
+
+    listNode?.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-report-resolve]');
+      if (!button) return;
+
+      const card = button.closest('[data-report-id]');
+      const reportId = card?.dataset.reportId;
+      if (!reportId) return;
+
+      button.disabled = true;
+
+      try {
+        const response = await fetch('/api/admin/private-message-reports/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reportId }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          showMessage(result.error || 'Report not updated.', 'error');
+          button.disabled = false;
+          return;
+        }
+
+        showMessage('Report resolved.', 'ok');
+        loadReports();
+      } catch {
+        showMessage('Connection error.', 'error');
+        button.disabled = false;
+      }
+    });
+
+    loadReports();
+  </script>
+</BaseLayout>

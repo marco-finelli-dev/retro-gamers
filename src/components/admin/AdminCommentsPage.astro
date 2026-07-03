@@ -1,0 +1,603 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import '../../styles/pages/admin-comments.css';
+
+type Lang = 'it' | 'en';
+
+interface Props {
+  lang?: Lang;
+}
+
+const { lang = 'it' } = Astro.props;
+const isEnglish = lang === 'en';
+const adminBase = isEnglish ? '/en/admin' : '/admin';
+
+const copy = isEnglish
+  ? {
+      title: 'Comment moderation | Retro-Gamers.it',
+      description: 'Retro-Gamers.it comment moderation panel',
+      sidebarTitle: 'Editorial tools',
+      heroTitle: 'Comment moderation',
+      heroDescription: 'Review the queue, filter states and keep community discussions readable.',
+      accessTitle: 'Editorial access',
+      accessDescription: 'You do not have permission to access this section.',
+      login: 'Sign in',
+      loading: 'Loading...',
+      status: 'Status',
+      language: 'Language',
+      search: 'Search',
+      searchPlaceholder: 'Author, text, article...',
+      filter: 'Filter',
+      reset: 'Reset',
+      filterHelp: 'Pending: manual queue. Rejected: not public but recoverable. Hidden: removed from public view.',
+      loadingComments: 'Loading comments...',
+      nav: {
+        dashboard: 'Editorial dashboard',
+        comments: 'Comment moderation',
+        commentReports: 'Comment reports',
+        users: 'Users',
+        privateMessageReports: 'Message reports',
+        ratings: 'Reader ratings',
+        newsletter: 'Newsletter',
+      },
+      filters: {
+        all: 'All',
+        pending: 'Pending',
+        approved: 'Approved',
+        rejected: 'Rejected',
+        spam: 'Spam',
+        deleted: 'Hidden',
+        allLanguages: 'All',
+        italian: 'Italian',
+        english: 'English',
+      },
+      client: {
+        locale: 'en-US',
+        userFallback: 'User',
+        articleFallback: 'Article',
+        unknownStatus: 'Unknown status',
+        originalComment: 'Original comment',
+        approve: 'Approve',
+        reject: 'Reject',
+        pending: 'Move back to review',
+        hide: 'Hide',
+        hardDelete: 'Permanently delete',
+        hideConfirm: 'Hide this comment from the public site?',
+        hardDeleteConfirm: 'This will permanently delete the comment. Continue?',
+        replyTo: 'Reply to',
+        openArticle: 'Open article',
+        manage: 'Review',
+        close: 'Close',
+        language: 'Language',
+        moderationReason: 'Moderation reason',
+        statusLabels: {
+          pending: 'Pending',
+          approved: 'Approved',
+          rejected: 'Rejected',
+          spam: 'Spam',
+          deleted: 'Hidden',
+        },
+        emptyMessages: {
+          all: 'No comments found with these filters.',
+          pending: 'No comments to moderate.',
+          approved: 'No approved comments with these filters.',
+          rejected: 'No rejected comments with these filters.',
+          spam: 'No spam comments with these filters.',
+          deleted: 'No hidden comments with these filters.',
+        },
+        roleLabels: {
+          admin: 'Admin',
+          moderator: 'Moderator',
+          user: 'Reader',
+        },
+        loadError: 'Could not load comments.',
+        accessUnavailable: 'Access unavailable',
+        commentsFoundOne: '1 comment found',
+        commentsFoundMany: 'comments found',
+        connectionError: 'Connection error.',
+        actionFailed: 'Action failed.',
+        commentUpdated: 'Comment updated.',
+        notePrefix: 'Moderated from admin panel',
+      },
+    }
+  : {
+      title: 'Moderazione commenti | Retro-Gamers.it',
+      description: 'Pannello moderazione commenti Retro-Gamers.it',
+      sidebarTitle: 'Strumenti redazione',
+      heroTitle: 'Moderazione commenti',
+      heroDescription: 'Controlla la coda, filtra gli stati e mantieni leggibili le discussioni della community.',
+      accessTitle: 'Accesso redazione',
+      accessDescription: 'Non hai i permessi per accedere a questa sezione.',
+      login: 'Accedi',
+      loading: 'Caricamento...',
+      status: 'Stato',
+      language: 'Lingua',
+      search: 'Ricerca',
+      searchPlaceholder: 'Autore, testo, articolo...',
+      filter: 'Filtra',
+      reset: 'Reset',
+      filterHelp: 'Da revisionare: coda manuale. Rifiutati: non pubblici ma recuperabili. Nascosti: rimossi dal pubblico.',
+      loadingComments: 'Caricamento commenti...',
+      nav: {
+        dashboard: 'Area redazione',
+        comments: 'Moderazione commenti',
+        commentReports: 'Segnalazioni commenti',
+        users: 'Gestione utenti',
+        privateMessageReports: 'Segnalazioni messaggi',
+        ratings: 'Voti lettori',
+        newsletter: 'Newsletter',
+      },
+      filters: {
+        all: 'Tutti',
+        pending: 'Da revisionare',
+        approved: 'Approvati',
+        rejected: 'Rifiutati',
+        spam: 'Spam',
+        deleted: 'Nascosti',
+        allLanguages: 'Tutte',
+        italian: 'Italiano',
+        english: 'English',
+      },
+      client: {
+        locale: 'it-IT',
+        userFallback: 'Utente',
+        articleFallback: 'Articolo',
+        unknownStatus: 'Stato sconosciuto',
+        originalComment: 'Commento originale',
+        approve: 'Approva',
+        reject: 'Rifiuta',
+        pending: 'Rimetti in revisione',
+        hide: 'Nascondi',
+        hardDelete: 'Cancella definitivamente',
+        hideConfirm: 'Nascondere questo commento dal sito pubblico?',
+        hardDeleteConfirm: 'Questa azione cancellerà definitivamente il commento. Continuare?',
+        replyTo: 'Risposta a',
+        openArticle: 'Apri articolo',
+        manage: 'Gestisci',
+        close: 'Chiudi',
+        language: 'Lingua',
+        moderationReason: 'Motivo revisione',
+        statusLabels: {
+          pending: 'Da revisionare',
+          approved: 'Approvato',
+          rejected: 'Rifiutato',
+          spam: 'Spam',
+          deleted: 'Nascosto',
+        },
+        emptyMessages: {
+          all: 'Nessun commento trovato con questi filtri.',
+          pending: 'Nessun commento da revisionare.',
+          approved: 'Nessun commento approvato con questi filtri.',
+          rejected: 'Nessun commento rifiutato con questi filtri.',
+          spam: 'Nessun commento spam con questi filtri.',
+          deleted: 'Nessun commento nascosto con questi filtri.',
+        },
+        roleLabels: {
+          admin: 'Admin',
+          moderator: 'Moderatore',
+          user: 'Lettore',
+        },
+        loadError: 'Errore caricamento commenti.',
+        accessUnavailable: 'Accesso non disponibile',
+        commentsFoundOne: '1 commento trovato',
+        commentsFoundMany: 'commenti trovati',
+        connectionError: 'Errore di connessione.',
+        actionFailed: 'Azione non riuscita.',
+        commentUpdated: 'Commento aggiornato.',
+        notePrefix: 'Moderazione da pannello admin',
+      },
+    };
+
+const title = copy.title;
+const description = copy.description;
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
+const isAdmin = session.profile?.role === 'admin';
+const loginHref = isEnglish ? '/en/account/login/' : '/account/login/';
+
+const staffLinks = [
+  { href: `${adminBase}/`, label: copy.nav.dashboard },
+  { href: `${adminBase}/comments/`, label: copy.nav.comments },
+  { href: `${adminBase}/comment-reports/`, label: copy.nav.commentReports },
+  { href: `${adminBase}/users/`, label: copy.nav.users },
+  { href: `${adminBase}/private-message-reports/`, label: copy.nav.privateMessageReports },
+  { href: `${adminBase}/ratings/`, label: copy.nav.ratings },
+  { href: `${adminBase}/newsletter/`, label: copy.nav.newsletter },
+];
+---
+
+<BaseLayout title={title} description={description} lang={lang}>
+  <CommunityLayout class="admin-comments-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title={copy.sidebarTitle}>
+          <div class="community-staff-links">
+            {staffLinks.map((link) => (
+              <a class="community-action-link" href={link.href}>{link.label}</a>
+            ))}
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    {isStaff ? (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title={copy.heroTitle}
+          description={copy.heroDescription}
+        >
+          <span slot="aside" class="community-soft-badge" data-admin-comments-count>{copy.loading}</span>
+        </CommunityHero>
+
+        <section
+          class="community-card admin-comments-panel"
+          data-admin-comments-panel
+          data-can-hard-delete={isAdmin ? 'true' : 'false'}
+        >
+          <form class="admin-comments-filters" data-admin-comments-filters>
+            <label>
+              <span>{copy.status}</span>
+              <select name="status">
+                <option value="all" selected>{copy.filters.all}</option>
+                <option value="pending">{copy.filters.pending}</option>
+                <option value="approved">{copy.filters.approved}</option>
+                <option value="rejected">{copy.filters.rejected}</option>
+                <option value="spam">{copy.filters.spam}</option>
+                <option value="deleted">{copy.filters.deleted}</option>
+              </select>
+            </label>
+
+            <label>
+              <span>{copy.language}</span>
+              <select name="language">
+                <option value="all" selected>{copy.filters.allLanguages}</option>
+                <option value="it">{copy.filters.italian}</option>
+                <option value="en">{copy.filters.english}</option>
+              </select>
+            </label>
+
+            <label>
+              <span>{copy.search}</span>
+              <input
+                type="search"
+                name="q"
+                placeholder={copy.searchPlaceholder}
+                autocomplete="off"
+              />
+            </label>
+
+            <div class="admin-comments-filters__actions">
+              <button type="submit">{copy.filter}</button>
+              <button type="button" data-admin-comments-reset>{copy.reset}</button>
+            </div>
+          </form>
+
+          <p class="admin-comments-filter-help">
+            {copy.filterHelp}
+          </p>
+
+          <div class="admin-comments-message" data-admin-comments-message hidden></div>
+
+          <div class="admin-comments-list" data-admin-comments-list>
+            <p class="admin-comments-empty">{copy.loadingComments}</p>
+          </div>
+        </section>
+      </>
+    ) : (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title={copy.accessTitle}
+          description={copy.accessDescription}
+        />
+
+        <section class="community-card">
+          <div class="community-staff-links">
+            <a class="community-action-link" href={loginHref}>{copy.login}</a>
+          </div>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
+
+  <script define:vars={{ adminCommentsCopy: copy.client }}>
+    const listNode = document.querySelector('[data-admin-comments-list]');
+    const countNode = document.querySelector('[data-admin-comments-count]');
+    const messageNode = document.querySelector('[data-admin-comments-message]');
+    const filtersForm = document.querySelector('[data-admin-comments-filters]');
+    const resetButton = document.querySelector('[data-admin-comments-reset]');
+    const panelNode = document.querySelector('[data-admin-comments-panel]');
+    const canHardDelete = panelNode?.dataset.canHardDelete === 'true';
+    const labels = adminCommentsCopy;
+
+    const escapeHtml = (value) =>
+      String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    const showMessage = (text, type = 'ok') => {
+      if (!messageNode) return;
+
+      messageNode.textContent = text;
+      messageNode.dataset.type = type;
+      messageNode.hidden = !text;
+    };
+
+    const formatDate = (value) => {
+      if (!value) return '';
+
+      return new Intl.DateTimeFormat(labels.locale, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value));
+    };
+
+    const statusLabels = labels.statusLabels;
+    const emptyMessages = labels.emptyMessages;
+    const roleLabels = labels.roleLabels;
+
+    const getFilterParams = () => {
+      const params = new URLSearchParams();
+
+      if (!filtersForm) return params;
+
+      const formData = new FormData(filtersForm);
+      const status = String(formData.get('status') || 'all');
+      const language = String(formData.get('language') || 'all');
+      const q = String(formData.get('q') || '').trim();
+
+      params.set('status', status);
+      params.set('language', language);
+      if (q) params.set('q', q);
+
+      return params;
+    };
+
+    const initializeFiltersFromUrl = () => {
+      if (!filtersForm) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const allowedStatuses = new Set(['all', 'pending', 'approved', 'rejected', 'spam', 'deleted']);
+      const allowedLanguages = new Set(['all', 'it', 'en']);
+      const status = params.get('status');
+      const language = params.get('language');
+      const q = params.get('q');
+
+      if (status && allowedStatuses.has(status)) {
+        const statusField = filtersForm.querySelector('[name="status"]');
+        if (statusField instanceof HTMLSelectElement) statusField.value = status;
+      }
+
+      if (language && allowedLanguages.has(language)) {
+        const languageField = filtersForm.querySelector('[name="language"]');
+        if (languageField instanceof HTMLSelectElement) languageField.value = language;
+      }
+
+      if (q) {
+        const searchField = filtersForm.querySelector('[name="q"]');
+        if (searchField instanceof HTMLInputElement) searchField.value = q;
+      }
+    };
+
+    const renderComment = (comment) => {
+      const profile = comment.profiles || {};
+      const author = profile.display_name || profile.username || labels.userFallback;
+      const badge = profile.user_badges?.label_it || profile.user_badges?.label_en || '';
+      const articleUrl = comment.article_url || '#';
+      const articleLabel = comment.article_title || comment.article_slug || labels.articleFallback;
+      const status = statusLabels[comment.status] || comment.status || labels.unknownStatus;
+      const role = roleLabels[profile.role] || profile.role || '';
+      const parent = comment.parent || null;
+      const parentProfile = parent?.profiles || {};
+      const parentAuthor = parentProfile.display_name || parentProfile.username || labels.originalComment;
+      const detailId = `admin-comment-detail-${comment.id}`;
+      const moderationReason = comment.moderation_reason || '';
+      const isHidden = Boolean(comment.deleted_at);
+      const displayStatus = isHidden ? statusLabels.deleted : status;
+      const actionButtons = isHidden
+        ? `
+            <button type="button" data-action="approve">${escapeHtml(labels.approve)}</button>
+            <button type="button" data-action="pending">${escapeHtml(labels.pending)}</button>
+            ${canHardDelete ? `<button type="button" class="admin-comment-card__danger-action" data-action="hard_delete" data-confirm="${escapeHtml(labels.hardDeleteConfirm)}">${escapeHtml(labels.hardDelete)}</button>` : ''}
+          `
+        : `
+            ${comment.status !== 'approved' ? `<button type="button" data-action="approve">${escapeHtml(labels.approve)}</button>` : ''}
+            ${comment.status !== 'rejected' ? `<button type="button" data-action="reject">${escapeHtml(labels.reject)}</button>` : ''}
+            ${comment.status !== 'pending' ? `<button type="button" data-action="pending">${escapeHtml(labels.pending)}</button>` : ''}
+            <button type="button" data-action="soft_delete" data-confirm="${escapeHtml(labels.hideConfirm)}">${escapeHtml(labels.hide)}</button>
+            ${canHardDelete ? `<button type="button" class="admin-comment-card__danger-action" data-action="hard_delete" data-confirm="${escapeHtml(labels.hardDeleteConfirm)}">${escapeHtml(labels.hardDelete)}</button>` : ''}
+          `;
+
+      return `
+        <article class="admin-comment-card" data-comment-id="${escapeHtml(comment.id)}">
+          <header class="admin-comment-card__header">
+            <div class="admin-comment-card__summary">
+              <p class="admin-comment-card__article">
+                <a href="${escapeHtml(articleUrl)}" target="_blank" rel="noreferrer">
+                  ${escapeHtml(articleLabel)}
+                </a>
+              </p>
+
+              <div class="admin-comment-card__title-row">
+                <h2>${escapeHtml(author)}</h2>
+                ${parent ? `<span class="admin-comment-card__reply-label">${escapeHtml(labels.replyTo)} ${escapeHtml(parentAuthor)}</span>` : ''}
+              </div>
+            </div>
+
+            <div class="admin-comment-card__quick-actions">
+              <a href="${escapeHtml(articleUrl)}" target="_blank" rel="noreferrer">${escapeHtml(labels.openArticle)}</a>
+              <button
+                type="button"
+                data-admin-comment-toggle
+                aria-expanded="false"
+                aria-controls="${escapeHtml(detailId)}"
+              >
+                ${escapeHtml(labels.manage)}
+              </button>
+            </div>
+          </header>
+
+          <p class="admin-comment-card__meta">
+            <span class="admin-comment-card__status" data-status="${escapeHtml(isHidden ? 'deleted' : comment.status || '')}">
+              ${escapeHtml(displayStatus)}
+            </span>
+            ${role ? `<span>${escapeHtml(role)}</span>` : ''}
+            ${badge ? `<span>${escapeHtml(badge)}</span>` : ''}
+            ${comment.article_language ? `<span>${escapeHtml(comment.article_language.toUpperCase())}</span>` : ''}
+            ${comment.created_at ? `<span>${escapeHtml(formatDate(comment.created_at))}</span>` : ''}
+          </p>
+
+          <div class="admin-comment-card__preview">
+            ${escapeHtml(comment.body)}
+          </div>
+
+          <div class="admin-comment-card__details" id="${escapeHtml(detailId)}" data-admin-comment-details hidden>
+            ${parent ? `
+              <div class="admin-comment-card__parent">
+                <strong>${escapeHtml(labels.replyTo)} ${escapeHtml(parentAuthor)}</strong>
+                <p>${escapeHtml(parent.body || '').slice(0, 220)}</p>
+              </div>
+            ` : ''}
+
+            <div class="admin-comment-card__body">
+              ${escapeHtml(comment.body)}
+            </div>
+
+            ${moderationReason ? `
+              <p class="admin-comment-card__moderation-reason">
+                <strong>${escapeHtml(labels.moderationReason)}</strong>
+                <span>${escapeHtml(moderationReason)}</span>
+              </p>
+            ` : ''}
+
+            <div class="admin-comment-card__actions">
+              ${actionButtons}
+            </div>
+          </div>
+        </article>
+      `;
+    };
+
+    const loadComments = async () => {
+      if (!listNode) return;
+
+      try {
+        const params = getFilterParams();
+        const response = await fetch(`/api/admin/comments/pending?${params.toString()}`);
+        const result = await response.json();
+
+        if (!result.ok) {
+          listNode.innerHTML = `<p class="admin-comments-empty">${escapeHtml(result.error || labels.loadError)}</p>`;
+          if (countNode) countNode.textContent = labels.accessUnavailable;
+          return;
+        }
+
+        const comments = result.comments || [];
+
+        if (countNode) {
+          countNode.textContent = comments.length === 1
+            ? labels.commentsFoundOne
+            : `${comments.length} ${labels.commentsFoundMany}`;
+        }
+
+        if (comments.length === 0) {
+          const status = String(params.get('status') || 'all');
+          listNode.innerHTML = `<p class="admin-comments-empty">${escapeHtml(emptyMessages[status] || emptyMessages.all)}</p>`;
+          return;
+        }
+
+        listNode.innerHTML = comments.map(renderComment).join('');
+      } catch {
+        listNode.innerHTML = `<p class="admin-comments-empty">${escapeHtml(labels.connectionError)}</p>`;
+      }
+    };
+
+    filtersForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      showMessage('');
+      loadComments();
+    });
+
+    resetButton?.addEventListener('click', () => {
+      filtersForm?.reset();
+      showMessage('');
+      loadComments();
+    });
+
+    listNode?.addEventListener('click', async (event) => {
+      const toggleButton = event.target.closest('button[data-admin-comment-toggle]');
+      if (toggleButton) {
+        const card = toggleButton.closest('[data-comment-id]');
+        const details = card?.querySelector('[data-admin-comment-details]');
+
+        if (details) {
+          const isOpening = details.hidden;
+          details.hidden = !isOpening;
+          toggleButton.setAttribute('aria-expanded', String(isOpening));
+          toggleButton.textContent = isOpening ? labels.close : labels.manage;
+        }
+
+        return;
+      }
+
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+
+      const card = button.closest('[data-comment-id]');
+      const commentId = card?.dataset.commentId;
+      const action = button.dataset.action;
+
+      if (!commentId || !action) return;
+
+      const confirmation = button.dataset.confirm;
+      if (confirmation && !window.confirm(confirmation)) {
+        return;
+      }
+
+      button.disabled = true;
+      showMessage('');
+
+      try {
+        const response = await fetch('/api/admin/comments/moderate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            commentId,
+            action,
+            note: `${labels.notePrefix}: ${action}`
+          })
+        });
+
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(result.error || labels.actionFailed, 'error');
+          button.disabled = false;
+          return;
+        }
+
+        showMessage(labels.commentUpdated, 'ok');
+        await loadComments();
+      } catch {
+        showMessage(labels.connectionError, 'error');
+        button.disabled = false;
+      }
+    });
+
+    initializeFiltersFromUrl();
+    loadComments();
+  </script>
+</BaseLayout>

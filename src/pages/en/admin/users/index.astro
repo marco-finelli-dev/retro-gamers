@@ -1,0 +1,441 @@
+---
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../../../components/community/CommunitySidebarSection.astro';
+import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
+import '../../../../styles/pages/admin-users.css';
+
+const title = 'Users | Retro-Gamers.it';
+const description = 'Registered users management panel for Retro-Gamers.it';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
+---
+
+<BaseLayout title={title} description={description} lang="en">
+  <CommunityLayout class="admin-users-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title="Editorial tools">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/en/admin/">Editorial dashboard</a>
+            <a class="community-action-link" href="/en/admin/comments/">Comment moderation</a>
+            <a class="community-action-link" href="/en/admin/comment-reports/">Comment reports</a>
+            <a class="community-action-link" href="/en/admin/users/">Users</a>
+            <a class="community-action-link" href="/en/admin/private-message-reports/">Message reports</a>
+            <a class="community-action-link" href="/en/admin/ratings/">Reader ratings</a>
+            <a class="community-action-link" href="/en/admin/newsletter/">Newsletter</a>
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    <CommunityHero
+      kicker="Retro-Gamers.it"
+      title="Users"
+      description="Review users, roles, account status and recent activity."
+    >
+      <span slot="aside" class="community-soft-badge" data-admin-users-count>Loading...</span>
+    </CommunityHero>
+
+    <section class="community-card admin-users-panel">
+      <form class="admin-users-filters" data-admin-users-filters>
+        <label class="admin-users-filters__search">
+          <span>Search users</span>
+          <input
+            type="search"
+            name="q"
+            placeholder="Email, username, name..."
+            autocomplete="off"
+          />
+        </label>
+
+        <label>
+          <span>Role</span>
+          <select name="role">
+            <option value="all">All</option>
+            <option value="user">User</option>
+            <option value="moderator">Moderator</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Status</span>
+          <select name="status">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="banned">Banned</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Sort by</span>
+          <select name="sortBy">
+            <option value="last_activity">Last activity</option>
+            <option value="registration">Registration</option>
+            <option value="comments">Comments</option>
+            <option value="approved">Approved</option>
+            <option value="pending">Pending</option>
+            <option value="community_points">Community points</option>
+            <option value="username">Username</option>
+            <option value="role">Role</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Direction</span>
+          <select name="direction">
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
+          </select>
+        </label>
+
+        <div class="admin-users-filters__actions">
+          <button type="submit">Search</button>
+          <button type="button" data-admin-users-reset>Reset</button>
+        </div>
+      </form>
+
+      <div class="admin-users-message" data-admin-users-message hidden></div>
+
+      <div class="admin-users-list" data-admin-users-list>
+        <p class="admin-users-empty">Loading registered users...</p>
+      </div>
+    </section>
+  </CommunityLayout>
+
+  <script>
+    const listNode = document.querySelector('[data-admin-users-list]');
+    const countNode = document.querySelector('[data-admin-users-count]');
+    const messageNode = document.querySelector('[data-admin-users-message]');
+    const filtersForm = document.querySelector('[data-admin-users-filters]');
+    const resetButton = document.querySelector('[data-admin-users-reset]');
+
+    const escapeHtml = (value) =>
+      String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+    const showMessage = (text, type = 'ok') => {
+      if (!messageNode) return;
+
+      messageNode.textContent = text;
+      messageNode.dataset.type = type;
+      messageNode.hidden = !text;
+    };
+
+    const formatDate = (value) => {
+      if (!value) return 'Unavailable';
+
+      return new Intl.DateTimeFormat('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }).format(new Date(value));
+    };
+
+    const formatLastActivity = (value) => {
+      if (!value) return 'Never after registration';
+
+      const date = new Date(value);
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfYesterday = new Date(startOfToday);
+      startOfYesterday.setDate(startOfToday.getDate() - 1);
+      const startOfTomorrow = new Date(startOfToday);
+      startOfTomorrow.setDate(startOfToday.getDate() + 1);
+      const time = new Intl.DateTimeFormat('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(date);
+
+      if (date >= startOfToday && date < startOfTomorrow) {
+        return `Today at ${time}`;
+      }
+
+      if (date >= startOfYesterday && date < startOfToday) {
+        return `Yesterday at ${time}`;
+      }
+
+      return new Intl.DateTimeFormat('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }).format(date);
+    };
+
+    const getUserInitial = (user) => {
+      const source = user.displayName || user.username || user.email || 'User';
+      const match = String(source || '').trim().match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/);
+
+      return (match?.[0] || '?').toUpperCase();
+    };
+
+    const roleLabels = {
+      user: 'User',
+      moderator: 'Moderator',
+      admin: 'Admin'
+    };
+
+    const statusLabels = {
+      active: 'Active',
+      suspended: 'Suspended',
+      banned: 'Banned'
+    };
+
+    const filterDefaults = {
+      q: '',
+      role: 'all',
+      status: 'all',
+      sortBy: 'last_activity',
+      direction: 'desc',
+      legacySort: 'last_activity_desc'
+    };
+    const filterOptions = {
+      role: new Set(['all', 'user', 'moderator', 'admin']),
+      status: new Set(['all', 'active', 'suspended', 'banned']),
+      sortBy: new Set([
+        'registration',
+        'last_activity',
+        'comments',
+        'approved',
+        'pending',
+        'community_points',
+        'username',
+        'role'
+      ]),
+      direction: new Set(['asc', 'desc']),
+      legacySort: new Set([
+        'last_activity_desc',
+        'last_activity_asc',
+        'registered_desc',
+        'registered_asc',
+        'comments_desc',
+        'comments_asc',
+        'approved_desc',
+        'approved_asc',
+        'pending_desc',
+        'pending_asc',
+        'community_points_desc',
+        'community_points_asc',
+        'username_asc',
+        'username_desc',
+        'role_asc',
+        'role_desc'
+      ])
+    };
+
+    const getSafeOption = (value, key) => {
+      const normalized = String(value || '').trim().toLowerCase();
+
+      return filterOptions[key]?.has(normalized) ? normalized : filterDefaults[key];
+    };
+
+    const getSortPartsFromUrl = (params) => {
+      if (params.has('sort')) {
+        const legacySort = getSafeOption(params.get('sort'), 'legacySort');
+        const direction = legacySort.endsWith('_asc') ? 'asc' : 'desc';
+        const field = legacySort.replace(/_(asc|desc)$/, '');
+
+        return {
+          sortBy: field === 'registered' ? 'registration' : getSafeOption(field, 'sortBy'),
+          direction
+        };
+      }
+
+      return {
+        sortBy: getSafeOption(params.get('sortBy'), 'sortBy'),
+        direction: getSafeOption(params.get('direction'), 'direction')
+      };
+    };
+
+    const setFormFromUrl = () => {
+      if (!filtersForm) return;
+
+      const params = new URLSearchParams(window.location.search);
+      const sortParts = getSortPartsFromUrl(params);
+      const qInput = filtersForm.elements.namedItem('q');
+      const roleInput = filtersForm.elements.namedItem('role');
+      const statusInput = filtersForm.elements.namedItem('status');
+      const sortInput = filtersForm.elements.namedItem('sortBy');
+      const directionInput = filtersForm.elements.namedItem('direction');
+
+      if (qInput instanceof HTMLInputElement) qInput.value = String(params.get('q') || filterDefaults.q);
+      if (roleInput instanceof HTMLSelectElement) roleInput.value = getSafeOption(params.get('role'), 'role');
+      if (statusInput instanceof HTMLSelectElement) statusInput.value = getSafeOption(params.get('status'), 'status');
+      if (sortInput instanceof HTMLSelectElement) sortInput.value = sortParts.sortBy;
+      if (directionInput instanceof HTMLSelectElement) directionInput.value = sortParts.direction;
+    };
+
+    const getFilterParams = () => {
+      const params = new URLSearchParams();
+
+      if (!filtersForm) return params;
+
+      const formData = new FormData(filtersForm);
+      const q = String(formData.get('q') || '').trim();
+      const role = getSafeOption(formData.get('role'), 'role');
+      const status = getSafeOption(formData.get('status'), 'status');
+      const sortBy = getSafeOption(formData.get('sortBy'), 'sortBy');
+      const direction = getSafeOption(formData.get('direction'), 'direction');
+
+      if (q) params.set('q', q);
+      if (role !== filterDefaults.role) params.set('role', role);
+      if (status !== filterDefaults.status) params.set('status', status);
+      if (sortBy !== filterDefaults.sortBy) params.set('sortBy', sortBy);
+      if (direction !== filterDefaults.direction) params.set('direction', direction);
+
+      return params;
+    };
+
+    const updateUrl = (params, replace = false) => {
+      const query = params.toString();
+      const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash || ''}`;
+
+      window.history[replace ? 'replaceState' : 'pushState']({}, '', nextUrl);
+    };
+
+    const renderUser = (user) => {
+      const role = roleLabels[user.role] || user.role || 'User';
+      const status = statusLabels[user.status] || user.status || 'Active';
+      const displayName = user.displayName || 'Not set';
+      const username = user.username || 'Not set';
+      const email = user.email || 'Email unavailable';
+      const comments = user.comments || { total: 0, pending: 0, approved: 0 };
+      const ratings = user.ratings || { total: 0 };
+      const communityPointsValue = user.communityPoints == null
+        ? Number.NaN
+        : Number(user.communityPoints);
+      const communityPoints = Number.isFinite(communityPointsValue)
+        ? communityPointsValue
+        : 1;
+      const avatarInitial = getUserInitial(user);
+      const avatarLabel = `Avatar for ${user.displayName || user.username || user.email || 'user'}`;
+      const manageHref = `/en/admin/users/${encodeURIComponent(user.userId)}/`;
+      const avatarImage = user.avatarUrl
+        ? `
+          <img
+            src="${escapeHtml(user.avatarUrl)}"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onerror="this.hidden = true"
+          />
+        `
+        : '';
+
+      return `
+        <article class="admin-user-row" data-user-id="${escapeHtml(user.userId)}">
+          <div class="admin-user-row__identity">
+            <a class="admin-user-row__identity-link" href="${escapeHtml(manageHref)}">
+              <span class="admin-user-card__avatar" role="img" aria-label="${escapeHtml(avatarLabel)}">
+                <span class="admin-user-card__avatar-fallback" aria-hidden="true">${escapeHtml(avatarInitial)}</span>
+                ${avatarImage}
+              </span>
+
+              <span class="admin-user-row__identity-content">
+                <strong>${escapeHtml(displayName)}</strong>
+                <span>@${escapeHtml(username)}</span>
+                <span class="admin-user-row__email">${escapeHtml(email)}</span>
+              </span>
+            </a>
+          </div>
+
+          <dl class="admin-user-row__facts">
+            <div>
+              <dt>Role</dt>
+              <dd class="admin-user-card__role" data-role="${escapeHtml(user.role || '')}">${escapeHtml(role)}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd class="admin-user-card__status" data-status="${escapeHtml(user.status || '')}">${escapeHtml(status)}</dd>
+            </div>
+            <div>
+              <dt>Comments</dt>
+              <dd>${Number(comments.total || 0)}</dd>
+            </div>
+            <div>
+              <dt>Approved</dt>
+              <dd>${Number(comments.approved || 0)}</dd>
+            </div>
+            <div>
+              <dt>Ratings</dt>
+              <dd>${Number(ratings.total || 0)}</dd>
+            </div>
+            <div>
+              <dt>Points</dt>
+              <dd>${communityPoints}</dd>
+            </div>
+            <div class="admin-user-row__fact--wide">
+              <dt>Last activity</dt>
+              <dd>${escapeHtml(formatLastActivity(user.lastActivityAt))}</dd>
+            </div>
+          </dl>
+        </article>
+      `;
+    };
+
+    const loadUsers = async (params = getFilterParams()) => {
+      if (!listNode) return;
+
+      try {
+        const query = params.toString();
+        const response = await fetch(`/api/admin/users/list${query ? `?${query}` : ''}`);
+        const result = await response.json();
+
+        if (!result.ok) {
+          listNode.innerHTML = `<p class="admin-users-empty">${escapeHtml(result.error || 'Could not load users.')}</p>`;
+          if (countNode) countNode.textContent = 'Access unavailable';
+          return;
+        }
+
+        const users = result.users || [];
+
+        if (countNode) {
+          countNode.textContent = users.length === 1
+            ? '1 user found'
+            : `${users.length} users found`;
+        }
+
+        if (users.length === 0) {
+          listNode.innerHTML = '<p class="admin-users-empty">No users found with these filters.</p>';
+          return;
+        }
+
+        listNode.innerHTML = users.map(renderUser).join('');
+      } catch {
+        listNode.innerHTML = '<p class="admin-users-empty">Connection error.</p>';
+      }
+    };
+
+    filtersForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      showMessage('');
+      const params = getFilterParams();
+      updateUrl(params);
+      loadUsers(params);
+    });
+
+    resetButton?.addEventListener('click', () => {
+      filtersForm?.reset();
+      showMessage('');
+      const params = new URLSearchParams();
+      updateUrl(params);
+      loadUsers(params);
+    });
+
+    window.addEventListener('popstate', () => {
+      setFormFromUrl();
+      showMessage('');
+      loadUsers();
+    });
+
+    setFormFromUrl();
+    loadUsers();
+  </script>
+</BaseLayout>
