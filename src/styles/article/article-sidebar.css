@@ -31,18 +31,22 @@
 }
 
 .article-page:not(.is-review) .article-page__sidebar {
-  position: sticky;
-  top: clamp(96px, 10vh, 118px);
-  align-self: start;
+  position: static;
+  top: auto;
+  align-self: stretch;
 }
 
 .article-page:not(.is-review) .article-sidebar {
-  height: auto;
+  height: 100%;
 }
 
 .article-page:not(.is-review) .article-sidebar__sticky {
-  position: static;
-  top: auto;
+  position: sticky;
+  top: clamp(96px, 10vh, 118px);
+}
+
+.article-sidebar__newsletter {
+  min-width: 0;
 }
 
 

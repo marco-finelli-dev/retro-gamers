@@ -285,8 +285,12 @@ const getTypeLabel = (item) =>
       </div>
     </section>
 
-    {!hideNewsletterPromo && <NewsletterPromo lang={lang} variant="sidebar" compact />}
-
   </div>
+
+  {!hideNewsletterPromo && (
+    <div class="article-sidebar__newsletter">
+      <NewsletterPromo lang={lang} variant="sidebar" compact />
+    </div>
+  )}
 
 </div>
