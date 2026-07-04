@@ -117,6 +117,11 @@ export async function GET() {
       priority: '0.7'
     },
     {
+      loc: absoluteUrl('/community/'),
+      changefreq: 'weekly',
+      priority: '0.7'
+    },
+    {
       loc: absoluteUrl('/interviste/'),
       changefreq: 'monthly',
       priority: '0.7'
@@ -234,6 +239,11 @@ export async function GET() {
     },
     {
       loc: absoluteUrl('/en/memories/'),
+      changefreq: 'weekly',
+      priority: '0.7'
+    },
+    {
+      loc: absoluteUrl('/en/community/'),
       changefreq: 'weekly',
       priority: '0.7'
     },
