@@ -44,7 +44,7 @@ const renderTextContent = (value?: string | null) => {
 
   return paragraphs
     .map((paragraph) => `
-      <p style="margin:0 0 14px 0;">
+      <p class="rg-email-text" style="margin:0 0 14px 0; color:#374151;">
         ${escapeEmailHtml(paragraph).replace(/\n/g, '<br>')}
       </p>
     `)
@@ -72,22 +72,22 @@ const renderCampaignItem = (item: NewsletterCampaignItem) => {
   const description = item.description ? escapeEmailHtml(item.description) : '';
   const type = escapeEmailHtml(item.type.replace(/_/g, ' '));
   const titleHtml = url
-    ? `<a href="${escapeEmailHtml(url)}" style="color:#0b7f89; text-decoration:none;">${title}</a>`
+    ? `<a class="rg-newsletter-item-link" href="${escapeEmailHtml(url)}" style="color:#0b7f89; text-decoration:none;">${title}</a>`
     : title;
 
   return `
-    <div style="border:1px solid #d8e7e9; border-radius:14px; padding:14px; margin:0 0 14px 0; background:#f8fbfc;">
+    <div class="rg-newsletter-item" style="border:1px solid #e5e0d8; border-radius:14px; padding:14px; margin:0 0 14px 0; background:#f8fbfc;">
       ${imageUrl && isAbsoluteHttpUrl(imageUrl) ? `
         <img src="${escapeEmailHtml(imageUrl)}" alt="" width="560" style="display:block; width:100%; max-width:560px; height:auto; border-radius:10px; margin:0 0 12px 0;">
       ` : ''}
-      <div style="margin:0 0 7px 0; font-size:11px; line-height:1.3; letter-spacing:0.08em; text-transform:uppercase; color:#0b6b73; font-weight:700;">
+      <div class="rg-newsletter-item-kicker" style="margin:0 0 7px 0; font-size:11px; line-height:1.3; letter-spacing:0.08em; text-transform:uppercase; color:#0b6b73; font-weight:700;">
         ${type}
       </div>
-      <h2 style="margin:0 0 8px 0; font-size:18px; line-height:1.3; color:#10202a;">
+      <h2 class="rg-newsletter-item-title" style="margin:0 0 8px 0; font-size:18px; line-height:1.3; color:#111827;">
         ${titleHtml}
       </h2>
       ${description ? `
-        <p style="margin:0; color:#31424d; font-size:14px; line-height:1.55;">
+        <p class="rg-newsletter-item-text" style="margin:0; color:#374151; font-size:14px; line-height:1.55;">
           ${description}
         </p>
       ` : ''}
@@ -163,7 +163,7 @@ export function renderNewsletterCampaignEmail({
   const contentTextFallback = String(campaign.content_text || '').trim();
   const bodyHtml = `
     ${testNotice ? `
-      <div style="border:1px solid #f4c857; border-radius:12px; padding:12px 14px; margin:0 0 18px 0; background:#fff7d6; color:#6d5400; font-weight:700;">
+      <div class="rg-email-alert" style="border:1px solid #f4c857; border-radius:12px; padding:12px 14px; margin:0 0 18px 0; background:#fff7d6; color:#6d5400; font-weight:700;">
         ${escapeEmailHtml(testNotice)}
       </div>
     ` : ''}
@@ -184,7 +184,7 @@ export function renderNewsletterCampaignEmail({
       </p>
       <p style="margin:0;">
         ${escapeEmailHtml(unsubscribeText)}<br>
-        <a href="${escapeEmailHtml(unsubscribeUrl)}" style="color:#0b7f89; text-decoration:underline; word-break:break-word;">${escapeEmailHtml(unsubscribeUrl)}</a>
+        <a class="rg-email-link" href="${escapeEmailHtml(unsubscribeUrl)}" style="color:#0b7f89; text-decoration:underline; word-break:break-word;">${escapeEmailHtml(unsubscribeUrl)}</a>
       </p>
       ${previewNotice ? `<p style="margin:8px 0 0 0;">${escapeEmailHtml(previewNotice)}</p>` : ''}
     `,
