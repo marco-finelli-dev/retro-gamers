@@ -22,8 +22,8 @@ const sectionId = `home-community-strip-title-${lang}`;
 
 const copy = isEn
   ? {
-      title: 'The community is taking shape',
-      text: 'Comments, memories, ratings and profiles are turning Retro-Gamers.it into more than an archive.',
+      title: 'Community voices',
+      text: 'Comments, memories and conversations from readers who are bringing Retro-Gamers.it to life beyond the articles.',
       primary: 'Visit the community',
       secondary: isLoggedIn ? 'Go to your account' : 'Create your profile',
       empty: 'The first memories will arrive with the readers.',
@@ -33,8 +33,8 @@ const copy = isEn
       profileLabel: 'Profile',
     }
   : {
-      title: 'La community prende forma',
-      text: 'Commenti, memorie, voti e profili stanno trasformando Retro-Gamers.it in qualcosa di più di un archivio.',
+      title: 'Le voci della community',
+      text: 'Commenti, ricordi e discussioni dai lettori che stanno dando vita a Retro-Gamers.it oltre gli articoli.',
       primary: 'Vai alla community',
       secondary: isLoggedIn ? 'Vai al tuo account' : 'Crea il tuo profilo',
       empty: 'Le prime memorie arriveranno con i lettori.',
@@ -102,7 +102,7 @@ const profileHref = isEn
 
           <footer>
             <span>{copy.fromArticle}</span>
-            <a href={comment.articleUrl}>{comment.articleTitle}</a>
+            <a class="home-community-strip__article" href={comment.articleUrl}>{comment.articleTitle}</a>
             <a class="home-community-strip__discussion" href={comment.articleUrl}>
               {copy.readDiscussion}
             </a>
