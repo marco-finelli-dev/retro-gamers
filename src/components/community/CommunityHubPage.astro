@@ -27,14 +27,14 @@ const copy = isEn
       languageSwitch: '/community/',
       heroTitle: 'Community',
       heroDescription:
-        'Retro-Gamers.it is not just an archive of reviews and features: it is a place where readers, memories and conversations can stay alive.',
+        'A place where reviews, memories and conversations stay close to the articles, instead of disappearing into the social feed.',
       profileCtaGuest: 'Create your profile',
       profileCtaAuth: 'Go to your account',
       profileHrefGuest: '/en/account/register/',
       profileHrefAuth: '/en/account/',
       badgesCta: 'Discover badges',
       badgesHref: '/en/badges/',
-      newsletterCta: 'Subscribe to the newsletter',
+      newsletterCta: 'Newsletter',
       newsletterHref: '/en/newsletter/',
       stats: {
         comments: 'Public comments',
@@ -75,14 +75,14 @@ const copy = isEn
       languageSwitch: '/en/community/',
       heroTitle: 'Community',
       heroDescription:
-        'Retro-Gamers.it non è solo un archivio di recensioni e speciali: è uno spazio dove lettori, ricordi e discussioni possono restare vivi.',
+        'Un luogo dove recensioni, ricordi e discussioni restano accanto agli articoli, senza perdersi nel flusso dei social.',
       profileCtaGuest: 'Crea il tuo profilo',
       profileCtaAuth: 'Vai al tuo account',
       profileHrefGuest: '/account/register/',
       profileHrefAuth: '/account/',
       badgesCta: 'Scopri i badge',
       badgesHref: '/badges/',
-      newsletterCta: 'Iscriviti alla newsletter',
+      newsletterCta: 'Newsletter',
       newsletterHref: '/newsletter/',
       stats: {
         comments: 'Commenti pubblici',
@@ -169,24 +169,25 @@ const alternateLanguages = [
       kicker="Retro-Gamers.it"
       title={copy.heroTitle}
       description={copy.heroDescription}
+      class="community-hub-hero"
     >
-      <Fragment slot="aside">
-        <div class="community-hub-cta-list" aria-label="Community actions">
-          <a href={profileCtaHref}>{profileCtaLabel}</a>
+      <div class="community-hub-hero__actions" aria-label="Community actions">
+        <a class="community-hub-hero__primary" href={profileCtaHref}>{profileCtaLabel}</a>
+        <div class="community-hub-hero__secondary">
           <a href={copy.badgesHref}>{copy.badgesCta}</a>
           <a href={copy.newsletterHref}>{copy.newsletterCta}</a>
         </div>
-      </Fragment>
-    </CommunityHero>
+      </div>
 
-    <section class="community-hub-stats" aria-label="Community stats">
-      {statsItems.map((item) => (
-        <article>
-          <strong>{item.value}</strong>
-          <span>{item.label}</span>
-        </article>
-      ))}
-    </section>
+      <div class="community-hub-stats" aria-label="Community stats">
+        {statsItems.map((item) => (
+          <article>
+            <strong>{item.value}</strong>
+            <span>{item.label}</span>
+          </article>
+        ))}
+      </div>
+    </CommunityHero>
 
     <section class="community-card community-hub-section" aria-labelledby="community-latest-comments">
       <div class="community-hub-section__heading">
