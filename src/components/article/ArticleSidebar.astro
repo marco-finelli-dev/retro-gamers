@@ -2,6 +2,7 @@
 import { getPostUrl, getArchiveUrl, getPlatformUrl, getCategoryUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
+import NewsletterPromo from '../newsletter/NewsletterPromo.astro';
 
 const {
   post,
@@ -282,6 +283,8 @@ const getTypeLabel = (item) =>
         ))}
       </div>
     </section>
+
+    <NewsletterPromo lang={lang} variant="sidebar" compact />
 
   </div>
 

@@ -8,6 +8,7 @@ import EditorialHub from '../components/home/EditorialHub.astro';
 import ArchiveStrip from '../components/home/ArchiveStrip.astro';
 import Interviews from '../components/home/Interviews.astro';
 import Hardware from '../components/home/Hardware.astro';
+import NewsletterPromo from '../components/newsletter/NewsletterPromo.astro';
 
 import '../styles/pages/home.css';
 
@@ -79,6 +80,12 @@ const withCommentCounts = (posts) =>
         memories={withCommentCounts(memories)}
         guides={withCommentCounts(guides)}
       />
+    </div>
+  </section>
+
+  <section class="home-newsletter">
+    <div class="container">
+      <NewsletterPromo lang="it" variant="home" />
     </div>
   </section>
 

@@ -1,0 +1,97 @@
+---
+import '../../styles/components/newsletter-promo.css';
+
+type Lang = 'it' | 'en';
+type Variant = 'home' | 'article-end' | 'sidebar' | 'account';
+
+interface Props {
+  lang?: Lang;
+  variant?: Variant;
+  compact?: boolean;
+  showTitle?: boolean;
+}
+
+const {
+  lang = 'it',
+  variant = 'home',
+  compact = variant === 'sidebar',
+  showTitle = true,
+} = Astro.props as Props;
+
+const currentLang: Lang = lang === 'en' ? 'en' : 'it';
+const newsletterHref = currentLang === 'en' ? '/en/newsletter/' : '/newsletter/';
+
+const copy = {
+  it: {
+    home: {
+      kicker: 'Newsletter',
+      title: 'Ricevi il meglio di Retro-Gamers',
+      text: 'Una mail periodica con recensioni, speciali, guide e aggiornamenti dalla community. Niente spam, solo retro-gaming scelto con cura.',
+      cta: 'Iscriviti alla newsletter',
+    },
+    'article-end': {
+      kicker: 'Newsletter',
+      title: 'Ti è piaciuto questo viaggio nel retro-gaming?',
+      text: 'Ricevi una selezione periodica di articoli, recensioni e speciali direttamente via email.',
+      cta: 'Iscriviti alla newsletter',
+    },
+    sidebar: {
+      kicker: 'Newsletter',
+      title: 'Newsletter Retro-Gamers',
+      text: 'Il meglio del sito, senza rumore.',
+      cta: 'Iscriviti',
+    },
+    account: {
+      kicker: 'Newsletter',
+      title: 'Vuoi ricevere gli aggiornamenti di Retro-Gamers via email?',
+      text: 'Puoi attivare la newsletter qui sotto o dalla pagina dedicata.',
+      cta: 'Apri pagina newsletter',
+    },
+  },
+  en: {
+    home: {
+      kicker: 'Newsletter',
+      title: 'Get the best of Retro-Gamers',
+      text: 'A periodic email with reviews, features, guides and community updates. No spam, just carefully selected retro-gaming.',
+      cta: 'Subscribe to the newsletter',
+    },
+    'article-end': {
+      kicker: 'Newsletter',
+      title: 'Enjoyed this retro-gaming journey?',
+      text: 'Get a periodic selection of articles, reviews and features directly by email.',
+      cta: 'Subscribe to the newsletter',
+    },
+    sidebar: {
+      kicker: 'Newsletter',
+      title: 'Retro-Gamers Newsletter',
+      text: 'The best of the site, without the noise.',
+      cta: 'Subscribe',
+    },
+    account: {
+      kicker: 'Newsletter',
+      title: 'Want to receive Retro-Gamers updates by email?',
+      text: 'You can enable the newsletter below or from the dedicated page.',
+      cta: 'Open newsletter page',
+    },
+  },
+} as const;
+
+const t = copy[currentLang][variant];
+const classes = [
+  'newsletter-promo',
+  `newsletter-promo--${variant}`,
+  compact ? 'newsletter-promo--compact' : '',
+].filter(Boolean).join(' ');
+---
+
+<aside class={classes} aria-label={t.kicker}>
+  <div class="newsletter-promo__content">
+    <p class="newsletter-promo__kicker">{t.kicker}</p>
+    {showTitle && <h2>{t.title}</h2>}
+    <p>{t.text}</p>
+  </div>
+
+  <a class="newsletter-promo__cta" href={newsletterHref}>
+    {t.cta}
+  </a>
+</aside>

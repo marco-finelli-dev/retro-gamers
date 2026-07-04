@@ -6,6 +6,7 @@ import CommunityLayout from '../../components/community/CommunityLayout.astro';
 import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
 import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
 import CommunityStatList from '../../components/community/CommunityStatList.astro';
+import NewsletterPromo from '../../components/newsletter/NewsletterPromo.astro';
 import { getActiveReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
 import { getCommunityRank } from '../../lib/community-rank';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
@@ -673,6 +674,8 @@ const clientCopy = currentLang === 'en'
 
               {isNewsletterSubscribable && (
                 <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                  <NewsletterPromo lang={currentLang} variant="account" compact />
+
                   <p class="account-newsletter-status">
                     {newsletterStatus === 'unsubscribed'
                       ? ui.newsletterUnsubscribed
