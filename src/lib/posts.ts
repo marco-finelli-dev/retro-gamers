@@ -395,6 +395,52 @@ function hasImage(post: Post) {
   return Boolean(post.featuredImage?.asset?.url);
 }
 
+function isOlderThanDays(post: Post, days: number, today = new Date()) {
+  if (!post.publishedAt) return false;
+
+  const publishedTime = new Date(post.publishedAt).getTime();
+
+  if (!Number.isFinite(publishedTime)) return false;
+
+  const cutoffTime = today.getTime() - days * 24 * 60 * 60 * 1000;
+
+  return publishedTime < cutoffTime;
+}
+
+const archiveEvergreenTypes = new Set([
+  'review',
+  'memories',
+  'guide',
+  'interview',
+  'article',
+  'feature',
+  'special'
+]);
+
+function isArchiveEvergreenCandidate(post: Post) {
+  return archiveEvergreenTypes.has(post.type || '') && post.type !== 'news';
+}
+
+function takeArchivePosts(source: Post[], usedIds: Set<string>, limit: number) {
+  const evergreenSource = source.filter((post) =>
+    isArchiveEvergreenCandidate(post) && isOlderThanDays(post, 14)
+  );
+  const picked = takeUnused(evergreenSource, usedIds, limit, {
+    requireImage: true
+  });
+
+  if (picked.length >= limit) return picked;
+
+  const fallback = takeUnused(
+    source.filter(isArchiveEvergreenCandidate),
+    usedIds,
+    limit - picked.length,
+    { requireImage: true }
+  );
+
+  return [...picked, ...fallback];
+}
+
 function takeUnused(
   source: Post[],
   usedIds: Set<string>,
@@ -546,14 +592,7 @@ export function groupPosts(posts: Post[] = []) {
     ARCHIVE STRIP:
     blocco editoriale misto, ma senza ripetere hero/reviews/specials/memories/interviews.
   */
-  const archive = takeUnused(
-    italianPosts.filter((post) =>
-      ['review', 'memories', 'guide', 'interview', 'article', 'feature'].includes(post.type || '')
-    ),
-    usedIds,
-    4,
-    { requireImage: true }
-  );
+  const archive = takeArchivePosts(italianPosts, usedIds, 4);
 
   /*
     HARDWARE:

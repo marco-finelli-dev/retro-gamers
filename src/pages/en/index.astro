@@ -68,6 +68,50 @@ const takeUnused = (source, limit, options = {}) => {
   return picked;
 };
 
+const archiveEvergreenTypes = new Set([
+  'review',
+  'memories',
+  'guide',
+  'interview',
+  'article',
+  'feature',
+  'special'
+]);
+
+const isArchiveEvergreenCandidate = (post) =>
+  archiveEvergreenTypes.has(post.type || '') && post.type !== 'news';
+
+const isOlderThanDays = (post, days) => {
+  if (!post.publishedAt) return false;
+
+  const publishedTime = new Date(post.publishedAt).getTime();
+
+  if (!Number.isFinite(publishedTime)) return false;
+
+  const cutoffTime = Date.now() - days * 24 * 60 * 60 * 1000;
+
+  return publishedTime < cutoffTime;
+};
+
+const takeArchivePosts = (source, limit) => {
+  const evergreen = takeUnused(
+    source.filter((post) => isArchiveEvergreenCandidate(post) && isOlderThanDays(post, 14)),
+    limit,
+    { requireImage: true }
+  );
+
+  if (evergreen.length >= limit) return evergreen;
+
+  return [
+    ...evergreen,
+    ...takeUnused(
+      source.filter(isArchiveEvergreenCandidate),
+      limit - evergreen.length,
+      { requireImage: true }
+    )
+  ];
+};
+
 const hero = [];
 
 if (featuredPost) {
@@ -132,13 +176,7 @@ const interviews = takeUnused(
   3
 );
 
-const archive = takeUnused(
-  englishPosts.filter((post) =>
-    ['review', 'memories', 'interview', 'article', 'feature', 'special'].includes(post.type || '')
-  ),
-  4,
-  { requireImage: true }
-);
+const archive = takeArchivePosts(englishPosts, 4);
 
 const hardware = takeUnused(
   englishPosts.filter((post) => post.type === 'hardware'),
