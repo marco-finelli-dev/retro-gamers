@@ -51,8 +51,8 @@ const emptyCommentsText = isOwnProfile
   : 'This reader has not published any comments yet.';
 const canSendPrivateMessage = Boolean(profile && isViewerLoggedIn && !isOwnProfile && profile.status === 'active');
 const privateMessageHref = profile
-  ? `/account/messages/private/?to=${encodeURIComponent(profile.username)}`
-  : '/account/messages/private/';
+  ? `/en/account/messages/private/?to=${encodeURIComponent(profile.username)}`
+  : '/en/account/messages/private/';
 const loginPrivateMessageHref = profile
   ? `/en/account/login/?returnTo=${encodeURIComponent(getPublicUserUrl(profile.username, 'en'))}`
   : '/en/account/login/';
