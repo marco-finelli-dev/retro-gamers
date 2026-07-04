@@ -286,46 +286,48 @@ const staffLinks = [
           data-can-hard-delete={isAdmin ? 'true' : 'false'}
         >
           <form class="admin-comments-filters" data-admin-comments-filters>
-            <label>
-              <span>{copy.status}</span>
-              <select name="status">
-                <option value="all">{copy.filters.all}</option>
-                <option value="pending" selected>{copy.filters.pending}</option>
-                <option value="approved">{copy.filters.approved}</option>
-                <option value="rejected">{copy.filters.rejected}</option>
-                <option value="deleted">{copy.filters.deleted}</option>
-              </select>
-            </label>
+            <div class="admin-comments__filter-fields">
+              <label class="admin-comments__filter-field admin-comments__filter-field--status">
+                <span>{copy.status}</span>
+                <select name="status">
+                  <option value="all">{copy.filters.all}</option>
+                  <option value="pending" selected>{copy.filters.pending}</option>
+                  <option value="approved">{copy.filters.approved}</option>
+                  <option value="rejected">{copy.filters.rejected}</option>
+                  <option value="deleted">{copy.filters.deleted}</option>
+                </select>
+              </label>
 
-            <label>
-              <span>{copy.language}</span>
-              <select name="lang">
-                <option value="all" selected>{copy.filters.allLanguages}</option>
-                <option value="it">{copy.filters.italian}</option>
-                <option value="en">{copy.filters.english}</option>
-              </select>
-            </label>
+              <label class="admin-comments__filter-field admin-comments__filter-field--language">
+                <span>{copy.language}</span>
+                <select name="lang">
+                  <option value="all" selected>{copy.filters.allLanguages}</option>
+                  <option value="it">{copy.filters.italian}</option>
+                  <option value="en">{copy.filters.english}</option>
+                </select>
+              </label>
 
-            <label>
-              <span>{copy.pageSize}</span>
-              <select name="pageSize">
-                <option value="30" selected>30</option>
-                <option value="60">60</option>
-                <option value="100">100</option>
-              </select>
-            </label>
+              <label class="admin-comments__filter-field admin-comments__filter-field--page-size">
+                <span>{copy.pageSize}</span>
+                <select name="pageSize">
+                  <option value="30" selected>30</option>
+                  <option value="60">60</option>
+                  <option value="100">100</option>
+                </select>
+              </label>
 
-            <label>
-              <span>{copy.search}</span>
-              <input
-                type="search"
-                name="q"
-                placeholder={copy.searchPlaceholder}
-                autocomplete="off"
-              />
-            </label>
+              <label class="admin-comments__filter-field admin-comments__filter-field--search">
+                <span>{copy.search}</span>
+                <input
+                  type="search"
+                  name="q"
+                  placeholder={copy.searchPlaceholder}
+                  autocomplete="off"
+                />
+              </label>
+            </div>
 
-            <div class="admin-comments-filters__actions">
+            <div class="admin-comments-filters__actions admin-comments__filter-actions">
               <button type="submit">{copy.filter}</button>
               <button type="button" data-admin-comments-reset>{copy.reset}</button>
             </div>
