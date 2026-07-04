@@ -17,7 +17,7 @@ const {
 } = Astro.props;
 
 const isEn = lang === 'en';
-const comments = latestComments.slice(0, 3);
+const comments = latestComments.slice(0, 10);
 const sectionId = `home-community-strip-title-${lang}`;
 
 const copy = isEn
@@ -31,6 +31,7 @@ const copy = isEn
       fromArticle: 'From',
       readDiscussion: 'Read the discussion',
       profileLabel: 'Profile',
+      railLabel: 'Latest reader memories',
     }
   : {
       title: 'Le voci della community',
@@ -42,6 +43,7 @@ const copy = isEn
       fromArticle: 'Da',
       readDiscussion: 'Leggi la discussione',
       profileLabel: 'Profilo',
+      railLabel: 'Ultime memorie dai lettori',
     };
 
 const communityHref = isEn ? '/en/community/' : '/community/';
@@ -50,23 +52,25 @@ const profileHref = isEn
   : (isLoggedIn ? '/account/' : '/account/register/');
 ---
 
-<section class="home-community-strip" aria-labelledby={sectionId}>
-  <div class="home-community-strip__intro">
-    <p class="home-community-strip__kicker">{copy.kicker}</p>
-    <h2 id={sectionId}>{copy.title}</h2>
-    <p>{copy.text}</p>
+<section class="section-box home-community-strip" aria-labelledby={sectionId}>
+  <div class="home-community-strip__header">
+    <div>
+      <span class="home-community-strip__kicker">{copy.kicker}</span>
+      <h2 id={sectionId}>{copy.title}</h2>
+      <p>{copy.text}</p>
+    </div>
 
-    <div class="home-community-strip__actions">
-      <a class="home-community-strip__cta home-community-strip__cta--primary" href={communityHref}>
+    <div class="home-community-strip__actions" aria-label={copy.kicker}>
+      <a class="home-community-strip__link home-community-strip__link--primary" href={communityHref}>
         {copy.primary}
       </a>
-      <a class="home-community-strip__cta home-community-strip__cta--secondary" href={profileHref}>
+      <a class="home-community-strip__link home-community-strip__link--secondary" href={profileHref}>
         {copy.secondary}
       </a>
     </div>
   </div>
 
-  <div class="home-community-strip__comments" aria-label={copy.kicker}>
+  <div class="home-community-strip__comments" aria-label={copy.railLabel} tabindex="0">
     {comments.length > 0 ? (
       comments.map((comment) => (
         <article class="home-community-strip__comment">

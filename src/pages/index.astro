@@ -55,7 +55,7 @@ const homeCommentCountMap = await getApprovedCommentCountMap(
 const withCommentCounts = (posts) =>
   attachApprovedCommentCounts(posts, homeCommentCountMap, 'it');
 
-const latestCommunityComments = await getLatestCommunityComments('it', 3);
+const latestCommunityComments = await getLatestCommunityComments('it', 10);
 const viewerSession = await getUserSessionFromCookies(Astro.cookies);
 let hideNewsletterPromo = false;
 

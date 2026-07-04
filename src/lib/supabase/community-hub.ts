@@ -71,7 +71,7 @@ export async function getLatestCommunityComments(
   limit = 6
 ): Promise<CommunityHubComment[]> {
   const language = normalizeLang(lang);
-  const safeLimit = Math.min(Math.max(Number(limit) || 6, 1), 6);
+  const safeLimit = Math.min(Math.max(Number(limit) || 6, 1), 10);
   const query = supabaseAdmin
     .from('comments')
     .select(`
