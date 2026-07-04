@@ -68,12 +68,16 @@ const copy = isEnglish
         hide: 'Hide',
         hardDelete: 'Permanently delete',
         hideConfirm: 'Hide this comment from the public site?',
-        hardDeleteConfirm: 'This will permanently delete the comment. Continue?',
+        hardDeleteConfirm: 'Do you want to permanently delete this comment? This action cannot be undone.',
         replyTo: 'Reply to',
         openArticle: 'Open article',
+        viewProfile: 'View profile',
         manage: 'Review',
         close: 'Close',
         language: 'Language',
+        commentExcerpt: 'Comment excerpt',
+        fullComment: 'Full comment',
+        quickActions: 'Quick moderation actions',
         moderationReason: 'Moderation reason',
         reasonPrefix: 'Reason:',
         newBadge: 'New',
@@ -158,12 +162,16 @@ const copy = isEnglish
         hide: 'Nascondi',
         hardDelete: 'Cancella definitivamente',
         hideConfirm: 'Nascondere questo commento dal sito pubblico?',
-        hardDeleteConfirm: 'Questa azione cancellerà definitivamente il commento. Continuare?',
+        hardDeleteConfirm: 'Vuoi cancellare definitivamente questo commento? L’azione non può essere annullata.',
         replyTo: 'Risposta a',
         openArticle: 'Apri articolo',
+        viewProfile: 'Vedi profilo',
         manage: 'Gestisci',
         close: 'Chiudi',
         language: 'Lingua',
+        commentExcerpt: 'Estratto commento',
+        fullComment: 'Commento completo',
+        quickActions: 'Azioni rapide moderazione',
         moderationReason: 'Motivo revisione',
         reasonPrefix: 'Motivo:',
         newBadge: 'Nuovo',
@@ -356,6 +364,14 @@ const staffLinks = [
       return Number.isFinite(timestamp) && Date.now() - timestamp <= 24 * 60 * 60 * 1000;
     };
 
+    const createExcerpt = (value, maxLength = 280) => {
+      const normalized = String(value || '').replace(/\s+/g, ' ').trim();
+
+      if (normalized.length <= maxLength) return normalized;
+
+      return `${normalized.slice(0, maxLength).trimEnd()}…`;
+    };
+
     const statusLabels = labels.statusLabels;
     const emptyMessages = labels.emptyMessages;
     const roleLabels = labels.roleLabels;
@@ -409,6 +425,11 @@ const staffLinks = [
       const badge = profile.user_badges?.label_it || profile.user_badges?.label_en || '';
       const articleUrl = comment.article_url || '#';
       const articleLabel = comment.article_title || comment.article_slug || labels.articleFallback;
+      const profileUrl = profile.username
+        ? labels.locale === 'en-US'
+          ? `/en/users/${encodeURIComponent(profile.username)}/`
+          : `/utenti/${encodeURIComponent(profile.username)}/`
+        : '';
       const status = statusLabels[comment.status] || comment.status || labels.unknownStatus;
       const role = roleLabels[profile.role] || profile.role || '';
       const parent = comment.parent || null;
@@ -439,9 +460,22 @@ const staffLinks = [
             <button type="button" data-action="soft_delete" data-confirm="${escapeHtml(labels.hideConfirm)}">${escapeHtml(labels.hide)}</button>
             ${canHardDelete ? `<button type="button" class="admin-comment-card__danger-action" data-action="hard_delete" data-confirm="${escapeHtml(labels.hardDeleteConfirm)}">${escapeHtml(labels.hardDelete)}</button>` : ''}
           `;
+      const quickModerationActions = !isHidden && comment.status === 'pending'
+        ? `
+            <div class="admin-comment-card__quick-moderation" aria-label="${escapeHtml(labels.quickActions)}">
+              <button type="button" class="admin-comment-card__primary-action" data-action="approve">${escapeHtml(labels.approve)}</button>
+              <button type="button" data-action="reject">${escapeHtml(labels.reject)}</button>
+            </div>
+          `
+        : '';
 
       return `
-        <article class="admin-comment-card" data-comment-id="${escapeHtml(comment.id)}">
+        <article
+          class="admin-comment-card"
+          data-comment-id="${escapeHtml(comment.id)}"
+          data-comment-status="${escapeHtml(comment.status || '')}"
+          data-comment-hidden="${isHidden ? 'true' : 'false'}"
+        >
           <header class="admin-comment-card__header">
             <div class="admin-comment-card__summary">
               <p class="admin-comment-card__article">
@@ -458,6 +492,7 @@ const staffLinks = [
 
             <div class="admin-comment-card__quick-actions">
               <a href="${escapeHtml(articleUrl)}" target="_blank" rel="noreferrer">${escapeHtml(labels.openArticle)}</a>
+              ${profileUrl ? `<a href="${escapeHtml(profileUrl)}" target="_blank" rel="noreferrer">${escapeHtml(labels.viewProfile)}</a>` : ''}
               <button
                 type="button"
                 data-admin-comment-toggle
@@ -488,8 +523,11 @@ const staffLinks = [
           ` : ''}
 
           <div class="admin-comment-card__preview">
-            ${escapeHtml(comment.body)}
+            <span class="admin-comment-card__preview-label">${escapeHtml(labels.commentExcerpt)}</span>
+            <p>${escapeHtml(createExcerpt(comment.body))}</p>
           </div>
+
+          ${quickModerationActions}
 
           <div class="admin-comment-card__details" id="${escapeHtml(detailId)}" data-admin-comment-details hidden>
             ${parent ? `
@@ -500,6 +538,7 @@ const staffLinks = [
             ` : ''}
 
             <div class="admin-comment-card__body">
+              <strong class="admin-comment-card__body-label">${escapeHtml(labels.fullComment)}</strong>
               ${escapeHtml(comment.body)}
             </div>
 
