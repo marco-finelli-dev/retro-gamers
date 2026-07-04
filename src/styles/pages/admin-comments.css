@@ -312,6 +312,18 @@
   color: var(--color-text-soft);
 }
 
+.admin-comment-card__meta .admin-comment-card__review-badge {
+  border-color: rgba(34,240,255,0.28);
+  background: rgba(34,240,255,0.10);
+  color: var(--color-primary);
+}
+
+.admin-comment-card__meta .admin-comment-card__review-badge[data-review-state="review"] {
+  border-color: rgba(251,191,36,0.24);
+  background: rgba(251,191,36,0.10);
+  color: color-mix(in srgb, #fbbf24 82%, var(--color-text));
+}
+
 .admin-comment-card__parent {
   margin-bottom: 12px;
   padding: 12px 14px;
@@ -358,6 +370,25 @@
   font-size: 0.76rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.admin-comment-card__reason-summary {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 0;
+  color: var(--color-text-soft);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.admin-comment-card__reason-summary strong {
+  flex: 0 0 auto;
+  color: var(--color-text);
+}
+
+.admin-comment-card__reason-summary span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .admin-comment-card__preview {

@@ -49,7 +49,6 @@ const copy = isEnglish
         pending: 'Pending',
         approved: 'Approved',
         rejected: 'Rejected',
-        spam: 'Spam',
         deleted: 'Hidden',
         allLanguages: 'All',
         italian: 'Italian',
@@ -62,8 +61,10 @@ const copy = isEnglish
         unknownStatus: 'Unknown status',
         originalComment: 'Original comment',
         approve: 'Approve',
+        restoreApprove: 'Restore and approve',
         reject: 'Reject',
         pending: 'Move back to review',
+        restorePending: 'Restore to review',
         hide: 'Hide',
         hardDelete: 'Permanently delete',
         hideConfirm: 'Hide this comment from the public site?',
@@ -74,6 +75,9 @@ const copy = isEnglish
         close: 'Close',
         language: 'Language',
         moderationReason: 'Moderation reason',
+        reasonPrefix: 'Reason:',
+        newBadge: 'New',
+        needsReviewBadge: 'Needs review',
         statusLabels: {
           pending: 'Pending',
           approved: 'Approved',
@@ -86,7 +90,6 @@ const copy = isEnglish
           pending: 'No comments to moderate.',
           approved: 'No approved comments with these filters.',
           rejected: 'No rejected comments with these filters.',
-          spam: 'No spam comments with these filters.',
           deleted: 'No hidden comments with these filters.',
         },
         roleLabels: {
@@ -136,7 +139,6 @@ const copy = isEnglish
         pending: 'Da revisionare',
         approved: 'Approvati',
         rejected: 'Rifiutati',
-        spam: 'Spam',
         deleted: 'Nascosti',
         allLanguages: 'Tutte',
         italian: 'Italiano',
@@ -149,8 +151,10 @@ const copy = isEnglish
         unknownStatus: 'Stato sconosciuto',
         originalComment: 'Commento originale',
         approve: 'Approva',
+        restoreApprove: 'Ripristina e approva',
         reject: 'Rifiuta',
         pending: 'Rimetti in revisione',
+        restorePending: 'Ripristina in revisione',
         hide: 'Nascondi',
         hardDelete: 'Cancella definitivamente',
         hideConfirm: 'Nascondere questo commento dal sito pubblico?',
@@ -161,6 +165,9 @@ const copy = isEnglish
         close: 'Chiudi',
         language: 'Lingua',
         moderationReason: 'Motivo revisione',
+        reasonPrefix: 'Motivo:',
+        newBadge: 'Nuovo',
+        needsReviewBadge: 'Da controllare',
         statusLabels: {
           pending: 'Da revisionare',
           approved: 'Approvato',
@@ -173,7 +180,6 @@ const copy = isEnglish
           pending: 'Nessun commento da revisionare.',
           approved: 'Nessun commento approvato con questi filtri.',
           rejected: 'Nessun commento rifiutato con questi filtri.',
-          spam: 'Nessun commento spam con questi filtri.',
           deleted: 'Nessun commento nascosto con questi filtri.',
         },
         roleLabels: {
@@ -243,11 +249,10 @@ const staffLinks = [
             <label>
               <span>{copy.status}</span>
               <select name="status">
-                <option value="all" selected>{copy.filters.all}</option>
-                <option value="pending">{copy.filters.pending}</option>
+                <option value="all">{copy.filters.all}</option>
+                <option value="pending" selected>{copy.filters.pending}</option>
                 <option value="approved">{copy.filters.approved}</option>
                 <option value="rejected">{copy.filters.rejected}</option>
-                <option value="spam">{copy.filters.spam}</option>
                 <option value="deleted">{copy.filters.deleted}</option>
               </select>
             </label>
@@ -343,6 +348,14 @@ const staffLinks = [
       }).format(new Date(value));
     };
 
+    const isWithinLastDay = (value) => {
+      if (!value) return false;
+
+      const timestamp = new Date(value).getTime();
+
+      return Number.isFinite(timestamp) && Date.now() - timestamp <= 24 * 60 * 60 * 1000;
+    };
+
     const statusLabels = labels.statusLabels;
     const emptyMessages = labels.emptyMessages;
     const roleLabels = labels.roleLabels;
@@ -368,7 +381,7 @@ const staffLinks = [
       if (!filtersForm) return;
 
       const params = new URLSearchParams(window.location.search);
-      const allowedStatuses = new Set(['all', 'pending', 'approved', 'rejected', 'spam', 'deleted']);
+      const allowedStatuses = new Set(['all', 'pending', 'approved', 'rejected', 'deleted']);
       const allowedLanguages = new Set(['all', 'it', 'en']);
       const status = params.get('status');
       const language = params.get('language');
@@ -405,16 +418,24 @@ const staffLinks = [
       const moderationReason = comment.moderation_reason || '';
       const isHidden = Boolean(comment.deleted_at);
       const displayStatus = isHidden ? statusLabels.deleted : status;
+      const isRecentPending = comment.status === 'pending' && isWithinLastDay(comment.created_at);
+      const reviewBadge = comment.status === 'pending'
+        ? `
+            <span class="admin-comment-card__review-badge" data-review-state="${isRecentPending ? 'new' : 'review'}">
+              ${escapeHtml(isRecentPending ? labels.newBadge : labels.needsReviewBadge)}
+            </span>
+          `
+        : '';
       const actionButtons = isHidden
         ? `
-            <button type="button" data-action="approve">${escapeHtml(labels.approve)}</button>
-            <button type="button" data-action="pending">${escapeHtml(labels.pending)}</button>
+            <button type="button" data-action="approve">${escapeHtml(labels.restoreApprove)}</button>
+            <button type="button" data-action="pending">${escapeHtml(labels.restorePending)}</button>
             ${canHardDelete ? `<button type="button" class="admin-comment-card__danger-action" data-action="hard_delete" data-confirm="${escapeHtml(labels.hardDeleteConfirm)}">${escapeHtml(labels.hardDelete)}</button>` : ''}
           `
         : `
             ${comment.status !== 'approved' ? `<button type="button" data-action="approve">${escapeHtml(labels.approve)}</button>` : ''}
-            ${comment.status !== 'rejected' ? `<button type="button" data-action="reject">${escapeHtml(labels.reject)}</button>` : ''}
             ${comment.status !== 'pending' ? `<button type="button" data-action="pending">${escapeHtml(labels.pending)}</button>` : ''}
+            ${comment.status !== 'rejected' ? `<button type="button" data-action="reject">${escapeHtml(labels.reject)}</button>` : ''}
             <button type="button" data-action="soft_delete" data-confirm="${escapeHtml(labels.hideConfirm)}">${escapeHtml(labels.hide)}</button>
             ${canHardDelete ? `<button type="button" class="admin-comment-card__danger-action" data-action="hard_delete" data-confirm="${escapeHtml(labels.hardDeleteConfirm)}">${escapeHtml(labels.hardDelete)}</button>` : ''}
           `;
@@ -452,11 +473,19 @@ const staffLinks = [
             <span class="admin-comment-card__status" data-status="${escapeHtml(isHidden ? 'deleted' : comment.status || '')}">
               ${escapeHtml(displayStatus)}
             </span>
+            ${reviewBadge}
             ${role ? `<span>${escapeHtml(role)}</span>` : ''}
             ${badge ? `<span>${escapeHtml(badge)}</span>` : ''}
             ${comment.article_language ? `<span>${escapeHtml(comment.article_language.toUpperCase())}</span>` : ''}
             ${comment.created_at ? `<span>${escapeHtml(formatDate(comment.created_at))}</span>` : ''}
           </p>
+
+          ${moderationReason ? `
+            <p class="admin-comment-card__reason-summary">
+              <strong>${escapeHtml(labels.reasonPrefix)}</strong>
+              <span>${escapeHtml(moderationReason)}</span>
+            </p>
+          ` : ''}
 
           <div class="admin-comment-card__preview">
             ${escapeHtml(comment.body)}
