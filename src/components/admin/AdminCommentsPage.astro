@@ -79,6 +79,17 @@ const copy = isEnglish
         commentExcerpt: 'Comment excerpt',
         fullComment: 'Full comment',
         quickActions: 'Quick moderation actions',
+        select: 'Select',
+        selectAllPage: 'Select all on this page',
+        selectedOne: '1 selected',
+        selectedMany: '{count} selected',
+        noSelection: 'No comments selected',
+        approveSelected: 'Approve selected',
+        rejectSelected: 'Reject selected',
+        approveSelectedConfirm: 'Do you want to approve the selected comments?',
+        rejectSelectedConfirm: 'Do you want to reject the selected comments?',
+        bulkUpdated: 'Comments updated:',
+        maxBulkSelected: 'You can moderate up to 50 comments at a time.',
         moderationReason: 'Moderation reason',
         reasonPrefix: 'Reason:',
         newBadge: 'New',
@@ -178,6 +189,17 @@ const copy = isEnglish
         commentExcerpt: 'Estratto commento',
         fullComment: 'Commento completo',
         quickActions: 'Azioni rapide moderazione',
+        select: 'Seleziona',
+        selectAllPage: 'Seleziona tutti in questa pagina',
+        selectedOne: '1 selezionato',
+        selectedMany: '{count} selezionati',
+        noSelection: 'Nessun commento selezionato',
+        approveSelected: 'Approva selezionati',
+        rejectSelected: 'Rifiuta selezionati',
+        approveSelectedConfirm: 'Vuoi approvare i commenti selezionati?',
+        rejectSelectedConfirm: 'Vuoi rifiutare i commenti selezionati?',
+        bulkUpdated: 'Commenti aggiornati:',
+        maxBulkSelected: 'Puoi moderare al massimo 50 commenti alla volta.',
         moderationReason: 'Motivo revisione',
         reasonPrefix: 'Motivo:',
         newBadge: 'Nuovo',
@@ -315,6 +337,20 @@ const staffLinks = [
 
           <div class="admin-comments-message" data-admin-comments-message hidden></div>
 
+          <div class="admin-comments-bulk" data-admin-comments-bulk hidden>
+            <label class="admin-comments-bulk__select-all">
+              <input type="checkbox" data-admin-comments-select-all />
+              <span>{copy.client.selectAllPage}</span>
+            </label>
+            <span class="admin-comments-bulk__count" data-admin-comments-selected-count>
+              {copy.client.selectedMany.replace('{count}', '0')}
+            </span>
+            <div class="admin-comments-bulk__actions">
+              <button type="button" data-bulk-action="approve" disabled>{copy.client.approveSelected}</button>
+              <button type="button" data-bulk-action="reject" disabled>{copy.client.rejectSelected}</button>
+            </div>
+          </div>
+
           <div class="admin-comments-list" data-admin-comments-list>
             <p class="admin-comments-empty">{copy.loadingComments}</p>
           </div>
@@ -345,12 +381,17 @@ const staffLinks = [
     const messageNode = document.querySelector('[data-admin-comments-message]');
     const filtersForm = document.querySelector('[data-admin-comments-filters]');
     const paginationNode = document.querySelector('[data-admin-comments-pagination]');
+    const bulkNode = document.querySelector('[data-admin-comments-bulk]');
+    const selectAllCheckbox = document.querySelector('[data-admin-comments-select-all]');
+    const selectedCountNode = document.querySelector('[data-admin-comments-selected-count]');
     const resetButton = document.querySelector('[data-admin-comments-reset]');
     const panelNode = document.querySelector('[data-admin-comments-panel]');
     const canHardDelete = panelNode?.dataset.canHardDelete === 'true';
     const labels = adminCommentsCopy;
     const allowedPageSizes = new Set(['30', '60', '100']);
+    const maxBulkSelection = 50;
     let currentPage = 1;
+    let bulkInProgress = false;
 
     const escapeHtml = (value) =>
       String(value || '')
@@ -517,6 +558,18 @@ const staffLinks = [
             </div>
           `
         : '';
+      const selectionControl = !isHidden && comment.status === 'pending'
+        ? `
+            <label class="admin-comment-card__selection">
+              <input
+                type="checkbox"
+                data-bulk-comment-id="${escapeHtml(comment.id)}"
+                aria-label="${escapeHtml(`${labels.select}: ${author}`)}"
+              />
+              <span>${escapeHtml(labels.select)}</span>
+            </label>
+          `
+        : '';
 
       return `
         <article
@@ -525,6 +578,8 @@ const staffLinks = [
           data-comment-status="${escapeHtml(comment.status || '')}"
           data-comment-hidden="${isHidden ? 'true' : 'false'}"
         >
+          ${selectionControl}
+
           <header class="admin-comment-card__header">
             <div class="admin-comment-card__summary">
               <p class="admin-comment-card__article">
@@ -641,6 +696,45 @@ const staffLinks = [
       `;
     };
 
+    const getBulkCheckboxes = () =>
+      Array.from(listNode?.querySelectorAll('input[data-bulk-comment-id]') || [])
+        .filter((input) => input instanceof HTMLInputElement);
+
+    const getSelectedBulkIds = () =>
+      getBulkCheckboxes()
+        .filter((input) => input.checked)
+        .map((input) => input.dataset.bulkCommentId)
+        .filter(Boolean);
+
+    const updateBulkState = () => {
+      if (!bulkNode) return;
+
+      const checkboxes = getBulkCheckboxes();
+      const selectedIds = getSelectedBulkIds();
+      const selectedCount = selectedIds.length;
+      const bulkButtons = Array.from(bulkNode.querySelectorAll('button[data-bulk-action]'));
+
+      bulkNode.hidden = checkboxes.length === 0;
+
+      if (selectedCountNode) {
+        selectedCountNode.textContent = selectedCount === 1
+          ? labels.selectedOne
+          : String(labels.selectedMany || '').replace('{count}', String(selectedCount));
+      }
+
+      if (selectAllCheckbox instanceof HTMLInputElement) {
+        selectAllCheckbox.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
+        selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+        selectAllCheckbox.disabled = bulkInProgress || checkboxes.length === 0;
+      }
+
+      for (const button of bulkButtons) {
+        if (button instanceof HTMLButtonElement) {
+          button.disabled = bulkInProgress || selectedCount === 0;
+        }
+      }
+    };
+
     const loadComments = async ({ page = currentPage, updateHistory = true } = {}) => {
       if (!listNode) return;
 
@@ -653,6 +747,7 @@ const staffLinks = [
           listNode.innerHTML = `<p class="admin-comments-empty">${escapeHtml(result.error || labels.loadError)}</p>`;
           if (countNode) countNode.textContent = labels.accessUnavailable;
           renderPagination(null);
+          updateBulkState();
           return;
         }
 
@@ -681,13 +776,16 @@ const staffLinks = [
         if (comments.length === 0) {
           const status = String(params.get('status') || 'all');
           listNode.innerHTML = `<p class="admin-comments-empty">${escapeHtml(emptyMessages[status] || emptyMessages.all)}</p>`;
+          updateBulkState();
           return;
         }
 
         listNode.innerHTML = comments.map(renderComment).join('');
+        updateBulkState();
       } catch {
         listNode.innerHTML = `<p class="admin-comments-empty">${escapeHtml(labels.connectionError)}</p>`;
         renderPagination(null);
+        updateBulkState();
       }
     };
 
@@ -712,6 +810,83 @@ const staffLinks = [
       const nextPage = normalizePage(button.dataset.paginationPage);
       showMessage('');
       loadComments({ page: nextPage });
+    });
+
+    selectAllCheckbox?.addEventListener('change', () => {
+      if (!(selectAllCheckbox instanceof HTMLInputElement)) return;
+
+      for (const checkbox of getBulkCheckboxes()) {
+        checkbox.checked = selectAllCheckbox.checked;
+      }
+
+      updateBulkState();
+    });
+
+    bulkNode?.addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-bulk-action]');
+      if (!button || button.disabled) return;
+
+      const action = button.dataset.bulkAction;
+      const selectedIds = getSelectedBulkIds();
+
+      if (selectedIds.length === 0) {
+        showMessage(labels.noSelection, 'error');
+        updateBulkState();
+        return;
+      }
+
+      if (selectedIds.length > maxBulkSelection) {
+        showMessage(labels.maxBulkSelected, 'error');
+        updateBulkState();
+        return;
+      }
+
+      const confirmText = action === 'approve'
+        ? labels.approveSelectedConfirm
+        : labels.rejectSelectedConfirm;
+
+      if (!window.confirm(confirmText)) {
+        return;
+      }
+
+      bulkInProgress = true;
+      updateBulkState();
+      showMessage('');
+
+      try {
+        const response = await fetch('/api/admin/comments/bulk-moderate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ids: selectedIds,
+            action
+          })
+        });
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(result.error || labels.actionFailed, 'error');
+          bulkInProgress = false;
+          updateBulkState();
+          return;
+        }
+
+        showMessage(`${labels.bulkUpdated} ${result.updatedCount || 0}`, 'ok');
+        bulkInProgress = false;
+        await loadComments();
+      } catch {
+        showMessage(labels.connectionError, 'error');
+        bulkInProgress = false;
+        updateBulkState();
+      }
+    });
+
+    listNode?.addEventListener('change', (event) => {
+      if (event.target instanceof HTMLInputElement && event.target.matches('input[data-bulk-comment-id]')) {
+        updateBulkState();
+      }
     });
 
     listNode?.addEventListener('click', async (event) => {
