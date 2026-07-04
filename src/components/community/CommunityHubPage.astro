@@ -34,7 +34,7 @@ const copy = isEn
       profileHrefAuth: '/en/account/',
       badgesCta: 'Discover badges',
       badgesHref: '/en/badges/',
-      newsletterCta: 'Newsletter',
+      newsletterCta: 'Subscribe to the newsletter',
       newsletterHref: '/en/newsletter/',
       stats: {
         comments: 'Public comments',
@@ -42,31 +42,20 @@ const copy = isEn
         profiles: 'Active profiles',
         articles: 'Discussed articles',
       },
-      latestTitle: 'Latest reader memories',
-      latestEmpty: 'No public memories to show yet.',
-      articleFallback: 'Article',
-      readDiscussion: 'Read the discussion',
+      hubTitle: 'Inside the community',
+      hubDescription: "Memories, conversations and articles gathering readers' voices.",
+      memories: {
+        title: 'Reader memories',
+        empty: 'The first memories will arrive with the readers.',
+        read: 'Read the discussion',
+      },
+      discussions: {
+        title: 'Most discussed articles',
+        cta: 'Read the articles',
+        empty: 'Discussions will grow together with the community.',
+      },
       profileLabel: 'Reader profile',
-      mostDiscussedTitle: 'Most discussed articles',
-      archiveKicker: 'Living archive',
-      mostDiscussedEmpty: 'Discussions will grow together with the community.',
       commentsLabel: (count: number) => `${count} ${count === 1 ? 'comment' : 'comments'}`,
-      joinTitle: 'Keep the memories alive',
-      joinCards: [
-        {
-          title: 'Comment',
-          text: 'Add memories, impressions and details that can give new life to a game.',
-        },
-        {
-          title: 'Rate',
-          text: 'Share your opinion on reviews and help other readers find their way.',
-        },
-        {
-          title: 'Follow',
-          text: 'Choose interests, badges and the newsletter to build your own space inside Retro-Gamers.it.',
-        },
-      ],
-      locale: 'en-US',
     }
   : {
       title: 'Community | Retro-Gamers.it',
@@ -82,7 +71,7 @@ const copy = isEn
       profileHrefAuth: '/account/',
       badgesCta: 'Scopri i badge',
       badgesHref: '/badges/',
-      newsletterCta: 'Newsletter',
+      newsletterCta: 'Iscriviti alla newsletter',
       newsletterHref: '/newsletter/',
       stats: {
         comments: 'Commenti pubblici',
@@ -90,31 +79,20 @@ const copy = isEn
         profiles: 'Profili attivi',
         articles: 'Articoli discussi',
       },
-      latestTitle: 'Ultime memorie dai lettori',
-      latestEmpty: 'Non ci sono ancora memorie pubbliche da mostrare.',
-      articleFallback: 'Articolo',
-      readDiscussion: 'Leggi la discussione',
+      hubTitle: 'Dentro la community',
+      hubDescription: 'Memorie, discussioni e articoli che stanno raccogliendo le voci dei lettori.',
+      memories: {
+        title: 'Memorie dei lettori',
+        empty: 'Le prime memorie arriveranno con i lettori.',
+        read: 'Leggi la discussione',
+      },
+      discussions: {
+        title: 'Articoli più discussi',
+        cta: 'Leggi gli articoli',
+        empty: 'Le discussioni cresceranno insieme alla community.',
+      },
       profileLabel: 'Profilo lettore',
-      mostDiscussedTitle: 'Articoli più discussi',
-      archiveKicker: 'Archivio vivo',
-      mostDiscussedEmpty: 'Le discussioni cresceranno insieme alla community.',
       commentsLabel: (count: number) => `${count} ${count === 1 ? 'commento' : 'commenti'}`,
-      joinTitle: 'Fai vivere i ricordi',
-      joinCards: [
-        {
-          title: 'Commenta',
-          text: 'Aggiungi ricordi, impressioni e dettagli che possono dare nuova vita a un gioco.',
-        },
-        {
-          title: 'Vota',
-          text: 'Condividi il tuo giudizio sulle recensioni e aiuta altri lettori a orientarsi.',
-        },
-        {
-          title: 'Segui',
-          text: 'Scegli interessi, badge e newsletter per costruire il tuo spazio dentro Retro-Gamers.it.',
-        },
-      ],
-      locale: 'it-IT',
     };
 
 const allPosts = await getAllPosts();
@@ -133,13 +111,10 @@ const [latestComments, stats, mostDiscussedPosts] = await Promise.all([
   getCommunityHubStats(currentLang),
   getMostDiscussedPosts(postsForLang, currentLang),
 ]);
-const dateFormatter = new Intl.DateTimeFormat(copy.locale, {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
 const profileCtaHref = isLoggedIn ? copy.profileHrefAuth : copy.profileHrefGuest;
 const profileCtaLabel = isLoggedIn ? copy.profileCtaAuth : copy.profileCtaGuest;
+const memoryPreviewItems = latestComments.slice(0, 4);
+const discussionPreviewItems = mostDiscussedPosts.slice(0, 4);
 const statsItems = [
   { label: copy.stats.comments, value: stats.approvedComments },
   { label: copy.stats.ratings, value: stats.readerRatings },
@@ -173,10 +148,8 @@ const alternateLanguages = [
     >
       <div class="community-hub-hero__actions" aria-label="Community actions">
         <a class="community-hub-hero__primary" href={profileCtaHref}>{profileCtaLabel}</a>
-        <div class="community-hub-hero__secondary">
-          <a href={copy.badgesHref}>{copy.badgesCta}</a>
-          <a href={copy.newsletterHref}>{copy.newsletterCta}</a>
-        </div>
+        {!isLoggedIn && <a class="community-hub-hero__secondary-cta" href={copy.newsletterHref}>{copy.newsletterCta}</a>}
+        <a class="community-hub-hero__secondary-cta" href={copy.badgesHref}>{copy.badgesCta}</a>
       </div>
 
       <div class="community-hub-stats" aria-label="Community stats">
@@ -189,102 +162,74 @@ const alternateLanguages = [
       </div>
     </CommunityHero>
 
-    <section class="community-card community-hub-section" aria-labelledby="community-latest-comments">
+    <section class="community-card community-hub-section community-hub-main" aria-labelledby="community-hub-main">
       <div class="community-hub-section__heading">
         <p class="community-kicker">Community</p>
-        <h2 id="community-latest-comments">{copy.latestTitle}</h2>
+        <h2 id="community-hub-main">{copy.hubTitle}</h2>
+        <p>{copy.hubDescription}</p>
       </div>
 
-      {latestComments.length > 0 ? (
-        <div class="community-hub-comments">
-          {latestComments.map((comment) => (
-            <article class="community-hub-comment">
-              <header>
-                <UserAvatar
-                  name={comment.authorName}
-                  src={comment.avatarUrl || ''}
-                  size="sm"
-                  label={`${copy.profileLabel}: ${comment.authorName}`}
-                />
+      <div class="community-hub-columns">
+        <section class="community-hub-column community-hub-column--memories" aria-labelledby="community-hub-memories">
+          <div class="community-hub-column__heading">
+            <h3 id="community-hub-memories">{copy.memories.title}</h3>
+          </div>
 
-                <div>
-                  <strong>
-                    {comment.profileUrl ? (
-                      <a href={comment.profileUrl}>{comment.authorName}</a>
-                    ) : (
-                      comment.authorName
-                    )}
-                  </strong>
-                  <span>
-                    {comment.createdAt
-                      ? dateFormatter.format(new Date(comment.createdAt))
-                      : copy.articleFallback}
-                  </span>
-                  {comment.badgeLabel && (
-                    <small class="community-hub-comment__badge">
-                      {comment.badgeImageUrl && <img src={comment.badgeImageUrl} alt="" loading="lazy" decoding="async" />}
-                      {comment.badgeLabel}
-                    </small>
+          {memoryPreviewItems.length > 0 ? (
+            <div class="community-hub-memory-list">
+              {memoryPreviewItems.map((comment) => (
+                <article class="community-hub-memory">
+                  <header>
+                    <UserAvatar
+                      name={comment.authorName}
+                      src={comment.avatarUrl || ''}
+                      size="sm"
+                      label={`${copy.profileLabel}: ${comment.authorName}`}
+                    />
+                    <strong>{comment.authorName}</strong>
+                  </header>
+
+                  <p>{comment.excerpt}</p>
+
+                  <footer>
+                    <a href={comment.articleUrl}>{comment.articleTitle}</a>
+                    <a href={comment.articleUrl}>{copy.memories.read}</a>
+                  </footer>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p class="community-hub-empty community-hub-empty--compact">{copy.memories.empty}</p>
+          )}
+        </section>
+
+        <section class="community-hub-column community-hub-column--discussions" aria-labelledby="community-hub-discussions">
+          <div class="community-hub-column__heading">
+            <h3 id="community-hub-discussions">{copy.discussions.title}</h3>
+          </div>
+
+          {discussionPreviewItems.length > 0 ? (
+            <div class="community-hub-discussion-grid">
+              {discussionPreviewItems.map((post) => (
+                <article class="community-hub-discussion-card">
+                  {post.imageUrl && (
+                    <a class="community-hub-discussion-card__media" href={post.url} aria-label={post.title}>
+                      <img src={post.imageUrl} alt="" loading="lazy" decoding="async" />
+                    </a>
                   )}
-                </div>
-              </header>
-
-              <p>{comment.excerpt}</p>
-
-              <footer>
-                <a href={comment.articleUrl}>{comment.articleTitle}</a>
-                <a href={comment.articleUrl}>{copy.readDiscussion}</a>
-              </footer>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <p class="community-hub-empty">{copy.latestEmpty}</p>
-      )}
-    </section>
-
-    <section class="community-card community-hub-section" aria-labelledby="community-most-discussed">
-      <div class="community-hub-section__heading">
-        <p class="community-kicker">{copy.archiveKicker}</p>
-        <h2 id="community-most-discussed">{copy.mostDiscussedTitle}</h2>
-      </div>
-
-      {mostDiscussedPosts.length > 0 ? (
-        <div class="community-hub-posts">
-          {mostDiscussedPosts.map((post) => (
-            <article class="community-hub-post">
-              {post.imageUrl && (
-                <a class="community-hub-post__media" href={post.url} aria-label={post.title}>
-                  <img src={post.imageUrl} alt="" loading="lazy" decoding="async" />
-                </a>
-              )}
-
-              <div class="community-hub-post__body">
-                <span>{copy.commentsLabel(post.commentCount)}</span>
-                <h3><a href={post.url}>{post.title}</a></h3>
-                {post.excerpt && <p>{post.excerpt}</p>}
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <p class="community-hub-empty">{copy.mostDiscussedEmpty}</p>
-      )}
-    </section>
-
-    <section class="community-card community-hub-section" aria-labelledby="community-join">
-      <div class="community-hub-section__heading">
-        <p class="community-kicker">Retro-Gamers.it</p>
-        <h2 id="community-join">{copy.joinTitle}</h2>
-      </div>
-
-      <div class="community-hub-join-grid">
-        {copy.joinCards.map((card) => (
-          <article>
-            <h3>{card.title}</h3>
-            <p>{card.text}</p>
-          </article>
-        ))}
+                  {!post.imageUrl && <div class="community-hub-discussion-card__media community-hub-discussion-card__media--placeholder" aria-hidden="true"></div>}
+                  <div class="community-hub-discussion-card__body">
+                    <span>{copy.commentsLabel(post.commentCount)}</span>
+                    <h4><a href={post.url}>{post.title}</a></h4>
+                    {post.excerpt && <p>{post.excerpt}</p>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p class="community-hub-empty community-hub-empty--compact">{copy.discussions.empty}</p>
+          )}
+        </section>
       </div>
     </section>
   </CommunityLayout>
