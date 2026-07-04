@@ -2,7 +2,6 @@
 import '../../../styles/pages/user-profile.css';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import UserAvatar from '../../../components/account/UserAvatar.astro';
-import CommunityHero from '../../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../../components/community/CommunityLayout.astro';
 import PublicUserInterests from '../../../components/community/PublicUserInterests.astro';
 import {
@@ -43,13 +42,13 @@ const badgeImageSrc = getReaderBadgeImageSrcForBadge(badge || { key: profile?.ba
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const bio = profile?.bio_en?.trim() || profile?.bio?.trim() || '';
 const isOwnProfile = Boolean(isViewerLoggedIn && viewerSession.user?.id === profile?.user_id);
-const emptyBioText = isOwnProfile
-  ? 'Add a bio from your account to share what you love about retrogaming.'
-  : 'This reader has not added a bio yet.';
-const emptyCommentsText = isOwnProfile
-  ? 'You have not published any public comments yet. When you join article discussions, they will appear here.'
-  : 'This reader has not published any comments yet.';
+const emptyCommentsText = 'The first memories will appear when this reader joins the conversations.';
+const emptyBioText = 'This reader has not written a bio yet.';
 const canSendPrivateMessage = Boolean(profile && isViewerLoggedIn && !isOwnProfile && profile.status === 'active');
+const messageRecipientName = String(profile?.display_name || '').trim().split(/\s+/)[0] || '';
+const privateMessageLabel = messageRecipientName
+  ? `Write to ${messageRecipientName}`
+  : 'Write a message';
 const privateMessageHref = profile
   ? `/en/account/messages/private/?to=${encodeURIComponent(profile.username)}`
   : '/en/account/messages/private/';
@@ -68,6 +67,7 @@ const memberSinceFormatter = new Intl.DateTimeFormat('en-US', {
 const memberSince = profile?.created_at
   ? memberSinceFormatter.format(new Date(profile.created_at))
   : '—';
+const visibleComments = comments.slice(0, 3);
 const publicStats = [
   { label: 'Comments', value: result.approvedCount },
   { label: 'Ratings', value: result.ratingsCount },
@@ -95,13 +95,8 @@ const communityRank = getCommunityRank(result.communityPoints);
       </section>
     ) : (
       <>
-        <CommunityHero
-          class="public-user-hero"
-          kicker="Reader profile"
-          title={displayName}
-          description={`@${profile.username}`}
-        >
-          <Fragment slot="leading">
+        <section class="community-card public-user-profile-card" aria-labelledby="public-profile-title">
+          <div class="public-user-profile-card__avatar">
             <span class="public-user-hero__avatar-frame">
               <UserAvatar
                 name={displayName}
@@ -119,102 +114,125 @@ const communityRank = getCommunityRank(result.communityPoints);
                 {result.communityPoints}
               </span>
             </span>
-          </Fragment>
-
-          <div class="public-user-badges" aria-label="Badges and role">
-            {badgeLabel && (
-              <span class="public-user-badge">
-                {badgeImageSrc && <img src={badgeImageSrc} alt="" loading="lazy" decoding="async" />}
-                <span>{badgeLabel}</span>
-              </span>
-            )}
-            {isStaff && <span>Retro-Gamers staff</span>}
           </div>
 
-          {bio ? (
-            <p class="public-user-bio">{bio}</p>
-          ) : (
-            <p class="public-user-bio public-user-bio--empty">{emptyBioText}</p>
-          )}
+          <div class="public-user-profile-card__identity">
+            <p class="public-user-kicker">Reader profile</p>
+            <h1 id="public-profile-title">{displayName}</h1>
+            <p class="public-user-profile-card__username">@{profile.username}</p>
 
-          <Fragment slot="aside">
-            <div class="public-user-stats" aria-label="Public stats">
-              <div class="public-user-stats__grid">
-                {publicStats.map((stat) => (
-                  <div class="public-user-stat">
-                    <span>{stat.label}</span>
-                    <strong>{stat.value}</strong>
-                  </div>
-                ))}
+            {(badgeLabel || isStaff) && (
+              <div class="public-user-badges" aria-label="Badges and role">
+                {badgeLabel && (
+                  <span class="public-user-badge">
+                    {badgeImageSrc && <img src={badgeImageSrc} alt="" loading="lazy" decoding="async" />}
+                    <span>{badgeLabel}</span>
+                  </span>
+                )}
+                {isStaff && <span class="public-user-role-badge">Retro-Gamers staff</span>}
               </div>
+            )}
+          </div>
 
-              <p class="public-user-member-since">
+          <div class="public-user-profile-card__meta" aria-label="Community details">
+            <div class="public-user-profile-card__facts">
+              <p>
                 <span>Member since</span>
                 <strong>{memberSince}</strong>
               </p>
-
-              <div class="public-user-rank-card" aria-label="Community level">
+              <p>
                 <span>Community level</span>
                 <strong>{communityRank.label}</strong>
-                <p>{communityRank.descriptionEn}</p>
-                <small>Level based on community participation.</small>
-              </div>
+              </p>
             </div>
 
             {!isOwnProfile && (
               <div class="public-user-actions">
                 {canSendPrivateMessage ? (
-                  <a href={privateMessageHref}>Send a message</a>
+                  <a href={privateMessageHref}>{privateMessageLabel}</a>
                 ) : (
                   <a href={loginPrivateMessageHref}>Log in to send a message</a>
                 )}
               </div>
             )}
-          </Fragment>
-        </CommunityHero>
+          </div>
+        </section>
 
-        <PublicUserInterests interests={result.interests} lang="en" />
+        <section class="public-user-stat-strip" aria-label="Public stats">
+          {publicStats.map((stat) => (
+            <div class="public-user-stat">
+              <span>{stat.label}</span>
+              <strong>{stat.value}</strong>
+            </div>
+          ))}
+        </section>
 
-        <section class="community-card public-user-panel" aria-labelledby="latest-comments-title">
-          <div class="public-user-section-heading">
-            <p class="public-user-kicker">Community</p>
-            <h2 id="latest-comments-title">Latest comments</h2>
+        <div class="public-user-layout">
+          <div class="public-user-main-column">
+            <section class="community-card public-user-panel public-user-about" aria-labelledby="public-user-about-title">
+              <div class="public-user-section-heading">
+                <p class="public-user-kicker">Profile</p>
+                <h2 id="public-user-about-title">About</h2>
+              </div>
+
+              {bio ? (
+                <p class="public-user-bio">{bio}</p>
+              ) : (
+                <p class="public-user-empty">{emptyBioText}</p>
+              )}
+            </section>
+
+            <section class="community-card public-user-panel public-user-memories" aria-labelledby="latest-comments-title">
+              <div class="public-user-section-heading">
+                <p class="public-user-kicker">Community</p>
+                <h2 id="latest-comments-title">Latest memories</h2>
+                <p>Comments and memories left beside the articles.</p>
+              </div>
+
+              {visibleComments.length > 0 ? (
+                <div class="public-user-comments">
+                  {visibleComments.map((comment) => {
+                    const commentHref = getCommentArticleHref(comment);
+
+                    return (
+                      <article class="public-user-comment">
+                        <p>
+                          <a class="public-user-comment__excerpt-link" href={commentHref}>
+                            {getCommentExcerpt(comment.body)}
+                          </a>
+                        </p>
+
+                        <footer>
+                          <time datetime={comment.created_at || undefined}>
+                            {comment.created_at
+                              ? dateFormatter.format(new Date(comment.created_at))
+                              : 'Date unavailable'}
+                          </time>
+
+                          <a class="public-user-comment__article-link" href={commentHref}>
+                            {comment.article_title || 'Open article'}
+                          </a>
+
+                          <a class="public-user-comment__discussion-link" href={commentHref}>
+                            Read
+                          </a>
+                        </footer>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p class="public-user-empty">
+                  {emptyCommentsText}
+                </p>
+              )}
+            </section>
           </div>
 
-          {comments.length > 0 ? (
-            <div class="public-user-comments">
-              {comments.map((comment) => {
-                const commentHref = getCommentArticleHref(comment);
-
-                return (
-                  <article class="public-user-comment">
-                    <p>
-                      <a class="public-user-comment__excerpt-link" href={commentHref}>
-                        {getCommentExcerpt(comment.body)}
-                      </a>
-                    </p>
-
-                    <footer>
-                      <time datetime={comment.created_at || undefined}>
-                        {comment.created_at
-                          ? dateFormatter.format(new Date(comment.created_at))
-                          : 'Date unavailable'}
-                      </time>
-
-                      <a href={commentHref}>
-                        {comment.article_title || 'Open article'}
-                      </a>
-                    </footer>
-                  </article>
-                );
-              })}
-            </div>
-          ) : (
-            <p class="public-user-empty">
-              {emptyCommentsText}
-            </p>
-          )}
-        </section>
+          <aside class="public-user-side-column" aria-label="Community data">
+            <PublicUserInterests interests={result.interests} lang="en" />
+          </aside>
+        </div>
       </>
     )}
   </CommunityLayout>
