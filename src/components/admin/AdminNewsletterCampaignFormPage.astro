@@ -33,7 +33,9 @@ const copy = isEnglish
       description: 'Prepare editorial newsletter campaigns safely.',
       sidebarTitle: 'Editorial tools',
       heroTitle: isNew ? 'New campaign' : 'Edit campaign',
+      detailsTitle: 'Campaign details',
       heroDescription: 'Build the email content, send a test and launch only with explicit confirmation.',
+      detailsDescription: 'Review the campaign content and status. Sent campaigns are read-only.',
       accessTitle: 'Editorial access',
       accessDescription: 'This page is reserved for Retro-Gamers.it staff.',
       login: 'Sign in',
@@ -43,7 +45,7 @@ const copy = isEnglish
       deleteDraft: 'Delete draft',
       campaignNotFound: 'Campaign not found.',
       unavailable: 'Campaign data is unavailable. Check that newsletter-campaigns-v2.sql has been applied.',
-      sentLocked: 'Sent campaigns can no longer be edited.',
+      sentLocked: 'This campaign has already been sent and cannot be edited.',
       cancelledLocked: 'This campaign can no longer be edited.',
       contentHelp: 'Before sending, add at least an intro, content text or one editorial block.',
       fields: {
@@ -124,7 +126,9 @@ const copy = isEnglish
       description: 'Prepara campagne newsletter editoriali in modo sicuro.',
       sidebarTitle: 'Strumenti redazione',
       heroTitle: isNew ? 'Nuova campagna' : 'Modifica campagna',
+      detailsTitle: 'Dettagli campagna',
       heroDescription: 'Costruisci il contenuto email, invia un test e lancia solo con conferma esplicita.',
+      detailsDescription: 'Controlla contenuto e stato della campagna. Le campagne inviate sono in sola lettura.',
       accessTitle: 'Accesso redazione',
       accessDescription: 'Questa pagina è riservata allo staff Retro-Gamers.it.',
       login: 'Accedi',
@@ -134,7 +138,7 @@ const copy = isEnglish
       deleteDraft: 'Elimina draft',
       campaignNotFound: 'Campagna non trovata.',
       unavailable: 'Dati campagne non disponibili. Verifica che newsletter-campaigns-v2.sql sia stato applicato.',
-      sentLocked: 'Le campagne inviate non possono più essere modificate.',
+      sentLocked: 'Questa campagna è già stata inviata e non può essere modificata.',
       cancelledLocked: 'Questa campagna non può più essere modificata.',
       contentHelp: 'Prima dell’invio aggiungi almeno intro, contenuto testuale o un blocco editoriale.',
       fields: {
@@ -296,9 +300,12 @@ const disabledReason = campaign?.status === 'sent'
   : campaign && !canEdit
     ? copy.cancelledLocked
     : '';
+const pageTitle = isNew || canEdit ? copy.title : copy.detailsTitle;
+const heroTitle = isNew || canEdit ? copy.heroTitle : copy.detailsTitle;
+const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDescription;
 ---
 
-<BaseLayout title={`${copy.title} | Retro-Gamers.it`} description={copy.description} lang={lang}>
+<BaseLayout title={`${pageTitle} | Retro-Gamers.it`} description={copy.description} lang={lang}>
   <CommunityLayout class="admin-newsletter-page" sidebar={isStaff}>
     <Fragment slot="sidebar">
       {isStaff && (
@@ -316,8 +323,8 @@ const disabledReason = campaign?.status === 'sent'
       <>
         <CommunityHero
           kicker="Retro-Gamers.it"
-          title={copy.heroTitle}
-          description={copy.heroDescription}
+          title={heroTitle}
+          description={heroDescription}
         >
           {!isNew && <span slot="aside" class="community-soft-badge">{statusLabel}</span>}
         </CommunityHero>
@@ -336,7 +343,7 @@ const disabledReason = campaign?.status === 'sent'
         ) : (
           <section class="community-card admin-newsletter-panel">
             {disabledReason && <p class="admin-newsletter-empty">{disabledReason}</p>}
-            <p class="admin-newsletter-helper">{copy.contentHelp}</p>
+            {canEdit && <p class="admin-newsletter-helper">{copy.contentHelp}</p>}
 
             <form
               class="admin-newsletter-campaign-form"
@@ -460,20 +467,24 @@ const disabledReason = campaign?.status === 'sent'
                 ))}
               </div>
 
-              <div class="admin-newsletter-actions">
-                <button type="submit" class="admin-newsletter-primary" disabled={!canEdit}>{copy.save}</button>
-                {canDelete && (
-                  <button type="button" class="admin-newsletter-danger" data-delete-campaign>
-                    {copy.deleteDraft}
-                  </button>
-                )}
-              </div>
-              <p class="admin-newsletter-form-message" data-campaign-message aria-live="polite"></p>
+              {canEdit && (
+                <>
+                  <div class="admin-newsletter-actions">
+                    <button type="submit" class="admin-newsletter-primary">{copy.save}</button>
+                    {canDelete && (
+                      <button type="button" class="admin-newsletter-danger" data-delete-campaign>
+                        {copy.deleteDraft}
+                      </button>
+                    )}
+                  </div>
+                  <p class="admin-newsletter-form-message" data-campaign-message aria-live="polite"></p>
+                </>
+              )}
             </form>
           </section>
         )}
 
-        {!isNew && campaign && (
+        {!isNew && campaign && canSend && (
           <section class="community-card admin-newsletter-panel">
             <div class="admin-newsletter-section-head">
               <div>
@@ -499,7 +510,7 @@ const disabledReason = campaign?.status === 'sent'
           </section>
         )}
 
-        {!isNew && campaign && (
+        {!isNew && campaign && canSend && (
           <section class="community-card admin-newsletter-panel">
             <div class="admin-newsletter-section-head">
               <div>

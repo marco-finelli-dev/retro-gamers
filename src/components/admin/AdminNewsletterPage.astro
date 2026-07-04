@@ -100,6 +100,7 @@ const copy = isEnglish
       actions: {
         edit: 'Edit',
         preview: 'Preview',
+        details: 'Details',
       },
       statusLabels: {
         active: 'Active',
@@ -180,6 +181,7 @@ const copy = isEnglish
       actions: {
         edit: 'Modifica',
         preview: 'Anteprima',
+        details: 'Dettagli',
       },
       statusLabels: {
         active: 'Attivo',
@@ -266,6 +268,9 @@ const getStatusLabel = (status?: string | null) => {
 
 const getLanguageLabel = (language?: string | null) =>
   language === 'en' ? 'EN' : language === 'it' ? 'IT' : '—';
+
+const isCampaignEditable = (status?: string | null) =>
+  status === 'draft' || status === 'test_sent';
 
 let activeCount = emptyCount();
 let pendingCount = emptyCount();
@@ -530,7 +535,11 @@ const statCards = [
                       <td data-label={copy.campaignColumns.sent}>{formatDate(campaign.sent_at)}</td>
                       <td data-label={copy.campaignColumns.actions}>
                         <div class="admin-newsletter-row-actions">
-                          <a href={`${adminBase}/newsletter/campaigns/${campaign.id}/`}>{copy.actions.edit}</a>
+                          {isCampaignEditable(campaign.status) ? (
+                            <a href={`${adminBase}/newsletter/campaigns/${campaign.id}/`}>{copy.actions.edit}</a>
+                          ) : (
+                            <a href={`${adminBase}/newsletter/campaigns/${campaign.id}/`}>{copy.actions.details}</a>
+                          )}
                           <a href={`${adminBase}/newsletter/campaigns/${campaign.id}/preview/`}>{copy.actions.preview}</a>
                         </div>
                       </td>
