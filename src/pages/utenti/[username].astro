@@ -26,13 +26,32 @@ if (isUnavailable) {
   Astro.response.status = 404;
 }
 
+const cleanMetaText = (value = '') => value.replace(/\s+/g, ' ').trim();
+
+const truncateMetaDescription = (value: string, maxLength = 155) => {
+  const cleaned = cleanMetaText(value);
+
+  if (cleaned.length <= maxLength) {
+    return cleaned;
+  }
+
+  const truncated = cleaned.slice(0, maxLength - 3).replace(/\s+\S*$/, '').replace(/[,:;.\s]+$/, '');
+  return `${truncated || cleaned.slice(0, maxLength - 3)}...`;
+};
+
 const displayName = profile?.display_name || profile?.username || 'Lettore';
 const pageTitle = isUnavailable
   ? 'Profilo non disponibile'
   : `${displayName} | Profilo lettore`;
+const bio = profile?.bio?.trim() || '';
 const description = isUnavailable
   ? 'Profilo lettore non disponibile su Retro-Gamers.it.'
-  : `Profilo pubblico di ${displayName} su Retro-Gamers.it.`;
+  : truncateMetaDescription(
+      bio
+        ? `Profilo pubblico di ${displayName} su Retro-Gamers.it: ${bio}`
+        : `Profilo pubblico di ${displayName} su Retro-Gamers.it: interessi retro, commenti e memorie nella community.`
+    );
+const canonical = profile ? getPublicUserUrl(profile.username, 'it') : Astro.url.pathname;
 const languageSwitch = profile
   ? getPublicUserUrl(profile.username, 'en')
   : '/en/';
@@ -40,7 +59,6 @@ const badge = profile?.user_badges;
 const badgeLabel = badge?.label_it || badge?.label_en || profile?.badge_key || '';
 const badgeImageSrc = getReaderBadgeImageSrcForBadge(badge || { key: profile?.badge_key || '' });
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
-const bio = profile?.bio?.trim() || '';
 const isOwnProfile = Boolean(isViewerLoggedIn && viewerSession.user?.id === profile?.user_id);
 const emptyCommentsText = 'Le prime memorie arriveranno quando questo lettore parteciperà alle discussioni.';
 const emptyBioText = 'Questo lettore non ha ancora scritto una bio.';
@@ -81,6 +99,7 @@ const communityRank = getCommunityRank(result.communityPoints);
 <BaseLayout
   title={pageTitle}
   description={description}
+  canonical={canonical}
   languageSwitch={languageSwitch}
   noindex={isUnavailable}
 >
