@@ -89,6 +89,21 @@ function getReadingTime(content = []) {
   return Math.max(1, Math.ceil(words / 220));
 }
 
+function getEditorialPageTitle(post, fallbackSlug = '') {
+  const seoTitle = String(post?.seoTitle || '').trim();
+  const title = String(post?.title || '').trim();
+  const slugValue = String(fallbackSlug || post?.slug || '').trim();
+  const looksLikeSlug =
+    seoTitle &&
+    (seoTitle === slugValue ||
+      (/^[a-z0-9]+(?:-[a-z0-9]+)+$/i.test(seoTitle) &&
+        !/[\s:,.!?'"’“”]/.test(seoTitle)));
+
+  return looksLikeSlug
+    ? title || seoTitle
+    : seoTitle || title;
+}
+
 /* ========================
    POST
 ======================== */
@@ -577,9 +592,7 @@ if (!viewerSession.error && viewerSession.user) {
 
 const siteUrl = 'https://www.retro-gamers.it';
 
-const pageTitle =
-  post.seoTitle ||
-  post.title;
+const pageTitle = getEditorialPageTitle(post, slug);
 
 const pageDescription =
   post.excerpt ||
