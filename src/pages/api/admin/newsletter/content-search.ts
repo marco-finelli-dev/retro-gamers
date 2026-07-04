@@ -5,7 +5,7 @@ import { getPostUrl } from '../../../../lib/routes.js';
 import { client } from '../../../../lib/sanity.js';
 import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supabase/auth';
 
-type NewsletterContentSearchType = 'review' | 'feature' | 'guide' | 'news';
+type NewsletterContentSearchType = 'review' | 'feature' | 'guide' | 'news' | 'interview';
 
 type SanityNewsletterContent = {
   _id: string;
@@ -24,7 +24,7 @@ type SanityNewsletterContent = {
   } | null;
 };
 
-const allowedTypes = new Set<NewsletterContentSearchType>(['review', 'feature', 'guide', 'news']);
+const allowedTypes = new Set<NewsletterContentSearchType>(['review', 'feature', 'guide', 'news', 'interview']);
 const siteUrl = String(import.meta.env.PUBLIC_SITE_URL || 'https://www.retro-gamers.it').replace(/\/$/, '');
 
 const json = (payload: unknown, status = 200) =>

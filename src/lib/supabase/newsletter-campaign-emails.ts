@@ -65,12 +65,38 @@ const stripEmailHtml = (value?: string | null) =>
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-const renderCampaignItem = (item: NewsletterCampaignItem) => {
+const getCampaignItemTypeLabel = (type: string, language: 'it' | 'en') => {
+  const labels = language === 'en'
+    ? {
+        article: 'Article',
+        review: 'Review',
+        feature: 'Feature',
+        guide: 'Guide',
+        news: 'News',
+        interview: 'Interview',
+        external_link: 'External link',
+        text: 'Text',
+      }
+    : {
+        article: 'Articolo',
+        review: 'Recensione',
+        feature: 'Speciale',
+        guide: 'Guida',
+        news: 'News',
+        interview: 'Intervista',
+        external_link: 'Link esterno',
+        text: 'Testo',
+      };
+
+  return labels[type as keyof typeof labels] || type.replace(/_/g, ' ');
+};
+
+const renderCampaignItem = (item: NewsletterCampaignItem, language: 'it' | 'en') => {
   const url = normalizeUrl(item.url);
   const imageUrl = normalizeUrl(item.image_url);
   const title = escapeEmailHtml(item.title);
   const description = item.description ? escapeEmailHtml(item.description) : '';
-  const type = escapeEmailHtml(item.type.replace(/_/g, ' '));
+  const type = escapeEmailHtml(getCampaignItemTypeLabel(item.type, language));
   const titleHtml = url
     ? `<a class="rg-newsletter-item-link" href="${escapeEmailHtml(url)}" style="color:#0b7f89; text-decoration:none;">${title}</a>`
     : title;
@@ -168,7 +194,7 @@ export function renderNewsletterCampaignEmail({
       </div>
     ` : ''}
     ${contentHtml || (contentTextFallback ? renderTextContent(contentTextFallback) : '')}
-    ${(campaign.items || []).map(renderCampaignItem).join('')}
+    ${(campaign.items || []).map((item) => renderCampaignItem(item, language)).join('')}
   `;
 
   return renderRetroGamersEmail({

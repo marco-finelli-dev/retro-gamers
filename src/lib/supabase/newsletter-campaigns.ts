@@ -9,7 +9,7 @@ import {
 } from './newsletter';
 
 export type NewsletterCampaignStatus = 'draft' | 'test_sent' | 'sending' | 'sent' | 'cancelled';
-export type NewsletterCampaignItemType = 'article' | 'review' | 'feature' | 'guide' | 'news' | 'external_link' | 'text';
+export type NewsletterCampaignItemType = 'article' | 'review' | 'feature' | 'guide' | 'news' | 'interview' | 'external_link' | 'text';
 
 export type NewsletterCampaignItem = {
   id: string;
@@ -105,6 +105,7 @@ const itemTypes = new Set<NewsletterCampaignItemType>([
   'feature',
   'guide',
   'news',
+  'interview',
   'external_link',
   'text',
 ]);

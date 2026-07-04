@@ -98,6 +98,7 @@ const copy = isEnglish
         feature: 'Feature',
         guide: 'Guide',
         news: 'News',
+        interview: 'Interview',
         external_link: 'External link',
         text: 'Text',
       },
@@ -208,6 +209,7 @@ const copy = isEnglish
         feature: 'Speciale',
         guide: 'Guida',
         news: 'News',
+        interview: 'Intervista',
         external_link: 'Link esterno',
         text: 'Testo',
       },
@@ -499,6 +501,7 @@ const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDe
                               <option value="feature" selected={item.type === 'feature'}>{copy.itemTypes.feature}</option>
                               <option value="guide" selected={item.type === 'guide'}>{copy.itemTypes.guide}</option>
                               <option value="news" selected={item.type === 'news'}>{copy.itemTypes.news}</option>
+                              <option value="interview" selected={item.type === 'interview'}>{copy.itemTypes.interview}</option>
                               <option value="external_link" selected={item.type === 'external_link'}>{copy.itemTypes.external_link}</option>
                               <option value="text" selected={item.type === 'text'}>{copy.itemTypes.text}</option>
                             </select>
@@ -576,6 +579,7 @@ const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDe
                               <option value="feature">{copy.itemTypes.feature}</option>
                               <option value="guide">{copy.itemTypes.guide}</option>
                               <option value="news">{copy.itemTypes.news}</option>
+                              <option value="interview">{copy.itemTypes.interview}</option>
                               <option value="external_link" selected>{copy.itemTypes.external_link}</option>
                               <option value="text">{copy.itemTypes.text}</option>
                             </select>
@@ -753,7 +757,7 @@ const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDe
     const campaignId = campaignForm.dataset.campaignId;
     const apiBase = campaignForm.dataset.apiBase;
     const adminBase = campaignForm.dataset.adminBase;
-    const internalContentTypes = new Set(['review', 'feature', 'guide', 'news']);
+    const internalContentTypes = new Set(['review', 'feature', 'guide', 'news', 'interview']);
     const languageSelect = campaignForm.querySelector('[name="language"]');
     const itemList = campaignForm.querySelector('.admin-newsletter-items');
     const itemTemplate = campaignForm.querySelector('[data-campaign-item-template]');

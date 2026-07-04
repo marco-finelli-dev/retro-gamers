@@ -150,7 +150,7 @@ begin
   ) then
     alter table public.newsletter_campaign_items
       add constraint newsletter_campaign_items_type_check
-      check (type in ('article', 'review', 'feature', 'guide', 'news', 'external_link', 'text'));
+      check (type in ('article', 'review', 'feature', 'guide', 'news', 'interview', 'external_link', 'text'));
   end if;
 end;
 $$;
