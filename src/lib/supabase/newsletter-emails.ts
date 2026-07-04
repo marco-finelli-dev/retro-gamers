@@ -38,12 +38,16 @@ export async function sendNewsletterConfirmationEmail(subscriber: NewsletterSubs
   const ignoreText = language === 'en'
     ? 'If you did not request this, you can ignore this email.'
     : 'Se non hai richiesto questa iscrizione, puoi ignorare questa email.';
+  const footerNote = language === 'en'
+    ? 'You are receiving this email because you requested to subscribe to the Retro-Gamers.it newsletter.'
+    : 'Ricevi questa email perché hai richiesto l’iscrizione alla newsletter di Retro-Gamers.it.';
 
   const html = renderRetroGamersEmail({
     title,
     intro,
     ctaLabel,
     ctaUrl: confirmationUrl,
+    footerNote,
     footerHtml: `
       <p style="margin:0;">
         ${escapeEmailHtml(ignoreText)}

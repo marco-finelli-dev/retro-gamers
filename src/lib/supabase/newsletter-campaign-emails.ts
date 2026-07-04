@@ -51,6 +51,20 @@ const renderTextContent = (value?: string | null) => {
     .join('');
 };
 
+const stripEmailHtml = (value?: string | null) =>
+  String(value || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
 const renderCampaignItem = (item: NewsletterCampaignItem) => {
   const url = normalizeUrl(item.url);
   const imageUrl = normalizeUrl(item.image_url);
@@ -81,6 +95,41 @@ const renderCampaignItem = (item: NewsletterCampaignItem) => {
   `;
 };
 
+const renderNewsletterCampaignText = ({
+  campaign,
+  unsubscribeUrl,
+  isTest,
+}: {
+  campaign: NewsletterCampaign;
+  unsubscribeUrl: string;
+  isTest: boolean;
+}) => {
+  const language = campaign.language === 'en' ? 'en' : 'it';
+  const parts = [
+    campaign.subject,
+    isTest
+      ? language === 'en'
+        ? 'This is a test email.'
+        : 'Questa è una email di test.'
+      : '',
+    campaign.intro || '',
+    campaign.content_text || stripEmailHtml(campaign.content_html),
+    ...(campaign.items || []).map((item) => [
+      item.title,
+      item.description || '',
+      item.url ? normalizeUrl(item.url) : '',
+    ].filter(Boolean).join('\n')),
+    campaign.cta_label && campaign.cta_url
+      ? `${campaign.cta_label}: ${normalizeUrl(campaign.cta_url)}`
+      : '',
+    language === 'en'
+      ? `You are receiving this newsletter because you subscribed to Retro-Gamers.it.\nYou can unsubscribe at any time using this link:\n${unsubscribeUrl}\n\nRetro-Gamers.it`
+      : `Ricevi questa newsletter perché ti sei iscritto a Retro-Gamers.it.\nPuoi disiscriverti in qualsiasi momento da questo link:\n${unsubscribeUrl}\n\nRetro-Gamers.it`,
+  ];
+
+  return parts.filter(Boolean).join('\n\n');
+};
+
 export function renderNewsletterCampaignEmail({
   campaign,
   subscriber,
@@ -99,9 +148,12 @@ export function renderNewsletterCampaignEmail({
       ? 'This is a test email.'
       : 'Questa è una email di test.'
     : '';
+  const footerIntro = language === 'en'
+    ? 'You are receiving this newsletter because you subscribed to Retro-Gamers.it.'
+    : 'Ricevi questa newsletter perché ti sei iscritto a Retro-Gamers.it.';
   const unsubscribeText = language === 'en'
-    ? 'You receive this newsletter because you subscribed to Retro-Gamers.it. You can unsubscribe at any time here:'
-    : 'Ricevi questa newsletter perché ti sei iscritto a Retro-Gamers.it. Puoi disiscriverti in qualsiasi momento qui:';
+    ? 'You can unsubscribe at any time using this link:'
+    : 'Puoi disiscriverti in qualsiasi momento da questo link:';
   const previewNotice = isTest
     ? language === 'en'
       ? 'The unsubscribe link is a preview placeholder in test emails.'
@@ -125,7 +177,11 @@ export function renderNewsletterCampaignEmail({
     bodyHtml,
     ctaLabel: campaign.cta_label || undefined,
     ctaUrl: campaign.cta_url ? normalizeUrl(campaign.cta_url) : undefined,
+    footerType: 'newsletter',
     footerHtml: `
+      <p style="margin:0 0 8px 0;">
+        ${escapeEmailHtml(footerIntro)}
+      </p>
       <p style="margin:0;">
         ${escapeEmailHtml(unsubscribeText)}<br>
         <a href="${escapeEmailHtml(unsubscribeUrl)}" style="color:#0b7f89; text-decoration:underline; word-break:break-word;">${escapeEmailHtml(unsubscribeUrl)}</a>
@@ -149,6 +205,10 @@ export async function sendNewsletterCampaignEmail({
   isTest?: boolean;
 }) {
   const html = renderNewsletterCampaignEmail({ campaign, subscriber, isTest });
+  const unsubscribeUrl = subscriber?.unsubscribe_token
+    ? buildNewsletterUnsubscribeUrl(subscriber.unsubscribe_token)
+    : '#unsubscribe-preview';
+  const text = renderNewsletterCampaignText({ campaign, unsubscribeUrl, isTest });
   const subject = isTest
     ? `[TEST] ${campaign.subject}`
     : campaign.subject;
@@ -167,6 +227,7 @@ export async function sendNewsletterCampaignEmail({
       to,
       subject,
       html,
+      text,
     });
     const resendError = (result as { error?: { message?: string } | null })?.error;
 

@@ -1,4 +1,5 @@
 export type EmailTemplateLanguage = 'it' | 'en';
+export type EmailTemplateFooterType = 'operational' | 'newsletter';
 
 type RenderRetroGamersEmailInput = {
   title: string;
@@ -6,6 +7,8 @@ type RenderRetroGamersEmailInput = {
   bodyHtml?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  footerType?: EmailTemplateFooterType;
+  footerNote?: string;
   footerHtml?: string;
   language?: EmailTemplateLanguage;
   previewText?: string;
@@ -30,6 +33,8 @@ export function renderRetroGamersEmail({
   bodyHtml = '',
   ctaLabel,
   ctaUrl,
+  footerType = 'operational',
+  footerNote,
   footerHtml = '',
   language = 'it',
   previewText,
@@ -39,7 +44,8 @@ export function renderRetroGamersEmail({
   const escapedCtaLabel = ctaLabel ? escapeEmailHtml(ctaLabel) : '';
   const escapedCtaUrl = ctaUrl ? escapeEmailHtml(ctaUrl) : '';
   const escapedPreview = previewText ? escapeEmailHtml(previewText) : escapedTitle;
-  const operationalNote = defaultOperationalNote(language);
+  const defaultFooterNote = footerType === 'operational' ? defaultOperationalNote(language) : '';
+  const footerNoteText = footerNote ?? defaultFooterNote;
 
   return `<!doctype html>
 <html lang="${language}">
@@ -111,9 +117,11 @@ export function renderRetroGamersEmail({
                   <strong style="color:#31424d;">Retro-Gamers.it</strong><br>
                   <a href="https://www.retro-gamers.it/" style="color:#0b7f89; text-decoration:underline;">https://www.retro-gamers.it/</a>
                 </p>
-                <p style="margin:0 0 8px 0;">
-                  ${escapeEmailHtml(operationalNote)}
-                </p>
+                ${footerNoteText ? `
+                  <p style="margin:0 0 8px 0;">
+                    ${escapeEmailHtml(footerNoteText)}
+                  </p>
+                ` : ''}
                 ${footerHtml ? `
                   <div style="margin-top:8px;">
                     ${footerHtml}
