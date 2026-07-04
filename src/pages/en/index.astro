@@ -115,7 +115,7 @@ const guides = takeUnused(
 
 const specials = takeUnused(
   englishPosts.filter((post) =>
-    ['feature', 'special', 'article', 'interview'].includes(post.type || '')
+    ['feature', 'special', 'article'].includes(post.type || '')
   ),
   5,
   { requireImage: true }
@@ -235,12 +235,6 @@ if (!viewerSession.error && viewerSession.user) {
     </section>
   )}
 
-  <section class="home-archive">
-    <div class="container">
-      <ArchiveStrip posts={withCommentCounts(archive)} lang="en" />
-    </div>
-  </section>
-
   {interviews.length > 0 && (
     <section class="home-interviews">
       <div class="container">
@@ -248,6 +242,12 @@ if (!viewerSession.error && viewerSession.user) {
       </div>
     </section>
   )}
+
+  <section class="home-archive">
+    <div class="container">
+      <ArchiveStrip posts={withCommentCounts(archive)} lang="en" />
+    </div>
+  </section>
 
   <section class="home-hardware">
     <div class="container">

@@ -118,12 +118,6 @@ if (!viewerSession.error && viewerSession.user) {
     </section>
   )}
 
-  <section class="home-archive">
-    <div class="container">
-      <ArchiveStrip posts={withCommentCounts(archive)} />
-    </div>
-  </section>
-
   {interviews.length > 0 && (
     <section class="home-interviews">
       <div class="container">
@@ -131,6 +125,12 @@ if (!viewerSession.error && viewerSession.user) {
       </div>
     </section>
   )}
+
+  <section class="home-archive">
+    <div class="container">
+      <ArchiveStrip posts={withCommentCounts(archive)} />
+    </div>
+  </section>
 
   <section class="home-hardware">
     <div class="container">
