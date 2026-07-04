@@ -21,7 +21,8 @@ const {
   relatedPosts = [],
   seriesPosts = [],
   comments = [],
-  languageSwitch = null
+  languageSwitch = null,
+  hideNewsletterPromo = false
 } = Astro.props;
 
 const isReview = post?.type === 'review';
@@ -108,7 +109,7 @@ const switchCta =
 
       <SupportButton lang={currentLang} variant="box" />
 
-      <NewsletterPromo lang={currentLang} variant="article-end" />
+      {!hideNewsletterPromo && <NewsletterPromo lang={currentLang} variant="article-end" />}
 
       <ArticleLightbox />
 
@@ -118,7 +119,11 @@ const switchCta =
       {isReview ? (
         <ReviewSidebar post={post} relatedPosts={relatedPosts} />
       ) : (
-        <ArticleSidebar post={post} relatedPosts={relatedPosts} />
+        <ArticleSidebar
+          post={post}
+          relatedPosts={relatedPosts}
+          hideNewsletterPromo={hideNewsletterPromo}
+        />
       )}
     </aside>
 

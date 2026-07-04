@@ -17,6 +17,8 @@ import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
 } from '../../lib/supabase/comment-counts';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import { getNewsletterSubscriptionForUser } from '../../lib/supabase/newsletter';
 
 const allPosts = await getAllPosts();
 
@@ -165,6 +167,18 @@ const homeCommentCountMap = await getApprovedCommentCountMap(
 
 const withCommentCounts = (posts) =>
   attachApprovedCommentCounts(posts, homeCommentCountMap, 'en');
+
+const viewerSession = await getUserSessionFromCookies(Astro.cookies);
+let hideNewsletterPromo = false;
+
+if (!viewerSession.error && viewerSession.user) {
+  const newsletter = await getNewsletterSubscriptionForUser(
+    viewerSession.user.id,
+    viewerSession.user.email
+  );
+
+  hideNewsletterPromo = newsletter.status === 'active' || newsletter.status === 'pending';
+}
 ---
 
 <BaseLayout
@@ -200,11 +214,13 @@ const withCommentCounts = (posts) =>
     </div>
   </section>
 
-  <section class="home-newsletter">
-    <div class="container">
-      <NewsletterPromo lang="en" variant="home" />
-    </div>
-  </section>
+  {!hideNewsletterPromo && (
+    <section class="home-newsletter">
+      <div class="container">
+        <NewsletterPromo lang="en" variant="home" />
+      </div>
+    </section>
+  )}
 
   <section class="home-archive">
     <div class="container">

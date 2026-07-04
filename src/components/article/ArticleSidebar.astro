@@ -6,7 +6,8 @@ import NewsletterPromo from '../newsletter/NewsletterPromo.astro';
 
 const {
   post,
-  relatedPosts = []
+  relatedPosts = [],
+  hideNewsletterPromo = false
 } = Astro.props;
 
 const lang = post?.language || 'it';
@@ -284,7 +285,7 @@ const getTypeLabel = (item) =>
       </div>
     </section>
 
-    <NewsletterPromo lang={lang} variant="sidebar" compact />
+    {!hideNewsletterPromo && <NewsletterPromo lang={lang} variant="sidebar" compact />}
 
   </div>
 

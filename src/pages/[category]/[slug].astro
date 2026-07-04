@@ -8,6 +8,8 @@ import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
 } from '../../lib/supabase/comment-counts';
+import { getUserSessionFromCookies } from '../../lib/supabase/auth';
+import { getNewsletterSubscriptionForUser } from '../../lib/supabase/newsletter';
 import {
   getCreatorRefsFromPortableText,
   getCreatorsReferencingArticle,
@@ -561,6 +563,18 @@ const relatedPostsWithCommentCounts = attachApprovedCommentCounts(
   'it'
 );
 
+const viewerSession = await getUserSessionFromCookies(Astro.cookies);
+let hideNewsletterPromo = false;
+
+if (!viewerSession.error && viewerSession.user) {
+  const newsletter = await getNewsletterSubscriptionForUser(
+    viewerSession.user.id,
+    viewerSession.user.email
+  );
+
+  hideNewsletterPromo = newsletter.status === 'active' || newsletter.status === 'pending';
+}
+
 const siteUrl = 'https://www.retro-gamers.it';
 
 const pageTitle =
@@ -628,6 +642,7 @@ const alternateLanguages = englishUrl
     relatedPosts={relatedPostsWithCommentCounts}
     seriesPosts={seriesPosts}
     comments={comments}
+    hideNewsletterPromo={hideNewsletterPromo}
     languageSwitch={
       englishUrl && englishCategory
         ? { url: `/en/${englishCategory}/${englishTranslation.slug}/` }

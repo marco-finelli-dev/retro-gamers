@@ -30,6 +30,21 @@
   align-self: start;
 }
 
+.article-page:not(.is-review) .article-page__sidebar {
+  position: sticky;
+  top: clamp(96px, 10vh, 118px);
+  align-self: start;
+}
+
+.article-page:not(.is-review) .article-sidebar {
+  height: auto;
+}
+
+.article-page:not(.is-review) .article-sidebar__sticky {
+  position: static;
+  top: auto;
+}
+
 
 /* ========================================
    SHARED PANELS
@@ -593,6 +608,12 @@
 @media (max-width: 1024px) {
   .article-page__sidebar {
     position: static;
+    align-self: auto;
+  }
+
+  .article-page:not(.is-review) .article-page__sidebar {
+    position: static;
+    top: auto;
     align-self: auto;
   }
 
