@@ -56,6 +56,7 @@ const copy = isEnglish
       campaignsTitle: 'Newsletter campaigns',
       campaignsDescription: 'Prepare drafts, preview emails, send tests and launch explicit editorial sends.',
       newCampaign: 'New campaign',
+      tableScrollHint: 'Scroll the table sideways to see all data.',
       dataUnavailable: 'Data unavailable',
       countUnavailable: 'Count unavailable',
       subscribersUnavailable: 'Newsletter data is unavailable. Check that the newsletter-v1.sql schema has been applied.',
@@ -137,6 +138,7 @@ const copy = isEnglish
       campaignsTitle: 'Campagne newsletter',
       campaignsDescription: 'Prepara bozze, anteprime, invii test e invii editoriali espliciti.',
       newCampaign: 'Nuova campagna',
+      tableScrollHint: 'Scorri la tabella lateralmente per vedere tutti i dati.',
       dataUnavailable: 'Dato non disponibile',
       countUnavailable: 'Conteggio non disponibile',
       subscribersUnavailable: 'Dati newsletter non disponibili. Verifica che lo schema SQL newsletter-v1.sql sia stato applicato.',
@@ -457,6 +459,7 @@ const statCards = [
             <p class="admin-newsletter-empty">{newsletterError}</p>
           ) : subscribers.length > 0 ? (
             <div class="admin-newsletter-table-wrap">
+              <p class="admin-newsletter-scroll-hint">{copy.tableScrollHint}</p>
               <table class="admin-newsletter-table">
                 <thead>
                   <tr>
@@ -499,7 +502,7 @@ const statCards = [
               <h2>{copy.campaignsTitle}</h2>
               <p>{copy.campaignsDescription}</p>
             </div>
-            <a class="admin-newsletter-primary" href={`${adminBase}/newsletter/campaigns/new/`}>
+            <a class="admin-newsletter-primary admin-newsletter-new-campaign" href={`${adminBase}/newsletter/campaigns/new/`}>
               {copy.newCampaign}
             </a>
           </div>
@@ -508,6 +511,7 @@ const statCards = [
             <p class="admin-newsletter-empty">{campaignsError}</p>
           ) : campaigns.length > 0 ? (
             <div class="admin-newsletter-table-wrap">
+              <p class="admin-newsletter-scroll-hint">{copy.tableScrollHint}</p>
               <table class="admin-newsletter-table admin-newsletter-campaign-table">
                 <thead>
                   <tr>

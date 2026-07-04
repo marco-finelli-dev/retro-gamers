@@ -201,10 +201,24 @@
 
 .admin-newsletter-table-wrap {
   overflow-x: auto;
+  max-width: 100%;
   border: 1px solid var(--rg-card-border);
   border-radius: 18px;
   background: var(--rg-card-bg);
   box-shadow: var(--rg-card-shadow);
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-newsletter-scroll-hint {
+  display: none;
+  margin: 0;
+  border-bottom: 1px solid var(--rg-card-border);
+  padding: 10px 12px;
+  color: var(--color-text-soft);
+  font-size: 0.82rem;
+  font-weight: 820;
+  line-height: 1.4;
 }
 
 .admin-newsletter-table {
@@ -563,6 +577,67 @@
   }
 }
 
+@media (max-width: 720px) {
+  .admin-newsletter-section-head {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .admin-newsletter-section-head > div {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-newsletter-section-head p,
+  .admin-newsletter-helper {
+    margin-top: 5px;
+  }
+
+  .admin-newsletter-new-campaign {
+    width: auto;
+    max-width: 100%;
+    align-self: flex-start;
+    min-width: min(100%, 178px);
+    min-height: 42px;
+    padding-inline: 18px;
+  }
+
+  .admin-newsletter-scroll-hint {
+    display: block;
+  }
+
+  .admin-newsletter-table {
+    min-width: 760px;
+  }
+
+  .admin-newsletter-campaign-table {
+    min-width: 720px;
+  }
+
+  .admin-newsletter-table th,
+  .admin-newsletter-table td {
+    padding: 11px 10px;
+  }
+
+  .admin-newsletter-table td {
+    font-size: 0.84rem;
+  }
+
+  .admin-newsletter-table td:first-child {
+    max-width: 220px;
+  }
+
+  .admin-newsletter-row-actions {
+    gap: 7px;
+  }
+
+  .admin-newsletter-row-actions a {
+    min-height: 36px;
+    padding-inline: 11px;
+    font-size: 0.82rem;
+  }
+}
+
 @media (max-width: 640px) {
   .admin-newsletter-page {
     width: min(100% - 24px, 1180px);
@@ -586,7 +661,6 @@
   .admin-newsletter-page-actions,
   .admin-newsletter-actions,
   .admin-newsletter-send-panel,
-  .admin-newsletter-primary,
   .admin-newsletter-secondary,
   .admin-newsletter-danger {
     width: 100%;
@@ -596,5 +670,18 @@
   .admin-newsletter-page-actions,
   .admin-newsletter-actions {
     align-items: stretch;
+  }
+
+  .admin-newsletter-panel {
+    gap: 14px;
+    border-radius: 18px;
+  }
+
+  .admin-newsletter-section-head .admin-newsletter-primary {
+    width: auto;
+  }
+
+  .admin-newsletter-table-wrap {
+    border-radius: 16px;
   }
 }
