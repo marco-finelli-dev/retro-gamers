@@ -72,6 +72,14 @@ const copy = isEnglish
       contentTextHelp: 'Plain-text fallback for the email. It is not shown in the HTML preview when HTML content is present.',
       itemsTitle: 'Editorial blocks',
       itemsDescription: 'Add recommended links or articles. Empty rows are ignored.',
+      addBlock: 'Add block',
+      removeBlock: 'Remove block',
+      block: 'Block',
+      emptyBlock: 'Empty',
+      filledBlock: 'Filled',
+      openBlock: 'Open block',
+      closeBlock: 'Close block',
+      maxBlocksReached: 'Maximum number of blocks reached.',
       contentSearch: 'Search content',
       contentSearchPlaceholder: 'Start typing the title...',
       contentSearchEmpty: 'No content found',
@@ -83,6 +91,15 @@ const copy = isEnglish
         description: 'Description',
         url: 'URL',
         imageUrl: 'Image URL',
+      },
+      itemTypes: {
+        article: 'Article',
+        review: 'Review',
+        feature: 'Feature',
+        guide: 'Guide',
+        news: 'News',
+        external_link: 'External link',
+        text: 'Text',
       },
       testTitle: 'Test send',
       testDescription: 'Send one test email without contacting subscribers.',
@@ -165,6 +182,14 @@ const copy = isEnglish
       contentTextHelp: 'Versione testuale/fallback dell’email. Non viene mostrata nella preview HTML se è presente contenuto HTML.',
       itemsTitle: 'Blocchi editoriali',
       itemsDescription: 'Aggiungi link o articoli consigliati. Le righe vuote vengono ignorate.',
+      addBlock: 'Aggiungi blocco',
+      removeBlock: 'Rimuovi blocco',
+      block: 'Blocco',
+      emptyBlock: 'Vuoto',
+      filledBlock: 'Compilato',
+      openBlock: 'Apri blocco',
+      closeBlock: 'Chiudi blocco',
+      maxBlocksReached: 'Numero massimo di blocchi raggiunto.',
       contentSearch: 'Cerca contenuto',
       contentSearchPlaceholder: 'Inizia a digitare il titolo...',
       contentSearchEmpty: 'Nessun contenuto trovato',
@@ -176,6 +201,15 @@ const copy = isEnglish
         description: 'Descrizione',
         url: 'URL',
         imageUrl: 'URL immagine',
+      },
+      itemTypes: {
+        article: 'Articolo',
+        review: 'Recensione',
+        feature: 'Speciale',
+        guide: 'Guida',
+        news: 'News',
+        external_link: 'Link esterno',
+        text: 'Testo',
       },
       testTitle: 'Invio test',
       testDescription: 'Invia una sola email di test senza contattare gli iscritti.',
@@ -279,20 +313,20 @@ const canEdit = isNew || isEditableNewsletterCampaign(campaign);
 const canDelete = campaign?.status === 'draft';
 const canSend = Boolean(campaign && isEditableNewsletterCampaign(campaign));
 const selectedLanguage = draftCampaign.language || 'it';
-const normalizedItems: NewsletterCampaignItem[] = [
-  ...(draftCampaign.items || []),
-  ...Array.from({ length: Math.max(0, 6 - (draftCampaign.items || []).length) }, (_, index) => ({
-    id: `empty-${index}`,
-    campaign_id: draftCampaign.id,
-    position: (draftCampaign.items || []).length + index,
-    type: 'external_link' as const,
-    title: '',
-    description: null,
-    url: null,
-    image_url: null,
-    created_at: '',
-  })),
-].slice(0, 12);
+const maxCampaignItems = 12;
+const createEmptyItem = (position = 0): NewsletterCampaignItem => ({
+  id: `empty-${position}`,
+  campaign_id: draftCampaign.id,
+  position,
+  type: 'external_link',
+  title: '',
+  description: null,
+  url: null,
+  image_url: null,
+  created_at: '',
+});
+const savedItems = (draftCampaign.items || []).slice(0, maxCampaignItems);
+const normalizedItems: NewsletterCampaignItem[] = savedItems.length > 0 ? savedItems : [createEmptyItem(0)];
 
 const statusLabel = campaign ? copy.status[campaign.status] || campaign.status : copy.status.draft;
 const disabledReason = campaign?.status === 'sent'
@@ -358,6 +392,13 @@ const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDe
               data-delete-error={copy.messages.deleteError}
               data-search-empty={copy.contentSearchEmpty}
               data-search-error={copy.contentSearchError}
+              data-max-items={maxCampaignItems}
+              data-block-label={copy.block}
+              data-empty-label={copy.emptyBlock}
+              data-filled-label={copy.filledBlock}
+              data-open-label={copy.openBlock}
+              data-close-label={copy.closeBlock}
+              data-type-labels={JSON.stringify(copy.itemTypes)}
             >
               <div class="admin-newsletter-form-grid">
                 <label>
@@ -418,54 +459,172 @@ const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDe
               </div>
 
               <div class="admin-newsletter-items">
-                {normalizedItems.map((item, index) => (
-                  <fieldset class="admin-newsletter-item" data-campaign-item disabled={!canEdit}>
-                    <legend>{`${copy.itemsTitle} ${index + 1}`}</legend>
-                    <label>
-                      <span>{copy.item.position}</span>
-                      <input name="position" type="number" value={item.position} min="0" />
-                    </label>
-                    <label>
-                      <span>{copy.item.type}</span>
-                      <select name="type">
-                        <option value="article" selected={item.type === 'article'}>Article</option>
-                        <option value="review" selected={item.type === 'review'}>Review</option>
-                        <option value="feature" selected={item.type === 'feature'}>Feature</option>
-                        <option value="guide" selected={item.type === 'guide'}>Guide</option>
-                        <option value="news" selected={item.type === 'news'}>News</option>
-                        <option value="external_link" selected={item.type === 'external_link'}>Link</option>
-                        <option value="text" selected={item.type === 'text'}>Text</option>
-                      </select>
-                    </label>
-                    <label class="admin-newsletter-wide admin-newsletter-content-search" data-content-search-wrap hidden>
-                      <span>{copy.contentSearch}</span>
-                      <input
-                        type="search"
-                        data-content-search
-                        placeholder={copy.contentSearchPlaceholder}
-                        autocomplete="off"
-                      />
-                      <div class="admin-newsletter-search-results" data-content-search-results hidden></div>
-                    </label>
-                    <label>
-                      <span>{copy.item.title}</span>
-                      <input name="title" type="text" value={item.title} />
-                    </label>
-                    <label>
-                      <span>{copy.item.url}</span>
-                      <input name="url" type="url" value={item.url || ''} />
-                    </label>
-                    <label class="admin-newsletter-wide">
-                      <span>{copy.item.description}</span>
-                      <textarea name="description" rows="2">{item.description || ''}</textarea>
-                    </label>
-                    <label class="admin-newsletter-wide">
-                      <span>{copy.item.imageUrl}</span>
-                      <input name="imageUrl" type="url" value={item.image_url || ''} />
-                    </label>
-                  </fieldset>
-                ))}
+                {normalizedItems.map((item, index) => {
+                  const itemTypeLabel = copy.itemTypes[item.type] || copy.itemTypes.external_link;
+                  const itemHasContent = Boolean(item.title || item.description || item.url || item.image_url);
+                  const itemTitle = item.title ? `${copy.block} ${index + 1}: ${item.title}` : `${copy.block} ${index + 1}`;
+                  const itemBodyId = `newsletter-campaign-item-${index}`;
+                  const itemOpen = canEdit && isNew && index === 0;
+
+                  return (
+                    <div class="admin-newsletter-item" data-campaign-item>
+                      <button
+                        type="button"
+                        class="admin-newsletter-item-toggle"
+                        data-campaign-item-toggle
+                        aria-expanded={itemOpen ? 'true' : 'false'}
+                        aria-controls={itemBodyId}
+                        aria-label={`${itemOpen ? copy.closeBlock : copy.openBlock} ${index + 1}`}
+                      >
+                        <span class="admin-newsletter-item-summary">
+                          <strong data-item-title>{itemTitle}</strong>
+                          <span data-item-type>{itemTypeLabel}</span>
+                        </span>
+                        <span class="admin-newsletter-item-state" data-item-state>
+                          {itemHasContent ? copy.filledBlock : copy.emptyBlock}
+                        </span>
+                      </button>
+
+                      <div class="admin-newsletter-item-body" id={itemBodyId} data-campaign-item-body hidden={!itemOpen}>
+                        <div class="admin-newsletter-item-fields">
+                          <label>
+                            <span>{copy.item.position}</span>
+                            <input name="position" type="number" value={item.position} min="0" disabled={!canEdit} />
+                          </label>
+                          <label>
+                            <span>{copy.item.type}</span>
+                            <select name="type" disabled={!canEdit}>
+                              <option value="article" selected={item.type === 'article'}>{copy.itemTypes.article}</option>
+                              <option value="review" selected={item.type === 'review'}>{copy.itemTypes.review}</option>
+                              <option value="feature" selected={item.type === 'feature'}>{copy.itemTypes.feature}</option>
+                              <option value="guide" selected={item.type === 'guide'}>{copy.itemTypes.guide}</option>
+                              <option value="news" selected={item.type === 'news'}>{copy.itemTypes.news}</option>
+                              <option value="external_link" selected={item.type === 'external_link'}>{copy.itemTypes.external_link}</option>
+                              <option value="text" selected={item.type === 'text'}>{copy.itemTypes.text}</option>
+                            </select>
+                          </label>
+                          <label class="admin-newsletter-wide admin-newsletter-content-search" data-content-search-wrap hidden>
+                            <span>{copy.contentSearch}</span>
+                            <input
+                              type="search"
+                              data-content-search
+                              placeholder={copy.contentSearchPlaceholder}
+                              autocomplete="off"
+                              disabled={!canEdit}
+                            />
+                            <div class="admin-newsletter-search-results" data-content-search-results hidden></div>
+                          </label>
+                          <label>
+                            <span>{copy.item.title}</span>
+                            <input name="title" type="text" value={item.title} disabled={!canEdit} />
+                          </label>
+                          <label>
+                            <span>{copy.item.url}</span>
+                            <input name="url" type="url" value={item.url || ''} disabled={!canEdit} />
+                          </label>
+                          <label class="admin-newsletter-wide">
+                            <span>{copy.item.description}</span>
+                            <textarea name="description" rows="2" disabled={!canEdit}>{item.description || ''}</textarea>
+                          </label>
+                          <label class="admin-newsletter-wide">
+                            <span>{copy.item.imageUrl}</span>
+                            <input name="imageUrl" type="url" value={item.image_url || ''} disabled={!canEdit} />
+                          </label>
+                        </div>
+
+                        {canEdit && (
+                          <div class="admin-newsletter-item-actions">
+                            <button type="button" class="admin-newsletter-secondary admin-newsletter-item-remove" data-remove-campaign-item>
+                              {copy.removeBlock}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
+              {canEdit && (
+                <>
+                  <template data-campaign-item-template>
+                    <div class="admin-newsletter-item" data-campaign-item>
+                      <button
+                        type="button"
+                        class="admin-newsletter-item-toggle"
+                        data-campaign-item-toggle
+                        aria-expanded="true"
+                      >
+                        <span class="admin-newsletter-item-summary">
+                          <strong data-item-title>{copy.block}</strong>
+                          <span data-item-type>{copy.itemTypes.external_link}</span>
+                        </span>
+                        <span class="admin-newsletter-item-state" data-item-state>{copy.emptyBlock}</span>
+                      </button>
+
+                      <div class="admin-newsletter-item-body" data-campaign-item-body>
+                        <div class="admin-newsletter-item-fields">
+                          <label>
+                            <span>{copy.item.position}</span>
+                            <input name="position" type="number" value="0" min="0" />
+                          </label>
+                          <label>
+                            <span>{copy.item.type}</span>
+                            <select name="type">
+                              <option value="article">{copy.itemTypes.article}</option>
+                              <option value="review">{copy.itemTypes.review}</option>
+                              <option value="feature">{copy.itemTypes.feature}</option>
+                              <option value="guide">{copy.itemTypes.guide}</option>
+                              <option value="news">{copy.itemTypes.news}</option>
+                              <option value="external_link" selected>{copy.itemTypes.external_link}</option>
+                              <option value="text">{copy.itemTypes.text}</option>
+                            </select>
+                          </label>
+                          <label class="admin-newsletter-wide admin-newsletter-content-search" data-content-search-wrap hidden>
+                            <span>{copy.contentSearch}</span>
+                            <input
+                              type="search"
+                              data-content-search
+                              placeholder={copy.contentSearchPlaceholder}
+                              autocomplete="off"
+                            />
+                            <div class="admin-newsletter-search-results" data-content-search-results hidden></div>
+                          </label>
+                          <label>
+                            <span>{copy.item.title}</span>
+                            <input name="title" type="text" value="" />
+                          </label>
+                          <label>
+                            <span>{copy.item.url}</span>
+                            <input name="url" type="url" value="" />
+                          </label>
+                          <label class="admin-newsletter-wide">
+                            <span>{copy.item.description}</span>
+                            <textarea name="description" rows="2"></textarea>
+                          </label>
+                          <label class="admin-newsletter-wide">
+                            <span>{copy.item.imageUrl}</span>
+                            <input name="imageUrl" type="url" value="" />
+                          </label>
+                        </div>
+
+                        <div class="admin-newsletter-item-actions">
+                          <button type="button" class="admin-newsletter-secondary admin-newsletter-item-remove" data-remove-campaign-item>
+                            {copy.removeBlock}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+
+                  <div class="admin-newsletter-item-toolbar">
+                    <button type="button" class="admin-newsletter-secondary" data-add-campaign-item>
+                      {copy.addBlock}
+                    </button>
+                    <p class="admin-newsletter-field-help" data-item-limit-message hidden>{copy.maxBlocksReached}</p>
+                  </div>
+                </>
+              )}
 
               {canEdit && (
                 <>
@@ -596,6 +755,118 @@ const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDe
     const adminBase = campaignForm.dataset.adminBase;
     const internalContentTypes = new Set(['review', 'feature', 'guide', 'news']);
     const languageSelect = campaignForm.querySelector('[name="language"]');
+    const itemList = campaignForm.querySelector('.admin-newsletter-items');
+    const itemTemplate = campaignForm.querySelector('[data-campaign-item-template]');
+    const addItemButton = campaignForm.querySelector('[data-add-campaign-item]');
+    const itemLimitMessage = campaignForm.querySelector('[data-item-limit-message]');
+    const maxItems = Number(campaignForm.dataset.maxItems || 12);
+    let typeLabels = {};
+
+    try {
+      typeLabels = JSON.parse(campaignForm.dataset.typeLabels || '{}');
+    } catch {
+      typeLabels = {};
+    }
+
+    const getItemRows = () => [...campaignForm.querySelectorAll('.admin-newsletter-items > [data-campaign-item]')];
+
+    const getTypeLabel = (row) => {
+      const typeSelect = row.querySelector('[name="type"]');
+      const value = typeSelect?.value || 'external_link';
+
+      return typeLabels[value] || typeSelect?.selectedOptions?.[0]?.textContent?.trim() || value;
+    };
+
+    const itemHasContent = (row) =>
+      ['title', 'description', 'url', 'imageUrl'].some((name) => getFieldValue(row, name).trim());
+
+    const setItemOpen = (row, open) => {
+      const toggle = row.querySelector('[data-campaign-item-toggle]');
+      const body = row.querySelector('[data-campaign-item-body]');
+      const index = Number(row.dataset.itemIndex || 0) + 1;
+
+      if (body) {
+        body.hidden = !open;
+      }
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggle.setAttribute(
+          'aria-label',
+          `${open ? campaignForm.dataset.closeLabel : campaignForm.dataset.openLabel} ${index}`
+        );
+      }
+    };
+
+    const closeOtherItems = (activeRow) => {
+      getItemRows().forEach((row) => {
+        if (row !== activeRow) {
+          setItemOpen(row, false);
+        }
+      });
+    };
+
+    const refreshItemSummary = (row) => {
+      const index = Number(row.dataset.itemIndex || 0) + 1;
+      const title = getFieldValue(row, 'title').trim();
+      const titleElement = row.querySelector('[data-item-title]');
+      const typeElement = row.querySelector('[data-item-type]');
+      const stateElement = row.querySelector('[data-item-state]');
+      const blockLabel = campaignForm.dataset.blockLabel || 'Block';
+
+      if (titleElement) {
+        titleElement.textContent = title ? `${blockLabel} ${index}: ${title}` : `${blockLabel} ${index}`;
+      }
+      if (typeElement) {
+        typeElement.textContent = getTypeLabel(row);
+      }
+      if (stateElement) {
+        stateElement.textContent = itemHasContent(row)
+          ? campaignForm.dataset.filledLabel || 'Filled'
+          : campaignForm.dataset.emptyLabel || 'Empty';
+      }
+    };
+
+    const refreshItemControls = ({ renumberPositions = false } = {}) => {
+      const rows = getItemRows();
+
+      rows.forEach((row, index) => {
+        row.dataset.itemIndex = String(index);
+        const body = row.querySelector('[data-campaign-item-body]');
+        const toggle = row.querySelector('[data-campaign-item-toggle]');
+        const bodyId = `newsletter-campaign-item-${index}`;
+
+        if (body) {
+          body.id = bodyId;
+        }
+        if (toggle) {
+          toggle.setAttribute('aria-controls', bodyId);
+        }
+        if (renumberPositions) {
+          const positionInput = row.querySelector('[name="position"]');
+          if (positionInput) {
+            positionInput.value = String(index);
+          }
+        }
+
+        refreshItemSummary(row);
+        setItemOpen(row, row.querySelector('[data-campaign-item-body]')?.hidden === false);
+      });
+
+      const atLimit = rows.length >= maxItems;
+      if (addItemButton) {
+        addItemButton.disabled = atLimit;
+      }
+      if (itemLimitMessage) {
+        itemLimitMessage.hidden = !atLimit;
+      }
+
+      rows.forEach((row) => {
+        const removeButton = row.querySelector('[data-remove-campaign-item]');
+        if (removeButton) {
+          removeButton.hidden = rows.length === 1 && !itemHasContent(row);
+        }
+      });
+    };
 
     const setSearchResults = (resultsElement, items, row) => {
       if (!resultsElement) return;
@@ -646,6 +917,8 @@ const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDe
           if (imageInput) imageInput.value = item.imageUrl || '';
           if (searchInput) searchInput.value = item.title || '';
 
+          typeSelect?.dispatchEvent(new Event('change', { bubbles: true }));
+          refreshItemSummary(row);
           resultsElement.hidden = true;
         });
 
@@ -682,7 +955,10 @@ const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDe
         }
       };
 
-      typeSelect?.addEventListener('change', updateVisibility);
+      typeSelect?.addEventListener('change', () => {
+        updateVisibility();
+        refreshItemSummary(row);
+      });
       searchInput?.addEventListener('input', () => {
         window.clearTimeout(debounceTimer);
         const query = searchInput.value.trim();
@@ -720,7 +996,67 @@ const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDe
       updateVisibility();
     };
 
-    campaignForm.querySelectorAll('[data-campaign-item]').forEach(initContentSearch);
+    const initItemRow = (row) => {
+      const toggle = row.querySelector('[data-campaign-item-toggle]');
+      const removeButton = row.querySelector('[data-remove-campaign-item]');
+
+      toggle?.addEventListener('click', () => {
+        const body = row.querySelector('[data-campaign-item-body]');
+        const willOpen = body?.hidden !== false;
+
+        if (willOpen) {
+          closeOtherItems(row);
+        }
+        setItemOpen(row, willOpen);
+        refreshItemSummary(row);
+      });
+
+      removeButton?.addEventListener('click', () => {
+        row.remove();
+
+        if (getItemRows().length === 0) {
+          addItemRow();
+          return;
+        }
+
+        refreshItemControls({ renumberPositions: true });
+      });
+
+      row.querySelectorAll('input, textarea, select').forEach((field) => {
+        field.addEventListener('input', () => refreshItemSummary(row));
+        field.addEventListener('change', () => refreshItemSummary(row));
+      });
+
+      initContentSearch(row);
+      refreshItemSummary(row);
+    };
+
+    const addItemRow = () => {
+      if (!itemList || !itemTemplate) return null;
+      const rows = getItemRows();
+
+      if (rows.length >= maxItems) {
+        refreshItemControls();
+        return null;
+      }
+
+      const fragment = itemTemplate.content.cloneNode(true);
+      const row = fragment.querySelector('[data-campaign-item]');
+
+      if (!row) return null;
+
+      itemList.append(row);
+      initItemRow(row);
+      closeOtherItems(row);
+      setItemOpen(row, true);
+      refreshItemControls({ renumberPositions: true });
+      row.querySelector('[name="type"]')?.focus();
+      return row;
+    };
+
+    campaignForm.querySelectorAll('.admin-newsletter-items > [data-campaign-item]').forEach(initItemRow);
+    refreshItemControls();
+    addItemButton?.addEventListener('click', addItemRow);
     languageSelect?.addEventListener('change', () => {
       campaignForm.querySelectorAll('[data-content-search-results]').forEach((resultsElement) => {
         resultsElement.hidden = true;
