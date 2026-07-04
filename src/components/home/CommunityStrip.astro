@@ -1,0 +1,116 @@
+---
+import UserAvatar from '../account/UserAvatar.astro';
+import type { CommunityHubComment } from '../../lib/supabase/community-hub';
+
+type Lang = 'it' | 'en';
+
+interface Props {
+  lang?: Lang;
+  latestComments?: CommunityHubComment[];
+  isLoggedIn?: boolean;
+}
+
+const {
+  lang = 'it',
+  latestComments = [],
+  isLoggedIn = false,
+} = Astro.props;
+
+const isEn = lang === 'en';
+const comments = latestComments.slice(0, 3);
+const sectionId = `home-community-strip-title-${lang}`;
+
+const copy = isEn
+  ? {
+      title: 'The community is taking shape',
+      text: 'Comments, memories, ratings and profiles are turning Retro-Gamers.it into more than an archive.',
+      primary: 'Visit the community',
+      secondary: isLoggedIn ? 'Go to your account' : 'Create your profile',
+      empty: 'The first memories will arrive with the readers.',
+      kicker: 'Community',
+      fromArticle: 'From',
+      readDiscussion: 'Read the discussion',
+      profileLabel: 'Profile',
+    }
+  : {
+      title: 'La community prende forma',
+      text: 'Commenti, memorie, voti e profili stanno trasformando Retro-Gamers.it in qualcosa di più di un archivio.',
+      primary: 'Vai alla community',
+      secondary: isLoggedIn ? 'Vai al tuo account' : 'Crea il tuo profilo',
+      empty: 'Le prime memorie arriveranno con i lettori.',
+      kicker: 'Community',
+      fromArticle: 'Da',
+      readDiscussion: 'Leggi la discussione',
+      profileLabel: 'Profilo',
+    };
+
+const communityHref = isEn ? '/en/community/' : '/community/';
+const profileHref = isEn
+  ? (isLoggedIn ? '/en/account/' : '/en/account/register/')
+  : (isLoggedIn ? '/account/' : '/account/register/');
+---
+
+<section class="home-community-strip" aria-labelledby={sectionId}>
+  <div class="home-community-strip__intro">
+    <p class="home-community-strip__kicker">{copy.kicker}</p>
+    <h2 id={sectionId}>{copy.title}</h2>
+    <p>{copy.text}</p>
+
+    <div class="home-community-strip__actions">
+      <a class="home-community-strip__cta home-community-strip__cta--primary" href={communityHref}>
+        {copy.primary}
+      </a>
+      <a class="home-community-strip__cta home-community-strip__cta--secondary" href={profileHref}>
+        {copy.secondary}
+      </a>
+    </div>
+  </div>
+
+  <div class="home-community-strip__comments" aria-label={copy.kicker}>
+    {comments.length > 0 ? (
+      comments.map((comment) => (
+        <article class="home-community-strip__comment">
+          <header>
+            <UserAvatar
+              name={comment.authorName}
+              src={comment.avatarUrl || ''}
+              size="sm"
+              label={`${copy.profileLabel}: ${comment.authorName}`}
+            />
+
+            <div class="home-community-strip__author">
+              <strong>
+                {comment.profileUrl ? (
+                  <a href={comment.profileUrl}>{comment.authorName}</a>
+                ) : (
+                  comment.authorName
+                )}
+              </strong>
+
+              {comment.badgeLabel && (
+                <span class="home-community-strip__badge">
+                  {comment.badgeImageUrl && (
+                    <img src={comment.badgeImageUrl} alt="" loading="lazy" decoding="async" />
+                  )}
+                  {comment.badgeLabel}
+                </span>
+              )}
+            </div>
+          </header>
+
+          <p>{comment.excerpt}</p>
+
+          <footer>
+            <span>{copy.fromArticle}</span>
+            <a href={comment.articleUrl}>{comment.articleTitle}</a>
+            <a class="home-community-strip__discussion" href={comment.articleUrl}>
+              {copy.readDiscussion}
+            </a>
+          </footer>
+        </article>
+      ))
+    ) : (
+      <p class="home-community-strip__empty">{copy.empty}</p>
+    )}
+  </div>
+</section>

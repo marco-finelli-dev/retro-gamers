@@ -8,6 +8,7 @@ import EditorialHub from '../../components/home/EditorialHub.astro';
 import ArchiveStrip from '../../components/home/ArchiveStrip.astro';
 import Interviews from '../../components/home/Interviews.astro';
 import Hardware from '../../components/home/Hardware.astro';
+import CommunityStrip from '../../components/home/CommunityStrip.astro';
 import NewsletterPromo from '../../components/newsletter/NewsletterPromo.astro';
 
 import '../../styles/pages/home.css';
@@ -19,6 +20,7 @@ import {
 } from '../../lib/supabase/comment-counts';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { getNewsletterSubscriptionForUser } from '../../lib/supabase/newsletter';
+import { getLatestCommunityComments } from '../../lib/supabase/community-hub';
 
 const allPosts = await getAllPosts();
 
@@ -168,6 +170,7 @@ const homeCommentCountMap = await getApprovedCommentCountMap(
 const withCommentCounts = (posts) =>
   attachApprovedCommentCounts(posts, homeCommentCountMap, 'en');
 
+const latestCommunityComments = await getLatestCommunityComments('en', 3);
 const viewerSession = await getUserSessionFromCookies(Astro.cookies);
 let hideNewsletterPromo = false;
 
@@ -210,6 +213,16 @@ if (!viewerSession.error && viewerSession.user) {
         memories={withCommentCounts(memories)}
         guides={withCommentCounts(guides)}
         lang="en"
+      />
+    </div>
+  </section>
+
+  <section class="home-community">
+    <div class="container">
+      <CommunityStrip
+        lang="en"
+        latestComments={latestCommunityComments}
+        isLoggedIn={!viewerSession.error && Boolean(viewerSession.user)}
       />
     </div>
   </section>
