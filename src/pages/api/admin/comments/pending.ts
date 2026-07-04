@@ -12,11 +12,23 @@ const json = (payload: unknown, status = 200) =>
     },
   });
 
-const allowedStatuses = new Set(['all', 'pending', 'pending_review', 'approved', 'rejected', 'spam', 'deleted']);
+const DEFAULT_PAGE_SIZE = 30;
+const MAX_PAGE_SIZE = 100;
+
+const allowedStatuses = new Set(['all', 'pending', 'pending_review', 'approved', 'rejected', 'deleted']);
 const allowedLanguages = new Set(['all', 'it', 'en']);
 
 const normalizeSearch = (value: string) =>
-  value.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 80);
+  value.trim().replace(/[(),]/g, ' ').replace(/\s+/g, ' ').slice(0, 80);
+
+const normalizePositiveInteger = (value: string | null, fallback: number) => {
+  const parsed = Number.parseInt(value || '', 10);
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const escapeIlikeValue = (value: string) =>
+  value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
 
 export const GET: APIRoute = async ({ cookies, url }) => {
   const session = await getUserSessionFromCookies(cookies);
@@ -29,12 +41,16 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     return json({ ok: false, error: 'Permessi insufficienti.' }, 403);
   }
 
-  const statusParam = url.searchParams.get('status') || 'all';
-  const languageParam = url.searchParams.get('language') || 'all';
-  const requestedStatus = allowedStatuses.has(statusParam) ? statusParam : 'all';
+  const statusParam = url.searchParams.get('status') || 'pending';
+  const languageParam = url.searchParams.get('lang') || url.searchParams.get('language') || 'all';
+  const requestedStatus = allowedStatuses.has(statusParam) ? statusParam : 'pending';
   const status = requestedStatus === 'pending_review' ? 'pending' : requestedStatus;
   const language = allowedLanguages.has(languageParam) ? languageParam : 'all';
   const search = normalizeSearch(url.searchParams.get('q') || '');
+  const page = normalizePositiveInteger(url.searchParams.get('page'), 1);
+  const pageSize = Math.min(normalizePositiveInteger(url.searchParams.get('pageSize'), DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
   const selectFields = (includeModeration: boolean) => `
       id,
@@ -63,12 +79,32 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       )
     `;
 
+  const matchingProfileIds = search
+    ? await (async () => {
+        const searchPattern = `%${escapeIlikeValue(search)}%`;
+        const { data: profiles, error: profilesError } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .or(`username.ilike.${searchPattern},display_name.ilike.${searchPattern}`)
+          .limit(500);
+
+        if (profilesError) {
+          logApiError('admin-comments-pending.profile-search', profilesError);
+          return [];
+        }
+
+        return (profiles ?? [])
+          .map((profile) => profile.id)
+          .filter((id): id is string => Boolean(id));
+      })()
+    : [];
+
   const buildQuery = (includeModeration: boolean) => {
     let query = supabaseAdmin
       .from('comments')
-      .select(selectFields(includeModeration))
+      .select(selectFields(includeModeration), { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(120);
+      .range(from, to);
 
     if (status === 'deleted') {
       query = query.not('deleted_at', 'is', null);
@@ -80,10 +116,25 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       query = query.eq('article_language', language);
     }
 
+    if (search) {
+      const searchPattern = `%${escapeIlikeValue(search)}%`;
+      const searchFilters = [
+        `body.ilike.${searchPattern}`,
+        `article_title.ilike.${searchPattern}`,
+        `article_slug.ilike.${searchPattern}`,
+      ];
+
+      if (matchingProfileIds.length > 0) {
+        searchFilters.push(`profile_id.in.(${matchingProfileIds.join(',')})`);
+      }
+
+      query = query.or(searchFilters.join(','));
+    }
+
     return query;
   };
 
-  let { data, error } = await buildQuery(true);
+  let { data, error, count } = await buildQuery(true);
 
   if (isMissingCommentModerationColumnError(error)) {
     const fallbackResult = await buildQuery(false);
@@ -93,6 +144,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       moderated_at: null,
     })) ?? null;
     error = fallbackResult.error;
+    count = fallbackResult.count;
   }
 
   if (error) {
@@ -101,24 +153,6 @@ export const GET: APIRoute = async ({ cookies, url }) => {
   }
 
   let comments = data ?? [];
-
-  if (search) {
-    comments = comments.filter((comment) => {
-      const profile = comment.profiles || {};
-      const haystack = [
-        comment.body,
-        comment.article_title,
-        comment.article_slug,
-        profile.display_name,
-        profile.username,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-
-      return haystack.includes(search);
-    });
-  }
 
   const parentIds = [
     ...new Set(
@@ -160,7 +194,18 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     filters: {
       status: requestedStatus,
       language,
+      lang: language,
       q: search,
+      page,
+      pageSize,
+    },
+    pagination: {
+      page,
+      pageSize,
+      total: count ?? comments.length,
+      totalPages: Math.max(1, Math.ceil((count ?? comments.length) / pageSize)),
+      hasPrev: page > 1,
+      hasNext: page < Math.max(1, Math.ceil((count ?? comments.length) / pageSize)),
     },
     comments,
   });

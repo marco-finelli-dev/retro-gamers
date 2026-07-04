@@ -29,6 +29,7 @@ const copy = isEnglish
       loading: 'Loading...',
       status: 'Status',
       language: 'Language',
+      pageSize: 'Per page',
       search: 'Search',
       searchPlaceholder: 'Author, text, article...',
       filter: 'Filter',
@@ -105,6 +106,10 @@ const copy = isEnglish
         accessUnavailable: 'Access unavailable',
         commentsFoundOne: '1 comment found',
         commentsFoundMany: 'comments found',
+        commentsFoundLabel: 'Comments found:',
+        pageSummary: 'Page {page} of {totalPages}',
+        previous: 'Previous',
+        next: 'Next',
         connectionError: 'Connection error.',
         actionFailed: 'Action failed.',
         commentUpdated: 'Comment updated.',
@@ -123,6 +128,7 @@ const copy = isEnglish
       loading: 'Caricamento...',
       status: 'Stato',
       language: 'Lingua',
+      pageSize: 'Per pagina',
       search: 'Ricerca',
       searchPlaceholder: 'Autore, testo, articolo...',
       filter: 'Filtra',
@@ -199,6 +205,10 @@ const copy = isEnglish
         accessUnavailable: 'Accesso non disponibile',
         commentsFoundOne: '1 commento trovato',
         commentsFoundMany: 'commenti trovati',
+        commentsFoundLabel: 'Commenti trovati:',
+        pageSummary: 'Pagina {page} di {totalPages}',
+        previous: 'Precedente',
+        next: 'Successiva',
         connectionError: 'Errore di connessione.',
         actionFailed: 'Azione non riuscita.',
         commentUpdated: 'Commento aggiornato.',
@@ -267,10 +277,19 @@ const staffLinks = [
 
             <label>
               <span>{copy.language}</span>
-              <select name="language">
+              <select name="lang">
                 <option value="all" selected>{copy.filters.allLanguages}</option>
                 <option value="it">{copy.filters.italian}</option>
                 <option value="en">{copy.filters.english}</option>
+              </select>
+            </label>
+
+            <label>
+              <span>{copy.pageSize}</span>
+              <select name="pageSize">
+                <option value="30" selected>30</option>
+                <option value="60">60</option>
+                <option value="100">100</option>
               </select>
             </label>
 
@@ -299,6 +318,8 @@ const staffLinks = [
           <div class="admin-comments-list" data-admin-comments-list>
             <p class="admin-comments-empty">{copy.loadingComments}</p>
           </div>
+
+          <nav class="admin-comments-pagination" data-admin-comments-pagination hidden></nav>
         </section>
       </>
     ) : (
@@ -323,10 +344,13 @@ const staffLinks = [
     const countNode = document.querySelector('[data-admin-comments-count]');
     const messageNode = document.querySelector('[data-admin-comments-message]');
     const filtersForm = document.querySelector('[data-admin-comments-filters]');
+    const paginationNode = document.querySelector('[data-admin-comments-pagination]');
     const resetButton = document.querySelector('[data-admin-comments-reset]');
     const panelNode = document.querySelector('[data-admin-comments-panel]');
     const canHardDelete = panelNode?.dataset.canHardDelete === 'true';
     const labels = adminCommentsCopy;
+    const allowedPageSizes = new Set(['30', '60', '100']);
+    let currentPage = 1;
 
     const escapeHtml = (value) =>
       String(value || '')
@@ -376,21 +400,36 @@ const staffLinks = [
     const emptyMessages = labels.emptyMessages;
     const roleLabels = labels.roleLabels;
 
-    const getFilterParams = () => {
+    const normalizePage = (value) => {
+      const parsed = Number.parseInt(String(value || ''), 10);
+
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+    };
+
+    const getFilterParams = (page = currentPage) => {
       const params = new URLSearchParams();
 
       if (!filtersForm) return params;
 
       const formData = new FormData(filtersForm);
-      const status = String(formData.get('status') || 'all');
-      const language = String(formData.get('language') || 'all');
+      const status = String(formData.get('status') || 'pending');
+      const language = String(formData.get('lang') || formData.get('language') || 'all');
+      const pageSize = String(formData.get('pageSize') || '30');
       const q = String(formData.get('q') || '').trim();
 
       params.set('status', status);
-      params.set('language', language);
+      params.set('lang', language);
+      params.set('page', String(normalizePage(page)));
+      params.set('pageSize', allowedPageSizes.has(pageSize) ? pageSize : '30');
       if (q) params.set('q', q);
 
       return params;
+    };
+
+    const updateBrowserUrl = (params) => {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.search = params.toString();
+      window.history.replaceState({}, '', nextUrl);
     };
 
     const initializeFiltersFromUrl = () => {
@@ -399,8 +438,11 @@ const staffLinks = [
       const params = new URLSearchParams(window.location.search);
       const allowedStatuses = new Set(['all', 'pending', 'approved', 'rejected', 'deleted']);
       const allowedLanguages = new Set(['all', 'it', 'en']);
+      const pageSizeOptions = new Set(['30', '60', '100']);
       const status = params.get('status');
-      const language = params.get('language');
+      const language = params.get('lang') || params.get('language');
+      const page = params.get('page');
+      const pageSize = params.get('pageSize');
       const q = params.get('q');
 
       if (status && allowedStatuses.has(status)) {
@@ -409,14 +451,21 @@ const staffLinks = [
       }
 
       if (language && allowedLanguages.has(language)) {
-        const languageField = filtersForm.querySelector('[name="language"]');
+        const languageField = filtersForm.querySelector('[name="lang"]');
         if (languageField instanceof HTMLSelectElement) languageField.value = language;
+      }
+
+      if (pageSize && pageSizeOptions.has(pageSize)) {
+        const pageSizeField = filtersForm.querySelector('[name="pageSize"]');
+        if (pageSizeField instanceof HTMLSelectElement) pageSizeField.value = pageSize;
       }
 
       if (q) {
         const searchField = filtersForm.querySelector('[name="q"]');
         if (searchField instanceof HTMLInputElement) searchField.value = q;
       }
+
+      currentPage = normalizePage(page || '1');
     };
 
     const renderComment = (comment) => {
@@ -557,27 +606,77 @@ const staffLinks = [
       `;
     };
 
-    const loadComments = async () => {
+    const renderPagination = (pagination) => {
+      if (!paginationNode) return;
+
+      if (!pagination) {
+        paginationNode.hidden = true;
+        paginationNode.innerHTML = '';
+        return;
+      }
+
+      const total = Number(pagination.total || 0);
+      const totalPages = Math.max(1, Number(pagination.totalPages || 1));
+      const page = Math.min(Math.max(1, Number(pagination.page || 1)), totalPages);
+      const hasPrev = Boolean(pagination.hasPrev);
+      const hasNext = Boolean(pagination.hasNext);
+      const pageSummary = String(labels.pageSummary || '')
+        .replace('{page}', String(page))
+        .replace('{totalPages}', String(totalPages));
+
+      paginationNode.hidden = false;
+      paginationNode.innerHTML = `
+        <div class="admin-comments-pagination__summary">
+          <strong>${escapeHtml(labels.commentsFoundLabel)} ${escapeHtml(String(total))}</strong>
+          <span>${escapeHtml(pageSummary)}</span>
+        </div>
+        <div class="admin-comments-pagination__actions">
+          <button type="button" data-pagination-page="${page - 1}" ${hasPrev ? '' : 'disabled'}>
+            ${escapeHtml(labels.previous)}
+          </button>
+          <button type="button" data-pagination-page="${page + 1}" ${hasNext ? '' : 'disabled'}>
+            ${escapeHtml(labels.next)}
+          </button>
+        </div>
+      `;
+    };
+
+    const loadComments = async ({ page = currentPage, updateHistory = true } = {}) => {
       if (!listNode) return;
 
       try {
-        const params = getFilterParams();
+        const params = getFilterParams(page);
         const response = await fetch(`/api/admin/comments/pending?${params.toString()}`);
         const result = await response.json();
 
         if (!result.ok) {
           listNode.innerHTML = `<p class="admin-comments-empty">${escapeHtml(result.error || labels.loadError)}</p>`;
           if (countNode) countNode.textContent = labels.accessUnavailable;
+          renderPagination(null);
           return;
         }
 
         const comments = result.comments || [];
+        const pagination = result.pagination || {
+          page,
+          pageSize: Number(params.get('pageSize') || 30),
+          total: comments.length,
+          totalPages: 1,
+          hasPrev: false,
+          hasNext: false,
+        };
+        currentPage = Number(pagination.page || page) || 1;
+        params.set('page', String(currentPage));
+        if (updateHistory) updateBrowserUrl(params);
 
         if (countNode) {
-          countNode.textContent = comments.length === 1
+          const total = Number(pagination.total || comments.length);
+          countNode.textContent = total === 1
             ? labels.commentsFoundOne
-            : `${comments.length} ${labels.commentsFoundMany}`;
+            : `${total} ${labels.commentsFoundMany}`;
         }
+
+        renderPagination(pagination);
 
         if (comments.length === 0) {
           const status = String(params.get('status') || 'all');
@@ -588,19 +687,31 @@ const staffLinks = [
         listNode.innerHTML = comments.map(renderComment).join('');
       } catch {
         listNode.innerHTML = `<p class="admin-comments-empty">${escapeHtml(labels.connectionError)}</p>`;
+        renderPagination(null);
       }
     };
 
     filtersForm?.addEventListener('submit', (event) => {
       event.preventDefault();
       showMessage('');
-      loadComments();
+      currentPage = 1;
+      loadComments({ page: 1 });
     });
 
     resetButton?.addEventListener('click', () => {
       filtersForm?.reset();
       showMessage('');
-      loadComments();
+      currentPage = 1;
+      loadComments({ page: 1 });
+    });
+
+    paginationNode?.addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-pagination-page]');
+      if (!button || button.disabled) return;
+
+      const nextPage = normalizePage(button.dataset.paginationPage);
+      showMessage('');
+      loadComments({ page: nextPage });
     });
 
     listNode?.addEventListener('click', async (event) => {
