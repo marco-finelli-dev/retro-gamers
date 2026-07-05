@@ -52,6 +52,20 @@ const switchCta =
   currentLang === 'en'
     ? 'Leggi in italiano'
     : 'Read in English';
+
+const commentsDiscovery = currentLang === 'en'
+  ? {
+      title: 'Do you have a memory tied to this article?',
+      text:
+        'Share it in the comments: on the site it stays with the piece instead of disappearing into the social feed.',
+      cta: 'Go to comments'
+    }
+  : {
+      title: 'Hai un ricordo legato a questo articolo?',
+      text:
+        'Raccontalo nei commenti: sul sito resta accanto al pezzo e non si perde nel flusso dei social.',
+      cta: 'Vai ai commenti'
+    };
 ---
 
 <ArticleReadingProgress />
@@ -128,6 +142,17 @@ const switchCta =
     </aside>
 
   </div>
+
+  <aside class="article-comments-discovery" aria-labelledby="article-comments-discovery-title">
+    <div>
+      <span>{currentLang === 'en' ? 'Reader memories' : 'Memorie dei lettori'}</span>
+      <h2 id="article-comments-discovery-title">{commentsDiscovery.title}</h2>
+      <p>{commentsDiscovery.text}</p>
+    </div>
+
+    <a href="#comments">{commentsDiscovery.cta}</a>
+  </aside>
+
   <ArticleComments post={post} comments={comments} />
 
 </main>

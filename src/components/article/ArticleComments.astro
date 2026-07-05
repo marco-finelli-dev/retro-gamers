@@ -17,18 +17,18 @@ const loginHref = `${accountLoginHref}?returnTo=${encodeURIComponent(`${articleU
 
 const labels = {
   it: {
-    title: 'Memorie e commenti',
-    countSingular: 'commento',
-    countPlural: 'commenti',
+    title: 'Memorie dei lettori',
+    countSingular: 'memoria',
+    countPlural: 'memorie',
     intro:
-      'Condividi un ricordo, una correzione o un dettaglio su questo articolo. I commenti sono moderati per mantenere la discussione civile e leggibile.',
+      'Commenti, ricordi e punti di vista restano qui, accanto all’articolo.',
     comment: 'Commento',
     submit: 'Invia commento',
     moderation:
       'I commenti vengono moderati prima della pubblicazione. Usa un tono civile e resta in tema con l’articolo.',
     rulesLink: 'Regolamento commenti',
     empty:
-      'Nessun commento per ora. Puoi essere il primo a lasciare una memoria.',
+      'Sii il primo a lasciare un ricordo su questo articolo.',
     loading: 'Caricamento commenti...',
     leaveComment: 'Lascia un commento',
     reply: 'Rispondi',
@@ -64,18 +64,18 @@ const labels = {
     sortLiked: 'Più apprezzati'
   },
   en: {
-    title: 'Memories and comments',
-    countSingular: 'comment',
-    countPlural: 'comments',
+    title: 'Reader memories',
+    countSingular: 'memory',
+    countPlural: 'memories',
     intro:
-      'Share a memory, a correction or a detail about this article. Comments are moderated to keep the discussion civil and readable.',
+      'Comments, memories and points of view stay here, beside the article.',
     comment: 'Comment',
     submit: 'Submit comment',
     moderation:
       'Comments are reviewed before publication. Please keep the discussion respectful and on topic.',
     rulesLink: 'Comment rules',
     empty:
-      'No comments yet. You can be the first to leave a memory.',
+      'Be the first to leave a memory on this article.',
     loading: 'Loading comments...',
     leaveComment: 'Leave a comment',
     reply: 'Reply',
@@ -114,123 +114,6 @@ const labels = {
 
 const t = labels[lang] || labels.it;
 const commentRulesHref = lang === 'en' ? '/en/comment-rules/' : '/regolamento-commenti/';
-const readerMemoryLabels = {
-  it: {
-    review: {
-      title: 'Memorie dei lettori',
-      text:
-        'Hai giocato anche tu a questo titolo? Racconta il tuo ricordo, una versione che hai amato, un difetto che non hai mai sopportato o un dettaglio che secondo te merita di essere riscoperto. I commenti su Retro-Gamers.it restano accanto all’articolo e non si perdono nel flusso dei social.'
-    },
-    feature: {
-      title: 'Memorie dei lettori',
-      text:
-        'Hai vissuto anche tu questa storia, questa macchina o questo periodo? Lascia il tuo ricordo nei commenti. L’idea è raccogliere punti di vista, esperienze e memorie personali accanto agli speciali di Retro-Gamers.it.'
-    },
-    special: {
-      title: 'Memorie dei lettori',
-      text:
-        'Hai vissuto anche tu questa storia, questa macchina o questo periodo? Lascia il tuo ricordo nei commenti. L’idea è raccogliere punti di vista, esperienze e memorie personali accanto agli speciali di Retro-Gamers.it.'
-    },
-    guide: {
-      title: 'Memorie dei lettori',
-      text:
-        'Hai provato questa configurazione o hai un consiglio utile da aggiungere? Raccontalo nei commenti: può aiutare altri lettori e restare come nota pratica accanto alla guida.'
-    },
-    fallback: {
-      title: 'Memorie dei lettori',
-      text:
-        'Vuoi aggiungere un ricordo, una correzione o un punto di vista? Lascia un commento: su Retro-Gamers.it le discussioni restano accanto agli articoli, non spariscono nel flusso dei social.'
-    }
-  },
-  en: {
-    review: {
-      title: 'Reader memories',
-      text:
-        'Did you play this game too? Share a memory, a version you loved, something you never liked, or a detail you think deserves to be rediscovered. Comments on Retro-Gamers.it stay next to the article instead of disappearing into the social media flow.'
-    },
-    feature: {
-      title: 'Reader memories',
-      text:
-        'Did you experience this story, machine or period too? Leave your memory in the comments. The idea is to collect personal experiences and points of view alongside Retro-Gamers.it features.'
-    },
-    special: {
-      title: 'Reader memories',
-      text:
-        'Did you experience this story, machine or period too? Leave your memory in the comments. The idea is to collect personal experiences and points of view alongside Retro-Gamers.it features.'
-    },
-    guide: {
-      title: 'Reader memories',
-      text:
-        'Have you tried this setup or do you have a useful tip to add? Share it in the comments: it may help other readers and stay as a practical note next to the guide.'
-    },
-    fallback: {
-      title: 'Reader memories',
-      text:
-        'Do you want to add a memory, a correction or a point of view? Leave a comment: on Retro-Gamers.it discussions stay next to the articles instead of disappearing into the social media flow.'
-    }
-  }
-};
-const commentCtaLabels = {
-  it: {
-    review: {
-      title: 'Hai un ricordo da aggiungere?',
-      text:
-        'Racconta quando hai scoperto questo gioco, su quale macchina lo hai vissuto o cosa ne pensi oggi. I commenti migliori restano accanto all’articolo, non si perdono nel flusso dei social.'
-    },
-    feature: {
-      title: 'Hai un ricordo o un punto di vista da aggiungere?',
-      text:
-        'Racconta la tua esperienza, il tuo ricordo legato a questo periodo o cosa ne pensi del tema dell’articolo. I commenti migliori restano accanto allo speciale, non si perdono nel flusso dei social.'
-    },
-    interview: {
-      title: 'Vuoi aggiungere una riflessione?',
-      text:
-        'Condividi cosa ti ha colpito dell’intervista, del progetto raccontato o del tema trattato. I commenti migliori restano accanto all’articolo, non si perdono nel flusso dei social.'
-    },
-    guide: {
-      title: 'Hai un consiglio da aggiungere?',
-      text:
-        'Condividi la tua esperienza, una soluzione utile o un consiglio che può aiutare altri lettori. I commenti migliori restano accanto alla guida, non si perdono nel flusso dei social.'
-    },
-    fallback: {
-      title: 'Hai qualcosa da aggiungere?',
-      text:
-        'Condividi il tuo ricordo, la tua esperienza o il tuo punto di vista. I commenti migliori restano accanto all’articolo, non si perdono nel flusso dei social.'
-    }
-  },
-  en: {
-    review: {
-      title: 'Do you have a memory to add?',
-      text:
-        'Tell us when you discovered this game, which machine you played it on or what you think about it today. The best comments stay next to the article, instead of getting lost in the social media feed.'
-    },
-    feature: {
-      title: 'Do you have a memory or point of view to add?',
-      text:
-        'Share your experience, a memory connected to that period or what you think about the topic of the article. The best comments stay next to the feature, instead of getting lost in the social media feed.'
-    },
-    interview: {
-      title: 'Do you want to add a thought?',
-      text:
-        'Share what struck you about the interview, the project or the topic discussed. The best comments stay next to the article, instead of getting lost in the social media feed.'
-    },
-    guide: {
-      title: 'Do you have a tip to add?',
-      text:
-        'Share your experience, a useful solution or a tip that could help other readers. The best comments stay next to the guide, instead of getting lost in the social media feed.'
-    },
-    fallback: {
-      title: 'Do you have something to add?',
-      text:
-        'Share your memory, experience or point of view. The best comments stay next to the article, instead of getting lost in the social media feed.'
-    }
-  }
-};
-const articleType = String(post?.type || '').trim();
-const ctaLabels = commentCtaLabels[lang] || commentCtaLabels.it;
-const commentCta = ctaLabels[articleType] || ctaLabels.fallback;
-const memoryLabels = readerMemoryLabels[lang] || readerMemoryLabels.it;
-const readerMemoryPrompt = memoryLabels[articleType] || memoryLabels.fallback;
 
 const legacyComments = Array.isArray(comments)
   ? comments
@@ -280,11 +163,6 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
   data-article-title={articleTitle}
   data-article-url={articleUrl}
 >
-  <aside class="article-comments__memory-box">
-    <h3>{readerMemoryPrompt.title}</h3>
-    <p>{readerMemoryPrompt.text}</p>
-  </aside>
-
   <div class="article-comments__header">
     <div>
       <span class="article-comments__kicker" data-comments-count>
@@ -301,11 +179,6 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
       <p class="article-comments__status" data-comments-status hidden></p>
     </div>
-  </div>
-
-  <div class="article-comments__prompt">
-    <h3>{commentCta.title}</h3>
-    <p>{commentCta.text}</p>
   </div>
 
   <div class="article-comments__composer" data-comments-auth-box hidden>
@@ -394,10 +267,10 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
   const commentLabels = {
     it: {
-      commentSingular: 'commento',
-      commentPlural: 'commenti',
+      commentSingular: 'memoria',
+      commentPlural: 'memorie',
       empty:
-        'Nessun commento per ora. Puoi essere il primo a lasciare una memoria.',
+        'Sii il primo a lasciare un ricordo su questo articolo.',
       sent: 'Commento inviato. Sarà visibile dopo la moderazione.',
       error: 'Qualcosa è andato storto. Riprova.',
       loggedAs: 'Stai commentando come',
@@ -441,10 +314,10 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       sortLiked: 'Più apprezzati'
     },
     en: {
-      commentSingular: 'comment',
-      commentPlural: 'comments',
+      commentSingular: 'memory',
+      commentPlural: 'memories',
       empty:
-        'No comments yet. You can be the first to leave a memory.',
+        'Be the first to leave a memory on this article.',
       sent: 'Comment sent. It will appear after moderation.',
       error: 'Something went wrong. Please try again.',
       loggedAs: 'You are commenting as',

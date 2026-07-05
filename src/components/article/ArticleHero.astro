@@ -1,6 +1,5 @@
 ---
 import { getArchiveUrl, getPostUrl } from '../../lib/routes';
-import CommentCountBadge from '../common/CommentCountBadge.astro';
 import ArticleShare from './ArticleShare.astro';
 import ArticleSaveButton from './ArticleSaveButton.astro';
 
@@ -145,10 +144,16 @@ const infoItems = [
 ].filter(Boolean);
 
 const commentCount = Number(post.commentCount || 0);
-const hasHeroCommentCount = commentCount > 0;
+const commentsLabel = lang === 'en'
+  ? commentCount > 0
+    ? `${commentCount} ${commentCount === 1 ? 'reader memory' : 'reader memories'}`
+    : 'Leave the first memory'
+  : commentCount > 0
+    ? `${commentCount} ${commentCount === 1 ? 'memoria dei lettori' : 'memorie dei lettori'}`
+    : 'Lascia il primo ricordo';
 const commentsAriaLabel = lang === 'en'
-  ? `Go to comments, ${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}`
-  : `Vai ai commenti, ${commentCount} ${commentCount === 1 ? 'commento' : 'commenti'}`;
+  ? `Go to reader memories: ${commentsLabel}`
+  : `Vai alle memorie dei lettori: ${commentsLabel}`;
 
 const articleSlug =
   typeof post.slug === 'string'
@@ -193,7 +198,7 @@ const articleId =
 
     <div class="article-hero__footer">
 
-      {(authorDisplayName || infoItems.length > 0 || hasHeroCommentCount) && (
+      {(authorDisplayName || infoItems.length > 0 || commentsLabel) && (
         <div class="article-hero__byline">
 
           {authorDisplayName && (
@@ -250,35 +255,33 @@ const articleId =
                     <span>{item}</span>
                   ))}
 
-                  {hasHeroCommentCount && (
-                    <a
-                      href="#comments"
-                      class="article-hero__comments-link"
-                      aria-label={commentsAriaLabel}
-                    >
-                      <CommentCountBadge count={commentCount} lang={lang} variant="compact" />
-                    </a>
-                  )}
+                  <a
+                    href="#comments"
+                    class="article-hero__comments-link"
+                    aria-label={commentsAriaLabel}
+                  >
+                    <span class="article-hero__comments-icon" aria-hidden="true"></span>
+                    <span>{commentsLabel}</span>
+                  </a>
                 </div>
               </div>
             </div>
           )}
 
-          {!authorDisplayName && (infoItems.length > 0 || hasHeroCommentCount) && (
+          {!authorDisplayName && (infoItems.length > 0 || commentsLabel) && (
             <div class="article-hero__info">
               {infoItems.map((item) => (
                 <span>{item}</span>
               ))}
 
-              {hasHeroCommentCount && (
-                <a
-                  href="#comments"
-                  class="article-hero__comments-link"
-                  aria-label={commentsAriaLabel}
-                >
-                  <CommentCountBadge count={commentCount} lang={lang} variant="compact" />
-                </a>
-              )}
+              <a
+                href="#comments"
+                class="article-hero__comments-link"
+                aria-label={commentsAriaLabel}
+              >
+                <span class="article-hero__comments-icon" aria-hidden="true"></span>
+                <span>{commentsLabel}</span>
+              </a>
             </div>
           )}
 
