@@ -142,18 +142,7 @@ const infoItems = [
   showUpdated && updatedDate ? `${updatedLabel} ${updatedDate}` : '',
   readingTime ? `${readingTimeLabel}: ${readingTime} ${minuteLabel}` : '',
 ].filter(Boolean);
-
-const commentCount = Number(post.commentCount || 0);
-const commentsLabel = lang === 'en'
-  ? commentCount > 0
-    ? `${commentCount} ${commentCount === 1 ? 'reader memory' : 'reader memories'}`
-    : 'Leave the first memory'
-  : commentCount > 0
-    ? `${commentCount} ${commentCount === 1 ? 'memoria dei lettori' : 'memorie dei lettori'}`
-    : 'Lascia il primo ricordo';
-const commentsAriaLabel = lang === 'en'
-  ? `Go to reader memories: ${commentsLabel}`
-  : `Vai alle memorie dei lettori: ${commentsLabel}`;
+const heroInfoItems = [authorRole, ...infoItems].filter(Boolean);
 
 const articleSlug =
   typeof post.slug === 'string'
@@ -174,17 +163,19 @@ const articleId =
 
   <div class="article-hero__top">
 
-    <a href={getArchiveUrl(post.type, lang)} class="article-hero__eyebrow">
-      {typeLabel}
-    </a>
+    <div class="article-hero__top-main">
+      <a href={getArchiveUrl(post.type, lang)} class="article-hero__eyebrow">
+        {typeLabel}
+      </a>
 
-    {metaItems.length > 0 && (
-      <div class="article-hero__meta">
-        {metaItems.map((item) => (
-          <span>{item}</span>
-        ))}
-      </div>
-    )}
+      {metaItems.length > 0 && (
+        <div class="article-hero__meta">
+          {metaItems.map((item) => (
+            <span>{item}</span>
+          ))}
+        </div>
+      )}
+    </div>
 
   </div>
 
@@ -198,7 +189,7 @@ const articleId =
 
     <div class="article-hero__footer">
 
-      {(authorDisplayName || infoItems.length > 0 || commentsLabel) && (
+      {(authorDisplayName || infoItems.length > 0) && (
         <div class="article-hero__byline">
 
           {authorDisplayName && (
@@ -250,38 +241,28 @@ const articleId =
                   )}
                 </div>
 
-                <div class="article-hero__info">
-                  {[authorRole, ...infoItems].filter(Boolean).map((item) => (
-                    <span>{item}</span>
-                  ))}
+                {heroInfoItems.length > 0 && (
+                  <div class="article-hero__info">
+                    {heroInfoItems.map((item) => (
+                      <span>{item}</span>
+                    ))}
+                  </div>
+                )}
 
-                  <a
-                    href="#comments"
-                    class="article-hero__comments-link"
-                    aria-label={commentsAriaLabel}
-                  >
-                    <span class="article-hero__comments-icon" aria-hidden="true"></span>
-                    <span>{commentsLabel}</span>
-                  </a>
-                </div>
               </div>
             </div>
           )}
 
-          {!authorDisplayName && (infoItems.length > 0 || commentsLabel) && (
-            <div class="article-hero__info">
-              {infoItems.map((item) => (
-                <span>{item}</span>
-              ))}
+          {!authorDisplayName && infoItems.length > 0 && (
+            <div class="article-hero__meta-stack">
+              {infoItems.length > 0 && (
+                <div class="article-hero__info">
+                  {infoItems.map((item) => (
+                    <span>{item}</span>
+                  ))}
+                </div>
+              )}
 
-              <a
-                href="#comments"
-                class="article-hero__comments-link"
-                aria-label={commentsAriaLabel}
-              >
-                <span class="article-hero__comments-icon" aria-hidden="true"></span>
-                <span>{commentsLabel}</span>
-              </a>
             </div>
           )}
 
@@ -289,14 +270,16 @@ const articleId =
       )}
 
       <div class="article-hero__actions">
-        <ArticleSaveButton
-          articleId={articleId}
-          articleSlug={articleSlug}
-          articleTitle={post.title}
-          articleLanguage={lang}
-          articleCategory={typeLabel}
-          articleUrl={articleUrl}
-        />
+        <div class="article-hero__save-action">
+          <ArticleSaveButton
+            articleId={articleId}
+            articleSlug={articleSlug}
+            articleTitle={post.title}
+            articleLanguage={lang}
+            articleCategory={typeLabel}
+            articleUrl={articleUrl}
+          />
+        </div>
 
         <ArticleShare post={post} compact />
       </div>

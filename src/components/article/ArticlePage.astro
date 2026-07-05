@@ -21,12 +21,24 @@ const {
   relatedPosts = [],
   seriesPosts = [],
   comments = [],
+  communityPreview = [],
   languageSwitch = null,
   hideNewsletterPromo = false
 } = Astro.props;
 
 const isReview = post?.type === 'review';
 const currentLang = post?.language || 'it';
+const heroCommentCount = Number(post?.commentCount || 0);
+const heroCommentsLabel = currentLang === 'en'
+  ? heroCommentCount > 0
+    ? `${heroCommentCount} ${heroCommentCount === 1 ? 'reader memory' : 'reader memories'}`
+    : 'Leave the first memory'
+  : heroCommentCount > 0
+    ? `${heroCommentCount} ${heroCommentCount === 1 ? 'memoria dei lettori' : 'memorie dei lettori'}`
+    : 'Lascia il primo ricordo';
+const heroCommentsAriaLabel = currentLang === 'en'
+  ? `Go to reader memories: ${heroCommentsLabel}`
+  : `Vai alle memorie dei lettori: ${heroCommentsLabel}`;
 const reviewPros = Array.isArray(post?.pros)
   ? post.pros.filter((item) => typeof item === 'string' && item.trim())
   : [];
@@ -43,24 +55,38 @@ const articlePageClass = [
   isReview ? 'is-review' : ''
 ].filter(Boolean).join(' ');
 
-const switchLabel =
-  currentLang === 'en'
-    ? 'Available also in Italian'
-    : 'Disponibile anche in inglese';
-
 const switchCta =
   currentLang === 'en'
-    ? 'Leggi in italiano'
-    : 'Read in English';
+    ? '🇮🇹 Leggi in italiano'
+    : '🇬🇧 Read in English';
 
+const previewComments = Array.isArray(communityPreview)
+  ? communityPreview.slice(0, 2)
+  : [];
+const hasCommunityPreview = previewComments.length > 0;
+const getAuthorInitial = (name = '') =>
+  String(name || '')
+    .trim()
+    .match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/)?.[0]
+    ?.toUpperCase() || 'R';
 const commentsDiscovery = currentLang === 'en'
   ? {
+      label: 'Reader memories',
+      previewTitle: 'From the community',
+      previewText: 'A few memories already shared by readers below this article.',
+      previewCta: 'Read all memories',
+      previewFooter: 'Do you have a memory too? Leave it below the article.',
       title: 'Do you have a memory tied to this article?',
       text:
         'Share it in the comments: on the site it stays with the piece instead of disappearing into the social feed.',
       cta: 'Go to comments'
     }
   : {
+      label: 'Memorie dei lettori',
+      previewTitle: 'Dalla community',
+      previewText: 'Alcuni ricordi già lasciati dai lettori sotto questo articolo.',
+      previewCta: 'Leggi tutte le memorie',
+      previewFooter: 'Hai un ricordo anche tu? Lascialo sotto l’articolo.',
       title: 'Hai un ricordo legato a questo articolo?',
       text:
         'Raccontalo nei commenti: sul sito resta accanto al pezzo e non si perde nel flusso dei social.',
@@ -74,14 +100,22 @@ const commentsDiscovery = currentLang === 'en'
 
   <ArticleHero post={post} />
 
-  {languageSwitch?.url && (
-    <div class="article-language-switch-wrap">
-      <a href={languageSwitch.url} class="article-language-switch">
-        <span>{switchLabel}</span>
-        <strong>{switchCta}</strong>
+  <div class="article-post-hero-actions">
+    <div class="article-post-hero-actions__language">
+      {languageSwitch?.url && (
+        <a href={languageSwitch.url} class="article-language-switch">
+          {switchCta}
+        </a>
+      )}
+    </div>
+
+    <div class="article-post-hero-actions__community">
+      <a href="#comments" class="article-community-jump" aria-label={heroCommentsAriaLabel}>
+        <span class="article-community-jump__icon" aria-hidden="true"></span>
+        <span>{heroCommentsLabel}</span>
       </a>
     </div>
-  )}
+  </div>
 
   <div class="article-page__body">
 
@@ -143,14 +177,85 @@ const commentsDiscovery = currentLang === 'en'
 
   </div>
 
-  <aside class="article-comments-discovery" aria-labelledby="article-comments-discovery-title">
-    <div>
-      <span>{currentLang === 'en' ? 'Reader memories' : 'Memorie dei lettori'}</span>
-      <h2 id="article-comments-discovery-title">{commentsDiscovery.title}</h2>
-      <p>{commentsDiscovery.text}</p>
-    </div>
+  <aside
+    class:list={[
+      'article-comments-discovery',
+      hasCommunityPreview && 'article-comments-discovery--with-preview'
+    ]}
+    aria-labelledby="article-comments-discovery-title"
+  >
+    {hasCommunityPreview ? (
+      <>
+        <div class="article-comments-discovery__header">
+          <div>
+            <span class="article-comments-discovery__label">{commentsDiscovery.label}</span>
+            <h2 id="article-comments-discovery-title">{commentsDiscovery.previewTitle}</h2>
+            <p>{commentsDiscovery.previewText}</p>
+          </div>
 
-    <a href="#comments">{commentsDiscovery.cta}</a>
+          <a href="#comments">{commentsDiscovery.previewCta}</a>
+        </div>
+
+        <div class="article-comments-discovery__preview" aria-label={commentsDiscovery.previewTitle}>
+          {previewComments.map((comment) => (
+            <article class="article-comments-discovery__card">
+              {comment.authorProfileUrl ? (
+                <a
+                  href={comment.authorProfileUrl}
+                  class="article-comments-discovery__avatar"
+                  aria-label={comment.authorName}
+                >
+                  {comment.avatarUrl ? (
+                    <img
+                      src={comment.avatarUrl}
+                      alt=""
+                      width="42"
+                      height="42"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span>{getAuthorInitial(comment.authorName)}</span>
+                  )}
+                </a>
+              ) : (
+                <span class="article-comments-discovery__avatar" aria-hidden="true">
+                  {comment.avatarUrl ? (
+                    <img
+                      src={comment.avatarUrl}
+                      alt=""
+                      width="42"
+                      height="42"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span>{getAuthorInitial(comment.authorName)}</span>
+                  )}
+                </span>
+              )}
+
+              <div>
+                <strong>{comment.authorName}</strong>
+                <p>{comment.excerpt}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <p class="article-comments-discovery__footer">{commentsDiscovery.previewFooter}</p>
+      </>
+    ) : (
+      <>
+        <div>
+          <span class="article-comments-discovery__label">{commentsDiscovery.label}</span>
+          <h2 id="article-comments-discovery-title">{commentsDiscovery.title}</h2>
+          <p>{commentsDiscovery.text}</p>
+        </div>
+
+        <a href="#comments">{commentsDiscovery.cta}</a>
+      </>
+    )}
   </aside>
 
   <ArticleComments post={post} comments={comments} />

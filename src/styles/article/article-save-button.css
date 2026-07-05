@@ -8,12 +8,34 @@
   justify-content: flex-end;
   flex: 0 0 auto;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   margin-left: auto;
 }
 
 .article-hero__actions .article-share {
   margin: 0;
+}
+
+.article-hero__save-action {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  max-width: min(100%, 260px);
+}
+
+.article-hero__save-action .article-save__login,
+.article-hero__save-action .article-save__button {
+  min-height: 42px;
+  padding: 0 14px;
+  font-size: 0.78rem;
+  font-weight: 880;
+  opacity: 0.9;
+}
+
+.article-hero__save-action .article-save__button[aria-pressed="true"] {
+  border-color: var(--rg-badge-border);
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
 }
 
 .article-save {
@@ -96,13 +118,30 @@ html[data-theme="light"] .article-save__message {
 
 @media (max-width: 768px) {
   .article-hero__actions {
+    align-items: flex-start;
+    flex-direction: column;
     justify-content: flex-start;
     width: 100%;
     margin-left: 0;
   }
 
+  .article-hero__save-action {
+    justify-content: flex-start;
+    width: min(100%, 360px);
+    max-width: 100%;
+  }
+
   .article-save {
     justify-items: start;
+  }
+
+  .article-hero__save-action .article-save {
+    width: 100%;
+  }
+
+  .article-hero__save-action .article-save__login,
+  .article-hero__save-action .article-save__button {
+    width: 100%;
   }
 
   .article-save__message {
@@ -120,5 +159,11 @@ html[data-theme="light"] .article-save__message {
     min-height: 40px;
     padding: 0 12px;
     font-size: 0.78rem;
+  }
+
+  .article-hero__save-action .article-save__login,
+  .article-hero__save-action .article-save__button {
+    min-height: 40px;
+    font-size: 0.76rem;
   }
 }
