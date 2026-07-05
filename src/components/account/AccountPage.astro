@@ -9,6 +9,10 @@ import CommunityStatList from '../../components/community/CommunityStatList.astr
 import NewsletterPromo from '../../components/newsletter/NewsletterPromo.astro';
 import { getActiveReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
 import { getCommunityRank } from '../../lib/community-rank';
+import {
+  getAccountDashboardRetention,
+  type AccountDashboardRetention,
+} from '../../lib/supabase/account-dashboard';
 import { getPublicUserUrl } from '../../lib/supabase/public-profiles';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
@@ -42,6 +46,7 @@ const copy = {
     likesReceived: 'Like ricevuti',
     dislikesReceived: 'Dislike ricevuti',
     goPublicProfile: 'Vai al profilo pubblico',
+    viewPublicProfile: 'Vedi il tuo profilo pubblico',
     goPublishedComments: 'Vai ai commenti pubblicati',
     heroKicker: 'Profilo lettore',
     heroTitle: 'Area account',
@@ -56,6 +61,35 @@ const copy = {
     favoritesDescription:
       'Ritrova gli articoli che hai salvato e gestisci i tuoi interessi retro.',
     favoritesCta: 'Apri preferiti',
+    resumeTitle: 'Riprendi da qui',
+    resumeDescription:
+      'Discussioni, messaggi e aggiornamenti vicini alla tua attività.',
+    resumeSystemMessages: (count: number) => `Hai ${count} ${count === 1 ? 'messaggio da leggere' : 'messaggi da leggere'}`,
+    resumePrivateMessages: (count: number) => `Hai ${count} ${count === 1 ? 'messaggio privato non letto' : 'messaggi privati non letti'}`,
+    resumePendingComments: (count: number) => `Hai ${count} ${count === 1 ? 'commento in attesa di moderazione' : 'commenti in attesa di moderazione'}`,
+    resumeEmpty:
+      'Quando commenterai o riceverai messaggi, troverai qui il punto da cui ripartire.',
+    resumeReturnDiscussion: 'Torna alla discussione',
+    resumeOpenMessages: 'Apri messaggi',
+    resumeOpenPrivateMessages: 'Apri privati',
+    resumeOpenMemories: 'Apri memorie',
+    yourContributions: 'I tuoi contributi',
+    yourContributionsDescription:
+      'Un riepilogo rapido di quello che hai lasciato nella community.',
+    contributionRatings: 'Voti dati',
+    contributionActionsMemories: 'Le tue memorie',
+    contributionActionsRatings: 'I tuoi voti',
+    contributionActionsProfile: 'Profilo pubblico',
+    fromInterests: 'Dai tuoi interessi',
+    forYou: 'Per te',
+    fromInterestsDescription:
+      'Articoli collegati alle piattaforme, agli autori e alle aziende che segui.',
+    manageInterests: 'Gestisci interessi',
+    interestsEmpty:
+      'Aggiungi qualche interesse per ricevere suggerimenti più vicini al tuo modo di vivere il retro-gaming.',
+    interestsNoArticles:
+      'Non ci sono ancora articoli collegati ai tuoi interessi.',
+    readArticle: 'Leggi articolo',
     newsletterDescription:
       'Ricevi aggiornamenti su nuovi articoli, recensioni, speciali e iniziative della community.',
     newsletterActive: 'Sei iscritto alla newsletter.',
@@ -169,6 +203,7 @@ const copy = {
     likesReceived: 'Likes received',
     dislikesReceived: 'Dislikes received',
     goPublicProfile: 'Go to public profile',
+    viewPublicProfile: 'View your public profile',
     goPublishedComments: 'Go to published comments',
     heroKicker: 'Reader profile',
     heroTitle: 'My account',
@@ -183,6 +218,35 @@ const copy = {
     favoritesDescription:
       'Find the articles you saved and manage your retro interests.',
     favoritesCta: 'Go to favorites',
+    resumeTitle: 'Pick up from here',
+    resumeDescription:
+      'Discussions, messages and updates close to your activity.',
+    resumeSystemMessages: (count: number) => `You have ${count} ${count === 1 ? 'message' : 'messages'} to read`,
+    resumePrivateMessages: (count: number) => `You have ${count} ${count === 1 ? 'unread private message' : 'unread private messages'}`,
+    resumePendingComments: (count: number) => `You have ${count} ${count === 1 ? 'comment' : 'comments'} waiting for moderation`,
+    resumeEmpty:
+      'When you comment or receive messages, this will become your place to pick things back up.',
+    resumeReturnDiscussion: 'Return to the discussion',
+    resumeOpenMessages: 'Open messages',
+    resumeOpenPrivateMessages: 'Open private messages',
+    resumeOpenMemories: 'Open memories',
+    yourContributions: 'Your contributions',
+    yourContributionsDescription:
+      'A quick view of what you have added to the community.',
+    contributionRatings: 'Ratings',
+    contributionActionsMemories: 'Your memories',
+    contributionActionsRatings: 'Your ratings',
+    contributionActionsProfile: 'Public profile',
+    fromInterests: 'From your interests',
+    forYou: 'For you',
+    fromInterestsDescription:
+      'Articles connected to the platforms, creators and companies you follow.',
+    manageInterests: 'Manage interests',
+    interestsEmpty:
+      'Add a few interests to get suggestions closer to the way you experience retro gaming.',
+    interestsNoArticles:
+      'There are no articles connected to your interests yet.',
+    readArticle: 'Read article',
     newsletterDescription:
       'Get updates about new articles, reviews, features and community initiatives.',
     newsletterActive: 'You are subscribed to the newsletter.',
@@ -314,6 +378,15 @@ let currentBio = '';
 let currentBioEn = '';
 let newsletterStatus: 'none' | 'pending' | 'active' | 'unsubscribed' = 'none';
 let newsletterLanguage: 'it' | 'en' = 'it';
+let dashboardRetention: AccountDashboardRetention = {
+  unreadSystemMessagesCount: 0,
+  unreadPrivateMessagesCount: 0,
+  latestApprovedComments: [],
+  pendingCommentsCount: 0,
+  suggestedArticlesFromInterests: [],
+  hasInterests: false,
+  latestSystemMessage: null,
+};
 const isMissingBioColumnError = (error: { code?: string; message?: string; details?: string } | null) => {
   if (!error) return false;
 
@@ -393,12 +466,13 @@ const getProfileBio = async (userId: string) => {
 let commentActivity = { ...emptyCommunityStats };
 
 if (isLoggedIn && user?.id) {
-  const [, activeBadges, profileBio, stats, newsletter] = await Promise.all([
+  const [, activeBadges, profileBio, stats, newsletter, retention] = await Promise.all([
     touchUserActivity(user.id, 'account-load'),
     getActiveReaderBadges({ fallback: false }),
     getProfileBio(user.id),
     getCommunityStats(user.id),
     getNewsletterSubscriptionForUser(user.id, user.email),
+    getAccountDashboardRetention(user.id, currentLang),
   ]);
 
   badges = activeBadges;
@@ -407,6 +481,7 @@ if (isLoggedIn && user?.id) {
   commentActivity = stats;
   newsletterStatus = newsletter.status;
   newsletterLanguage = newsletter.language;
+  dashboardRetention = retention;
 }
 
 const communityStatItems = [
@@ -425,6 +500,38 @@ const communityStatItems = [
   { label: ui.pending, value: commentActivity.pending },
   { label: ui.likesReceived, value: commentActivity.likesReceived },
   { label: ui.dislikesReceived, value: commentActivity.dislikesReceived },
+];
+const resumeDateFormatter = new Intl.DateTimeFormat(currentLang === 'en' ? 'en-US' : 'it-IT', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
+const hasResumeItems =
+  dashboardRetention.unreadSystemMessagesCount > 0 ||
+  dashboardRetention.unreadPrivateMessagesCount > 0 ||
+  dashboardRetention.pendingCommentsCount > 0 ||
+  dashboardRetention.latestApprovedComments.length > 0;
+const contributionItems = [
+  {
+    label: ui.publishedComments,
+    value: commentActivity.approved,
+    href: memoriesHref,
+  },
+  {
+    label: ui.contributionRatings,
+    value: commentActivity.reviewRatings,
+    href: ratingsHref,
+  },
+  {
+    label: ui.communityPoints,
+    value: commentActivity.communityPoints,
+    href: publicProfileHref || undefined,
+  },
+  {
+    label: ui.likesReceived,
+    value: commentActivity.likesReceived,
+    href: publicProfileHref || undefined,
+  },
 ];
 const communityRank = getCommunityRank(commentActivity.communityPoints);
 const communityRankProgress = Math.round(communityRank.progressToNext);
@@ -587,9 +694,150 @@ const clientCopy = currentLang === 'en'
           kicker={ui.heroKicker}
           title={ui.heroTitle}
           description={ui.heroDescription}
-        />
+        >
+          {publicProfileHref && (
+            <div class="account-hero-actions">
+              <a href={publicProfileHref}>{ui.viewPublicProfile}</a>
+            </div>
+          )}
+        </CommunityHero>
 
         <div class="community-content-stack">
+            <section class="account-resume-card" aria-labelledby="account-resume-title">
+              <div class="account-section-heading">
+                <p class="account-kicker">{ui.communityKicker}</p>
+                <h2 id="account-resume-title">{ui.resumeTitle}</h2>
+                <p>{ui.resumeDescription}</p>
+              </div>
+
+              {hasResumeItems ? (
+                <div class="account-resume-list">
+                  {dashboardRetention.unreadSystemMessagesCount > 0 && (
+                    <a class="account-resume-item account-resume-item--notice" href={messagesHref}>
+                      <span>{ui.resumeSystemMessages(dashboardRetention.unreadSystemMessagesCount)}</span>
+                      <strong>{ui.resumeOpenMessages}</strong>
+                    </a>
+                  )}
+
+                  {dashboardRetention.unreadPrivateMessagesCount > 0 && (
+                    <a class="account-resume-item account-resume-item--notice" href={`${messagesHref}private/`}>
+                      <span>{ui.resumePrivateMessages(dashboardRetention.unreadPrivateMessagesCount)}</span>
+                      <strong>{ui.resumeOpenPrivateMessages}</strong>
+                    </a>
+                  )}
+
+                  {dashboardRetention.pendingCommentsCount > 0 && (
+                    <a class="account-resume-item account-resume-item--pending" href={memoriesHref}>
+                      <span>{ui.resumePendingComments(dashboardRetention.pendingCommentsCount)}</span>
+                      <strong>{ui.resumeOpenMemories}</strong>
+                    </a>
+                  )}
+
+                  {dashboardRetention.latestApprovedComments.map((comment) => (
+                    <article class="account-resume-comment">
+                      <div>
+                        <p>{comment.excerpt}</p>
+                        <span>
+                          {comment.articleTitle || ui.memories}
+                          {comment.createdAt && (
+                            <>
+                              {' · '}
+                              <time datetime={comment.createdAt}>
+                                {resumeDateFormatter.format(new Date(comment.createdAt))}
+                              </time>
+                            </>
+                          )}
+                        </span>
+                      </div>
+
+                      <a href={comment.href}>{ui.resumeReturnDiscussion}</a>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p class="account-resume-empty">{ui.resumeEmpty}</p>
+              )}
+            </section>
+
+            <div class="account-retention-grid">
+              <section class="account-contributions-card" aria-labelledby="account-contributions-title">
+                <div class="account-section-heading">
+                  <p class="account-kicker">{ui.communityKicker}</p>
+                  <h2 id="account-contributions-title">{ui.yourContributions}</h2>
+                  <p>{ui.yourContributionsDescription}</p>
+                </div>
+
+                <div class="account-contribution-stats">
+                  {contributionItems.map((item) => (
+                    item.href ? (
+                      <a href={item.href}>
+                        <strong>{item.value}</strong>
+                        <span>{item.label}</span>
+                      </a>
+                    ) : (
+                      <div>
+                        <strong>{item.value}</strong>
+                        <span>{item.label}</span>
+                      </div>
+                    )
+                  ))}
+                </div>
+
+                <div class="account-retention-actions">
+                  <a href={memoriesHref}>{ui.contributionActionsMemories}</a>
+                  <a href={ratingsHref}>{ui.contributionActionsRatings}</a>
+                  {publicProfileHref && <a href={publicProfileHref}>{ui.contributionActionsProfile}</a>}
+                </div>
+              </section>
+
+              <section class="account-interest-suggestions" aria-labelledby="account-interest-suggestions-title">
+                <div class="account-section-heading">
+                  <p class="account-kicker">{ui.forYou}</p>
+                  <h2 id="account-interest-suggestions-title">{ui.fromInterests}</h2>
+                  <p>{ui.fromInterestsDescription}</p>
+                </div>
+
+                {dashboardRetention.suggestedArticlesFromInterests.length > 0 ? (
+                  <div class="account-interest-suggestions__list">
+                    {dashboardRetention.suggestedArticlesFromInterests.map((article) => (
+                      <article class:list={['account-interest-suggestion', !article.imageUrl && 'account-interest-suggestion--text']}>
+                        {article.imageUrl && (
+                          <a class="account-interest-suggestion__image" href={article.href} aria-label={article.title}>
+                            <img
+                              src={article.imageUrl}
+                              alt={article.imageAlt || article.title}
+                              width="160"
+                              height="100"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </a>
+                        )}
+
+                        <div>
+                          <span>{article.categoryLabel || article.type}</span>
+                          <h3>
+                            <a href={article.href}>{article.title}</a>
+                          </h3>
+                          <a class="account-interest-suggestion__link" href={article.href}>
+                            {ui.readArticle}
+                          </a>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p class="account-resume-empty">
+                    {dashboardRetention.hasInterests ? ui.interestsNoArticles : ui.interestsEmpty}
+                  </p>
+                )}
+
+                <div class="account-retention-actions">
+                  <a href={favoritesHref}>{ui.manageInterests}</a>
+                </div>
+              </section>
+            </div>
+
             <section class="account-favorites-card" aria-labelledby="account-favorites-title">
               <div>
                 <p class="account-kicker">{ui.favoritesKicker}</p>
