@@ -8,7 +8,6 @@ import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
 } from '../../../lib/supabase/comment-counts';
-import { getArticleCommunityPreview } from '../../../lib/supabase/article-community-preview';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { getNewsletterSubscriptionForUser } from '../../../lib/supabase/newsletter';
 import {
@@ -585,7 +584,6 @@ const relatedPostsWithCommentCounts = attachApprovedCommentCounts(
   commentCountMap,
   'en'
 );
-const communityPreview = await getArticleCommunityPreview(hydratedPost.slug || slug, 'en', 2);
 
 const viewerSession = await getUserSessionFromCookies(Astro.cookies);
 let hideNewsletterPromo = false;
@@ -669,7 +667,6 @@ const alternateLanguages = [
     relatedPosts={relatedPostsWithCommentCounts}
     seriesPosts={seriesPosts}
     comments={comments}
-    communityPreview={communityPreview}
     hideNewsletterPromo={hideNewsletterPromo}
     languageSwitch={
       italianTranslation?.slug && italianCategory

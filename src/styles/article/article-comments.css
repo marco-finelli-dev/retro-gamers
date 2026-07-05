@@ -38,23 +38,6 @@
       0 12px 28px rgba(0,0,0,0.14);
   }
 
-  .article-comments-discovery + .article-comments {
-    margin-top: 24px;
-  }
-
-  .article-comments-discovery--with-preview {
-    display: grid;
-    align-items: stretch;
-    justify-content: stretch;
-  }
-
-  .article-comments-discovery__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 18px;
-  }
-
   .article-comments-discovery__label {
     display: inline-flex;
     width: fit-content;
@@ -85,8 +68,7 @@
     line-height: 1.6;
   }
 
-  .article-comments-discovery > a,
-  .article-comments-discovery__header > a {
+  .article-comments-discovery > a {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -120,9 +102,7 @@
   }
 
   .article-comments-discovery > a:hover,
-  .article-comments-discovery > a:focus-visible,
-  .article-comments-discovery__header > a:hover,
-  .article-comments-discovery__header > a:focus-visible {
+  .article-comments-discovery > a:focus-visible {
     border-color: var(--rg-badge-border);
     background: var(--rg-cta-hover-bg);
     color: var(--rg-action-hover-color);
@@ -131,92 +111,6 @@
     box-shadow: var(--rg-card-hover-shadow);
   }
 
-  .article-comments-discovery__preview {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .article-comments-discovery__card {
-    display: grid;
-    grid-template-columns: 42px minmax(0, 1fr);
-    gap: 12px;
-    align-items: flex-start;
-
-    min-width: 0;
-    padding: 13px 14px;
-
-    border: 1px solid var(--rg-card-border);
-    border-radius: 18px;
-
-    background:
-      linear-gradient(135deg, rgba(34,240,255,0.044), rgba(168,85,247,0.024)),
-      rgba(4, 8, 16, 0.22);
-  }
-
-  .article-comments-discovery__avatar {
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-
-    width: 42px;
-    height: 42px;
-
-    border: 1px solid var(--rg-badge-border);
-    border-radius: 999px;
-
-    background: var(--rg-badge-bg);
-    color: var(--rg-badge-color);
-
-    font-size: 0.82rem;
-    font-weight: 900;
-    line-height: 1;
-    text-decoration: none;
-  }
-
-  .article-comments-discovery__avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .article-comments-discovery__card strong {
-    display: block;
-    overflow: hidden;
-
-    margin: 1px 0 4px;
-
-    color: var(--rg-section-title-color);
-    font-size: 0.88rem;
-    line-height: 1.2;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .article-comments-discovery__card p {
-    display: -webkit-box;
-    overflow: hidden;
-
-    margin: 0;
-
-    color: rgba(255,255,255,0.68);
-    font-size: 0.88rem;
-    line-height: 1.5;
-
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-  }
-
-  .article-comments-discovery__footer {
-    margin: 0;
-    padding-top: 2px;
-
-    color: rgba(255,255,255,0.66);
-    font-size: 0.9rem;
-    font-weight: 700;
-    line-height: 1.5;
-  }
-  
   /* ========================
      HEADER
   ======================== */
@@ -1724,25 +1618,11 @@
       border-radius: 20px;
     }
 
-    .article-comments-discovery + .article-comments {
-      margin-top: 20px;
-    }
-
     .article-comments-discovery p {
       font-size: 0.9rem;
     }
 
-    .article-comments-discovery__header {
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .article-comments-discovery__preview {
-      grid-template-columns: 1fr;
-    }
-
-    .article-comments-discovery > a,
-    .article-comments-discovery__header > a {
+    .article-comments-discovery > a {
       width: 100%;
     }
 
@@ -2005,18 +1885,6 @@ html[data-theme="light"] .article-comments-discovery h2 {
 }
 
 html[data-theme="light"] .article-comments-discovery p {
-  color: rgba(22,24,36,0.68);
-}
-
-html[data-theme="light"] .article-comments-discovery__card {
-  border-color: var(--rg-card-border);
-  background:
-    linear-gradient(135deg, rgba(0,142,163,0.040), rgba(102,81,184,0.024)),
-    rgba(255,255,255,0.60);
-}
-
-html[data-theme="light"] .article-comments-discovery__card p,
-html[data-theme="light"] .article-comments-discovery__footer {
   color: rgba(22,24,36,0.68);
 }
 

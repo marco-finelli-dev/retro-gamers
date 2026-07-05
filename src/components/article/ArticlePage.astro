@@ -21,7 +21,6 @@ const {
   relatedPosts = [],
   seriesPosts = [],
   comments = [],
-  communityPreview = [],
   languageSwitch = null,
   hideNewsletterPromo = false
 } = Astro.props;
@@ -60,22 +59,9 @@ const switchCta =
     ? '🇮🇹 Leggi in italiano'
     : '🇬🇧 Read in English';
 
-const previewComments = Array.isArray(communityPreview)
-  ? communityPreview.slice(0, 2)
-  : [];
-const hasCommunityPreview = previewComments.length > 0;
-const getAuthorInitial = (name = '') =>
-  String(name || '')
-    .trim()
-    .match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/)?.[0]
-    ?.toUpperCase() || 'R';
 const commentsDiscovery = currentLang === 'en'
   ? {
       label: 'Reader memories',
-      previewTitle: 'From the community',
-      previewText: 'A few memories already shared by readers below this article.',
-      previewCta: 'Read all memories',
-      previewFooter: 'Do you have a memory too? Leave it below the article.',
       title: 'Do you have a memory tied to this article?',
       text:
         'Share it in the comments: on the site it stays with the piece instead of disappearing into the social feed.',
@@ -83,10 +69,6 @@ const commentsDiscovery = currentLang === 'en'
     }
   : {
       label: 'Memorie dei lettori',
-      previewTitle: 'Dalla community',
-      previewText: 'Alcuni ricordi già lasciati dai lettori sotto questo articolo.',
-      previewCta: 'Leggi tutte le memorie',
-      previewFooter: 'Hai un ricordo anche tu? Lascialo sotto l’articolo.',
       title: 'Hai un ricordo legato a questo articolo?',
       text:
         'Raccontalo nei commenti: sul sito resta accanto al pezzo e non si perde nel flusso dei social.',
@@ -189,72 +171,6 @@ const commentsDiscovery = currentLang === 'en'
     </aside>
 
   </div>
-
-  {hasCommunityPreview && (
-    <aside
-      class="article-comments-discovery article-comments-discovery--with-preview"
-      aria-labelledby="article-comments-preview-title"
-    >
-      <div class="article-comments-discovery__header">
-        <div>
-          <span class="article-comments-discovery__label">{commentsDiscovery.label}</span>
-          <h2 id="article-comments-preview-title">{commentsDiscovery.previewTitle}</h2>
-          <p>{commentsDiscovery.previewText}</p>
-        </div>
-
-        <a href="#comments">{commentsDiscovery.previewCta}</a>
-      </div>
-
-      <div class="article-comments-discovery__preview" aria-label={commentsDiscovery.previewTitle}>
-        {previewComments.map((comment) => (
-          <article class="article-comments-discovery__card">
-            {comment.authorProfileUrl ? (
-              <a
-                href={comment.authorProfileUrl}
-                class="article-comments-discovery__avatar"
-                aria-label={comment.authorName}
-              >
-                {comment.avatarUrl ? (
-                  <img
-                    src={comment.avatarUrl}
-                    alt=""
-                    width="42"
-                    height="42"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <span>{getAuthorInitial(comment.authorName)}</span>
-                )}
-              </a>
-            ) : (
-              <span class="article-comments-discovery__avatar" aria-hidden="true">
-                {comment.avatarUrl ? (
-                  <img
-                    src={comment.avatarUrl}
-                    alt=""
-                    width="42"
-                    height="42"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <span>{getAuthorInitial(comment.authorName)}</span>
-                )}
-              </span>
-            )}
-
-            <div>
-              <strong>{comment.authorName}</strong>
-              <p>{comment.excerpt}</p>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <p class="article-comments-discovery__footer">{commentsDiscovery.previewFooter}</p>
-    </aside>
-  )}
 
   <ArticleComments post={post} comments={comments} />
 
