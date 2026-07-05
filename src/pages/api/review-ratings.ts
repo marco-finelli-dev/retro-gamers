@@ -16,7 +16,10 @@ type RatingRow = {
 type RatingPayload = {
   postId?: string;
   score?: number;
+  lang?: string;
 };
+
+const RATING_EDIT_WINDOW_MS = 5 * 60 * 1000;
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -25,6 +28,39 @@ const json = (payload: unknown, status = 200) =>
       'Content-Type': 'application/json',
     },
   });
+
+const isUserRatingEditable = (createdAt?: string | null) => {
+  if (!createdAt) {
+    return false;
+  }
+
+  const createdAtMs = new Date(createdAt).getTime();
+
+  if (!Number.isFinite(createdAtMs)) {
+    return false;
+  }
+
+  return Date.now() - createdAtMs <= RATING_EDIT_WINDOW_MS;
+};
+
+const getEditWindowExpiresAt = (createdAt?: string | null) => {
+  if (!createdAt) {
+    return null;
+  }
+
+  const createdAtMs = new Date(createdAt).getTime();
+
+  if (!Number.isFinite(createdAtMs)) {
+    return null;
+  }
+
+  return new Date(createdAtMs + RATING_EDIT_WINDOW_MS).toISOString();
+};
+
+const lockedRatingMessage = (lang?: string | null) =>
+  lang === 'en'
+    ? 'Your rating can no longer be changed.'
+    : 'Il voto non è più modificabile.';
 
 const getRatingSummary = async (postId: string, userId?: string | null) => {
   const { data, error } = await supabaseAdmin
@@ -44,11 +80,14 @@ const getRatingSummary = async (postId: string, userId?: string | null) => {
     : null;
 
   let myScore: number | null = null;
+  let userRatingCreatedAt: string | null = null;
+  let editWindowExpiresAt: string | null = null;
+  let canEditUserRating = true;
 
   if (userId) {
     const { data: myRating, error: myRatingError } = await supabaseAdmin
       .from('review_ratings')
-      .select('score')
+      .select('id, score, created_at')
       .eq('post_id', postId)
       .eq('user_id', userId)
       .maybeSingle();
@@ -57,15 +96,23 @@ const getRatingSummary = async (postId: string, userId?: string | null) => {
       throw myRatingError;
     }
 
-    myScore = myRating?.score === undefined || myRating?.score === null
-      ? null
-      : Number(myRating.score);
+    if (myRating) {
+      myScore = myRating.score === undefined || myRating.score === null
+        ? null
+        : Number(myRating.score);
+      userRatingCreatedAt = myRating.created_at ?? null;
+      editWindowExpiresAt = getEditWindowExpiresAt(userRatingCreatedAt);
+      canEditUserRating = isUserRatingEditable(userRatingCreatedAt);
+    }
   }
 
   return {
     averageScore,
     totalVotes,
     myScore,
+    userRatingCreatedAt,
+    editWindowExpiresAt,
+    canEditUserRating,
   };
 };
 
@@ -113,6 +160,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const postId = cleanReviewRatingPostId(payload.postId);
   const score = Number(payload.score);
+  const lang = payload.lang === 'en' ? 'en' : 'it';
 
   if (!postId) {
     return json({ ok: false, error: 'Recensione non valida.' }, 400);
@@ -123,18 +171,56 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   try {
-    const { error } = await supabaseAdmin
+    const { data: existingRating, error: existingRatingError } = await supabaseAdmin
       .from('review_ratings')
-      .upsert({
-        post_id: postId,
-        user_id: session.user.id,
-        score,
-      }, {
-        onConflict: 'post_id,user_id',
-      });
+      .select('id, score, created_at')
+      .eq('post_id', postId)
+      .eq('user_id', session.user.id)
+      .maybeSingle();
 
-    if (error) {
-      throw error;
+    if (existingRatingError) {
+      throw existingRatingError;
+    }
+
+    if (existingRating && !isUserRatingEditable(existingRating.created_at)) {
+      const summary = await getRatingSummary(postId, session.user.id);
+
+      return json({
+        ok: false,
+        code: 'rating_edit_expired',
+        error: lockedRatingMessage(lang),
+        averageScore: summary.averageScore,
+        totalVotes: summary.totalVotes,
+        myScore: summary.myScore,
+        userRatingCreatedAt: summary.userRatingCreatedAt,
+        editWindowExpiresAt: summary.editWindowExpiresAt,
+        canEditUserRating: false,
+        isAuthenticated: true,
+      }, 409);
+    }
+
+    if (existingRating) {
+      const { error } = await supabaseAdmin
+        .from('review_ratings')
+        .update({ score })
+        .eq('id', existingRating.id)
+        .eq('user_id', session.user.id);
+
+      if (error) {
+        throw error;
+      }
+    } else {
+      const { error } = await supabaseAdmin
+        .from('review_ratings')
+        .insert({
+          post_id: postId,
+          user_id: session.user.id,
+          score,
+        });
+
+      if (error) {
+        throw error;
+      }
     }
 
     const summary = await getRatingSummary(postId, session.user.id);
@@ -144,6 +230,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       averageScore: summary.averageScore,
       totalVotes: summary.totalVotes,
       myScore: summary.myScore ?? score,
+      userRatingCreatedAt: summary.userRatingCreatedAt,
+      editWindowExpiresAt: summary.editWindowExpiresAt,
+      canEditUserRating: summary.canEditUserRating,
       isAuthenticated: true,
     });
   } catch (error) {

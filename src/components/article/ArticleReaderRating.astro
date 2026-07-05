@@ -11,24 +11,35 @@ const isEn = lang === 'en';
 
 const labels = isEn
   ? {
-      title: 'Readers’ rating',
+      cta: 'Rate it too',
+      title: 'Reader rating',
       editorial: 'Retro-Gamers',
-      yours: 'Your score',
+      yours: 'Your rating',
       readers: 'Readers',
-      promptTitle: 'Played this game?',
-      promptText: 'Leave your score and compare it with the editorial verdict.',
+      promptTitle: 'Have you played this title?',
+      promptText: 'Leave your rating and compare it with our verdict.',
       loginText: 'Log in or register to vote.',
-      noVotes: 'No votes yet',
+      noVotes: 'No reader ratings yet',
+      editableNotice: 'You can change your rating for a few minutes after submitting it.',
+      lockedNotice: 'Rating saved. It can no longer be changed.',
+      yourRatingPrefix: 'Your rating:',
+      summarySingular: 'rating',
+      summaryPlural: 'ratings',
+      summaryFrom: 'from',
+      firstCta: 'Be the first to rate it',
+      comparisonSeparator: '·',
       voteSingular: 'vote',
       votePlural: 'votes',
-      updated: 'Score updated',
+      updated: 'Rating updated',
       login: 'Log in',
       register: 'Register',
-      save: 'Save score',
-      minus: 'Decrease score',
-      plus: 'Increase score'
+      save: 'Save rating',
+      update: 'Update rating',
+      minus: 'Decrease rating',
+      plus: 'Increase rating'
     }
   : {
+      cta: 'Vota anche tu',
       title: 'Il voto dei lettori',
       editorial: 'Retro-Gamers',
       yours: 'Il tuo voto',
@@ -36,13 +47,22 @@ const labels = isEn
       promptTitle: 'Hai giocato questo titolo?',
       promptText: 'Lascia il tuo voto e confrontalo con quello della redazione.',
       loginText: 'Accedi o registrati per votare.',
-      noVotes: 'Nessun voto ancora',
+      noVotes: 'Nessun voto dei lettori',
+      editableNotice: 'Puoi modificare il voto per pochi minuti dopo l’invio.',
+      lockedNotice: 'Voto registrato. Non è più modificabile.',
+      yourRatingPrefix: 'Il tuo voto:',
+      summarySingular: 'voto',
+      summaryPlural: 'voti',
+      summaryFrom: 'da',
+      firstCta: 'Vota per primo',
+      comparisonSeparator: '·',
       voteSingular: 'voto',
       votePlural: 'voti',
       updated: 'Voto aggiornato',
       login: 'Accedi',
       register: 'Registrati',
       save: 'Salva voto',
+      update: 'Aggiorna voto',
       minus: 'Diminuisci voto',
       plus: 'Aumenta voto'
     };
@@ -54,12 +74,10 @@ const formatScore = (value) => {
   const number = Number(value);
 
   if (!Number.isFinite(number)) {
-    return '—';
+    return '-';
   }
 
-  return Number.isInteger(number)
-    ? String(number)
-    : number.toFixed(1);
+  return number.toFixed(1);
 };
 
 const clampScore = (value) => {
@@ -75,6 +93,10 @@ const clampScore = (value) => {
 
 const initialScore = clampScore(editorialScore);
 const editorialDisplay = formatScore(editorialScore);
+const editorialComparison = `${labels.editorial} ${editorialDisplay}`;
+const panelId = `reader-rating-panel-${String(postId || 'review')
+  .replace(/[^a-zA-Z0-9_-]+/g, '-')
+  .replace(/^-+|-+$/g, '')}`;
 ---
 
 {postId && (
@@ -82,62 +104,82 @@ const editorialDisplay = formatScore(editorialScore);
     class="article-reader-rating"
     data-reader-rating
     data-post-id={postId}
+    data-lang={isEn ? 'en' : 'it'}
     data-default-score={initialScore}
     data-updated-label={labels.updated}
     data-no-votes-label={labels.noVotes}
+    data-editable-notice-label={labels.editableNotice}
+    data-locked-notice-label={labels.lockedNotice}
+    data-your-rating-prefix-label={labels.yourRatingPrefix}
+    data-summary-from-label={labels.summaryFrom}
+    data-summary-singular-label={labels.summarySingular}
+    data-summary-plural-label={labels.summaryPlural}
+    data-summary-cta-label={labels.cta}
+    data-summary-first-cta-label={labels.firstCta}
+    data-editorial-label={labels.editorial}
+    data-readers-label={labels.readers}
+    data-comparison-separator={labels.comparisonSeparator}
+    data-save-label={labels.save}
+    data-update-label={labels.update}
     data-vote-singular={labels.voteSingular}
     data-vote-plural={labels.votePlural}
   >
-    <div class="article-reader-rating__intro">
-      <span>{labels.title}</span>
-      <h3>{labels.promptTitle}</h3>
-      <p>{labels.promptText}</p>
-    </div>
+    <details class="article-reader-rating__details" data-reader-rating-details>
+      <summary
+        class="article-reader-rating__toggle"
+        aria-expanded="false"
+        aria-controls={panelId}
+        data-reader-rating-toggle
+      >
+        <span class="article-reader-rating__summary">
+          <span class="article-reader-rating__label">{labels.title}</span>
+          <strong data-reader-rating-summary>{labels.noVotes}</strong>
+        </span>
 
-    <div class="article-reader-rating__grid">
-      <div class="article-reader-rating__stat">
-        <span>{labels.editorial}</span>
-        <strong>{editorialDisplay}</strong>
+        <span class="article-reader-rating__action" data-reader-rating-action>
+          {labels.firstCta}
+        </span>
+      </summary>
+
+      <div class="article-reader-rating__panel" id={panelId}>
+        <div class="article-reader-rating__intro">
+          <h3>{labels.promptTitle}</h3>
+          <p>{labels.promptText}</p>
+          <p class="article-reader-rating__comparison" data-reader-rating-comparison>
+            {editorialComparison}
+          </p>
+          <p class="article-reader-rating__edit-note" data-reader-rating-edit-note hidden></p>
+        </div>
+
+        <p class="article-reader-rating__count" data-reader-rating-count>
+          {labels.noVotes}
+        </p>
+
+        <div class="article-reader-rating__vote" data-reader-rating-controls hidden>
+          <span class="article-reader-rating__vote-label">{labels.yours}</span>
+
+          <div class="article-reader-rating__stepper" role="group" aria-label={labels.yours}>
+            <button type="button" data-reader-rating-minus aria-label={labels.minus}>−</button>
+            <output data-reader-rating-selected>{formatScore(initialScore)}</output>
+            <button type="button" data-reader-rating-plus aria-label={labels.plus}>+</button>
+          </div>
+
+          <button type="button" class="article-reader-rating__save" data-reader-rating-save>
+            {labels.save}
+          </button>
+        </div>
+
+        <div class="article-reader-rating__auth" data-reader-rating-auth hidden>
+          <p>{labels.loginText}</p>
+          <div>
+            <a href={loginHref}>{labels.login}</a>
+            <a href={registerHref}>{labels.register}</a>
+          </div>
+        </div>
+
+        <p class="article-reader-rating__status" data-reader-rating-status aria-live="polite" hidden></p>
       </div>
-
-      <div class="article-reader-rating__stat">
-        <span>{labels.yours}</span>
-        <strong data-reader-rating-my-score>—</strong>
-      </div>
-
-      <div class="article-reader-rating__stat">
-        <span>{labels.readers}</span>
-        <strong data-reader-rating-average>—</strong>
-      </div>
-    </div>
-
-    <p class="article-reader-rating__count" data-reader-rating-count>
-      {labels.noVotes}
-    </p>
-
-    <div class="article-reader-rating__vote" data-reader-rating-controls hidden>
-      <span class="article-reader-rating__vote-label">{labels.yours}</span>
-
-      <div class="article-reader-rating__stepper" role="group" aria-label={labels.yours}>
-        <button type="button" data-reader-rating-minus aria-label={labels.minus}>−</button>
-        <output data-reader-rating-selected>{formatScore(initialScore)}</output>
-        <button type="button" data-reader-rating-plus aria-label={labels.plus}>+</button>
-      </div>
-
-      <button type="button" class="article-reader-rating__save" data-reader-rating-save>
-        {labels.save}
-      </button>
-    </div>
-
-    <div class="article-reader-rating__auth" data-reader-rating-auth hidden>
-      <p>{labels.loginText}</p>
-      <div>
-        <a href={loginHref}>{labels.login}</a>
-        <a href={registerHref}>{labels.register}</a>
-      </div>
-    </div>
-
-    <p class="article-reader-rating__status" data-reader-rating-status aria-live="polite" hidden></p>
+    </details>
   </section>
 )}
 
@@ -147,12 +189,10 @@ const editorialDisplay = formatScore(editorialScore);
       const number = Number(value);
 
       if (!Number.isFinite(number)) {
-        return '—';
+        return '-';
       }
 
-      return Number.isInteger(number)
-        ? String(number)
-        : number.toFixed(1);
+      return number.toFixed(1);
     };
 
     const clampScore = (value) => {
@@ -168,7 +208,7 @@ const editorialDisplay = formatScore(editorialScore);
 
     const updateVoteCount = (root, totalVotes) => {
       const count = root.querySelector('[data-reader-rating-count]');
-      const noVotesLabel = root.dataset.noVotesLabel || 'No votes yet';
+      const noVotesLabel = root.dataset.noVotesLabel || 'No reader ratings yet';
       const voteSingular = root.dataset.voteSingular || 'vote';
       const votePlural = root.dataset.votePlural || 'votes';
 
@@ -192,17 +232,28 @@ const editorialDisplay = formatScore(editorialScore);
       const postId = root.dataset.postId || '';
       const controls = root.querySelector('[data-reader-rating-controls]');
       const auth = root.querySelector('[data-reader-rating-auth]');
+      const details = root.querySelector('[data-reader-rating-details]');
+      const toggle = root.querySelector('[data-reader-rating-toggle]');
       const minus = root.querySelector('[data-reader-rating-minus]');
       const plus = root.querySelector('[data-reader-rating-plus]');
       const selected = root.querySelector('[data-reader-rating-selected]');
       const save = root.querySelector('[data-reader-rating-save]');
-      const average = root.querySelector('[data-reader-rating-average]');
-      const myScore = root.querySelector('[data-reader-rating-my-score]');
+      const summary = root.querySelector('[data-reader-rating-summary]');
+      const action = root.querySelector('[data-reader-rating-action]');
+      const comparison = root.querySelector('[data-reader-rating-comparison]');
+      const editNote = root.querySelector('[data-reader-rating-edit-note]');
       const status = root.querySelector('[data-reader-rating-status]');
       const updatedLabel = root.dataset.updatedLabel || 'Updated';
 
       let selectedScore = clampScore(root.dataset.defaultScore);
       let savedScore = null;
+      let canUserEdit = true;
+
+      const updateToggleState = () => {
+        if (!toggle || !details) return;
+
+        toggle.setAttribute('aria-expanded', String(details.open));
+      };
 
       const setStatus = (message, isError = false) => {
         if (!status) return;
@@ -218,46 +269,94 @@ const editorialDisplay = formatScore(editorialScore);
         }
 
         if (minus) {
-          minus.disabled = selectedScore <= 1;
+          minus.disabled = !canUserEdit || selectedScore <= 1;
         }
 
         if (plus) {
-          plus.disabled = selectedScore >= 10;
+          plus.disabled = !canUserEdit || selectedScore >= 10;
+        }
+
+        if (save && !save.disabled) {
+          save.disabled = !canUserEdit;
         }
       };
 
       const renderSummary = (data) => {
-        if (average) {
-          average.textContent = data.averageScore === null || data.averageScore === undefined
-            ? '—'
-            : formatScore(data.averageScore);
+        const totalVotes = Number(data.totalVotes || 0);
+        const hasAverage = totalVotes > 0 && data.averageScore !== null && data.averageScore !== undefined;
+        const summaryFromLabel = root.dataset.summaryFromLabel || 'from';
+        const summarySingularLabel = root.dataset.summarySingularLabel || 'rating';
+        const summaryPluralLabel = root.dataset.summaryPluralLabel || 'ratings';
+        const noVotesLabel = root.dataset.noVotesLabel || 'No reader ratings yet';
+        const summaryText = hasAverage
+          ? `${formatScore(data.averageScore)} ${summaryFromLabel} ${totalVotes} ${totalVotes === 1 ? summarySingularLabel : summaryPluralLabel}`
+          : noVotesLabel;
+
+        if (summary) {
+          summary.textContent = summaryText;
         }
 
-        updateVoteCount(root, Number(data.totalVotes || 0));
+        if (action) {
+          action.textContent = hasAverage
+            ? (root.dataset.summaryCtaLabel || 'Rate it too')
+            : (root.dataset.summaryFirstCtaLabel || 'Be the first to rate it');
+        }
+
+        if (comparison) {
+          const editorialLabel = root.dataset.editorialLabel || 'Retro-Gamers';
+          const readersLabel = root.dataset.readersLabel || 'Readers';
+          const separator = root.dataset.comparisonSeparator || '·';
+          comparison.textContent = hasAverage
+            ? `${editorialLabel} ${formatScore(root.dataset.defaultScore)} ${separator} ${readersLabel} ${formatScore(data.averageScore)}`
+            : `${editorialLabel} ${formatScore(root.dataset.defaultScore)}`;
+        }
+
+        updateVoteCount(root, totalVotes);
 
         savedScore = data.myScore === null || data.myScore === undefined
           ? null
           : Number(data.myScore);
-
-        if (myScore) {
-          myScore.textContent = savedScore === null
-            ? '—'
-            : formatScore(savedScore);
-        }
+        const hasUserRating = savedScore !== null;
+        canUserEdit = !hasUserRating || data.canEditUserRating !== false;
 
         selectedScore = savedScore === null
           ? selectedScore
           : clampScore(savedScore);
 
-        renderSelected();
+        if (save) {
+          save.textContent = hasUserRating
+            ? (root.dataset.updateLabel || 'Update rating')
+            : (root.dataset.saveLabel || 'Save rating');
+          save.disabled = !canUserEdit;
+        }
+
+        if (editNote) {
+          if (!data.isAuthenticated || !hasUserRating) {
+            editNote.hidden = true;
+            editNote.textContent = '';
+            editNote.classList.remove('is-locked');
+          } else if (canUserEdit) {
+            editNote.hidden = false;
+            editNote.textContent = root.dataset.editableNoticeLabel || '';
+            editNote.classList.remove('is-locked');
+          } else {
+            const prefix = root.dataset.yourRatingPrefixLabel || 'Your rating:';
+            const lockedNotice = root.dataset.lockedNoticeLabel || 'Rating saved. It can no longer be changed.';
+            editNote.hidden = false;
+            editNote.textContent = `${prefix} ${formatScore(savedScore)}. ${lockedNotice}`;
+            editNote.classList.add('is-locked');
+          }
+        }
 
         if (data.isAuthenticated) {
-          if (controls) controls.hidden = false;
+          if (controls) controls.hidden = !canUserEdit;
           if (auth) auth.hidden = true;
         } else {
           if (controls) controls.hidden = true;
           if (auth) auth.hidden = false;
         }
+
+        renderSelected();
       };
 
       const loadSummary = async () => {
@@ -306,12 +405,19 @@ const editorialDisplay = formatScore(editorialScore);
             },
             body: JSON.stringify({
               postId,
-              score: selectedScore
+              score: selectedScore,
+              lang: root.dataset.lang || 'it'
             })
           });
           const data = await response.json();
 
           if (!response.ok) {
+            if (data?.code === 'rating_edit_expired') {
+              renderSummary(data);
+              setStatus(data?.error || 'Rating not updated.', true);
+              return;
+            }
+
             throw new Error(data?.error || 'Rating not updated.');
           }
 
@@ -320,11 +426,13 @@ const editorialDisplay = formatScore(editorialScore);
         } catch (error) {
           setStatus(error?.message || 'Rating not updated.', true);
         } finally {
-          save.disabled = false;
+          save.disabled = !canUserEdit;
         }
       });
 
       renderSelected();
+      updateToggleState();
+      details?.addEventListener('toggle', updateToggleState);
       loadSummary();
     };
 
