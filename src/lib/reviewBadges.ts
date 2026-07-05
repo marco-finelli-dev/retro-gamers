@@ -40,7 +40,7 @@ const getBadge = (
   if (!key) return null;
 
   const locale = lang === 'en' ? 'en' : 'it';
-  const suffix = variant === 'ribbon' ? `-ribbon-${locale}` : `-${locale}`;
+  const suffix = variant === 'ribbon' ? `-ribbon-${locale}-240` : `-${locale}`;
 
   return {
     key,

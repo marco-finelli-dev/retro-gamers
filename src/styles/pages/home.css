@@ -617,6 +617,8 @@ html:not([data-theme="light"]) .home-community-strip::after {
 }
 
 .home-community-strip__comment footer .home-community-strip__discussion {
+  display: inline-flex;
+  align-items: center;
   width: fit-content;
   color: var(--color-primary);
   font-weight: 900;
@@ -700,6 +702,20 @@ html:not([data-theme="light"]) .home-community-strip::after {
   .home-community-strip__comments {
     --community-rail-card-width: 100%;
     scroll-snap-type: x mandatory;
+  }
+
+  .home-community-strip__comment footer {
+    gap: 6px;
+  }
+
+  .home-community-strip__comment footer .home-community-strip__article {
+    min-height: 44px;
+    padding-block: 7px;
+  }
+
+  .home-community-strip__comment footer .home-community-strip__discussion {
+    min-height: 44px;
+    padding-inline: 2px;
   }
 
   .home-community-strip__actions {

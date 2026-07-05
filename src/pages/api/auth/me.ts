@@ -13,11 +13,27 @@ export const GET: APIRoute = async ({ cookies }) => {
   const session = await getUserSessionFromCookies(cookies);
 
   if (session.error || !session.user || !session.profile) {
-    return json({ ok: false, error: session.error }, session.status);
+    if (session.status === 401) {
+      return json({
+        ok: true,
+        isAuthenticated: false,
+        user: null,
+        profile: null,
+      });
+    }
+
+    return json({
+      ok: false,
+      isAuthenticated: false,
+      user: null,
+      profile: null,
+      error: session.error,
+    }, session.status);
   }
 
   return json({
     ok: true,
+    isAuthenticated: true,
     user: {
       id: session.user.id,
       email: session.user.email,
