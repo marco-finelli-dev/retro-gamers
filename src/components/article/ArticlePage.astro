@@ -139,6 +139,19 @@ const commentsDiscovery = currentLang === 'en'
 
       <ArticleContent content={post.content} lang={currentLang} />
 
+      <aside
+        class="article-comments-discovery article-comments-discovery--article-end"
+        aria-labelledby="article-comments-invite-title"
+      >
+        <div>
+          <span class="article-comments-discovery__label">{commentsDiscovery.label}</span>
+          <h2 id="article-comments-invite-title">{commentsDiscovery.title}</h2>
+          <p>{commentsDiscovery.text}</p>
+        </div>
+
+        <a href="#comments">{commentsDiscovery.cta}</a>
+      </aside>
+
        <ArticleSeriesBox post={post} seriesPosts={seriesPosts} />
 
       {isReview && post.rating && (
@@ -177,86 +190,71 @@ const commentsDiscovery = currentLang === 'en'
 
   </div>
 
-  <aside
-    class:list={[
-      'article-comments-discovery',
-      hasCommunityPreview && 'article-comments-discovery--with-preview'
-    ]}
-    aria-labelledby="article-comments-discovery-title"
-  >
-    {hasCommunityPreview ? (
-      <>
-        <div class="article-comments-discovery__header">
-          <div>
-            <span class="article-comments-discovery__label">{commentsDiscovery.label}</span>
-            <h2 id="article-comments-discovery-title">{commentsDiscovery.previewTitle}</h2>
-            <p>{commentsDiscovery.previewText}</p>
-          </div>
-
-          <a href="#comments">{commentsDiscovery.previewCta}</a>
-        </div>
-
-        <div class="article-comments-discovery__preview" aria-label={commentsDiscovery.previewTitle}>
-          {previewComments.map((comment) => (
-            <article class="article-comments-discovery__card">
-              {comment.authorProfileUrl ? (
-                <a
-                  href={comment.authorProfileUrl}
-                  class="article-comments-discovery__avatar"
-                  aria-label={comment.authorName}
-                >
-                  {comment.avatarUrl ? (
-                    <img
-                      src={comment.avatarUrl}
-                      alt=""
-                      width="42"
-                      height="42"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span>{getAuthorInitial(comment.authorName)}</span>
-                  )}
-                </a>
-              ) : (
-                <span class="article-comments-discovery__avatar" aria-hidden="true">
-                  {comment.avatarUrl ? (
-                    <img
-                      src={comment.avatarUrl}
-                      alt=""
-                      width="42"
-                      height="42"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span>{getAuthorInitial(comment.authorName)}</span>
-                  )}
-                </span>
-              )}
-
-              <div>
-                <strong>{comment.authorName}</strong>
-                <p>{comment.excerpt}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <p class="article-comments-discovery__footer">{commentsDiscovery.previewFooter}</p>
-      </>
-    ) : (
-      <>
+  {hasCommunityPreview && (
+    <aside
+      class="article-comments-discovery article-comments-discovery--with-preview"
+      aria-labelledby="article-comments-preview-title"
+    >
+      <div class="article-comments-discovery__header">
         <div>
           <span class="article-comments-discovery__label">{commentsDiscovery.label}</span>
-          <h2 id="article-comments-discovery-title">{commentsDiscovery.title}</h2>
-          <p>{commentsDiscovery.text}</p>
+          <h2 id="article-comments-preview-title">{commentsDiscovery.previewTitle}</h2>
+          <p>{commentsDiscovery.previewText}</p>
         </div>
 
-        <a href="#comments">{commentsDiscovery.cta}</a>
-      </>
-    )}
-  </aside>
+        <a href="#comments">{commentsDiscovery.previewCta}</a>
+      </div>
+
+      <div class="article-comments-discovery__preview" aria-label={commentsDiscovery.previewTitle}>
+        {previewComments.map((comment) => (
+          <article class="article-comments-discovery__card">
+            {comment.authorProfileUrl ? (
+              <a
+                href={comment.authorProfileUrl}
+                class="article-comments-discovery__avatar"
+                aria-label={comment.authorName}
+              >
+                {comment.avatarUrl ? (
+                  <img
+                    src={comment.avatarUrl}
+                    alt=""
+                    width="42"
+                    height="42"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span>{getAuthorInitial(comment.authorName)}</span>
+                )}
+              </a>
+            ) : (
+              <span class="article-comments-discovery__avatar" aria-hidden="true">
+                {comment.avatarUrl ? (
+                  <img
+                    src={comment.avatarUrl}
+                    alt=""
+                    width="42"
+                    height="42"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span>{getAuthorInitial(comment.authorName)}</span>
+                )}
+              </span>
+            )}
+
+            <div>
+              <strong>{comment.authorName}</strong>
+              <p>{comment.excerpt}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <p class="article-comments-discovery__footer">{commentsDiscovery.previewFooter}</p>
+    </aside>
+  )}
 
   <ArticleComments post={post} comments={comments} />
 
