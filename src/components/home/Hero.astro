@@ -81,6 +81,15 @@ const getImage = (image, width = 960, height = null) => {
   return builder.url();
 };
 
+const getMainImageSrcSet = (image) =>
+  [
+    [760, 456],
+    [960, 576],
+    [1200, 720]
+  ]
+    .map(([width, height]) => `${getImage(image, width, height)} ${width}w`)
+    .join(', ');
+
 const getCommentLabel = (count) => {
   const value = Number(count || 0);
 
@@ -111,6 +120,8 @@ const getCommentLabel = (count) => {
         {main.featuredImage?.asset && (
           <img
             src={getImage(main.featuredImage, 1200, 720)}
+            srcset={getMainImageSrcSet(main.featuredImage)}
+            sizes="(max-width: 768px) calc(100vw - 68px), (max-width: 1024px) calc(100vw - 100px), 790px"
             alt={main.featuredImage?.alt || main.title}
             width="1200"
             height="720"
