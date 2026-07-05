@@ -20,14 +20,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const openMenu = () => {
     menu.classList.add('is-open');
+    menu.removeAttribute('inert');
     menu.setAttribute('aria-hidden', 'false');
     toggle.setAttribute('aria-expanded', 'true');
     lockScroll();
   };
 
   const closeMenu = () => {
+    if (menu.contains(document.activeElement)) {
+      toggle.focus({ preventScroll: true });
+    }
+
     menu.classList.remove('is-open');
     menu.setAttribute('aria-hidden', 'true');
+    menu.setAttribute('inert', '');
     toggle.setAttribute('aria-expanded', 'false');
     unlockScroll();
   };
