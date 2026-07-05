@@ -39,7 +39,14 @@ const labels = {
   data-label-loading={labels.loading}
   data-label-error={labels.error}
 >
-  <a class="article-save__login" href={loginHref} data-article-save-login hidden>
+  <a
+    class="article-save__login"
+    href={loginHref}
+    aria-label={labels.login}
+    title={labels.login}
+    data-article-save-login
+    hidden
+  >
     {labels.login}
   </a>
 
@@ -49,6 +56,7 @@ const labels = {
     data-article-save-button
     aria-label={labels.unsaved}
     aria-pressed="false"
+    title={labels.unsaved}
     hidden
   >
     {labels.unsaved}
