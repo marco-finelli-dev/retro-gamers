@@ -369,6 +369,67 @@ export async function getAllPosts(): Promise<Post[]> {
   return data || [];
 }
 
+export async function getArticleRoutePosts(): Promise<Post[]> {
+  const data = await client.fetch(`
+    *[
+      _type == "article" &&
+      defined(slug.current) &&
+      !(_id in path("drafts.**"))
+    ] | order(coalesce(publishedAt, _createdAt) desc){
+      _id,
+      title,
+      "slug": slug.current,
+      publishedAt,
+      type,
+      language,
+
+      featuredImage {
+        asset->{ url },
+        alt
+      },
+
+      categories[]->{
+        "name": coalesce(name, title),
+        "nameEn": coalesce(nameEn, titleEn),
+        "slug": slug.current
+      },
+
+      platforms[]->{
+        name,
+        "slug": slug.current,
+        platformType,
+        badgeLabel
+      },
+
+      genres[]->{
+        name,
+        nameEn,
+        "slug": slug.current
+      },
+
+      developers[]->{
+        name,
+        nameEn,
+        "slug": slug.current
+      },
+
+      rating {
+        overall
+      },
+
+      gameInfo {
+        releaseYear,
+        cover {
+          asset->{ url },
+          alt
+        }
+      }
+    }
+  `);
+
+  return data || [];
+}
+
 // =========================
 // GROUPING HOME — NO DUPLICATI
 // =========================

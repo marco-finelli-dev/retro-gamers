@@ -3,7 +3,7 @@ import Layout from '../../../layouts/BaseLayout.astro';
 import ArticlePage from '../../../components/article/ArticlePage.astro';
 
 import { client } from '../../../lib/sanity';
-import { getAllPosts, groupPosts, getRelatedPosts } from '../../../lib/posts';
+import { getArticleRoutePosts, getRelatedPosts } from '../../../lib/posts';
 import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
@@ -441,13 +441,7 @@ if (!post) {
 }
 
 const publishedPostId = post._id.replace('drafts.', '');
-const inverseCreators = await getCreatorsReferencingArticle(publishedPostId);
 const portableTextCreators = getCreatorRefsFromPortableText(post.content);
-const articleCreators = mergeCreatorRefs(
-  post.creators,
-  inverseCreators,
-  portableTextCreators
-);
 
 /* ========================
    ITALIAN TRANSLATION
@@ -458,9 +452,9 @@ const directItalianTranslation =
     ? post.translationOf
     : null;
 
-const reverseItalianTranslation = directItalianTranslation
-  ? null
-  : await client.fetch(`
+const reverseItalianTranslationPromise = directItalianTranslation
+  ? Promise.resolve(null)
+  : client.fetch(`
     *[
       _type == "article" &&
       defined(slug.current) &&
@@ -473,13 +467,9 @@ const reverseItalianTranslation = directItalianTranslation
       "slug": slug.current,
       language
     }
-  `, {
+	  `, {
     postId: publishedPostId
   });
-
-const italianTranslation =
-  directItalianTranslation ||
-  reverseItalianTranslation;
 
 /* ========================
    HYDRATION
@@ -487,21 +477,14 @@ const italianTranslation =
 
 const readingTime = getReadingTime(post.content);
 
-let hydratedPost = {
-  ...post,
-  creators: articleCreators,
-  language: post.language || 'en',
-  readingTime
-};
-
 /* ========================
    SERIES
 ======================== */
 
-const seriesId = hydratedPost.editorialSeries?.[0]?._id || null;
+const seriesId = post.editorialSeries?.[0]?._id || null;
 
-const seriesPosts = seriesId
-  ? await client.fetch(`
+const seriesPostsPromise = seriesId
+  ? client.fetch(`
     *[
       _type == "article" &&
       defined(slug.current) &&
@@ -519,14 +502,14 @@ const seriesPosts = seriesId
       seriesOrder,
       seriesLabel
     }
-  `, { seriesId })
-  : [];
+	  `, { seriesId })
+  : Promise.resolve([]);
 
 /* ========================
    COMMENTS
 ======================== */
 
-const comments = await client.fetch(`
+const commentsPromise = client.fetch(`
   *[
     _type == "comment" &&
     article._ref == $postId &&
@@ -561,10 +544,40 @@ const comments = await client.fetch(`
    GLOBAL DATA
 ======================== */
 
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
+const [
+  inverseCreators,
+  reverseItalianTranslation,
+  seriesPosts,
+  comments,
+  articleRoutePosts,
+  viewerSession
+] = await Promise.all([
+  getCreatorsReferencingArticle(publishedPostId),
+  reverseItalianTranslationPromise,
+  seriesPostsPromise,
+  commentsPromise,
+  getArticleRoutePosts(),
+  getUserSessionFromCookies(Astro.cookies)
+]);
 
-const englishPosts = grouped.allLanguages.filter(
+const italianTranslation =
+  directItalianTranslation ||
+  reverseItalianTranslation;
+
+const articleCreators = mergeCreatorRefs(
+  post.creators,
+  inverseCreators,
+  portableTextCreators
+);
+
+let hydratedPost = {
+  ...post,
+  creators: articleCreators,
+  language: post.language || 'en',
+  readingTime
+};
+
+const englishPosts = articleRoutePosts.filter(
   (post) => post.language === 'en'
 );
 
@@ -576,7 +589,7 @@ const englishNews = englishPosts.filter(
   (post) => post.type === 'news'
 );
 
-const relatedPosts = getRelatedPosts(hydratedPost, grouped.allLanguages, 3);
+const relatedPosts = getRelatedPosts(hydratedPost, articleRoutePosts, 3);
 const commentCountMap = await getApprovedCommentCountMap([hydratedPost, ...relatedPosts], 'en');
 hydratedPost = attachApprovedCommentCounts([hydratedPost], commentCountMap, 'en')[0];
 const relatedPostsWithCommentCounts = attachApprovedCommentCounts(
@@ -585,7 +598,6 @@ const relatedPostsWithCommentCounts = attachApprovedCommentCounts(
   'en'
 );
 
-const viewerSession = await getUserSessionFromCookies(Astro.cookies);
 let hideNewsletterPromo = false;
 
 if (!viewerSession.error && viewerSession.user) {

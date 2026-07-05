@@ -3,7 +3,7 @@ import Layout from '../../layouts/BaseLayout.astro';
 import ArticlePage from '../../components/article/ArticlePage.astro';
 
 import { getSanityClient } from '../../lib/sanity';
-import { getAllPosts, groupPosts, getRelatedPosts } from '../../lib/posts';
+import { getArticleRoutePosts, getRelatedPosts } from '../../lib/posts';
 import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
@@ -448,13 +448,7 @@ if (!post) {
 }
 
 const publishedPostId = post._id.replace('drafts.', '');
-const inverseCreators = await getCreatorsReferencingArticle(publishedPostId);
 const portableTextCreators = getCreatorRefsFromPortableText(post.content);
-const articleCreators = mergeCreatorRefs(
-  post.creators,
-  inverseCreators,
-  portableTextCreators
-);
 
 /* ========================
    ENGLISH TRANSLATION
@@ -465,9 +459,9 @@ const directEnglishTranslation =
     ? post.translationOf
     : null;
 
-const reverseEnglishTranslation = directEnglishTranslation
-  ? null
-  : await sanityClient.fetch(`
+const reverseEnglishTranslationPromise = directEnglishTranslation
+  ? Promise.resolve(null)
+  : sanityClient.fetch(`
     *[
       _type == "article" &&
       defined(slug.current) &&
@@ -480,13 +474,9 @@ const reverseEnglishTranslation = directEnglishTranslation
       "slug": slug.current,
       language
     }
-  `, {
+	  `, {
     postId: publishedPostId
   });
-
-const englishTranslation =
-  directEnglishTranslation ||
-  reverseEnglishTranslation;
 
 /* ========================
    HYDRATION
@@ -494,21 +484,14 @@ const englishTranslation =
 
 const readingTime = getReadingTime(post.content);
 
-let hydratedPost = {
-  ...post,
-  creators: articleCreators,
-  language: post.language || 'it',
-  readingTime
-};
-
 /* ========================
    SERIES
 ======================== */
 
-const seriesId = hydratedPost.editorialSeries?.[0]?._id || null;
+const seriesId = post.editorialSeries?.[0]?._id || null;
 
-const seriesPosts = seriesId
-  ? await sanityClient.fetch(`
+const seriesPostsPromise = seriesId
+  ? sanityClient.fetch(`
     *[
       _type == "article" &&
       defined(slug.current) &&
@@ -525,14 +508,14 @@ const seriesPosts = seriesId
       seriesOrder,
       seriesLabel
     }
-  `, { seriesId })
-  : [];
+	  `, { seriesId })
+  : Promise.resolve([]);
 
 /* ========================
    COMMENTS
 ======================== */
 
-const comments = await sanityClient.fetch(`
+const commentsPromise = sanityClient.fetch(`
   *[
     _type == "comment" &&
     article._ref == $postId &&
@@ -566,10 +549,47 @@ const comments = await sanityClient.fetch(`
    GLOBAL DATA
 ======================== */
 
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
+const [
+  inverseCreators,
+  reverseEnglishTranslation,
+  seriesPosts,
+  comments,
+  articleRoutePosts,
+  viewerSession
+] = await Promise.all([
+  getCreatorsReferencingArticle(publishedPostId),
+  reverseEnglishTranslationPromise,
+  seriesPostsPromise,
+  commentsPromise,
+  getArticleRoutePosts(),
+  getUserSessionFromCookies(Astro.cookies)
+]);
 
-const relatedPosts = getRelatedPosts(hydratedPost, grouped.all, 3);
+const articleCreators = mergeCreatorRefs(
+  post.creators,
+  inverseCreators,
+  portableTextCreators
+);
+
+const englishTranslation =
+  directEnglishTranslation ||
+  reverseEnglishTranslation;
+
+let hydratedPost = {
+  ...post,
+  creators: articleCreators,
+  language: post.language || 'it',
+  readingTime
+};
+
+const headerReviews = articleRoutePosts.filter((item) =>
+  item.type === 'review' && (item.language || 'it') !== 'en'
+);
+const headerNews = articleRoutePosts.filter((item) =>
+  item.type === 'news' && (item.language || 'it') !== 'en'
+);
+
+const relatedPosts = getRelatedPosts(hydratedPost, articleRoutePosts, 3);
 const commentCountMap = await getApprovedCommentCountMap([hydratedPost, ...relatedPosts], 'it');
 hydratedPost = attachApprovedCommentCounts([hydratedPost], commentCountMap, 'it')[0];
 const relatedPostsWithCommentCounts = attachApprovedCommentCounts(
@@ -578,7 +598,6 @@ const relatedPostsWithCommentCounts = attachApprovedCommentCounts(
   'it'
 );
 
-const viewerSession = await getUserSessionFromCookies(Astro.cookies);
 let hideNewsletterPromo = false;
 
 if (!viewerSession.error && viewerSession.user) {
@@ -636,8 +655,8 @@ const alternateLanguages = englishUrl
 ---
 
 <Layout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
+  reviews={headerReviews}
+  news={headerNews}
   title={pageTitle}
   description={pageDescription}
   image={pageImage}
