@@ -11,19 +11,25 @@ const items = isEn
         title: 'Consoles',
         label: 'Home systems',
         href: '/en/platforms/consoles/',
-        icon: '/images/icons/console-icon.png'
+        icon: '/images/icons/console-icon.png',
+        iconWidth: 80,
+        iconHeight: 38
       },
       {
         title: 'Computers',
         label: 'Home computers',
         href: '/en/platforms/computers/',
-        icon: '/images/icons/computer-icon.png'
+        icon: '/images/icons/computer-icon.png',
+        iconWidth: 77,
+        iconHeight: 80
       },
       {
         title: 'Arcade',
         label: 'Cabinets and boards',
         href: '/en/platforms/arcade/',
-        icon: '/images/icons/arcade-icon.png'
+        icon: '/images/icons/arcade-icon.png',
+        iconWidth: 67,
+        iconHeight: 80
       }
     ]
   : [
@@ -31,19 +37,25 @@ const items = isEn
         title: 'Console',
         label: 'Sistemi da salotto',
         href: '/piattaforme/console/',
-        icon: '/images/icons/console-icon.png'
+        icon: '/images/icons/console-icon.png',
+        iconWidth: 80,
+        iconHeight: 38
       },
       {
         title: 'Computer',
         label: 'Home computer',
         href: '/piattaforme/computer/',
-        icon: '/images/icons/computer-icon.png'
+        icon: '/images/icons/computer-icon.png',
+        iconWidth: 77,
+        iconHeight: 80
       },
       {
         title: 'Arcade',
         label: 'Cabinet e board',
         href: '/piattaforme/arcade/',
-        icon: '/images/icons/arcade-icon.png'
+        icon: '/images/icons/arcade-icon.png',
+        iconWidth: 67,
+        iconHeight: 80
       }
     ];
 
@@ -61,7 +73,13 @@ const moreLabel = isEn ? 'All platforms' : 'Tutte le piattaforme';
         <a href={item.href} class="rg-platform-link">
 
           <span class="rg-platform-link__icon" aria-hidden="true">
-            <img src={item.icon} alt="" loading="lazy" />
+            <img
+              src={item.icon}
+              alt=""
+              width={item.iconWidth}
+              height={item.iconHeight}
+              loading="lazy"
+            />
           </span>
 
           <span class="rg-platform-link__text">

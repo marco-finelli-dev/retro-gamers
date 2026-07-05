@@ -54,15 +54,21 @@ const typeUrls = {
 const types = [
   {
     type: 'arcade',
-    icon: '/images/icons/arcade-icon.png'
+    icon: '/images/icons/arcade-icon.png',
+    iconWidth: 67,
+    iconHeight: 80
   },
   {
     type: 'computer',
-    icon: '/images/icons/computer-icon.png'
+    icon: '/images/icons/computer-icon.png',
+    iconWidth: 77,
+    iconHeight: 80
   },
   {
     type: 'console',
-    icon: '/images/icons/console-icon.png'
+    icon: '/images/icons/console-icon.png',
+    iconWidth: 80,
+    iconHeight: 38
   }
 ];
 
@@ -99,6 +105,8 @@ const getCountLabel = (count) =>
   <img
     src={item.icon}
     alt=""
+    width={item.iconWidth}
+    height={item.iconHeight}
     loading="lazy"
   />
 </div>
