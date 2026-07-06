@@ -62,11 +62,11 @@ const copy = isEn
         'This page is currently published as a guide and historical context. It does not include files downloadable from Retro-Gamers.it.',
       downloadFuture:
         'Future internal downloads will be reserved for registered users after editorial and legal review.',
-      downloadReadyTitle: 'Download available',
+      downloadReadyTitle: 'Available downloads',
       downloadReadyText:
         'This package is served with a temporary link reserved for registered users.',
       downloadPackagesText:
-        'Choose the package you want to download. Each file is served with a temporary link reserved for registered users.',
+        'Choose the package that matches the platform you want to use. Each file is served through a temporary link reserved for registered users.',
       downloadButton: 'Download package',
       downloadPreparing: 'Preparing temporary download link...',
       downloadReady: 'Temporary link ready. The download will open in a new tab.',
@@ -106,7 +106,7 @@ const copy = isEn
         guideOnly: 'Guide only',
       },
       distributions: {
-        internalDownload: 'Future internal download',
+        internalDownload: 'Internal download',
         officialExternalReference: 'Official external reference',
         guideOnly: 'Guide only',
       },
@@ -146,11 +146,11 @@ const copy = isEn
         'Questa scheda è pubblicata come guida e contesto storico. Non contiene file scaricabili da Retro-Gamers.it.',
       downloadFuture:
         'I futuri download interni saranno riservati agli utenti registrati dopo verifica editoriale e legale.',
-      downloadReadyTitle: 'Download disponibile',
+      downloadReadyTitle: 'Download disponibili',
       downloadReadyText:
         'Il pacchetto viene servito con un link temporaneo riservato agli utenti registrati.',
       downloadPackagesText:
-        'Scegli il pacchetto da scaricare. Ogni file viene servito con un link temporaneo riservato agli utenti registrati.',
+        'Scegli il pacchetto compatibile con la piattaforma che vuoi usare. Ogni file viene servito con un link temporaneo riservato agli utenti registrati.',
       downloadButton: 'Scarica il pacchetto',
       downloadPreparing: 'Preparazione del link temporaneo...',
       downloadReady: 'Link temporaneo pronto. Il download si aprirà in una nuova scheda.',
@@ -190,7 +190,7 @@ const copy = isEn
         guideOnly: 'Solo guida',
       },
       distributions: {
-        internalDownload: 'Download interno futuro',
+        internalDownload: 'Download interno',
         officialExternalReference: 'Riferimento esterno ufficiale',
         guideOnly: 'Solo guida',
       },
@@ -396,8 +396,8 @@ const getRelatedPostExcerpt = (post: any) =>
 const getRelatedPostImage = (post: any) =>
   post.featuredImage?.asset
     ? urlFor(post.featuredImage)
-        .width(520)
-        .height(325)
+        .width(168)
+        .height(128)
         .fit('crop')
         .quality(74)
         .auto('format')
@@ -448,7 +448,7 @@ const downloadMessageAttrs = {
           <div class="playable-classic-hero__chips">
             {legalStatusLabel && <span>{legalStatusLabel}</span>}
             {distributionLabel && <span>{distributionLabel}</span>}
-            {classic.requiresLogin && <span>{isEn ? 'Login for future downloads' : 'Login per download futuri'}</span>}
+            {classic.requiresLogin && <span>{isEn ? 'Login required' : 'Login richiesto'}</span>}
           </div>
         </div>
 
@@ -477,90 +477,9 @@ const downloadMessageAttrs = {
             <p class="playable-classic-empty-copy">{description}</p>
           )}
 
-          {(classic.recommendedEmulator || setupHtml || classic.technicalNotes || classic.languageNotes) && (
-            <section class="playable-classic-panel">
-              <h2>{copy.instructionsTitle}</h2>
-
-              {classic.recommendedEmulator && (
-                <p><strong>{copy.recommendedEmulator}:</strong> {classic.recommendedEmulator}</p>
-              )}
-
-              {setupHtml && (
-                <div class="playable-classic-richtext playable-classic-richtext--compact">
-                  <h3>{copy.setupInstructions}</h3>
-                  <div set:html={setupHtml} />
-                </div>
-              )}
-
-              {classic.technicalNotes && (
-                <p><strong>{copy.technicalNotes}:</strong> {classic.technicalNotes}</p>
-              )}
-
-              {classic.languageNotes && (
-                <p><strong>{copy.languageNotes}:</strong> {classic.languageNotes}</p>
-              )}
-            </section>
-          )}
-
-          {relatedPostCards.length > 0 && (
-            <section class="playable-classic-panel">
-              <h2>{copy.relatedPosts}</h2>
-
-              <div class="playable-classic-related-posts">
-                {relatedPostCards.map((post) => (
-                  <article class="playable-classic-related-card">
-                    {post.imageUrl ? (
-                      <a
-                        class="playable-classic-related-card__media"
-                        href={post.url}
-                        aria-label={post.title}
-                      >
-                        <img
-                          src={post.imageUrl}
-                          alt={post.featuredImage?.alt || post.title}
-                          width="520"
-                          height="325"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </a>
-                    ) : (
-                      <a
-                        class="playable-classic-related-card__media playable-classic-related-card__media--placeholder"
-                        href={post.url}
-                        aria-label={post.title}
-                      >
-                        <span aria-hidden="true">{post.title?.slice(0, 2).toUpperCase()}</span>
-                      </a>
-                    )}
-
-                    <div class="playable-classic-related-card__body">
-                      <div class="playable-classic-related-card__meta">
-                        <span>{post.typeLabel}</span>
-                        {post.language && <small>{post.language.toUpperCase()}</small>}
-                      </div>
-
-                      <h3><a href={post.url}>{post.title}</a></h3>
-
-                      {post.excerpt && (
-                        <p>{post.excerpt}</p>
-                      )}
-
-                      <a class="playable-classic-related-card__cta" href={post.url}>
-                        {copy.readArticle}
-                      </a>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
-        </article>
-
-        <aside class="playable-classic-sidebar" aria-label={isEn ? 'Playable classic details' : 'Dettagli classico giocabile'}>
-          {hasInternalDownload ? (
+          {hasInternalDownload && (
             <section
-              class="playable-classic-download playable-classic-download--ready"
+              class="playable-classic-download playable-classic-download--ready playable-classic-download--main"
               data-playable-classic-download-group
             >
               <h2>{copy.downloadReadyTitle}</h2>
@@ -686,7 +605,36 @@ const downloadMessageAttrs = {
                 <a href={copy.policyHref}>{copy.policyCta}</a>
               </div>
             </section>
-          ) : (
+          )}
+
+          {(classic.recommendedEmulator || setupHtml || classic.technicalNotes || classic.languageNotes) && (
+            <section class="playable-classic-panel">
+              <h2>{copy.instructionsTitle}</h2>
+
+              {classic.recommendedEmulator && (
+                <p><strong>{copy.recommendedEmulator}:</strong> {classic.recommendedEmulator}</p>
+              )}
+
+              {setupHtml && (
+                <div class="playable-classic-richtext playable-classic-richtext--compact">
+                  <h3>{copy.setupInstructions}</h3>
+                  <div set:html={setupHtml} />
+                </div>
+              )}
+
+              {classic.technicalNotes && (
+                <p><strong>{copy.technicalNotes}:</strong> {classic.technicalNotes}</p>
+              )}
+
+              {classic.languageNotes && (
+                <p><strong>{copy.languageNotes}:</strong> {classic.languageNotes}</p>
+              )}
+            </section>
+          )}
+        </article>
+
+        <aside class="playable-classic-sidebar" aria-label={isEn ? 'Playable classic details' : 'Dettagli classico giocabile'}>
+          {!hasInternalDownload && (
             <section class="playable-classic-download">
               <h2>{copy.downloadTitle}</h2>
               <p>{copy.downloadText}</p>
@@ -705,6 +653,43 @@ const downloadMessageAttrs = {
                   <strong>{item.value}</strong>
                 </div>
               ))}
+            </section>
+          )}
+
+          {relatedPostCards.length > 0 && (
+            <section class="playable-classic-panel playable-classic-panel--sidebar">
+              <h2>{copy.relatedPosts}</h2>
+
+              <div class="playable-classic-related-posts">
+                {relatedPostCards.map((post) => (
+                  <a class="playable-classic-related-post" href={post.url}>
+                    {post.imageUrl ? (
+                      <span class="playable-classic-related-post__media">
+                        <img
+                          src={post.imageUrl}
+                          alt={post.featuredImage?.alt || post.title}
+                          width="84"
+                          height="64"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </span>
+                    ) : (
+                      <span class="playable-classic-related-post__media playable-classic-related-post__media--placeholder" aria-hidden="true">
+                        {post.title?.slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+
+                    <span class="playable-classic-related-post__body">
+                      <span class="playable-classic-related-post__meta">
+                        <span>{post.typeLabel}</span>
+                        {post.language && <small>{post.language.toUpperCase()}</small>}
+                      </span>
+                      <strong>{post.title}</strong>
+                    </span>
+                  </a>
+                ))}
+              </div>
             </section>
           )}
 
