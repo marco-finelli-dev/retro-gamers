@@ -51,8 +51,8 @@ const copy = isEn
       genre: 'Genre',
       legalStatus: 'Legal status',
       distribution: 'Distribution',
-      reference: 'External reference',
       legalSource: 'Legal source',
+      sourceLabel: 'Source',
       notesTitle: 'Legal notes',
       licenseNotes: 'License notes',
       redistributionNotes: 'Redistribution notes',
@@ -139,8 +139,8 @@ const copy = isEn
       genre: 'Genere',
       legalStatus: 'Stato legale',
       distribution: 'Distribuzione',
-      reference: 'Riferimento esterno',
       legalSource: 'Fonte legale',
+      sourceLabel: 'Fonte',
       notesTitle: 'Note legali',
       licenseNotes: 'Note licenza',
       redistributionNotes: 'Note redistribuzione',
@@ -670,7 +670,7 @@ const downloadMessageAttrs = {
             </section>
           )}
 
-          {(noteItems.length > 0 || classic.externalReferenceUrl || classic.legalSourceUrl) && (
+          {(noteItems.length > 0 || classic.legalSourceUrl) && (
             <section class="playable-classic-panel playable-classic-panel--sidebar">
               <h2>{copy.notesTitle}</h2>
               {noteItems.map((item) => (
@@ -680,20 +680,13 @@ const downloadMessageAttrs = {
                 </div>
               ))}
 
-              {classic.externalReferenceUrl && (
-                <p>
-                  <a href={classic.externalReferenceUrl} target="_blank" rel="noopener noreferrer">
-                    {classic.externalReferenceLabel || copy.reference}
-                  </a>
-                </p>
-              )}
-
               {classic.legalSourceUrl && (
-                <p>
-                  <a href={classic.legalSourceUrl} target="_blank" rel="noopener noreferrer">
+                <div class="playable-classic-source">
+                  <span>{copy.sourceLabel}</span>
+                  <a class="playable-classic-source__pill" href={classic.legalSourceUrl} target="_blank" rel="noopener noreferrer">
                     {classic.legalSourceLabel || copy.legalSource}
                   </a>
-                </p>
+                </div>
               )}
             </section>
           )}

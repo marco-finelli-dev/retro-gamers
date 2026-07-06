@@ -79,8 +79,6 @@ export type PlayableClassic = {
   legalStatus?: string;
   distributionType?: string;
   verificationDate?: string;
-  externalReferenceUrl?: string;
-  externalReferenceLabel?: string;
   legalSourceUrl?: string;
   legalSourceLabel?: string;
   licenseNotes?: string;
@@ -193,8 +191,6 @@ const playableClassicFields = `
   legalStatus,
   distributionType,
   verificationDate,
-  externalReferenceUrl,
-  externalReferenceLabel,
   legalSourceUrl,
   legalSourceLabel,
   licenseNotes,
