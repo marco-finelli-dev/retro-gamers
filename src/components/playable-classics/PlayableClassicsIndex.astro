@@ -1,0 +1,186 @@
+---
+import '../../styles/pages/playable-classics.css';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { urlFor } from '../../lib/image';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+import {
+  getPlayableClassicUrl,
+  getPublishedPlayableClassics,
+  type PlayableClassic,
+  type PlayableClassicLang,
+} from '../../lib/playable-classics';
+
+const { lang = 'it' } = Astro.props as { lang?: PlayableClassicLang };
+const currentLang: PlayableClassicLang = lang === 'en' ? 'en' : 'it';
+const isEn = currentLang === 'en';
+
+const copy = isEn
+  ? {
+      title: 'Playable Classics',
+      description:
+        'Games, demos, homebrew and retro materials to rediscover with clear sources, legal context and practical notes.',
+      canonical: 'https://www.retro-gamers.it/en/playable-classics/',
+      languageSwitch: '/classici-giocabili-oggi/',
+      eyebrow: 'Playable Classics',
+      heroTitle: 'Playable Classics',
+      heroText:
+        'A curated space for rediscovering games and retro materials with historical context, practical guidance and a clear legal status.',
+      policyCta: 'Read the policy',
+      policyHref: '/en/playable-classics/policy/',
+      cardsTitle: 'Available pages',
+      emptyTitle: 'No public pages yet',
+      emptyText:
+        'The first pages will appear after editorial and legal review. Downloads are not active yet.',
+      open: 'Open page',
+      year: 'Year',
+      platform: 'Platform',
+      guideOnly: 'Guide only',
+    }
+  : {
+      title: 'Classici giocabili oggi',
+      description:
+        'Giochi, demo, homebrew e materiali retro da riscoprire con fonti chiare, contesto legale e note pratiche.',
+      canonical: 'https://www.retro-gamers.it/classici-giocabili-oggi/',
+      languageSwitch: '/en/playable-classics/',
+      eyebrow: 'Download legali',
+      heroTitle: 'Classici giocabili oggi',
+      heroText:
+        'Uno spazio curato per riscoprire giochi e materiali retro con contesto storico, indicazioni pratiche e stato legale chiaro.',
+      policyCta: 'Leggi la policy',
+      policyHref: '/classici-giocabili-oggi/policy/',
+      cardsTitle: 'Schede disponibili',
+      emptyTitle: 'Nessuna scheda pubblica per ora',
+      emptyText:
+        'Le prime schede compariranno dopo verifica editoriale e legale. I download non sono ancora attivi.',
+      open: 'Apri scheda',
+      year: 'Anno',
+      platform: 'Piattaforma',
+      guideOnly: 'Solo guida',
+    };
+
+const [classics, allPosts] = await Promise.all([
+  getPublishedPlayableClassics(currentLang),
+  getAllPosts(),
+]);
+
+const groupedPosts = groupPosts(allPosts);
+const headerReviews = isEn
+  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
+  : groupedPosts.allReviews;
+const headerNews = isEn
+  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
+  : groupedPosts.allNews;
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/classici-giocabili-oggi/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/playable-classics/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/classici-giocabili-oggi/' },
+];
+
+const getCoverUrl = (classic: PlayableClassic) => {
+  if (!classic.coverImage?.asset) return '';
+
+  return urlFor(classic.coverImage)
+    .width(760)
+    .height(470)
+    .fit('crop')
+    .quality(76)
+    .auto('format')
+    .url();
+};
+
+const getName = (item: any) =>
+  isEn
+    ? item?.nameEn || item?.name || item?.title || ''
+    : item?.name || item?.title || item?.nameEn || '';
+
+const getPrimaryPlatform = (classic: PlayableClassic) =>
+  classic.originalPlatforms?.map(getName).filter(Boolean)[0] || '';
+---
+
+<BaseLayout
+  reviews={headerReviews}
+  news={headerNews}
+  title={copy.title}
+  description={copy.description}
+  image="/og-image.jpg"
+  canonical={copy.canonical}
+  lang={currentLang}
+  languageSwitch={copy.languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <main class="playable-classics-page">
+    <div class="container">
+      <section class="playable-classics-hero">
+        <div class="playable-classics-hero__content">
+          <span>{copy.eyebrow}</span>
+          <h1>{copy.heroTitle}</h1>
+          <p>{copy.heroText}</p>
+          <a class="playable-classics-hero__policy" href={copy.policyHref}>{copy.policyCta}</a>
+        </div>
+      </section>
+
+      <section class="playable-classics-section" aria-labelledby="playable-classics-list">
+        <div class="playable-classics-section__heading">
+          <span>{copy.eyebrow}</span>
+          <h2 id="playable-classics-list">{copy.cardsTitle}</h2>
+        </div>
+
+        {classics.length > 0 ? (
+          <div class="playable-classics-grid">
+            {classics.map((classic) => {
+              const coverUrl = getCoverUrl(classic);
+              const primaryPlatform = getPrimaryPlatform(classic);
+
+              return (
+                <article class="playable-classics-card">
+                  <a class="playable-classics-card__media" href={getPlayableClassicUrl(classic, currentLang)}>
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt={classic.coverImage?.alt || classic.title}
+                        width="760"
+                        height="470"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span aria-hidden="true">{classic.title?.slice(0, 2).toUpperCase()}</span>
+                    )}
+                  </a>
+
+                  <div class="playable-classics-card__body">
+                    <div class="playable-classics-card__meta">
+                      <span>{classic.distributionType === 'guideOnly' ? copy.guideOnly : classic.distributionType}</span>
+                      {classic.originalYear && <small>{copy.year}: {classic.originalYear}</small>}
+                      {primaryPlatform && <small>{copy.platform}: {primaryPlatform}</small>}
+                    </div>
+
+                    <h3>
+                      <a href={getPlayableClassicUrl(classic, currentLang)}>{classic.title}</a>
+                    </h3>
+
+                    {(classic.excerpt || classic.subtitle) && (
+                      <p>{classic.excerpt || classic.subtitle}</p>
+                    )}
+
+                    <a class="playable-classics-card__cta" href={getPlayableClassicUrl(classic, currentLang)}>
+                      {copy.open}
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div class="playable-classics-empty">
+            <h3>{copy.emptyTitle}</h3>
+            <p>{copy.emptyText}</p>
+            <a href={copy.policyHref}>{copy.policyCta}</a>
+          </div>
+        )}
+      </section>
+    </div>
+  </main>
+</BaseLayout>

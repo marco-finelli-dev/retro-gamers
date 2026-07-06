@@ -1,0 +1,13 @@
+---
+import PlayableClassicDetail from '../../components/playable-classics/PlayableClassicDetail.astro';
+import { getPlayableClassicBySlug } from '../../lib/playable-classics';
+
+const { slug } = Astro.params;
+const classic = await getPlayableClassicBySlug(slug || '', 'it');
+
+if (!classic) {
+  return Astro.rewrite('/404');
+}
+---
+
+<PlayableClassicDetail classic={classic} lang="it" />

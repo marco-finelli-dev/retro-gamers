@@ -1,0 +1,474 @@
+---
+import '../../styles/pages/playable-classics.css';
+
+import { toHTML } from '@portabletext/to-html';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { urlFor } from '../../lib/image';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+import {
+  type PlayableClassic,
+  type PlayableClassicLang,
+} from '../../lib/playable-classics';
+import {
+  getCompanyUrl,
+  getPlatformUrl,
+  getPostUrl,
+} from '../../lib/routes';
+
+const {
+  classic,
+  lang = 'it',
+} = Astro.props as { classic: PlayableClassic; lang?: PlayableClassicLang };
+
+const currentLang: PlayableClassicLang = lang === 'en' ? 'en' : 'it';
+const isEn = currentLang === 'en';
+
+const [allPosts] = await Promise.all([
+  getAllPosts(),
+]);
+
+const groupedPosts = groupPosts(allPosts);
+const headerReviews = isEn
+  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
+  : groupedPosts.allReviews;
+const headerNews = isEn
+  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
+  : groupedPosts.allNews;
+
+const copy = isEn
+  ? {
+      sectionTitle: 'Playable Classics',
+      sectionHref: '/en/playable-classics/',
+      policyHref: '/en/playable-classics/policy/',
+      policyCta: 'Read the policy',
+      canonicalBase: 'https://www.retro-gamers.it/en/playable-classics',
+      languageSwitch: '/classici-giocabili-oggi/',
+      defaultDescription: (title: string) =>
+        `${title}: historical context, legal status and practical notes on Retro-Gamers.it.`,
+      year: 'Original year',
+      platforms: 'Original platforms',
+      developer: 'Developer',
+      publisher: 'Publisher',
+      genre: 'Genre',
+      legalStatus: 'Legal status',
+      distribution: 'Distribution',
+      reference: 'External reference',
+      legalSource: 'Legal source',
+      notesTitle: 'Legal notes',
+      licenseNotes: 'License notes',
+      redistributionNotes: 'Redistribution notes',
+      downloadTitle: 'No internal download yet',
+      downloadText:
+        'This page is currently published as a guide and historical context. It does not include files downloadable from Retro-Gamers.it.',
+      downloadFuture:
+        'Future internal downloads will be reserved for registered users after editorial and legal review.',
+      loginCta: 'Go to your account',
+      loginHref: '/en/account/',
+      instructionsTitle: 'How to play today',
+      recommendedEmulator: 'Recommended emulator or interpreter',
+      setupInstructions: 'Quick setup notes',
+      technicalNotes: 'Technical notes',
+      languageNotes: 'Language notes',
+      relatedPosts: 'Related articles',
+      relatedPlatforms: 'Related platforms',
+      relatedCompanies: 'Related companies',
+      relatedCreators: 'Related creators',
+      readArticle: 'Read article',
+      backToIndex: 'Back to Playable Classics',
+      legalStatuses: {
+        verifiedFreeware: 'Verified freeware',
+        openSource: 'Open source',
+        authorizedHomebrew: 'Authorized homebrew',
+        redistributableDemo: 'Redistributable demo',
+        redistributableShareware: 'Redistributable shareware',
+        officialExternalReference: 'Official external reference',
+        guideOnly: 'Guide only',
+      },
+      distributions: {
+        internalDownload: 'Future internal download',
+        officialExternalReference: 'Official external reference',
+        guideOnly: 'Guide only',
+      },
+    }
+  : {
+      sectionTitle: 'Classici giocabili oggi',
+      sectionHref: '/classici-giocabili-oggi/',
+      policyHref: '/classici-giocabili-oggi/policy/',
+      policyCta: 'Leggi la policy',
+      canonicalBase: 'https://www.retro-gamers.it/classici-giocabili-oggi',
+      languageSwitch: '/en/playable-classics/',
+      defaultDescription: (title: string) =>
+        `${title}: contesto storico, stato legale e note pratiche su Retro-Gamers.it.`,
+      year: 'Anno originale',
+      platforms: 'Piattaforme originali',
+      developer: 'Sviluppatore',
+      publisher: 'Publisher',
+      genre: 'Genere',
+      legalStatus: 'Stato legale',
+      distribution: 'Distribuzione',
+      reference: 'Riferimento esterno',
+      legalSource: 'Fonte legale',
+      notesTitle: 'Note legali',
+      licenseNotes: 'Note licenza',
+      redistributionNotes: 'Note redistribuzione',
+      downloadTitle: 'Download interno non disponibile',
+      downloadText:
+        'Questa scheda è pubblicata come guida e contesto storico. Non contiene file scaricabili da Retro-Gamers.it.',
+      downloadFuture:
+        'I futuri download interni saranno riservati agli utenti registrati dopo verifica editoriale e legale.',
+      loginCta: 'Accedi al tuo account',
+      loginHref: '/account/login/',
+      instructionsTitle: 'Come giocarlo oggi',
+      recommendedEmulator: 'Emulatore o interprete consigliato',
+      setupInstructions: 'Istruzioni rapide',
+      technicalNotes: 'Note tecniche',
+      languageNotes: 'Note lingua',
+      relatedPosts: 'Articoli collegati',
+      relatedPlatforms: 'Piattaforme collegate',
+      relatedCompanies: 'Aziende collegate',
+      relatedCreators: 'Creator collegati',
+      readArticle: 'Leggi articolo',
+      backToIndex: 'Torna ai Classici giocabili oggi',
+      legalStatuses: {
+        verifiedFreeware: 'Freeware verificato',
+        openSource: 'Open source',
+        authorizedHomebrew: 'Homebrew autorizzato',
+        redistributableDemo: 'Demo redistribuibile',
+        redistributableShareware: 'Shareware redistribuibile',
+        officialExternalReference: 'Riferimento esterno ufficiale',
+        guideOnly: 'Solo guida',
+      },
+      distributions: {
+        internalDownload: 'Download interno futuro',
+        officialExternalReference: 'Riferimento esterno ufficiale',
+        guideOnly: 'Solo guida',
+      },
+    };
+
+const alternateLanguages = [
+  { lang: currentLang, url: `${copy.canonicalBase}/${classic.slug}/` },
+];
+
+const title = classic.title;
+const description = classic.excerpt || classic.subtitle || copy.defaultDescription(classic.title);
+const coverUrl = classic.coverImage?.asset
+  ? urlFor(classic.coverImage)
+      .width(1280)
+      .height(720)
+      .fit('crop')
+      .quality(78)
+      .auto('format')
+      .url()
+  : '';
+
+function escapeHTML(value = '') {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char] || char));
+}
+
+function getPortableImage(value: any) {
+  if (!value?.asset) return '';
+
+  const imageUrl = urlFor(value)
+    .width(980)
+    .quality(76)
+    .auto('format')
+    .url();
+
+  const caption = value.caption
+    ? `<figcaption>${escapeHTML(value.caption)}</figcaption>`
+    : '';
+
+  return `
+    <figure>
+      <img
+        src="${escapeHTML(imageUrl)}"
+        alt="${escapeHTML(value.alt || '')}"
+        width="980"
+        height="552"
+        loading="lazy"
+        decoding="async"
+      />
+      ${caption}
+    </figure>
+  `;
+}
+
+function renderPortableText(blocks: any[] = []) {
+  if (!Array.isArray(blocks) || blocks.length === 0) return '';
+
+  return toHTML(blocks, {
+    components: {
+      types: {
+        image: ({ value }) => getPortableImage(value),
+      },
+      marks: {
+        link: ({ children, value }) => {
+          const href = value?.href || '#';
+          const isMail = href.startsWith('mailto:');
+          const rel = isMail ? '' : ' rel="noopener noreferrer"';
+          const target = isMail ? '' : ' target="_blank"';
+
+          return `<a href="${escapeHTML(href)}"${target}${rel}>${children}</a>`;
+        },
+      },
+    },
+  });
+}
+
+const bodyHtml = renderPortableText(classic.body);
+const setupHtml = renderPortableText(classic.setupInstructions);
+
+const getLabel = (map: Record<string, string>, value?: string) =>
+  (value && map[value]) || value || '';
+
+const getName = (item: any) =>
+  isEn
+    ? item?.nameEn || item?.name || item?.title || ''
+    : item?.name || item?.title || item?.nameEn || '';
+
+const legalStatusLabel = getLabel(copy.legalStatuses, classic.legalStatus);
+const distributionLabel = getLabel(copy.distributions, classic.distributionType);
+const facts = [
+  classic.originalYear && { label: copy.year, value: String(classic.originalYear) },
+  classic.originalPlatforms?.length && {
+    label: copy.platforms,
+    value: classic.originalPlatforms.map(getName).filter(Boolean).join(', '),
+  },
+  classic.developer?.length && {
+    label: copy.developer,
+    value: classic.developer.map(getName).filter(Boolean).join(', '),
+  },
+  classic.publisher?.length && {
+    label: copy.publisher,
+    value: classic.publisher.map(getName).filter(Boolean).join(', '),
+  },
+  classic.genre?.length && {
+    label: copy.genre,
+    value: classic.genre.map(getName).filter(Boolean).join(', '),
+  },
+].filter(Boolean) as Array<{ label: string; value: string }>;
+
+const legalItems = [
+  legalStatusLabel && { label: copy.legalStatus, value: legalStatusLabel },
+  distributionLabel && { label: copy.distribution, value: distributionLabel },
+].filter(Boolean) as Array<{ label: string; value: string }>;
+
+const noteItems = [
+  classic.licenseNotes && { label: copy.licenseNotes, value: classic.licenseNotes },
+  classic.redistributionNotes && { label: copy.redistributionNotes, value: classic.redistributionNotes },
+].filter(Boolean) as Array<{ label: string; value: string }>;
+
+const relationPlatforms = classic.relatedPlatforms || [];
+const relationCompanies = classic.relatedCompanies || [];
+const relationCreators = classic.relatedCreators || [];
+---
+
+<BaseLayout
+  reviews={headerReviews}
+  news={headerNews}
+  title={title}
+  description={description}
+  image={coverUrl || '/og-image.jpg'}
+  canonical={`${copy.canonicalBase}/${classic.slug}/`}
+  lang={currentLang}
+  languageSwitch={copy.languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <main class="playable-classics-page playable-classic-detail">
+    <div class="container">
+      <a class="playable-classic-back" href={copy.sectionHref}>{copy.backToIndex}</a>
+
+      <section class="playable-classic-hero">
+        <div class="playable-classic-hero__content">
+          <span>{copy.sectionTitle}</span>
+          <h1>{classic.title}</h1>
+          {(classic.subtitle || classic.excerpt) && (
+            <p>{classic.subtitle || classic.excerpt}</p>
+          )}
+
+          <div class="playable-classic-hero__chips">
+            {legalStatusLabel && <span>{legalStatusLabel}</span>}
+            {distributionLabel && <span>{distributionLabel}</span>}
+            {classic.requiresLogin && <span>{isEn ? 'Login for future downloads' : 'Login per download futuri'}</span>}
+          </div>
+        </div>
+
+        <figure class="playable-classic-hero__media">
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt={classic.coverImage?.alt || classic.title}
+              width="1280"
+              height="720"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+            />
+          ) : (
+            <span aria-hidden="true">{classic.title?.slice(0, 2).toUpperCase()}</span>
+          )}
+        </figure>
+      </section>
+
+      <div class="playable-classic-layout">
+        <article class="playable-classic-main">
+          {bodyHtml ? (
+            <div class="playable-classic-richtext" set:html={bodyHtml} />
+          ) : (
+            <p class="playable-classic-empty-copy">{description}</p>
+          )}
+
+          {(classic.recommendedEmulator || setupHtml || classic.technicalNotes || classic.languageNotes) && (
+            <section class="playable-classic-panel">
+              <h2>{copy.instructionsTitle}</h2>
+
+              {classic.recommendedEmulator && (
+                <p><strong>{copy.recommendedEmulator}:</strong> {classic.recommendedEmulator}</p>
+              )}
+
+              {setupHtml && (
+                <div class="playable-classic-richtext playable-classic-richtext--compact">
+                  <h3>{copy.setupInstructions}</h3>
+                  <div set:html={setupHtml} />
+                </div>
+              )}
+
+              {classic.technicalNotes && (
+                <p><strong>{copy.technicalNotes}:</strong> {classic.technicalNotes}</p>
+              )}
+
+              {classic.languageNotes && (
+                <p><strong>{copy.languageNotes}:</strong> {classic.languageNotes}</p>
+              )}
+            </section>
+          )}
+
+          {classic.relatedPosts?.length > 0 && (
+            <section class="playable-classic-panel">
+              <h2>{copy.relatedPosts}</h2>
+
+              <div class="playable-classic-related-posts">
+                {classic.relatedPosts.map((post) => (
+                  <article>
+                    <span>{post.type || (isEn ? 'Article' : 'Articolo')}</span>
+                    <h3><a href={getPostUrl(post)}>{post.title}</a></h3>
+                    {(post.excerpt || post.cardExcerpt || post.subtitle) && (
+                      <p>{post.excerpt || post.cardExcerpt || post.subtitle}</p>
+                    )}
+                    <a href={getPostUrl(post)}>{copy.readArticle}</a>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+        </article>
+
+        <aside class="playable-classic-sidebar" aria-label={isEn ? 'Playable classic details' : 'Dettagli classico giocabile'}>
+          <section class="playable-classic-download">
+            <h2>{copy.downloadTitle}</h2>
+            <p>{copy.downloadText}</p>
+            {classic.requiresLogin && <p>{copy.downloadFuture}</p>}
+            <div class="playable-classic-download__actions">
+              <a href={copy.loginHref}>{copy.loginCta}</a>
+              <a href={copy.policyHref}>{copy.policyCta}</a>
+            </div>
+          </section>
+
+          {facts.length > 0 && (
+            <section class="playable-classic-facts">
+              {facts.map((item) => (
+                <div>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {legalItems.length > 0 && (
+            <section class="playable-classic-panel playable-classic-panel--sidebar">
+              <h2>{copy.legalStatus}</h2>
+              <dl class="playable-classic-definition-list">
+                {legalItems.map((item) => (
+                  <>
+                    <dt>{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </>
+                ))}
+              </dl>
+
+              {classic.externalReferenceUrl && (
+                <p>
+                  <a href={classic.externalReferenceUrl} target="_blank" rel="noopener noreferrer">
+                    {classic.externalReferenceLabel || copy.reference}
+                  </a>
+                </p>
+              )}
+
+              {classic.legalSourceUrl && (
+                <p>
+                  <a href={classic.legalSourceUrl} target="_blank" rel="noopener noreferrer">
+                    {classic.legalSourceLabel || copy.legalSource}
+                  </a>
+                </p>
+              )}
+            </section>
+          )}
+
+          {noteItems.length > 0 && (
+            <section class="playable-classic-panel playable-classic-panel--sidebar">
+              <h2>{copy.notesTitle}</h2>
+              {noteItems.map((item) => (
+                <div class="playable-classic-note">
+                  <h3>{item.label}</h3>
+                  <p>{item.value}</p>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {relationPlatforms.length > 0 && (
+            <section class="playable-classic-panel playable-classic-panel--sidebar">
+              <h2>{copy.relatedPlatforms}</h2>
+              <div class="playable-classic-chip-list">
+                {relationPlatforms.map((platform) => (
+                  <a href={getPlatformUrl(platform, currentLang)}>{getName(platform)}</a>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {relationCompanies.length > 0 && (
+            <section class="playable-classic-panel playable-classic-panel--sidebar">
+              <h2>{copy.relatedCompanies}</h2>
+              <div class="playable-classic-chip-list">
+                {relationCompanies.map((company) => (
+                  <a href={getCompanyUrl(company, currentLang)}>{getName(company)}</a>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {relationCreators.length > 0 && (
+            <section class="playable-classic-panel playable-classic-panel--sidebar">
+              <h2>{copy.relatedCreators}</h2>
+              <div class="playable-classic-chip-list">
+                {relationCreators.map((creator) => (
+                  <a href={currentLang === 'en' ? `/en/creators/${creator.slug}/` : `/creatori/${creator.slug}/`}>
+                    {creator.name}
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+        </aside>
+      </div>
+    </div>
+  </main>
+</BaseLayout>

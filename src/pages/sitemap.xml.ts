@@ -8,6 +8,10 @@ import {
   getAllCompanies,
   getCompanyUrl
 } from '../lib/companies';
+import {
+  getPlayableClassicRoutes,
+  getPlayableClassicUrl
+} from '../lib/playable-classics';
 
 const SITE_URL = 'https://www.retro-gamers.it';
 
@@ -84,6 +88,7 @@ export async function GET() {
   const posts = await getAllPosts();
   const platforms = await getAllPlatforms();
   const companies = await getAllCompanies();
+  const playableClassics = await getPlayableClassicRoutes();
 
   const staticPages = [
     {
@@ -200,6 +205,16 @@ export async function GET() {
       loc: absoluteUrl('/newsletter/'),
       changefreq: 'monthly',
       priority: '0.4'
+    },
+    {
+      loc: absoluteUrl('/classici-giocabili-oggi/'),
+      changefreq: 'monthly',
+      priority: '0.6'
+    },
+    {
+      loc: absoluteUrl('/classici-giocabili-oggi/policy/'),
+      changefreq: 'yearly',
+      priority: '0.3'
     },
     {
       loc: absoluteUrl('/privacy-policy/'),
@@ -323,6 +338,16 @@ export async function GET() {
       priority: '0.4'
     },
     {
+      loc: absoluteUrl('/en/playable-classics/'),
+      changefreq: 'monthly',
+      priority: '0.5'
+    },
+    {
+      loc: absoluteUrl('/en/playable-classics/policy/'),
+      changefreq: 'yearly',
+      priority: '0.3'
+    },
+    {
       loc: absoluteUrl('/en/privacy-policy/'),
       changefreq: 'yearly',
       priority: '0.2'
@@ -404,6 +429,15 @@ export async function GET() {
       priority: '0.6'
     }));
 
+  const playableClassicPages = playableClassics
+    .filter((classic) => classic?.slug)
+    .map((classic) => ({
+      loc: absoluteUrl(getPlayableClassicUrl(classic, classic.language || 'it')),
+      lastmod: getPostLastmod(classic),
+      changefreq: 'monthly',
+      priority: '0.6'
+    }));
+
   const urls = [
     ...staticPages,
     ...postPages,
@@ -412,7 +446,8 @@ export async function GET() {
     ...categoryPagesIt,
     ...categoryPagesEn,
     ...companyPagesIt,
-    ...companyPagesEn
+    ...companyPagesEn,
+    ...playableClassicPages
   ];
 
   const uniqueUrls = Array.from(
