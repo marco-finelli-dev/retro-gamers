@@ -301,6 +301,53 @@ const relationPlatforms = classic.relatedPlatforms || [];
 const relationCompanies = classic.relatedCompanies || [];
 const relationCreators = classic.relatedCreators || [];
 const downloadEndpoint = `/api/playable-classics/${classic.slug}/download`;
+const relatedPostTypeLabels: Record<string, string> = isEn
+  ? {
+      article: 'Article',
+      feature: 'Feature',
+      guide: 'Guide',
+      interview: 'Interview',
+      news: 'News',
+      review: 'Review',
+      special: 'Feature',
+    }
+  : {
+      article: 'Articolo',
+      feature: 'Speciale',
+      guide: 'Guida',
+      interview: 'Intervista',
+      news: 'News',
+      review: 'Recensione',
+      special: 'Speciale',
+    };
+
+const getRelatedPostTypeLabel = (type?: string) => {
+  if (!type) return isEn ? 'Article' : 'Articolo';
+
+  return relatedPostTypeLabels[type] || type.replace(/[-_]/g, ' ');
+};
+
+const getRelatedPostExcerpt = (post: any) =>
+  post.cardExcerpt || post.excerpt || post.subtitle || '';
+
+const getRelatedPostImage = (post: any) =>
+  post.featuredImage?.asset
+    ? urlFor(post.featuredImage)
+        .width(520)
+        .height(325)
+        .fit('crop')
+        .quality(74)
+        .auto('format')
+        .url()
+    : '';
+
+const relatedPostCards = (classic.relatedPosts || []).map((post) => ({
+  ...post,
+  excerpt: getRelatedPostExcerpt(post),
+  imageUrl: getRelatedPostImage(post),
+  typeLabel: getRelatedPostTypeLabel(post.type),
+  url: getPostUrl(post),
+}));
 const downloadMessageAttrs = {
   preparing: copy.downloadPreparing,
   ready: copy.downloadReady,
@@ -392,19 +439,54 @@ const downloadMessageAttrs = {
             </section>
           )}
 
-          {classic.relatedPosts?.length > 0 && (
+          {relatedPostCards.length > 0 && (
             <section class="playable-classic-panel">
               <h2>{copy.relatedPosts}</h2>
 
               <div class="playable-classic-related-posts">
-                {classic.relatedPosts.map((post) => (
-                  <article>
-                    <span>{post.type || (isEn ? 'Article' : 'Articolo')}</span>
-                    <h3><a href={getPostUrl(post)}>{post.title}</a></h3>
-                    {(post.excerpt || post.cardExcerpt || post.subtitle) && (
-                      <p>{post.excerpt || post.cardExcerpt || post.subtitle}</p>
+                {relatedPostCards.map((post) => (
+                  <article class="playable-classic-related-card">
+                    {post.imageUrl ? (
+                      <a
+                        class="playable-classic-related-card__media"
+                        href={post.url}
+                        aria-label={post.title}
+                      >
+                        <img
+                          src={post.imageUrl}
+                          alt={post.featuredImage?.alt || post.title}
+                          width="520"
+                          height="325"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </a>
+                    ) : (
+                      <a
+                        class="playable-classic-related-card__media playable-classic-related-card__media--placeholder"
+                        href={post.url}
+                        aria-label={post.title}
+                      >
+                        <span aria-hidden="true">{post.title?.slice(0, 2).toUpperCase()}</span>
+                      </a>
                     )}
-                    <a href={getPostUrl(post)}>{copy.readArticle}</a>
+
+                    <div class="playable-classic-related-card__body">
+                      <div class="playable-classic-related-card__meta">
+                        <span>{post.typeLabel}</span>
+                        {post.language && <small>{post.language.toUpperCase()}</small>}
+                      </div>
+
+                      <h3><a href={post.url}>{post.title}</a></h3>
+
+                      {post.excerpt && (
+                        <p>{post.excerpt}</p>
+                      )}
+
+                      <a class="playable-classic-related-card__cta" href={post.url}>
+                        {copy.readArticle}
+                      </a>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -478,7 +560,6 @@ const downloadMessageAttrs = {
               <p>{copy.downloadText}</p>
               {classic.requiresLogin && <p>{copy.downloadFuture}</p>}
               <div class="playable-classic-download__actions">
-                <a href={copy.loginHref}>{copy.loginCta}</a>
                 <a href={copy.policyHref}>{copy.policyCta}</a>
               </div>
             </section>
