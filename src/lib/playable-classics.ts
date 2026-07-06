@@ -87,12 +87,7 @@ export type PlayableClassic = {
   redistributionNotes?: string;
   downloadable?: boolean;
   requiresLogin?: boolean;
-  packageName?: string;
-  packageVersion?: string;
-  packageSize?: string;
-  checksumSha256?: string;
   downloadPackages?: PlayableClassicDownloadPackage[];
-  recommendedEmulator?: string;
   recommendedTools?: PlayableClassicRecommendedTool[];
   setupInstructions?: any[];
   technicalNotes?: string;
@@ -206,10 +201,6 @@ const playableClassicFields = `
   redistributionNotes,
   downloadable,
   requiresLogin,
-  packageName,
-  packageVersion,
-  packageSize,
-  checksumSha256,
   downloadPackages[]{
     "packageId": coalesce(packageId.current, packageId),
     title,
@@ -223,7 +214,6 @@ const playableClassicFields = `
     requiresLogin,
     notes
   },
-  recommendedEmulator,
   recommendedTools[]{
     name,
     toolType,

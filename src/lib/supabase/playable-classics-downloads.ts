@@ -15,11 +15,6 @@ export type PlayableClassicDownloadRecord = {
   downloadable?: boolean;
   distributionType?: string;
   requiresLogin?: boolean;
-  packageName?: string;
-  packageVersion?: string;
-  packageSize?: string;
-  checksumSha256?: string;
-  storagePath?: string;
   downloadPackages?: PlayableClassicDownloadPackageRecord[];
 };
 
@@ -86,11 +81,6 @@ const downloadRecordProjection = `
   downloadable,
   distributionType,
   requiresLogin,
-  packageName,
-  packageVersion,
-  packageSize,
-  checksumSha256,
-  storagePath,
   downloadPackages[]{
     "packageId": coalesce(packageId.current, packageId),
     title,
@@ -127,23 +117,6 @@ export async function getPlayableClassicDownloadRecord(
   );
 
   return data || null;
-}
-
-function getLegacyDownloadPackage(
-  classic: PlayableClassicDownloadRecord
-): PlayableClassicDownloadPackageRecord | null {
-  if (!classic.storagePath) return null;
-
-  return {
-    packageId: 'legacy',
-    title: classic.packageName || classic.title || 'Download package',
-    packageVersion: classic.packageVersion,
-    packageSize: classic.packageSize,
-    checksumSha256: classic.checksumSha256,
-    storagePath: classic.storagePath,
-    isActive: true,
-    requiresLogin: classic.requiresLogin,
-  };
 }
 
 function getConfiguredDownloadPackages(
@@ -198,12 +171,6 @@ function selectDownloadPackage({
     }
 
     return { ok: true, downloadPackage };
-  }
-
-  const legacyPackage = getLegacyDownloadPackage(classic);
-
-  if (legacyPackage) {
-    return { ok: true, downloadPackage: legacyPackage };
   }
 
   const activePackages = configuredPackages.filter(
@@ -387,8 +354,8 @@ export async function logPlayableClassicDownload({
     user_id: userId,
     playable_classic_id: classic._id,
     slug: classic.slug || '',
-    package_name: downloadPackage.title || classic.packageName || null,
-    package_version: downloadPackage.packageVersion || classic.packageVersion || null,
+    package_name: downloadPackage.title || null,
+    package_version: downloadPackage.packageVersion || null,
     storage_path: downloadPackage.storagePath,
     user_agent: userAgent || null,
   };

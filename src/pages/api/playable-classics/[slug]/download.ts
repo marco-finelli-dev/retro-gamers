@@ -63,10 +63,10 @@ export const GET: APIRoute = async ({ params, cookies, request }) => {
       ok: true,
       url: signedUrl.signedUrl,
       expiresIn: signedUrl.expiresIn,
-      packageName: check.downloadPackage.title || check.classic.packageName || null,
-      packageVersion: check.downloadPackage.packageVersion || check.classic.packageVersion || null,
-      packageSize: check.downloadPackage.packageSize || check.classic.packageSize || null,
-      checksumSha256: check.downloadPackage.checksumSha256 || check.classic.checksumSha256 || null,
+      packageName: check.downloadPackage.title || null,
+      packageVersion: check.downloadPackage.packageVersion || null,
+      packageSize: check.downloadPackage.packageSize || null,
+      checksumSha256: check.downloadPackage.checksumSha256 || null,
     });
   } catch (error) {
     logApiError('playable-classics-download', error);

@@ -62,8 +62,6 @@ const copy = isEn
       downloadFuture:
         'Future internal downloads will be reserved for registered users after editorial and legal review.',
       downloadReadyTitle: 'Available downloads',
-      downloadReadyText:
-        'This package is served with a temporary link reserved for registered users.',
       downloadPackagesText:
         'Choose the package that matches the platform you want to use. Each file is served through a temporary link reserved for registered users.',
       downloadButton: 'Download package',
@@ -74,7 +72,6 @@ const copy = isEn
       downloadForbidden: 'This page is not configured for internal downloads.',
       downloadNotFound: 'This downloadable page is no longer available.',
       downloadUnavailable: 'Download storage is not configured yet.',
-      packageName: 'Package',
       packageVersion: 'Version',
       packageSize: 'Size',
       checksum: 'SHA-256',
@@ -85,7 +82,6 @@ const copy = isEn
       loginCta: 'Go to your account',
       loginHref: '/en/account/',
       instructionsTitle: 'How to play today',
-      recommendedEmulator: 'Recommended emulator or interpreter',
       recommendedToolsTitle: 'Recommended tools',
       primaryTool: 'Primary',
       setupInstructions: 'Quick setup notes',
@@ -154,8 +150,6 @@ const copy = isEn
       downloadFuture:
         'I futuri download interni saranno riservati agli utenti registrati dopo verifica editoriale e legale.',
       downloadReadyTitle: 'Download disponibili',
-      downloadReadyText:
-        'Il pacchetto viene servito con un link temporaneo riservato agli utenti registrati.',
       downloadPackagesText:
         'Scegli il pacchetto compatibile con la piattaforma che vuoi usare. Ogni file viene servito con un link temporaneo riservato agli utenti registrati.',
       downloadButton: 'Scarica il pacchetto',
@@ -166,7 +160,6 @@ const copy = isEn
       downloadForbidden: 'Questa scheda non è configurata per il download interno.',
       downloadNotFound: 'Questa scheda scaricabile non è più disponibile.',
       downloadUnavailable: 'Lo storage download non è ancora configurato.',
-      packageName: 'Pacchetto',
       packageVersion: 'Versione',
       packageSize: 'Dimensione',
       checksum: 'SHA-256',
@@ -177,7 +170,6 @@ const copy = isEn
       loginCta: 'Accedi al tuo account',
       loginHref: '/account/login/',
       instructionsTitle: 'Come giocarlo oggi',
-      recommendedEmulator: 'Emulatore o interprete consigliato',
       recommendedToolsTitle: 'Emulatori consigliati',
       primaryTool: 'Principale',
       setupInstructions: 'Istruzioni rapide',
@@ -339,13 +331,7 @@ const facts = [
 const recommendedToolSource = [...(classic.recommendedTools || [])]
   .filter((tool) => tool?.name)
   .sort((a, b) => Number(b.isPrimary === true) - Number(a.isPrimary === true));
-const recommendedToolItems = (
-  recommendedToolSource.length > 0
-    ? recommendedToolSource
-    : classic.recommendedEmulator
-      ? [{ name: classic.recommendedEmulator, isPrimary: true }]
-      : []
-).map((tool) => ({
+const recommendedToolItems = recommendedToolSource.map((tool) => ({
   ...tool,
   typeLabel: getToolTypeLabel(tool.toolType),
 }));
@@ -357,7 +343,6 @@ const noteItems = [
 
 const relationCompanies = classic.relatedCompanies || [];
 const relationCreators = classic.relatedCreators || [];
-const downloadEndpoint = `/api/playable-classics/${classic.slug}/download`;
 const activeDownloadPackages = (classic.downloadPackages || [])
   .filter((downloadPackage) => downloadPackage?.packageId && downloadPackage.isActive !== false)
   .map((downloadPackage) => {
@@ -486,106 +471,20 @@ const downloadMessageAttrs = {
             <p class="playable-classic-empty-copy">{description}</p>
           )}
 
-          {hasInternalDownload && (
+          {hasInternalDownload && hasDownloadPackages && (
             <section
               class="playable-classic-download playable-classic-download--ready playable-classic-download--main"
               data-playable-classic-download-group
             >
               <h2>{copy.downloadReadyTitle}</h2>
-              <p>{hasDownloadPackages ? copy.downloadPackagesText : copy.downloadReadyText}</p>
+              <p>{copy.downloadPackagesText}</p>
 
-              {hasDownloadPackages ? (
-                <div class="playable-classic-download-packages">
-                  {activeDownloadPackages.map((downloadPackage) => (
-                    <article
-                      class="playable-classic-download-package"
-                      data-playable-classic-download
-                      data-endpoint={downloadPackage.endpoint}
-                      data-message-preparing={downloadMessageAttrs.preparing}
-                      data-message-ready={downloadMessageAttrs.ready}
-                      data-message-generic={downloadMessageAttrs.generic}
-                      data-message-unauthorized={downloadMessageAttrs.unauthorized}
-                      data-message-forbidden={downloadMessageAttrs.forbidden}
-                      data-message-not-found={downloadMessageAttrs.notFound}
-                      data-message-unavailable={downloadMessageAttrs.unavailable}
-                    >
-                      <header class="playable-classic-download-package__header">
-                        <div>
-                          <h3>{downloadPackage.title}</h3>
-                          <div class="playable-classic-download-package__meta">
-                            {downloadPackage.platformLabel && <span>{downloadPackage.platformLabel}</span>}
-                            {downloadPackage.typeLabel && <span>{downloadPackage.typeLabel}</span>}
-                            {downloadPackage.languageLabel && <small>{downloadPackage.languageLabel}</small>}
-                          </div>
-                        </div>
-                      </header>
-
-                      {downloadPackage.metadata.length > 0 && (
-                        <dl class="playable-classic-package">
-                          {downloadPackage.metadata.map((item) => (
-                            <>
-                              <dt>{item.label}</dt>
-                              <dd>{item.code ? <code>{item.value}</code> : item.value}</dd>
-                            </>
-                          ))}
-                        </dl>
-                      )}
-
-                      {downloadPackage.notes && (
-                        <p class="playable-classic-download-package__notes">
-                          <strong>{copy.packageNotes}:</strong> {downloadPackage.notes}
-                        </p>
-                      )}
-
-                      <div class="playable-classic-download__actions">
-                        <button type="button" data-download-button>{copy.downloadButton}</button>
-                        <a href={copy.loginHref} data-download-login hidden>{copy.loginCta}</a>
-                      </div>
-
-                      <p
-                        class="playable-classic-download__status"
-                        data-download-status
-                        role="status"
-                        aria-live="polite"
-                        hidden
-                      ></p>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  {(classic.packageName || classic.packageVersion || classic.packageSize || classic.checksumSha256) && (
-                    <dl class="playable-classic-package">
-                      {classic.packageName && (
-                        <>
-                          <dt>{copy.packageName}</dt>
-                          <dd>{classic.packageName}</dd>
-                        </>
-                      )}
-                      {classic.packageVersion && (
-                        <>
-                          <dt>{copy.packageVersion}</dt>
-                          <dd>{classic.packageVersion}</dd>
-                        </>
-                      )}
-                      {classic.packageSize && (
-                        <>
-                          <dt>{copy.packageSize}</dt>
-                          <dd>{classic.packageSize}</dd>
-                        </>
-                      )}
-                      {classic.checksumSha256 && (
-                        <>
-                          <dt>{copy.checksum}</dt>
-                          <dd><code>{classic.checksumSha256}</code></dd>
-                        </>
-                      )}
-                    </dl>
-                  )}
-
-                  <div
+              <div class="playable-classic-download-packages">
+                {activeDownloadPackages.map((downloadPackage) => (
+                  <article
+                    class="playable-classic-download-package"
                     data-playable-classic-download
-                    data-endpoint={downloadEndpoint}
+                    data-endpoint={downloadPackage.endpoint}
                     data-message-preparing={downloadMessageAttrs.preparing}
                     data-message-ready={downloadMessageAttrs.ready}
                     data-message-generic={downloadMessageAttrs.generic}
@@ -594,6 +493,34 @@ const downloadMessageAttrs = {
                     data-message-not-found={downloadMessageAttrs.notFound}
                     data-message-unavailable={downloadMessageAttrs.unavailable}
                   >
+                    <header class="playable-classic-download-package__header">
+                      <div>
+                        <h3>{downloadPackage.title}</h3>
+                        <div class="playable-classic-download-package__meta">
+                          {downloadPackage.platformLabel && <span>{downloadPackage.platformLabel}</span>}
+                          {downloadPackage.typeLabel && <span>{downloadPackage.typeLabel}</span>}
+                          {downloadPackage.languageLabel && <small>{downloadPackage.languageLabel}</small>}
+                        </div>
+                      </div>
+                    </header>
+
+                    {downloadPackage.metadata.length > 0 && (
+                      <dl class="playable-classic-package">
+                        {downloadPackage.metadata.map((item) => (
+                          <>
+                            <dt>{item.label}</dt>
+                            <dd>{item.code ? <code>{item.value}</code> : item.value}</dd>
+                          </>
+                        ))}
+                      </dl>
+                    )}
+
+                    {downloadPackage.notes && (
+                      <p class="playable-classic-download-package__notes">
+                        <strong>{copy.packageNotes}:</strong> {downloadPackage.notes}
+                      </p>
+                    )}
+
                     <div class="playable-classic-download__actions">
                       <button type="button" data-download-button>{copy.downloadButton}</button>
                       <a href={copy.loginHref} data-download-login hidden>{copy.loginCta}</a>
@@ -606,9 +533,9 @@ const downloadMessageAttrs = {
                       aria-live="polite"
                       hidden
                     ></p>
-                  </div>
-                </>
-              )}
+                  </article>
+                ))}
+              </div>
 
               <div class="playable-classic-download__actions playable-classic-download__actions--policy">
                 <a href={copy.policyHref}>{copy.policyCta}</a>
