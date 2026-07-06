@@ -333,9 +333,10 @@
 }
 
 .playable-classic-cover {
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   position: relative;
-  margin: clamp(16px, 2.6vw, 24px) 0 0;
+  margin: 0;
   border: 1px solid var(--rg-card-border);
   border-radius: 18px;
   background:
@@ -358,8 +359,7 @@
 .playable-classic-cover img {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: clamp(260px, 42vw, 520px);
+  height: 100%;
   object-fit: cover;
 }
 
@@ -378,7 +378,10 @@
   min-width: 0;
 }
 
-.playable-classic-sidebar {
+.playable-classic-sidebar__sticky {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
   position: sticky;
   top: 92px;
 }
@@ -400,18 +403,7 @@
   line-height: 1.14;
 }
 
-.playable-classic-richtext h2 {
-  padding-bottom: 0.36em;
-  border-bottom: 1px solid color-mix(in srgb, var(--rg-card-border) 72%, transparent);
-}
-
-.playable-classic-panel h2 {
-  padding-bottom: 0.42em;
-  border-bottom: 1px solid color-mix(in srgb, var(--rg-card-border) 72%, transparent);
-}
-
 .playable-classic-panel--sidebar h2 {
-  padding-bottom: 0.36em;
   font-size: 1.02rem;
 }
 
@@ -867,7 +859,7 @@
     grid-template-columns: 1fr;
   }
 
-  .playable-classic-sidebar {
+  .playable-classic-sidebar__sticky {
     position: static;
   }
 }
@@ -890,10 +882,6 @@
 
   .playable-classics-grid {
     grid-template-columns: 1fr;
-  }
-
-  .playable-classic-cover img {
-    max-height: none;
   }
 
   .playable-classic-definition-list {

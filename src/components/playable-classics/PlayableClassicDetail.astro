@@ -453,20 +453,6 @@ const downloadMessageAttrs = {
         </div>
       </section>
 
-      {coverUrl && (
-        <figure class="playable-classic-cover">
-          <img
-            src={coverUrl}
-            alt={classic.coverImage?.alt || classic.title}
-            width="1280"
-            height="720"
-            loading="eager"
-            fetchpriority="high"
-            decoding="async"
-          />
-        </figure>
-      )}
-
       <div class="playable-classic-layout">
         <article class="playable-classic-main">
           {bodyHtml ? (
@@ -632,17 +618,21 @@ const downloadMessageAttrs = {
         </article>
 
         <aside class="playable-classic-sidebar" aria-label={isEn ? 'Playable classic details' : 'Dettagli classico giocabile'}>
-          {!hasInternalDownload && (
-            <section class="playable-classic-download">
-              <h2>{copy.downloadTitle}</h2>
-              <p>{copy.downloadText}</p>
-              {classic.requiresLogin && <p>{copy.downloadFuture}</p>}
-              <div class="playable-classic-download__actions">
-                <a href={copy.policyHref}>{copy.policyCta}</a>
-              </div>
-            </section>
+          {coverUrl && (
+            <figure class="playable-classic-cover">
+              <img
+                src={coverUrl}
+                alt={classic.coverImage?.alt || classic.title}
+                width="1280"
+                height="720"
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+              />
+            </figure>
           )}
 
+          <div class="playable-classic-sidebar__sticky">
           {facts.length > 0 && (
             <section class="playable-classic-facts">
               {facts.map((item) => (
@@ -661,6 +651,17 @@ const downloadMessageAttrs = {
                 {relationPlatforms.map((platform) => (
                   <a href={getPlatformUrl(platform, currentLang)}>{getName(platform)}</a>
                 ))}
+              </div>
+            </section>
+          )}
+
+          {!hasInternalDownload && (
+            <section class="playable-classic-download">
+              <h2>{copy.downloadTitle}</h2>
+              <p>{copy.downloadText}</p>
+              {classic.requiresLogin && <p>{copy.downloadFuture}</p>}
+              <div class="playable-classic-download__actions">
+                <a href={copy.policyHref}>{copy.policyCta}</a>
               </div>
             </section>
           )}
@@ -763,6 +764,7 @@ const downloadMessageAttrs = {
               </div>
             </section>
           )}
+          </div>
         </aside>
       </div>
     </div>
