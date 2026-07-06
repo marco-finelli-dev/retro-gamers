@@ -451,23 +451,21 @@ const downloadMessageAttrs = {
             {classic.requiresLogin && <span>{isEn ? 'Registered users' : 'Utenti registrati'}</span>}
           </div>
         </div>
-
-        <figure class="playable-classic-hero__media">
-          {coverUrl ? (
-            <img
-              src={coverUrl}
-              alt={classic.coverImage?.alt || classic.title}
-              width="1280"
-              height="720"
-              loading="eager"
-              fetchpriority="high"
-              decoding="async"
-            />
-          ) : (
-            <span aria-hidden="true">{classic.title?.slice(0, 2).toUpperCase()}</span>
-          )}
-        </figure>
       </section>
+
+      {coverUrl && (
+        <figure class="playable-classic-cover">
+          <img
+            src={coverUrl}
+            alt={classic.coverImage?.alt || classic.title}
+            width="1280"
+            height="720"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </figure>
+      )}
 
       <div class="playable-classic-layout">
         <article class="playable-classic-main">
