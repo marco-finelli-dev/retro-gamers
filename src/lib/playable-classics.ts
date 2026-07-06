@@ -39,6 +39,20 @@ export type PlayableClassicPostRef = {
   featuredImage?: PlayableClassicImage;
 };
 
+export type PlayableClassicDownloadPackage = {
+  packageId?: string;
+  title?: string;
+  platform?: PlayableClassicRef;
+  packageType?: string;
+  language?: string;
+  packageVersion?: string;
+  packageSize?: string;
+  checksumSha256?: string;
+  isActive?: boolean;
+  requiresLogin?: boolean;
+  notes?: string;
+};
+
 export type PlayableClassic = {
   _id: string;
   title: string;
@@ -68,6 +82,7 @@ export type PlayableClassic = {
   packageVersion?: string;
   packageSize?: string;
   checksumSha256?: string;
+  downloadPackages?: PlayableClassicDownloadPackage[];
   recommendedEmulator?: string;
   setupInstructions?: any[];
   technicalNotes?: string;
@@ -185,6 +200,19 @@ const playableClassicFields = `
   packageVersion,
   packageSize,
   checksumSha256,
+  downloadPackages[]{
+    "packageId": coalesce(packageId.current, packageId),
+    title,
+    platform->{ ${platformFields} },
+    packageType,
+    language,
+    packageVersion,
+    packageSize,
+    checksumSha256,
+    isActive,
+    requiresLogin,
+    notes
+  },
   recommendedEmulator,
   setupInstructions[]{ ${portableTextProjection} },
   technicalNotes,

@@ -536,9 +536,71 @@
   margin-top: 2px;
 }
 
+.playable-classic-download__actions--policy {
+  margin-top: 0;
+}
+
 .playable-classic-download__actions [hidden],
 .playable-classic-download__status[hidden] {
   display: none;
+}
+
+.playable-classic-download-packages {
+  display: grid;
+  gap: 12px;
+}
+
+.playable-classic-download-package {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--rg-card-border) 72%, transparent);
+  border-radius: 15px;
+  padding: 13px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--rg-card-bg) 78%, transparent), transparent),
+    color-mix(in srgb, var(--rg-card-bg) 62%, transparent);
+}
+
+.playable-classic-download-package__header {
+  display: grid;
+  gap: 8px;
+}
+
+.playable-classic-download-package h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.22;
+}
+
+.playable-classic-download-package__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.playable-classic-download-package__meta span,
+.playable-classic-download-package__meta small {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  padding: 0 8px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.66rem;
+  font-weight: 890;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.playable-classic-download-package__notes {
+  font-size: 0.9rem;
+  line-height: 1.55;
 }
 
 .playable-classic-package {

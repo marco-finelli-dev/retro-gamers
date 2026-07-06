@@ -20,11 +20,30 @@ export type PlayableClassicDownloadRecord = {
   packageSize?: string;
   checksumSha256?: string;
   storagePath?: string;
+  downloadPackages?: PlayableClassicDownloadPackageRecord[];
+};
+
+export type PlayableClassicDownloadPackageRecord = {
+  packageId?: string;
+  title?: string;
+  packageType?: string;
+  language?: string;
+  packageVersion?: string;
+  packageSize?: string;
+  checksumSha256?: string;
+  storageProvider?: string;
+  storagePath?: string;
+  isActive?: boolean;
+  requiresLogin?: boolean;
+  notes?: string;
 };
 
 export type PlayableClassicDownloadErrorCode =
   | 'unauthorized'
   | 'not_found'
+  | 'package_required'
+  | 'package_not_found'
+  | 'package_inactive'
   | 'not_downloadable'
   | 'invalid_distribution'
   | 'login_required'
@@ -37,6 +56,7 @@ export type PlayableClassicDownloadCheck =
       status: 200;
       session: Awaited<ReturnType<typeof getUserSessionFromCookies>>;
       classic: PlayableClassicDownloadRecord;
+      downloadPackage: PlayableClassicDownloadPackageRecord;
     }
   | {
       ok: false;
@@ -70,7 +90,21 @@ const downloadRecordProjection = `
   packageVersion,
   packageSize,
   checksumSha256,
-  storagePath
+  storagePath,
+  downloadPackages[]{
+    "packageId": coalesce(packageId.current, packageId),
+    title,
+    packageType,
+    language,
+    packageVersion,
+    packageSize,
+    checksumSha256,
+    storageProvider,
+    storagePath,
+    isActive,
+    requiresLogin,
+    notes
+  }
 `;
 
 export async function getPlayableClassicDownloadRecord(
@@ -95,12 +129,116 @@ export async function getPlayableClassicDownloadRecord(
   return data || null;
 }
 
+function getLegacyDownloadPackage(
+  classic: PlayableClassicDownloadRecord
+): PlayableClassicDownloadPackageRecord | null {
+  if (!classic.storagePath) return null;
+
+  return {
+    packageId: 'legacy',
+    title: classic.packageName || classic.title || 'Download package',
+    packageVersion: classic.packageVersion,
+    packageSize: classic.packageSize,
+    checksumSha256: classic.checksumSha256,
+    storagePath: classic.storagePath,
+    isActive: true,
+    requiresLogin: classic.requiresLogin,
+  };
+}
+
+function getConfiguredDownloadPackages(
+  classic: PlayableClassicDownloadRecord
+): PlayableClassicDownloadPackageRecord[] {
+  return (classic.downloadPackages || [])
+    .filter((downloadPackage) => downloadPackage?.packageId)
+    .map((downloadPackage) => ({
+      ...downloadPackage,
+      packageId: String(downloadPackage.packageId || '').trim(),
+    }));
+}
+
+function selectDownloadPackage({
+  classic,
+  packageId,
+}: {
+  classic: PlayableClassicDownloadRecord;
+  packageId?: string;
+}):
+  | { ok: true; downloadPackage: PlayableClassicDownloadPackageRecord }
+  | {
+      ok: false;
+      status: 403 | 404;
+      code: PlayableClassicDownloadErrorCode;
+      message: string;
+    } {
+  const configuredPackages = getConfiguredDownloadPackages(classic);
+  const requestedPackageId = String(packageId || '').trim();
+
+  if (requestedPackageId) {
+    const downloadPackage = configuredPackages.find(
+      (item) => item.packageId === requestedPackageId
+    );
+
+    if (!downloadPackage) {
+      return {
+        ok: false,
+        status: 404,
+        code: 'package_not_found',
+        message: 'Download package not found.',
+      };
+    }
+
+    if (downloadPackage.isActive === false) {
+      return {
+        ok: false,
+        status: 403,
+        code: 'package_inactive',
+        message: 'This download package is not active.',
+      };
+    }
+
+    return { ok: true, downloadPackage };
+  }
+
+  const legacyPackage = getLegacyDownloadPackage(classic);
+
+  if (legacyPackage) {
+    return { ok: true, downloadPackage: legacyPackage };
+  }
+
+  const activePackages = configuredPackages.filter(
+    (downloadPackage) => downloadPackage.isActive !== false
+  );
+
+  if (activePackages.length === 1) {
+    return { ok: true, downloadPackage: activePackages[0] };
+  }
+
+  if (activePackages.length > 1) {
+    return {
+      ok: false,
+      status: 403,
+      code: 'package_required',
+      message: 'Select a download package.',
+    };
+  }
+
+  return {
+    ok: false,
+    status: 403,
+    code: 'missing_storage_path',
+    message: 'This playable classic does not have a private storage path configured.',
+  };
+}
+
 export async function checkPlayableClassicDownloadRequest({
   cookies,
   slug,
+  packageId,
 }: {
   cookies: any;
   slug: string;
+  packageId?: string;
 }): Promise<PlayableClassicDownloadCheck> {
   const session = await getUserSessionFromCookies(cookies);
 
@@ -151,7 +289,18 @@ export async function checkPlayableClassicDownloadRequest({
     };
   }
 
-  if (!classic.storagePath) {
+  const selectedPackage = selectDownloadPackage({ classic, packageId });
+
+  if (!selectedPackage.ok) {
+    return {
+      ok: false,
+      status: selectedPackage.status,
+      code: selectedPackage.code,
+      message: selectedPackage.message,
+    };
+  }
+
+  if (!selectedPackage.downloadPackage.storagePath) {
     return {
       ok: false,
       status: 403,
@@ -165,6 +314,7 @@ export async function checkPlayableClassicDownloadRequest({
     status: 200,
     session,
     classic,
+    downloadPackage: selectedPackage.downloadPackage,
   };
 }
 
@@ -185,9 +335,9 @@ export function isPlayableClassicsDownloadStorageConfigured() {
 }
 
 export async function createPlayableClassicSignedUrl(
-  classic: PlayableClassicDownloadRecord
+  downloadPackage: PlayableClassicDownloadPackageRecord
 ): Promise<PlayableClassicSignedUrlResult> {
-  if (!classic.storagePath || !isPlayableClassicsDownloadStorageConfigured()) {
+  if (!downloadPackage.storagePath || !isPlayableClassicsDownloadStorageConfigured()) {
     return getStorageUnavailableResponse();
   }
 
@@ -195,10 +345,10 @@ export async function createPlayableClassicSignedUrl(
     .storage
     .from(PLAYABLE_CLASSICS_DOWNLOAD_BUCKET)
     .createSignedUrl(
-      classic.storagePath,
+      downloadPackage.storagePath,
       PLAYABLE_CLASSICS_SIGNED_URL_EXPIRES_IN,
       {
-        download: classic.packageName || true,
+        download: downloadPackage.title || true,
       }
     );
 
@@ -221,29 +371,53 @@ export async function createPlayableClassicSignedUrl(
 export async function logPlayableClassicDownload({
   userId,
   classic,
+  downloadPackage,
   userAgent = '',
 }: {
   userId: string;
   classic: PlayableClassicDownloadRecord;
+  downloadPackage: PlayableClassicDownloadPackageRecord;
   userAgent?: string;
 }) {
-  if (!classic.storagePath) {
+  if (!downloadPackage.storagePath) {
     return { ok: false, error: 'missing_storage_path' };
   }
+
+  const logPayload = {
+    user_id: userId,
+    playable_classic_id: classic._id,
+    slug: classic.slug || '',
+    package_name: downloadPackage.title || classic.packageName || null,
+    package_version: downloadPackage.packageVersion || classic.packageVersion || null,
+    storage_path: downloadPackage.storagePath,
+    user_agent: userAgent || null,
+  };
 
   const { error } = await supabaseAdmin
     .from('playable_classic_download_logs')
     .insert({
-      user_id: userId,
-      playable_classic_id: classic._id,
-      slug: classic.slug || '',
-      package_name: classic.packageName || null,
-      package_version: classic.packageVersion || null,
-      storage_path: classic.storagePath,
-      user_agent: userAgent || null,
+      ...logPayload,
+      package_id: downloadPackage.packageId || null,
+      package_title: downloadPackage.title || null,
     });
 
   if (error) {
+    const missingNewLogColumns =
+      error.code === 'PGRST204' ||
+      error.code === '42703' ||
+      String(error.message || '').includes('package_id') ||
+      String(error.message || '').includes('package_title');
+
+    if (missingNewLogColumns) {
+      const fallbackResult = await supabaseAdmin
+        .from('playable_classic_download_logs')
+        .insert(logPayload);
+
+      if (!fallbackResult.error) {
+        return { ok: true, error: null };
+      }
+    }
+
     console.warn('Playable Classics download log failed:', {
       code: error.code,
       message: error.message,

@@ -1,10 +1,10 @@
 import type { APIRoute } from 'astro';
-import { logApiError } from '../../../../lib/api-errors';
+import { logApiError } from '../../../../../lib/api-errors';
 import {
   checkPlayableClassicDownloadRequest,
   createPlayableClassicSignedUrl,
   logPlayableClassicDownload,
-} from '../../../../lib/supabase/playable-classics-downloads';
+} from '../../../../../lib/supabase/playable-classics-downloads';
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -18,17 +18,22 @@ const json = (payload: unknown, status = 200) =>
 
 export const GET: APIRoute = async ({ params, cookies, request }) => {
   const slug = String(params.slug || '').trim();
+  const packageId = String(params.packageId || '').trim();
 
-  if (!slug) {
+  if (!slug || !packageId) {
     return json({
       ok: false,
       code: 'not_found',
-      message: 'Playable classic not found.',
+      message: 'Download package not found.',
     }, 404);
   }
 
   try {
-    const check = await checkPlayableClassicDownloadRequest({ cookies, slug });
+    const check = await checkPlayableClassicDownloadRequest({
+      cookies,
+      slug,
+      packageId,
+    });
 
     if (!check.ok) {
       return json({
@@ -56,20 +61,20 @@ export const GET: APIRoute = async ({ params, cookies, request }) => {
     });
 
     if (!logResult.ok) {
-      console.warn('Playable Classics download served without log entry.');
+      console.warn('Playable Classics package download served without log entry.');
     }
 
     return json({
       ok: true,
       url: signedUrl.signedUrl,
       expiresIn: signedUrl.expiresIn,
-      packageName: check.downloadPackage.title || check.classic.packageName || null,
-      packageVersion: check.downloadPackage.packageVersion || check.classic.packageVersion || null,
-      packageSize: check.downloadPackage.packageSize || check.classic.packageSize || null,
-      checksumSha256: check.downloadPackage.checksumSha256 || check.classic.checksumSha256 || null,
+      packageName: check.downloadPackage.title || null,
+      packageVersion: check.downloadPackage.packageVersion || null,
+      packageSize: check.downloadPackage.packageSize || null,
+      checksumSha256: check.downloadPackage.checksumSha256 || null,
     });
   } catch (error) {
-    logApiError('playable-classics-download', error);
+    logApiError('playable-classics-package-download', error);
 
     return json({
       ok: false,
