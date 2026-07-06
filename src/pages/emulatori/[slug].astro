@@ -1,0 +1,13 @@
+---
+import EmulatorToolDetail from '../../components/emulator-tools/EmulatorToolDetail.astro';
+import { getEmulatorToolBySlug } from '../../lib/emulator-tools';
+
+const { slug } = Astro.params;
+const tool = await getEmulatorToolBySlug(slug || '', 'it');
+
+if (!tool) {
+  return Astro.rewrite('/404');
+}
+---
+
+<EmulatorToolDetail tool={tool} lang="it" />

@@ -12,6 +12,10 @@ import {
   getPlayableClassicRoutes,
   getPlayableClassicUrl
 } from '../lib/playable-classics';
+import {
+  getEmulatorToolSlugs,
+  getEmulatorToolUrl
+} from '../lib/emulator-tools';
 
 const SITE_URL = 'https://www.retro-gamers.it';
 
@@ -89,6 +93,7 @@ export async function GET() {
   const platforms = await getAllPlatforms();
   const companies = await getAllCompanies();
   const playableClassics = await getPlayableClassicRoutes();
+  const emulatorTools = await getEmulatorToolSlugs();
 
   const staticPages = [
     {
@@ -215,6 +220,11 @@ export async function GET() {
       loc: absoluteUrl('/classici-giocabili-oggi/policy/'),
       changefreq: 'yearly',
       priority: '0.3'
+    },
+    {
+      loc: absoluteUrl('/emulatori/'),
+      changefreq: 'monthly',
+      priority: '0.5'
     },
     {
       loc: absoluteUrl('/privacy-policy/'),
@@ -348,6 +358,11 @@ export async function GET() {
       priority: '0.3'
     },
     {
+      loc: absoluteUrl('/en/emulators/'),
+      changefreq: 'monthly',
+      priority: '0.5'
+    },
+    {
       loc: absoluteUrl('/en/privacy-policy/'),
       changefreq: 'yearly',
       priority: '0.2'
@@ -438,6 +453,15 @@ export async function GET() {
       priority: '0.6'
     }));
 
+  const emulatorToolPages = emulatorTools
+    .filter((tool) => tool?.slug)
+    .map((tool) => ({
+      loc: absoluteUrl(getEmulatorToolUrl(tool, tool.language || 'it')),
+      lastmod: getPostLastmod(tool),
+      changefreq: 'monthly',
+      priority: '0.5'
+    }));
+
   const urls = [
     ...staticPages,
     ...postPages,
@@ -447,7 +471,8 @@ export async function GET() {
     ...categoryPagesEn,
     ...companyPagesIt,
     ...companyPagesEn,
-    ...playableClassicPages
+    ...playableClassicPages,
+    ...emulatorToolPages
   ];
 
   const uniqueUrls = Array.from(

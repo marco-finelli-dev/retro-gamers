@@ -1,0 +1,199 @@
+---
+import '../../styles/pages/emulator-tools.css';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { urlFor } from '../../lib/image';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+import {
+  getEmulatorToolUrl,
+  getPublishedEmulatorTools,
+  type EmulatorTool,
+  type EmulatorToolLang,
+} from '../../lib/emulator-tools';
+
+const { lang = 'it' } = Astro.props as { lang?: EmulatorToolLang };
+const currentLang: EmulatorToolLang = lang === 'en' ? 'en' : 'it';
+const isEn = currentLang === 'en';
+
+const copy = isEn
+  ? {
+      title: 'Emulators and interpreters',
+      description:
+        'Curated pages for emulators, interpreters and tools used to revisit classic games and platforms.',
+      canonical: 'https://www.retro-gamers.it/en/emulators/',
+      languageSwitch: '/emulatori/',
+      eyebrow: 'Tools for playing today',
+      heroTitle: 'Emulators and interpreters',
+      heroText:
+        'Curated pages for emulators, interpreters and tools used to revisit classic games and platforms.',
+      cardsTitle: 'Available tools',
+      emptyTitle: 'No public pages yet',
+      emptyText:
+        'The first tool pages will appear after editorial review. Retro-Gamers.it links official sources and does not mirror emulators.',
+      open: 'Open page',
+      official: 'Official links',
+      toolTypes: {
+        interpreter: 'Interpreter',
+        emulator: 'Emulator',
+        frontend: 'Frontend',
+        utility: 'Utility',
+        other: 'Other',
+      },
+      licenses: {
+        openSource: 'Open source',
+        freeware: 'Freeware',
+        commercial: 'Commercial',
+        mixed: 'Mixed',
+        unknown: 'To verify',
+      },
+    }
+  : {
+      title: 'Emulatori e interpreti',
+      description:
+        'Schede curate per orientarsi tra emulatori, interpreti e strumenti utili a riscoprire giochi e piattaforme storiche.',
+      canonical: 'https://www.retro-gamers.it/emulatori/',
+      languageSwitch: '/en/emulators/',
+      eyebrow: 'Strumenti per giocare oggi',
+      heroTitle: 'Emulatori e interpreti',
+      heroText:
+        'Schede curate per orientarsi tra emulatori, interpreti e strumenti utili a riscoprire giochi e piattaforme storiche.',
+      cardsTitle: 'Schede disponibili',
+      emptyTitle: 'Nessuna scheda pubblica per ora',
+      emptyText:
+        'Le prime schede compariranno dopo revisione editoriale. Retro-Gamers.it rimanda alle fonti ufficiali e non fa mirror di emulatori.',
+      open: 'Apri scheda',
+      official: 'Link ufficiali',
+      toolTypes: {
+        interpreter: 'Interprete',
+        emulator: 'Emulatore',
+        frontend: 'Frontend',
+        utility: 'Utility',
+        other: 'Altro',
+      },
+      licenses: {
+        openSource: 'Open source',
+        freeware: 'Freeware',
+        commercial: 'Commerciale',
+        mixed: 'Mista',
+        unknown: 'Da verificare',
+      },
+    };
+
+const [tools, allPosts] = await Promise.all([
+  getPublishedEmulatorTools(currentLang),
+  getAllPosts(),
+]);
+
+const groupedPosts = groupPosts(allPosts);
+const headerReviews = isEn
+  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
+  : groupedPosts.allReviews;
+const headerNews = isEn
+  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
+  : groupedPosts.allNews;
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/emulatori/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/emulators/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/emulatori/' },
+];
+
+const getCoverUrl = (tool: EmulatorTool) => {
+  if (!tool.coverImage?.asset) return '';
+
+  return urlFor(tool.coverImage)
+    .width(760)
+    .height(470)
+    .fit('crop')
+    .quality(76)
+    .auto('format')
+    .url();
+};
+
+const getLabel = (map: Record<string, string>, value?: string) =>
+  (value && map[value]) || value || '';
+---
+
+<BaseLayout
+  reviews={headerReviews}
+  news={headerNews}
+  title={copy.title}
+  description={copy.description}
+  image="/og-image.jpg"
+  canonical={copy.canonical}
+  lang={currentLang}
+  languageSwitch={copy.languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <main class="emulator-tools-page">
+    <div class="container">
+      <section class="emulator-tools-hero">
+        <div class="emulator-tools-hero__content">
+          <span>{copy.eyebrow}</span>
+          <h1>{copy.heroTitle}</h1>
+          <p>{copy.heroText}</p>
+        </div>
+      </section>
+
+      <section class="emulator-tools-section" aria-labelledby="emulator-tools-list">
+        <div class="emulator-tools-section__heading">
+          <span>{copy.eyebrow}</span>
+          <h2 id="emulator-tools-list">{copy.cardsTitle}</h2>
+        </div>
+
+        {tools.length > 0 ? (
+          <div class="emulator-tools-grid">
+            {tools.map((tool) => {
+              const coverUrl = getCoverUrl(tool);
+              const toolType = getLabel(copy.toolTypes, tool.toolType);
+              const license = getLabel(copy.licenses, tool.licenseType);
+
+              return (
+                <article class="emulator-tools-card">
+                  <a class="emulator-tools-card__media" href={getEmulatorToolUrl(tool, currentLang)}>
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt={tool.coverImage?.alt || tool.title}
+                        width="760"
+                        height="470"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span aria-hidden="true">{tool.title?.slice(0, 2).toUpperCase()}</span>
+                    )}
+                  </a>
+
+                  <div class="emulator-tools-card__body">
+                    <div class="emulator-tools-card__meta">
+                      {toolType && <span>{toolType}</span>}
+                      {license && <small>{license}</small>}
+                    </div>
+
+                    <h3>
+                      <a href={getEmulatorToolUrl(tool, currentLang)}>{tool.title}</a>
+                    </h3>
+
+                    {(tool.excerpt || tool.subtitle) && (
+                      <p>{tool.excerpt || tool.subtitle}</p>
+                    )}
+
+                    <a class="emulator-tools-card__cta" href={getEmulatorToolUrl(tool, currentLang)}>
+                      {copy.open}
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div class="emulator-tools-empty">
+            <h3>{copy.emptyTitle}</h3>
+            <p>{copy.emptyText}</p>
+          </div>
+        )}
+      </section>
+    </div>
+  </main>
+</BaseLayout>

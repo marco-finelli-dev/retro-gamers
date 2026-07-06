@@ -1,0 +1,571 @@
+.emulator-tools-page {
+  padding: clamp(24px, 4vw, 44px) 0 clamp(54px, 7vw, 88px);
+  color: var(--color-text);
+}
+
+.emulator-tools-hero,
+.emulator-tool-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--rg-panel-border);
+  border-radius: 24px;
+  padding: clamp(28px, 5vw, 56px);
+  background:
+    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--color-primary) 22%, transparent), transparent 34%),
+    radial-gradient(circle at 88% 12%, rgba(168,85,247,0.18), transparent 38%),
+    var(--rg-panel-bg);
+  box-shadow: var(--rg-panel-shadow);
+}
+
+.emulator-tools-hero::before,
+.emulator-tool-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--rg-panel-grid);
+  background-size: 44px 44px;
+  opacity: var(--rg-panel-grid-opacity);
+  pointer-events: none;
+}
+
+.emulator-tools-hero > *,
+.emulator-tool-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.emulator-tools-hero__content,
+.emulator-tool-hero__content {
+  display: grid;
+  gap: 15px;
+  max-width: 920px;
+}
+
+.emulator-tools-hero span,
+.emulator-tool-hero__content > span,
+.emulator-tools-section__heading span {
+  color: var(--rg-eyebrow-color);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.emulator-tools-hero h1,
+.emulator-tool-hero h1 {
+  margin: 0;
+  color: var(--rg-section-title-color);
+  font-family: var(--font-display);
+  font-size: clamp(2.55rem, 7vw, 5.6rem);
+  line-height: 0.94;
+  letter-spacing: 0;
+}
+
+.emulator-tools-hero p,
+.emulator-tool-hero__content > p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: clamp(1rem, 1.7vw, 1.18rem);
+  line-height: 1.64;
+}
+
+.emulator-tool-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  margin-bottom: 18px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.82rem;
+  font-weight: 830;
+  text-decoration: none;
+}
+
+.emulator-tool-back:hover,
+.emulator-tool-back:focus-visible {
+  color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 3px 0 currentColor;
+}
+
+.emulator-tool-hero__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.emulator-tool-hero__chips span,
+.emulator-tools-card__meta span,
+.emulator-tools-card__meta small {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.72rem;
+  font-weight: 880;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.emulator-tools-section {
+  display: grid;
+  gap: 18px;
+  margin-top: clamp(30px, 5vw, 50px);
+}
+
+.emulator-tools-section__heading {
+  display: grid;
+  gap: 8px;
+}
+
+.emulator-tools-section__heading h2 {
+  margin: 0;
+  color: var(--rg-section-title-color);
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 4vw, 3.1rem);
+  line-height: 1;
+}
+
+.emulator-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.emulator-tools-card,
+.emulator-tools-empty,
+.emulator-tool-panel,
+.emulator-tool-facts {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--rg-panel-border);
+  border-radius: 18px;
+  background: var(--rg-panel-bg);
+  box-shadow: var(--rg-panel-shadow);
+}
+
+.emulator-tools-card {
+  display: grid;
+  min-width: 0;
+}
+
+.emulator-tools-card__media {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background:
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--color-primary) 22%, transparent), transparent 46%),
+    color-mix(in srgb, var(--rg-card-bg) 88%, #000 10%);
+  color: var(--rg-eyebrow-color);
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.emulator-tools-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.emulator-tools-card__body {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.emulator-tools-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.emulator-tools-card h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.12;
+}
+
+.emulator-tools-card h3 a,
+.emulator-tools-card__cta,
+.emulator-tool-panel a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.emulator-tools-card h3 a:hover,
+.emulator-tools-card h3 a:focus-visible,
+.emulator-tools-card__cta:hover,
+.emulator-tools-card__cta:focus-visible,
+.emulator-tool-panel a:hover,
+.emulator-tool-panel a:focus-visible {
+  color: var(--color-primary);
+  outline: none;
+}
+
+.emulator-tools-card p,
+.emulator-tools-empty p,
+.emulator-tool-panel p {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.emulator-tools-card__cta {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  padding: 0 13px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.82rem;
+  font-weight: 860;
+}
+
+.emulator-tools-empty {
+  display: grid;
+  gap: 10px;
+  padding: clamp(20px, 3vw, 28px);
+}
+
+.emulator-tools-empty h3 {
+  margin: 0;
+  color: var(--rg-section-title-color);
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+}
+
+.emulator-tool-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 44px;
+  align-items: start;
+  margin-top: 34px;
+}
+
+.emulator-tool-main {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.emulator-tool-sidebar {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+  height: 100%;
+}
+
+.emulator-tool-sidebar__sticky {
+  display: grid;
+  gap: 16px;
+  align-self: start;
+  min-width: 0;
+  position: sticky;
+  top: clamp(96px, 10vh, 118px);
+}
+
+.emulator-tool-cover {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  position: relative;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 20px;
+  background: var(--rg-card-bg);
+  box-shadow: var(--rg-card-shadow);
+}
+
+.emulator-tool-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to top, rgba(0,0,0,0.20), transparent 62%),
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.10), transparent 38%);
+}
+
+.emulator-tool-cover img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 520px;
+  border-radius: 14px;
+  object-fit: contain;
+  object-position: center;
+  filter:
+    brightness(0.96)
+    contrast(1.04)
+    saturate(1.04);
+}
+
+.emulator-tool-richtext,
+.emulator-tool-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.emulator-tool-richtext {
+  max-width: 820px;
+  color: var(--color-text-soft);
+  font-size: 1.02rem;
+  line-height: 1.72;
+}
+
+.emulator-tool-richtext h2,
+.emulator-tool-panel h2 {
+  margin: 0;
+  color: var(--rg-section-title-color);
+  font-family: var(--font-display);
+  font-size: clamp(1.34rem, 2.6vw, 1.85rem);
+  line-height: 1.14;
+}
+
+.emulator-tool-panel--sidebar h2 {
+  font-size: 1.02rem;
+}
+
+.emulator-tool-richtext h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1.05rem;
+  line-height: 1.24;
+}
+
+.emulator-tool-richtext p,
+.emulator-tool-richtext ul,
+.emulator-tool-richtext ol,
+.emulator-tool-richtext blockquote {
+  margin: 0;
+}
+
+.emulator-tool-richtext ul,
+.emulator-tool-richtext ol {
+  padding-left: 1.2rem;
+}
+
+.emulator-tool-richtext a {
+  color: var(--color-primary);
+  font-weight: 760;
+}
+
+.emulator-tool-figure {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.emulator-tool-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+}
+
+.emulator-tool-figure figcaption {
+  color: var(--color-text-soft);
+  font-size: 0.85rem;
+}
+
+.emulator-tool-panel {
+  padding: 18px;
+}
+
+.emulator-tool-actions,
+.emulator-tool-link-list,
+.emulator-tool-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.emulator-tool-actions a,
+.emulator-tool-link-list a,
+.emulator-tool-chip-list a,
+.emulator-tool-chip-list span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  padding: 0 11px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.84rem;
+  font-weight: 820;
+}
+
+.emulator-tool-actions a {
+  min-height: 42px;
+  padding: 0 15px;
+  color: var(--color-primary);
+}
+
+.emulator-tool-facts {
+  display: grid;
+  gap: 0;
+}
+
+.emulator-tool-facts div {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--rg-card-border) 76%, transparent);
+}
+
+.emulator-tool-facts div:last-child {
+  border-bottom: 0;
+}
+
+.emulator-tool-facts span,
+.emulator-tool-related-post__meta {
+  color: var(--rg-eyebrow-color);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.emulator-tool-facts strong {
+  color: var(--color-text);
+  font-size: 0.94rem;
+  line-height: 1.32;
+}
+
+.emulator-tool-related-posts {
+  display: grid;
+  gap: 0;
+}
+
+.emulator-tool-related-post {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid color-mix(in srgb, var(--rg-card-border) 58%, transparent);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.emulator-tool-related-post:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.emulator-tool-related-post:last-child {
+  padding-bottom: 0;
+}
+
+.emulator-tool-related-post__content {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.emulator-tool-related-post__content--text {
+  grid-template-columns: 1fr;
+}
+
+.emulator-tool-related-post__media {
+  display: block;
+  overflow: hidden;
+  width: 84px;
+  height: 64px;
+  border: 1px solid color-mix(in srgb, var(--rg-card-border) 76%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--rg-card-bg) 86%, #000 10%);
+}
+
+.emulator-tool-related-post__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.emulator-tool-related-post strong {
+  display: -webkit-box;
+  color: inherit;
+  font-size: 0.94rem;
+  line-height: 1.22;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+@media (max-width: 1024px) {
+  .emulator-tools-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .emulator-tool-layout {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .emulator-tool-sidebar,
+  .emulator-tool-sidebar__sticky {
+    position: static;
+    top: auto;
+    height: auto;
+  }
+
+  .emulator-tool-sidebar {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .emulator-tool-cover {
+    display: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .emulator-tools-page {
+    padding-top: 22px;
+  }
+
+  .emulator-tools-hero,
+  .emulator-tool-hero,
+  .emulator-tools-card,
+  .emulator-tools-empty,
+  .emulator-tool-panel,
+  .emulator-tool-facts {
+    border-radius: 16px;
+  }
+
+  .emulator-tools-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .emulator-tool-hero__chips span,
+  .emulator-tools-card__meta span,
+  .emulator-tools-card__meta small {
+    min-height: 28px;
+  }
+}

@@ -1,0 +1,443 @@
+---
+import '../../styles/pages/emulator-tools.css';
+
+import { toHTML } from '@portabletext/to-html';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { urlFor } from '../../lib/image';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+import { getPlayableClassicUrl } from '../../lib/playable-classics';
+import {
+  type EmulatorTool,
+  type EmulatorToolLang,
+} from '../../lib/emulator-tools';
+import {
+  getPlatformUrl,
+  getPostUrl,
+} from '../../lib/routes.js';
+
+const {
+  tool,
+  lang = 'it',
+} = Astro.props as { tool: EmulatorTool; lang?: EmulatorToolLang };
+
+const currentLang: EmulatorToolLang = lang === 'en' ? 'en' : 'it';
+const isEn = currentLang === 'en';
+
+const copy = isEn
+  ? {
+      sectionTitle: 'Emulators and interpreters',
+      sectionHref: '/en/emulators/',
+      canonicalBase: 'https://www.retro-gamers.it/en/emulators',
+      languageSwitch: '/emulatori/',
+      defaultDescription: (title: string) =>
+        `${title}: official links, practical notes and supported systems on Retro-Gamers.it.`,
+      backToIndex: 'Back to Emulators',
+      toolType: 'Type',
+      licenseType: 'License',
+      licenseNotes: 'License notes',
+      officialLinks: 'Official links',
+      officialWebsite: 'Official website',
+      officialDownload: 'Official download',
+      sourceCode: 'Source code',
+      documentation: 'Documentation',
+      hostSystems: 'Host systems',
+      supportedSystems: 'Supported systems',
+      relatedPlayableClassics: 'Playable Classics',
+      relatedPosts: 'Related articles',
+      relatedPlatforms: 'Related platforms',
+      setupInstructions: 'Quick setup notes',
+      technicalNotes: 'Technical notes',
+      bodyFallback: 'This tool page is being prepared.',
+      toolTypes: {
+        interpreter: 'Interpreter',
+        emulator: 'Emulator',
+        frontend: 'Frontend',
+        utility: 'Utility',
+        other: 'Other',
+      },
+      licenses: {
+        openSource: 'Open source',
+        freeware: 'Freeware',
+        commercial: 'Commercial',
+        mixed: 'Mixed',
+        unknown: 'To verify',
+      },
+    }
+  : {
+      sectionTitle: 'Emulatori e interpreti',
+      sectionHref: '/emulatori/',
+      canonicalBase: 'https://www.retro-gamers.it/emulatori',
+      languageSwitch: '/en/emulators/',
+      defaultDescription: (title: string) =>
+        `${title}: link ufficiali, note pratiche e sistemi supportati su Retro-Gamers.it.`,
+      backToIndex: 'Torna agli Emulatori',
+      toolType: 'Tipo',
+      licenseType: 'Licenza',
+      licenseNotes: 'Note licenza',
+      officialLinks: 'Link ufficiali',
+      officialWebsite: 'Sito ufficiale',
+      officialDownload: 'Download ufficiale',
+      sourceCode: 'Codice sorgente',
+      documentation: 'Documentazione',
+      hostSystems: 'Sistemi host',
+      supportedSystems: 'Sistemi supportati',
+      relatedPlayableClassics: 'Classici giocabili',
+      relatedPosts: 'Articoli collegati',
+      relatedPlatforms: 'Piattaforme collegate',
+      setupInstructions: 'Istruzioni rapide',
+      technicalNotes: 'Note tecniche',
+      bodyFallback: 'Questa scheda strumento è in preparazione.',
+      toolTypes: {
+        interpreter: 'Interprete',
+        emulator: 'Emulatore',
+        frontend: 'Frontend',
+        utility: 'Utility',
+        other: 'Altro',
+      },
+      licenses: {
+        openSource: 'Open source',
+        freeware: 'Freeware',
+        commercial: 'Commerciale',
+        mixed: 'Mista',
+        unknown: 'Da verificare',
+      },
+    };
+
+const [allPosts] = await Promise.all([
+  getAllPosts(),
+]);
+
+const groupedPosts = groupPosts(allPosts);
+const headerReviews = isEn
+  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
+  : groupedPosts.allReviews;
+const headerNews = isEn
+  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
+  : groupedPosts.allNews;
+
+const title = tool.title;
+const description = tool.excerpt || tool.subtitle || copy.defaultDescription(tool.title);
+const coverUrl = tool.coverImage?.asset
+  ? urlFor(tool.coverImage)
+      .width(1280)
+      .height(720)
+      .fit('crop')
+      .quality(78)
+      .auto('format')
+      .url()
+  : '';
+const sidebarCoverUrl = tool.coverImage?.asset
+  ? urlFor(tool.coverImage)
+      .width(720)
+      .quality(78)
+      .auto('format')
+      .url()
+  : '';
+
+const alternateLanguages = [
+  { lang: currentLang, url: `${copy.canonicalBase}/${tool.slug}/` },
+];
+
+function escapeHTML(value = '') {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[char] || char));
+}
+
+function getPortableImage(value: any) {
+  if (!value?.asset) return '';
+
+  const src = urlFor(value)
+    .width(1100)
+    .quality(78)
+    .auto('format')
+    .url();
+  const alt = escapeHTML(value.alt || '');
+  const caption = value.caption
+    ? `<figcaption>${escapeHTML(value.caption)}</figcaption>`
+    : '';
+
+  return `<figure class="emulator-tool-figure"><img src="${src}" alt="${alt}" loading="lazy" decoding="async" />${caption}</figure>`;
+}
+
+function renderPortableText(blocks: any[] = []) {
+  if (!Array.isArray(blocks) || blocks.length === 0) return '';
+
+  return toHTML(blocks, {
+    components: {
+      types: {
+        image: ({ value }) => getPortableImage(value),
+      },
+      marks: {
+        link: ({ children, value }) => {
+          const href = value?.href || '#';
+          const isMail = href.startsWith('mailto:');
+          const rel = isMail ? '' : ' rel="noopener noreferrer"';
+          const target = isMail ? '' : ' target="_blank"';
+
+          return `<a href="${escapeHTML(href)}"${target}${rel}>${children}</a>`;
+        },
+      },
+    },
+  });
+}
+
+const bodyHtml = renderPortableText(tool.body);
+const setupHtml = renderPortableText(tool.setupInstructions);
+
+const getLabel = (map: Record<string, string>, value?: string) =>
+  (value && map[value]) || value || '';
+
+const getName = (item: any) =>
+  isEn
+    ? item?.nameEn || item?.name || item?.title || ''
+    : item?.name || item?.title || item?.nameEn || '';
+
+const toolTypeLabel = getLabel(copy.toolTypes, tool.toolType);
+const licenseLabel = getLabel(copy.licenses, tool.licenseType);
+
+const facts = [
+  toolTypeLabel && { label: copy.toolType, value: toolTypeLabel },
+  licenseLabel && { label: copy.licenseType, value: licenseLabel },
+].filter(Boolean) as Array<{ label: string; value: string }>;
+
+const officialLinks = [
+  tool.officialWebsite && { label: copy.officialWebsite, href: tool.officialWebsite },
+  tool.officialDownloadUrl && { label: copy.officialDownload, href: tool.officialDownloadUrl },
+  tool.sourceCodeUrl && { label: copy.sourceCode, href: tool.sourceCodeUrl },
+  tool.documentationUrl && { label: copy.documentation, href: tool.documentationUrl },
+].filter(Boolean) as Array<{ label: string; href: string }>;
+
+const relatedPostTypeLabels: Record<string, string> = isEn
+  ? {
+      article: 'Article',
+      feature: 'Feature',
+      guide: 'Guide',
+      interview: 'Interview',
+      news: 'News',
+      review: 'Review',
+      special: 'Feature',
+    }
+  : {
+      article: 'Articolo',
+      feature: 'Speciale',
+      guide: 'Guida',
+      interview: 'Intervista',
+      news: 'News',
+      review: 'Recensione',
+      special: 'Speciale',
+    };
+
+const getRelatedPostTypeLabel = (type?: string) => {
+  if (!type) return isEn ? 'Article' : 'Articolo';
+
+  return relatedPostTypeLabels[type] || type.replace(/[-_]/g, ' ');
+};
+
+const getRelatedPostImage = (post: any) =>
+  post.featuredImage?.asset
+    ? urlFor(post.featuredImage)
+        .width(168)
+        .height(128)
+        .fit('crop')
+        .quality(74)
+        .auto('format')
+        .url()
+    : '';
+
+const relatedPosts = (tool.relatedPosts || []).map((post) => ({
+  ...post,
+  typeLabel: getRelatedPostTypeLabel(post.type),
+  imageUrl: getRelatedPostImage(post),
+  url: getPostUrl(post),
+}));
+---
+
+<BaseLayout
+  reviews={headerReviews}
+  news={headerNews}
+  title={title}
+  description={description}
+  image={coverUrl || '/og-image.jpg'}
+  canonical={`${copy.canonicalBase}/${tool.slug}/`}
+  lang={currentLang}
+  languageSwitch={copy.languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <main class="emulator-tools-page emulator-tool-detail">
+    <div class="container">
+      <a class="emulator-tool-back" href={copy.sectionHref}>{copy.backToIndex}</a>
+
+      <section class="emulator-tool-hero">
+        <div class="emulator-tool-hero__content">
+          <span>{copy.sectionTitle}</span>
+          <h1>{tool.title}</h1>
+          {(tool.subtitle || tool.excerpt) && (
+            <p>{tool.subtitle || tool.excerpt}</p>
+          )}
+
+          <div class="emulator-tool-hero__chips">
+            {toolTypeLabel && <span>{toolTypeLabel}</span>}
+            {licenseLabel && <span>{licenseLabel}</span>}
+          </div>
+        </div>
+      </section>
+
+      <div class="emulator-tool-layout">
+        <article class="emulator-tool-main">
+          {bodyHtml ? (
+            <div class="emulator-tool-richtext" set:html={bodyHtml} />
+          ) : (
+            <p class="emulator-tool-empty-copy">{copy.bodyFallback}</p>
+          )}
+
+          {officialLinks.length > 0 && (
+            <section class="emulator-tool-panel emulator-tool-official-cta">
+              <h2>{copy.officialLinks}</h2>
+              <div class="emulator-tool-actions">
+                {officialLinks.map((link) => (
+                  <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {setupHtml && (
+            <section class="emulator-tool-panel">
+              <h2>{copy.setupInstructions}</h2>
+              <div class="emulator-tool-richtext emulator-tool-richtext--compact" set:html={setupHtml} />
+            </section>
+          )}
+
+          {tool.technicalNotes && (
+            <section class="emulator-tool-panel">
+              <h2>{copy.technicalNotes}</h2>
+              <p>{tool.technicalNotes}</p>
+            </section>
+          )}
+        </article>
+
+        <aside class="emulator-tool-sidebar" aria-label={isEn ? 'Emulator details' : 'Dettagli emulatore'}>
+          {sidebarCoverUrl && (
+            <figure class="emulator-tool-cover">
+              <img
+                src={sidebarCoverUrl}
+                alt={tool.coverImage?.alt || tool.title}
+                width="720"
+                loading="lazy"
+                decoding="async"
+              />
+            </figure>
+          )}
+
+          <div class="emulator-tool-sidebar__sticky">
+            {facts.length > 0 && (
+              <section class="emulator-tool-facts">
+                {facts.map((item) => (
+                  <div>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
+                ))}
+              </section>
+            )}
+
+            {officialLinks.length > 0 && (
+              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+                <h2>{copy.officialLinks}</h2>
+                <div class="emulator-tool-link-list">
+                  {officialLinks.map((link) => (
+                    <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {tool.supportedHostSystems?.length > 0 && (
+              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+                <h2>{copy.hostSystems}</h2>
+                <div class="emulator-tool-chip-list">
+                  {tool.supportedHostSystems.map((system) => (
+                    <span>{system}</span>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {tool.emulatedSystems?.length > 0 && (
+              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+                <h2>{copy.supportedSystems}</h2>
+                <div class="emulator-tool-chip-list">
+                  {tool.emulatedSystems.map((platform) => (
+                    <a href={getPlatformUrl(platform, currentLang)}>{getName(platform)}</a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {tool.relatedPlayableClassics?.length > 0 && (
+              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+                <h2>{copy.relatedPlayableClassics}</h2>
+                <div class="emulator-tool-link-list">
+                  {tool.relatedPlayableClassics.map((classic) => (
+                    <a href={getPlayableClassicUrl(classic, currentLang)}>{classic.title}</a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {relatedPosts.length > 0 && (
+              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+                <h2>{copy.relatedPosts}</h2>
+                <div class="emulator-tool-related-posts">
+                  {relatedPosts.map((post) => (
+                    <a class="emulator-tool-related-post" href={post.url}>
+                      <span class="emulator-tool-related-post__meta">{post.typeLabel}</span>
+                      <span class={`emulator-tool-related-post__content${post.imageUrl ? '' : ' emulator-tool-related-post__content--text'}`}>
+                        {post.imageUrl && (
+                          <span class="emulator-tool-related-post__media">
+                            <img
+                              src={post.imageUrl}
+                              alt={post.featuredImage?.alt || post.title}
+                              width="84"
+                              height="64"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </span>
+                        )}
+                        <strong>{post.title}</strong>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {tool.relatedPlatforms?.length > 0 && (
+              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+                <h2>{copy.relatedPlatforms}</h2>
+                <div class="emulator-tool-chip-list">
+                  {tool.relatedPlatforms.map((platform) => (
+                    <a href={getPlatformUrl(platform, currentLang)}>{getName(platform)}</a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {tool.licenseNotes && (
+              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+                <h2>{copy.licenseNotes}</h2>
+                <p>{tool.licenseNotes}</p>
+              </section>
+            )}
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
