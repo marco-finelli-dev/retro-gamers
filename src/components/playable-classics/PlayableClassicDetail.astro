@@ -62,6 +62,21 @@ const copy = isEn
         'This page is currently published as a guide and historical context. It does not include files downloadable from Retro-Gamers.it.',
       downloadFuture:
         'Future internal downloads will be reserved for registered users after editorial and legal review.',
+      downloadReadyTitle: 'Download available',
+      downloadReadyText:
+        'This package is served with a temporary link reserved for registered users.',
+      downloadButton: 'Download package',
+      downloadPreparing: 'Preparing temporary download link...',
+      downloadReady: 'Temporary link ready. The download will open in a new tab.',
+      downloadGenericError: 'The download is not available right now. Please try again later.',
+      downloadUnauthorized: 'Sign in to generate the temporary download link.',
+      downloadForbidden: 'This page is not configured for internal downloads.',
+      downloadNotFound: 'This downloadable page is no longer available.',
+      downloadUnavailable: 'Download storage is not configured yet.',
+      packageName: 'Package',
+      packageVersion: 'Version',
+      packageSize: 'Size',
+      checksum: 'SHA-256',
       loginCta: 'Go to your account',
       loginHref: '/en/account/',
       instructionsTitle: 'How to play today',
@@ -116,6 +131,21 @@ const copy = isEn
         'Questa scheda è pubblicata come guida e contesto storico. Non contiene file scaricabili da Retro-Gamers.it.',
       downloadFuture:
         'I futuri download interni saranno riservati agli utenti registrati dopo verifica editoriale e legale.',
+      downloadReadyTitle: 'Download disponibile',
+      downloadReadyText:
+        'Il pacchetto viene servito con un link temporaneo riservato agli utenti registrati.',
+      downloadButton: 'Scarica il pacchetto',
+      downloadPreparing: 'Preparazione del link temporaneo...',
+      downloadReady: 'Link temporaneo pronto. Il download si aprirà in una nuova scheda.',
+      downloadGenericError: 'Il download non è disponibile in questo momento. Riprova più tardi.',
+      downloadUnauthorized: 'Accedi per generare il link temporaneo di download.',
+      downloadForbidden: 'Questa scheda non è configurata per il download interno.',
+      downloadNotFound: 'Questa scheda scaricabile non è più disponibile.',
+      downloadUnavailable: 'Lo storage download non è ancora configurato.',
+      packageName: 'Pacchetto',
+      packageVersion: 'Versione',
+      packageSize: 'Dimensione',
+      checksum: 'SHA-256',
       loginCta: 'Accedi al tuo account',
       loginHref: '/account/login/',
       instructionsTitle: 'Come giocarlo oggi',
@@ -234,6 +264,9 @@ const getName = (item: any) =>
 
 const legalStatusLabel = getLabel(copy.legalStatuses, classic.legalStatus);
 const distributionLabel = getLabel(copy.distributions, classic.distributionType);
+const hasInternalDownload =
+  classic.downloadable === true &&
+  classic.distributionType === 'internalDownload';
 const facts = [
   classic.originalYear && { label: copy.year, value: String(classic.originalYear) },
   classic.originalPlatforms?.length && {
@@ -267,6 +300,16 @@ const noteItems = [
 const relationPlatforms = classic.relatedPlatforms || [];
 const relationCompanies = classic.relatedCompanies || [];
 const relationCreators = classic.relatedCreators || [];
+const downloadEndpoint = `/api/playable-classics/${classic.slug}/download`;
+const downloadMessageAttrs = {
+  preparing: copy.downloadPreparing,
+  ready: copy.downloadReady,
+  generic: copy.downloadGenericError,
+  unauthorized: copy.downloadUnauthorized,
+  forbidden: copy.downloadForbidden,
+  notFound: copy.downloadNotFound,
+  unavailable: copy.downloadUnavailable,
+};
 ---
 
 <BaseLayout
@@ -370,15 +413,76 @@ const relationCreators = classic.relatedCreators || [];
         </article>
 
         <aside class="playable-classic-sidebar" aria-label={isEn ? 'Playable classic details' : 'Dettagli classico giocabile'}>
-          <section class="playable-classic-download">
-            <h2>{copy.downloadTitle}</h2>
-            <p>{copy.downloadText}</p>
-            {classic.requiresLogin && <p>{copy.downloadFuture}</p>}
-            <div class="playable-classic-download__actions">
-              <a href={copy.loginHref}>{copy.loginCta}</a>
-              <a href={copy.policyHref}>{copy.policyCta}</a>
-            </div>
-          </section>
+          {hasInternalDownload ? (
+            <section
+              class="playable-classic-download playable-classic-download--ready"
+              data-playable-classic-download
+              data-endpoint={downloadEndpoint}
+              data-message-preparing={downloadMessageAttrs.preparing}
+              data-message-ready={downloadMessageAttrs.ready}
+              data-message-generic={downloadMessageAttrs.generic}
+              data-message-unauthorized={downloadMessageAttrs.unauthorized}
+              data-message-forbidden={downloadMessageAttrs.forbidden}
+              data-message-not-found={downloadMessageAttrs.notFound}
+              data-message-unavailable={downloadMessageAttrs.unavailable}
+            >
+              <h2>{copy.downloadReadyTitle}</h2>
+              <p>{copy.downloadReadyText}</p>
+
+              {(classic.packageName || classic.packageVersion || classic.packageSize || classic.checksumSha256) && (
+                <dl class="playable-classic-package">
+                  {classic.packageName && (
+                    <>
+                      <dt>{copy.packageName}</dt>
+                      <dd>{classic.packageName}</dd>
+                    </>
+                  )}
+                  {classic.packageVersion && (
+                    <>
+                      <dt>{copy.packageVersion}</dt>
+                      <dd>{classic.packageVersion}</dd>
+                    </>
+                  )}
+                  {classic.packageSize && (
+                    <>
+                      <dt>{copy.packageSize}</dt>
+                      <dd>{classic.packageSize}</dd>
+                    </>
+                  )}
+                  {classic.checksumSha256 && (
+                    <>
+                      <dt>{copy.checksum}</dt>
+                      <dd><code>{classic.checksumSha256}</code></dd>
+                    </>
+                  )}
+                </dl>
+              )}
+
+              <div class="playable-classic-download__actions">
+                <button type="button" data-download-button>{copy.downloadButton}</button>
+                <a href={copy.loginHref} data-download-login hidden>{copy.loginCta}</a>
+                <a href={copy.policyHref}>{copy.policyCta}</a>
+              </div>
+
+              <p
+                class="playable-classic-download__status"
+                data-download-status
+                role="status"
+                aria-live="polite"
+                hidden
+              ></p>
+            </section>
+          ) : (
+            <section class="playable-classic-download">
+              <h2>{copy.downloadTitle}</h2>
+              <p>{copy.downloadText}</p>
+              {classic.requiresLogin && <p>{copy.downloadFuture}</p>}
+              <div class="playable-classic-download__actions">
+                <a href={copy.loginHref}>{copy.loginCta}</a>
+                <a href={copy.policyHref}>{copy.policyCta}</a>
+              </div>
+            </section>
+          )}
 
           {facts.length > 0 && (
             <section class="playable-classic-facts">
@@ -471,4 +575,83 @@ const relationCreators = classic.relatedCreators || [];
       </div>
     </div>
   </main>
+
+  <script>
+    const downloadRoot = document.querySelector('[data-playable-classic-download]');
+
+    if (downloadRoot) {
+      const button = downloadRoot.querySelector('[data-download-button]');
+      const status = downloadRoot.querySelector('[data-download-status]');
+      const loginLink = downloadRoot.querySelector('[data-download-login]');
+      const endpoint = downloadRoot.getAttribute('data-endpoint') || '';
+      const messages = {
+        preparing: downloadRoot.getAttribute('data-message-preparing') || '',
+        ready: downloadRoot.getAttribute('data-message-ready') || '',
+        generic: downloadRoot.getAttribute('data-message-generic') || '',
+        unauthorized: downloadRoot.getAttribute('data-message-unauthorized') || '',
+        forbidden: downloadRoot.getAttribute('data-message-forbidden') || '',
+        notFound: downloadRoot.getAttribute('data-message-not-found') || '',
+        unavailable: downloadRoot.getAttribute('data-message-unavailable') || '',
+      };
+
+      const setStatus = (message, tone = 'neutral') => {
+        if (!status) return;
+        status.textContent = message;
+        status.hidden = false;
+        status.dataset.tone = tone;
+      };
+
+      const getErrorMessage = (response, payload) => {
+        if (response.status === 401) return messages.unauthorized;
+        if (response.status === 404) return messages.notFound;
+        if (response.status === 503) return messages.unavailable;
+        if (response.status === 403) return messages.forbidden;
+        return payload?.message || messages.generic;
+      };
+
+      button?.addEventListener('click', async () => {
+        if (!endpoint) return;
+
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        loginLink?.setAttribute('hidden', '');
+        setStatus(messages.preparing, 'neutral');
+
+        try {
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+              Accept: 'application/json',
+            },
+          });
+
+          const payload = await response.json().catch(() => null);
+
+          if (!response.ok || payload?.ok !== true || !payload?.url) {
+            setStatus(getErrorMessage(response, payload), 'error');
+
+            if (response.status === 401) {
+              loginLink?.removeAttribute('hidden');
+            }
+
+            return;
+          }
+
+          setStatus(messages.ready, 'success');
+
+          const link = document.createElement('a');
+          link.href = payload.url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.click();
+        } catch {
+          setStatus(messages.generic, 'error');
+        } finally {
+          button.disabled = false;
+          button.removeAttribute('aria-busy');
+        }
+      });
+    }
+  </script>
 </BaseLayout>

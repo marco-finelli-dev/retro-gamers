@@ -1,8 +1,11 @@
 import { client } from '../sanity';
 import { getUserSessionFromCookies } from './auth';
+import { supabaseAdmin } from './server';
 
 export const PLAYABLE_CLASSICS_DOWNLOAD_BUCKET =
-  import.meta.env.SUPABASE_PLAYABLE_CLASSICS_BUCKET || 'playable-classics';
+  String(import.meta.env.SUPABASE_PLAYABLE_CLASSICS_BUCKET || '').trim();
+
+export const PLAYABLE_CLASSICS_SIGNED_URL_EXPIRES_IN = 120;
 
 export type PlayableClassicDownloadRecord = {
   _id: string;
@@ -39,6 +42,19 @@ export type PlayableClassicDownloadCheck =
       ok: false;
       status: 401 | 403 | 404 | 503;
       code: PlayableClassicDownloadErrorCode;
+      message: string;
+    };
+
+export type PlayableClassicSignedUrlResult =
+  | {
+      ok: true;
+      signedUrl: string;
+      expiresIn: number;
+    }
+  | {
+      ok: false;
+      status: 503;
+      code: 'service_unavailable';
       message: string;
     };
 
@@ -152,16 +168,90 @@ export async function checkPlayableClassicDownloadRequest({
   };
 }
 
-export function getPlayableClassicsStorageUnavailableResponse() {
-  /*
-    V0 intentionally does not generate signed URLs.
-    A future milestone can replace this hard stop with a Supabase Storage
-    signed URL after bucket, policy and download logging have been reviewed.
-  */
+function getStorageUnavailableResponse(): PlayableClassicSignedUrlResult {
   return {
-    ok: false as const,
-    status: 503 as const,
-    code: 'service_unavailable' as const,
+    ok: false,
+    status: 503,
+    code: 'service_unavailable',
     message: 'Download storage is not configured yet.',
   };
+}
+
+export function isPlayableClassicsDownloadStorageConfigured() {
+  return Boolean(
+    PLAYABLE_CLASSICS_DOWNLOAD_BUCKET &&
+    import.meta.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
+
+export async function createPlayableClassicSignedUrl(
+  classic: PlayableClassicDownloadRecord
+): Promise<PlayableClassicSignedUrlResult> {
+  if (!classic.storagePath || !isPlayableClassicsDownloadStorageConfigured()) {
+    return getStorageUnavailableResponse();
+  }
+
+  const { data, error } = await supabaseAdmin
+    .storage
+    .from(PLAYABLE_CLASSICS_DOWNLOAD_BUCKET)
+    .createSignedUrl(
+      classic.storagePath,
+      PLAYABLE_CLASSICS_SIGNED_URL_EXPIRES_IN,
+      {
+        download: classic.packageName || true,
+      }
+    );
+
+  if (error || !data?.signedUrl) {
+    console.warn('Playable Classics signed URL generation failed:', {
+      code: error?.name,
+      message: error?.message,
+    });
+
+    return getStorageUnavailableResponse();
+  }
+
+  return {
+    ok: true,
+    signedUrl: data.signedUrl,
+    expiresIn: PLAYABLE_CLASSICS_SIGNED_URL_EXPIRES_IN,
+  };
+}
+
+export async function logPlayableClassicDownload({
+  userId,
+  classic,
+  userAgent = '',
+}: {
+  userId: string;
+  classic: PlayableClassicDownloadRecord;
+  userAgent?: string;
+}) {
+  if (!classic.storagePath) {
+    return { ok: false, error: 'missing_storage_path' };
+  }
+
+  const { error } = await supabaseAdmin
+    .from('playable_classic_download_logs')
+    .insert({
+      user_id: userId,
+      playable_classic_id: classic._id,
+      slug: classic.slug || '',
+      package_name: classic.packageName || null,
+      package_version: classic.packageVersion || null,
+      storage_path: classic.storagePath,
+      user_agent: userAgent || null,
+    });
+
+  if (error) {
+    console.warn('Playable Classics download log failed:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+    });
+
+    return { ok: false, error };
+  }
+
+  return { ok: true, error: null };
 }

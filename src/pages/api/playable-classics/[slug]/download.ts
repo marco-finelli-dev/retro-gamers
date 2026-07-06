@@ -2,7 +2,8 @@ import type { APIRoute } from 'astro';
 import { logApiError } from '../../../../lib/api-errors';
 import {
   checkPlayableClassicDownloadRequest,
-  getPlayableClassicsStorageUnavailableResponse,
+  createPlayableClassicSignedUrl,
+  logPlayableClassicDownload,
 } from '../../../../lib/supabase/playable-classics-downloads';
 
 const json = (payload: unknown, status = 200) =>
@@ -10,10 +11,12 @@ const json = (payload: unknown, status = 200) =>
     status,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
     },
   });
 
-export const GET: APIRoute = async ({ params, cookies }) => {
+export const GET: APIRoute = async ({ params, cookies, request }) => {
   const slug = String(params.slug || '').trim();
 
   if (!slug) {
@@ -35,13 +38,35 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       }, check.status);
     }
 
-    const unavailable = getPlayableClassicsStorageUnavailableResponse();
+    const signedUrl = await createPlayableClassicSignedUrl(check.classic);
+
+    if (!signedUrl.ok) {
+      return json({
+        ok: false,
+        code: signedUrl.code,
+        message: signedUrl.message,
+      }, signedUrl.status);
+    }
+
+    const logResult = await logPlayableClassicDownload({
+      userId: check.session.user.id,
+      classic: check.classic,
+      userAgent: request.headers.get('user-agent') || '',
+    });
+
+    if (!logResult.ok) {
+      console.warn('Playable Classics download served without log entry.');
+    }
 
     return json({
-      ok: false,
-      code: unavailable.code,
-      message: unavailable.message,
-    }, unavailable.status);
+      ok: true,
+      url: signedUrl.signedUrl,
+      expiresIn: signedUrl.expiresIn,
+      packageName: check.classic.packageName || null,
+      packageVersion: check.classic.packageVersion || null,
+      packageSize: check.classic.packageSize || null,
+      checksumSha256: check.classic.checksumSha256 || null,
+    });
   } catch (error) {
     logApiError('playable-classics-download', error);
 
