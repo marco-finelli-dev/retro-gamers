@@ -378,8 +378,11 @@ function chunkBalanced(images = []) {
     }
 
     if (block._type === 'imageRow') {
-      const rows = chunkBalanced(block.images || []);
+      const images = block.images || [];
       const isUniformHeight = block.layout === 'uniformHeight';
+      const rows = isUniformHeight
+        ? [images].filter((row) => row.length > 0)
+        : chunkBalanced(images);
       const groupCaption = typeof block.groupCaption === 'string'
         ? block.groupCaption.trim()
         : '';
@@ -487,8 +490,11 @@ function chunkBalanced(images = []) {
             }
 
             if (inner._type === 'imageRow') {
-              const rows = chunkBalanced(inner.images || []);
+              const images = inner.images || [];
               const isUniformHeight = inner.layout === 'uniformHeight';
+              const rows = isUniformHeight
+                ? [images].filter((row) => row.length > 0)
+                : chunkBalanced(images);
               const groupCaption = typeof inner.groupCaption === 'string'
                 ? inner.groupCaption.trim()
                 : '';
