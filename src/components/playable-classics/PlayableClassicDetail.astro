@@ -11,7 +11,6 @@ import {
 } from '../../lib/playable-classics';
 import {
   getCompanyUrl,
-  getPlatformUrl,
   getPostUrl,
 } from '../../lib/routes';
 
@@ -45,8 +44,8 @@ const copy = isEn
       languageSwitch: '/classici-giocabili-oggi/',
       defaultDescription: (title: string) =>
         `${title}: historical context, legal status and practical notes on Retro-Gamers.it.`,
-      year: 'Original year',
-      platforms: 'Original platforms',
+      year: 'Release year',
+      platforms: 'Platforms',
       developer: 'Developer',
       publisher: 'Publisher',
       genre: 'Genre',
@@ -87,11 +86,12 @@ const copy = isEn
       loginHref: '/en/account/',
       instructionsTitle: 'How to play today',
       recommendedEmulator: 'Recommended emulator or interpreter',
+      recommendedToolsTitle: 'Recommended tools',
+      primaryTool: 'Primary',
       setupInstructions: 'Quick setup notes',
       technicalNotes: 'Technical notes',
       languageNotes: 'Language notes',
       relatedPosts: 'Related articles',
-      relatedPlatforms: 'Related platforms',
       relatedCompanies: 'Related companies',
       relatedCreators: 'Related creators',
       readArticle: 'Read article',
@@ -119,6 +119,13 @@ const copy = isEn
         extras: 'Extras',
         other: 'Other',
       },
+      toolTypes: {
+        interpreter: 'Interpreter',
+        emulator: 'Emulator',
+        frontend: 'Frontend',
+        utility: 'Utility',
+        other: 'Other',
+      },
     }
   : {
       sectionTitle: 'Classici giocabili oggi',
@@ -129,8 +136,8 @@ const copy = isEn
       languageSwitch: '/en/playable-classics/',
       defaultDescription: (title: string) =>
         `${title}: contesto storico, stato legale e note pratiche su Retro-Gamers.it.`,
-      year: 'Anno originale',
-      platforms: 'Piattaforme originali',
+      year: 'Anno uscita',
+      platforms: 'Piattaforme',
       developer: 'Sviluppatore',
       publisher: 'Publisher',
       genre: 'Genere',
@@ -171,11 +178,12 @@ const copy = isEn
       loginHref: '/account/login/',
       instructionsTitle: 'Come giocarlo oggi',
       recommendedEmulator: 'Emulatore o interprete consigliato',
+      recommendedToolsTitle: 'Emulatori consigliati',
+      primaryTool: 'Principale',
       setupInstructions: 'Istruzioni rapide',
       technicalNotes: 'Note tecniche',
       languageNotes: 'Note lingua',
       relatedPosts: 'Articoli collegati',
-      relatedPlatforms: 'Piattaforme collegate',
       relatedCompanies: 'Aziende collegate',
       relatedCreators: 'Creator collegati',
       readArticle: 'Leggi articolo',
@@ -201,6 +209,13 @@ const copy = isEn
         patch: 'Patch',
         emulatorConfig: 'Config emulatore',
         extras: 'Extra',
+        other: 'Altro',
+      },
+      toolTypes: {
+        interpreter: 'Interprete',
+        emulator: 'Emulatore',
+        frontend: 'Frontend',
+        utility: 'Utility',
         other: 'Altro',
       },
     };
@@ -299,6 +314,8 @@ const hasInternalDownload =
   classic.distributionType === 'internalDownload';
 const getPackageTypeLabel = (type?: string) =>
   (type && copy.packageTypes[type]) || (type ? type.replace(/[-_]/g, ' ') : '');
+const getToolTypeLabel = (type?: string) =>
+  (type && copy.toolTypes[type]) || (type ? type.replace(/[-_]/g, ' ') : '');
 const facts = [
   classic.originalYear && { label: copy.year, value: String(classic.originalYear) },
   classic.originalPlatforms?.length && {
@@ -319,17 +336,25 @@ const facts = [
   },
 ].filter(Boolean) as Array<{ label: string; value: string }>;
 
-const legalItems = [
-  legalStatusLabel && { label: copy.legalStatus, value: legalStatusLabel },
-  distributionLabel && { label: copy.distribution, value: distributionLabel },
-].filter(Boolean) as Array<{ label: string; value: string }>;
+const recommendedToolSource = [...(classic.recommendedTools || [])]
+  .filter((tool) => tool?.name)
+  .sort((a, b) => Number(b.isPrimary === true) - Number(a.isPrimary === true));
+const recommendedToolItems = (
+  recommendedToolSource.length > 0
+    ? recommendedToolSource
+    : classic.recommendedEmulator
+      ? [{ name: classic.recommendedEmulator, isPrimary: true }]
+      : []
+).map((tool) => ({
+  ...tool,
+  typeLabel: getToolTypeLabel(tool.toolType),
+}));
 
 const noteItems = [
   classic.licenseNotes && { label: copy.licenseNotes, value: classic.licenseNotes },
   classic.redistributionNotes && { label: copy.redistributionNotes, value: classic.redistributionNotes },
 ].filter(Boolean) as Array<{ label: string; value: string }>;
 
-const relationPlatforms = classic.relatedPlatforms || [];
 const relationCompanies = classic.relatedCompanies || [];
 const relationCreators = classic.relatedCreators || [];
 const downloadEndpoint = `/api/playable-classics/${classic.slug}/download`;
@@ -591,13 +616,9 @@ const downloadMessageAttrs = {
             </section>
           )}
 
-          {(classic.recommendedEmulator || setupHtml || classic.technicalNotes || classic.languageNotes) && (
+          {(setupHtml || classic.technicalNotes || classic.languageNotes) && (
             <section class="playable-classic-panel">
               <h2>{copy.instructionsTitle}</h2>
-
-              {classic.recommendedEmulator && (
-                <p><strong>{copy.recommendedEmulator}:</strong> {classic.recommendedEmulator}</p>
-              )}
 
               {setupHtml && (
                 <div class="playable-classic-richtext playable-classic-richtext--compact">
@@ -644,12 +665,35 @@ const downloadMessageAttrs = {
             </section>
           )}
 
-          {relationPlatforms.length > 0 && (
+          {recommendedToolItems.length > 0 && (
             <section class="playable-classic-panel playable-classic-panel--sidebar">
-              <h2>{copy.relatedPlatforms}</h2>
-              <div class="playable-classic-chip-list">
-                {relationPlatforms.map((platform) => (
-                  <a href={getPlatformUrl(platform, currentLang)}>{getName(platform)}</a>
+              <h2>{copy.recommendedToolsTitle}</h2>
+              <div class="playable-classic-tools">
+                {recommendedToolItems.map((tool) => (
+                  <article class:list={['playable-classic-tool', tool.isPrimary && 'playable-classic-tool--primary']}>
+                    <header>
+                      {tool.officialUrl ? (
+                        <a class="playable-classic-tool__name" href={tool.officialUrl} target="_blank" rel="noopener noreferrer">
+                          {tool.name}
+                        </a>
+                      ) : (
+                        <strong class="playable-classic-tool__name">{tool.name}</strong>
+                      )}
+
+                      {(tool.typeLabel || tool.isPrimary) && (
+                        <span class="playable-classic-tool__badges">
+                          {tool.typeLabel && <small>{tool.typeLabel}</small>}
+                          {tool.isPrimary && <small>{copy.primaryTool}</small>}
+                        </span>
+                      )}
+                    </header>
+
+                    {tool.recommendedFor && (
+                      <p class="playable-classic-tool__for">{tool.recommendedFor}</p>
+                    )}
+
+                    {tool.notes && <p>{tool.notes}</p>}
+                  </article>
                 ))}
               </div>
             </section>
@@ -699,17 +743,15 @@ const downloadMessageAttrs = {
             </section>
           )}
 
-          {legalItems.length > 0 && (
+          {(noteItems.length > 0 || classic.externalReferenceUrl || classic.legalSourceUrl) && (
             <section class="playable-classic-panel playable-classic-panel--sidebar">
-              <h2>{copy.legalStatus}</h2>
-              <dl class="playable-classic-definition-list">
-                {legalItems.map((item) => (
-                  <>
-                    <dt>{item.label}</dt>
-                    <dd>{item.value}</dd>
-                  </>
-                ))}
-              </dl>
+              <h2>{copy.notesTitle}</h2>
+              {noteItems.map((item) => (
+                <div class="playable-classic-note">
+                  <h3>{item.label}</h3>
+                  <p>{item.value}</p>
+                </div>
+              ))}
 
               {classic.externalReferenceUrl && (
                 <p>
@@ -726,18 +768,6 @@ const downloadMessageAttrs = {
                   </a>
                 </p>
               )}
-            </section>
-          )}
-
-          {noteItems.length > 0 && (
-            <section class="playable-classic-panel playable-classic-panel--sidebar">
-              <h2>{copy.notesTitle}</h2>
-              {noteItems.map((item) => (
-                <div class="playable-classic-note">
-                  <h3>{item.label}</h3>
-                  <p>{item.value}</p>
-                </div>
-              ))}
             </section>
           )}
 

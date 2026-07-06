@@ -53,6 +53,15 @@ export type PlayableClassicDownloadPackage = {
   notes?: string;
 };
 
+export type PlayableClassicRecommendedTool = {
+  name?: string;
+  toolType?: string;
+  officialUrl?: string;
+  recommendedFor?: string;
+  notes?: string;
+  isPrimary?: boolean;
+};
+
 export type PlayableClassic = {
   _id: string;
   title: string;
@@ -84,6 +93,7 @@ export type PlayableClassic = {
   checksumSha256?: string;
   downloadPackages?: PlayableClassicDownloadPackage[];
   recommendedEmulator?: string;
+  recommendedTools?: PlayableClassicRecommendedTool[];
   setupInstructions?: any[];
   technicalNotes?: string;
   languageNotes?: string;
@@ -214,6 +224,14 @@ const playableClassicFields = `
     notes
   },
   recommendedEmulator,
+  recommendedTools[]{
+    name,
+    toolType,
+    officialUrl,
+    recommendedFor,
+    notes,
+    isPrimary
+  },
   setupInstructions[]{ ${portableTextProjection} },
   technicalNotes,
   languageNotes,
