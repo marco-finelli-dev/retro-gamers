@@ -577,10 +577,15 @@
 }
 
 .playable-classic-download-package h3 {
+  display: -webkit-box;
   margin: 0;
   color: var(--color-text);
   font-size: 1rem;
   line-height: 1.22;
+  min-height: 2.44em;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .playable-classic-download-package__meta {
@@ -737,9 +742,7 @@
 
 .playable-classic-related-post {
   display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
+  gap: 8px;
   min-width: 0;
   padding: 11px 0;
   color: var(--color-text);
@@ -762,6 +765,18 @@
   outline: none;
 }
 
+.playable-classic-related-post__content {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.playable-classic-related-post__content--text {
+  grid-template-columns: 1fr;
+}
+
 .playable-classic-related-post__media {
   display: block;
   overflow: hidden;
@@ -779,21 +794,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.playable-classic-related-post__media--placeholder {
-  display: grid;
-  place-items: center;
-  color: var(--rg-eyebrow-color);
-  font-size: 1.15rem;
-  font-weight: 950;
-  letter-spacing: 0.04em;
-}
-
-.playable-classic-related-post__body {
-  display: grid;
-  min-width: 0;
-  gap: 6px;
 }
 
 .playable-classic-related-post__meta {
