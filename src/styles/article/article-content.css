@@ -321,6 +321,62 @@
   text-shadow: var(--article-caption-shadow);
 }
 
+.article-image-gallery__caption {
+  max-width: 760px;
+  margin: 14px auto 0;
+  padding: 10px 18px 0;
+
+  border-top: 1px solid var(--article-caption-border);
+
+  font-size: 13.5px;
+  line-height: 1.55;
+  font-weight: 620;
+  text-align: center;
+  letter-spacing: 0.01em;
+
+  color: var(--article-caption-color);
+
+  text-shadow: var(--article-caption-shadow);
+}
+
+.article-image-gallery--uniform-height {
+  --article-gallery-image-height: clamp(220px, 28vw, 360px);
+}
+
+.article-image-gallery--uniform-height .article-image-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.article-image-gallery--uniform-height figure {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+}
+
+.article-image-gallery--uniform-height .article-image-row img {
+  width: auto;
+  max-width: 100%;
+  height: var(--article-gallery-image-height);
+
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+
+.article-image-gallery--uniform-height .article-image-row__item--wide img {
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+
+.article-image-gallery--uniform-height .article-image-row figcaption {
+  width: 100%;
+  max-width: min(760px, 100%);
+}
+
 
 /* ========================================
    VIDEO
@@ -617,6 +673,56 @@
   text-shadow: var(--article-caption-shadow);
 
   overflow: visible;
+}
+
+.article-aside-gallery__caption {
+  width: 100%;
+  max-width: 100%;
+
+  margin: 2px 0 0;
+  padding: 9px 6px 2px;
+
+  border-top: 1px solid var(--article-caption-border);
+
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 650;
+  text-align: center;
+  letter-spacing: 0.01em;
+
+  color: var(--article-aside-caption-color);
+
+  text-shadow: var(--article-caption-shadow);
+}
+
+.article-aside-gallery--uniform-height {
+  --article-aside-gallery-image-height: clamp(180px, 24vw, 300px);
+}
+
+.article-aside-gallery--uniform-height .article-aside-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.article-aside-gallery--uniform-height .article-aside-row figure {
+  flex: 0 1 auto;
+  align-items: center;
+}
+
+.article-aside-gallery--uniform-height .article-aside-row img {
+  width: auto;
+  max-width: 100%;
+  height: var(--article-aside-gallery-image-height);
+
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+
+.article-aside-gallery--uniform-height .article-aside-row__item--wide img {
+  aspect-ratio: auto;
+  object-fit: contain;
 }
 
 /* immagine singola nelle curiosità */
@@ -1190,6 +1296,24 @@
     line-height: 1.45;
 
     color: var(--article-aside-caption-color);
+  }
+
+  .article-image-gallery--uniform-height .article-image-row,
+  .article-aside-gallery--uniform-height .article-aside-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .article-image-gallery--uniform-height figure,
+  .article-aside-gallery--uniform-height .article-aside-row figure {
+    width: 100%;
+  }
+
+  .article-image-gallery--uniform-height .article-image-row img,
+  .article-aside-gallery--uniform-height .article-aside-row img {
+    width: 100%;
+    height: auto;
+    max-height: none;
   }
 
   .article-aside-gallery.is-single {
@@ -1852,8 +1976,8 @@ html[data-theme="light"] .article-series-box__item:hover strong {
    ARTICLE IMAGE DISPLAY MODES — HARD OVERRIDE
 ======================================== */
 
-.article-content .article-image-row .article-image-row__item--contain img,
-.article-content .article-image-row .article-image-row__item--natural img {
+.article-content .article-image-gallery:not(.article-image-gallery--uniform-height) .article-image-row .article-image-row__item--contain img,
+.article-content .article-image-gallery:not(.article-image-gallery--uniform-height) .article-image-row .article-image-row__item--natural img {
   width: 100% !important;
   height: auto !important;
 
@@ -1861,7 +1985,7 @@ html[data-theme="light"] .article-series-box__item:hover strong {
   object-fit: contain !important;
 }
 
-.article-content .article-image-row .article-image-row__item--wide img {
+.article-content .article-image-gallery:not(.article-image-gallery--uniform-height) .article-image-row .article-image-row__item--wide img {
   aspect-ratio: 21 / 9 !important;
   object-fit: cover !important;
 }

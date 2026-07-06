@@ -379,9 +379,13 @@ function chunkBalanced(images = []) {
 
     if (block._type === 'imageRow') {
       const rows = chunkBalanced(block.images || []);
+      const isUniformHeight = block.layout === 'uniformHeight';
+      const groupCaption = typeof block.groupCaption === 'string'
+        ? block.groupCaption.trim()
+        : '';
 
       return (
-        <div class="article-image-gallery">
+        <div class={`article-image-gallery ${isUniformHeight ? 'article-image-gallery--uniform-height' : ''}`}>
           {rows.map((row) => (
             <div
               class={`article-image-row article-image-row--${row.length}`}
@@ -416,6 +420,10 @@ function chunkBalanced(images = []) {
               })}
             </div>
           ))}
+
+          {groupCaption && (
+            <p class="article-image-gallery__caption">{groupCaption}</p>
+          )}
         </div>
       );
     }
@@ -480,9 +488,13 @@ function chunkBalanced(images = []) {
 
             if (inner._type === 'imageRow') {
               const rows = chunkBalanced(inner.images || []);
+              const isUniformHeight = inner.layout === 'uniformHeight';
+              const groupCaption = typeof inner.groupCaption === 'string'
+                ? inner.groupCaption.trim()
+                : '';
 
               return (
-                <div class="article-aside-gallery">
+                <div class={`article-aside-gallery ${isUniformHeight ? 'article-aside-gallery--uniform-height' : ''}`}>
                   {rows.map((row) => (
                     <div
                       class={`article-aside-row article-aside-row--${row.length}`}
@@ -517,6 +529,10 @@ function chunkBalanced(images = []) {
                       })}
                     </div>
                   ))}
+
+                  {groupCaption && (
+                    <p class="article-aside-gallery__caption">{groupCaption}</p>
+                  )}
                 </div>
               );
             }
