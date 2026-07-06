@@ -333,57 +333,72 @@
 }
 
 .playable-classic-cover {
-  aspect-ratio: 16 / 10;
+  display: grid;
+  place-items: center;
   overflow: hidden;
   position: relative;
   margin: 0;
+  padding: 12px;
   border: 1px solid var(--rg-card-border);
-  border-radius: 18px;
-  background:
-    radial-gradient(circle at 72% 18%, rgba(168,85,247,0.18), transparent 42%),
-    radial-gradient(circle at 20% 82%, rgba(34,240,255,0.10), transparent 38%),
-    var(--rg-card-bg);
+  border-radius: 20px;
+  background: var(--rg-card-bg);
   box-shadow: var(--rg-card-shadow);
 }
 
-.playable-classic-cover::before {
+.playable-classic-cover::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: var(--rg-panel-grid);
-  background-size: 34px 34px;
-  opacity: calc(var(--rg-panel-grid-opacity) * 0.52);
+  background:
+    linear-gradient(to top, rgba(0,0,0,0.20), transparent 62%),
+    radial-gradient(circle at 0% 0%, rgba(34,240,255,0.10), transparent 38%);
 }
 
 .playable-classic-cover img {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  height: auto;
+  max-height: 520px;
+  border-radius: 14px;
+  object-fit: contain;
+  object-position: center;
+  filter:
+    brightness(0.96)
+    contrast(1.04)
+    saturate(1.04);
 }
 
 .playable-classic-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  gap: clamp(18px, 3vw, 28px);
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 44px;
   align-items: start;
-  margin-top: clamp(24px, 4vw, 38px);
+  margin-top: 34px;
 }
 
-.playable-classic-main,
-.playable-classic-sidebar {
+.playable-classic-main {
   display: grid;
   gap: 18px;
   min-width: 0;
+}
+
+.playable-classic-sidebar {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+  height: 100%;
 }
 
 .playable-classic-sidebar__sticky {
   display: grid;
-  gap: 18px;
+  gap: 16px;
+  align-self: start;
   min-width: 0;
   position: sticky;
-  top: 92px;
+  top: clamp(96px, 10vh, 118px);
 }
 
 .playable-classic-richtext {
@@ -850,17 +865,32 @@
   font-weight: 820;
 }
 
-@media (max-width: 1040px) {
+@media (max-width: 1024px) {
   .playable-classics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .playable-classic-layout {
     grid-template-columns: 1fr;
+    gap: 30px;
   }
 
+  .playable-classic-sidebar,
   .playable-classic-sidebar__sticky {
     position: static;
+    top: auto;
+    height: auto;
+  }
+
+  .playable-classic-sidebar {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .playable-classic-cover {
+    display: none;
   }
 }
 
