@@ -172,14 +172,12 @@
   min-width: 0;
   transition:
     border-color var(--transition-fast),
-    box-shadow var(--transition-fast),
-    transform var(--transition-fast);
+    box-shadow var(--transition-fast);
 }
 
 .playable-classics-card:hover {
   border-color: color-mix(in srgb, var(--rg-card-border) 55%, var(--color-primary));
   box-shadow: var(--section-box-hover-shadow);
-  transform: translateY(-2px);
 }
 
 .playable-classics-card__media {
@@ -314,7 +312,9 @@
 
 .playable-classics-empty a:focus-visible {
   outline: none;
-  box-shadow: 0 3px 0 currentColor;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .playable-classic-back {
@@ -466,7 +466,9 @@
 .playable-classic-richtext a:focus-visible,
 .playable-classic-panel a:focus-visible {
   outline: none;
-  box-shadow: 0 3px 0 currentColor;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .playable-classic-richtext figure {
@@ -721,6 +723,21 @@
   overflow-wrap: anywhere;
 }
 
+.playable-classic-facts strong a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 48%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.playable-classic-facts strong a:hover,
+.playable-classic-facts strong a:focus-visible {
+  color: var(--color-primary);
+  outline: none;
+  text-decoration-color: currentColor;
+}
+
 .playable-classic-definition-list {
   display: grid;
   grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
@@ -932,12 +949,13 @@ a.playable-classic-tool__name:focus-visible {
   white-space: normal;
 }
 
-.playable-classic-source__pill:hover,
-.playable-classic-source__pill:focus-visible {
+.playable-classic-panel .playable-classic-source__pill:hover,
+.playable-classic-panel .playable-classic-source__pill:focus-visible {
   background: var(--rg-cta-hover-bg);
   color: var(--color-primary);
   outline: none;
   box-shadow: 0 0 0 3px rgba(34,240,255,0.18);
+  text-decoration: none;
 }
 
 .playable-classic-chip-list a {
@@ -949,7 +967,9 @@ a.playable-classic-tool__name:focus-visible {
 .playable-classic-chip-list a:focus-visible {
   color: var(--color-primary);
   outline: none;
-  box-shadow: 0 3px 0 currentColor;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .playable-classic-chip-list {

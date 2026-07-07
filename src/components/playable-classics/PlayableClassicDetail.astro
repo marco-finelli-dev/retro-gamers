@@ -11,6 +11,7 @@ import {
 } from '../../lib/playable-classics';
 import {
   getCompanyUrl,
+  getPlatformUrl,
   getPostUrl,
 } from '../../lib/routes';
 
@@ -89,7 +90,6 @@ const copy = isEn
       technicalNotes: 'Technical notes',
       languageNotes: 'Language notes',
       relatedPosts: 'Related articles',
-      relatedCompanies: 'Related companies',
       relatedCreators: 'Related creators',
       readArticle: 'Read article',
       backToIndex: 'Back to Playable Classics',
@@ -178,7 +178,6 @@ const copy = isEn
       technicalNotes: 'Note tecniche',
       languageNotes: 'Note lingua',
       relatedPosts: 'Articoli collegati',
-      relatedCompanies: 'Aziende collegate',
       relatedCreators: 'Creator collegati',
       readArticle: 'Leggi articolo',
       backToIndex: 'Torna ai Classici giocabili oggi',
@@ -310,25 +309,62 @@ const getPackageTypeLabel = (type?: string) =>
   (type && copy.packageTypes[type]) || (type ? type.replace(/[-_]/g, ' ') : '');
 const getToolTypeLabel = (type?: string) =>
   (type && copy.toolTypes[type]) || (type ? type.replace(/[-_]/g, ' ') : '');
+
+const normalizeName = (value = '') => value.trim().toLowerCase();
+const relationCompanies = classic.relatedCompanies || [];
+const relationCreators = classic.relatedCreators || [];
+const findCompanyByName = (value = '') => {
+  const normalized = normalizeName(value);
+  if (!normalized) return null;
+
+  return relationCompanies.find((company) =>
+    [company.name, company.nameEn, company.title]
+      .filter(Boolean)
+      .map((name) => normalizeName(String(name)))
+      .includes(normalized)
+  );
+};
+const getCompanyFactItems = (items: any[] = []) =>
+  items.map((item) => {
+    const label = getName(item);
+    const company = findCompanyByName(label);
+
+    return {
+      label,
+      href: company ? getCompanyUrl(company, currentLang) : '',
+    };
+  }).filter((item) => item.label);
+const getPlatformFactItems = (items: any[] = []) =>
+  items.map((item) => {
+    const label = getName(item);
+    const href = item?.slug && item?.manufacturer?.slug && item?.platformType
+      ? getPlatformUrl(item, currentLang)
+      : '';
+
+    return { label, href };
+  }).filter((item) => item.label);
 const facts = [
-  classic.originalYear && { label: copy.year, value: String(classic.originalYear) },
+  classic.originalYear && { label: copy.year, items: [{ label: String(classic.originalYear) }] },
   classic.originalPlatforms?.length && {
     label: copy.platforms,
-    value: classic.originalPlatforms.map(getName).filter(Boolean).join(', '),
+    items: getPlatformFactItems(classic.originalPlatforms),
   },
   classic.developer?.length && {
     label: copy.developer,
-    value: classic.developer.map(getName).filter(Boolean).join(', '),
+    items: getCompanyFactItems(classic.developer),
   },
   classic.publisher?.length && {
     label: copy.publisher,
-    value: classic.publisher.map(getName).filter(Boolean).join(', '),
+    items: getCompanyFactItems(classic.publisher),
   },
   classic.genre?.length && {
     label: copy.genre,
-    value: classic.genre.map(getName).filter(Boolean).join(', '),
+    items: classic.genre.map((item) => ({ label: getName(item) })).filter((item) => item.label),
   },
-].filter(Boolean) as Array<{ label: string; value: string }>;
+].filter((item) => item && item.items.length > 0) as Array<{
+  label: string;
+  items: Array<{ label: string; href?: string }>;
+}>;
 
 const recommendedToolSource = [...(classic.recommendedTools || [])]
   .filter((item) => item?.tool?.title)
@@ -347,8 +383,6 @@ const noteItems = [
   classic.redistributionNotes && { label: copy.redistributionNotes, value: classic.redistributionNotes },
 ].filter(Boolean) as Array<{ label: string; value: string }>;
 
-const relationCompanies = classic.relatedCompanies || [];
-const relationCreators = classic.relatedCreators || [];
 const activeDownloadPackages = (classic.downloadPackages || [])
   .filter((downloadPackage) => downloadPackage?.packageId && downloadPackage.isActive !== false)
   .map((downloadPackage) => {
@@ -592,7 +626,18 @@ const downloadMessageAttrs = {
               {facts.map((item) => (
                 <div>
                   <span>{item.label}</span>
-                  <strong>{item.value}</strong>
+                  <strong>
+                    {item.items.map((fact, index) => (
+                      <>
+                        {fact.href ? (
+                          <a href={fact.href}>{fact.label}</a>
+                        ) : (
+                          <span>{fact.label}</span>
+                        )}
+                        {index < item.items.length - 1 && <span>, </span>}
+                      </>
+                    ))}
+                  </strong>
                 </div>
               ))}
             </section>
@@ -676,6 +721,19 @@ const downloadMessageAttrs = {
             </section>
           )}
 
+          {relationCreators.length > 0 && (
+            <section class="playable-classic-panel playable-classic-panel--sidebar">
+              <h2>{copy.relatedCreators}</h2>
+              <div class="playable-classic-chip-list">
+                {relationCreators.map((creator) => (
+                  <a href={currentLang === 'en' ? `/en/creators/${creator.slug}/` : `/creatori/${creator.slug}/`}>
+                    {creator.name}
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+
           {(noteItems.length > 0 || classic.legalSourceUrl) && (
             <section class="playable-classic-panel playable-classic-panel--sidebar">
               <h2>{copy.notesTitle}</h2>
@@ -693,30 +751,6 @@ const downloadMessageAttrs = {
                   </a>
                 </div>
               )}
-            </section>
-          )}
-
-          {relationCompanies.length > 0 && (
-            <section class="playable-classic-panel playable-classic-panel--sidebar">
-              <h2>{copy.relatedCompanies}</h2>
-              <div class="playable-classic-chip-list">
-                {relationCompanies.map((company) => (
-                  <a href={getCompanyUrl(company, currentLang)}>{getName(company)}</a>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {relationCreators.length > 0 && (
-            <section class="playable-classic-panel playable-classic-panel--sidebar">
-              <h2>{copy.relatedCreators}</h2>
-              <div class="playable-classic-chip-list">
-                {relationCreators.map((creator) => (
-                  <a href={currentLang === 'en' ? `/en/creators/${creator.slug}/` : `/creatori/${creator.slug}/`}>
-                    {creator.name}
-                  </a>
-                ))}
-              </div>
             </section>
           )}
           </div>
