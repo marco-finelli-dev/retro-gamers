@@ -454,6 +454,35 @@ const getRelatedPostImage = (post: any) =>
         .url()
     : '';
 
+const getCreatorUrl = (creator: any) =>
+  creator?.slug
+    ? currentLang === 'en'
+      ? `/en/creators/${creator.slug}/`
+      : `/creatori/${creator.slug}/`
+    : '';
+const getCreatorRole = (creator: any) =>
+  isEn
+    ? creator?.roleEn || creator?.role || ''
+    : creator?.role || creator?.roleEn || '';
+const getCreatorImage = (creator: any) =>
+  creator?.portrait?.asset
+    ? urlFor(creator.portrait)
+        .width(96)
+        .height(96)
+        .fit('crop')
+        .quality(72)
+        .auto('format')
+        .url()
+    : '';
+const getCreatorInitials = (name = '') =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+
 const relatedPostCards = (classic.relatedPosts || []).map((post) => ({
   ...post,
   excerpt: getRelatedPostExcerpt(post),
@@ -724,12 +753,40 @@ const downloadMessageAttrs = {
           {relationCreators.length > 0 && (
             <section class="playable-classic-panel playable-classic-panel--sidebar">
               <h2>{copy.relatedCreators}</h2>
-              <div class="playable-classic-chip-list">
-                {relationCreators.map((creator) => (
-                  <a href={currentLang === 'en' ? `/en/creators/${creator.slug}/` : `/creatori/${creator.slug}/`}>
-                    {creator.name}
-                  </a>
-                ))}
+              <div class="playable-classic-creators">
+                {relationCreators.map((creator) => {
+                  const creatorUrl = getCreatorUrl(creator);
+                  const portrait = getCreatorImage(creator);
+                  const role = getCreatorRole(creator);
+                  const CardTag = creatorUrl ? 'a' : 'div';
+
+                  return (
+                    <CardTag
+                      class="playable-classic-creator-card"
+                      href={creatorUrl || undefined}
+                    >
+                      <span class="playable-classic-creator-card__portrait">
+                        {portrait ? (
+                          <img
+                            src={portrait}
+                            alt={creator.portrait?.alt || creator.name}
+                            width="48"
+                            height="48"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <span>{getCreatorInitials(creator.name) || 'RG'}</span>
+                        )}
+                      </span>
+
+                      <span class="playable-classic-creator-card__body">
+                        <strong>{creator.name}</strong>
+                        {role && <small>{role}</small>}
+                      </span>
+                    </CardTag>
+                  );
+                })}
               </div>
             </section>
           )}

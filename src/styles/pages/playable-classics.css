@@ -419,7 +419,13 @@
 }
 
 .playable-classic-panel--sidebar h2 {
-  font-size: 1.02rem;
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
 }
 
 .playable-classic-richtext h3,
@@ -704,38 +710,43 @@
   border-bottom: 0;
 }
 
-.playable-classic-facts span,
+.playable-classic-facts div > span,
 .playable-classic-definition-list dt,
 .playable-classic-related-post__meta span,
 .playable-classic-related-post__meta small {
   color: var(--rg-eyebrow-color);
-  font-size: 0.7rem;
-  font-weight: 900;
-  letter-spacing: 0.1em;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
 }
 
 .playable-classic-facts strong,
 .playable-classic-definition-list dd {
   color: var(--color-text);
-  font-size: 0.98rem;
+  font-size: 13px;
   line-height: 1.35;
+  font-weight: 650;
   overflow-wrap: anywhere;
 }
 
 .playable-classic-facts strong a {
-  color: var(--color-primary);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--color-primary) 48%, transparent);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
+  color: var(--rg-action-color);
+  text-decoration: none;
+  overflow-wrap: break-word;
+  transition:
+    color var(--transition-fast),
+    text-decoration-color var(--transition-fast);
 }
 
 .playable-classic-facts strong a:hover,
 .playable-classic-facts strong a:focus-visible {
-  color: var(--color-primary);
+  color: var(--rg-action-hover-color);
   outline: none;
-  text-decoration-color: currentColor;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .playable-classic-definition-list {
@@ -761,35 +772,58 @@
 
 .playable-classic-related-posts {
   display: grid;
-  gap: 0;
+  gap: 10px;
 }
 
 .playable-classic-related-post {
+  position: relative;
+  overflow: hidden;
   display: grid;
   gap: 8px;
   min-width: 0;
-  padding: 11px 0;
+  padding: 9px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 14px;
+  background: var(--rg-card-bg);
   color: var(--color-text);
   text-decoration: none;
-  border-top: 1px solid color-mix(in srgb, var(--rg-card-border) 72%, transparent);
+  box-shadow: var(--rg-card-shadow);
+  transition:
+    transform var(--transition-smooth),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-smooth),
+    background var(--transition-fast);
 }
 
-.playable-classic-related-post:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.playable-classic-related-post:last-child {
-  padding-bottom: 0;
+.playable-classic-related-post::before,
+.playable-classic-creator-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--rg-panel-highlight);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
 }
 
 .playable-classic-related-post:hover,
 .playable-classic-related-post:focus-visible {
-  color: var(--color-primary);
+  border-color: var(--rg-badge-border);
   outline: none;
+  box-shadow: var(--rg-card-hover-shadow);
+  transform: translateY(-2px);
+}
+
+.playable-classic-related-post:hover::before,
+.playable-classic-related-post:focus-visible::before,
+.playable-classic-creator-card:hover::before,
+.playable-classic-creator-card:focus-visible::before {
+  opacity: 1;
 }
 
 .playable-classic-related-post__content {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 84px minmax(0, 1fr);
   gap: 10px;
@@ -802,6 +836,8 @@
 }
 
 .playable-classic-related-post__media {
+  position: relative;
+  z-index: 1;
   display: block;
   overflow: hidden;
   width: 84px;
@@ -818,9 +854,23 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition:
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    filter var(--transition-smooth);
+}
+
+.playable-classic-related-post:hover .playable-classic-related-post__media img,
+.playable-classic-related-post:focus-visible .playable-classic-related-post__media img {
+  filter:
+    brightness(1.04)
+    contrast(1.08)
+    saturate(1.10);
+  transform: scale(1.07);
 }
 
 .playable-classic-related-post__meta {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -842,13 +892,116 @@
 }
 
 .playable-classic-related-post strong {
+  position: relative;
+  z-index: 1;
   display: -webkit-box;
   color: inherit;
-  font-size: 0.94rem;
+  font-size: 13px;
   line-height: 1.22;
+  font-weight: 750;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+  transition:
+    color var(--transition-fast),
+    text-shadow var(--transition-fast);
+}
+
+.playable-classic-related-post:hover strong,
+.playable-classic-related-post:focus-visible strong {
+  color: var(--color-primary);
+  text-shadow: 0 0 12px rgba(34,240,255,0.20);
+}
+
+.playable-classic-creators {
+  display: grid;
+  gap: 10px;
+}
+
+.playable-classic-creator-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  padding: 9px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 14px;
+  background: var(--rg-card-bg);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--rg-card-shadow);
+  transition:
+    transform var(--transition-smooth),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-smooth),
+    background var(--transition-fast);
+}
+
+.playable-classic-creator-card:hover,
+.playable-classic-creator-card:focus-visible {
+  border-color: var(--rg-badge-border);
+  outline: none;
+  box-shadow: var(--rg-card-hover-shadow);
+  transform: translateY(-2px);
+}
+
+.playable-classic-creator-card__portrait {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 14px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.playable-classic-creator-card__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.playable-classic-creator-card__body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.playable-classic-creator-card__body strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1.15;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playable-classic-creator-card__body small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--rg-eyebrow-color);
+  font-size: 10px;
+  line-height: 1.25;
+  font-weight: 820;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+  overflow-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .playable-classic-tools {
