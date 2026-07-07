@@ -39,6 +39,59 @@ export function getPostUrl(post) {
     : `/${section}/${slug}/`;
 }
 
+const getSlug = (item) => {
+  if (!item) return ''
+
+  return typeof item.slug === 'string'
+    ? item.slug
+    : item.slug?.current || ''
+}
+
+export function getPlayableClassicUrl(item, lang = item?.language || 'it') {
+  const slug = getSlug(item)
+
+  if (!slug) {
+    return lang === 'en' ? '/en/playable-classics/' : '/classici-giocabili-oggi/'
+  }
+
+  return lang === 'en'
+    ? `/en/playable-classics/${slug}/`
+    : `/classici-giocabili-oggi/${slug}/`
+}
+
+export function getEmulatorToolUrl(item, lang = item?.language || 'it') {
+  const slug = getSlug(item)
+
+  if (!slug) {
+    return lang === 'en' ? '/en/emulators/' : '/emulatori/'
+  }
+
+  return lang === 'en'
+    ? `/en/emulators/${slug}/`
+    : `/emulatori/${slug}/`
+}
+
+export function getSanityDocumentUrl(document, fallbackLang = 'it') {
+  if (!document) return '#'
+
+  const documentType = document._type || document.documentType || ''
+  const language = document.language || fallbackLang || 'it'
+
+  if (documentType === 'playableClassic') {
+    return getPlayableClassicUrl(document, language)
+  }
+
+  if (documentType === 'emulatorTool') {
+    return getEmulatorToolUrl(document, language)
+  }
+
+  return getPostUrl({
+    ...document,
+    type: document.type || 'article',
+    language
+  })
+}
+
 export function getArchiveUrl(type, language = 'it') {
   const routes = {
     it: {

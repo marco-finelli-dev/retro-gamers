@@ -61,6 +61,15 @@ const items = isEn
 
 const moreHref = isEn ? '/en/platforms/' : '/piattaforme/';
 const moreLabel = isEn ? 'All platforms' : 'Tutte le piattaforme';
+const resourceLinks = isEn
+  ? [
+      { label: 'Playable Classics', href: '/en/playable-classics/' },
+      { label: 'Emulators', href: '/en/emulators/' }
+    ]
+  : [
+      { label: 'Classici giocabili oggi', href: '/classici-giocabili-oggi/' },
+      { label: 'Emulatori e interpreti', href: '/emulatori/' }
+    ];
 ---
 
 <div class="rg-dropdown rg-dropdown--platforms">
@@ -91,6 +100,12 @@ const moreLabel = isEn ? 'All platforms' : 'Tutte le piattaforme';
       ))}
 
     </div>
+
+    {resourceLinks.map((item) => (
+      <a href={item.href} class="rg-dropdown__more">
+        {item.label} <span>→</span>
+      </a>
+    ))}
 
     <a href={moreHref} class="rg-dropdown__more">
       {moreLabel} <span>→</span>

@@ -1,5 +1,5 @@
 ---
-import { getPostUrl } from '../../lib/routes';
+import { getSanityDocumentUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 import ConsentYouTube from '../common/ConsentYouTube.astro';
 
@@ -20,13 +20,7 @@ function preserveLineBreaks(str = '') {
 }
 
 function getInternalUrl(reference) {
-  if (!reference?.slug) return '#';
-
-  return getPostUrl({
-    type: reference.type || 'article',
-    slug: reference.slug,
-    language: reference.language || 'it'
-  });
+  return getSanityDocumentUrl(reference, lang);
 }
 
 function getPlatformUrl(reference) {

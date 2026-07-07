@@ -264,6 +264,7 @@ const post = await sanityClient.fetch(`
         _type == "internalLink" => {
         ...,
         reference->{
+          _type,
           type,
           language,
           "slug": slug.current
@@ -355,6 +356,7 @@ _type == "imageRow" => {
                     _type == "internalLink" => {
             ...,
             reference->{
+              _type,
               type,
               language,
               "slug": slug.current

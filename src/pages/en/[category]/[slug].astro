@@ -257,6 +257,7 @@ const post = await client.fetch(`
             _type == "internalLink" => {
         ...,
         reference->{
+          _type,
           type,
           language,
           "slug": slug.current
@@ -348,6 +349,7 @@ _type == "imageRow" => {
                    _type == "internalLink" => {
             ...,
             reference->{
+              _type,
               type,
               language,
               "slug": slug.current
