@@ -43,6 +43,8 @@ export type EmulatorTool = {
   language?: EmulatorToolLang;
   subtitle?: string;
   excerpt?: string;
+  seoTitle?: string;
+  metaDescription?: string;
   coverImage?: EmulatorToolImage;
   toolType?: string;
   licenseType?: string;
@@ -130,6 +132,8 @@ const emulatorToolFields = `
   language,
   subtitle,
   excerpt,
+  seoTitle,
+  metaDescription,
   coverImage {
     alt,
     asset->{ _id, url }

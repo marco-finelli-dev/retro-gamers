@@ -245,8 +245,12 @@ const alternateLanguages = [
     : []),
 ];
 
-const title = classic.title;
-const description = classic.excerpt || classic.subtitle || copy.defaultDescription(classic.title);
+const title = classic.seoTitle || classic.title;
+const description =
+  classic.metaDescription ||
+  classic.excerpt ||
+  classic.subtitle ||
+  copy.defaultDescription(classic.title);
 const coverUrl = classic.coverImage?.asset
   ? urlFor(classic.coverImage)
       .width(1280)
@@ -542,13 +546,18 @@ const getCreatorInitials = (name = '') =>
     .join('')
     .toUpperCase();
 
-const relatedPostCards = (classic.relatedPosts || []).map((post) => ({
-  ...post,
-  excerpt: getRelatedPostExcerpt(post),
-  imageUrl: getRelatedPostImage(post),
-  typeLabel: getRelatedPostTypeLabel(post.type),
-  url: getPostUrl(post),
-}));
+const isRelatedPostInCurrentLanguage = (post: any) =>
+  isEn ? post?.language === 'en' : post?.language !== 'en';
+
+const relatedPostCards = (classic.relatedPosts || [])
+  .filter(isRelatedPostInCurrentLanguage)
+  .map((post) => ({
+    ...post,
+    excerpt: getRelatedPostExcerpt(post),
+    imageUrl: getRelatedPostImage(post),
+    typeLabel: getRelatedPostTypeLabel(post.type),
+    url: getPostUrl(post),
+  }));
 const downloadMessageAttrs = {
   preparing: copy.downloadPreparing,
   ready: copy.downloadReady,

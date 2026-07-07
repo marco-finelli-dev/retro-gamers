@@ -84,6 +84,8 @@ export type PlayableClassic = {
   language?: PlayableClassicLang;
   subtitle?: string;
   excerpt?: string;
+  seoTitle?: string;
+  metaDescription?: string;
   coverImage?: PlayableClassicImage;
   body?: any[];
   originalYear?: number;
@@ -194,6 +196,8 @@ const playableClassicFields = `
   language,
   subtitle,
   excerpt,
+  seoTitle,
+  metaDescription,
   coverImage {
     asset->{ _id, url },
     alt

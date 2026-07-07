@@ -118,8 +118,12 @@ const headerNews = isEn
   ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
   : groupedPosts.allNews;
 
-const title = tool.title;
-const description = tool.excerpt || tool.subtitle || copy.defaultDescription(tool.title);
+const title = tool.seoTitle || tool.title;
+const description =
+  tool.metaDescription ||
+  tool.excerpt ||
+  tool.subtitle ||
+  copy.defaultDescription(tool.title);
 const coverUrl = tool.coverImage?.asset
   ? urlFor(tool.coverImage)
       .width(1280)
@@ -292,12 +296,17 @@ const relatedPlayableClassicCards = (tool.relatedPlayableClassics || []).map((cl
   url: getPlayableClassicUrl(classic, currentLang),
 }));
 
-const relatedPosts = (tool.relatedPosts || []).map((post) => ({
-  ...post,
-  typeLabel: getRelatedPostTypeLabel(post.type),
-  imageUrl: getRelatedPostImage(post),
-  url: getPostUrl(post),
-}));
+const isRelatedPostInCurrentLanguage = (post: any) =>
+  isEn ? post?.language === 'en' : post?.language !== 'en';
+
+const relatedPosts = (tool.relatedPosts || [])
+  .filter(isRelatedPostInCurrentLanguage)
+  .map((post) => ({
+    ...post,
+    typeLabel: getRelatedPostTypeLabel(post.type),
+    imageUrl: getRelatedPostImage(post),
+    url: getPostUrl(post),
+  }));
 ---
 
 <BaseLayout
