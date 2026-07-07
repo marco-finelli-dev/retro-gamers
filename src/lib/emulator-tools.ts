@@ -29,6 +29,13 @@ export type EmulatorToolRef = {
   publishedAt?: string;
 };
 
+export type EmulatorToolTranslationRef = {
+  _id?: string;
+  title?: string;
+  slug?: string;
+  language?: EmulatorToolLang;
+};
+
 export type EmulatorTool = {
   _id: string;
   title: string;
@@ -55,6 +62,7 @@ export type EmulatorTool = {
   publishedAt?: string;
   featured?: boolean;
   isPublished?: boolean;
+  translatedVersion?: EmulatorToolTranslationRef;
   _updatedAt?: string;
 };
 
@@ -143,7 +151,13 @@ const emulatorToolFields = `
   relatedPlatforms[]->{ ${platformFields} },
   publishedAt,
   featured,
-  isPublished
+  isPublished,
+  translatedVersion->{
+    _id,
+    title,
+    "slug": slug.current,
+    language
+  }
 `;
 
 const emulatorToolBaseFilter = `

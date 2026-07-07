@@ -7,6 +7,7 @@ import { urlFor } from '../../lib/image';
 import { getAllPosts, groupPosts } from '../../lib/posts';
 import { getPlayableClassicUrl } from '../../lib/playable-classics';
 import {
+  getEmulatorToolUrl,
   type EmulatorTool,
   type EmulatorToolLang,
 } from '../../lib/emulator-tools';
@@ -136,8 +137,35 @@ const sidebarCoverUrl = tool.coverImage?.asset
       .url()
   : '';
 
+const canonicalUrl = `${copy.canonicalBase}/${tool.slug}/`;
+const translatedVersion = tool.translatedVersion?.slug
+  ? tool.translatedVersion
+  : null;
+const translatedLanguage: EmulatorToolLang =
+  translatedVersion?.language === 'it' || translatedVersion?.language === 'en'
+    ? translatedVersion.language
+    : currentLang === 'en'
+      ? 'it'
+      : 'en';
+const translatedPath = translatedVersion
+  ? getEmulatorToolUrl(translatedVersion, translatedLanguage)
+  : '';
+const translatedUrl = translatedPath ? `https://www.retro-gamers.it${translatedPath}` : '';
+const languageSwitchUrl = translatedPath || copy.languageSwitch;
+const xDefaultUrl =
+  currentLang === 'it'
+    ? canonicalUrl
+    : translatedLanguage === 'it' && translatedUrl
+      ? translatedUrl
+      : canonicalUrl;
 const alternateLanguages = [
-  { lang: currentLang, url: `${copy.canonicalBase}/${tool.slug}/` },
+  { lang: currentLang, url: canonicalUrl },
+  ...(translatedUrl
+    ? [
+        { lang: translatedLanguage, url: translatedUrl },
+        { lang: 'x-default', url: xDefaultUrl },
+      ]
+    : []),
 ];
 
 function escapeHTML(value = '') {
@@ -278,9 +306,9 @@ const relatedPosts = (tool.relatedPosts || []).map((post) => ({
   title={title}
   description={description}
   image={coverUrl || '/og-image.jpg'}
-  canonical={`${copy.canonicalBase}/${tool.slug}/`}
+  canonical={canonicalUrl}
   lang={currentLang}
-  languageSwitch={copy.languageSwitch}
+  languageSwitch={{ url: languageSwitchUrl }}
   alternateLanguages={alternateLanguages}
 >
   <main class="emulator-tools-page emulator-tool-detail">

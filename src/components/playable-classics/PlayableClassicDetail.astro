@@ -6,6 +6,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
 import { getAllPosts, groupPosts } from '../../lib/posts';
 import {
+  getPlayableClassicUrl,
   type PlayableClassic,
   type PlayableClassicLang,
 } from '../../lib/playable-classics';
@@ -213,8 +214,35 @@ const copy = isEn
       },
     };
 
+const canonicalUrl = `${copy.canonicalBase}/${classic.slug}/`;
+const translatedVersion = classic.translatedVersion?.slug
+  ? classic.translatedVersion
+  : null;
+const translatedLanguage: PlayableClassicLang =
+  translatedVersion?.language === 'it' || translatedVersion?.language === 'en'
+    ? translatedVersion.language
+    : currentLang === 'en'
+      ? 'it'
+      : 'en';
+const translatedPath = translatedVersion
+  ? getPlayableClassicUrl(translatedVersion, translatedLanguage)
+  : '';
+const translatedUrl = translatedPath ? `https://www.retro-gamers.it${translatedPath}` : '';
+const languageSwitchUrl = translatedPath || copy.languageSwitch;
+const xDefaultUrl =
+  currentLang === 'it'
+    ? canonicalUrl
+    : translatedLanguage === 'it' && translatedUrl
+      ? translatedUrl
+      : canonicalUrl;
 const alternateLanguages = [
-  { lang: currentLang, url: `${copy.canonicalBase}/${classic.slug}/` },
+  { lang: currentLang, url: canonicalUrl },
+  ...(translatedUrl
+    ? [
+        { lang: translatedLanguage, url: translatedUrl },
+        { lang: 'x-default', url: xDefaultUrl },
+      ]
+    : []),
 ];
 
 const title = classic.title;
@@ -538,9 +566,9 @@ const downloadMessageAttrs = {
   title={title}
   description={description}
   image={coverUrl || '/og-image.jpg'}
-  canonical={`${copy.canonicalBase}/${classic.slug}/`}
+  canonical={canonicalUrl}
   lang={currentLang}
-  languageSwitch={copy.languageSwitch}
+  languageSwitch={{ url: languageSwitchUrl }}
   alternateLanguages={alternateLanguages}
 >
   <main class="playable-classics-page playable-classic-detail">

@@ -39,6 +39,13 @@ export type PlayableClassicPostRef = {
   featuredImage?: PlayableClassicImage;
 };
 
+export type PlayableClassicTranslationRef = {
+  _id?: string;
+  title?: string;
+  slug?: string;
+  language?: PlayableClassicLang;
+};
+
 export type PlayableClassicDownloadPackage = {
   packageId?: string;
   title?: string;
@@ -105,6 +112,7 @@ export type PlayableClassic = {
   isPublished?: boolean;
   featured?: boolean;
   publishedAt?: string;
+  translatedVersion?: PlayableClassicTranslationRef;
   _updatedAt?: string;
 };
 
@@ -246,7 +254,13 @@ const playableClassicFields = `
   relatedCreators[]->{ ${creatorFields} },
   isPublished,
   featured,
-  publishedAt
+  publishedAt,
+  translatedVersion->{
+    _id,
+    title,
+    "slug": slug.current,
+    language
+  }
 `;
 
 const publicPlayableClassicFilter = `
