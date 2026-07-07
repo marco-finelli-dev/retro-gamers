@@ -299,6 +299,21 @@ const getName = (item: any) =>
   isEn
     ? item?.nameEn || item?.name || item?.title || ''
     : item?.name || item?.title || item?.nameEn || '';
+const getTaxonomySlug = (item: any) => {
+  if (!item) return '';
+
+  if (typeof item.slug === 'string') return item.slug;
+  if (typeof item.slug?.current === 'string') return item.slug.current;
+
+  return '';
+};
+const getArchiveFilterUrl = (key: string, value: string) => {
+  if (!key || !value) return '';
+
+  const baseUrl = currentLang === 'en' ? '/en/archive/' : '/archivio/';
+
+  return `${baseUrl}?${key}=${encodeURIComponent(value)}`;
+};
 
 const legalStatusLabel = getLabel(copy.legalStatuses, classic.legalStatus);
 const distributionLabel = getLabel(copy.distributions, classic.distributionType);
@@ -343,8 +358,24 @@ const getPlatformFactItems = (items: any[] = []) =>
 
     return { label, href };
   }).filter((item) => item.label);
+const getGenreFactItems = (items: any[] = []) =>
+  items.map((item) => {
+    const label = getName(item);
+    const slug = getTaxonomySlug(item);
+
+    return {
+      label,
+      href: slug ? getArchiveFilterUrl('genre', slug) : '',
+    };
+  }).filter((item) => item.label);
 const facts = [
-  classic.originalYear && { label: copy.year, items: [{ label: String(classic.originalYear) }] },
+  classic.originalYear && {
+    label: copy.year,
+    items: [{
+      label: String(classic.originalYear),
+      href: getArchiveFilterUrl('year', String(classic.originalYear)),
+    }],
+  },
   classic.originalPlatforms?.length && {
     label: copy.platforms,
     items: getPlatformFactItems(classic.originalPlatforms),
@@ -359,7 +390,7 @@ const facts = [
   },
   classic.genre?.length && {
     label: copy.genre,
-    items: classic.genre.map((item) => ({ label: getName(item) })).filter((item) => item.label),
+    items: getGenreFactItems(classic.genre),
   },
 ].filter((item) => item && item.items.length > 0) as Array<{
   label: string;
