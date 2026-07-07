@@ -9,6 +9,7 @@ import ArchiveStrip from '../components/home/ArchiveStrip.astro';
 import Interviews from '../components/home/Interviews.astro';
 import Hardware from '../components/home/Hardware.astro';
 import CommunityStrip from '../components/home/CommunityStrip.astro';
+import PlayToday from '../components/home/PlayToday.astro';
 import NewsletterPromo from '../components/newsletter/NewsletterPromo.astro';
 
 import '../styles/pages/home.css';
@@ -21,6 +22,8 @@ import {
 import { getUserSessionFromCookies } from '../lib/supabase/auth';
 import { getNewsletterSubscriptionForUser } from '../lib/supabase/newsletter';
 import { getLatestCommunityComments } from '../lib/supabase/community-hub';
+import { getHomePlayableClassics } from '../lib/playable-classics';
+import { getHomeEmulatorTools } from '../lib/emulator-tools';
 
 const allPosts = await getAllPosts();
 
@@ -55,7 +58,15 @@ const homeCommentCountMap = await getApprovedCommentCountMap(
 const withCommentCounts = (posts) =>
   attachApprovedCommentCounts(posts, homeCommentCountMap, 'it');
 
-const latestCommunityComments = await getLatestCommunityComments('it', 10);
+const [
+  latestCommunityComments,
+  playableClassics,
+  emulatorTools
+] = await Promise.all([
+  getLatestCommunityComments('it', 10),
+  getHomePlayableClassics('it', 4),
+  getHomeEmulatorTools('it', 4)
+]);
 const viewerSession = await getUserSessionFromCookies(Astro.cookies);
 let hideNewsletterPromo = false;
 
@@ -106,6 +117,16 @@ if (!viewerSession.error && viewerSession.user) {
         lang="it"
         latestComments={latestCommunityComments}
         isLoggedIn={!viewerSession.error && Boolean(viewerSession.user)}
+      />
+    </div>
+  </section>
+
+  <section class="home-play-today-section">
+    <div class="container">
+      <PlayToday
+        lang="it"
+        playableClassics={playableClassics}
+        emulatorTools={emulatorTools}
       />
     </div>
   </section>

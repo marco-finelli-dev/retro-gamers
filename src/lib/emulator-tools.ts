@@ -188,6 +188,25 @@ const emulatorToolFields = `
   }
 `;
 
+const emulatorToolHomeFields = `
+  _id,
+  _updatedAt,
+  title,
+  "slug": slug.current,
+  language,
+  subtitle,
+  excerpt,
+  coverImage {
+    alt,
+    asset->{ _id, url }
+  },
+  toolType,
+  licenseType,
+  publishedAt,
+  featured,
+  isPublished
+`;
+
 const emulatorToolBaseFilter = `
   _type == "emulatorTool" &&
   defined(slug.current) &&
@@ -244,6 +263,25 @@ export async function getPublishedEmulatorTools(
       }
     `,
     { lang }
+  );
+
+  return data || [];
+}
+
+export async function getHomeEmulatorTools(
+  lang: EmulatorToolLang = 'it',
+  limit = 4
+): Promise<EmulatorTool[]> {
+  const data = await client.fetch(
+    `
+      *[
+        ${publishedEmulatorToolFilter} &&
+        coalesce(language, "it") == $lang
+      ] | order(coalesce(featured, false) desc, coalesce(publishedAt, _createdAt) desc, title asc)[0...$limit] {
+        ${emulatorToolHomeFields}
+      }
+    `,
+    { lang, limit }
   );
 
   return data || [];

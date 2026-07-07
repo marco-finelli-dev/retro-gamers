@@ -1,0 +1,237 @@
+---
+import { urlFor } from '../../lib/image';
+import { getEmulatorToolUrl, type EmulatorTool } from '../../lib/emulator-tools';
+import { getPlayableClassicUrl, type PlayableClassic } from '../../lib/playable-classics';
+
+const {
+  lang = 'it',
+  playableClassics = [],
+  emulatorTools = []
+} = Astro.props as {
+  lang?: 'it' | 'en';
+  playableClassics?: PlayableClassic[];
+  emulatorTools?: EmulatorTool[];
+};
+
+const isEn = lang === 'en';
+const currentLang = isEn ? 'en' : 'it';
+
+const copy = isEn
+  ? {
+      title: 'Play It Today',
+      description:
+        'Classic games, verified sources and recommended tools for bringing the past back to modern systems without losing context.',
+      open: 'Open page',
+      playableClassicLabel: 'Playable classic',
+      classics: {
+        title: 'Playable Classics',
+        description:
+          'Curated pages for classic games that can be rediscovered today with legal notes, practical instructions and recommended tools.',
+        href: '/en/playable-classics/',
+        cta: 'All playable classics',
+        emptyTitle: 'Playable Classics',
+        emptyText:
+          'The first curated pages will appear here after editorial and legal review.'
+      },
+      tools: {
+        title: 'Emulators',
+        description:
+          'Tools for launching, configuring and understanding games and platforms from the past, with official links and technical notes.',
+        href: '/en/emulators/',
+        cta: 'All tools',
+        emptyTitle: 'Emulators',
+        emptyText:
+          'The first tool pages will appear here with official links and practical notes.'
+      },
+      toolTypes: {
+        interpreter: 'Interpreter',
+        emulator: 'Emulator',
+        frontend: 'Frontend',
+        utility: 'Utility',
+        other: 'Other'
+      },
+      licenses: {
+        openSource: 'Open source',
+        freeware: 'Freeware',
+        commercial: 'Commercial',
+        mixed: 'Mixed',
+        unknown: 'To verify'
+      }
+    }
+  : {
+      title: 'Riscoprire oggi',
+      description:
+        'Giochi storici, fonti verificate e strumenti consigliati per riportare il passato su sistemi moderni senza perdere il contesto.',
+      open: 'Apri scheda',
+      playableClassicLabel: 'Classico giocabile',
+      classics: {
+        title: 'Classici giocabili oggi',
+        description:
+          'Schede dedicate ai giochi storici che possono essere riscoperti oggi con note legali, istruzioni pratiche e strumenti consigliati.',
+        href: '/classici-giocabili-oggi/',
+        cta: 'Tutti i classici giocabili',
+        emptyTitle: 'Classici giocabili oggi',
+        emptyText:
+          'Le prime schede curate compariranno qui dopo verifica editoriale e legale.'
+      },
+      tools: {
+        title: 'Emulatori e interpreti',
+        description:
+          'Strumenti utili per avviare, configurare e comprendere giochi e piattaforme del passato, con link ufficiali e note tecniche.',
+        href: '/emulatori/',
+        cta: 'Tutti gli strumenti',
+        emptyTitle: 'Emulatori e interpreti',
+        emptyText:
+          'Le prime schede strumento compariranno qui con link ufficiali e note pratiche.'
+      },
+      toolTypes: {
+        interpreter: 'Interprete',
+        emulator: 'Emulatore',
+        frontend: 'Frontend',
+        utility: 'Utility',
+        other: 'Altro'
+      },
+      licenses: {
+        openSource: 'Open source',
+        freeware: 'Freeware',
+        commercial: 'Commerciale',
+        mixed: 'Mista',
+        unknown: 'Da verificare'
+      }
+    };
+
+const cleanText = (value?: string) =>
+  value?.replace(/\[…\]/g, '').trim() || '';
+
+const getExcerpt = (item: any) =>
+  cleanText(item?.excerpt) || cleanText(item?.subtitle);
+
+const getCoverUrl = (item: any, width = 640, height = 360) => {
+  if (!item?.coverImage?.asset) return '';
+
+  return urlFor(item.coverImage)
+    .width(width)
+    .height(height)
+    .fit('crop')
+    .quality(74)
+    .auto('format')
+    .url();
+};
+
+const getName = (item: any) =>
+  isEn
+    ? item?.nameEn || item?.name || item?.title || ''
+    : item?.name || item?.title || item?.nameEn || '';
+
+const getClassicMeta = (classic: PlayableClassic) => {
+  const platform = classic.originalPlatforms?.map(getName).filter(Boolean)[0] || '';
+
+  return [copy.playableClassicLabel, platform].filter(Boolean).join(' · ');
+};
+
+const getToolMeta = (tool: EmulatorTool) => {
+  return tool.toolType
+    ? (copy.toolTypes as Record<string, string>)[tool.toolType] || tool.toolType.replace(/[-_]/g, ' ')
+    : '';
+};
+
+const normalizeItems = ({
+  items,
+  kind
+}: {
+  items: Array<PlayableClassic | EmulatorTool>;
+  kind: 'classic' | 'tool';
+}) => items.slice(0, 4).map((item) => ({
+  id: item._id || item.slug,
+  kind,
+  title: item.title,
+  url: kind === 'classic'
+    ? getPlayableClassicUrl(item as PlayableClassic, currentLang)
+    : getEmulatorToolUrl(item as EmulatorTool, currentLang),
+  excerpt: getExcerpt(item),
+  thumbUrl: getCoverUrl(item, 360, 270),
+  imageAlt: item.coverImage?.alt || item.title,
+  meta: kind === 'classic'
+    ? getClassicMeta(item as PlayableClassic)
+    : getToolMeta(item as EmulatorTool)
+}));
+
+const sections = [
+  {
+    ...copy.classics,
+    key: 'classics',
+    items: normalizeItems({ items: playableClassics, kind: 'classic' })
+  },
+  {
+    ...copy.tools,
+    key: 'tools',
+    items: normalizeItems({ items: emulatorTools, kind: 'tool' })
+  }
+];
+---
+
+<section class="section-box home-play-today" aria-labelledby={`home-play-today-title-${lang}`}>
+
+  <div class="home-play-today__header">
+    <h2 id={`home-play-today-title-${lang}`}>{copy.title}</h2>
+    <p>{copy.description}</p>
+  </div>
+
+  <div class="home-play-today__grid">
+    {sections.map((section) => (
+      <article class={`home-play-today__column home-play-today__column--${section.key}`}>
+        <header class="home-play-today__column-header">
+          <div>
+            <h3>{section.title}</h3>
+            <p>{section.description}</p>
+          </div>
+
+          <a href={section.href} class="home-play-today__index-link">
+            {section.cta}
+          </a>
+        </header>
+
+        <div class="home-play-today__card-list">
+          {section.items.length > 0 ? (
+            section.items.map((item) => (
+              <a
+                href={item.url}
+                class={`home-play-today-card${item.thumbUrl ? '' : ' home-play-today-card--no-thumb'}`}
+              >
+                {item.thumbUrl && (
+                  <div class={`home-play-today-card__thumb${item.kind === 'tool' ? ' home-play-today-card__thumb--tool' : ''}`}>
+                    <img
+                      src={item.thumbUrl}
+                      alt={item.imageAlt}
+                      width="360"
+                      height="270"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                )}
+
+                <div class="home-play-today-card__content">
+                  {item.meta && <span class="home-play-today-card__meta">{item.meta}</span>}
+                  <h4>{item.title}</h4>
+                  {item.excerpt && <p>{item.excerpt}</p>}
+                  <strong>{copy.open} →</strong>
+                </div>
+              </a>
+            ))
+          ) : (
+            <a href={section.href} class="home-play-today-card home-play-today-card--empty home-play-today-card--no-thumb">
+              <div class="home-play-today-card__content">
+                <span class="home-play-today-card__meta">{section.title}</span>
+                <h4>{section.emptyTitle}</h4>
+                <p>{section.emptyText}</p>
+                <strong>{section.cta} →</strong>
+              </div>
+            </a>
+          )}
+        </div>
+      </article>
+    ))}
+  </div>
+
+</section>

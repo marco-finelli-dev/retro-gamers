@@ -289,6 +289,27 @@ const playableClassicFields = `
   }
 `;
 
+const playableClassicHomeFields = `
+  _id,
+  _updatedAt,
+  title,
+  "slug": slug.current,
+  language,
+  subtitle,
+  excerpt,
+  coverImage {
+    asset->{ _id, url },
+    alt
+  },
+  originalYear,
+  originalPlatforms[]->{ ${platformFields} },
+  legalStatus,
+  distributionType,
+  isPublished,
+  featured,
+  publishedAt
+`;
+
 const publicPlayableClassicFilter = `
   _type == "playableClassic" &&
   defined(slug.current) &&
@@ -322,6 +343,25 @@ export async function getPublishedPlayableClassics(
       }
     `,
     { lang }
+  );
+
+  return data || [];
+}
+
+export async function getHomePlayableClassics(
+  lang: PlayableClassicLang = 'it',
+  limit = 4
+): Promise<PlayableClassic[]> {
+  const data = await client.fetch(
+    `
+      *[
+        ${publicPlayableClassicFilter} &&
+        coalesce(language, "it") == $lang
+      ] | order(coalesce(featured, false) desc, coalesce(publishedAt, _createdAt) desc, title asc)[0...$limit] {
+        ${playableClassicHomeFields}
+      }
+    `,
+    { lang, limit }
   );
 
   return data || [];
