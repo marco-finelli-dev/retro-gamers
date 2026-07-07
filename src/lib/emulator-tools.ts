@@ -25,6 +25,7 @@ export type EmulatorToolRef = {
   featuredImage?: EmulatorToolImage;
   excerpt?: string;
   subtitle?: string;
+  originalPlatforms?: EmulatorToolRef[];
   publishedAt?: string;
 };
 
@@ -94,7 +95,8 @@ const playableClassicFields = `
   coverImage {
     alt,
     asset->{ _id, url }
-  }
+  },
+  originalPlatforms[]->{ ${platformFields} }
 `;
 
 const relatedPostFields = `

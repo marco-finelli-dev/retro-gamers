@@ -41,6 +41,10 @@ const copy = isEn
       hostSystems: 'Host systems',
       supportedSystems: 'Supported systems',
       relatedPlayableClassics: 'Playable Classics',
+      relatedPlayableClassicsTitle: (title: string) => `Playable classics with ${title}`,
+      relatedPlayableClassicsIntro:
+        'Games and materials on Retro-Gamers.it that can be launched or managed with this tool when listed on the related page.',
+      openPlayableClassic: 'Open page',
       relatedPosts: 'Related articles',
       setupInstructions: 'Quick setup notes',
       technicalNotes: 'Technical notes',
@@ -77,6 +81,10 @@ const copy = isEn
       hostSystems: 'Sistemi host',
       supportedSystems: 'Sistemi supportati',
       relatedPlayableClassics: 'Classici giocabili',
+      relatedPlayableClassicsTitle: (title: string) => `Classici giocabili con ${title}`,
+      relatedPlayableClassicsIntro:
+        'Giochi e materiali presenti su Retro-Gamers.it che possono essere avviati o gestiti con questo strumento, quando indicato nella relativa scheda.',
+      openPlayableClassic: 'Apri scheda',
       relatedPosts: 'Articoli collegati',
       setupInstructions: 'Istruzioni rapide',
       technicalNotes: 'Note tecniche',
@@ -238,6 +246,24 @@ const getRelatedPostImage = (post: any) =>
         .url()
     : '';
 
+const getPlayableClassicImage = (classic: any) =>
+  classic.coverImage?.asset
+    ? urlFor(classic.coverImage)
+        .width(480)
+        .height(300)
+        .fit('crop')
+        .quality(76)
+        .auto('format')
+        .url()
+    : '';
+
+const relatedPlayableClassicCards = (tool.relatedPlayableClassics || []).map((classic) => ({
+  ...classic,
+  imageUrl: getPlayableClassicImage(classic),
+  platformsLabel: (classic.originalPlatforms || []).map(getName).filter(Boolean).join(', '),
+  url: getPlayableClassicUrl(classic, currentLang),
+}));
+
 const relatedPosts = (tool.relatedPosts || []).map((post) => ({
   ...post,
   typeLabel: getRelatedPostTypeLabel(post.type),
@@ -297,6 +323,41 @@ const relatedPosts = (tool.relatedPosts || []).map((post) => ({
               <p>{tool.technicalNotes}</p>
             </section>
           )}
+
+          {relatedPlayableClassicCards.length > 0 && (
+            <section class="emulator-tool-panel emulator-tool-playable-classics">
+              <div class="emulator-tool-playable-classics__heading">
+                <h2>{copy.relatedPlayableClassicsTitle(tool.title)}</h2>
+                <p>{copy.relatedPlayableClassicsIntro}</p>
+              </div>
+
+              <div class="emulator-tool-playable-classics__grid">
+                {relatedPlayableClassicCards.map((classic) => (
+                  <article class="emulator-tool-playable-card">
+                    {classic.imageUrl && (
+                      <a class="emulator-tool-playable-card__media" href={classic.url} aria-label={classic.title}>
+                        <img
+                          src={classic.imageUrl}
+                          alt={classic.coverImage?.alt || classic.title}
+                          width="480"
+                          height="300"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </a>
+                    )}
+
+                    <div class="emulator-tool-playable-card__body">
+                      {classic.platformsLabel && <span>{classic.platformsLabel}</span>}
+                      <h3><a href={classic.url}>{classic.title}</a></h3>
+                      {(classic.excerpt || classic.subtitle) && <p>{classic.excerpt || classic.subtitle}</p>}
+                      <a class="emulator-tools-card__cta" href={classic.url}>{copy.openPlayableClassic}</a>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
         </article>
 
         <aside class="emulator-tool-sidebar editorial-sidebar" aria-label={isEn ? 'Emulator details' : 'Dettagli emulatore'}>
@@ -341,17 +402,6 @@ const relatedPosts = (tool.relatedPosts || []).map((post) => ({
                 <div class="emulator-tool-chip-list">
                   {tool.emulatedSystems.map((platform) => (
                     <a href={getPlatformUrl(platform, currentLang)}>{getName(platform)}</a>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {tool.relatedPlayableClassics?.length > 0 && (
-              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
-                <h2>{copy.relatedPlayableClassics}</h2>
-                <div class="emulator-tool-link-list">
-                  {tool.relatedPlayableClassics.map((classic) => (
-                    <a href={getPlayableClassicUrl(classic, currentLang)}>{classic.title}</a>
                   ))}
                 </div>
               </section>
