@@ -1,0 +1,44 @@
+.editorial-sidebar {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  align-self: stretch;
+  min-width: 0;
+  height: 100%;
+}
+
+.editorial-sidebar__media {
+  margin: 0;
+}
+
+.editorial-sidebar__sticky {
+  --editorial-sidebar-sticky-top: clamp(96px, 10vh, 118px);
+
+  display: grid;
+  gap: 16px;
+  align-self: start;
+  min-width: 0;
+  max-height: calc(100vh - var(--editorial-sidebar-sticky-top) - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  position: sticky;
+  scrollbar-width: thin;
+  top: var(--editorial-sidebar-sticky-top);
+}
+
+@media (max-width: 1024px) {
+  .editorial-sidebar,
+  .editorial-sidebar__sticky {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    position: static;
+    top: auto;
+  }
+
+  .editorial-sidebar {
+    align-self: auto;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}

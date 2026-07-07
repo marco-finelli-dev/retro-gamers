@@ -1,3 +1,5 @@
+@import '../components/editorial-sidebar.css';
+
 .emulator-tools-page {
   padding: clamp(24px, 4vw, 44px) 0 clamp(54px, 7vw, 88px);
   color: var(--color-text);
@@ -265,24 +267,6 @@
   min-width: 0;
 }
 
-.emulator-tool-sidebar {
-  display: grid;
-  gap: 16px;
-  align-content: start;
-  align-self: stretch;
-  min-width: 0;
-  height: 100%;
-}
-
-.emulator-tool-sidebar__sticky {
-  display: grid;
-  gap: 16px;
-  align-self: start;
-  min-width: 0;
-  position: sticky;
-  top: clamp(96px, 10vh, 118px);
-}
-
 .emulator-tool-cover {
   display: grid;
   place-items: center;
@@ -495,17 +479,6 @@
     gap: 30px;
   }
 
-  .emulator-tool-sidebar,
-  .emulator-tool-sidebar__sticky {
-    position: static;
-    top: auto;
-    height: auto;
-  }
-
-  .emulator-tool-sidebar {
-    grid-template-columns: 1fr;
-    gap: 18px;
-  }
 }
 
 @media (max-width: 768px) {

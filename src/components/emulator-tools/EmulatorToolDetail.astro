@@ -299,9 +299,9 @@ const relatedPosts = (tool.relatedPosts || []).map((post) => ({
           )}
         </article>
 
-        <aside class="emulator-tool-sidebar" aria-label={isEn ? 'Emulator details' : 'Dettagli emulatore'}>
+        <aside class="emulator-tool-sidebar editorial-sidebar" aria-label={isEn ? 'Emulator details' : 'Dettagli emulatore'}>
           {sidebarCoverUrl && (
-            <figure class="emulator-tool-cover">
+            <figure class="emulator-tool-cover editorial-sidebar__media">
               <img
                 src={sidebarCoverUrl}
                 alt={tool.coverImage?.alt || tool.title}
@@ -312,7 +312,7 @@ const relatedPosts = (tool.relatedPosts || []).map((post) => ({
             </figure>
           )}
 
-          <div class="emulator-tool-sidebar__sticky">
+          <div class="emulator-tool-sidebar__sticky editorial-sidebar__sticky">
             {officialLinks.length > 0 && (
               <section class="emulator-tool-panel emulator-tool-panel--sidebar">
                 <h2>{copy.officialLinks}</h2>
