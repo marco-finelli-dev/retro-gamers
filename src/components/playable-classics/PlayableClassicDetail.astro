@@ -52,7 +52,6 @@ const copy = isEn
       legalStatus: 'Legal status',
       distribution: 'Distribution',
       legalSource: 'Legal source',
-      sourceLabel: 'Source',
       notesTitle: 'Legal notes',
       licenseNotes: 'License notes',
       redistributionNotes: 'Redistribution notes',
@@ -83,6 +82,8 @@ const copy = isEn
       loginHref: '/en/account/',
       instructionsTitle: 'How to play today',
       recommendedToolsTitle: 'Recommended tools',
+      recommendedForLabel: 'Recommended for',
+      toolNotesLabel: 'Note',
       primaryTool: 'Primary',
       setupInstructions: 'Quick setup notes',
       technicalNotes: 'Technical notes',
@@ -140,7 +141,6 @@ const copy = isEn
       legalStatus: 'Stato legale',
       distribution: 'Distribuzione',
       legalSource: 'Fonte legale',
-      sourceLabel: 'Fonte',
       notesTitle: 'Note legali',
       licenseNotes: 'Note licenza',
       redistributionNotes: 'Note redistribuzione',
@@ -171,6 +171,8 @@ const copy = isEn
       loginHref: '/account/login/',
       instructionsTitle: 'Come giocarlo oggi',
       recommendedToolsTitle: 'Emulatori consigliati',
+      recommendedForLabel: 'Consigliato per',
+      toolNotesLabel: 'Nota',
       primaryTool: 'Principale',
       setupInstructions: 'Istruzioni rapide',
       technicalNotes: 'Note tecniche',
@@ -329,11 +331,15 @@ const facts = [
 ].filter(Boolean) as Array<{ label: string; value: string }>;
 
 const recommendedToolSource = [...(classic.recommendedTools || [])]
-  .filter((tool) => tool?.name)
+  .filter((item) => item?.tool?.title)
   .sort((a, b) => Number(b.isPrimary === true) - Number(a.isPrimary === true));
-const recommendedToolItems = recommendedToolSource.map((tool) => ({
-  ...tool,
-  typeLabel: getToolTypeLabel(tool.toolType),
+const recommendedToolItems = recommendedToolSource.map((item) => ({
+  ...item,
+  title: item.tool?.title || '',
+  url: item.tool?.slug
+    ? `${isEn ? '/en/emulators' : '/emulatori'}/${item.tool.slug}/`
+    : '',
+  typeLabel: getToolTypeLabel(item.tool?.toolType),
 }));
 
 const noteItems = [
@@ -599,12 +605,12 @@ const downloadMessageAttrs = {
                 {recommendedToolItems.map((tool) => (
                   <article class:list={['playable-classic-tool', tool.isPrimary && 'playable-classic-tool--primary']}>
                     <header>
-                      {tool.officialUrl ? (
-                        <a class="playable-classic-tool__name" href={tool.officialUrl} target="_blank" rel="noopener noreferrer">
-                          {tool.name}
+                      {tool.url ? (
+                        <a class="playable-classic-tool__name" href={tool.url}>
+                          {tool.title}
                         </a>
                       ) : (
-                        <strong class="playable-classic-tool__name">{tool.name}</strong>
+                        <strong class="playable-classic-tool__name">{tool.title}</strong>
                       )}
 
                       {(tool.typeLabel || tool.isPrimary) && (
@@ -616,10 +622,10 @@ const downloadMessageAttrs = {
                     </header>
 
                     {tool.recommendedFor && (
-                      <p class="playable-classic-tool__for">{tool.recommendedFor}</p>
+                      <p class="playable-classic-tool__for"><strong>{copy.recommendedForLabel}:</strong> {tool.recommendedFor}</p>
                     )}
 
-                    {tool.notes && <p>{tool.notes}</p>}
+                    {tool.notes && <p><strong>{copy.toolNotesLabel}:</strong> {tool.notes}</p>}
                   </article>
                 ))}
               </div>
@@ -682,9 +688,8 @@ const downloadMessageAttrs = {
 
               {classic.legalSourceUrl && (
                 <div class="playable-classic-source">
-                  <span>{copy.sourceLabel}</span>
                   <a class="playable-classic-source__pill" href={classic.legalSourceUrl} target="_blank" rel="noopener noreferrer">
-                    {classic.legalSourceLabel || copy.legalSource}
+                    {classic.legalSourceLabel ? `${copy.legalSource}: ${classic.legalSourceLabel}` : copy.legalSource}
                   </a>
                 </div>
               )}

@@ -54,9 +54,17 @@ export type PlayableClassicDownloadPackage = {
 };
 
 export type PlayableClassicRecommendedTool = {
-  name?: string;
-  toolType?: string;
-  officialUrl?: string;
+  tool?: {
+    _id?: string;
+    title?: string;
+    slug?: string;
+    language?: PlayableClassicLang;
+    toolType?: string;
+    licenseType?: string;
+    officialWebsite?: string;
+    officialDownloadUrl?: string;
+    coverImage?: PlayableClassicImage;
+  };
   recommendedFor?: string;
   notes?: string;
   isPrimary?: boolean;
@@ -211,12 +219,23 @@ const playableClassicFields = `
     notes
   },
   recommendedTools[]{
-    name,
-    toolType,
-    officialUrl,
     recommendedFor,
     notes,
-    isPrimary
+    isPrimary,
+    tool->{
+      _id,
+      title,
+      "slug": slug.current,
+      language,
+      toolType,
+      licenseType,
+      officialWebsite,
+      officialDownloadUrl,
+      coverImage {
+        asset->{ _id, url },
+        alt
+      }
+    }
   },
   setupInstructions[]{ ${portableTextProjection} },
   technicalNotes,

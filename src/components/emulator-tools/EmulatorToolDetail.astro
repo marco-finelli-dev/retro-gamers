@@ -32,8 +32,6 @@ const copy = isEn
       defaultDescription: (title: string) =>
         `${title}: official links, practical notes and supported systems on Retro-Gamers.it.`,
       backToIndex: 'Back to Emulators',
-      toolType: 'Type',
-      licenseType: 'License',
       licenseNotes: 'License notes',
       officialLinks: 'Official links',
       officialWebsite: 'Official website',
@@ -44,7 +42,6 @@ const copy = isEn
       supportedSystems: 'Supported systems',
       relatedPlayableClassics: 'Playable Classics',
       relatedPosts: 'Related articles',
-      relatedPlatforms: 'Related platforms',
       setupInstructions: 'Quick setup notes',
       technicalNotes: 'Technical notes',
       bodyFallback: 'This tool page is being prepared.',
@@ -71,8 +68,6 @@ const copy = isEn
       defaultDescription: (title: string) =>
         `${title}: link ufficiali, note pratiche e sistemi supportati su Retro-Gamers.it.`,
       backToIndex: 'Torna agli Emulatori',
-      toolType: 'Tipo',
-      licenseType: 'Licenza',
       licenseNotes: 'Note licenza',
       officialLinks: 'Link ufficiali',
       officialWebsite: 'Sito ufficiale',
@@ -83,7 +78,6 @@ const copy = isEn
       supportedSystems: 'Sistemi supportati',
       relatedPlayableClassics: 'Classici giocabili',
       relatedPosts: 'Articoli collegati',
-      relatedPlatforms: 'Piattaforme collegate',
       setupInstructions: 'Istruzioni rapide',
       technicalNotes: 'Note tecniche',
       bodyFallback: 'Questa scheda strumento è in preparazione.',
@@ -200,11 +194,6 @@ const getName = (item: any) =>
 const toolTypeLabel = getLabel(copy.toolTypes, tool.toolType);
 const licenseLabel = getLabel(copy.licenses, tool.licenseType);
 
-const facts = [
-  toolTypeLabel && { label: copy.toolType, value: toolTypeLabel },
-  licenseLabel && { label: copy.licenseType, value: licenseLabel },
-].filter(Boolean) as Array<{ label: string; value: string }>;
-
 const officialLinks = [
   tool.officialWebsite && { label: copy.officialWebsite, href: tool.officialWebsite },
   tool.officialDownloadUrl && { label: copy.officialDownload, href: tool.officialDownloadUrl },
@@ -295,17 +284,6 @@ const relatedPosts = (tool.relatedPosts || []).map((post) => ({
             <p class="emulator-tool-empty-copy">{copy.bodyFallback}</p>
           )}
 
-          {officialLinks.length > 0 && (
-            <section class="emulator-tool-panel emulator-tool-official-cta">
-              <h2>{copy.officialLinks}</h2>
-              <div class="emulator-tool-actions">
-                {officialLinks.map((link) => (
-                  <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
-                ))}
-              </div>
-            </section>
-          )}
-
           {setupHtml && (
             <section class="emulator-tool-panel">
               <h2>{copy.setupInstructions}</h2>
@@ -335,17 +313,6 @@ const relatedPosts = (tool.relatedPosts || []).map((post) => ({
           )}
 
           <div class="emulator-tool-sidebar__sticky">
-            {facts.length > 0 && (
-              <section class="emulator-tool-facts">
-                {facts.map((item) => (
-                  <div>
-                    <span>{item.label}</span>
-                    <strong>{item.value}</strong>
-                  </div>
-                ))}
-              </section>
-            )}
-
             {officialLinks.length > 0 && (
               <section class="emulator-tool-panel emulator-tool-panel--sidebar">
                 <h2>{copy.officialLinks}</h2>
@@ -413,17 +380,6 @@ const relatedPosts = (tool.relatedPosts || []).map((post) => ({
                         <strong>{post.title}</strong>
                       </span>
                     </a>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {tool.relatedPlatforms?.length > 0 && (
-              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
-                <h2>{copy.relatedPlatforms}</h2>
-                <div class="emulator-tool-chip-list">
-                  {tool.relatedPlatforms.map((platform) => (
-                    <a href={getPlatformUrl(platform, currentLang)}>{getName(platform)}</a>
                   ))}
                 </div>
               </section>
