@@ -12,6 +12,7 @@ export type PlayableClassicImage = {
 
 export type PlayableClassicRef = {
   _id?: string;
+  _type?: string;
   name?: string;
   nameEn?: string;
   title?: string;
@@ -28,6 +29,7 @@ export type PlayableClassicRef = {
 
 export type PlayableClassicPostRef = {
   _id: string;
+  _type?: string;
   title: string;
   slug: string;
   type?: string;
@@ -36,6 +38,9 @@ export type PlayableClassicPostRef = {
   cardExcerpt?: string;
   subtitle?: string;
   publishedAt?: string;
+  categories?: PlayableClassicRef[];
+  translationOf?: PlayableClassicPostRef;
+  translatedVersions?: PlayableClassicPostRef[];
   featuredImage?: PlayableClassicImage;
 };
 
@@ -172,8 +177,9 @@ const creatorFields = `
   }
 `;
 
-const relatedPostFields = `
+const relatedPostCoreFields = `
   _id,
+  _type,
   title,
   "slug": slug.current,
   excerpt,
@@ -182,10 +188,26 @@ const relatedPostFields = `
   type,
   language,
   publishedAt,
+  categories[]->{
+    _id,
+    name,
+    nameEn,
+    "slug": slug.current
+  },
   featuredImage {
     alt,
     asset->{ _id, url }
   }
+`;
+
+const relatedPostFields = `
+  ${relatedPostCoreFields},
+  translationOf->{ ${relatedPostCoreFields} },
+  "translatedVersions": *[
+    _type == "article" &&
+    translationOf._ref == ^._id &&
+    !(_id in path("drafts.**"))
+  ]{ ${relatedPostCoreFields} }
 `;
 
 const playableClassicFields = `

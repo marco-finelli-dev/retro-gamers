@@ -299,14 +299,46 @@ const relatedPlayableClassicCards = (tool.relatedPlayableClassics || []).map((cl
 const isRelatedPostInCurrentLanguage = (post: any) =>
   isEn ? post?.language === 'en' : post?.language !== 'en';
 
-const relatedPosts = (tool.relatedPosts || [])
-  .filter(isRelatedPostInCurrentLanguage)
-  .map((post) => ({
-    ...post,
-    typeLabel: getRelatedPostTypeLabel(post.type),
-    imageUrl: getRelatedPostImage(post),
-    url: getPostUrl(post),
-  }));
+const getLocalizedRelatedPost = (post: any) => {
+  if (isRelatedPostInCurrentLanguage(post)) {
+    return post;
+  }
+
+  if (isRelatedPostInCurrentLanguage(post?.translationOf)) {
+    return post.translationOf;
+  }
+
+  return (post?.translatedVersions || []).find(isRelatedPostInCurrentLanguage) || null;
+};
+
+const uniqueRelatedPosts = (posts: any[] = []) => {
+  const seen = new Set();
+
+  return posts.filter((post) => {
+    const key = post?._id || post?.slug;
+
+    if (!key || seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+};
+
+const localizedRelatedPosts = uniqueRelatedPosts(
+  (tool.relatedPosts || [])
+    .map(getLocalizedRelatedPost)
+    .filter(Boolean)
+    .filter((post) => post?.slug)
+);
+
+const relatedPosts = localizedRelatedPosts.map((post) => ({
+  ...post,
+  typeLabel: getRelatedPostTypeLabel(post.type),
+  imageUrl: getRelatedPostImage(post),
+  url: getPostUrl(post),
+}));
 ---
 
 <BaseLayout

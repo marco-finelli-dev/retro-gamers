@@ -12,6 +12,7 @@ export type EmulatorToolImage = {
 
 export type EmulatorToolRef = {
   _id?: string;
+  _type?: string;
   title?: string;
   name?: string;
   nameEn?: string;
@@ -25,6 +26,10 @@ export type EmulatorToolRef = {
   featuredImage?: EmulatorToolImage;
   excerpt?: string;
   subtitle?: string;
+  cardExcerpt?: string;
+  categories?: EmulatorToolRef[];
+  translationOf?: EmulatorToolRef;
+  translatedVersions?: EmulatorToolRef[];
   originalPlatforms?: EmulatorToolRef[];
   publishedAt?: string;
 };
@@ -97,6 +102,7 @@ const platformFields = `
 
 const playableClassicFields = `
   _id,
+  _type,
   title,
   "slug": slug.current,
   language,
@@ -109,19 +115,37 @@ const playableClassicFields = `
   originalPlatforms[]->{ ${platformFields} }
 `;
 
-const relatedPostFields = `
+const relatedPostCoreFields = `
   _id,
+  _type,
   title,
   "slug": slug.current,
   type,
   language,
   subtitle,
   excerpt,
+  cardExcerpt,
   publishedAt,
+  categories[]->{
+    _id,
+    name,
+    nameEn,
+    "slug": slug.current
+  },
   featuredImage {
     alt,
     asset->{ _id, url }
   }
+`;
+
+const relatedPostFields = `
+  ${relatedPostCoreFields},
+  translationOf->{ ${relatedPostCoreFields} },
+  "translatedVersions": *[
+    _type == "article" &&
+    translationOf._ref == ^._id &&
+    !(_id in path("drafts.**"))
+  ]{ ${relatedPostCoreFields} }
 `;
 
 const emulatorToolFields = `
