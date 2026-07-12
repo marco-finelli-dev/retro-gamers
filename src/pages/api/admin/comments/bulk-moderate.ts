@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../../lib/api-errors';
+import { closePendingCommentAccountMessages } from '../../../../lib/supabase/account-messages';
 import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supabase/auth';
 import { notifyApprovedComment } from '../../../../lib/supabase/comment-admin-notifications';
 import { isMissingCommentModerationColumnError } from '../../../../lib/supabase/comment-moderation';
@@ -12,6 +13,7 @@ type BulkModeratePayload = {
 
 const MAX_BULK_IDS = 50;
 const allowedActions = new Set(['approve', 'reject']);
+const closesPendingNotification = new Set(['approve', 'reject']);
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -150,6 +152,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const updatedIds = new Set((updatedComments ?? []).map((comment) => comment.id));
 
   if (updatedIds.size > 0) {
+    if (closesPendingNotification.has(action)) {
+      const closeResult = await closePendingCommentAccountMessages([...updatedIds]);
+
+      if (!closeResult.ok) {
+        logApiError('admin-comments-bulk-moderate.close-notifications', closeResult.error);
+      }
+    }
+
     const { error: eventError } = await supabaseAdmin
       .from('moderation_events')
       .insert(

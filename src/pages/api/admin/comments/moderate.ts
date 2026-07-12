@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { logApiError } from '../../../../lib/api-errors';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supabase/auth';
+import { closePendingCommentAccountMessages } from '../../../../lib/supabase/account-messages';
 import { notifyApprovedComment } from '../../../../lib/supabase/comment-admin-notifications';
 import { isMissingCommentModerationColumnError } from '../../../../lib/supabase/comment-moderation';
 
@@ -27,6 +28,14 @@ const actionToStatus = {
   restore: 'pending',
   pending: 'pending',
 } as const;
+
+const closesPendingNotification = new Set([
+  'approve',
+  'reject',
+  'spam',
+  'soft_delete',
+  'hard_delete',
+]);
 
 const normalizeAction = (action?: ModeratePayload['action']) => {
   if (action === 'restore') return 'pending';
@@ -178,6 +187,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return json({ ok: false, error: 'Commento non cancellato definitivamente.' }, 500);
     }
 
+    const closeResult = await closePendingCommentAccountMessages(commentIds);
+
+    if (!closeResult.ok) {
+      logApiError('admin-comments-moderate.hard-delete-notifications', closeResult.error);
+    }
+
     return json({
       ok: true,
       comment: {
@@ -239,6 +254,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (updateError) {
     logApiError('admin-comments-moderate.update', updateError);
     return json({ ok: false, error: 'Commento non aggiornato. Riprova più tardi.' }, 500);
+  }
+
+  if (closesPendingNotification.has(action)) {
+    const closeResult = await closePendingCommentAccountMessages(commentId);
+
+    if (!closeResult.ok) {
+      logApiError('admin-comments-moderate.close-notifications', closeResult.error);
+    }
   }
 
   const { error: eventError } = await supabaseAdmin

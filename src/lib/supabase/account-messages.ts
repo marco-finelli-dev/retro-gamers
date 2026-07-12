@@ -21,6 +21,12 @@ export type AccountMessage = {
   read_at: string | null;
 };
 
+type AccountMessageMetadata = Record<string, unknown> | null;
+
+type AccountMessageRow = AccountMessage & {
+  metadata: AccountMessageMetadata;
+};
+
 type AccountMessageInput = {
   userId?: string | null;
   type: AccountMessageType;
@@ -85,6 +91,57 @@ const isMissingMetadataColumnError = (error: { code?: string; message?: string; 
     )
   );
 };
+
+const getPendingCommentId = (metadata: AccountMessageMetadata) => {
+  const commentId = metadata?.commentId;
+
+  return typeof commentId === 'string' ? commentId.trim() : '';
+};
+
+const isUuid = (value: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+const getValidPendingCommentIds = async (
+  messages: Array<Pick<AccountMessageRow, 'type' | 'metadata'>>
+) => {
+  const commentIds = [...new Set(
+    messages
+      .filter((message) => message.type === 'comment_pending')
+      .map((message) => getPendingCommentId(message.metadata))
+      .filter(isUuid)
+  )];
+
+  if (commentIds.length === 0) {
+    return { commentIds: new Set<string>(), error: null };
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('comments')
+    .select('id')
+    .in('id', commentIds)
+    .eq('status', 'pending')
+    .is('deleted_at', null);
+
+  logAccountMessagesError('pending-comment-validation', error);
+
+  return {
+    commentIds: new Set((data ?? []).map((comment) => comment.id).filter(Boolean)),
+    error,
+  };
+};
+
+const toAccountMessage = (message: AccountMessageRow): AccountMessage => ({
+  id: message.id,
+  user_id: message.user_id,
+  type: message.type,
+  title: message.title,
+  body: message.body,
+  action_label: message.action_label,
+  action_url: message.action_url,
+  is_read: message.is_read,
+  created_at: message.created_at,
+  read_at: message.read_at,
+});
 
 export const getCommentActionUrl = (comment: {
   id?: string | null;
@@ -330,6 +387,21 @@ export async function createCommentLikeAccountMessage(
 }
 
 export async function createPendingCommentAccountMessages(comment: CommentReference) {
+  const { data: currentComment, error: commentError } = await supabaseAdmin
+    .from('comments')
+    .select('id, user_id, parent_id, article_slug, article_language, article_title, article_url, status, deleted_at')
+    .eq('id', comment.id)
+    .maybeSingle();
+
+  if (commentError) {
+    logAccountMessagesError('pending-comment-validation', commentError);
+    return { ok: false, sent: 0, error: commentError.message };
+  }
+
+  if (!currentComment || currentComment.status !== 'pending' || currentComment.deleted_at) {
+    return { ok: true, sent: 0, skipped: true };
+  }
+
   const { data: moderators, error } = await supabaseAdmin
     .from('profiles')
     .select('user_id, role, status')
@@ -341,14 +413,14 @@ export async function createPendingCommentAccountMessages(comment: CommentRefere
   }
 
   const recipients = (moderators ?? [])
-    .filter((profile) => profile.user_id && profile.user_id !== comment.user_id)
+    .filter((profile) => profile.user_id && profile.user_id !== currentComment.user_id)
     .filter((profile) => !['blocked', 'suspended', 'banned'].includes(String(profile.status || '')));
 
   if (recipients.length === 0) {
     return { ok: true, sent: 0 };
   }
 
-  const language = comment.article_language === 'en' ? 'en' : 'it';
+  const language = currentComment.article_language === 'en' ? 'en' : 'it';
   const title = language === 'en'
     ? 'New comment awaiting moderation'
     : 'Nuovo commento da moderare';
@@ -368,10 +440,10 @@ export async function createPendingCommentAccountMessages(comment: CommentRefere
         actionUrl: '/admin/comments/?status=pending',
         dedupe: false,
         metadata: {
-          commentId: comment.id,
-          articleSlug: comment.article_slug || null,
-          articleTitle: comment.article_title || null,
-          authorUserId: comment.user_id || null,
+          commentId: currentComment.id,
+          articleSlug: currentComment.article_slug || null,
+          articleTitle: currentComment.article_title || null,
+          authorUserId: currentComment.user_id || null,
           status: 'pending',
         },
       })
@@ -385,6 +457,59 @@ export async function createPendingCommentAccountMessages(comment: CommentRefere
   }
 
   return { ok: true, sent: results.length };
+}
+
+export async function closePendingCommentAccountMessages(commentIds: string | string[]) {
+  const uniqueCommentIds = [...new Set(
+    (Array.isArray(commentIds) ? commentIds : [commentIds])
+      .map((commentId) => commentId.trim())
+      .filter(Boolean)
+  )];
+
+  if (uniqueCommentIds.length === 0) {
+    return { ok: true, closedCount: 0, error: null };
+  }
+
+  const closedAt = new Date().toISOString();
+  const { data: timestampedMessages, error: timestampError } = await supabaseAdmin
+    .from('account_messages')
+    .update({
+      is_read: true,
+      read_at: closedAt,
+    })
+    .eq('type', 'comment_pending')
+    .in('metadata->>commentId', uniqueCommentIds)
+    .eq('is_read', false)
+    .is('read_at', null)
+    .select('id');
+
+  if (timestampError) {
+    logAccountMessagesError('close-pending-comments-with-read-at', timestampError);
+    return { ok: false, closedCount: 0, error: timestampError };
+  }
+
+  const { data: readMessages, error: readError } = await supabaseAdmin
+    .from('account_messages')
+    .update({ is_read: true })
+    .eq('type', 'comment_pending')
+    .in('metadata->>commentId', uniqueCommentIds)
+    .eq('is_read', false)
+    .select('id');
+
+  if (readError) {
+    logAccountMessagesError('close-pending-comments', readError);
+    return {
+      ok: false,
+      closedCount: timestampedMessages?.length ?? 0,
+      error: readError,
+    };
+  }
+
+  return {
+    ok: true,
+    closedCount: (timestampedMessages?.length ?? 0) + (readMessages?.length ?? 0),
+    error: null,
+  };
 }
 
 export async function getCommentById(commentId?: string | null): Promise<CommentReference | null> {
@@ -405,33 +530,98 @@ export async function getCommentById(commentId?: string | null): Promise<Comment
 }
 
 export async function getAccountMessages(userId: string, limit = DEFAULT_LIMIT) {
-  const { data, error } = await supabaseAdmin
-    .from('account_messages')
-    .select('id, user_id, type, title, body, action_label, action_url, is_read, created_at, read_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  const safeLimit = Math.max(0, Math.floor(limit));
 
-  logAccountMessagesError('list', error);
+  if (safeLimit === 0) {
+    return { messages: [] as AccountMessage[], error: null };
+  }
+
+  const batchSize = Math.max(DEFAULT_LIMIT, safeLimit);
+  const validMessages: AccountMessageRow[] = [];
+  let offset = 0;
+
+  while (validMessages.length < safeLimit) {
+    const { data, error } = await supabaseAdmin
+      .from('account_messages')
+      .select('id, user_id, type, title, body, action_label, action_url, is_read, created_at, read_at, metadata')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + batchSize - 1);
+
+    logAccountMessagesError('list', error);
+
+    if (error) {
+      return {
+        messages: validMessages.slice(0, safeLimit).map(toAccountMessage),
+        error,
+      };
+    }
+
+    const messageRows = (data ?? []) as AccountMessageRow[];
+    const pendingValidation = await getValidPendingCommentIds(messageRows);
+
+    validMessages.push(...messageRows.filter((message) => (
+      message.type !== 'comment_pending' ||
+      pendingValidation.commentIds.has(getPendingCommentId(message.metadata))
+    )));
+
+    if (pendingValidation.error) {
+      return {
+        messages: validMessages.slice(0, safeLimit).map(toAccountMessage),
+        error: pendingValidation.error,
+      };
+    }
+
+    if (messageRows.length < batchSize) {
+      break;
+    }
+
+    offset += batchSize;
+  }
 
   return {
-    messages: (data ?? []) as AccountMessage[],
-    error,
+    messages: validMessages.slice(0, safeLimit).map(toAccountMessage),
+    error: null,
   };
 }
 
 export async function getUnreadAccountMessageCount(userId: string) {
-  const { count, error } = await supabaseAdmin
-    .from('account_messages')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('is_read', false);
+  const [otherMessagesResult, pendingMessagesResult] = await Promise.all([
+    supabaseAdmin
+      .from('account_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_read', false)
+      .neq('type', 'comment_pending'),
+    supabaseAdmin
+      .from('account_messages')
+      .select('type, metadata')
+      .eq('user_id', userId)
+      .eq('is_read', false)
+      .eq('type', 'comment_pending'),
+  ]);
 
-  logAccountMessagesError('unread-count', error);
+  logAccountMessagesError('unread-count-other', otherMessagesResult.error);
+  logAccountMessagesError('unread-count-pending', pendingMessagesResult.error);
+
+  const queryError = otherMessagesResult.error || pendingMessagesResult.error;
+
+  if (queryError) {
+    return {
+      count: 0,
+      error: queryError,
+    };
+  }
+
+  const pendingMessages = (pendingMessagesResult.data ?? []) as Array<Pick<AccountMessageRow, 'type' | 'metadata'>>;
+  const pendingValidation = await getValidPendingCommentIds(pendingMessages);
+  const validPendingCount = pendingMessages.filter((message) => (
+    pendingValidation.commentIds.has(getPendingCommentId(message.metadata))
+  )).length;
 
   return {
-    count: count ?? 0,
-    error,
+    count: (otherMessagesResult.count ?? 0) + validPendingCount,
+    error: pendingValidation.error,
   };
 }
 
