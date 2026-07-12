@@ -345,10 +345,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'Commento non inviato. Riprova più tardi.' }, 500);
   }
 
-  const moderationDecision = assessCommentModeration(body, {
+  const moderationAssessment = assessCommentModeration(body, {
     hasApprovedComments: (approvedCount ?? 0) > 0,
     hasRecentDuplicate: (recentDuplicateCount ?? 0) > 0,
   });
+  const moderationDecision = isStaff && moderationAssessment.status === 'pending'
+    ? { status: 'approved' as const, reason: null }
+    : moderationAssessment;
 
   const nextStatus = moderationDecision.status;
   const publishedMessage = articleLanguage === 'en' ? 'Comment published.' : 'Commento pubblicato.';
