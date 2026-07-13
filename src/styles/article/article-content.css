@@ -1403,7 +1403,8 @@ html.has-lightbox-open body {
 .article-lightbox {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 10000;
+  isolation: isolate;
 
   display: grid;
   place-items: center;
@@ -1413,7 +1414,7 @@ html.has-lightbox-open body {
   background:
     radial-gradient(circle at 50% 0%, rgba(34,240,255,0.075), transparent 36%),
     radial-gradient(circle at 100% 0%, rgba(168,85,247,0.080), transparent 42%),
-    rgba(5,7,12,0.94);
+    rgba(5,7,12,0.98);
 
   backdrop-filter: blur(18px) saturate(120%);
   -webkit-backdrop-filter: blur(18px) saturate(120%);
@@ -1628,7 +1629,7 @@ html[data-theme="light"] .article-lightbox {
   background:
     radial-gradient(circle at 50% 0%, rgba(34,240,255,0.075), transparent 36%),
     radial-gradient(circle at 100% 0%, rgba(168,85,247,0.080), transparent 42%),
-    rgba(5,7,12,0.94);
+    rgba(5,7,12,0.98);
 }
 
 html[data-theme="light"] .article-lightbox__stage {
