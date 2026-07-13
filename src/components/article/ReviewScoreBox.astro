@@ -1,16 +1,11 @@
 ---
-import { getReviewRibbonBadge } from '../../lib/reviewBadges';
+import { formatReviewScore, getReviewRibbonBadge } from '../../lib/reviewBadges';
 
 const { rating, compact = false, lang = 'it' } = Astro.props;
 
 const score = rating?.overall;
 const numericScore = Number(score);
-const hasScore =
-  score !== undefined &&
-  score !== null &&
-  Number.isFinite(numericScore);
-const formattedScore =
-  hasScore ? numericScore.toFixed(1) : '-';
+const formattedScore = formatReviewScore(score);
 
 const labels = {
   it: {

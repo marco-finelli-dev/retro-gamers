@@ -1,13 +1,12 @@
 ---
-import { getReviewBadge } from '../../lib/reviewBadges';
+import { formatReviewScore, getReviewBadge } from '../../lib/reviewBadges';
 import ArticleReaderRating from './ArticleReaderRating.astro';
 
 const { rating, lang = 'it', readerRatingPostId = '' } = Astro.props;
 
 const score = rating?.overall;
 const numericScore = Number(score);
-const formattedScore =
-  score !== undefined && score !== null ? Number(score).toFixed(1) : '-';
+const formattedScore = formatReviewScore(score);
 
 const labels = {
   it: {

@@ -1,7 +1,7 @@
 ---
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
-import { getReviewRibbonBadge } from '../../lib/reviewBadges';
+import { formatReviewScore, getReviewRibbonBadge } from '../../lib/reviewBadges';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const {
@@ -106,7 +106,7 @@ const reviewBadge = getReviewRibbonBadge(score, lang);
 
     {score && (
       <div class="archive-card__score">
-        {Number(score).toFixed(1)}
+        {formatReviewScore(score)}
       </div>
     )}
   </div>

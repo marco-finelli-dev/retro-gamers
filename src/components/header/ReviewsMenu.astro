@@ -2,6 +2,7 @@
 import '../../styles/components/header/dropdown.css';
 import { getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
+import { formatReviewScore } from '../../lib/reviewBadges';
 
 const { posts = [], lang = 'it' } = Astro.props;
 
@@ -28,7 +29,7 @@ const all = posts
   })
   .map((p) => ({
     ...p,
-    score: p?.score ?? p?.rating?.overall ?? 0
+    score: p?.score ?? p?.rating?.overall ?? null
   }))
   .filter((post) => post?._id);
 
@@ -84,9 +85,6 @@ const finalPosts = uniqueById([
   archivePost
 ].filter(Boolean)).slice(0, 5);
 
-const formatScore = (score) =>
-  score ? Number(score).toFixed(1) : '-';
-
 const getScoreClass = (score) => {
   if (score >= 9.5) return 'is-top';
   if (score >= 9) return 'is-must';
@@ -121,7 +119,7 @@ const getImage = (post) => {
 
     {finalPosts.map((post) => {
       const image = getImage(post);
-      const score = post.score ?? 0;
+      const score = post.score;
 
       return (
         <a href={getPostUrl(post)} class="rg-dropdown__item rg-dropdown__item--review">
@@ -154,7 +152,7 @@ const getImage = (post) => {
           </div>
 
           <div class={`rg-dropdown__score ${getScoreClass(score)}`}>
-            <span>{formatScore(score)}</span>
+            <span>{formatReviewScore(score)}</span>
           </div>
 
         </a>

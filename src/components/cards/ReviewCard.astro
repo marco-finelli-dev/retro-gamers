@@ -2,7 +2,7 @@
 import { urlFor } from '../../lib/image';
 import { getFormatLabel } from '../../lib/formatLabels';
 import { getPostUrl } from '../../lib/routes';
-import { getReviewRibbonBadge } from '../../lib/reviewBadges';
+import { formatReviewScore, getReviewRibbonBadge } from '../../lib/reviewBadges';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const { post, lang = 'it' } = Astro.props;
@@ -12,11 +12,6 @@ const isEn = lang === 'en';
 if (!post) return;
 
 const getScore = (post) => post.rating?.overall ?? post.score ?? 0;
-
-const formatScore = (score) => {
-  if (score === null || score === undefined) return '-';
-  return Number(score).toFixed(1);
-};
 
 const getScoreClass = (score) => {
   if (score >= 9) return 'is-top';
@@ -127,7 +122,7 @@ const metaItems = [
 
     {score ? (
       <div class={`rg-score ${getScoreClass(score)}`}>
-        <span>{formatScore(score)}</span>
+        <span>{formatReviewScore(score)}</span>
       </div>
     ) : null}
 

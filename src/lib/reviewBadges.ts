@@ -6,6 +6,17 @@ type ReviewBadge = {
   alt: string;
 };
 
+export const formatReviewScore = (score: unknown) => {
+  if (score === null || score === undefined) return '-';
+
+  const value = Number(score);
+
+  if (!Number.isFinite(value)) return '-';
+  if (value === 10) return '10';
+
+  return value.toFixed(1);
+};
+
 const badgeAlt: Record<ReviewBadgeKey, { it: string; en: string }> = {
   top: {
     it: 'Scelta della redazione',
