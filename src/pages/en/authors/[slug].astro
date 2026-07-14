@@ -22,6 +22,12 @@ const author = await client.fetch(`
     "slug": slug.current,
     bio,
     bioEn,
+    seoDescription,
+    seoDescriptionEn,
+    description,
+    descriptionEn,
+    excerpt,
+    excerptEn,
     role,
     email,
     showEmail,
@@ -59,6 +65,80 @@ const roleLabels = {
 };
 
 const roleLabel = roleLabels[author.role] || 'Author';
+
+function getPlainText(value) {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((block) => getPlainText(block))
+      .join(' ');
+  }
+
+  if (Array.isArray(value?.children)) {
+    return value.children
+      .map((child) => typeof child?.text === 'string' ? child.text : '')
+      .join(' ');
+  }
+
+  return '';
+}
+
+function cleanMetaDescription(value = '') {
+  return String(value)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function truncateMetaDescription(value = '', maxLength = 160) {
+  const clean = cleanMetaDescription(value);
+
+  if (clean.length <= maxLength) {
+    return clean;
+  }
+
+  const truncated = clean
+    .slice(0, maxLength - 3)
+    .replace(/\s+\S*$/, '')
+    .replace(/[,:;.\s]+$/, '')
+    .trim();
+
+  return `${truncated || clean.slice(0, maxLength - 3).trim()}...`;
+}
+
+function getFirstTextValue(values = []) {
+  return values
+    .map((value) => cleanMetaDescription(getPlainText(value)))
+    .find(Boolean) || '';
+}
+
+function getAuthorMetaDescription(author, displayName, roleLabel) {
+  const explicitDescription = getFirstTextValue([
+    author.seoDescriptionEn,
+    author.descriptionEn,
+    author.excerptEn,
+    author.seoDescription,
+    author.description,
+    author.excerpt
+  ]);
+
+  const bioDescription = getFirstTextValue([
+    author.bioEn,
+    author.bio
+  ]);
+
+  const fallbackDescription =
+    `${displayName} on Retro-Gamers.it: ${roleLabel.toLowerCase()} of the editorial team, with articles, reviews and retro-gaming features.`;
+
+  return truncateMetaDescription(
+    explicitDescription ||
+    bioDescription ||
+    fallbackDescription
+  );
+}
 
 const authorCover = author.cover?.asset
   ? urlFor(author.cover)
@@ -146,8 +226,7 @@ const englishNews = englishPosts.filter((post) => post.type === 'news');
 
 const pageTitle = `Articles by ${displayName}`;
 
-const pageDescription =
-  `${displayName} on Retro-Gamers International: articles, reviews, guides and features from the world of retro gaming.`;
+const pageDescription = getAuthorMetaDescription(author, displayName, roleLabel);
 
 const pageImage =
   authorCover ||
