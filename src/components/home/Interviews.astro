@@ -1,7 +1,7 @@
 ---
 import '../../styles/components/interviews.css';
 import { urlFor } from '../../lib/image';
-import { getPostUrl } from '../../lib/routes';
+import { getArchiveUrl, getPostUrl } from '../../lib/routes';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const { posts = [], lang = 'it' } = Astro.props;
@@ -18,7 +18,7 @@ const labels = {
     ? 'Conversations with developers, authors and people who shaped retro-gaming culture.'
     : 'Conversazioni con sviluppatori, autori e protagonisti della cultura videoludica.',
   all: isEn ? 'All interviews' : 'Tutte le interviste',
-  href: isEn ? '/en/interviews/' : '/interviste/',
+  href: getArchiveUrl('interview', lang),
   category: isEn ? 'Interview' : 'Intervista'
 };
 

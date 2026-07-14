@@ -1,7 +1,12 @@
 ---
 import '../../styles/components/editorial-hub.css';
 import { urlFor } from '../../lib/image';
-import { getPostUrl } from '../../lib/routes';
+import {
+  getArchiveUrl,
+  getPlatformIndexUrl,
+  getPlatformTypeUrl,
+  getPostUrl
+} from '../../lib/routes';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const {
@@ -25,10 +30,10 @@ const labels = {
 };
 
 const urls = {
-  specials: isEn ? '/en/features/' : '/speciali/',
-  memories: isEn ? '/en/memories/' : '/memories/',
-  guides: isEn ? '/en/guides/' : '/guide/',
-  platforms: isEn ? '/en/platforms/' : '/piattaforme/'
+  specials: getArchiveUrl('feature', lang),
+  memories: getArchiveUrl('memories', lang),
+  guides: getArchiveUrl('guide', lang),
+  platforms: getPlatformIndexUrl(lang)
 };
 
 const specialItems = specials.slice(0, 5);
@@ -41,19 +46,19 @@ const platformItems = isEn
       {
         label: 'Consoles',
         description: 'Home and handheld systems',
-        href: '/en/platforms/consoles/',
+        href: getPlatformTypeUrl('console', lang),
         icon: '/images/icons/console-icon.png'
       },
       {
         label: 'Computers',
         description: 'Home computers',
-        href: '/en/platforms/computers/',
+        href: getPlatformTypeUrl('computer', lang),
         icon: '/images/icons/computer-icon.png'
       },
       {
         label: 'Arcade',
         description: 'Cabinets and boards',
-        href: '/en/platforms/arcade/',
+        href: getPlatformTypeUrl('arcade', lang),
         icon: '/images/icons/arcade-icon.png'
       }
     ]
@@ -61,19 +66,19 @@ const platformItems = isEn
       {
         label: 'Console',
         description: 'Sistemi da salotto',
-        href: '/piattaforme/console/',
+        href: getPlatformTypeUrl('console', lang),
         icon: '/images/icons/console-icon.png'
       },
       {
         label: 'Computer',
         description: 'Home computer',
-        href: '/piattaforme/computer/',
+        href: getPlatformTypeUrl('computer', lang),
         icon: '/images/icons/computer-icon.png'
       },
       {
         label: 'Arcade',
         description: 'Cabinet e board',
-        href: '/piattaforme/arcade/',
+        href: getPlatformTypeUrl('arcade', lang),
         icon: '/images/icons/arcade-icon.png'
       }
     ];

@@ -1,6 +1,7 @@
 ---
 import '../../styles/components/reviews.css';
 import ReviewCard from '../cards/ReviewCard.astro';
+import { getArchiveUrl } from '../../lib/routes';
 
 const { posts = [], lang = 'it' } = Astro.props;
 
@@ -13,7 +14,7 @@ const labels = {
     : 'Le ultime prove dal mondo console, arcade e home computer.',
   viewAll: isEn ? 'View all' : 'Vedi tutte',
   aria: isEn ? 'Latest reviews' : 'Ultime recensioni',
-  href: isEn ? '/en/reviews/' : '/recensioni/'
+  href: getArchiveUrl('review', lang)
 };
 
 const reviews = posts.slice(0, 5);

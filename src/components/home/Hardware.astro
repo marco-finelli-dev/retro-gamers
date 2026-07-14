@@ -1,7 +1,7 @@
 ---
 import '../../styles/components/hardware.css';
 import { urlFor } from '../../lib/image';
-import { getPostUrl } from '../../lib/routes';
+import { getArchiveUrl, getPostUrl } from '../../lib/routes';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const { posts = [], lang = 'it' } = Astro.props;
@@ -17,7 +17,7 @@ const labels = {
     ? 'Consoles, controllers, FPGA, books, accessories and retro gear worth keeping an eye on.'
     : 'Console, controller, FPGA, libri, accessori e oggetti retro da tenere d’occhio.',
   allHardware: isEn ? 'All hardware' : 'Tutto l’hardware',
-  href: isEn ? '/en/hardware/' : '/hardware/',
+  href: getArchiveUrl('hardware', lang),
   comingSoon: isEn ? 'Coming soon' : 'Prossimamente',
   emptyTitle: isEn
     ? 'Hardware, accessories and retro releases'

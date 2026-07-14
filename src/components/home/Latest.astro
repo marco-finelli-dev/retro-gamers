@@ -1,6 +1,6 @@
 ---
 import '../../styles/components/latest.css';
-import { getPostUrl } from '../../lib/routes';
+import { getArchiveUrl, getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
 
@@ -16,7 +16,7 @@ const labels = {
     ? 'News, hardware, stories and deep dives from the retro world.'
     : 'News, hardware, storie e approfondimenti dal mondo retro.',
   viewAll: isEn ? 'View all' : 'Vedi tutti',
-  href: isEn ? '/en/archive/' : '/articoli/'
+  href: getArchiveUrl('article', lang)
 };
 
 /* ========================
