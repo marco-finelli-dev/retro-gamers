@@ -3,9 +3,9 @@ import '../../styles/components/platforms.css';
 import PlatformCard from './PlatformCard.astro';
 
 import {
-  platformTypeLabels,
-  getPlatformTypeUrl
+  platformTypeLabels
 } from '../../lib/platforms';
+import { getPlatformTypeUrl } from '../../lib/routes.js';
 
 const {
   type,
@@ -25,12 +25,6 @@ const typeLabels = {
   }
 };
 
-const typeUrlSlugs = {
-  arcade: 'arcade',
-  computer: 'computers',
-  console: 'consoles'
-};
-
 const title = manufacturer?.name || (isEn ? 'Manufacturer' : 'Produttore');
 
 const typeLabel =
@@ -38,9 +32,7 @@ const typeLabel =
   platformTypeLabels[type] ||
   (isEn ? 'Platforms' : 'Piattaforme');
 
-const typeHref = isEn
-  ? `/en/platforms/${typeUrlSlugs[type] || type}/`
-  : getPlatformTypeUrl(type);
+const typeHref = getPlatformTypeUrl(type, lang);
 
 const labels = {
   description: isEn

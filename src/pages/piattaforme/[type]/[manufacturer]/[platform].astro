@@ -6,14 +6,18 @@ import Pagination from '../../../../components/common/Pagination.astro';
 
 import { getAllPosts, groupPosts } from '../../../../lib/posts';
 import {
-  getPlatformByPath,
-  getPlatformTypeFromParam
+  getPlatformByPath
 } from '../../../../lib/platforms';
+import {
+  getPlatformIndexUrl,
+  getPlatformTypeFromRouteSegment,
+  getPlatformUrl
+} from '../../../../lib/routes.js';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../../lib/pagination';
 
 const { type, manufacturer, platform } = Astro.params;
 
-const platformType = getPlatformTypeFromParam(type);
+const platformType = getPlatformTypeFromRouteSegment(type, 'it') || 'console';
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
@@ -25,7 +29,7 @@ const platformData = await getPlatformByPath(
 );
 
 if (!platformData) {
-  return Astro.redirect('/piattaforme/');
+  return Astro.redirect(getPlatformIndexUrl('it'));
 }
 
 const currentPage = getCurrentPage(Astro.url);
@@ -72,7 +76,7 @@ const pageDescription =
   title={platformData.name}
   description={pageDescription}
   image={platformData.cover?.asset?.url || platformData.logoLight?.asset?.url || platformData.logo?.asset?.url || '/og-image.jpg'}
-  canonical={`https://www.retro-gamers.it/piattaforme/${platformType}/${manufacturer}/${platform}/`}
+  canonical={`https://www.retro-gamers.it${getPlatformUrl(platformData, 'it')}`}
 >
   <PlatformDetail platform={platformData} />
 

@@ -5,15 +5,20 @@ import PlatformTypePage from '../../../components/platforms/PlatformTypePage.ast
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getPlatformsByType } from '../../../lib/platforms';
 import type { PlatformType } from '../../../lib/platforms';
+import {
+  getPlatformIndexUrl,
+  getPlatformTypeFromRouteSegment,
+  getPlatformTypeUrl,
+  isPlatformRouteSegment
+} from '../../../lib/routes.js';
 
-const allowedTypes = ['arcade', 'computer', 'console'] as const;
 const { type } = Astro.params;
 
-if (!type || !allowedTypes.includes(type as PlatformType)) {
-  return Astro.redirect('/piattaforme/');
+if (!isPlatformRouteSegment(type, 'it')) {
+  return Astro.redirect(getPlatformIndexUrl('it'));
 }
 
-const platformType = type as PlatformType;
+const platformType = getPlatformTypeFromRouteSegment(type, 'it') as PlatformType;
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
@@ -39,7 +44,7 @@ const pageDescriptions = {
   title={pageTitles[platformType] || 'Piattaforme'}
   description={pageDescriptions[platformType] || 'Console, home computer, arcade e sistemi storici raccontati da Retro-Gamers.it.'}
   image="/og-image.jpg"
-  canonical={`https://www.retro-gamers.it/piattaforme/${platformType}/`}
+  canonical={`https://www.retro-gamers.it${getPlatformTypeUrl(platformType, 'it')}`}
 >
   <PlatformTypePage
     type={platformType}

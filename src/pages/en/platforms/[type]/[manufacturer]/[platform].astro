@@ -8,23 +8,16 @@ import { getAllPosts } from '../../../../../lib/posts';
 import {
   getPlatformByPath
 } from '../../../../../lib/platforms';
+import {
+  getPlatformIndexUrl,
+  getPlatformTypeFromRouteSegment,
+  getPlatformUrl
+} from '../../../../../lib/routes.js';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../../../lib/pagination';
-
-const typeMap = {
-  arcade: 'arcade',
-  computers: 'computer',
-  consoles: 'console'
-};
-
-const typeSlugMap = {
-  arcade: 'arcade',
-  computer: 'computers',
-  console: 'consoles'
-};
 
 const { type, manufacturer, platform } = Astro.params;
 
-const platformType = typeMap[type] || type;
+const platformType = getPlatformTypeFromRouteSegment(type, 'en') || type;
 
 const allPosts = await getAllPosts();
 
@@ -43,10 +36,8 @@ const platformData = await getPlatformByPath(
 );
 
 if (!platformData) {
-  return Astro.redirect('/en/platforms/');
+  return Astro.redirect(getPlatformIndexUrl('en'));
 }
-
-const canonicalType = typeSlugMap[platformType] || type;
 
 const currentPage = getCurrentPage(Astro.url);
 
@@ -80,7 +71,7 @@ const pageDescription =
   title={platformData.name}
   description={pageDescription}
   image={platformData.cover?.asset?.url || platformData.logoLight?.asset?.url || platformData.logo?.asset?.url || '/og-image.jpg'}
-  canonical={`https://www.retro-gamers.it/en/platforms/${canonicalType}/${manufacturer}/${platform}/`}
+  canonical={`https://www.retro-gamers.it${getPlatformUrl(platformData, 'en')}`}
 >
   <PlatformDetail platform={platformData} lang="en" />
 

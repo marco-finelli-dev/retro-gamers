@@ -4,6 +4,7 @@ import PlatformsLanding from '../../../components/platforms/PlatformsLanding.ast
 
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getAllPlatforms } from '../../../lib/platforms';
+import { getPlatformIndexUrl } from '../../../lib/routes.js';
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
@@ -25,7 +26,7 @@ const platforms = await getAllPlatforms();
   lang="en"
   title="Platforms"
   description="Consoles, home computers and arcade systems from the history of retro gaming."
-  canonical="https://www.retro-gamers.it/en/platforms/"
+  canonical={`https://www.retro-gamers.it${getPlatformIndexUrl('en')}`}
 >
   <PlatformsLanding platforms={platforms} lang="en" />
 </BaseLayout>

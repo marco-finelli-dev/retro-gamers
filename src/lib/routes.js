@@ -43,11 +43,15 @@ const CONTENT_ROUTE_SEGMENTS = {
 };
 
 const PLATFORM_ROUTE_SEGMENTS = {
-  console: { it: 'console', en: 'consoles' },
-  computer: { it: 'computer', en: 'computers' },
-  arcade: { it: 'arcade', en: 'arcade' },
-  consoles: { it: 'console', en: 'consoles' },
-  computers: { it: 'computer', en: 'computers' }
+  types: {
+    console: { it: 'console', en: 'consoles' },
+    computer: { it: 'computer', en: 'computers' },
+    arcade: { it: 'arcade', en: 'arcade' }
+  },
+  aliases: {
+    consoles: 'console',
+    computers: 'computer'
+  }
 };
 
 const PLATFORM_ROUTE_BASE_PATHS = {
@@ -94,11 +98,55 @@ const getContentRouteSegment = (type, language, routeKind) => {
 
 const getRouteLanguage = (language) => language === 'en' ? 'en' : 'it';
 
-const getPlatformRouteSegment = (type, language) => {
+const normalizePlatformType = (type) =>
+  PLATFORM_ROUTE_SEGMENTS.aliases[type] || type;
+
+const getConfiguredPlatformRouteSegment = (type, language) => {
+  const normalizedType = normalizePlatformType(type);
   const routeLanguage = getRouteLanguage(language);
 
-  return PLATFORM_ROUTE_SEGMENTS[type]?.[routeLanguage] || type;
+  return PLATFORM_ROUTE_SEGMENTS.types[normalizedType]?.[routeLanguage] || null;
 };
+
+export function getPlatformBasePath(language = 'it') {
+  return PLATFORM_ROUTE_BASE_PATHS[getRouteLanguage(language)];
+}
+
+export function getPlatformRouteSegment(type, language = 'it') {
+  return getConfiguredPlatformRouteSegment(type, language) || type;
+}
+
+export function getPlatformTypeFromRouteSegment(segment, language = 'it') {
+  if (!segment) return null;
+
+  const routeLanguage = getRouteLanguage(language);
+  const routeEntry = Object.entries(PLATFORM_ROUTE_SEGMENTS.types)
+    .find(([, routes]) => routes[routeLanguage] === segment);
+
+  return routeEntry?.[0] || null;
+}
+
+export function isPlatformRouteSegment(segment, language = 'it') {
+  return getPlatformTypeFromRouteSegment(segment, language) !== null;
+}
+
+export function getPlatformIndexUrl(language = 'it') {
+  return `${getPlatformBasePath(language)}/`;
+}
+
+export function getPlatformTypeUrl(type, language = 'it') {
+  const segment = getPlatformRouteSegment(type, language);
+
+  return segment
+    ? `${getPlatformBasePath(language)}/${segment}/`
+    : getPlatformIndexUrl(language);
+}
+
+export function getPlatformManufacturerUrl(type, manufacturerSlug, language = 'it') {
+  if (!type || !manufacturerSlug) return getPlatformIndexUrl(language);
+
+  return `${getPlatformTypeUrl(type, language)}${manufacturerSlug}/`;
+}
 
 export function getSearchRouteData(language = 'it') {
   const routeLanguage = getRouteLanguage(language);
@@ -112,12 +160,16 @@ export function getSearchRouteData(language = 'it') {
       getConfiguredContentRouteSegment(alias, routeLanguage, 'detail')
     ])
   ]);
-  const platformSegments = Object.fromEntries(
-    Object.keys(PLATFORM_ROUTE_SEGMENTS).map((type) => [
+  const platformSegments = Object.fromEntries([
+    ...Object.keys(PLATFORM_ROUTE_SEGMENTS.types).map((type) => [
       type,
       getPlatformRouteSegment(type, routeLanguage)
+    ]),
+    ...Object.keys(PLATFORM_ROUTE_SEGMENTS.aliases).map((alias) => [
+      alias,
+      getPlatformRouteSegment(alias, routeLanguage)
     ])
-  );
+  ]);
 
   return {
     articles: {
@@ -221,13 +273,11 @@ export const getPlatformUrl = (platform, lang = 'it') => {
       : platform.manufacturer?.slug?.current
 
   const routeLanguage = getRouteLanguage(lang)
-  const type = getPlatformRouteSegment(platform.platformType, routeLanguage)
-
-  if (!platformSlug || !manufacturerSlug || !type) {
-    return `${PLATFORM_ROUTE_BASE_PATHS[routeLanguage]}/`
+  if (!platformSlug || !manufacturerSlug || !platform.platformType) {
+    return getPlatformIndexUrl(routeLanguage)
   }
 
-  return `${PLATFORM_ROUTE_BASE_PATHS[routeLanguage]}/${type}/${manufacturerSlug}/${platformSlug}/`
+  return `${getPlatformManufacturerUrl(platform.platformType, manufacturerSlug, routeLanguage)}${platformSlug}/`
 }
 
 export const getCategoryUrl = (category, lang = 'it') => {

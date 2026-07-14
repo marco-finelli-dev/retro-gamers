@@ -6,16 +6,14 @@ import { getAllPosts, groupPosts } from '../../../../../lib/posts';
 import {
   getPlatformsByTypeAndManufacturer
 } from '../../../../../lib/platforms';
-
-const typeMap = {
-  arcade: 'arcade',
-  computers: 'computer',
-  consoles: 'console'
-};
+import {
+  getPlatformManufacturerUrl,
+  getPlatformTypeFromRouteSegment
+} from '../../../../../lib/routes.js';
 
 const { type, manufacturer } = Astro.params;
 
-const platformType = typeMap[type] || type;
+const platformType = getPlatformTypeFromRouteSegment(type, 'en') || type;
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
@@ -40,13 +38,6 @@ const resolvedManufacturer =
     slug: manufacturer
   };
 
-const typeSlugMap = {
-  arcade: 'arcade',
-  computer: 'computers',
-  console: 'consoles'
-};
-
-const canonicalType = typeSlugMap[platformType] || type;
 ---
 
 <BaseLayout
@@ -55,7 +46,7 @@ const canonicalType = typeSlugMap[platformType] || type;
   lang="en"
   title={`${resolvedManufacturer.name} platforms`}
   description={`All ${resolvedManufacturer.name} platforms in the Retro-Gamers archive.`}
-  canonical={`https://www.retro-gamers.it/en/platforms/${canonicalType}/${manufacturer}/`}
+  canonical={`https://www.retro-gamers.it${getPlatformManufacturerUrl(platformType, manufacturer, 'en')}`}
 >
   <ManufacturerPage
     type={platformType}

@@ -5,9 +5,9 @@ import PlatformCard from './PlatformCard.astro';
 import {
   platformTypeLabels,
   platformTypeDescriptions,
-  groupPlatformsByManufacturer,
-  getManufacturerUrl
+  groupPlatformsByManufacturer
 } from '../../lib/platforms';
+import { getPlatformManufacturerUrl } from '../../lib/routes.js';
 
 const { type, platforms = [], lang = 'it' } = Astro.props;
 
@@ -40,20 +40,10 @@ const typeDescriptions = {
   }
 };
 
-const typeUrlSlugs = {
-  arcade: 'arcade',
-  computer: 'computers',
-  console: 'consoles'
-};
-
 const getManufacturerHref = (type, slug) => {
   if (!slug) return '#';
 
-  if (isEn) {
-    return `/en/platforms/${typeUrlSlugs[type] || type}/${slug}/`;
-  }
-
-  return getManufacturerUrl(type, slug);
+  return getPlatformManufacturerUrl(type, slug, lang);
 };
 
 const groups = groupPlatformsByManufacturer(platforms);

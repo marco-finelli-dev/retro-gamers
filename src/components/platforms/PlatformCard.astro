@@ -1,32 +1,10 @@
 ---
 import { urlFor } from '../../lib/image';
-import { getPlatformUrl } from '../../lib/platforms';
+import { getPlatformUrl } from '../../lib/routes.js';
 
 const { platform, lang = 'it' } = Astro.props;
 
 const isEn = lang === 'en';
-
-const typeUrlSlugs = {
-  arcade: 'arcade',
-  computer: 'computers',
-  console: 'consoles'
-};
-
-const getPlatformHref = (platform) => {
-  if (!platform) return '#';
-
-  if (isEn) {
-    const typeSlug = typeUrlSlugs[platform.platformType] || platform.platformType;
-    const manufacturerSlug = platform.manufacturer?.slug;
-    const platformSlug = platform.slug;
-
-    if (typeSlug && manufacturerSlug && platformSlug) {
-      return `/en/platforms/${typeSlug}/${manufacturerSlug}/${platformSlug}/`;
-    }
-  }
-
-  return getPlatformUrl(platform);
-};
 
 const getLogo = (platform) => {
   if (!platform?.logo?.asset) return '';
@@ -86,7 +64,7 @@ const year = platform.specs?.year || '';
 const badge = platform.badgeLabel || '';
 ---
 
-<a href={getPlatformHref(platform)} class={`platform-card platform-card--${platform.platformType}`}>
+<a href={getPlatformUrl(platform, lang)} class={`platform-card platform-card--${platform.platformType}`}>
 
   <div class="platform-card__visual">
 

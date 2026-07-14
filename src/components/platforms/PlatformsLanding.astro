@@ -2,9 +2,9 @@
 import '../../styles/components/platforms.css';
 import {
   platformTypeLabels,
-  platformTypeDescriptions,
-  getPlatformTypeUrl
+  platformTypeDescriptions
 } from '../../lib/platforms';
+import { getPlatformTypeUrl } from '../../lib/routes.js';
 
 const { platforms = [], lang = 'it' } = Astro.props;
 
@@ -35,19 +35,6 @@ const typeDescriptions = {
     arcade: 'Cabinets, boards and arcade systems that shaped the coin-op experience.',
     computer: 'Home computers, personal computers and machines that shaped home computing.',
     console: 'Home and handheld systems created for domestic gaming.'
-  }
-};
-
-const typeUrls = {
-  it: {
-    arcade: '/piattaforme/arcade/',
-    computer: '/piattaforme/computer/',
-    console: '/piattaforme/console/'
-  },
-  en: {
-    arcade: '/en/platforms/arcade/',
-    computer: '/en/platforms/computers/',
-    console: '/en/platforms/consoles/'
   }
 };
 
@@ -97,7 +84,7 @@ const getCountLabel = (count) =>
 
         return (
           <a
-            href={typeUrls[lang]?.[item.type] || getPlatformTypeUrl(item.type)}
+            href={getPlatformTypeUrl(item.type, lang)}
             class={`platform-type-card platform-type-card--${item.type}`}
           >
 

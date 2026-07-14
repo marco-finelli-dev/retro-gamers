@@ -5,22 +5,22 @@ import PlatformTypePage from '../../../../components/platforms/PlatformTypePage.
 import { getAllPosts, groupPosts } from '../../../../lib/posts';
 import { getPlatformsByType } from '../../../../lib/platforms';
 import type { PlatformType } from '../../../../lib/platforms';
+import {
+  getPlatformIndexUrl,
+  getPlatformRouteSegment,
+  getPlatformTypeFromRouteSegment,
+  getPlatformTypeUrl,
+  isPlatformRouteSegment
+} from '../../../../lib/routes.js';
 
-const allowedTypes = ['arcade', 'computers', 'consoles'] as const;
 const { type } = Astro.params;
 
-if (!type || !allowedTypes.includes(type as typeof allowedTypes[number])) {
-  return Astro.redirect('/en/platforms/');
+if (!isPlatformRouteSegment(type, 'en')) {
+  return Astro.redirect(getPlatformIndexUrl('en'));
 }
 
-const typeMap: Record<typeof allowedTypes[number], PlatformType> = {
-  arcade: 'arcade',
-  computers: 'computer',
-  consoles: 'console'
-};
-
-const publicType = type as typeof allowedTypes[number];
-const internalType = typeMap[publicType];
+const internalType = getPlatformTypeFromRouteSegment(type, 'en') as PlatformType;
+const publicType = getPlatformRouteSegment(internalType, 'en');
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
@@ -54,7 +54,7 @@ const pageDescriptions = {
   lang="en"
   title={pageTitles[publicType] || 'Platforms'}
   description={pageDescriptions[publicType] || 'Retro gaming platforms, machines and systems.'}
-  canonical={`https://www.retro-gamers.it/en/platforms/${publicType}/`}
+  canonical={`https://www.retro-gamers.it${getPlatformTypeUrl(internalType, 'en')}`}
 >
   <PlatformTypePage
     type={internalType}
