@@ -158,6 +158,16 @@ function getGalleryImageUrl(image, displayMode = 'cover') {
     .url();
 }
 
+function getLightboxGroupId(scope, index, key) {
+  return `article-${scope}-${key || index}`;
+}
+
+function getRowStartIndex(rows = [], rowIndex = 0) {
+  return rows
+    .slice(0, rowIndex)
+    .reduce((total, row) => total + row.length, 0);
+}
+
 function renderTextChild(child, markDefs = []) {
   let output = preserveLineBreaks(child.text || '');
 
@@ -312,7 +322,7 @@ function chunkBalanced(images = []) {
 
 <div class="article-content">
 
-  {content?.map((block) => {
+  {content?.map((block, blockIndex) => {
 
     if (block._type === 'block') {
       const html = renderBlockChildren(block);
@@ -376,18 +386,20 @@ function chunkBalanced(images = []) {
       const groupCaption = typeof block.groupCaption === 'string'
         ? block.groupCaption.trim()
         : '';
+      const lightboxGroupId = getLightboxGroupId('gallery', blockIndex, block._key);
 
       return (
         <div class={`article-image-gallery ${isUniformHeight ? 'article-image-gallery--uniform-height' : ''}`}>
-          {rows.map((row) => (
+          {rows.map((row, rowIndex) => (
             <div
               class={`article-image-row article-image-row--${row.length}`}
               style={`--image-count: ${row.length};`}
             >
-              {row.map((img) => {
+              {row.map((img, imageIndex) => {
                 const displayMode = getDisplayMode(img);
                 const imageUrl = getGalleryImageUrl(img.image, displayMode);
                 const fullImageUrl = getOriginalImageUrl(img.image);
+                const lightboxIndex = getRowStartIndex(rows, rowIndex) + imageIndex;
 
                 if (!imageUrl) return null;
 
@@ -397,6 +409,8 @@ function chunkBalanced(images = []) {
                       src={imageUrl}
                       data-fullsrc={fullImageUrl || imageUrl}
                       data-caption={img.caption || ''}
+                      data-lightbox-group={lightboxGroupId}
+                      data-lightbox-index={lightboxIndex}
                       class="js-article-lightbox-image"
                       alt={img.alt || ''}
                       width={displayMode === 'contain' || displayMode === 'natural' ? '900' : '720'}
@@ -440,7 +454,7 @@ function chunkBalanced(images = []) {
             <h4>{block.title}</h4>
           )}
 
-          {asideContent.map((inner) => {
+          {asideContent.map((inner, innerIndex) => {
             if (inner._type === 'block') {
               const html = renderBlockChildren(inner);
 
@@ -488,18 +502,20 @@ function chunkBalanced(images = []) {
               const groupCaption = typeof inner.groupCaption === 'string'
                 ? inner.groupCaption.trim()
                 : '';
+              const lightboxGroupId = getLightboxGroupId('aside-gallery', `${blockIndex}-${innerIndex}`, inner._key);
 
               return (
                 <div class={`article-aside-gallery ${isUniformHeight ? 'article-aside-gallery--uniform-height' : ''}`}>
-                  {rows.map((row) => (
+                  {rows.map((row, rowIndex) => (
                     <div
                       class={`article-aside-row article-aside-row--${row.length}`}
                       style={`--aside-image-count: ${row.length};`}
                     >
-                      {row.map((img) => {
+                      {row.map((img, imageIndex) => {
                         const displayMode = getDisplayMode(img);
                         const imageUrl = getGalleryImageUrl(img.image, displayMode);
                         const fullImageUrl = getOriginalImageUrl(img.image);
+                        const lightboxIndex = getRowStartIndex(rows, rowIndex) + imageIndex;
 
                         if (!imageUrl) return null;
 
@@ -509,6 +525,8 @@ function chunkBalanced(images = []) {
                               src={imageUrl}
                               data-fullsrc={fullImageUrl || imageUrl}
                               data-caption={img.caption || ''}
+                              data-lightbox-group={lightboxGroupId}
+                              data-lightbox-index={lightboxIndex}
                               class="js-article-lightbox-image"
                               alt={img.alt || ''}
                               width={displayMode === 'contain' || displayMode === 'natural' ? '900' : '720'}

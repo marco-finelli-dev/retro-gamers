@@ -6,12 +6,16 @@ const labels = isEnglish
   ? {
       close: 'Close enlarged image',
       dialog: 'Enlarged image',
-      open: 'Open enlarged image'
+      open: 'Open enlarged image',
+      previous: 'Previous image',
+      next: 'Next image'
     }
   : {
       close: 'Chiudi immagine',
       dialog: 'Immagine ingrandita',
-      open: 'Apri immagine ingrandita'
+      open: 'Apri immagine ingrandita',
+      previous: 'Immagine precedente',
+      next: 'Immagine successiva'
     };
 ---
 
@@ -19,6 +23,8 @@ const labels = isEnglish
   class="article-lightbox"
   data-article-lightbox
   data-lightbox-open-label={labels.open}
+  data-lightbox-previous-label={labels.previous}
+  data-lightbox-next-label={labels.next}
   hidden
 >
   <button
@@ -38,12 +44,32 @@ const labels = isEnglish
       ×
     </button>
 
+    <button
+      class="article-lightbox__nav article-lightbox__nav--previous"
+      type="button"
+      data-lightbox-previous
+      aria-label={labels.previous}
+      hidden
+    >
+      ‹
+    </button>
+
     <img
       src=""
       alt=""
       class="article-lightbox__image"
       data-lightbox-image
     />
+
+    <button
+      class="article-lightbox__nav article-lightbox__nav--next"
+      type="button"
+      data-lightbox-next
+      aria-label={labels.next}
+      hidden
+    >
+      ›
+    </button>
 
     <p class="article-lightbox__caption" data-lightbox-caption hidden></p>
   </div>
@@ -57,6 +83,8 @@ const labels = isEnglish
     const image = lightbox.querySelector('[data-lightbox-image]');
     const caption = lightbox.querySelector('[data-lightbox-caption]');
     const closeButtons = lightbox.querySelectorAll('[data-lightbox-close]');
+    const previousButton = lightbox.querySelector('[data-lightbox-previous]');
+    const nextButton = lightbox.querySelector('[data-lightbox-next]');
     const openLabel =
       lightbox.getAttribute('data-lightbox-open-label') ||
       'Apri immagine ingrandita';
@@ -66,8 +94,12 @@ const labels = isEnglish
     if (!candidates.length) return;
 
     let lastFocusedElement = null;
+    let activeItems = [];
+    let activeIndex = -1;
+    let touchStartX = 0;
+    let touchStartY = 0;
 
-    const open = (img) => {
+    const getItemData = (img) => {
       const fullSrc =
         img.dataset.fullsrc ||
         img.currentSrc ||
@@ -78,18 +110,83 @@ const labels = isEnglish
         img.closest('figure')?.querySelector('figcaption')?.textContent?.trim() ||
         '';
 
-      lastFocusedElement = document.activeElement;
+      return {
+        src: fullSrc,
+        alt: img.alt || '',
+        caption: captionText
+      };
+    };
 
-      image.src = fullSrc;
-      image.alt = img.alt || '';
+    const updateNavigation = () => {
+      const hasGallery = activeItems.length > 1;
 
-      if (captionText) {
-        caption.textContent = captionText;
+      if (previousButton) {
+        previousButton.hidden = !hasGallery;
+      }
+
+      if (nextButton) {
+        nextButton.hidden = !hasGallery;
+      }
+    };
+
+    const renderItem = (img) => {
+      const item = getItemData(img);
+
+      image.src = item.src;
+      image.alt = item.alt;
+
+      if (item.caption) {
+        caption.textContent = item.caption;
         caption.hidden = false;
       } else {
         caption.textContent = '';
         caption.hidden = true;
       }
+    };
+
+    const getGalleryItems = (img) => {
+      const group = img.dataset.lightboxGroup;
+
+      if (!group) {
+        return [img];
+      }
+
+      return Array
+        .from(candidates)
+        .filter((candidate) => candidate.dataset.lightboxGroup === group)
+        .sort((a, b) => {
+          const aIndex = Number.parseInt(a.dataset.lightboxIndex || '0', 10);
+          const bIndex = Number.parseInt(b.dataset.lightboxIndex || '0', 10);
+
+          return aIndex - bIndex;
+        });
+    };
+
+    const showAt = (index) => {
+      if (activeItems.length < 2) return;
+
+      const nextIndex =
+        (index + activeItems.length) % activeItems.length;
+
+      activeIndex = nextIndex;
+      renderItem(activeItems[activeIndex]);
+    };
+
+    const showPrevious = () => {
+      showAt(activeIndex - 1);
+    };
+
+    const showNext = () => {
+      showAt(activeIndex + 1);
+    };
+
+    const open = (img) => {
+      lastFocusedElement = document.activeElement;
+      activeItems = getGalleryItems(img);
+      activeIndex = Math.max(activeItems.indexOf(img), 0);
+
+      renderItem(activeItems[activeIndex] || img);
+      updateNavigation();
 
       lightbox.hidden = false;
       document.documentElement.classList.add('has-lightbox-open');
@@ -104,6 +201,11 @@ const labels = isEnglish
       image.alt = '';
       caption.textContent = '';
       caption.hidden = true;
+      activeItems = [];
+      activeIndex = -1;
+      touchStartX = 0;
+      touchStartY = 0;
+      updateNavigation();
 
       document.documentElement.classList.remove('has-lightbox-open');
 
@@ -134,9 +236,77 @@ const labels = isEnglish
       button.addEventListener('click', close);
     });
 
+    previousButton?.addEventListener('click', showPrevious);
+    nextButton?.addEventListener('click', showNext);
+
+    lightbox.addEventListener('touchstart', (event) => {
+      if (activeItems.length < 2 || event.touches.length !== 1) return;
+
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+    }, { passive: true });
+
+    lightbox.addEventListener('touchend', (event) => {
+      if (activeItems.length < 2 || !touchStartX || event.changedTouches.length !== 1) return;
+
+      const touch = event.changedTouches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+
+      touchStartX = 0;
+      touchStartY = 0;
+
+      if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.4) {
+        return;
+      }
+
+      if (deltaX < 0) {
+        showNext();
+      } else {
+        showPrevious();
+      }
+    }, { passive: true });
+
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && !lightbox.hidden) {
+      if (lightbox.hidden) return;
+
+      if (event.key === 'Escape') {
         close();
+        return;
+      }
+
+      if (activeItems.length > 1 && event.key === 'ArrowLeft') {
+        event.preventDefault();
+        showPrevious();
+        return;
+      }
+
+      if (activeItems.length > 1 && event.key === 'ArrowRight') {
+        event.preventDefault();
+        showNext();
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const focusable = Array
+          .from(lightbox.querySelectorAll('button:not([hidden])'))
+          .filter((button) => !button.disabled);
+
+        if (!focusable.length) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+          return;
+        }
+
+        if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     });
   })();
