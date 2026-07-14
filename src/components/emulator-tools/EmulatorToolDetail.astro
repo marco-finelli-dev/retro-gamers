@@ -142,9 +142,12 @@ const sidebarCoverUrl = tool.coverImage?.asset
   : '';
 
 const canonicalUrl = `${copy.canonicalBase}/${tool.slug}/`;
-const translatedVersion = tool.translatedVersion?.slug
-  ? tool.translatedVersion
-  : null;
+const translatedVersion =
+  tool.translatedVersion?.slug
+    ? tool.translatedVersion
+    : (tool.translatedVersions || []).find((version) =>
+        version?.slug && version.language !== currentLang
+      ) || null;
 const translatedLanguage: EmulatorToolLang =
   translatedVersion?.language === 'it' || translatedVersion?.language === 'en'
     ? translatedVersion.language

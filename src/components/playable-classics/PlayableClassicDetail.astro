@@ -215,9 +215,12 @@ const copy = isEn
     };
 
 const canonicalUrl = `${copy.canonicalBase}/${classic.slug}/`;
-const translatedVersion = classic.translatedVersion?.slug
-  ? classic.translatedVersion
-  : null;
+const translatedVersion =
+  classic.translatedVersion?.slug
+    ? classic.translatedVersion
+    : (classic.translatedVersions || []).find((version) =>
+        version?.slug && version.language !== currentLang
+      ) || null;
 const translatedLanguage: PlayableClassicLang =
   translatedVersion?.language === 'it' || translatedVersion?.language === 'en'
     ? translatedVersion.language

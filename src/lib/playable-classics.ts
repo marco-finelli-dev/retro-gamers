@@ -121,6 +121,7 @@ export type PlayableClassic = {
   featured?: boolean;
   publishedAt?: string;
   translatedVersion?: PlayableClassicTranslationRef;
+  translatedVersions?: PlayableClassicTranslationRef[];
   _updatedAt?: string;
 };
 
@@ -283,6 +284,17 @@ const playableClassicFields = `
   featured,
   publishedAt,
   translatedVersion->{
+    _id,
+    title,
+    "slug": slug.current,
+    language
+  },
+  "translatedVersions": *[
+    _type == "playableClassic" &&
+    translatedVersion._ref == ^._id &&
+    coalesce(isPublished, false) == true &&
+    !(_id in path("drafts.**"))
+  ]{
     _id,
     title,
     "slug": slug.current,

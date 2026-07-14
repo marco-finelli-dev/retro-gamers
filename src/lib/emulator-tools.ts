@@ -71,6 +71,7 @@ export type EmulatorTool = {
   featured?: boolean;
   isPublished?: boolean;
   translatedVersion?: EmulatorToolTranslationRef;
+  translatedVersions?: EmulatorToolTranslationRef[];
   _updatedAt?: string;
 };
 
@@ -182,6 +183,17 @@ const emulatorToolFields = `
   featured,
   isPublished,
   translatedVersion->{
+    _id,
+    title,
+    "slug": slug.current,
+    language
+  },
+  "translatedVersions": *[
+    _type == "emulatorTool" &&
+    translatedVersion._ref == ^._id &&
+    coalesce(isPublished, false) == true &&
+    !(_id in path("drafts.**"))
+  ]{
     _id,
     title,
     "slug": slug.current,
