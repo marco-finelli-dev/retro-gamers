@@ -42,11 +42,38 @@ const CONTENT_ROUTE_SEGMENTS = {
   }
 };
 
-const getContentRouteSegment = (type, language, routeKind) => {
-  const normalizedType = CONTENT_ROUTE_SEGMENTS.aliases[type] || type;
+const normalizeContentType = (type) =>
+  CONTENT_ROUTE_SEGMENTS.aliases[type] || type;
+
+const getConfiguredContentRouteSegment = (type, language, routeKind) => {
+  const normalizedType = normalizeContentType(type);
 
   return (
     CONTENT_ROUTE_SEGMENTS.types[normalizedType]?.[routeKind]?.[language] ||
+    null
+  );
+};
+
+export function getContentDetailSegment(type, language = 'it') {
+  return getConfiguredContentRouteSegment(type, language, 'detail');
+}
+
+export function getContentTypeFromRouteSegment(segment, language = 'it') {
+  if (!segment) return null;
+
+  const routeEntry = Object.entries(CONTENT_ROUTE_SEGMENTS.types)
+    .find(([, routes]) => routes.detail[language] === segment);
+
+  return routeEntry?.[0] || null;
+}
+
+export function isContentRouteSegment(segment, language = 'it') {
+  return getContentTypeFromRouteSegment(segment, language) !== null;
+}
+
+const getContentRouteSegment = (type, language, routeKind) => {
+  return (
+    getConfiguredContentRouteSegment(type, language, routeKind) ||
     CONTENT_ROUTE_SEGMENTS.fallbacks[routeKind]?.[language] ||
     'articoli'
   );

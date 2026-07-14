@@ -1,6 +1,11 @@
 ---
 import Layout from '../../../layouts/BaseLayout.astro';
 import ArticlePage from '../../../components/article/ArticlePage.astro';
+import {
+  getContentDetailSegment,
+  getContentTypeFromRouteSegment,
+  isContentRouteSegment
+} from '../../../lib/routes.js';
 
 import { client } from '../../../lib/sanity';
 import { getArticleRoutePosts, getRelatedPosts } from '../../../lib/posts';
@@ -22,30 +27,8 @@ import {
 
 const { category, slug } = Astro.params;
 
-const categoryToType = {
-  reviews: 'review',
-  news: 'news',
-  features: 'feature',
-  guides: 'guide',
-  memories: 'memories',
-  interviews: 'interview',
-  hardware: 'hardware',
-  articles: 'article'
-};
-
-const typeToItalianCategory = {
-  review: 'recensioni',
-  news: 'news',
-  feature: 'speciali',
-  guide: 'guide',
-  memories: 'memories',
-  interview: 'interviste',
-  hardware: 'hardware',
-  article: 'articoli'
-};
-
-const expectedType = category
-  ? categoryToType[category]
+const expectedType = category && isContentRouteSegment(category, 'en')
+  ? getContentTypeFromRouteSegment(category, 'en')
   : null;
 
 if (!expectedType) {
@@ -634,7 +617,7 @@ const canonicalUrl =
 
 const italianCategory =
   italianTranslation?.type
-    ? typeToItalianCategory[italianTranslation.type]
+    ? getContentDetailSegment(italianTranslation.type, 'it')
     : null;
 
 const italianUrl =

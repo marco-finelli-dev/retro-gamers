@@ -1,6 +1,11 @@
 ---
 import Layout from '../../layouts/BaseLayout.astro';
 import ArticlePage from '../../components/article/ArticlePage.astro';
+import {
+  getContentDetailSegment,
+  getContentTypeFromRouteSegment,
+  isContentRouteSegment
+} from '../../lib/routes.js';
 
 import { getSanityClient } from '../../lib/sanity';
 import { getArticleRoutePosts, getRelatedPosts } from '../../lib/posts';
@@ -28,30 +33,8 @@ const isPreview =
 
 const sanityClient = getSanityClient(isPreview);
 
-const categoryToType = {
-  recensioni: 'review',
-  news: 'news',
-  speciali: 'feature',
-  guide: 'guide',
-  memories: 'memories',
-  interviste: 'interview',
-  hardware: 'hardware',
-  articoli: 'article'
-};
-
-const englishTypeToCategory = {
-  feature: 'features',
-  review: 'reviews',
-  news: 'news',
-  guide: 'guides',
-  memories: 'memories',
-  interview: 'interviews',
-  hardware: 'hardware',
-  article: 'articles'
-};
-
-const expectedType = category
-  ? categoryToType[category]
+const expectedType = category && isContentRouteSegment(category, 'it')
+  ? getContentTypeFromRouteSegment(category, 'it')
   : null;
 
 if (!expectedType) {
@@ -634,7 +617,7 @@ const canonicalUrl =
 
 const englishCategory =
   englishTranslation?.type
-    ? englishTypeToCategory[englishTranslation.type]
+    ? getContentDetailSegment(englishTranslation.type, 'en')
     : null;
 
 const englishUrl =
