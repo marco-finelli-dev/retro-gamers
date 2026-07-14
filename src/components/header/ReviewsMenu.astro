@@ -1,6 +1,6 @@
 ---
 import '../../styles/components/header/dropdown.css';
-import { getPostUrl } from '../../lib/routes';
+import { getArchiveUrl, getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 import { formatReviewScore } from '../../lib/reviewBadges';
 
@@ -16,7 +16,7 @@ const labels = {
   more: isEn ? 'View all reviews' : 'Vedi tutte le recensioni'
 };
 
-const archiveHref = isEn ? '/en/reviews/' : '/recensioni/';
+const archiveHref = getArchiveUrl('review', lang);
 
 /* =========================
    DATA

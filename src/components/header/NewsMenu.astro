@@ -1,6 +1,6 @@
 ---
 import '../../styles/components/header/dropdown.css';
-import { getPostUrl } from '../../lib/routes';
+import { getArchiveUrl, getPostUrl } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 
 const { posts = [], lang = 'it' } = Astro.props;
@@ -11,7 +11,7 @@ const labels = {
   more: isEn ? 'View all news' : 'Vedi tutte le news'
 };
 
-const archiveHref = isEn ? '/en/news/' : '/news/';
+const archiveHref = getArchiveUrl('news', lang);
 
 const finalPosts = posts
   .filter((post) => {
