@@ -1,4 +1,5 @@
 import { client } from './sanity';
+export { getEmulatorToolUrl } from './routes.js';
 
 export type EmulatorToolLang = 'it' | 'en';
 
@@ -217,19 +218,6 @@ const publishedEmulatorToolFilter = `
   ${emulatorToolBaseFilter} &&
   coalesce(isPublished, false) == true
 `;
-
-export function getEmulatorToolUrl(
-  item: Pick<EmulatorTool, 'slug' | 'language'>,
-  lang: EmulatorToolLang = item.language || 'it'
-) {
-  if (!item?.slug) {
-    return lang === 'en' ? '/en/emulators/' : '/emulatori/';
-  }
-
-  return lang === 'en'
-    ? `/en/emulators/${item.slug}/`
-    : `/emulatori/${item.slug}/`;
-}
 
 export async function getPublishedEmulatorTools(
   lang: EmulatorToolLang = 'it'

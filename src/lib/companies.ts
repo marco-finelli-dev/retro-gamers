@@ -1,5 +1,6 @@
 import { client } from './sanity';
 import type { PlatformRef, Post } from './posts';
+export { getCompanyUrl } from './routes.js';
 
 export type CompanyType = 'developer' | 'publisher' | 'manufacturer';
 
@@ -67,16 +68,6 @@ export function getCompanyDescription(company: Company, lang = 'it') {
   return lang === 'en'
     ? company.descriptionEn || company.description || ''
     : company.description || '';
-}
-
-export function getCompanyUrl(company: Pick<Company, 'slug'>, lang = 'it') {
-  if (!company?.slug) {
-    return lang === 'en' ? '/en/companies/' : '/aziende/';
-  }
-
-  return lang === 'en'
-    ? `/en/companies/${company.slug}/`
-    : `/aziende/${company.slug}/`;
 }
 
 const postFields = `

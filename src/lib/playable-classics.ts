@@ -1,4 +1,5 @@
 import { client } from './sanity';
+export { getPlayableClassicUrl } from './routes.js';
 
 export type PlayableClassicLang = 'it' | 'en';
 
@@ -316,19 +317,6 @@ const publicPlayableClassicFilter = `
   !(_id in path("drafts.**")) &&
   coalesce(isPublished, false) == true
 `;
-
-export function getPlayableClassicUrl(
-  item: Pick<PlayableClassic, 'slug' | 'language'>,
-  lang: PlayableClassicLang = item.language || 'it'
-) {
-  if (!item?.slug) {
-    return lang === 'en' ? '/en/playable-classics/' : '/classici-giocabili-oggi/';
-  }
-
-  return lang === 'en'
-    ? `/en/playable-classics/${item.slug}/`
-    : `/classici-giocabili-oggi/${item.slug}/`;
-}
 
 export async function getPublishedPlayableClassics(
   lang: PlayableClassicLang = 'it'
