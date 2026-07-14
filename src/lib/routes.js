@@ -206,6 +206,18 @@ const getSlug = (item) => {
     : item.slug?.current || ''
 }
 
+export function getCreatorUrl(creator, lang = 'it') {
+  const slug = getSlug(creator)
+
+  if (!slug) {
+    return getRouteLanguage(lang) === 'en' ? '/en/creators/' : '/creatori/'
+  }
+
+  return getRouteLanguage(lang) === 'en'
+    ? `/en/creators/${slug}/`
+    : `/creatori/${slug}/`
+}
+
 export function getPlayableClassicUrl(item, lang = item?.language || 'it') {
   const slug = getSlug(item)
 

@@ -1,5 +1,10 @@
 ---
-import { getSanityDocumentUrl } from '../../lib/routes';
+import {
+  getCompanyUrl as getSharedCompanyUrl,
+  getCreatorUrl as getSharedCreatorUrl,
+  getPlatformUrl as getSharedPlatformUrl,
+  getSanityDocumentUrl
+} from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 import ConsentYouTube from '../common/ConsentYouTube.astro';
 
@@ -23,49 +28,40 @@ function getInternalUrl(reference) {
   return getSanityDocumentUrl(reference, lang);
 }
 
+function getReferenceSlug(reference) {
+  return typeof reference?.slug === 'string'
+    ? reference.slug
+    : reference?.slug?.current || '';
+}
+
 function getPlatformUrl(reference) {
-  if (!reference?.slug || !reference?.platformType || !reference?.manufacturer?.slug) {
+  const slug = getReferenceSlug(reference);
+  const manufacturerSlug = getReferenceSlug(reference?.manufacturer);
+
+  if (!slug || !reference?.platformType || !manufacturerSlug) {
     return '#';
   }
 
-  const typeMap = {
-    console: {
-      it: 'console',
-      en: 'consoles'
-    },
-    computer: {
-      it: 'computer',
-      en: 'computers'
-    },
-    arcade: {
-      it: 'arcade',
-      en: 'arcade'
+  return getSharedPlatformUrl({
+    ...reference,
+    slug,
+    manufacturer: {
+      ...(reference.manufacturer || {}),
+      slug: manufacturerSlug
     }
-  };
-
-  const localizedType =
-    typeMap[reference.platformType]?.[lang] ||
-    reference.platformType;
-
-  const prefix = lang === 'en' ? '/en/platforms' : '/piattaforme';
-
-  return `${prefix}/${localizedType}/${reference.manufacturer.slug}/${reference.slug}/`;
+  }, lang);
 }
 
 function getCreatorUrl(reference) {
-  if (!reference?.slug) return '#';
+  const slug = getReferenceSlug(reference);
 
-  return lang === 'en'
-    ? `/en/creators/${reference.slug}/`
-    : `/creatori/${reference.slug}/`;
+  return slug ? getSharedCreatorUrl({ ...reference, slug }, lang) : '#';
 }
 
 function getCompanyUrl(reference) {
-  if (!reference?.slug) return '#';
+  const slug = getReferenceSlug(reference);
 
-  return lang === 'en'
-    ? `/en/companies/${reference.slug}/`
-    : `/aziende/${reference.slug}/`;
+  return slug ? getSharedCompanyUrl({ ...reference, slug }, lang) : '#';
 }
 
 function isAffiliateUrl(url = '') {
