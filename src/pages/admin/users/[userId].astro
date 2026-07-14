@@ -14,7 +14,7 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
 ---
 
 <BaseLayout title={title} description={description}>
-  <CommunityLayout as="div" class="admin-users-page admin-users-detail-page" sidebar={isStaff}>
+  <CommunityLayout class="admin-users-page admin-users-detail-page" sidebar={isStaff}>
     <Fragment slot="sidebar">
       {isStaff && (
         <CommunitySidebarSection title="Strumenti redazione">
