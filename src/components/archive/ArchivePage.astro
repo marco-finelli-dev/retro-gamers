@@ -270,7 +270,9 @@ const hasFilters =
                 <select data-filter="category">
                   <option value="">{isEnglish ? ui.all : ui.allFemale}</option>
                   {categories.map((category) => (
-                    <option value={category.slug}>{category.name}</option>
+                    <option value={category.slug}>
+                      {isEnglish ? category.nameEn || category.name : category.name}
+                    </option>
                   ))}
                 </select>
               </label>

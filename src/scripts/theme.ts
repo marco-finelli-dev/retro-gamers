@@ -1,5 +1,6 @@
 type ThemePreference = 'dark' | 'light' | 'system'
 type ResolvedTheme = 'dark' | 'light'
+type ThemeLanguage = 'it' | 'en'
 
 const STORAGE_KEY = 'rg-theme'
 
@@ -41,16 +42,27 @@ const getThemeIcon = (preference: ThemePreference) => {
   return '◐'
 }
 
+const getDocumentLanguage = (): ThemeLanguage =>
+  document.documentElement.lang === 'en' ? 'en' : 'it'
+
 const getThemeLabel = (preference: ThemePreference) => {
+  const isEnglish = getDocumentLanguage() === 'en'
+
   if (preference === 'dark') {
-    return 'Tema scuro attivo. Clicca per passare al tema chiaro.'
+    return isEnglish
+      ? 'Dark theme active. Click to switch to the light theme.'
+      : 'Tema scuro attivo. Clicca per passare al tema chiaro.'
   }
 
   if (preference === 'light') {
-    return 'Tema chiaro attivo. Clicca per seguire le impostazioni di sistema.'
+    return isEnglish
+      ? 'Light theme active. Click to follow the system settings.'
+      : 'Tema chiaro attivo. Clicca per seguire le impostazioni di sistema.'
   }
 
-  return 'Tema automatico attivo. Clicca per passare al tema scuro.'
+  return isEnglish
+    ? 'Automatic theme active. Click to switch to the dark theme.'
+    : 'Tema automatico attivo. Clicca per passare al tema scuro.'
 }
 
 const applyTheme = (preference: ThemePreference) => {

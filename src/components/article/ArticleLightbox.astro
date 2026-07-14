@@ -1,17 +1,39 @@
-<div class="article-lightbox" data-article-lightbox hidden>
+---
+const { lang = 'it' } = Astro.props;
+const isEnglish = lang === 'en';
+
+const labels = isEnglish
+  ? {
+      close: 'Close enlarged image',
+      dialog: 'Enlarged image',
+      open: 'Open enlarged image'
+    }
+  : {
+      close: 'Chiudi immagine',
+      dialog: 'Immagine ingrandita',
+      open: 'Apri immagine ingrandita'
+    };
+---
+
+<div
+  class="article-lightbox"
+  data-article-lightbox
+  data-lightbox-open-label={labels.open}
+  hidden
+>
   <button
     class="article-lightbox__backdrop"
     type="button"
     data-lightbox-close
-    aria-label="Chiudi immagine"
+    aria-label={labels.close}
   ></button>
 
-  <div class="article-lightbox__stage" role="dialog" aria-modal="true" aria-label="Immagine ingrandita">
+  <div class="article-lightbox__stage" role="dialog" aria-modal="true" aria-label={labels.dialog}>
     <button
       class="article-lightbox__close"
       type="button"
       data-lightbox-close
-      aria-label="Chiudi immagine"
+      aria-label={labels.close}
     >
       ×
     </button>
@@ -35,6 +57,9 @@
     const image = lightbox.querySelector('[data-lightbox-image]');
     const caption = lightbox.querySelector('[data-lightbox-caption]');
     const closeButtons = lightbox.querySelectorAll('[data-lightbox-close]');
+    const openLabel =
+      lightbox.getAttribute('data-lightbox-open-label') ||
+      'Apri immagine ingrandita';
 
     const candidates = document.querySelectorAll('.js-article-lightbox-image');
 
@@ -93,7 +118,7 @@
       img.classList.add('is-lightboxable');
       img.setAttribute('tabindex', '0');
       img.setAttribute('role', 'button');
-      img.setAttribute('aria-label', 'Apri immagine ingrandita');
+      img.setAttribute('aria-label', openLabel);
 
       img.addEventListener('click', () => open(img));
 
