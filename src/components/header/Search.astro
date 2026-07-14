@@ -5,6 +5,9 @@ const { lang = 'it' } = Astro.props;
 
 const isEn = lang === 'en';
 const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
+const inputLabel = isEn ? 'Search the site' : 'Cerca nel sito';
+const openLabel = isEn ? 'Open search' : 'Apri ricerca';
+const closeLabel = isEn ? 'Close search' : 'Chiudi ricerca';
 ---
 
 <div class="search-wrapper" data-lang={lang}>
@@ -12,7 +15,11 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
   <button
     type="button"
     class="search-toggle"
-    aria-label={isEn ? 'Open search' : 'Apri ricerca'}
+    aria-label={openLabel}
+    aria-controls="site-search-dialog"
+    aria-expanded="false"
+    data-open-label={openLabel}
+    data-close-label={closeLabel}
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="11" cy="11" r="7" stroke="white" stroke-width="2" fill="none"/>
@@ -20,8 +27,18 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
     </svg>
   </button>
 
-  <div class="search-bar" role="dialog" aria-modal="true" aria-label={isEn ? 'Site search' : 'Ricerca nel sito'}>
-    <input type="text" placeholder={placeholder} />
+  <div
+    id="site-search-dialog"
+    class="search-bar"
+    role="dialog"
+    aria-modal="true"
+    aria-label={isEn ? 'Site search' : 'Ricerca nel sito'}
+    aria-hidden="true"
+    inert
+    hidden
+  >
+    <label class="sr-only" for="site-search-input">{inputLabel}</label>
+    <input id="site-search-input" type="text" placeholder={placeholder} />
 
     <div class="search-results">
       <div class="hover-bg"></div>
@@ -30,7 +47,7 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
     <button
       type="button"
       class="search-close"
-      aria-label={isEn ? 'Close search' : 'Chiudi ricerca'}
+      aria-label={closeLabel}
     >
       ✕
     </button>
@@ -38,7 +55,7 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
 
 </div>
 
-<div class="search-overlay"></div>
+<div class="search-overlay" aria-hidden="true" hidden></div>
 
 <script is:inline>
 (() => {
@@ -116,6 +133,8 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
   let debounce;
   let cache = null;
   let isOpen = false;
+  let closeTimer;
+  let lastFocusedElement = null;
 
   /* ========================
      LABELS / ROUTES
@@ -228,39 +247,116 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
     results.innerHTML = '<div class="hover-bg"></div>';
   }
 
+  function lockScroll() {
+    document.documentElement.classList.add('has-search-open');
+    document.body.classList.add('has-search-open');
+  }
+
+  function unlockScroll() {
+    document.documentElement.classList.remove('has-search-open');
+    document.body.classList.remove('has-search-open');
+  }
+
   function openSearch() {
     if (isOpen) return;
 
     isOpen = true;
+    window.clearTimeout(closeTimer);
+    lastFocusedElement = document.activeElement;
 
-    bar.classList.add('active');
-    overlay?.classList.add('active');
+    bar.hidden = false;
+    bar.removeAttribute('inert');
+    bar.setAttribute('aria-hidden', 'false');
+
+    if (overlay) {
+      overlay.hidden = false;
+    }
+
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.setAttribute('aria-label', toggle.dataset.closeLabel || 'Chiudi ricerca');
+    lockScroll();
 
     requestAnimationFrame(() => {
+      if (!isOpen) return;
+
+      bar.classList.add('active');
+      overlay?.classList.add('active');
       input?.focus();
     });
   }
 
-  function closeSearch() {
+  function closeSearch(restoreFocus = true) {
     if (!isOpen) return;
 
     isOpen = false;
+    window.clearTimeout(closeTimer);
 
     bar.classList.remove('active');
     overlay?.classList.remove('active');
+    bar.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', toggle.dataset.openLabel || 'Apri ricerca');
+    unlockScroll();
 
     if (input) input.value = '';
 
+    window.clearTimeout(debounce);
     reset();
+
+    if (
+      restoreFocus &&
+      lastFocusedElement &&
+      lastFocusedElement.isConnected &&
+      typeof lastFocusedElement.focus === 'function'
+    ) {
+      lastFocusedElement.focus({ preventScroll: true });
+    }
+
+    lastFocusedElement = null;
+    bar.setAttribute('inert', '');
+
+    closeTimer = window.setTimeout(() => {
+      if (isOpen) return;
+
+      bar.hidden = true;
+
+      if (overlay) {
+        overlay.hidden = true;
+      }
+    }, 300);
   }
 
   toggle?.addEventListener('click', (event) => {
     event.stopPropagation();
-    openSearch();
+    isOpen ? closeSearch() : openSearch();
   });
 
   bar?.addEventListener('click', (event) => {
     event.stopPropagation();
+  });
+
+  bar?.addEventListener('keydown', (event) => {
+    if (!isOpen || event.key !== 'Tab') return;
+
+    const focusableElements = Array.from(
+      bar.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')
+    ).filter((element) => !element.hidden && element.offsetParent !== null);
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (!firstElement || !lastElement) return;
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+      return;
+    }
+
+    if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
   });
 
   closeBtn?.addEventListener('click', (event) => {
@@ -268,19 +364,20 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
     closeSearch();
   });
 
-  overlay?.addEventListener('click', closeSearch);
+  overlay?.addEventListener('click', () => closeSearch());
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeSearch();
-    }
+    if (event.key !== 'Escape' || !isOpen) return;
+
+    event.preventDefault();
+    closeSearch();
   });
 
   document.addEventListener('click', (event) => {
     if (!isOpen) return;
     if (wrapper.contains(event.target)) return;
 
-    closeSearch();
+    closeSearch(false);
   });
 
   /* ========================

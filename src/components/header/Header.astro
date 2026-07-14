@@ -90,31 +90,49 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
     <nav class="site-header__nav" aria-label={labels.navigation}>
 
       <!-- RECENSIONI / REVIEWS -->
-      <div class="site-header__nav-item has-dropdown">
+      <div class="site-header__nav-item has-dropdown" data-header-dropdown>
         <button
           type="button"
           class="site-header__nav-link site-header__nav-button"
           aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="site-header-reviews-dropdown"
+          data-header-dropdown-trigger
         >
           {labels.reviews}
         </button>
 
-        <div class="site-header__dropdown">
+        <div
+          id="site-header-reviews-dropdown"
+          class="site-header__dropdown"
+          aria-hidden="true"
+          data-header-dropdown-panel
+          inert
+        >
           <ReviewsMenu posts={reviews} lang={lang} />
         </div>
       </div>
 
       <!-- NEWS -->
-      <div class="site-header__nav-item has-dropdown">
+      <div class="site-header__nav-item has-dropdown" data-header-dropdown>
         <button
           type="button"
           class="site-header__nav-link site-header__nav-button"
           aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="site-header-news-dropdown"
+          data-header-dropdown-trigger
         >
           {labels.news}
         </button>
 
-        <div class="site-header__dropdown">
+        <div
+          id="site-header-news-dropdown"
+          class="site-header__dropdown"
+          aria-hidden="true"
+          data-header-dropdown-panel
+          inert
+        >
           <NewsMenu posts={news} lang={lang} />
         </div>
       </div>
@@ -131,16 +149,25 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
         {labels.memories}
       </a>
 
-  <div class="site-header__nav-item has-dropdown">
+      <div class="site-header__nav-item has-dropdown" data-header-dropdown>
         <button
           type="button"
           class="site-header__nav-link site-header__nav-button"
           aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="site-header-platforms-dropdown"
+          data-header-dropdown-trigger
         >
           {labels.platforms}
         </button>
 
-        <div class="site-header__dropdown">
+        <div
+          id="site-header-platforms-dropdown"
+          class="site-header__dropdown"
+          aria-hidden="true"
+          data-header-dropdown-panel
+          inert
+        >
           <PlatformsMenu lang={lang} />
         </div>
       </div>
@@ -286,6 +313,142 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
 </header>
 
 <MobileMenu lang={lang} />
+
+<script is:inline>
+(() => {
+  const dropdowns = Array.from(
+    document.querySelectorAll('[data-header-dropdown]')
+  );
+
+  if (!dropdowns.length) return;
+
+  let isMovingFocus = false;
+
+  const getDropdownElements = (dropdown) => ({
+    trigger: dropdown.querySelector('[data-header-dropdown-trigger]'),
+    panel: dropdown.querySelector('[data-header-dropdown-panel]')
+  });
+
+  const closeDropdown = (dropdown, restoreFocus = false) => {
+    const { trigger, panel } = getDropdownElements(dropdown);
+    if (!trigger || !panel) return;
+
+    const focusIsInPanel = panel.contains(document.activeElement);
+
+    dropdown.classList.remove('is-open');
+    trigger.setAttribute('aria-expanded', 'false');
+    panel.setAttribute('aria-hidden', 'true');
+
+    if (restoreFocus || focusIsInPanel) {
+      isMovingFocus = true;
+      trigger.focus({ preventScroll: true });
+      isMovingFocus = false;
+    }
+
+    panel.setAttribute('inert', '');
+  };
+
+  const closeAllDropdowns = (except = null) => {
+    dropdowns.forEach((dropdown) => {
+      if (dropdown !== except) {
+        closeDropdown(dropdown);
+      }
+    });
+  };
+
+  const openDropdown = (dropdown) => {
+    const { trigger, panel } = getDropdownElements(dropdown);
+    if (!trigger || !panel) return;
+
+    closeAllDropdowns(dropdown);
+
+    dropdown.classList.add('is-open');
+    trigger.setAttribute('aria-expanded', 'true');
+    panel.setAttribute('aria-hidden', 'false');
+    panel.removeAttribute('inert');
+  };
+
+  dropdowns.forEach((dropdown) => {
+    const { trigger } = getDropdownElements(dropdown);
+    if (!trigger) return;
+
+    let wasOpenOnPointerDown = false;
+
+    trigger.addEventListener('pointerdown', () => {
+      wasOpenOnPointerDown = trigger.getAttribute('aria-expanded') === 'true';
+    });
+
+    trigger.addEventListener('click', (event) => {
+      event.stopPropagation();
+
+      const shouldClose = event.detail > 0
+        ? wasOpenOnPointerDown
+        : trigger.getAttribute('aria-expanded') === 'true';
+
+      if (shouldClose) {
+        closeDropdown(dropdown);
+        return;
+      }
+
+      openDropdown(dropdown);
+    });
+
+    dropdown.addEventListener('mouseenter', () => {
+      openDropdown(dropdown);
+    });
+
+    dropdown.addEventListener('mouseleave', () => {
+      if (!dropdown.contains(document.activeElement)) {
+        closeDropdown(dropdown);
+      }
+    });
+
+    dropdown.addEventListener('focusin', () => {
+      if (!isMovingFocus) {
+        openDropdown(dropdown);
+      }
+    });
+
+    dropdown.addEventListener('focusout', () => {
+      window.requestAnimationFrame(() => {
+        if (!dropdown.contains(document.activeElement)) {
+          closeDropdown(dropdown);
+        }
+      });
+    });
+  });
+
+  document.addEventListener('click', (event) => {
+    if (dropdowns.some((dropdown) => dropdown.contains(event.target))) {
+      return;
+    }
+
+    closeAllDropdowns();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    const openDropdownElement = dropdowns.find(
+      (dropdown) =>
+        dropdown
+          .querySelector('[data-header-dropdown-trigger]')
+          ?.getAttribute('aria-expanded') === 'true'
+    );
+
+    if (!openDropdownElement) return;
+
+    event.preventDefault();
+    closeDropdown(openDropdownElement, true);
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth <= 820) {
+      closeAllDropdowns();
+    }
+  });
+})();
+</script>
 
 <script is:inline>
 (() => {

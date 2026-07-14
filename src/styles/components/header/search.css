@@ -94,6 +94,11 @@
    SEARCH MODAL
 ======================================== */
 
+.search-bar[hidden],
+.search-overlay[hidden] {
+  display: none;
+}
+
 .search-bar {
   position: fixed;
   top: var(--search-top);
@@ -591,8 +596,9 @@
    SCROLL LOCK
 ======================================== */
 
-body.no-scroll {
-  overflow-y: scroll;
+html.has-search-open,
+body.has-search-open {
+  overflow: hidden;
 }
 
 
