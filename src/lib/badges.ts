@@ -7,12 +7,6 @@ export type ReaderBadge = {
   image_path: string | null;
 };
 
-export type ReaderBadgeAssignment = {
-  userId: string;
-  badge: ReaderBadge;
-  createdAt: string | null;
-};
-
 export const readerBadgeImagePaths: Record<string, string> = {
   arcade_kid: '/badges/reader/arcade-kid.webp',
   eight_bit_player: '/badges/reader/eight-bit-player.webp',
@@ -137,83 +131,6 @@ export async function getActiveReaderBadges(
   }
 
   return fallback ? sortReaderBadges(fallbackReaderBadges, lang) : [];
-}
-
-export async function getOwnedReaderBadges(
-  userId?: string | null,
-  options: { fallbackToActive?: boolean; lang?: 'it' | 'en' } = {}
-) {
-  const { fallbackToActive = true, lang = 'it' } = options;
-
-  if (!userId) return [];
-
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('user_badge_assignments')
-      .select(`
-        badge_key,
-        user_badges (
-          key,
-          label_it,
-          label_en,
-          image_path,
-          is_active
-        )
-      `)
-      .eq('user_id', userId);
-
-    if (error) {
-      if (fallbackToActive && isBadgeAssignmentsUnavailable(error)) {
-        return getActiveReaderBadges({ fallback: true, lang });
-      }
-
-      throw error;
-    }
-
-    const badges = (data ?? [])
-      .map((row) => {
-        const badge = Array.isArray(row.user_badges)
-          ? row.user_badges[0]
-          : row.user_badges;
-
-        if (!badge?.is_active) return null;
-
-        return normalizeBadge(badge);
-      })
-      .filter((badge): badge is ReaderBadge => Boolean(badge));
-
-    return sortReaderBadges(badges, lang);
-  } catch {
-    return fallbackToActive ? getActiveReaderBadges({ fallback: true, lang }) : [];
-  }
-}
-
-export async function readerOwnsBadge(userId: string, badgeKey: string) {
-  const normalizedBadgeKey = badgeKey.trim();
-
-  if (!userId || !normalizedBadgeKey) {
-    return { owns: false, assignmentsAvailable: true };
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from('user_badge_assignments')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('badge_key', normalizedBadgeKey)
-    .maybeSingle();
-
-  if (error) {
-    return {
-      owns: false,
-      assignmentsAvailable: !isBadgeAssignmentsUnavailable(error),
-      error,
-    };
-  }
-
-  return {
-    owns: Boolean(data),
-    assignmentsAvailable: true,
-  };
 }
 
 export async function assignReaderBadgeToUser(input: {

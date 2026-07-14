@@ -6,7 +6,6 @@ import { supabaseAdmin } from './server';
 
 export type SocialOAuthProvider = 'google' | 'facebook' | 'apple';
 
-export const socialOAuthProviders: SocialOAuthProvider[] = ['google', 'facebook', 'apple'];
 export const oauthCodeVerifierCookie = 'rg_oauth_code_verifier';
 
 export const isSocialOAuthProvider = (value: string | null): value is SocialOAuthProvider =>

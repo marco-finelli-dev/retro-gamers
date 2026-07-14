@@ -231,25 +231,6 @@ export function getEmulatorToolUrl(
     : `/emulatori/${item.slug}/`;
 }
 
-export async function getAllEmulatorTools(
-  lang?: EmulatorToolLang
-): Promise<EmulatorTool[]> {
-  const languageFilter = lang ? '&& coalesce(language, "it") == $lang' : '';
-  const data = await client.fetch(
-    `
-      *[
-        ${emulatorToolBaseFilter}
-        ${languageFilter}
-      ] | order(coalesce(featured, false) desc, coalesce(publishedAt, _createdAt) desc, title asc) {
-        ${emulatorToolFields}
-      }
-    `,
-    { lang }
-  );
-
-  return data || [];
-}
-
 export async function getPublishedEmulatorTools(
   lang: EmulatorToolLang = 'it'
 ): Promise<EmulatorTool[]> {
