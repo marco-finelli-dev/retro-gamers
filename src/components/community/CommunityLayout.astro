@@ -4,14 +4,16 @@ import '../../styles/pages/community.css';
 interface Props {
   class?: string;
   sidebar?: boolean;
+  as?: 'main' | 'div';
 }
 
-const { class: className = '', sidebar } = Astro.props;
+const { class: className = '', sidebar, as: element = 'main' } = Astro.props;
 const hasSidebar = sidebar ?? Astro.slots.has('sidebar');
 const classes = ['community-page', className].filter(Boolean).join(' ');
+const Root = element;
 ---
 
-<main class={classes}>
+<Root class={classes}>
   <div class:list={['community-shell', hasSidebar && 'community-shell--with-sidebar']}>
     <div class="community-main">
       <slot />
@@ -23,4 +25,4 @@ const classes = ['community-page', className].filter(Boolean).join(' ');
       </aside>
     )}
   </div>
-</main>
+</Root>
