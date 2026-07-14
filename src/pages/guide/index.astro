@@ -8,6 +8,12 @@ const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
 const posts = grouped.all.filter((post) => post.type === 'guide');
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/guide/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/guides/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/guide/' }
+];
 ---
 
 <BaseLayout
@@ -17,6 +23,7 @@ const posts = grouped.all.filter((post) => post.type === 'guide');
   description="Guide pratiche, consigli e procedure per vivere meglio il retro-gaming."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/guide/"
+  alternateLanguages={alternateLanguages}
 >
   <ArchivePage
     title="Guide"

@@ -16,6 +16,12 @@ const englishNews = allPosts.filter(
 );
 
 const posts = grouped.english.filter((post) => post.type === 'news');
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/news/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/news/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/news/' }
+];
 ---
 
 <BaseLayout
@@ -26,6 +32,7 @@ const posts = grouped.english.filter((post) => post.type === 'news');
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/en/news/"
   lang="en"
+  alternateLanguages={alternateLanguages}
 >
   <ArchivePage
     title="News"

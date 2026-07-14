@@ -16,6 +16,12 @@ const englishNews = allPosts.filter(
 );
 
 const posts = grouped.english.filter((post) => post.type === 'hardware');
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/hardware/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/hardware/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/hardware/' }
+];
 ---
 
 <BaseLayout
@@ -26,6 +32,7 @@ const posts = grouped.english.filter((post) => post.type === 'hardware');
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/en/hardware/"
   lang="en"
+  alternateLanguages={alternateLanguages}
 >
   <ArchivePage
     title="Hardware"

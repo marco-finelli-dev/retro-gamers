@@ -18,6 +18,12 @@ const englishNews = allPosts.filter(
 );
 
 const platforms = await getAllPlatforms();
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/piattaforme/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/platforms/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/piattaforme/' }
+];
 ---
 
 <BaseLayout
@@ -27,6 +33,7 @@ const platforms = await getAllPlatforms();
   title="Platforms"
   description="Consoles, home computers and arcade systems from the history of retro gaming."
   canonical={`https://www.retro-gamers.it${getPlatformIndexUrl('en')}`}
+  alternateLanguages={alternateLanguages}
 >
   <PlatformsLanding platforms={platforms} lang="en" />
 </BaseLayout>

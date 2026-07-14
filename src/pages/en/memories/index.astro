@@ -16,6 +16,12 @@ const englishNews = allPosts.filter(
 );
 
 const posts = grouped.english.filter((post) => post.type === 'memories');
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/memories/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/memories/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/memories/' }
+];
 ---
 
 <BaseLayout
@@ -26,6 +32,7 @@ const posts = grouped.english.filter((post) => post.type === 'memories');
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/en/memories/"
   lang="en"
+  alternateLanguages={alternateLanguages}
 >
   <ArchivePage
     title="Memories"

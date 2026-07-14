@@ -8,6 +8,12 @@ const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
 const posts = grouped.all.filter((post) => post.type === 'feature');
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/speciali/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/features/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/speciali/' }
+];
 ---
 
 <BaseLayout
@@ -17,6 +23,7 @@ const posts = grouped.all.filter((post) => post.type === 'feature');
   description="Approfondimenti, retrospettive e storie dal mondo videoludico e informatico."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/speciali/"
+  alternateLanguages={alternateLanguages}
 >
   <ArchivePage
     title="Speciali"

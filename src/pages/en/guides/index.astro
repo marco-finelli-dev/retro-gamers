@@ -16,6 +16,12 @@ const englishNews = allPosts.filter(
 );
 
 const posts = grouped.english.filter((post) => post.type === 'guide');
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/guide/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/guides/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/guide/' }
+];
 ---
 
 <BaseLayout
@@ -26,6 +32,7 @@ const posts = grouped.english.filter((post) => post.type === 'guide');
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/en/guides/"
   lang="en"
+  alternateLanguages={alternateLanguages}
 >
   <ArchivePage
     title="Guides"

@@ -6,6 +6,12 @@ import { getAllPosts, groupPosts } from '../../lib/posts';
 
 const allPosts = await getAllPosts();
 const { allReviews, allNews } = groupPosts(allPosts);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/news/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/news/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/news/' }
+];
 ---
 
 <BaseLayout
@@ -15,6 +21,7 @@ const { allReviews, allNews } = groupPosts(allPosts);
   description="Notizie, annunci, nuove uscite e segnalazioni dal mondo retro-gaming."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/news/"
+  alternateLanguages={alternateLanguages}
 >
   <ArchivePage
     title="News"

@@ -6,6 +6,12 @@ import { getAllPosts, groupPosts } from '../../lib/posts';
 
 const allPosts = await getAllPosts();
 const { allReviews, news } = groupPosts(allPosts);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/recensioni/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/reviews/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/recensioni/' }
+];
 ---
 
 <BaseLayout
@@ -15,6 +21,7 @@ const { allReviews, news } = groupPosts(allPosts);
   description="Recensioni di giochi retro per console, arcade e home computer: prove, voti, impressioni e memoria storica."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/recensioni/"
+  alternateLanguages={alternateLanguages}
 >
 
   <ArchivePage

@@ -8,6 +8,12 @@ const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
 const posts = grouped.all.filter((post) => post.type === 'memories');
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/memories/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/memories/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/memories/' }
+];
 ---
 
 <BaseLayout
@@ -17,6 +23,7 @@ const posts = grouped.all.filter((post) => post.type === 'memories');
   description="Ricordi, esperienze e frammenti di vita legati a videogiochi, home computer, console, cabinati e cultura digitale."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/memories/"
+  alternateLanguages={alternateLanguages}
 >
   <ArchivePage
     title="Memories"
