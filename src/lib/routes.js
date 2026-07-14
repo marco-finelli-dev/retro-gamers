@@ -1,3 +1,57 @@
+const CONTENT_ROUTE_SEGMENTS = {
+  types: {
+    review: {
+      detail: { it: 'recensioni', en: 'reviews' },
+      archive: { it: 'recensioni', en: 'reviews' }
+    },
+    guide: {
+      detail: { it: 'guide', en: 'guides' },
+      archive: { it: 'guide', en: 'guides' }
+    },
+    feature: {
+      detail: { it: 'speciali', en: 'features' },
+      archive: { it: 'speciali', en: 'features' }
+    },
+    interview: {
+      detail: { it: 'interviste', en: 'interviews' },
+      archive: { it: 'interviste', en: 'interviews' }
+    },
+    memories: {
+      detail: { it: 'memories', en: 'memories' },
+      archive: { it: 'memories', en: 'memories' }
+    },
+    news: {
+      detail: { it: 'news', en: 'news' },
+      archive: { it: 'news', en: 'news' }
+    },
+    hardware: {
+      detail: { it: 'hardware', en: 'hardware' },
+      archive: { it: 'hardware', en: 'hardware' }
+    },
+    article: {
+      detail: { it: 'articoli', en: 'articles' },
+      archive: { it: 'articoli', en: 'archive' }
+    }
+  },
+  aliases: {
+    special: 'feature'
+  },
+  fallbacks: {
+    detail: { it: 'articoli', en: 'articles' },
+    archive: { it: 'articoli', en: 'articles' }
+  }
+};
+
+const getContentRouteSegment = (type, language, routeKind) => {
+  const normalizedType = CONTENT_ROUTE_SEGMENTS.aliases[type] || type;
+
+  return (
+    CONTENT_ROUTE_SEGMENTS.types[normalizedType]?.[routeKind]?.[language] ||
+    CONTENT_ROUTE_SEGMENTS.fallbacks[routeKind]?.[language] ||
+    'articoli'
+  );
+};
+
 export function getPostUrl(post) {
   const slug = post?.slug;
 
@@ -5,36 +59,7 @@ export function getPostUrl(post) {
 
   const language = post?.language || 'it';
 
-  const routes = {
-    it: {
-      review: 'recensioni',
-      guide: 'guide',
-      feature: 'speciali',
-      special: 'speciali',
-      interview: 'interviste',
-      memories: 'memories',
-      news: 'news',
-      hardware: 'hardware',
-      article: 'articoli'
-    },
-
-    en: {
-      review: 'reviews',
-      guide: 'guides',
-      feature: 'features',
-      special: 'features',
-      interview: 'interviews',
-      memories: 'memories',
-      news: 'news',
-      hardware: 'hardware',
-      article: 'articles'
-    }
-  };
-
-  const section =
-    routes[language]?.[post.type] ||
-    routes[language]?.article ||
-    'articoli';
+  const section = getContentRouteSegment(post.type, language, 'detail');
 
   return language === 'en'
     ? `/en/${section}/${slug}/`
@@ -95,36 +120,7 @@ export function getSanityDocumentUrl(document, fallbackLang = 'it') {
 }
 
 export function getArchiveUrl(type, language = 'it') {
-  const routes = {
-    it: {
-      review: 'recensioni',
-      guide: 'guide',
-      feature: 'speciali',
-      special: 'speciali',
-      interview: 'interviste',
-      memories: 'memories',
-      news: 'news',
-      hardware: 'hardware',
-      article: 'articoli'
-    },
-
-    en: {
-      review: 'reviews',
-      guide: 'guides',
-      feature: 'features',
-      special: 'features',
-      interview: 'interviews',
-      memories: 'memories',
-      news: 'news',
-      hardware: 'hardware',
-      article: 'articles'
-    }
-  };
-
-  const section =
-    routes[language]?.[type] ||
-    routes[language]?.article ||
-    'articoli';
+  const section = getContentRouteSegment(type, language, 'archive');
 
   return language === 'en'
     ? `/en/${section}/`
