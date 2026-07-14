@@ -1,4 +1,5 @@
 ---
+import { getSearchRouteData } from '../../lib/routes.js';
 import '../../styles/components/header/search.css';
 
 const { lang = 'it' } = Astro.props;
@@ -8,9 +9,17 @@ const placeholder = isEn ? 'Search the site...' : 'Cerca nel sito...';
 const inputLabel = isEn ? 'Search the site' : 'Cerca nel sito';
 const openLabel = isEn ? 'Open search' : 'Apri ricerca';
 const closeLabel = isEn ? 'Close search' : 'Chiudi ricerca';
+const serializedRouteData = JSON.stringify(getSearchRouteData(lang))
+  .replace(/&/g, '\\u0026')
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e');
 ---
 
-<div class="search-wrapper" data-lang={lang}>
+<div
+  class="search-wrapper"
+  data-lang={lang}
+  data-route-config={serializedRouteData}
+>
 
   <button
     type="button"
@@ -122,6 +131,9 @@ const closeLabel = isEn ? 'Close search' : 'Chiudi ricerca';
 
   const currentLang = wrapper.dataset.lang || 'it';
   const isEn = currentLang === 'en';
+  const routeData = JSON.parse(wrapper.dataset.routeConfig || '{}');
+  const articleRouteData = routeData.articles;
+  const platformRouteData = routeData.platforms;
 
   const toggle = wrapper.querySelector('.search-toggle');
   const bar = wrapper.querySelector('.search-bar');
@@ -171,35 +183,11 @@ const closeLabel = isEn ? 'Close search' : 'Chiudi ricerca';
   };
 
   const getArticleUrl = (article) => {
-    const routes = isEn
-      ? {
-          review: 'reviews',
-          news: 'news',
-          feature: 'features',
-          special: 'features',
-          guide: 'guides',
-          memories: 'memories',
-          interview: 'interviews',
-          hardware: 'hardware',
-          article: 'articles'
-        }
-      : {
-          review: 'recensioni',
-          news: 'news',
-          feature: 'speciali',
-          special: 'speciali',
-          guide: 'guide',
-          memories: 'memories',
-          interview: 'interviste',
-          hardware: 'hardware',
-          article: 'articoli'
-        };
+    const section =
+      articleRouteData.segments[article.type] ||
+      articleRouteData.fallback;
 
-    const section = routes[article.type] || routes.article;
-
-    return isEn
-      ? `/en/${section}/${article.slug}/`
-      : `/${section}/${article.slug}/`;
+    return `${articleRouteData.basePath}/${section}/${article.slug}/`;
   };
 
   const getPlatformUrl = (platform) => {
@@ -208,26 +196,14 @@ const closeLabel = isEn ? 'Close search' : 'Chiudi ricerca';
       !platform?.manufacturer?.slug ||
       !platform?.slug
     ) {
-      return isEn ? '/en/platforms/' : '/piattaforme/';
+      return `${platformRouteData.basePath}/`;
     }
 
-    const typeMap = isEn
-      ? {
-          console: 'consoles',
-          computer: 'computers',
-          arcade: 'arcade'
-        }
-      : {
-          console: 'console',
-          computer: 'computer',
-          arcade: 'arcade'
-        };
+    const typeSlug =
+      platformRouteData.segments[platform.platformType] ||
+      platform.platformType;
 
-    const typeSlug = typeMap[platform.platformType] || platform.platformType;
-
-    return isEn
-      ? `/en/platforms/${typeSlug}/${platform.manufacturer.slug}/${platform.slug}/`
-      : `/piattaforme/${typeSlug}/${platform.manufacturer.slug}/${platform.slug}/`;
+    return `${platformRouteData.basePath}/${typeSlug}/${platform.manufacturer.slug}/${platform.slug}/`;
   };
 
   const getTaxonomyName = (item) => {

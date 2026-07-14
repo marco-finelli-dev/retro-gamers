@@ -42,6 +42,19 @@ const CONTENT_ROUTE_SEGMENTS = {
   }
 };
 
+const PLATFORM_ROUTE_SEGMENTS = {
+  console: { it: 'console', en: 'consoles' },
+  computer: { it: 'computer', en: 'computers' },
+  arcade: { it: 'arcade', en: 'arcade' },
+  consoles: { it: 'console', en: 'consoles' },
+  computers: { it: 'computer', en: 'computers' }
+};
+
+const PLATFORM_ROUTE_BASE_PATHS = {
+  it: '/piattaforme',
+  en: '/en/platforms'
+};
+
 const normalizeContentType = (type) =>
   CONTENT_ROUTE_SEGMENTS.aliases[type] || type;
 
@@ -78,6 +91,46 @@ const getContentRouteSegment = (type, language, routeKind) => {
     'articoli'
   );
 };
+
+const getRouteLanguage = (language) => language === 'en' ? 'en' : 'it';
+
+const getPlatformRouteSegment = (type, language) => {
+  const routeLanguage = getRouteLanguage(language);
+
+  return PLATFORM_ROUTE_SEGMENTS[type]?.[routeLanguage] || type;
+};
+
+export function getSearchRouteData(language = 'it') {
+  const routeLanguage = getRouteLanguage(language);
+  const contentSegments = Object.fromEntries([
+    ...Object.keys(CONTENT_ROUTE_SEGMENTS.types).map((type) => [
+      type,
+      getConfiguredContentRouteSegment(type, routeLanguage, 'detail')
+    ]),
+    ...Object.keys(CONTENT_ROUTE_SEGMENTS.aliases).map((alias) => [
+      alias,
+      getConfiguredContentRouteSegment(alias, routeLanguage, 'detail')
+    ])
+  ]);
+  const platformSegments = Object.fromEntries(
+    Object.keys(PLATFORM_ROUTE_SEGMENTS).map((type) => [
+      type,
+      getPlatformRouteSegment(type, routeLanguage)
+    ])
+  );
+
+  return {
+    articles: {
+      basePath: routeLanguage === 'en' ? '/en' : '',
+      segments: contentSegments,
+      fallback: CONTENT_ROUTE_SEGMENTS.fallbacks.detail[routeLanguage]
+    },
+    platforms: {
+      basePath: PLATFORM_ROUTE_BASE_PATHS[routeLanguage],
+      segments: platformSegments
+    }
+  };
+}
 
 export function getPostUrl(post) {
   const slug = post?.slug;
@@ -167,25 +220,14 @@ export const getPlatformUrl = (platform, lang = 'it') => {
       ? platform.manufacturer.slug
       : platform.manufacturer?.slug?.current
 
-  const typeMap = {
-    console: lang === 'en' ? 'consoles' : 'console',
-    computer: lang === 'en' ? 'computers' : 'computer',
-    arcade: 'arcade',
-    consoles: lang === 'en' ? 'consoles' : 'console',
-    computers: lang === 'en' ? 'computers' : 'computer'
-  }
-
-  const type = typeMap[platform.platformType] || platform.platformType
+  const routeLanguage = getRouteLanguage(lang)
+  const type = getPlatformRouteSegment(platform.platformType, routeLanguage)
 
   if (!platformSlug || !manufacturerSlug || !type) {
-    return lang === 'en' ? '/en/platforms/' : '/piattaforme/'
+    return `${PLATFORM_ROUTE_BASE_PATHS[routeLanguage]}/`
   }
 
-  if (lang === 'en') {
-    return `/en/platforms/${type}/${manufacturerSlug}/${platformSlug}/`
-  }
-
-  return `/piattaforme/${type}/${manufacturerSlug}/${platformSlug}/`
+  return `${PLATFORM_ROUTE_BASE_PATHS[routeLanguage]}/${type}/${manufacturerSlug}/${platformSlug}/`
 }
 
 export const getCategoryUrl = (category, lang = 'it') => {
