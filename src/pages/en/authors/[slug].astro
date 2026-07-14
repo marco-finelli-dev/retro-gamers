@@ -70,6 +70,10 @@ const authorCover = author.cover?.asset
       .url()
   : '';
 
+const authorHeroClass = authorCover
+  ? 'author-hero author-hero--with-background'
+  : 'author-hero author-hero--without-background';
+
 const authorAvatar = author.image?.asset
   ? urlFor(author.image)
       .width(320)
@@ -201,7 +205,7 @@ const socials = [
 
   <div class="author-page">
 
-    <section class="author-hero">
+    <section class={authorHeroClass}>
 
       {authorCover && (
         <div class="author-hero__cover">
