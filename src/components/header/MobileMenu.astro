@@ -1,7 +1,28 @@
 ---
+import {
+  getArchiveUrl,
+  getPlatformIndexUrl,
+  getPlatformTypeUrl
+} from '../../lib/routes.js';
+
 const { lang = 'it' } = Astro.props;
 
 const isEnglish = lang === 'en';
+
+const archiveHrefs = {
+  reviews: getArchiveUrl('review', lang),
+  news: getArchiveUrl('news', lang),
+  features: getArchiveUrl('feature', lang),
+  guides: getArchiveUrl('guide', lang),
+  memories: getArchiveUrl('memories', lang)
+};
+
+const platformHrefs = {
+  index: getPlatformIndexUrl(lang),
+  console: getPlatformTypeUrl('console', lang),
+  computer: getPlatformTypeUrl('computer', lang),
+  arcade: getPlatformTypeUrl('arcade', lang)
+};
 
 const ui = isEnglish
   ? {
@@ -21,40 +42,40 @@ const ui = isEnglish
 
 const mainLinks = isEnglish
   ? [
-      { label: 'Reviews', href: '/en/reviews/' },
-      { label: 'News', href: '/en/news/' },
-      { label: 'Features', href: '/en/features/' },
-      { label: 'Guides', href: '/en/guides/' },
+      { label: 'Reviews', href: archiveHrefs.reviews },
+      { label: 'News', href: archiveHrefs.news },
+      { label: 'Features', href: archiveHrefs.features },
+      { label: 'Guides', href: archiveHrefs.guides },
       { label: 'Playable Classics', href: '/en/playable-classics/' },
       { label: 'Emulators', href: '/en/emulators/' },
-      { label: 'Memories', href: '/en/memories/' },
+      { label: 'Memories', href: archiveHrefs.memories },
       { label: 'Interviews', href: '/en/interviews/' },
       { label: 'Hardware', href: '/en/hardware/' }
     ]
   : [
-      { label: 'Recensioni', href: '/recensioni/' },
-      { label: 'News', href: '/news/' },
-      { label: 'Speciali', href: '/speciali/' },
-      { label: 'Guide', href: '/guide/' },
+      { label: 'Recensioni', href: archiveHrefs.reviews },
+      { label: 'News', href: archiveHrefs.news },
+      { label: 'Speciali', href: archiveHrefs.features },
+      { label: 'Guide', href: archiveHrefs.guides },
       { label: 'Classici giocabili oggi', href: '/classici-giocabili-oggi/' },
       { label: 'Emulatori e interpreti', href: '/emulatori/' },
-      { label: 'Memories', href: '/memories/' },
+      { label: 'Memories', href: archiveHrefs.memories },
       { label: 'Interviste', href: '/interviste/' },
       { label: 'Hardware', href: '/hardware/' }
     ];
 
 const platformLinks = isEnglish
   ? [
-      { label: 'All platforms', href: '/en/platforms/' },
-      { label: 'Consoles', href: '/en/platforms/consoles/' },
-      { label: 'Computers', href: '/en/platforms/computers/' },
-      { label: 'Arcade', href: '/en/platforms/arcade/' }
+      { label: 'All platforms', href: platformHrefs.index },
+      { label: 'Consoles', href: platformHrefs.console },
+      { label: 'Computers', href: platformHrefs.computer },
+      { label: 'Arcade', href: platformHrefs.arcade }
     ]
   : [
-      { label: 'Tutte le piattaforme', href: '/piattaforme/' },
-      { label: 'Console', href: '/piattaforme/console/' },
-      { label: 'Computer', href: '/piattaforme/computer/' },
-      { label: 'Arcade', href: '/piattaforme/arcade/' }
+      { label: 'Tutte le piattaforme', href: platformHrefs.index },
+      { label: 'Console', href: platformHrefs.console },
+      { label: 'Computer', href: platformHrefs.computer },
+      { label: 'Arcade', href: platformHrefs.arcade }
     ];
 
 const accountLabels = isEnglish

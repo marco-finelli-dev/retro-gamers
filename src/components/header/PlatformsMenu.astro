@@ -1,16 +1,27 @@
 ---
 import '../../styles/components/header/dropdown.css';
+import {
+  getPlatformIndexUrl,
+  getPlatformTypeUrl
+} from '../../lib/routes.js';
 
 const { lang = 'it' } = Astro.props;
 
 const isEn = lang === 'en';
+
+const platformHrefs = {
+  index: getPlatformIndexUrl(lang),
+  console: getPlatformTypeUrl('console', lang),
+  computer: getPlatformTypeUrl('computer', lang),
+  arcade: getPlatformTypeUrl('arcade', lang)
+};
 
 const items = isEn
   ? [
       {
         title: 'Consoles',
         label: 'Home systems',
-        href: '/en/platforms/consoles/',
+        href: platformHrefs.console,
         icon: '/images/icons/console-icon.png',
         iconWidth: 80,
         iconHeight: 38
@@ -18,7 +29,7 @@ const items = isEn
       {
         title: 'Computers',
         label: 'Home computers',
-        href: '/en/platforms/computers/',
+        href: platformHrefs.computer,
         icon: '/images/icons/computer-icon.png',
         iconWidth: 77,
         iconHeight: 80
@@ -26,7 +37,7 @@ const items = isEn
       {
         title: 'Arcade',
         label: 'Cabinets and boards',
-        href: '/en/platforms/arcade/',
+        href: platformHrefs.arcade,
         icon: '/images/icons/arcade-icon.png',
         iconWidth: 67,
         iconHeight: 80
@@ -36,7 +47,7 @@ const items = isEn
       {
         title: 'Console',
         label: 'Sistemi da salotto',
-        href: '/piattaforme/console/',
+        href: platformHrefs.console,
         icon: '/images/icons/console-icon.png',
         iconWidth: 80,
         iconHeight: 38
@@ -44,7 +55,7 @@ const items = isEn
       {
         title: 'Computer',
         label: 'Home computer',
-        href: '/piattaforme/computer/',
+        href: platformHrefs.computer,
         icon: '/images/icons/computer-icon.png',
         iconWidth: 77,
         iconHeight: 80
@@ -52,14 +63,14 @@ const items = isEn
       {
         title: 'Arcade',
         label: 'Cabinet e board',
-        href: '/piattaforme/arcade/',
+        href: platformHrefs.arcade,
         icon: '/images/icons/arcade-icon.png',
         iconWidth: 67,
         iconHeight: 80
       }
     ];
 
-const moreHref = isEn ? '/en/platforms/' : '/piattaforme/';
+const moreHref = platformHrefs.index;
 const moreLabel = isEn ? 'All platforms' : 'Tutte le piattaforme';
 const resourceLinks = isEn
   ? [

@@ -4,6 +4,7 @@ import ReviewsMenu from './ReviewsMenu.astro';
 import NewsMenu from './NewsMenu.astro';
 import PlatformsMenu from './PlatformsMenu.astro';
 import MobileMenu from './MobileMenu.astro';
+import { getArchiveUrl } from '../../lib/routes.js';
 import '../../styles/components/header/header.css';
 
 const {
@@ -42,6 +43,9 @@ const labels = isEnglish
     };
 
 const homeUrl = isEnglish ? '/en/' : '/';
+const featuresHref = getArchiveUrl('feature', lang);
+const guidesHref = getArchiveUrl('guide', lang);
+const memoriesHref = getArchiveUrl('memories', lang);
 
 const languageSwitchUrl =
   typeof languageSwitch === 'string'
@@ -137,15 +141,15 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
         </div>
       </div>
 
-      <a href={isEnglish ? '/en/features/' : '/speciali/'} class="site-header__nav-link">
+      <a href={featuresHref} class="site-header__nav-link">
         {labels.features}
       </a>
 
-      <a href={isEnglish ? '/en/guides/' : '/guide/'} class="site-header__nav-link">
+      <a href={guidesHref} class="site-header__nav-link">
         {labels.guides}
       </a>
 
-      <a href={isEnglish ? '/en/memories/' : '/memories/'} class="site-header__nav-link">
+      <a href={memoriesHref} class="site-header__nav-link">
         {labels.memories}
       </a>
 
