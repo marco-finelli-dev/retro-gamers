@@ -707,10 +707,15 @@ html:not([data-theme="light"]) .editorial-hub::after {
     inset 0 1px 0 rgba(255,255,255,0.09);
 }
 
-.quick-guide__icon img {
+.quick-guide__placeholder-icon {
+  display: block;
   width: 42px;
   height: 42px;
-  object-fit: contain;
+  color: var(--color-primary);
+  background-color: currentColor;
+
+  -webkit-mask: url('/icons/book.svg') center / contain no-repeat;
+  mask: url('/icons/book.svg') center / contain no-repeat;
 
   filter:
     drop-shadow(0 0 10px rgba(34,240,255,0.28));
@@ -964,7 +969,7 @@ html[data-theme="light"] .platform-shortcut__icon {
     inset 0 -12px 22px rgba(24,32,48,0.035);
 }
 
-html[data-theme="light"] .quick-guide__icon img {
+html[data-theme="light"] .quick-guide__placeholder-icon {
   opacity: 1;
 
   filter:
