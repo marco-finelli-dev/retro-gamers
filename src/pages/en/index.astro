@@ -231,16 +231,23 @@ if (!viewerSession.error && viewerSession.user) {
 
   hideNewsletterPromo = newsletter.status === 'active' || newsletter.status === 'pending';
 }
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/' }
+];
 ---
 
 <BaseLayout
   reviews={headerReviews}
   news={headerNews}
-  title="Retro-Gamers International"
-  description="Reviews, news, features, guides and stories from the world of retro gaming, consoles, arcade and home computers."
+  title="Retro-Gamers International: retro gaming culture"
+  description="Retro-Gamers.it is an international editorial project about retro gaming history, classic consoles, arcade culture, creators and digital preservation."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/en/"
   lang="en"
+  alternateLanguages={alternateLanguages}
 >
 
   <h1 class="sr-only">Retro-Gamers.it, retro gaming, classic consoles and video games</h1>

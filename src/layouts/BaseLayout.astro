@@ -70,6 +70,11 @@ const resolvedLanguageSwitch = {
 
 const siteName = 'Retro-Gamers.it';
 const siteUrl = 'https://www.retro-gamers.it';
+const siteCanonicalUrl = `${siteUrl}/`;
+const organizationId = `${siteCanonicalUrl}#organization`;
+const websiteId = `${siteCanonicalUrl}#website`;
+const organizationDescription =
+  'Retro-Gamers.it è un progetto editoriale internazionale dedicato alla storia dei videogiochi, al retro gaming, alle console, agli home computer, agli arcade, ai creator e alla preservazione digitale.';
 
 const pageTitle =
   title === siteName
@@ -88,42 +93,66 @@ const canonicalUrl = canonical?.startsWith('http')
 
 const ogLocale = lang === 'en' ? 'en_US' : 'it_IT';
 
-const jsonLd =
-  type === 'article'
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'Article',
-        inLanguage: lang,
-        headline: title,
-        description: pageDescription,
-        image: absoluteImage ? [absoluteImage] : undefined,
-        datePublished: publishedAt || undefined,
-        dateModified: updatedAt || publishedAt || undefined,
-        author: {
-          '@type': 'Person',
-          name: 'Marco Finelli'
-        },
-        publisher: {
-          '@type': 'Organization',
-          name: siteName,
-          logo: {
-            '@type': 'ImageObject',
-            url: `${siteUrl}/logo.png`
-          }
-        },
-        mainEntityOfPage: {
-          '@type': 'WebPage',
-          '@id': canonicalUrl
-        }
-      }
-    : {
-        '@context': 'https://schema.org',
-        '@type': 'WebSite',
-        inLanguage: lang,
-        name: siteName,
-        url: siteUrl,
-        description: pageDescription
-      };
+const organizationJsonLd = {
+  '@type': 'Organization',
+  '@id': organizationId,
+  name: siteName,
+  url: siteCanonicalUrl,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${siteUrl}/logo.png`
+  },
+  description: organizationDescription,
+  founder: {
+    '@type': 'Person',
+    name: 'Marco Finelli'
+  }
+};
+
+const websiteJsonLd = {
+  '@type': 'WebSite',
+  '@id': websiteId,
+  inLanguage: lang,
+  name: siteName,
+  url: siteCanonicalUrl,
+  description: pageDescription,
+  publisher: {
+    '@id': organizationId
+  }
+};
+
+const articleJsonLd = {
+  '@type': 'Article',
+  inLanguage: lang,
+  headline: title,
+  description: pageDescription,
+  image: absoluteImage ? [absoluteImage] : undefined,
+  datePublished: publishedAt || undefined,
+  dateModified: updatedAt || publishedAt || undefined,
+  author: {
+    '@type': 'Person',
+    name: 'Marco Finelli'
+  },
+  publisher: {
+    '@id': organizationId
+  },
+  isPartOf: {
+    '@id': websiteId
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': canonicalUrl
+  }
+};
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    organizationJsonLd,
+    websiteJsonLd,
+    ...(type === 'article' ? [articleJsonLd] : [])
+  ]
+};
 ---
 
 <html lang={lang}>

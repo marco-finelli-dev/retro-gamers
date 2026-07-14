@@ -78,15 +78,22 @@ if (!viewerSession.error && viewerSession.user) {
 
   hideNewsletterPromo = newsletter.status === 'active' || newsletter.status === 'pending';
 }
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/' }
+];
 ---
 
 <BaseLayout
   reviews={reviews}
   news={news}
-  title="Retro-Gamers.it"
-  description="Recensioni, news, speciali, guide e approfondimenti dal mondo retro-gaming, console, arcade e home computer."
+  title="Storia, recensioni e cultura del retro gaming"
+  description="Retro-Gamers.it è un progetto editoriale dedicato alla storia dei videogiochi, console, home computer, arcade, creator e preservazione digitale."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/"
+  alternateLanguages={alternateLanguages}
 >
 
   <h1 class="sr-only">Retro-Gamers.it, retrogaming, console e videogiochi classici</h1>
