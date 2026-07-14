@@ -78,6 +78,24 @@
   font-weight: 850;
 }
 
+.article-reader-rating__user-state {
+  display: block;
+
+  color: rgba(255,255,255,0.64);
+
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 720;
+}
+
+.article-reader-rating__user-state.is-locked {
+  color: rgba(255,213,128,0.86);
+}
+
+.article-reader-rating__user-state[hidden] {
+  display: none !important;
+}
+
 .article-reader-rating__action {
   display: inline-flex;
   align-items: center;
@@ -96,6 +114,18 @@
   line-height: 1;
   font-weight: 820;
   white-space: nowrap;
+}
+
+.article-reader-rating__action.is-voted {
+  border-color: rgba(255,213,128,0.30);
+  color: rgba(255,213,128,0.92);
+  background: rgba(255,213,128,0.090);
+}
+
+.article-reader-rating__action.is-success {
+  border-color: rgba(87,221,141,0.34);
+  color: rgba(135,245,178,0.95);
+  background: rgba(87,221,141,0.095);
 }
 
 .article-reader-rating__panel {
@@ -357,6 +387,7 @@ html[data-theme="light"] .article-reader-rating__toggle {
 }
 
 html[data-theme="light"] .article-reader-rating__label,
+html[data-theme="light"] .article-reader-rating__user-state,
 html[data-theme="light"] .article-reader-rating__vote-label,
 html[data-theme="light"] .article-reader-rating__count,
 html[data-theme="light"] .article-reader-rating__comparison,
@@ -364,6 +395,7 @@ html[data-theme="light"] .article-reader-rating__edit-note {
   color: rgba(48,54,68,0.62) !important;
 }
 
+html[data-theme="light"] .article-reader-rating__user-state.is-locked,
 html[data-theme="light"] .article-reader-rating__edit-note.is-locked {
   color: rgba(130,78,10,0.88) !important;
 }
@@ -376,6 +408,18 @@ html[data-theme="light"] .article-reader-rating__action {
   border-color: rgba(8,104,122,0.24);
   color: #087C8E;
   background: rgba(8,124,142,0.070);
+}
+
+html[data-theme="light"] .article-reader-rating__action.is-voted {
+  border-color: rgba(130,78,10,0.24);
+  color: rgba(130,78,10,0.94);
+  background: rgba(130,78,10,0.070);
+}
+
+html[data-theme="light"] .article-reader-rating__action.is-success {
+  border-color: rgba(22,128,68,0.24);
+  color: rgba(18,116,61,0.96);
+  background: rgba(22,128,68,0.070);
 }
 
 html[data-theme="light"] .article-reader-rating__intro h3,

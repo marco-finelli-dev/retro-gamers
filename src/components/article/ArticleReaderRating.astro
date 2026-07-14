@@ -23,6 +23,8 @@ const labels = isEn
       editableNotice: 'You can change your rating for a few minutes after submitting it.',
       lockedNotice: 'Rating saved. It can no longer be changed.',
       yourRatingPrefix: 'Your rating:',
+      alreadyVoted: 'You have already voted',
+      submittedThanks: 'Thanks for your rating!',
       summarySingular: 'rating',
       summaryPlural: 'ratings',
       summaryFrom: 'from',
@@ -51,6 +53,8 @@ const labels = isEn
       editableNotice: 'Puoi modificare il voto per pochi minuti dopo l’invio.',
       lockedNotice: 'Voto registrato. Non è più modificabile.',
       yourRatingPrefix: 'Il tuo voto:',
+      alreadyVoted: 'Hai già votato',
+      submittedThanks: 'Grazie per il tuo voto!',
       summarySingular: 'voto',
       summaryPlural: 'voti',
       summaryFrom: 'da',
@@ -111,6 +115,8 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
     data-editable-notice-label={labels.editableNotice}
     data-locked-notice-label={labels.lockedNotice}
     data-your-rating-prefix-label={labels.yourRatingPrefix}
+    data-summary-voted-label={labels.alreadyVoted}
+    data-summary-success-label={labels.submittedThanks}
     data-summary-from-label={labels.summaryFrom}
     data-summary-singular-label={labels.summarySingular}
     data-summary-plural-label={labels.summaryPlural}
@@ -134,6 +140,7 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
         <span class="article-reader-rating__summary">
           <span class="article-reader-rating__label">{labels.title}</span>
           <strong data-reader-rating-summary>{labels.noVotes}</strong>
+          <span class="article-reader-rating__user-state" data-reader-rating-user-state hidden></span>
         </span>
 
         <span class="article-reader-rating__action" data-reader-rating-action>
@@ -222,6 +229,8 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
       count.textContent = `${totalVotes} ${totalVotes === 1 ? voteSingular : votePlural}`;
     };
 
+    const SUMMARY_SUCCESS_DURATION_MS = 4000;
+
     const initReaderRating = (root) => {
       if (root.dataset.readerRatingReady === 'true') {
         return;
@@ -240,6 +249,7 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
       const save = root.querySelector('[data-reader-rating-save]');
       const summary = root.querySelector('[data-reader-rating-summary]');
       const action = root.querySelector('[data-reader-rating-action]');
+      const userState = root.querySelector('[data-reader-rating-user-state]');
       const comparison = root.querySelector('[data-reader-rating-comparison]');
       const editNote = root.querySelector('[data-reader-rating-edit-note]');
       const status = root.querySelector('[data-reader-rating-status]');
@@ -248,6 +258,9 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
       let selectedScore = clampScore(root.dataset.defaultScore);
       let savedScore = null;
       let canUserEdit = true;
+      let justSubmitted = false;
+      let successTimeout = null;
+      let latestSummaryData = null;
 
       const updateToggleState = () => {
         if (!toggle || !details) return;
@@ -282,8 +295,16 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
       };
 
       const renderSummary = (data) => {
+        latestSummaryData = data;
+
         const totalVotes = Number(data.totalVotes || 0);
         const hasAverage = totalVotes > 0 && data.averageScore !== null && data.averageScore !== undefined;
+        savedScore = data.myScore === null || data.myScore === undefined
+          ? null
+          : Number(data.myScore);
+        const hasUserRating = savedScore !== null;
+        canUserEdit = !hasUserRating || data.canEditUserRating !== false;
+
         const summaryFromLabel = root.dataset.summaryFromLabel || 'from';
         const summarySingularLabel = root.dataset.summarySingularLabel || 'rating';
         const summaryPluralLabel = root.dataset.summaryPluralLabel || 'ratings';
@@ -297,9 +318,17 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
         }
 
         if (action) {
-          action.textContent = hasAverage
-            ? (root.dataset.summaryCtaLabel || 'Rate it too')
-            : (root.dataset.summaryFirstCtaLabel || 'Be the first to rate it');
+          action.textContent = justSubmitted
+            ? (root.dataset.summarySuccessLabel || 'Thanks for your rating!')
+            : hasUserRating
+            ? (root.dataset.summaryVotedLabel || 'You have already voted')
+            : (
+                hasAverage
+                  ? (root.dataset.summaryCtaLabel || 'Rate it too')
+                  : (root.dataset.summaryFirstCtaLabel || 'Be the first to rate it')
+              );
+          action.classList.toggle('is-voted', hasUserRating && !justSubmitted);
+          action.classList.toggle('is-success', justSubmitted);
         }
 
         if (comparison) {
@@ -313,12 +342,6 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
 
         updateVoteCount(root, totalVotes);
 
-        savedScore = data.myScore === null || data.myScore === undefined
-          ? null
-          : Number(data.myScore);
-        const hasUserRating = savedScore !== null;
-        canUserEdit = !hasUserRating || data.canEditUserRating !== false;
-
         selectedScore = savedScore === null
           ? selectedScore
           : clampScore(savedScore);
@@ -328,6 +351,24 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
             ? (root.dataset.updateLabel || 'Update rating')
             : (root.dataset.saveLabel || 'Save rating');
           save.disabled = !canUserEdit;
+        }
+
+        if (userState) {
+          if (!data.isAuthenticated || !hasUserRating) {
+            userState.hidden = true;
+            userState.textContent = '';
+            userState.classList.remove('is-locked');
+          } else {
+            const prefix = root.dataset.yourRatingPrefixLabel || 'Your rating:';
+            const notice = canUserEdit
+              ? (root.dataset.editableNoticeLabel || '')
+              : (root.dataset.lockedNoticeLabel || 'Rating saved. It can no longer be changed.');
+            userState.hidden = false;
+            userState.textContent = notice
+              ? `${prefix} ${formatScore(savedScore)}. ${notice}`
+              : `${prefix} ${formatScore(savedScore)}.`;
+            userState.classList.toggle('is-locked', !canUserEdit);
+          }
         }
 
         if (editNote) {
@@ -357,6 +398,23 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
         }
 
         renderSelected();
+      };
+
+      const showSubmittedFeedback = () => {
+        justSubmitted = true;
+
+        if (successTimeout) {
+          window.clearTimeout(successTimeout);
+        }
+
+        successTimeout = window.setTimeout(() => {
+          justSubmitted = false;
+          successTimeout = null;
+
+          if (latestSummaryData) {
+            renderSummary(latestSummaryData);
+          }
+        }, SUMMARY_SUCCESS_DURATION_MS);
       };
 
       const loadSummary = async () => {
@@ -421,6 +479,7 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
             throw new Error(data?.error || 'Rating not updated.');
           }
 
+          showSubmittedFeedback();
           renderSummary(data);
           setStatus(updatedLabel);
         } catch (error) {
