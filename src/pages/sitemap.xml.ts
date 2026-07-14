@@ -1,20 +1,23 @@
 import { getAllPosts } from '../lib/posts';
-import { getPostUrl } from '../lib/routes';
 import {
-  getAllPlatforms,
-  getPlatformUrl
+  getCategoryUrl,
+  getCompanyUrl,
+  getEmulatorToolUrl,
+  getPlatformUrl,
+  getPlayableClassicUrl,
+  getPostUrl
+} from '../lib/routes';
+import {
+  getAllPlatforms
 } from '../lib/platforms';
 import {
-  getAllCompanies,
-  getCompanyUrl
+  getAllCompanies
 } from '../lib/companies';
 import {
-  getPlayableClassicRoutes,
-  getPlayableClassicUrl
+  getPlayableClassicRoutes
 } from '../lib/playable-classics';
 import {
-  getEmulatorToolSlugs,
-  getEmulatorToolUrl
+  getEmulatorToolSlugs
 } from '../lib/emulator-tools';
 
 const SITE_URL = 'https://www.retro-gamers.it';
@@ -52,28 +55,6 @@ function urlEntry({
     <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>
   </url>`;
-}
-
-function getEnglishPlatformType(platformType?: string) {
-  const typeMap: Record<string, string> = {
-    console: 'consoles',
-    computer: 'computers',
-    arcade: 'arcade'
-  };
-
-  return platformType ? typeMap[platformType] || platformType : '';
-}
-
-function getEnglishPlatformUrl(platform: any) {
-  const type = getEnglishPlatformType(platform.platformType);
-  const manufacturerSlug = platform.manufacturer?.slug;
-  const platformSlug = platform.slug;
-
-  if (!type || !manufacturerSlug || !platformSlug) {
-    return '/en/platforms/';
-  }
-
-  return `/en/platforms/${type}/${manufacturerSlug}/${platformSlug}/`;
 }
 
 function getPostLastmod(post: any) {
@@ -386,7 +367,7 @@ export async function GET() {
   const platformPagesIt = platforms
     .filter((platform) => platform?.slug && platform?.platformType)
     .map((platform) => ({
-      loc: absoluteUrl(getPlatformUrl(platform)),
+      loc: absoluteUrl(getPlatformUrl(platform, 'it')),
       changefreq: 'monthly',
       priority: '0.7'
     }));
@@ -394,7 +375,7 @@ export async function GET() {
   const platformPagesEn = platforms
     .filter((platform) => platform?.slug && platform?.platformType)
     .map((platform) => ({
-      loc: absoluteUrl(getEnglishPlatformUrl(platform)),
+      loc: absoluteUrl(getPlatformUrl(platform, 'en')),
       changefreq: 'monthly',
       priority: '0.7'
     }));
@@ -417,13 +398,13 @@ export async function GET() {
   });
 
   const categoryPagesIt = Array.from(categorySlugsIt).map((slug) => ({
-    loc: absoluteUrl(`/categorie/${slug}/`),
+    loc: absoluteUrl(getCategoryUrl({ slug }, 'it')),
     changefreq: 'weekly',
     priority: '0.6'
   }));
 
   const categoryPagesEn = Array.from(categorySlugsEn).map((slug) => ({
-    loc: absoluteUrl(`/en/categories/${slug}/`),
+    loc: absoluteUrl(getCategoryUrl({ slug }, 'en')),
     changefreq: 'weekly',
     priority: '0.6'
   }));

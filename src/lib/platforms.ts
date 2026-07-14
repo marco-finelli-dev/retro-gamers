@@ -1,5 +1,4 @@
 import { client } from './sanity';
-import { getPlatformManufacturerUrl } from './routes.js';
 
 export type PlatformType = 'console' | 'computer' | 'arcade';
 
@@ -190,12 +189,6 @@ export function groupPlatformsByManufacturer(platforms: Platform[] = []) {
   return Array.from(groups.values()).sort((a, b) =>
     (a.manufacturer?.name || '').localeCompare(b.manufacturer?.name || '')
   );
-}
-
-export function getPlatformUrl(platform: Platform) {
-  const manufacturerSlug = platform.manufacturer?.slug || 'altro';
-
-  return `${getPlatformManufacturerUrl(platform.platformType, manufacturerSlug, 'it')}${platform.slug}/`;
 }
 
 export async function getPlatformsByTypeAndManufacturer(
