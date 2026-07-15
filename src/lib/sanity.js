@@ -18,7 +18,7 @@ export const previewClient = createClient({
   apiVersion,
   useCdn: false,
   perspective: 'drafts',
-  token: import.meta.env.SANITY_API_READ_TOKEN
+  token: process.env.SANITY_API_READ_TOKEN
 });
 
 export function getSanityClient(isPreview = false) {

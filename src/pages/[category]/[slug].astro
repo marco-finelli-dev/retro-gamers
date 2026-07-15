@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/BaseLayout.astro';
 import ArticlePage from '../../components/article/ArticlePage.astro';
+import PreviewModeBanner from '../../components/common/PreviewModeBanner.astro';
 import {
   getContentDetailSegment,
   getContentTypeFromRouteSegment,
@@ -8,6 +9,7 @@ import {
 } from '../../lib/routes.js';
 
 import { getSanityClient } from '../../lib/sanity';
+import { isDraftMode } from '../../lib/sanity-preview';
 import { getArticleRoutePosts, getRelatedPosts } from '../../lib/posts';
 import {
   attachApprovedCommentCounts,
@@ -27,10 +29,7 @@ import {
 
 const { category, slug } = Astro.params;
 
-const isPreview =
-  Astro.url.searchParams.get('preview') === '1' &&
-  Astro.url.searchParams.get('secret') === import.meta.env.PREVIEW_SECRET;
-
+const isPreview = isDraftMode(Astro.cookies);
 const sanityClient = getSanityClient(isPreview);
 
 const expectedType = category && isContentRouteSegment(category, 'it')
@@ -615,6 +614,9 @@ const pageImage =
 const canonicalUrl =
   `${siteUrl}/${category}/${slug}/`;
 
+const canonicalPath =
+  `/${category}/${slug}/`;
+
 const englishCategory =
   englishTranslation?.type
     ? getContentDetailSegment(englishTranslation.type, 'en')
@@ -657,6 +659,10 @@ const alternateLanguages = englishUrl
   alternateLanguages={alternateLanguages}
   noindex={isPreview}
 >
+
+  {isPreview && (
+    <PreviewModeBanner lang="it" returnTo={canonicalPath} />
+  )}
 
   <ArticlePage
     post={hydratedPost}

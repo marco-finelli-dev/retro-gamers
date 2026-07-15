@@ -1,13 +1,15 @@
 ---
 import Layout from '../../../layouts/BaseLayout.astro';
 import ArticlePage from '../../../components/article/ArticlePage.astro';
+import PreviewModeBanner from '../../../components/common/PreviewModeBanner.astro';
 import {
   getContentDetailSegment,
   getContentTypeFromRouteSegment,
   isContentRouteSegment
 } from '../../../lib/routes.js';
 
-import { client } from '../../../lib/sanity';
+import { getSanityClient } from '../../../lib/sanity';
+import { isDraftMode } from '../../../lib/sanity-preview';
 import { getArticleRoutePosts, getRelatedPosts } from '../../../lib/posts';
 import {
   attachApprovedCommentCounts,
@@ -26,6 +28,9 @@ import {
 ======================== */
 
 const { category, slug } = Astro.params;
+
+const isPreview = isDraftMode(Astro.cookies);
+const sanityClient = getSanityClient(isPreview);
 
 const expectedType = category && isContentRouteSegment(category, 'en')
   ? getContentTypeFromRouteSegment(category, 'en')
@@ -85,7 +90,7 @@ function getEditorialPageTitle(post, fallbackSlug = '') {
    POST
 ======================== */
 
-const post = await client.fetch(`
+const post = await sanityClient.fetch(`
 *[
   _type == "article" &&
   slug.current == $slug &&
@@ -443,7 +448,7 @@ const directItalianTranslation =
 
 const reverseItalianTranslationPromise = directItalianTranslation
   ? Promise.resolve(null)
-  : client.fetch(`
+  : sanityClient.fetch(`
     *[
       _type == "article" &&
       defined(slug.current) &&
@@ -473,7 +478,7 @@ const readingTime = getReadingTime(post.content);
 const seriesId = post.editorialSeries?.[0]?._id || null;
 
 const seriesPostsPromise = seriesId
-  ? client.fetch(`
+  ? sanityClient.fetch(`
     *[
       _type == "article" &&
       defined(slug.current) &&
@@ -498,7 +503,7 @@ const seriesPostsPromise = seriesId
    COMMENTS
 ======================== */
 
-const commentsPromise = client.fetch(`
+const commentsPromise = sanityClient.fetch(`
   *[
     _type == "comment" &&
     article._ref == $postId &&
@@ -615,6 +620,9 @@ const pageImage =
 const canonicalUrl =
   `${siteUrl}/en/${category}/${slug}/`;
 
+const canonicalPath =
+  `/en/${category}/${slug}/`;
+
 const italianCategory =
   italianTranslation?.type
     ? getContentDetailSegment(italianTranslation.type, 'it')
@@ -661,7 +669,12 @@ const alternateLanguages = [
   publishedAt={post.publishedAt}
   lang="en"
   alternateLanguages={alternateLanguages}
+  noindex={isPreview}
 >
+
+  {isPreview && (
+    <PreviewModeBanner lang="en" returnTo={canonicalPath} />
+  )}
 
   <ArticlePage
     post={hydratedPost}
