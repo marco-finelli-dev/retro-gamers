@@ -4,7 +4,8 @@ import PlatformsLanding from '../../../components/platforms/PlatformsLanding.ast
 
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getAllPlatforms } from '../../../lib/platforms';
-import { getPlatformIndexUrl } from '../../../lib/routes.js';
+import { getPlatformIndexUrl, getPlatformTypeUrl } from '../../../lib/routes.js';
+import { createCollectionPageStructuredData, createListItems } from '../../../lib/structured-data.js';
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
@@ -24,6 +25,20 @@ const alternateLanguages = [
   { lang: 'en', url: 'https://www.retro-gamers.it/en/platforms/' },
   { lang: 'x-default', url: 'https://www.retro-gamers.it/piattaforme/' }
 ];
+
+const platformTypeItems = [
+  { name: 'Arcade', url: getPlatformTypeUrl('arcade', 'en') },
+  { name: 'Computers', url: getPlatformTypeUrl('computer', 'en') },
+  { name: 'Consoles', url: getPlatformTypeUrl('console', 'en') }
+];
+
+const structuredData = createCollectionPageStructuredData({
+  url: 'https://www.retro-gamers.it/en/platforms/',
+  name: 'Platforms',
+  description: 'Consoles, home computers and arcade systems from the history of retro gaming.',
+  lang: 'en',
+  items: createListItems(platformTypeItems, (item) => item)
+});
 ---
 
 <BaseLayout
@@ -34,6 +49,7 @@ const alternateLanguages = [
   description="Consoles, home computers and arcade systems from the history of retro gaming."
   canonical={`https://www.retro-gamers.it${getPlatformIndexUrl('en')}`}
   alternateLanguages={alternateLanguages}
+  structuredData={structuredData}
 >
   <PlatformsLanding platforms={platforms} lang="en" />
 </BaseLayout>

@@ -10,6 +10,7 @@ import {
   type EmulatorTool,
   type EmulatorToolLang,
 } from '../../lib/emulator-tools';
+import { createCollectionPageStructuredData, createListItems } from '../../lib/structured-data.js';
 
 const { lang = 'it' } = Astro.props as { lang?: EmulatorToolLang };
 const currentLang: EmulatorToolLang = lang === 'en' ? 'en' : 'it';
@@ -112,6 +113,17 @@ const getCoverUrl = (tool: EmulatorTool) => {
 
 const getLabel = (map: Record<string, string>, value?: string) =>
   (value && map[value]) || value || '';
+
+const structuredData = createCollectionPageStructuredData({
+  url: copy.canonical,
+  name: copy.title,
+  description: copy.description,
+  lang: currentLang,
+  items: createListItems(tools, (tool) => ({
+    name: tool.title,
+    url: getEmulatorToolUrl(tool, currentLang)
+  }))
+});
 ---
 
 <BaseLayout
@@ -124,6 +136,7 @@ const getLabel = (map: Record<string, string>, value?: string) =>
   lang={currentLang}
   languageSwitch={copy.languageSwitch}
   alternateLanguages={alternateLanguages}
+  structuredData={structuredData}
 >
   <div class="emulator-tools-page">
     <div class="container">

@@ -30,7 +30,8 @@ const {
   type = 'website',
   publishedAt = null,
   updatedAt = null,
-  noindex = false
+  noindex = false,
+  structuredData = []
 } = Astro.props;
 
 const hasProvidedReviews =
@@ -145,12 +146,19 @@ const articleJsonLd = {
   }
 };
 
+const additionalJsonLdNodes = Array.isArray(structuredData)
+  ? structuredData.filter(Boolean)
+  : structuredData
+    ? [structuredData]
+    : [];
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     organizationJsonLd,
     websiteJsonLd,
-    ...(type === 'article' ? [articleJsonLd] : [])
+    ...(type === 'article' ? [articleJsonLd] : []),
+    ...additionalJsonLdNodes
   ]
 };
 ---

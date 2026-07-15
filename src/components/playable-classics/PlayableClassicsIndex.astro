@@ -10,6 +10,7 @@ import {
   type PlayableClassic,
   type PlayableClassicLang,
 } from '../../lib/playable-classics';
+import { createCollectionPageStructuredData, createListItems } from '../../lib/structured-data.js';
 
 const { lang = 'it' } = Astro.props as { lang?: PlayableClassicLang };
 const currentLang: PlayableClassicLang = lang === 'en' ? 'en' : 'it';
@@ -97,6 +98,17 @@ const getName = (item: any) =>
 
 const getPrimaryPlatform = (classic: PlayableClassic) =>
   classic.originalPlatforms?.map(getName).filter(Boolean)[0] || '';
+
+const structuredData = createCollectionPageStructuredData({
+  url: copy.canonical,
+  name: copy.title,
+  description: copy.description,
+  lang: currentLang,
+  items: createListItems(classics, (classic) => ({
+    name: classic.title,
+    url: getPlayableClassicUrl(classic, currentLang)
+  }))
+});
 ---
 
 <BaseLayout
@@ -109,6 +121,7 @@ const getPrimaryPlatform = (classic: PlayableClassic) =>
   lang={currentLang}
   languageSwitch={copy.languageSwitch}
   alternateLanguages={alternateLanguages}
+  structuredData={structuredData}
 >
   <div class="playable-classics-page">
     <div class="container">

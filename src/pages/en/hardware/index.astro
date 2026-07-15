@@ -3,6 +3,9 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import ArchivePage from '../../../components/archive/ArchivePage.astro';
 
 import { getAllPosts, groupPosts } from '../../../lib/posts';
+import { PAGE_SIZE } from '../../../lib/pagination';
+import { getPostUrl } from '../../../lib/routes.js';
+import { createCollectionPageStructuredData, createListItems } from '../../../lib/structured-data.js';
 
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
@@ -22,6 +25,17 @@ const alternateLanguages = [
   { lang: 'en', url: 'https://www.retro-gamers.it/en/hardware/' },
   { lang: 'x-default', url: 'https://www.retro-gamers.it/hardware/' }
 ];
+
+const structuredData = createCollectionPageStructuredData({
+  url: 'https://www.retro-gamers.it/en/hardware/',
+  name: 'Hardware',
+  description: 'Retro hardware articles from Retro-Gamers.it in English.',
+  lang: 'en',
+  items: createListItems(posts.slice(0, PAGE_SIZE), (post) => ({
+    name: post.title,
+    url: getPostUrl(post)
+  }))
+});
 ---
 
 <BaseLayout
@@ -33,6 +47,7 @@ const alternateLanguages = [
   canonical="https://www.retro-gamers.it/en/hardware/"
   lang="en"
   alternateLanguages={alternateLanguages}
+  structuredData={structuredData}
 >
   <ArchivePage
     title="Hardware"

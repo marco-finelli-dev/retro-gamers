@@ -3,6 +3,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchivePage from '../../components/archive/ArchivePage.astro';
 
 import { getAllPosts, groupPosts } from '../../lib/posts';
+import { PAGE_SIZE } from '../../lib/pagination';
+import { getPostUrl } from '../../lib/routes.js';
+import { createCollectionPageStructuredData, createListItems } from '../../lib/structured-data.js';
 
 const allPosts = await getAllPosts();
 const { allReviews, news } = groupPosts(allPosts);
@@ -12,6 +15,17 @@ const alternateLanguages = [
   { lang: 'en', url: 'https://www.retro-gamers.it/en/reviews/' },
   { lang: 'x-default', url: 'https://www.retro-gamers.it/recensioni/' }
 ];
+
+const structuredData = createCollectionPageStructuredData({
+  url: 'https://www.retro-gamers.it/recensioni/',
+  name: 'Recensioni',
+  description: 'Recensioni di giochi retro per console, arcade e home computer: prove, voti, impressioni e memoria storica.',
+  lang: 'it',
+  items: createListItems(allReviews.slice(0, PAGE_SIZE), (post) => ({
+    name: post.title,
+    url: getPostUrl(post)
+  }))
+});
 ---
 
 <BaseLayout
@@ -22,6 +36,7 @@ const alternateLanguages = [
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/recensioni/"
   alternateLanguages={alternateLanguages}
+  structuredData={structuredData}
 >
 
   <ArchivePage

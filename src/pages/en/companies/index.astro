@@ -11,6 +11,7 @@ import {
 } from '../../../lib/companies';
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../lib/pagination';
+import { createCollectionPageStructuredData, createListItems } from '../../../lib/structured-data.js';
 import '../../../styles/pages/companies.css';
 
 const companies = await getAllCompanies();
@@ -27,6 +28,17 @@ const {
   items: pageCompanies,
 } = paginateItems(companies, getCurrentPage(Astro.url), PAGE_SIZE);
 const getCompaniesPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber);
+const pageUrl = currentPage > 1
+  ? `https://www.retro-gamers.it${getCompaniesPageUrl(currentPage)}`
+  : 'https://www.retro-gamers.it/en/companies/';
+const italianPageUrl = currentPage > 1
+  ? `https://www.retro-gamers.it/aziende/?page=${currentPage}`
+  : 'https://www.retro-gamers.it/aziende/';
+const alternateLanguages = [
+  { lang: 'it', url: italianPageUrl },
+  { lang: 'en', url: pageUrl },
+  { lang: 'x-default', url: italianPageUrl }
+];
 
 function getLogo(image, width = 420) {
   if (!image?.asset) return '';
@@ -43,6 +55,17 @@ function getTypeLabels(company) {
     .filter((type) => companyTypeLabels.en[type])
     .map((type) => companyTypeLabels.en[type]);
 }
+
+const structuredData = createCollectionPageStructuredData({
+  url: pageUrl,
+  name: pageTitle,
+  description: pageDescription,
+  lang: 'en',
+  items: createListItems(pageCompanies, (company) => ({
+    name: getCompanyName(company, 'en'),
+    url: getCompanyUrl(company, 'en')
+  }))
+});
 ---
 
 <BaseLayout
@@ -51,13 +74,10 @@ function getTypeLabels(company) {
   lang="en"
   title={pageTitle}
   description={pageDescription}
-  canonical="https://www.retro-gamers.it/en/companies/"
+  canonical={pageUrl}
   languageSwitch="/aziende/"
-  alternateLanguages={[
-    { lang: 'it', url: 'https://www.retro-gamers.it/aziende/' },
-    { lang: 'en', url: 'https://www.retro-gamers.it/en/companies/' },
-    { lang: 'x-default', url: 'https://www.retro-gamers.it/aziende/' }
-  ]}
+  alternateLanguages={alternateLanguages}
+  structuredData={structuredData}
 >
   <div class="companies-page">
     <section class="companies-hero">

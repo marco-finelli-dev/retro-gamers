@@ -5,6 +5,8 @@ import { urlFor } from '../../../lib/image';
 import { countryCodeToFlag, getAllCreators } from '../../../lib/creators';
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../lib/pagination';
+import { getCreatorUrl } from '../../../lib/routes.js';
+import { createCollectionPageStructuredData, createListItems } from '../../../lib/structured-data.js';
 import '../../../styles/pages/creators.css';
 
 const creators = await getAllCreators();
@@ -21,6 +23,17 @@ const {
   items: pageCreators,
 } = paginateItems(creators, getCurrentPage(Astro.url), PAGE_SIZE);
 const getCreatorsPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber);
+const pageUrl = currentPage > 1
+  ? `https://www.retro-gamers.it${getCreatorsPageUrl(currentPage)}`
+  : 'https://www.retro-gamers.it/en/creators/';
+const italianPageUrl = currentPage > 1
+  ? `https://www.retro-gamers.it/creatori/?page=${currentPage}`
+  : 'https://www.retro-gamers.it/creatori/';
+const alternateLanguages = [
+  { lang: 'it', url: italianPageUrl },
+  { lang: 'en', url: pageUrl },
+  { lang: 'x-default', url: italianPageUrl }
+];
 
 function getInitials(name = '') {
   return name
@@ -43,6 +56,17 @@ function getPortrait(creator, width = 520, height = 390) {
     .auto('format')
     .url();
 }
+
+const structuredData = createCollectionPageStructuredData({
+  url: pageUrl,
+  name: pageTitle,
+  description: pageDescription,
+  lang: 'en',
+  items: createListItems(pageCreators, (creator) => ({
+    name: creator.name,
+    url: getCreatorUrl(creator, 'en')
+  }))
+});
 ---
 
 <BaseLayout
@@ -51,13 +75,10 @@ function getPortrait(creator, width = 520, height = 390) {
   lang="en"
   title={pageTitle}
   description={pageDescription}
-  canonical="https://www.retro-gamers.it/en/creators/"
+  canonical={pageUrl}
   languageSwitch="/creatori/"
-  alternateLanguages={[
-    { lang: 'it', url: 'https://www.retro-gamers.it/creatori/' },
-    { lang: 'en', url: 'https://www.retro-gamers.it/en/creators/' },
-    { lang: 'x-default', url: 'https://www.retro-gamers.it/creatori/' }
-  ]}
+  alternateLanguages={alternateLanguages}
+  structuredData={structuredData}
 >
   <div class="creators-page">
     <section class="creators-hero">
