@@ -18,8 +18,8 @@ const alternateLanguages = [
 
 const structuredData = createCollectionPageStructuredData({
   url: 'https://www.retro-gamers.it/recensioni/',
-  name: 'Recensioni',
-  description: 'Recensioni di giochi retro per console, arcade e home computer: prove, voti, impressioni e memoria storica.',
+  name: 'Recensioni di videogiochi retro',
+  description: 'Recensioni di videogiochi retro per console, arcade e home computer, con analisi critica, contesto storico, voti e memoria personale.',
   lang: 'it',
   items: createListItems(allReviews.slice(0, PAGE_SIZE), (post) => ({
     name: post.title,
@@ -31,8 +31,8 @@ const structuredData = createCollectionPageStructuredData({
 <BaseLayout
   reviews={allReviews}
   news={news}
-  title="Recensioni"
-  description="Recensioni di giochi retro per console, arcade e home computer: prove, voti, impressioni e memoria storica."
+  title="Recensioni di videogiochi retro"
+  description="Recensioni di videogiochi retro per console, arcade e home computer, con analisi critica, contesto storico, voti e memoria personale."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/recensioni/"
   alternateLanguages={alternateLanguages}
@@ -40,9 +40,9 @@ const structuredData = createCollectionPageStructuredData({
 >
 
   <ArchivePage
-    title="Recensioni"
+    title="Recensioni di videogiochi retro"
     eyebrow="Giochi alla prova"
-    description="Le nostre prove dal mondo arcade, console e home computer: voti, impressioni, memoria storica e rigiocabilità."
+    description="Le recensioni di Retro-Gamers.it tornano ai videogiochi che hanno segnato console, home computer e sale giochi, senza fermarsi alla nostalgia. Rileggiamo gameplay, grafica, sonoro e contesto storico per capire cosa conserva ancora valore, quali aspetti mostrano il peso del tempo e perché ogni titolo è stato importante. Dall’Amiga al Super Nintendo, dall’arcade alla prima PlayStation, ogni prova unisce memoria personale, analisi critica e attenzione alle versioni originali."
     posts={allReviews}
   />
 </BaseLayout>
