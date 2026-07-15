@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { validatePreviewUrl } from '@sanity/preview-url-secret';
 import { urlSearchParamPreviewSecret } from '@sanity/preview-url-secret/constants';
-import { previewClient } from '../../../lib/sanity';
+import { getPreviewClient } from '../../../lib/sanity';
 import {
   getSafeRedirectPath,
   hasPreviewCookieSecret,
@@ -30,7 +30,7 @@ export const GET: APIRoute = async ({ cookies, request, url }) => {
   let validation;
 
   try {
-    validation = await validatePreviewUrl(previewClient, request.url);
+    validation = await validatePreviewUrl(getPreviewClient(), request.url);
   } catch {
     return new Response('Invalid preview URL.', {
       status: 401,
