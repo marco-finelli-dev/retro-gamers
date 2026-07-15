@@ -91,6 +91,7 @@ const logoLight = getLogoLight(platform) || logo;
 const cover = getCover(platform);
 const manufacturerLogo = getManufacturerLogo(platform);
 const manufacturerLogoLight = getManufacturerLogoLight(platform) || manufacturerLogo;
+const hasPlatformLogo = Boolean(logo);
 
 const logoAlt =
   platform.logo?.alt ||
@@ -211,6 +212,14 @@ const historyParagraphs = historyText
         </div>
 
         <div class="platform-sheet__right">
+
+          {hasPlatformLogo ? (
+            <h1 class="sr-only">{platform.name}</h1>
+          ) : (
+            <h1 class="platform-sheet__section-title">
+              <span>{platform.name}</span>
+            </h1>
+          )}
 
           {(manufacturerLogo || logo) && (
             <div class="platform-sheet__brand">

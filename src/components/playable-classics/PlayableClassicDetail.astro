@@ -12,6 +12,7 @@ import {
 } from '../../lib/playable-classics';
 import {
   getCompanyUrl,
+  getEmulatorToolUrl,
   getPlatformUrl,
   getPostUrl,
 } from '../../lib/routes';
@@ -435,14 +436,32 @@ const facts = [
 const recommendedToolSource = [...(classic.recommendedTools || [])]
   .filter((item) => item?.tool?.title)
   .sort((a, b) => Number(b.isPrimary === true) - Number(a.isPrimary === true));
-const recommendedToolItems = recommendedToolSource.map((item) => ({
-  ...item,
-  title: item.tool?.title || '',
-  url: item.tool?.slug
-    ? `${isEn ? '/en/emulators' : '/emulatori'}/${item.tool.slug}/`
-    : '',
-  typeLabel: getToolTypeLabel(item.tool?.toolType),
-}));
+const getRecommendedToolDocument = (tool: any) => {
+  if (!tool) return null;
+
+  if (tool.language === currentLang) {
+    return tool;
+  }
+
+  if (tool.translatedVersion?.slug && tool.translatedVersion.language === currentLang) {
+    return tool.translatedVersion;
+  }
+
+  return (tool.translatedVersions || []).find((version: any) =>
+    version?.slug && version.language === currentLang
+  ) || tool;
+};
+const recommendedToolItems = recommendedToolSource.map((item) => {
+  const toolDocument = getRecommendedToolDocument(item.tool);
+  const toolLanguage = toolDocument?.language || currentLang;
+
+  return {
+    ...item,
+    title: toolDocument?.title || item.tool?.title || '',
+    url: toolDocument?.slug ? getEmulatorToolUrl(toolDocument, toolLanguage) : '',
+    typeLabel: getToolTypeLabel(toolDocument?.toolType || item.tool?.toolType),
+  };
+});
 
 const noteItems = [
   classic.licenseNotes && { label: copy.licenseNotes, value: classic.licenseNotes },

@@ -72,6 +72,8 @@ export type PlayableClassicRecommendedTool = {
     title?: string;
     slug?: string;
     language?: PlayableClassicLang;
+    translatedVersion?: PlayableClassicTranslationRef;
+    translatedVersions?: PlayableClassicTranslationRef[];
     toolType?: string;
     licenseType?: string;
     officialWebsite?: string;
@@ -263,6 +265,23 @@ const playableClassicFields = `
       title,
       "slug": slug.current,
       language,
+      translatedVersion->{
+        _id,
+        title,
+        "slug": slug.current,
+        language
+      },
+      "translatedVersions": *[
+        _type == "emulatorTool" &&
+        translatedVersion._ref == ^._id &&
+        coalesce(isPublished, false) == true &&
+        !(_id in path("drafts.**"))
+      ]{
+        _id,
+        title,
+        "slug": slug.current,
+        language
+      },
       toolType,
       licenseType,
       officialWebsite,
