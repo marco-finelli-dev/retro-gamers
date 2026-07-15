@@ -20,8 +20,8 @@ const alternateLanguages = [
 
 const structuredData = createCollectionPageStructuredData({
   url: 'https://www.retro-gamers.it/guide/',
-  name: 'Guide',
-  description: 'Guide pratiche, consigli e procedure per vivere meglio il retro-gaming.',
+  name: 'Guide al retro gaming',
+  description: 'Guide pratiche per emulatori, hardware, supporti e sistemi originali, con procedure chiare per configurare, preservare e tornare a giocare.',
   lang: 'it',
   items: createListItems(posts.slice(0, PAGE_SIZE), (post) => ({
     name: post.title,
@@ -33,17 +33,17 @@ const structuredData = createCollectionPageStructuredData({
 <BaseLayout
   reviews={grouped.allReviews}
   news={grouped.allNews}
-  title="Guide"
-  description="Guide pratiche, consigli e procedure per vivere meglio il retro-gaming."
+  title="Guide al retro gaming"
+  description="Guide pratiche per emulatori, hardware, supporti e sistemi originali, con procedure chiare per configurare, preservare e tornare a giocare."
   image="/og-image.jpg"
   canonical="https://www.retro-gamers.it/guide/"
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
   <ArchivePage
-    title="Guide"
+    title="Guide al retro gaming"
     eyebrow="Manuali e percorsi"
-    description="Guide pratiche, consigli, procedure e approfondimenti per vivere meglio il retro-gaming."
+    description="Le guide di Retro-Gamers.it raccolgono procedure pratiche per usare emulatori, configurare hardware, gestire supporti e mantenere funzionanti sistemi e giochi del passato. Ogni guida nasce da prove reali e cerca di spiegare con chiarezza passaggi, strumenti e possibili problemi, senza dare per scontate conoscenze tecniche avanzate. Dalle Compact Flash per Amiga alla configurazione dei software moderni, l’obiettivo è aiutare appassionati e nuovi utenti a conservare, comprendere e utilizzare il proprio patrimonio videoludico."
     posts={posts}
     showFilters={false}
   />
