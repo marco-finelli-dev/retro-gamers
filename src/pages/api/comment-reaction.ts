@@ -1,15 +1,62 @@
 import type { APIRoute } from 'astro';
 import { createClient } from '@sanity/client';
+import { existsSync, readFileSync } from 'node:fs';
 
 export const prerender = false;
 
-const sanityClient = createClient({
+const sanityConfig = {
   projectId: import.meta.env.SANITY_PROJECT_ID,
   dataset: import.meta.env.SANITY_DATASET || 'production',
   apiVersion: import.meta.env.SANITY_API_VERSION || '2025-01-01',
-  token: import.meta.env.SANITY_WRITE_TOKEN,
   useCdn: false
-});
+};
+
+let sanityWriteClient: ReturnType<typeof createClient> | undefined;
+
+function readLocalEnvValue(name: string) {
+  if (!import.meta.env.DEV) {
+    return '';
+  }
+
+  for (const file of ['.env', '.env.local']) {
+    if (!existsSync(file)) {
+      continue;
+    }
+
+    const match = readFileSync(file, 'utf8').match(
+      new RegExp(`^\\s*${name}\\s*=\\s*(.+?)\\s*$`, 'm')
+    );
+
+    if (match?.[1]) {
+      return match[1].replace(/^['"]|['"]$/g, '').trim();
+    }
+  }
+
+  return '';
+}
+
+function getSanityWriteToken() {
+  const token =
+    process.env['SANITY_WRITE_TOKEN'] ||
+    readLocalEnvValue('SANITY_WRITE_TOKEN');
+
+  if (!token || typeof token !== 'string') {
+    throw new Error('Comment reaction write client is not configured.');
+  }
+
+  return token;
+}
+
+function getSanityWriteClient() {
+  if (!sanityWriteClient) {
+    sanityWriteClient = createClient({
+      ...sanityConfig,
+      token: getSanityWriteToken()
+    });
+  }
+
+  return sanityWriteClient;
+}
 
 type Reaction = 'like' | 'dislike' | '';
 
@@ -19,13 +66,6 @@ function isReaction(value: unknown): value is Reaction {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    if (!import.meta.env.SANITY_WRITE_TOKEN) {
-      return new Response(
-        JSON.stringify({ ok: false, error: 'Missing token' }),
-        { status: 500 }
-      );
-    }
-
     const body = await request.json();
 
     const commentId = String(body.commentId || '').trim();
@@ -63,7 +103,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    await sanityClient
+    await getSanityWriteClient()
       .patch(commentId)
       .setIfMissing({
         likes: 0,
