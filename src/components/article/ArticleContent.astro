@@ -8,7 +8,7 @@ import {
 import { urlFor } from '../../lib/image';
 import ConsentYouTube from '../common/ConsentYouTube.astro';
 
-const { content = [], lang = 'it' } = Astro.props;
+const { content = [], lang = 'it', isPreview = false } = Astro.props;
 
 function escapeHTML(str = '') {
   return String(str).replace(/[&<>"']/g, (char) => ({
@@ -201,6 +201,14 @@ function renderTextChild(child, markDefs = []) {
     }
 
     if (def?._type === 'internalLink') {
+      if (
+        !isPreview &&
+        def.reference?._type === 'article' &&
+        def.reference?.isPublic !== true
+      ) {
+        return;
+      }
+
       output = `<a href="${escapeHTML(getInternalUrl(def.reference))}">${output}</a>`;
       return;
     }

@@ -166,6 +166,7 @@ const posts = await client.fetch(`
 *[
   _type == "article" &&
   defined(slug.current) &&
+  coalesce(isPublic, false) == true &&
   author._ref == $authorId &&
   (!defined(language) || language == "it") &&
   !(_id in path("drafts.**"))

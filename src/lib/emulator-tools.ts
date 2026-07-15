@@ -123,6 +123,7 @@ const relatedPostCoreFields = `
   title,
   "slug": slug.current,
   type,
+  isPublic,
   language,
   subtitle,
   excerpt,
@@ -146,6 +147,7 @@ const relatedPostFields = `
   "translatedVersions": *[
     _type == "article" &&
     translationOf._ref == ^._id &&
+    coalesce(isPublic, false) == true &&
     !(_id in path("drafts.**"))
   ]{ ${relatedPostCoreFields} }
 `;
@@ -177,7 +179,12 @@ const emulatorToolFields = `
   setupInstructions[]{ ${portableTextProjection} },
   technicalNotes,
   relatedPlayableClassics[]->{ ${playableClassicFields} },
-  relatedPosts[]->{ ${relatedPostFields} },
+  "relatedPosts": *[
+    _type == "article" &&
+    _id in ^.relatedPosts[]._ref &&
+    coalesce(isPublic, false) == true &&
+    !(_id in path("drafts.**"))
+  ]{ ${relatedPostFields} },
   relatedPlatforms[]->{ ${platformFields} },
   publishedAt,
   featured,

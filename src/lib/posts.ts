@@ -95,6 +95,7 @@ export type Post = {
   lastUpdated?: string;
   featuredUntil?: string;
   type?: string;
+  isPublic?: boolean;
 
   language?: 'it' | 'en';
 
@@ -182,6 +183,7 @@ export async function getAllPosts(): Promise<Post[]> {
     *[
       _type == "article" &&
       defined(slug.current) &&
+      coalesce(isPublic, false) == true &&
       !(_id in path("drafts.**"))
     ] | order(coalesce(publishedAt, _createdAt) desc){
       _id,
@@ -195,6 +197,7 @@ export async function getAllPosts(): Promise<Post[]> {
       lastUpdated,
       featuredUntil,
       type,
+      isPublic,
       language,
 
       translationOf->{
@@ -202,7 +205,8 @@ export async function getAllPosts(): Promise<Post[]> {
         title,
         "slug": slug.current,
         type,
-        language
+        language,
+        isPublic
       },
 
       featuredImage {
@@ -374,6 +378,7 @@ export async function getArticleRoutePosts(): Promise<Post[]> {
     *[
       _type == "article" &&
       defined(slug.current) &&
+      coalesce(isPublic, false) == true &&
       !(_id in path("drafts.**"))
     ] | order(coalesce(publishedAt, _createdAt) desc){
       _id,
@@ -381,6 +386,7 @@ export async function getArticleRoutePosts(): Promise<Post[]> {
       "slug": slug.current,
       publishedAt,
       type,
+      isPublic,
       language,
 
       featuredImage {

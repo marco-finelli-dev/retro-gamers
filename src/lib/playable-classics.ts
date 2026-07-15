@@ -190,6 +190,7 @@ const relatedPostCoreFields = `
   cardExcerpt,
   subtitle,
   type,
+  isPublic,
   language,
   publishedAt,
   categories[]->{
@@ -210,6 +211,7 @@ const relatedPostFields = `
   "translatedVersions": *[
     _type == "article" &&
     translationOf._ref == ^._id &&
+    coalesce(isPublic, false) == true &&
     !(_id in path("drafts.**"))
   ]{ ${relatedPostCoreFields} }
 `;
@@ -295,7 +297,12 @@ const playableClassicFields = `
   setupInstructions[]{ ${portableTextProjection} },
   technicalNotes,
   languageNotes,
-  relatedPosts[]->{ ${relatedPostFields} },
+  "relatedPosts": *[
+    _type == "article" &&
+    _id in ^.relatedPosts[]._ref &&
+    coalesce(isPublic, false) == true &&
+    !(_id in path("drafts.**"))
+  ]{ ${relatedPostFields} },
   relatedPlatforms[]->{ ${platformFields} },
   relatedCompanies[]->{ ${taxonomyFields} },
   relatedCreators[]->{ ${creatorFields} },

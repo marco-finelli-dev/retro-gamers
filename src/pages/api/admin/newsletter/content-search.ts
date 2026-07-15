@@ -117,6 +117,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       *[
         _type == "article" &&
         defined(slug.current) &&
+        coalesce(isPublic, false) == true &&
         !(_id in path("drafts.**")) &&
         (
           ($lang == "en" && language == "en") ||

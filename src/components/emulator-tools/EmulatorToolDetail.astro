@@ -300,7 +300,7 @@ const relatedPlayableClassicCards = (tool.relatedPlayableClassics || []).map((cl
 }));
 
 const isRelatedPostInCurrentLanguage = (post: any) =>
-  isEn ? post?.language === 'en' : post?.language !== 'en';
+  post?.isPublic === true && (isEn ? post?.language === 'en' : post?.language !== 'en');
 
 const getLocalizedRelatedPost = (post: any) => {
   if (isRelatedPostInCurrentLanguage(post)) {

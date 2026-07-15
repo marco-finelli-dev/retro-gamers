@@ -146,6 +146,7 @@ export async function getInterestArticles(
       *[
         _type == "article" &&
         defined(slug.current) &&
+        coalesce(isPublic, false) == true &&
         !(_id in path("drafts.**")) &&
         (
           ($lang == "en" && language == "en") ||

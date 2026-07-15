@@ -28,6 +28,7 @@ const authors = await client.fetch(`
     "postCount": count(*[
       _type == "article" &&
       defined(slug.current) &&
+      coalesce(isPublic, false) == true &&
       author._ref == ^._id &&
       (!defined(language) || language == "it") &&
       !(_id in path("drafts.**"))

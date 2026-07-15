@@ -269,6 +269,7 @@ export async function getArticlesReferencingCreator(
     *[
       _type == "article" &&
       defined(slug.current) &&
+      coalesce(isPublic, false) == true &&
       !(_id in path("drafts.**")) &&
       ${languageFilter} &&
       references($creatorId)

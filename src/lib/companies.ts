@@ -179,6 +179,7 @@ const companyFields = `
 
   "relatedArticles": *[
     _type == "article" &&
+    coalesce(isPublic, false) == true &&
     !(_id in path("drafts.**")) &&
     (
       ^._id in developers[]._ref ||

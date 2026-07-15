@@ -22,6 +22,7 @@ const {
   seriesPosts = [],
   comments = [],
   languageSwitch = null,
+  isPreview = false,
   hideNewsletterPromo = false
 } = Astro.props;
 
@@ -119,7 +120,7 @@ const commentsDiscovery = currentLang === 'en'
 
       <ArticleAffiliateBox post={post} />
 
-      <ArticleContent content={post.content} lang={currentLang} />
+      <ArticleContent content={post.content} lang={currentLang} isPreview={isPreview} />
 
       <aside
         class="article-comments-discovery article-comments-discovery--article-end"

@@ -6,6 +6,7 @@ export async function GET() {
       "articles": *[
         _type == "article" &&
         defined(slug.current) &&
+        coalesce(isPublic, false) == true &&
         !(_id in path("drafts.**"))
       ] | order(coalesce(publishedAt, _createdAt) desc) {
         title,

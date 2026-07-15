@@ -95,11 +95,13 @@ const post = await sanityClient.fetch(`
   _type == "article" &&
   slug.current == $slug &&
   type == $expectedType &&
+  ($isPreview || coalesce(isPublic, false) == true) &&
   coalesce(language, "it") == "it"
 ][0]{
   _id,
   _type,
   type,
+  isPublic,
   language,
 
   translationOf->{
@@ -107,7 +109,8 @@ const post = await sanityClient.fetch(`
     type,
     title,
     "slug": slug.current,
-    language
+    language,
+    isPublic
   },
 
   title,
@@ -248,6 +251,7 @@ const post = await sanityClient.fetch(`
         reference->{
           _type,
           type,
+          isPublic,
           language,
           "slug": slug.current
         }
@@ -340,6 +344,7 @@ _type == "imageRow" => {
             reference->{
               _type,
               type,
+              isPublic,
               language,
               "slug": slug.current
             }
@@ -428,7 +433,8 @@ _type == "imageRow" => {
 }
 `, {
   slug,
-  expectedType
+  expectedType,
+  isPreview
 });
 
 if (!post) {
@@ -443,7 +449,8 @@ const portableTextCreators = getCreatorRefsFromPortableText(post.content);
 ======================== */
 
 const directEnglishTranslation =
-  post.translationOf?.language === 'en'
+  post.translationOf?.language === 'en' &&
+  (isPreview || post.translationOf?.isPublic === true)
     ? post.translationOf
     : null;
 
@@ -454,16 +461,19 @@ const reverseEnglishTranslationPromise = directEnglishTranslation
       _type == "article" &&
       defined(slug.current) &&
       language == "en" &&
+      ($isPreview || coalesce(isPublic, false) == true) &&
       translationOf._ref == $postId
     ][0]{
       _id,
       type,
       title,
       "slug": slug.current,
-      language
+      language,
+      isPublic
     }
 	  `, {
-    postId: publishedPostId
+    postId: publishedPostId,
+    isPreview
   });
 
 /* ========================
@@ -483,6 +493,7 @@ const seriesPostsPromise = seriesId
     *[
       _type == "article" &&
       defined(slug.current) &&
+      ($isPreview || coalesce(isPublic, false) == true) &&
       coalesce(language, "it") == "it" &&
       references($seriesId)
     ] | order(coalesce(seriesOrder, 999) asc, coalesce(publishedAt, _createdAt) asc) {
@@ -496,7 +507,7 @@ const seriesPostsPromise = seriesId
       seriesOrder,
       seriesLabel
     }
-	  `, { seriesId })
+	  `, { seriesId, isPreview })
   : Promise.resolve([]);
 
 /* ========================
@@ -670,6 +681,7 @@ const alternateLanguages = englishUrl
     seriesPosts={seriesPosts}
     comments={comments}
     hideNewsletterPromo={hideNewsletterPromo}
+    isPreview={isPreview}
     languageSwitch={
       englishUrl && englishCategory
         ? { url: `/en/${englishCategory}/${englishTranslation.slug}/` }
