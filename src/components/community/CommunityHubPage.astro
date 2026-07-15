@@ -107,8 +107,8 @@ const postsForLang = allPosts.filter((post) => (post.language || 'it') === curre
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const [latestComments, stats, mostDiscussedPosts] = await Promise.all([
-  getLatestCommunityComments(currentLang),
-  getCommunityHubStats(currentLang),
+  getLatestCommunityComments(currentLang, 6, allPosts),
+  getCommunityHubStats(currentLang, allPosts),
   getMostDiscussedPosts(postsForLang, currentLang),
 ]);
 const profileCtaHref = isLoggedIn ? copy.profileHrefAuth : copy.profileHrefGuest;

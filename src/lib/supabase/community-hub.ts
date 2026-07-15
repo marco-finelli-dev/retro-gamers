@@ -43,6 +43,15 @@ const applyCommentLanguageFilter = (query: any, lang: CommunityHubLang) =>
     ? query.eq('article_language', 'en')
     : query.or('article_language.is.null,article_language.eq.it');
 
+function getPublicArticleSlugSet(posts: Post[] = [], lang: CommunityHubLang) {
+  return new Set(
+    posts
+      .filter((post) => (post.language || 'it') === lang)
+      .map((post) => String(post.slug || '').trim())
+      .filter(Boolean)
+  );
+}
+
 const countRows = async (
   table: string,
   applyFilters: (query: any) => unknown
@@ -68,10 +77,12 @@ const countRows = async (
 
 export async function getLatestCommunityComments(
   lang: CommunityHubLang = 'it',
-  limit = 6
+  limit = 6,
+  publicPosts: Post[] = []
 ): Promise<CommunityHubComment[]> {
   const language = normalizeLang(lang);
   const safeLimit = Math.min(Math.max(Number(limit) || 6, 1), 10);
+  const publicArticleSlugs = getPublicArticleSlugSet(publicPosts, language);
   const query = supabaseAdmin
     .from('comments')
     .select(`
@@ -97,7 +108,7 @@ export async function getLatestCommunityComments(
     .eq('status', 'approved')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(safeLimit);
+    .limit(publicArticleSlugs.size > 0 ? safeLimit * 3 : safeLimit);
   const { data, error } = await applyCommentLanguageFilter(query, language);
 
   if (error) {
@@ -108,7 +119,16 @@ export async function getLatestCommunityComments(
     return [];
   }
 
-  return (data ?? []).map((comment) => {
+  return (data ?? [])
+    .filter((comment) => {
+      if (publicArticleSlugs.size === 0) return true;
+
+      const slug = String(comment.article_slug || '').trim();
+
+      return slug && publicArticleSlugs.has(slug);
+    })
+    .slice(0, safeLimit)
+    .map((comment) => {
     const profile = Array.isArray(comment.profiles)
       ? comment.profiles[0]
       : comment.profiles;
@@ -132,7 +152,7 @@ export async function getLatestCommunityComments(
       articleTitle: comment.article_title || (lang === 'en' ? 'Article' : 'Articolo'),
       articleUrl: getCommentArticleHref(comment),
     };
-  });
+    });
 }
 
 export async function getMostDiscussedPosts(
@@ -183,9 +203,11 @@ export async function getMostDiscussedPosts(
 }
 
 export async function getCommunityHubStats(
-  lang: CommunityHubLang = 'it'
+  lang: CommunityHubLang = 'it',
+  publicPosts: Post[] = []
 ): Promise<CommunityHubStats> {
   const language = normalizeLang(lang);
+  const publicArticleSlugs = getPublicArticleSlugSet(publicPosts, language);
   const [approvedComments, readerRatings, activeProfiles, discussedArticles] = await Promise.all([
     countRows('comments', (query: any) =>
       applyCommentLanguageFilter(
@@ -214,7 +236,13 @@ export async function getCommunityHubStats(
         return 0;
       }
 
-      return new Set((data ?? []).map((row) => row.article_slug).filter(Boolean)).size;
+      return new Set(
+        (data ?? [])
+          .map((row) => String(row.article_slug || '').trim())
+          .filter((slug) => slug && (
+            publicArticleSlugs.size === 0 || publicArticleSlugs.has(slug)
+          ))
+      ).size;
     })(),
   ]);
 
