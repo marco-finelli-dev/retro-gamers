@@ -3,6 +3,7 @@ import { getPostUrl } from '../routes.js';
 import { getReaderBadgeImageSrcForBadge } from '../badges';
 import { getCommentArticleHref, getCommentExcerpt, getPublicUserUrl } from './public-profiles';
 import { getAvatarPublicUrl } from './avatars';
+import { isMissingGuestCommentSchemaError } from './guest-comments';
 import { supabaseAdmin } from './server';
 
 type CommunityHubLang = 'it' | 'en';
@@ -18,6 +19,7 @@ export type CommunityHubComment = {
   badgeImageUrl: string | null;
   articleTitle: string;
   articleUrl: string;
+  authorType: 'registered' | 'guest';
 };
 
 export type CommunityHubDiscussedPost = {
@@ -83,33 +85,47 @@ export async function getLatestCommunityComments(
   const language = normalizeLang(lang);
   const safeLimit = Math.min(Math.max(Number(limit) || 6, 1), 10);
   const publicArticleSlugs = getPublicArticleSlugSet(publicPosts, language);
-  const query = supabaseAdmin
-    .from('comments')
-    .select(`
-      id,
-      body,
-      created_at,
-      article_title,
-      article_url,
-      article_slug,
-      article_language,
-      profiles:profile_id (
-        username,
-        display_name,
-        avatar_path,
-        user_badges (
-          key,
-          label_it,
-          label_en,
-          image_path
+  const fetchComments = async (includeGuestFields: boolean) => {
+    const query = supabaseAdmin
+      .from('comments')
+      .select(`
+        id,
+        body,
+        created_at,
+        article_title,
+        article_url,
+        article_slug,
+        article_language,
+        ${includeGuestFields ? 'author_type, guest_display_name,' : ''}
+        profiles:profile_id (
+          username,
+          display_name,
+          avatar_path,
+          user_badges (
+            key,
+            label_it,
+            label_en,
+            image_path
+          )
         )
-      )
-    `)
-    .eq('status', 'approved')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .limit(publicArticleSlugs.size > 0 ? safeLimit * 3 : safeLimit);
-  const { data, error } = await applyCommentLanguageFilter(query, language);
+      `)
+      .eq('status', 'approved')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(publicArticleSlugs.size > 0 ? safeLimit * 3 : safeLimit);
+
+    return applyCommentLanguageFilter(query, language);
+  };
+
+  let includeGuestFields = true;
+  let { data, error } = await fetchComments(includeGuestFields);
+
+  if (isMissingGuestCommentSchemaError(error)) {
+    includeGuestFields = false;
+    const fallbackResult = await fetchComments(includeGuestFields);
+    data = fallbackResult.data;
+    error = fallbackResult.error;
+  }
 
   if (error) {
     console.error('Community hub latest comments failed:', {
@@ -136,6 +152,7 @@ export async function getLatestCommunityComments(
       ? profile?.user_badges[0]
       : profile?.user_badges;
     const username = String(profile?.username || '').trim();
+    const isGuest = includeGuestFields && comment.author_type === 'guest';
     const badgeLabel = lang === 'en'
       ? badge?.label_en || badge?.label_it || null
       : badge?.label_it || badge?.label_en || null;
@@ -144,13 +161,16 @@ export async function getLatestCommunityComments(
       id: String(comment.id),
       excerpt: getCommentExcerpt(comment.body, 190),
       createdAt: comment.created_at ?? null,
-      authorName: profile?.display_name || username || (lang === 'en' ? 'Reader' : 'Lettore'),
-      profileUrl: username ? getPublicUserUrl(username, lang) : null,
-      avatarUrl: getAvatarPublicUrl(profile?.avatar_path),
-      badgeLabel,
-      badgeImageUrl: getReaderBadgeImageSrcForBadge(badge),
+      authorName: isGuest
+        ? comment.guest_display_name || (lang === 'en' ? 'Guest' : 'Ospite')
+        : profile?.display_name || username || (lang === 'en' ? 'Reader' : 'Lettore'),
+      profileUrl: !isGuest && username ? getPublicUserUrl(username, lang) : null,
+      avatarUrl: isGuest ? null : getAvatarPublicUrl(profile?.avatar_path),
+      badgeLabel: isGuest ? (lang === 'en' ? 'Guest' : 'Ospite') : badgeLabel,
+      badgeImageUrl: isGuest ? null : getReaderBadgeImageSrcForBadge(badge),
       articleTitle: comment.article_title || (lang === 'en' ? 'Article' : 'Articolo'),
       articleUrl: getCommentArticleHref(comment),
+      authorType: isGuest ? 'guest' : 'registered',
     };
     });
 }

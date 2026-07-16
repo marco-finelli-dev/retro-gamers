@@ -4,6 +4,7 @@ import CommunityHero from '../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../components/community/CommunityLayout.astro';
 import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
 import { getUserSessionFromCookies, isStaffProfile } from '../../lib/supabase/auth';
+import { isMissingGuestCommentSchemaError } from '../../lib/supabase/guest-comments';
 import { supabaseAdmin } from '../../lib/supabase/server';
 import '../../styles/pages/admin-dashboard.css';
 
@@ -25,6 +26,8 @@ type RecentComment = {
   body?: string | null;
   status?: string | null;
   created_at?: string | null;
+  author_type?: string | null;
+  guest_display_name?: string | null;
   profiles?: {
     username?: string | null;
     display_name?: string | null;
@@ -222,24 +225,34 @@ if (isStaff) {
     ),
   ]);
 
-  const { data, error } = await supabaseAdmin
-    .from('comments')
-    .select(`
-      id,
-      article_title,
-      article_url,
-      body,
-      status,
-      created_at,
-      profiles:profile_id (
-        username,
-        display_name
-      )
-    `)
-    .in('status', ['approved', 'pending'])
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .limit(5);
+  const fetchRecentComments = (includeGuestFields: boolean) =>
+    supabaseAdmin
+      .from('comments')
+      .select(`
+        id,
+        article_title,
+        article_url,
+        body,
+        status,
+        created_at,
+        ${includeGuestFields ? 'author_type, guest_display_name,' : ''}
+        profiles:profile_id (
+          username,
+          display_name
+        )
+      `)
+      .in('status', ['approved', 'pending'])
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+  let { data, error } = await fetchRecentComments(true);
+
+  if (isMissingGuestCommentSchemaError(error)) {
+    const fallbackResult = await fetchRecentComments(false);
+    data = fallbackResult.data;
+    error = fallbackResult.error;
+  }
 
   if (error) {
     recentCommentsError = isOptionalDataError(error)
@@ -294,7 +307,9 @@ const staffLinks = [
 ];
 
 const getCommentAuthor = (comment: RecentComment) =>
-  comment.profiles?.display_name || comment.profiles?.username || copy.readerFallback;
+  comment.author_type === 'guest'
+    ? comment.guest_display_name || (isEnglish ? 'Guest' : 'Ospite')
+    : comment.profiles?.display_name || comment.profiles?.username || copy.readerFallback;
 
 const getCommentStatusLabel = (status?: string | null) =>
   status === 'pending' ? copy.statusPending : copy.statusApproved;

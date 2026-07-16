@@ -113,6 +113,69 @@ const copy = isEnglish
           moderator: 'Moderator',
           user: 'Reader',
         },
+        guestBadge: 'Guest',
+        guestIdentity: 'Guest identity',
+        guestIdentityStatus: 'Identity status',
+        guestApprovedComments: 'Approved guest comments',
+        guestFlags: 'Technical flags',
+        guestIdentityStatuses: {
+          active: 'Active',
+          restricted: 'Restricted',
+          blocked: 'Blocked',
+        },
+        identityModeration: 'Identity and abuse controls',
+        identityType: 'Identity type',
+        identityReference: 'Abbreviated identifier',
+        identityState: 'Current state',
+        identityCounts: 'Approved / rejected / reported',
+        identityTypes: {
+          account: 'Registered account',
+          guest: 'Guest identity',
+          ip: 'Pseudonymous network signal',
+        },
+        identityStates: {
+          active: 'Active',
+          restricted: 'Restricted',
+          blocked: 'Blocked',
+          banned: 'Banned',
+        },
+        activeBans: 'Active restrictions',
+        noActiveBans: 'No active restrictions',
+        auditTrail: 'Moderation audit',
+        noAuditEvents: 'No recorded moderation actions',
+        auditEvents: {
+          created: 'Applied',
+          revoked: 'Revoked',
+        },
+        moderatorReference: 'Moderator',
+        permanent: 'Permanent',
+        expires: 'Expires',
+        suspectedBanEvasion: 'Suspected ban evasion',
+        moderationAction: 'Action',
+        actionOptions: {
+          guest_restrict: 'Restrict guest identity',
+          guest_block: 'Block guest identity',
+          guest_unblock: 'Unblock identity',
+          account_restrict: 'Restrict registered user',
+          account_ban: 'Ban registered user',
+          account_unblock: 'Unblock registered user',
+          ip_block: 'Apply IP block',
+          ip_revoke: 'Revoke IP block',
+        },
+        duration: 'Duration',
+        durations: {
+          '24h': '24 hours',
+          '7d': '7 days',
+          '30d': '30 days',
+          custom: 'Custom',
+          permanent: 'Permanent',
+        },
+        customExpiry: 'Custom expiry',
+        internalReason: 'Internal reason',
+        internalReasonPlaceholder: 'Required; never shown publicly',
+        exceptionalPermanentIp: 'Exceptional permanent IP block (admin only)',
+        applyIdentityAction: 'Apply identity action',
+        identityActionUpdated: 'Identity moderation updated.',
         loadError: 'Could not load comments.',
         accessUnavailable: 'Access unavailable',
         commentsFoundOne: '1 comment found',
@@ -223,6 +286,69 @@ const copy = isEnglish
           moderator: 'Moderatore',
           user: 'Lettore',
         },
+        guestBadge: 'Ospite',
+        guestIdentity: 'Identità ospite',
+        guestIdentityStatus: 'Stato identità',
+        guestApprovedComments: 'Commenti ospite approvati',
+        guestFlags: 'Flag tecnici',
+        guestIdentityStatuses: {
+          active: 'Attiva',
+          restricted: 'Limitata',
+          blocked: 'Bloccata',
+        },
+        identityModeration: 'Identità e gestione abusi',
+        identityType: 'Tipo identità',
+        identityReference: 'Identificatore abbreviato',
+        identityState: 'Stato corrente',
+        identityCounts: 'Approvati / rifiutati / segnalati',
+        identityTypes: {
+          account: 'Account registrato',
+          guest: 'Identità ospite',
+          ip: 'Segnale di rete pseudonimizzato',
+        },
+        identityStates: {
+          active: 'Attiva',
+          restricted: 'Limitata',
+          blocked: 'Bloccata',
+          banned: 'Bannata',
+        },
+        activeBans: 'Blocchi attivi',
+        noActiveBans: 'Nessun blocco attivo',
+        auditTrail: 'Audit moderazione',
+        noAuditEvents: 'Nessuna azione di moderazione registrata',
+        auditEvents: {
+          created: 'Applicato',
+          revoked: 'Revocato',
+        },
+        moderatorReference: 'Moderatore',
+        permanent: 'Permanente',
+        expires: 'Scade',
+        suspectedBanEvasion: 'Possibile evasione del ban',
+        moderationAction: 'Azione',
+        actionOptions: {
+          guest_restrict: 'Limita identità ospite',
+          guest_block: 'Blocca identità ospite',
+          guest_unblock: 'Sblocca identità',
+          account_restrict: 'Limita utente registrato',
+          account_ban: 'Blocca utente registrato',
+          account_unblock: 'Sblocca utente registrato',
+          ip_block: 'Applica blocco IP',
+          ip_revoke: 'Revoca blocco IP',
+        },
+        duration: 'Durata',
+        durations: {
+          '24h': '24 ore',
+          '7d': '7 giorni',
+          '30d': '30 giorni',
+          custom: 'Personalizzata',
+          permanent: 'Permanente',
+        },
+        customExpiry: 'Scadenza personalizzata',
+        internalReason: 'Motivazione interna',
+        internalReasonPlaceholder: 'Obbligatoria; mai mostrata pubblicamente',
+        exceptionalPermanentIp: 'Blocco IP permanente eccezionale (solo admin)',
+        applyIdentityAction: 'Applica azione identità',
+        identityActionUpdated: 'Moderazione identità aggiornata.',
         loadError: 'Errore caricamento commenti.',
         accessUnavailable: 'Accesso non disponibile',
         commentsFoundOne: '1 commento trovato',
@@ -513,22 +639,210 @@ const staffLinks = [
 
     const renderComment = (comment) => {
       const profile = comment.profiles || {};
-      const author = profile.display_name || profile.username || labels.userFallback;
+      const isGuest = comment.author_type === 'guest';
+      const author = isGuest
+        ? comment.guest_display_name || labels.guestBadge
+        : profile.display_name || profile.username || labels.userFallback;
       const badge = profile.user_badges?.label_it || profile.user_badges?.label_en || '';
       const articleUrl = comment.article_url || '#';
       const articleLabel = comment.article_title || comment.article_slug || labels.articleFallback;
-      const profileUrl = profile.username
+      const profileUrl = !isGuest && profile.username
         ? labels.locale === 'en-US'
           ? `/en/users/${encodeURIComponent(profile.username)}/`
           : `/utenti/${encodeURIComponent(profile.username)}/`
         : '';
       const status = statusLabels[comment.status] || comment.status || labels.unknownStatus;
-      const role = roleLabels[profile.role] || profile.role || '';
+      const role = isGuest
+        ? labels.guestBadge
+        : roleLabels[profile.role] || profile.role || '';
       const parent = comment.parent || null;
       const parentProfile = parent?.profiles || {};
-      const parentAuthor = parentProfile.display_name || parentProfile.username || labels.originalComment;
+      const parentAuthor = parent?.author_type === 'guest'
+        ? parent.guest_display_name || labels.guestBadge
+        : parentProfile.display_name || parentProfile.username || labels.originalComment;
       const detailId = `admin-comment-detail-${comment.id}`;
       const moderationReason = comment.moderation_reason || '';
+      const guestIdentity = Array.isArray(comment.guest_identity)
+        ? comment.guest_identity[0]
+        : comment.guest_identity;
+      const guestIdentityStatus = labels.guestIdentityStatuses?.[guestIdentity?.status]
+        || guestIdentity?.status
+        || '';
+      const guestApprovedComments = Number(guestIdentity?.approved_comments_count || 0);
+      const guestFlags = Array.isArray(comment.abuse_flags)
+        ? comment.abuse_flags.map((flag) => String(flag || '').trim()).filter(Boolean)
+        : [];
+      const guestIdentityDetails = isGuest
+        ? `
+            <dl class="admin-comment-card__guest-details">
+              <div>
+                <dt>${escapeHtml(labels.guestIdentity)}</dt>
+                <dd>${escapeHtml(comment.guest_identity_ref || '—')}</dd>
+              </div>
+              <div>
+                <dt>${escapeHtml(labels.guestIdentityStatus)}</dt>
+                <dd>${escapeHtml(guestIdentityStatus || '—')}</dd>
+              </div>
+              <div>
+                <dt>${escapeHtml(labels.guestApprovedComments)}</dt>
+                <dd>${escapeHtml(String(guestApprovedComments))}</dd>
+              </div>
+              <div>
+                <dt>${escapeHtml(labels.guestFlags)}</dt>
+                <dd>${guestFlags.length > 0 ? guestFlags.map(escapeHtml).join(', ') : '—'}</dd>
+              </div>
+            </dl>
+          `
+        : '';
+      const identityModeration = comment.identity_moderation || {};
+      const identityCounts = identityModeration.counts || {};
+      const activeIdentityBans = Array.isArray(identityModeration.activeBans)
+        ? identityModeration.activeBans
+        : [];
+      const identityAudit = Array.isArray(identityModeration.audit)
+        ? identityModeration.audit
+        : [];
+      const identityActionKeys = isGuest
+        ? ['guest_restrict', 'guest_block', 'guest_unblock']
+        : ['account_restrict', 'account_ban', 'account_unblock'];
+
+      if (identityModeration.networkSignalAvailable) {
+        identityActionKeys.push('ip_block', 'ip_revoke');
+      }
+
+      const banList = activeIdentityBans.length > 0
+        ? `
+            <ul class="admin-comment-card__ban-list">
+              ${activeIdentityBans.map((ban) => `
+                <li>
+                  <strong>${escapeHtml(labels.identityTypes?.[ban.type] || ban.type)}</strong>
+                  <span>${escapeHtml(labels.identityStates?.[ban.status] || ban.status)}</span>
+                  <span>
+                    ${escapeHtml(ban.expiresAt
+                      ? `${labels.expires}: ${formatDate(ban.expiresAt)}`
+                      : labels.permanent)}
+                  </span>
+                  ${ban.reason ? `<span>${escapeHtml(ban.reason)}</span>` : ''}
+                </li>
+              `).join('')}
+            </ul>
+          `
+        : `<p class="admin-comment-card__no-bans">${escapeHtml(labels.noActiveBans)}</p>`;
+      const auditList = identityAudit.length > 0
+        ? `
+            <ol class="admin-comment-card__audit-list">
+              ${identityAudit.map((event) => `
+                <li>
+                  <strong>${escapeHtml(labels.auditEvents?.[event.eventType] || event.eventType)}</strong>
+                  <span>${escapeHtml(labels.identityTypes?.[event.type] || event.type)}</span>
+                  <span>${escapeHtml(labels.identityStates?.[event.status] || event.status)}</span>
+                  <time datetime="${escapeHtml(event.createdAt || '')}">
+                    ${escapeHtml(formatDate(event.createdAt))}
+                  </time>
+                  ${event.expiresAt
+                    ? `<span>${escapeHtml(`${labels.expires}: ${formatDate(event.expiresAt)}`)}</span>`
+                    : ''}
+                  ${event.moderatorRef
+                    ? `<span>${escapeHtml(`${labels.moderatorReference}: ${event.moderatorRef}`)}</span>`
+                    : ''}
+                  ${event.reason ? `<span>${escapeHtml(event.reason)}</span>` : ''}
+                </li>
+              `).join('')}
+            </ol>
+          `
+        : `<p class="admin-comment-card__no-bans">${escapeHtml(labels.noAuditEvents)}</p>`;
+      const identityModerationPanel = `
+        <section class="admin-comment-card__identity-moderation">
+          <h3>${escapeHtml(labels.identityModeration)}</h3>
+
+          <dl class="admin-comment-card__identity-summary">
+            <div>
+              <dt>${escapeHtml(labels.identityType)}</dt>
+              <dd>${escapeHtml(labels.identityTypes?.[identityModeration.type] || identityModeration.type || '—')}</dd>
+            </div>
+            <div>
+              <dt>${escapeHtml(labels.identityReference)}</dt>
+              <dd>${escapeHtml(identityModeration.reference || comment.guest_identity_ref || '—')}</dd>
+            </div>
+            <div>
+              <dt>${escapeHtml(labels.identityState)}</dt>
+              <dd>${escapeHtml(labels.identityStates?.[identityModeration.state] || identityModeration.state || '—')}</dd>
+            </div>
+            <div>
+              <dt>${escapeHtml(labels.identityCounts)}</dt>
+              <dd>
+                ${escapeHtml(String(identityCounts.approved || 0))}
+                /
+                ${escapeHtml(String(identityCounts.rejected || 0))}
+                /
+                ${escapeHtml(String(identityCounts.reported || 0))}
+              </dd>
+            </div>
+          </dl>
+
+          ${identityModeration.suspectedBanEvasion
+            ? `<p class="admin-comment-card__evasion-flag">${escapeHtml(labels.suspectedBanEvasion)}</p>`
+            : ''}
+
+          <div class="admin-comment-card__active-bans">
+            <strong>${escapeHtml(labels.activeBans)}</strong>
+            ${banList}
+          </div>
+
+          <div class="admin-comment-card__audit">
+            <strong>${escapeHtml(labels.auditTrail)}</strong>
+            ${auditList}
+          </div>
+
+          <form class="admin-comment-card__identity-form" data-identity-moderation-form>
+            <label>
+              <span>${escapeHtml(labels.moderationAction)}</span>
+              <select name="action" required>
+                ${identityActionKeys.map((actionKey) => `
+                  <option value="${escapeHtml(actionKey)}">
+                    ${escapeHtml(labels.actionOptions?.[actionKey] || actionKey)}
+                  </option>
+                `).join('')}
+              </select>
+            </label>
+
+            <label>
+              <span>${escapeHtml(labels.duration)}</span>
+              <select name="duration" required>
+                ${['24h', '7d', '30d', 'custom', 'permanent'].map((durationKey) => `
+                  <option value="${escapeHtml(durationKey)}">
+                    ${escapeHtml(labels.durations?.[durationKey] || durationKey)}
+                  </option>
+                `).join('')}
+              </select>
+            </label>
+
+            <label>
+              <span>${escapeHtml(labels.customExpiry)}</span>
+              <input type="datetime-local" name="customExpiresAt" />
+            </label>
+
+            <label class="admin-comment-card__identity-reason">
+              <span>${escapeHtml(labels.internalReason)}</span>
+              <textarea
+                name="reason"
+                rows="2"
+                minlength="3"
+                maxlength="1000"
+                placeholder="${escapeHtml(labels.internalReasonPlaceholder)}"
+                required
+              ></textarea>
+            </label>
+
+            <label class="admin-comment-card__exceptional-ip">
+              <input type="checkbox" name="exceptionalPermanentIp" value="true" />
+              <span>${escapeHtml(labels.exceptionalPermanentIp)}</span>
+            </label>
+
+            <button type="submit">${escapeHtml(labels.applyIdentityAction)}</button>
+          </form>
+        </section>
+      `;
       const isHidden = Boolean(comment.deleted_at);
       const displayStatus = isHidden ? statusLabels.deleted : status;
       const isRecentPending = comment.status === 'pending' && isWithinLastDay(comment.created_at);
@@ -578,6 +892,7 @@ const staffLinks = [
           class="admin-comment-card"
           data-comment-id="${escapeHtml(comment.id)}"
           data-comment-status="${escapeHtml(comment.status || '')}"
+          data-comment-author-type="${isGuest ? 'guest' : 'registered'}"
           data-comment-hidden="${isHidden ? 'true' : 'false'}"
         >
           ${selectionControl}
@@ -654,6 +969,9 @@ const staffLinks = [
                 <span>${escapeHtml(moderationReason)}</span>
               </p>
             ` : ''}
+
+            ${guestIdentityDetails}
+            ${identityModerationPanel}
 
             <div class="admin-comment-card__actions">
               ${actionButtons}
@@ -888,6 +1206,60 @@ const staffLinks = [
     listNode?.addEventListener('change', (event) => {
       if (event.target instanceof HTMLInputElement && event.target.matches('input[data-bulk-comment-id]')) {
         updateBulkState();
+      }
+    });
+
+    listNode?.addEventListener('submit', async (event) => {
+      const form = event.target;
+      if (!(form instanceof HTMLFormElement) || !form.matches('[data-identity-moderation-form]')) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const card = form.closest('[data-comment-id]');
+      const commentId = card?.dataset.commentId;
+      if (!commentId) return;
+
+      const submitButton = form.querySelector('button[type="submit"]');
+      const formData = new FormData(form);
+      const customExpiryValue = String(formData.get('customExpiresAt') || '').trim();
+      const customExpiryTimestamp = customExpiryValue ? Date.parse(customExpiryValue) : NaN;
+      const customExpiresAt = Number.isFinite(customExpiryTimestamp)
+        ? new Date(customExpiryTimestamp).toISOString()
+        : null;
+
+      if (submitButton instanceof HTMLButtonElement) submitButton.disabled = true;
+      showMessage('');
+
+      try {
+        const response = await fetch('/api/admin/comments/identity-moderation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            commentId,
+            action: String(formData.get('action') || ''),
+            duration: String(formData.get('duration') || '24h'),
+            customExpiresAt,
+            reason: String(formData.get('reason') || ''),
+            exceptionalPermanentIp: formData.get('exceptionalPermanentIp') === 'true'
+          })
+        });
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(result.error || labels.actionFailed, 'error');
+          if (submitButton instanceof HTMLButtonElement) submitButton.disabled = false;
+          return;
+        }
+
+        showMessage(labels.identityActionUpdated, 'ok');
+        await loadComments();
+      } catch {
+        showMessage(labels.connectionError, 'error');
+        if (submitButton instanceof HTMLButtonElement) submitButton.disabled = false;
       }
     });
 

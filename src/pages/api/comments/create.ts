@@ -18,6 +18,11 @@ import {
   assessCommentModeration,
   isMissingCommentModerationColumnError,
 } from '../../../lib/supabase/comment-moderation';
+import {
+  createGuestComment,
+  isMissingGuestCommentSchemaError,
+} from '../../../lib/supabase/guest-comments';
+import { getCommunityAccess } from '../../../lib/supabase/community-bans';
 import { touchUserActivity } from '../../../lib/supabase/user-activity';
 
 type CreateCommentPayload = {
@@ -29,6 +34,9 @@ type CreateCommentPayload = {
   parentId?: string | null;
   notifyReplies?: boolean;
   notifyThread?: boolean;
+  authorName?: string;
+  authorEmail?: string;
+  website?: string;
 };
 
 const json = (payload: unknown, status = 200) =>
@@ -175,18 +183,9 @@ async function notifyParentAuthorAboutApprovedReply(comment: {
 export const POST: APIRoute = async ({ request, cookies }) => {
   const session = await getUserSessionFromCookies(cookies);
 
-  if (session.error || !session.user || !session.profile) {
-    return json({ ok: false, error: 'Sessione non valida. Effettua di nuovo il login.' }, session.status || 401);
-  }
-
-  const user = session.user;
-  const profile = session.profile;
-
-  if (isBlockedProfileStatus(profile.status)) {
+  if (session.profile && isBlockedProfileStatus(session.profile.status)) {
     return json({ ok: false, error: 'Account bloccato.' }, 403);
   }
-
-  const isStaff = isStaffProfile(profile);
 
   let payload: CreateCommentPayload;
 
@@ -224,6 +223,110 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (body.length > 3000) {
     return json({ ok: false, error: 'Il commento è troppo lungo. Massimo 3000 caratteri.' }, 400);
   }
+
+  const isAuthenticated = Boolean(!session.error && session.user && session.profile);
+
+  if (!isAuthenticated) {
+    if (session.user || session.profile) {
+      return json({
+        ok: false,
+        error: isBlockedProfileStatus(session.profile?.status)
+          ? 'Account bloccato.'
+          : 'Sessione non valida. Effettua di nuovo il login.',
+      }, session.status || 401);
+    }
+
+    try {
+      const guestResult = await createGuestComment({
+        input: {
+          authorName: payload.authorName,
+          authorEmail: payload.authorEmail,
+          website: payload.website,
+          articleSlug,
+          articleLanguage,
+          articleTitle,
+          articleUrl,
+          body,
+          parentId,
+        },
+        request,
+        cookies,
+      });
+
+      if (!guestResult.ok) {
+        return json(guestResult.payload, guestResult.status);
+      }
+
+      if (guestResult.comment) {
+        const pendingNotificationResult = await createPendingCommentAccountMessages(guestResult.comment);
+
+        if (!pendingNotificationResult.ok) {
+          console.error('Guest pending comment notification failed:', {
+            sent: pendingNotificationResult.sent || 0,
+          });
+        }
+
+        try {
+          await sendNewCommentAdminEmail({
+            articleTitle,
+            articleUrl,
+            authorName: guestResult.authorName || (articleLanguage === 'en' ? 'Guest' : 'Ospite'),
+            body,
+            language: articleLanguage,
+            commentId: guestResult.comment.id,
+          });
+        } catch {
+          console.error('Guest comment admin email failed');
+        }
+      }
+
+      return json(guestResult.payload, guestResult.status);
+    } catch (error) {
+      const apiError = error as { code?: string } | null;
+
+      console.error('Guest comment submission failed:', {
+        code: apiError?.code || (isMissingGuestCommentSchemaError(apiError) ? 'guest_schema_unavailable' : 'unknown'),
+      });
+
+      return json({
+        ok: false,
+        error: articleLanguage === 'en'
+          ? 'Guest comments are not available right now. Please try again later.'
+          : 'I commenti ospite non sono disponibili in questo momento. Riprova più tardi.',
+      }, 503);
+    }
+  }
+
+  const user = session.user!;
+  const profile = session.profile!;
+
+  if (isBlockedProfileStatus(profile.status)) {
+    return json({ ok: false, error: 'Account bloccato.' }, 403);
+  }
+
+  let accountCommunityState: 'active' | 'restricted' | 'blocked' | 'banned' = 'active';
+
+  try {
+    const access = await getCommunityAccess({
+      subjectType: 'account',
+      subjectValue: user.id,
+    });
+    accountCommunityState = access.state;
+  } catch (error) {
+    logApiError('comments-create.community-access', error);
+    return json({ ok: false, error: 'Commento non inviato. Riprova più tardi.' }, 500);
+  }
+
+  if (accountCommunityState === 'blocked' || accountCommunityState === 'banned') {
+    return json({
+      ok: false,
+      error: articleLanguage === 'en'
+        ? 'This comment cannot be submitted. Please contact the editorial team if you believe this is an error.'
+        : 'Non è possibile inviare questo commento. Contatta la redazione se ritieni che si tratti di un errore.',
+    }, 403);
+  }
+
+  const isStaff = isStaffProfile(profile);
 
   const tooRecentThreshold = new Date(Date.now() - 20_000).toISOString();
   const { data: recentComments, error: recentCommentsError } = await supabaseAdmin
@@ -349,9 +452,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     hasApprovedComments: (approvedCount ?? 0) > 0,
     hasRecentDuplicate: (recentDuplicateCount ?? 0) > 0,
   });
-  const moderationDecision = isStaff && moderationAssessment.status === 'pending'
-    ? { status: 'approved' as const, reason: null }
-    : moderationAssessment;
+  const moderationDecision = accountCommunityState === 'restricted'
+    ? {
+        status: 'pending' as const,
+        reason: 'Account limitato: moderazione preventiva obbligatoria.',
+      }
+    : isStaff && moderationAssessment.status === 'pending'
+      ? { status: 'approved' as const, reason: null }
+      : moderationAssessment;
 
   const nextStatus = moderationDecision.status;
   const publishedMessage = articleLanguage === 'en' ? 'Comment published.' : 'Commento pubblicato.';

@@ -400,6 +400,63 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18px;
   }
+
+  .article-comments__guest-intro,
+  .article-comments__guest-identity,
+  .article-comments__guest-success {
+    margin: 0;
+    padding: 14px 16px;
+    border: 1px solid var(--rg-card-border);
+    border-radius: 14px;
+    background:
+      linear-gradient(135deg, rgba(34,240,255,0.055), rgba(168,85,247,0.030)),
+      rgba(4, 8, 16, 0.28);
+    color: var(--color-text-soft);
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+
+  .article-comments__guest-intro {
+    display: grid;
+    gap: 6px;
+  }
+
+  .article-comments__guest-intro p {
+    margin: 0;
+  }
+
+  .article-comments__guest-intro a,
+  .article-comments__guest-success a {
+    color: var(--rg-action-color);
+    font-weight: 850;
+  }
+
+  .article-comments__guest-identity {
+    border-color: var(--rg-badge-border);
+    background: var(--rg-badge-bg);
+    color: var(--rg-badge-color);
+    font-weight: 750;
+  }
+
+  .article-comments__guest-success {
+    margin: -12px 0 28px;
+    border-color: rgba(34, 197, 94, 0.28);
+    background: rgba(34, 197, 94, 0.10);
+  }
+
+  .article-comments__replying-to[hidden],
+  .article-comments__guest-intro[hidden],
+  .article-comments__guest-identity[hidden],
+  .article-comments__guest-success[hidden],
+  .article-comments__fields[hidden],
+  .article-comments__registered-options[hidden] {
+    display: none;
+  }
+
+  .article-comments__registered-options {
+    display: grid;
+    gap: 10px;
+  }
   
   .article-comments label {
     display: grid;
@@ -789,6 +846,12 @@
       linear-gradient(135deg, rgba(168,85,247,0.070), rgba(34,240,255,0.034)),
       rgba(4, 8, 16, 0.18);
     color: rgba(221,205,255,0.88);
+  }
+
+  .article-comment__role-badge--guest {
+    border-color: rgba(148, 163, 184, 0.25);
+    background: rgba(148, 163, 184, 0.10);
+    color: rgba(226, 232, 240, 0.86);
   }
 
   .article-comment__level-pill {
@@ -1941,6 +2004,26 @@ html[data-theme="light"] .article-comments__form {
   background: var(--rg-card-bg);
 }
 
+html[data-theme="light"] .article-comments__guest-intro,
+html[data-theme="light"] .article-comments__guest-success {
+  border-color: var(--rg-card-border);
+  background:
+    linear-gradient(135deg, rgba(0,142,163,0.045), rgba(102,81,184,0.026)),
+    rgba(255,255,255,0.54);
+  color: rgba(22,24,36,0.70);
+}
+
+html[data-theme="light"] .article-comments__guest-identity {
+  border-color: var(--rg-badge-border);
+  background: var(--rg-badge-bg);
+  color: rgba(22,24,36,0.78);
+}
+
+html[data-theme="light"] .article-comments__guest-success {
+  border-color: rgba(22, 163, 74, 0.24);
+  background: rgba(22, 163, 74, 0.08);
+}
+
 html[data-theme="light"] .article-comments__replying-to {
   border-color: var(--rg-badge-border);
   background: var(--rg-badge-bg);
@@ -2035,6 +2118,12 @@ html[data-theme="light"] .article-comment__role-badge--moderator {
     linear-gradient(135deg, rgba(102,81,184,0.070), rgba(0,142,163,0.026)),
     rgba(255,255,255,0.56);
   color: rgba(82,64,148,0.88);
+}
+
+html[data-theme="light"] .article-comment__role-badge--guest {
+  border-color: rgba(71, 85, 105, 0.20);
+  background: rgba(148, 163, 184, 0.12);
+  color: rgba(51, 65, 85, 0.88);
 }
 
 html[data-theme="light"] .article-comment__level-pill {

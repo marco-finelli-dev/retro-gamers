@@ -12,8 +12,9 @@ const articleSlug = rawSlug;
 const articleTitle = post?.title || '';
 const articleUrl = Astro.url.pathname;
 const accountLoginHref = lang === 'en' ? '/en/account/login/' : '/account/login/';
-const registerHref = lang === 'en' ? '/en/account/register/' : '/account/register/';
+const accountRegisterHref = lang === 'en' ? '/en/account/register/' : '/account/register/';
 const loginHref = `${accountLoginHref}?returnTo=${encodeURIComponent(`${articleUrl}#comments`)}`;
+const registerHref = `${accountRegisterHref}?returnTo=${encodeURIComponent(`${articleUrl}#comments`)}`;
 
 const labels = {
   it: {
@@ -38,6 +39,15 @@ const labels = {
     loginLink: 'Accedi',
     registerLink: 'Registrati',
     loggedAs: 'Stai commentando come',
+    guestName: 'Nome pubblico',
+    guestEmail: 'Email privata',
+    guestIntro:
+      'Puoi commentare senza account. Il nome sarà visibile pubblicamente; l’email resterà privata e servirà soltanto a mantenere coerente la tua identità ospite.',
+    guestBenefits:
+      'Registrandoti ottieni profilo, avatar, storico, notifiche e tutte le funzioni della community.',
+    guestIdentity:
+      'Hai già partecipato come {name}. Per mantenere coerente la tua identità nella community, continuerai a usare questo nome.',
+    guestSuccessCta: 'Crea il tuo account',
     notifyReplies: 'Avvisami se qualcuno risponde al mio commento',
     notifyThread: 'Avvisami se continua la discussione',
     sent: 'Commento inviato. Sarà visibile dopo la moderazione.',
@@ -85,6 +95,15 @@ const labels = {
     loginLink: 'Log in',
     registerLink: 'Register',
     loggedAs: 'You are commenting as',
+    guestName: 'Public name',
+    guestEmail: 'Private email',
+    guestIntro:
+      'You can comment without an account. Your name will be public; your email will remain private and will only be used to keep your guest identity consistent.',
+    guestBenefits:
+      'Register to get a profile, avatar, history, notifications and all community features.',
+    guestIdentity:
+      'You previously joined the discussion as {name}. To keep your community identity consistent, you will continue using this name.',
+    guestSuccessCta: 'Create your account',
     notifyReplies: 'Notify me when someone replies to my comment',
     notifyThread: 'Notify me if the discussion continues',
     sent: 'Comment sent. It will appear after moderation.',
@@ -198,6 +217,17 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     <form class="article-comments__form" data-comments-form>
       <input type="hidden" name="parentId" value="" data-parent-comment-id />
 
+      <label class="article-comments__honeypot" aria-hidden="true">
+        <span>Website</span>
+        <input
+          type="text"
+          name="website"
+          tabindex="-1"
+          autocomplete="off"
+          data-guest-honeypot
+        />
+      </label>
+
       <div class="article-comments__replying-to" data-replying-to hidden>
         <span data-replying-to-text></span>
 
@@ -207,6 +237,39 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       </div>
 
       <p class="article-comments__current-user" data-current-user></p>
+
+      <div class="article-comments__guest-intro" data-guest-intro hidden>
+        <p>{t.guestIntro}</p>
+        <p>{t.guestBenefits} <a href={registerHref}>{t.registerLink}</a></p>
+      </div>
+
+      <p class="article-comments__guest-identity" data-guest-identity hidden></p>
+
+      <div class="article-comments__fields" data-guest-fields hidden>
+        <label>
+          <span>{t.guestName}</span>
+          <input
+            type="text"
+            name="authorName"
+            minlength="2"
+            maxlength="60"
+            autocomplete="name"
+            data-guest-name
+          />
+        </label>
+
+        <label>
+          <span>{t.guestEmail}</span>
+          <input
+            type="email"
+            name="authorEmail"
+            maxlength="254"
+            autocomplete="email"
+            inputmode="email"
+            data-guest-email
+          />
+        </label>
+      </div>
 
       <label>
         <span>{t.comment}</span>
@@ -220,15 +283,17 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         ></textarea>
       </label>
 
-      <label class="article-comments__checkbox">
-        <input type="checkbox" name="notifyReplies" checked />
-        <span>{t.notifyReplies}</span>
-      </label>
+      <div class="article-comments__registered-options" data-registered-options>
+        <label class="article-comments__checkbox">
+          <input type="checkbox" name="notifyReplies" checked />
+          <span>{t.notifyReplies}</span>
+        </label>
 
-      <label class="article-comments__checkbox">
-        <input type="checkbox" name="notifyThread" />
-        <span>{t.notifyThread}</span>
-      </label>
+        <label class="article-comments__checkbox">
+          <input type="checkbox" name="notifyThread" />
+          <span>{t.notifyThread}</span>
+        </label>
+      </div>
 
       <div class="article-comments__actions">
         <small>{t.moderation}</small>
@@ -236,6 +301,10 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       </div>
     </form>
   </details>
+
+  <p class="article-comments__guest-success" data-guest-success hidden>
+    <a href={registerHref}>{t.guestSuccessCta}</a>
+  </p>
 
   <div class="article-comments__toolbar" data-comments-toolbar hidden>
     <span>{t.sortLabel}</span>
@@ -274,6 +343,9 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       sent: 'Commento inviato. Sarà visibile dopo la moderazione.',
       error: 'Qualcosa è andato storto. Riprova.',
       loggedAs: 'Stai commentando come',
+      guestBadge: 'Ospite',
+      guestIdentity:
+        'Hai già partecipato come {name}. Per mantenere coerente la tua identità nella community, continuerai a usare questo nome.',
       reply: 'Rispondi',
       replyTo: 'Risposta a',
       reader: 'Lettore',
@@ -321,6 +393,9 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       sent: 'Comment sent. It will appear after moderation.',
       error: 'Something went wrong. Please try again.',
       loggedAs: 'You are commenting as',
+      guestBadge: 'Guest',
+      guestIdentity:
+        'You previously joined the discussion as {name}. To keep your community identity consistent, you will continue using this name.',
       reply: 'Reply',
       replyTo: 'Reply to',
       reader: 'Reader',
@@ -490,7 +565,14 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       ? `<a class="article-comment__author-link" href="${escapeHtml(href)}">${escapeHtml(authorName)}</a>`
       : escapeHtml(authorName);
 
-  const getRoleBadge = (profile, labels) => {
+  const getRoleBadge = (profile, labels, authorType = '') => {
+    if (authorType === 'guest' || profile?.is_guest) {
+      return {
+        label: labels.guestBadge,
+        modifier: 'guest'
+      };
+    }
+
     const role = String(profile?.role || '').trim().toLowerCase();
 
     if (role === 'admin') {
@@ -510,8 +592,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     return null;
   };
 
-  const renderRoleBadge = (profile, labels) => {
-    const badge = getRoleBadge(profile, labels);
+  const renderRoleBadge = (profile, labels, authorType = '') => {
+    const badge = getRoleBadge(profile, labels, authorType);
 
     return badge
       ? `<span class="article-comment__role-badge article-comment__role-badge--${escapeHtml(badge.modifier)}">${escapeHtml(badge.label)}</span>`
@@ -791,16 +873,17 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
   const renderReply = (reply, language, labels) => {
     const profile = reply.profiles || {};
+    const isGuest = reply.authorType === 'guest' || profile.is_guest;
     const authorName = getAuthorName(profile, labels.reader);
-    const badgeLabel = getBadgeLabel(profile, language);
-    const roleBadge = renderRoleBadge(profile, labels);
-    const communityLevel = renderCommunityLevel(profile, labels);
+    const badgeLabel = isGuest ? '' : getBadgeLabel(profile, language);
+    const roleBadge = renderRoleBadge(profile, labels, reply.authorType);
+    const communityLevel = isGuest ? '' : renderCommunityLevel(profile, labels);
     const statusBadge = renderStatusBadge(reply, labels);
     const initial = getAvatarInitial(profile, labels.reader);
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
-    const profileHref = getProfileHref(profile, language, Boolean(reply.isLegacy));
+    const profileHref = isGuest ? '' : getProfileHref(profile, language, Boolean(reply.isLegacy));
     const avatarUrl = profile.avatar_url || '';
-    const communityPoints = reply.isLegacy ? 0 : getCommunityPoints(profile);
+    const communityPoints = reply.isLegacy || isGuest ? 0 : getCommunityPoints(profile);
 
     return `
       <div
@@ -836,19 +919,20 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
   const renderComment = (comment, language, labels, canReply) => {
     const profile = comment.profiles || {};
+    const isGuest = comment.authorType === 'guest' || profile.is_guest;
     const authorName = getAuthorName(profile, labels.reader);
-    const badgeLabel = getBadgeLabel(profile, language);
-    const roleBadge = renderRoleBadge(profile, labels);
-    const communityLevel = renderCommunityLevel(profile, labels);
+    const badgeLabel = isGuest ? '' : getBadgeLabel(profile, language);
+    const roleBadge = renderRoleBadge(profile, labels, comment.authorType);
+    const communityLevel = isGuest ? '' : renderCommunityLevel(profile, labels);
     const statusBadge = renderStatusBadge(comment, labels);
     const initial = getAvatarInitial(profile, labels.reader);
     const avatarLabel = labels.avatarOf.replace('{name}', authorName);
     const replies = Array.isArray(comment.replies) ? sortComments(comment.replies) : [];
     const isLegacy = Boolean(comment.isLegacy);
-    const profileHref = getProfileHref(profile, language, isLegacy);
+    const profileHref = isGuest ? '' : getProfileHref(profile, language, isLegacy);
     const highlightedClass = comment.isHighlighted ? ' article-comment--highlighted' : '';
     const avatarUrl = profile.avatar_url || '';
-    const communityPoints = isLegacy ? 0 : getCommunityPoints(profile);
+    const communityPoints = isLegacy || isGuest ? 0 : getCommunityPoints(profile);
     const hasOwnReply = replies.some((reply) => Boolean(reply.isOwnComment));
 
     const canReplyToComment = canReply && !isLegacy && comment.status === 'approved' && !hasOwnReply;
@@ -932,6 +1016,14 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const sortButtons = root.querySelectorAll('[data-comments-sort]');
     const form = root.querySelector('[data-comments-form]');
     const currentUserNode = root.querySelector('[data-current-user]');
+    const guestIntro = root.querySelector('[data-guest-intro]');
+    const guestIdentityNode = root.querySelector('[data-guest-identity]');
+    const guestFields = root.querySelector('[data-guest-fields]');
+    const guestNameInput = root.querySelector('[data-guest-name]');
+    const guestEmailInput = root.querySelector('[data-guest-email]');
+    const guestHoneypot = root.querySelector('[data-guest-honeypot]');
+    const registeredOptions = root.querySelector('[data-registered-options]');
+    const guestSuccess = root.querySelector('[data-guest-success]');
     const parentInput = root.querySelector('[data-parent-comment-id]');
     const replyingTo = root.querySelector('[data-replying-to]');
     const replyingToText = root.querySelector('[data-replying-to-text]');
@@ -939,6 +1031,9 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const textarea = root.querySelector('[data-comment-textarea]');
 
     let currentProfile = null;
+    let currentViewer = null;
+    let canCompose = false;
+    let isGuestComposer = false;
     let loadedComments = [];
     let lastPermalinkTarget = null;
     let permalinkScrollAttempts = 0;
@@ -1103,7 +1198,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       }
 
       listNode.innerHTML = mergedComments
-        .map((comment) => renderComment(comment, articleLanguage, labels, Boolean(currentProfile)))
+        .map((comment) => renderComment(comment, articleLanguage, labels, canCompose))
         .join('');
       queueCommentHashScroll();
     };
@@ -1435,7 +1530,19 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
     const applyViewerState = (viewer = null) => {
       const canComment = Boolean(viewer?.canComment);
-      currentProfile = canComment
+      const isAuthenticated = Boolean(canComment && viewer?.isAuthenticated);
+      const recognizedGuest = viewer?.guest?.recognized
+        ? viewer.guest
+        : null;
+      currentViewer = viewer;
+      canCompose = canComment;
+      isGuestComposer = Boolean(
+        canComment &&
+        !isAuthenticated &&
+        viewer?.canGuestComment &&
+        viewer?.authorType === 'guest'
+      );
+      currentProfile = isAuthenticated
         ? {
             id: viewer.profileId || '',
             user_id: viewer.userId || '',
@@ -1448,9 +1555,41 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
       if (authBox) authBox.hidden = canComment;
       if (composer) composer.hidden = !canComment;
+      if (guestIntro) guestIntro.hidden = !isGuestComposer;
+      if (guestFields) guestFields.hidden = !isGuestComposer;
+      if (registeredOptions) registeredOptions.hidden = isGuestComposer;
+      if (guestIdentityNode) {
+        guestIdentityNode.textContent = recognizedGuest
+          ? labels.guestIdentity.replace('{name}', recognizedGuest.displayName || labels.guestBadge)
+          : '';
+        guestIdentityNode.hidden = !recognizedGuest;
+      }
+
+      if (guestNameInput instanceof HTMLInputElement) {
+        guestNameInput.disabled = !isGuestComposer;
+        guestNameInput.required = isGuestComposer;
+        guestNameInput.readOnly = Boolean(recognizedGuest);
+
+        if (recognizedGuest) {
+          guestNameInput.value = recognizedGuest.displayName || '';
+        }
+      }
+
+      if (guestEmailInput instanceof HTMLInputElement) {
+        guestEmailInput.disabled = !isGuestComposer;
+        guestEmailInput.required = isGuestComposer;
+      }
+
+      if (guestHoneypot instanceof HTMLInputElement) {
+        guestHoneypot.disabled = !isGuestComposer;
+      }
+
+      registeredOptions?.querySelectorAll('input').forEach((input) => {
+        input.disabled = isGuestComposer;
+      });
 
       if (currentUserNode) {
-        currentUserNode.textContent = canComment
+        currentUserNode.textContent = isAuthenticated
           ? `${labels.loggedAs} ${getAuthorName(currentProfile, labels.reader)}`
           : '';
       }
@@ -1492,6 +1631,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
       submitButton.disabled = true;
       setStatus('');
+      if (guestSuccess) guestSuccess.hidden = true;
 
       try {
         const response = await fetch('/api/comments/create', {
@@ -1506,6 +1646,9 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
             articleUrl,
             parentId: String(formData.get('parentId') || '') || null,
             body,
+            authorName: isGuestComposer ? String(formData.get('authorName') || '') : undefined,
+            authorEmail: isGuestComposer ? String(formData.get('authorEmail') || '') : undefined,
+            website: isGuestComposer ? String(formData.get('website') || '') : undefined,
             notifyReplies: formData.get('notifyReplies') === 'on',
             notifyThread: formData.get('notifyThread') === 'on'
           })
@@ -1524,6 +1667,17 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         if (composer) composer.open = false;
 
         setStatus(result.message || labels.sent, 'ok');
+
+        if (isGuestComposer) {
+          if (guestSuccess) guestSuccess.hidden = false;
+
+          if (result.guest?.recognized) {
+            applyViewerState({
+              ...(currentViewer || {}),
+              guest: result.guest
+            });
+          }
+        }
 
         if (result.comment) {
           await loadComments();
@@ -1586,7 +1740,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         ? target.closest('[data-reply-to-comment]')
         : null;
 
-      if (!button || !currentProfile) return;
+      if (!button || !canCompose) return;
 
       const commentId = button.dataset.replyToComment;
       const author = button.dataset.replyToAuthor || '';

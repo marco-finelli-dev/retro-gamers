@@ -187,6 +187,11 @@ const alternateLanguages = [
                       label={`${copy.profileLabel}: ${comment.authorName}`}
                     />
                     <strong>{comment.authorName}</strong>
+                    {comment.authorType === 'guest' && (
+                      <span class="community-hub-memory__guest-badge">
+                        {isEn ? 'Guest' : 'Ospite'}
+                      </span>
+                    )}
                   </header>
 
                   <p>{comment.excerpt}</p>

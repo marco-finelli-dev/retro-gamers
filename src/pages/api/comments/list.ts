@@ -3,6 +3,12 @@ import { logApiError } from '../../../lib/api-errors';
 import { calculateCommunityPoints } from '../../../lib/community-points';
 import { getUserSessionFromCookies, isBlockedProfileStatus, isStaffProfile } from '../../../lib/supabase/auth';
 import { getAvatarPublicUrl, isMissingAvatarColumnError } from '../../../lib/supabase/avatars';
+import { isGuestCommentsConfigured } from '../../../lib/guest-comments';
+import { getGuestIdentitySecret } from '../../../lib/guest-comments-runtime';
+import {
+  getRecognizedGuestIdentity,
+  isMissingGuestCommentSchemaError,
+} from '../../../lib/supabase/guest-comments';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 
 const json = (payload: unknown, status = 200) =>
@@ -186,12 +192,21 @@ const fetchAuthorCommunityStats = async (userIds: string[]) => {
   return stats;
 };
 
-const getViewerState = (session: Awaited<ReturnType<typeof getUserSessionFromCookies>>) => {
+const getViewerState = (
+  session: Awaited<ReturnType<typeof getUserSessionFromCookies>>,
+  guestIdentity: Awaited<ReturnType<typeof getRecognizedGuestIdentity>> = null,
+  guestCommentsConfigured = false
+) => {
   const profile = session.profile;
   const isAuthenticated = Boolean(session.user && profile && !session.error);
   const canComment = Boolean(isAuthenticated && !isBlockedProfileStatus(profile?.status));
 
   if (!isAuthenticated || !profile) {
+    const blockedAuthenticatedProfile = Boolean(
+      (session.user || profile) && isBlockedProfileStatus(profile?.status)
+    );
+    const canGuestComment = !blockedAuthenticatedProfile && guestCommentsConfigured;
+
     return {
       isAuthenticated: false,
       profileId: null,
@@ -200,8 +215,16 @@ const getViewerState = (session: Awaited<ReturnType<typeof getUserSessionFromCoo
       displayName: '',
       role: '',
       status: '',
-      canComment: false,
+      canComment: canGuestComment,
       canAutoApprove: false,
+      canGuestComment,
+      authorType: 'guest',
+      guest: guestIdentity
+        ? {
+            recognized: true,
+            displayName: guestIdentity.canonical_display_name,
+          }
+        : null,
     };
   }
 
@@ -215,10 +238,13 @@ const getViewerState = (session: Awaited<ReturnType<typeof getUserSessionFromCoo
     status: profile.status ?? '',
     canComment,
     canAutoApprove: isStaffProfile(profile),
+    canGuestComment: false,
+    authorType: 'registered',
+    guest: null,
   };
 };
 
-const getCommentsSelect = (includeAvatar = true) => `
+const getCommentsSelect = (includeAvatar = true, includeGuestFields = true) => `
       id,
       article_slug,
       article_language,
@@ -228,6 +254,7 @@ const getCommentsSelect = (includeAvatar = true) => `
       body,
       status,
       user_id,
+      ${includeGuestFields ? 'author_type, guest_display_name,' : ''}
       created_at,
       profiles:profile_id (
         id,
@@ -266,13 +293,28 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   }
 
   const session = await getUserSessionFromCookies(cookies);
-  const viewer = getViewerState(session);
+  let guestIdentity: Awaited<ReturnType<typeof getRecognizedGuestIdentity>> = null;
+  const guestCommentsConfigured = isGuestCommentsConfigured(getGuestIdentitySecret());
+
+  if (!session.user && !session.profile && guestCommentsConfigured) {
+    try {
+      guestIdentity = await getRecognizedGuestIdentity(cookies);
+    } catch (error) {
+      const apiError = error as { code?: string } | null;
+
+      console.error('Guest comment identity lookup failed:', {
+        code: apiError?.code || 'unknown',
+      });
+    }
+  }
+
+  const viewer = getViewerState(session, guestIdentity, guestCommentsConfigured);
   const currentUserId = viewer.canComment ? session.user?.id ?? null : null;
 
-  const fetchArticleComments = async (includeAvatar = true) => {
+  const fetchArticleComments = async (includeAvatar = true, includeGuestFields = true) => {
     const { data: approvedComments, error: approvedError } = await supabaseAdmin
       .from('comments')
-      .select(getCommentsSelect(includeAvatar))
+      .select(getCommentsSelect(includeAvatar, includeGuestFields))
       .eq('article_slug', articleSlug)
       .eq('article_language', articleLanguage)
       .eq('status', 'approved')
@@ -289,7 +331,7 @@ export const GET: APIRoute = async ({ url, cookies }) => {
 
     const { data: pendingComments, error: pendingError } = await supabaseAdmin
       .from('comments')
-      .select(getCommentsSelect(includeAvatar))
+      .select(getCommentsSelect(includeAvatar, includeGuestFields))
       .eq('article_slug', articleSlug)
       .eq('article_language', articleLanguage)
       .eq('status', 'pending')
@@ -307,10 +349,20 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     };
   };
 
-  let { data, error } = await fetchArticleComments(true);
+  let includeAvatar = true;
+  let includeGuestFields = true;
+  let { data, error } = await fetchArticleComments(includeAvatar, includeGuestFields);
+
+  if (isMissingGuestCommentSchemaError(error)) {
+    includeGuestFields = false;
+    const fallbackResult = await fetchArticleComments(includeAvatar, includeGuestFields);
+    data = fallbackResult.data;
+    error = fallbackResult.error;
+  }
 
   if (isMissingAvatarColumnError(error)) {
-    const fallbackResult = await fetchArticleComments(false);
+    includeAvatar = false;
+    const fallbackResult = await fetchArticleComments(includeAvatar, includeGuestFields);
     data = fallbackResult.data;
     error = fallbackResult.error;
   }
@@ -432,16 +484,32 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   };
   const withReactionSummary = (comment: (typeof comments)[number]) => {
     const { user_id: userId, ...publicComment } = comment;
+    const authorType = publicComment.author_type === 'guest' ? 'guest' : 'registered';
+    const guestDisplayName = authorType === 'guest'
+      ? String(publicComment.guest_display_name || '').trim()
+      : '';
+    delete publicComment.author_type;
+    delete publicComment.guest_display_name;
     const isOwnComment = Boolean(currentUserId && userId === currentUserId);
-    const profileWithAvatar = withAvatarUrl(publicComment.profiles);
+    const profileWithAvatar = authorType === 'guest'
+      ? {
+          display_name: guestDisplayName || (articleLanguage === 'en' ? 'Guest' : 'Ospite'),
+          username: '',
+          avatar_url: null,
+          is_guest: true,
+        }
+      : withAvatarUrl(publicComment.profiles);
     const authorStats = userId ? authorCommunityStats.get(String(userId)) : null;
 
     return {
       ...publicComment,
+      authorType,
       profiles: profileWithAvatar
         ? {
             ...profileWithAvatar,
-            community_points: authorStats?.communityPoints ?? calculateCommunityPoints({}),
+            community_points: authorType === 'guest'
+              ? 0
+              : authorStats?.communityPoints ?? calculateCommunityPoints({}),
           }
         : profileWithAvatar,
       ...(reactionSummaries.get(comment.id) ?? emptyReactionSummary()),
