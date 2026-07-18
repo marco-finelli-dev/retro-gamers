@@ -5,7 +5,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Pagination from '../../components/common/Pagination.astro';
 import { client } from '../../lib/sanity';
 import { urlFor } from '../../lib/image';
-import { getAllPosts, groupPosts } from '../../lib/posts';
+import { PUBLIC_POST_GROQ_FILTER, getAllPosts, groupPosts } from '../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../lib/pagination';
 
 const authors = await client.fetch(`
@@ -28,7 +28,7 @@ const authors = await client.fetch(`
     "postCount": count(*[
       _type == "article" &&
       defined(slug.current) &&
-      coalesce(isPublic, false) == true &&
+      ${PUBLIC_POST_GROQ_FILTER} &&
       author._ref == ^._id &&
       (!defined(language) || language == "it") &&
       !(_id in path("drafts.**"))

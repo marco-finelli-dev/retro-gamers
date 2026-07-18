@@ -3,6 +3,7 @@ import { logApiError } from '../../../../lib/api-errors';
 import { urlFor } from '../../../../lib/image.js';
 import { getPostUrl } from '../../../../lib/routes.js';
 import { client } from '../../../../lib/sanity.js';
+import { PUBLIC_POST_GROQ_FILTER } from '../../../../lib/posts';
 import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supabase/auth';
 
 type NewsletterContentSearchType = 'review' | 'feature' | 'guide' | 'news' | 'interview';
@@ -117,7 +118,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
       *[
         _type == "article" &&
         defined(slug.current) &&
-        coalesce(isPublic, false) == true &&
+        ${PUBLIC_POST_GROQ_FILTER} &&
         !(_id in path("drafts.**")) &&
         (
           ($lang == "en" && language == "en") ||

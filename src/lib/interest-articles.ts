@@ -1,6 +1,7 @@
 import { client } from './sanity';
 import { urlFor } from './image.js';
 import { getPostUrl } from './routes.js';
+import { PUBLIC_POST_GROQ_FILTER } from './posts';
 import type { UserInterestRow } from './supabase/user-interests';
 
 type InterestArticleMatch = {
@@ -146,7 +147,7 @@ export async function getInterestArticles(
       *[
         _type == "article" &&
         defined(slug.current) &&
-        coalesce(isPublic, false) == true &&
+        ${PUBLIC_POST_GROQ_FILTER} &&
         !(_id in path("drafts.**")) &&
         (
           ($lang == "en" && language == "en") ||

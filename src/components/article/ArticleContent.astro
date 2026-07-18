@@ -204,7 +204,7 @@ function renderTextChild(child, markDefs = []) {
       if (
         !isPreview &&
         def.reference?._type === 'article' &&
-        def.reference?.isPublic !== true
+        def.reference?.isPublic === false
       ) {
         return;
       }

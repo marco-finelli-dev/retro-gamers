@@ -10,7 +10,12 @@ import {
 
 import { getSanityClient } from '../../../lib/sanity';
 import { isDraftMode } from '../../../lib/sanity-preview';
-import { getArticleRoutePosts, getRelatedPosts } from '../../../lib/posts';
+import {
+  PUBLIC_POST_GROQ_FILTER,
+  getPublicPostSummaries,
+  getRelatedPosts,
+  isPostPubliclyDistributed
+} from '../../../lib/posts';
 import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
@@ -95,7 +100,6 @@ const post = await sanityClient.fetch(`
   _type == "article" &&
   slug.current == $slug &&
   type == $expectedType &&
-  ($isPreview || coalesce(isPublic, false) == true) &&
   language == "en"
 ][0]{
   _id,
@@ -449,7 +453,7 @@ const portableTextCreators = getCreatorRefsFromPortableText(post.content);
 
 const directItalianTranslation =
   post.translationOf?.language === 'it' &&
-  (isPreview || post.translationOf?.isPublic === true)
+  (isPreview || isPostPubliclyDistributed(post.translationOf))
     ? post.translationOf
     : null;
 
@@ -460,7 +464,7 @@ const reverseItalianTranslationPromise = directItalianTranslation
       _type == "article" &&
       defined(slug.current) &&
       coalesce(language, "it") == "it" &&
-      ($isPreview || coalesce(isPublic, false) == true) &&
+      ($isPreview || ${PUBLIC_POST_GROQ_FILTER}) &&
       translationOf._ref == $postId
     ][0]{
       _id,
@@ -493,7 +497,7 @@ const seriesPostsPromise = seriesId
       _type == "article" &&
       defined(slug.current) &&
       !(_id in path("drafts.**")) &&
-      ($isPreview || coalesce(isPublic, false) == true) &&
+      ($isPreview || ${PUBLIC_POST_GROQ_FILTER}) &&
       language == "en" &&
       references($seriesId)
     ] | order(coalesce(seriesOrder, 999) asc, coalesce(publishedAt, _createdAt) asc) {
@@ -554,14 +558,14 @@ const [
   reverseItalianTranslation,
   seriesPosts,
   comments,
-  articleRoutePosts,
+  publicPostSummaries,
   viewerSession
 ] = await Promise.all([
   getCreatorsReferencingArticle(publishedPostId),
   reverseItalianTranslationPromise,
   seriesPostsPromise,
   commentsPromise,
-  getArticleRoutePosts(),
+  getPublicPostSummaries(),
   getUserSessionFromCookies(Astro.cookies)
 ]);
 
@@ -582,7 +586,7 @@ let hydratedPost = {
   readingTime
 };
 
-const englishPosts = articleRoutePosts.filter(
+const englishPosts = publicPostSummaries.filter(
   (post) => post.language === 'en'
 );
 
@@ -594,7 +598,7 @@ const englishNews = englishPosts.filter(
   (post) => post.type === 'news'
 );
 
-const relatedPosts = getRelatedPosts(hydratedPost, articleRoutePosts, 3);
+const relatedPosts = getRelatedPosts(hydratedPost, publicPostSummaries, 3);
 const commentCountMap = await getApprovedCommentCountMap([hydratedPost, ...relatedPosts], 'en');
 hydratedPost = attachApprovedCommentCounts([hydratedPost], commentCountMap, 'en')[0];
 const relatedPostsWithCommentCounts = attachApprovedCommentCounts(
@@ -680,7 +684,7 @@ const alternateLanguages = [
   publishedAt={post.publishedAt}
   lang="en"
   alternateLanguages={alternateLanguages}
-  noindex={isPreview}
+  noindex={isPreview || !isPostPubliclyDistributed(post)}
 >
 
   {isPreview && (

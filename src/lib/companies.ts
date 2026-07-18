@@ -1,5 +1,9 @@
 import { client } from './sanity';
-import type { PlatformRef, Post } from './posts';
+import {
+  PUBLIC_POST_GROQ_FILTER,
+  type PlatformRef,
+  type Post
+} from './posts';
 export { getCompanyUrl } from './routes.js';
 
 export type CompanyType = 'developer' | 'publisher' | 'manufacturer';
@@ -179,7 +183,7 @@ const companyFields = `
 
   "relatedArticles": *[
     _type == "article" &&
-    coalesce(isPublic, false) == true &&
+    ${PUBLIC_POST_GROQ_FILTER} &&
     !(_id in path("drafts.**")) &&
     (
       ^._id in developers[]._ref ||

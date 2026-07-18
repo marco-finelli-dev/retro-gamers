@@ -1,5 +1,11 @@
 import { client } from './sanity';
-import type { CreatorRef, PlatformRef, Post } from './posts';
+import {
+  PUBLIC_POST_GROQ_FILTER,
+  isPostPubliclyDistributed,
+  type CreatorRef,
+  type PlatformRef,
+  type Post
+} from './posts';
 
 export type CreatorCompanyRef = {
   name: string;
@@ -133,6 +139,7 @@ const creatorFields = `
     cardExcerpt,
     subtitle,
     type,
+    isPublic,
     language,
     publishedAt,
 
@@ -269,7 +276,7 @@ export async function getArticlesReferencingCreator(
     *[
       _type == "article" &&
       defined(slug.current) &&
-      coalesce(isPublic, false) == true &&
+      ${PUBLIC_POST_GROQ_FILTER} &&
       !(_id in path("drafts.**")) &&
       ${languageFilter} &&
       references($creatorId)
@@ -362,6 +369,7 @@ export function mergeCreatorRelatedArticles(
 
   for (const post of [...manualArticles, ...inverseArticles]) {
     if (!post?.slug) continue;
+    if (!isPostPubliclyDistributed(post)) continue;
 
     const postLang = post.language || 'it';
     if (lang === 'en' ? postLang !== 'en' : postLang === 'en') continue;

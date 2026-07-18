@@ -4,7 +4,11 @@ import '../../styles/pages/playable-classics.css';
 import { toHTML } from '@portabletext/to-html';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
-import { getAllPosts, groupPosts } from '../../lib/posts';
+import {
+  getAllPosts,
+  groupPosts,
+  isPostPubliclyDistributed
+} from '../../lib/posts';
 import {
   getPlayableClassicUrl,
   type PlayableClassic,
@@ -569,7 +573,8 @@ const getCreatorInitials = (name = '') =>
     .toUpperCase();
 
 const isRelatedPostInCurrentLanguage = (post: any) =>
-  post?.isPublic === true && (isEn ? post?.language === 'en' : post?.language !== 'en');
+  isPostPubliclyDistributed(post) &&
+  (isEn ? post?.language === 'en' : post?.language !== 'en');
 
 const getLocalizedRelatedPost = (post: any) => {
   if (isRelatedPostInCurrentLanguage(post)) {

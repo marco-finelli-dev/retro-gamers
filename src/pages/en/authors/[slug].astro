@@ -7,7 +7,7 @@ import Pagination from '../../../components/common/Pagination.astro';
 import { PortableText } from 'astro-portabletext';
 import { client } from '../../../lib/sanity';
 import { urlFor } from '../../../lib/image';
-import { getAllPosts } from '../../../lib/posts';
+import { PUBLIC_POST_GROQ_FILTER, getAllPosts } from '../../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../lib/pagination';
 
 const { slug } = Astro.params;
@@ -170,7 +170,7 @@ const posts = await client.fetch(`
   *[
     _type == "article" &&
     defined(slug.current) &&
-    coalesce(isPublic, false) == true &&
+    ${PUBLIC_POST_GROQ_FILTER} &&
     author._ref == $authorId &&
     language == "en" &&
     !(_id in path("drafts.**"))

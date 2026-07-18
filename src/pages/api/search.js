@@ -1,4 +1,5 @@
 import { client } from '../../lib/sanity';
+import { PUBLIC_POST_GROQ_FILTER } from '../../lib/posts';
 
 export async function GET() {
   const data = await client.fetch(`
@@ -6,7 +7,7 @@ export async function GET() {
       "articles": *[
         _type == "article" &&
         defined(slug.current) &&
-        coalesce(isPublic, false) == true &&
+        ${PUBLIC_POST_GROQ_FILTER} &&
         !(_id in path("drafts.**"))
       ] | order(coalesce(publishedAt, _createdAt) desc) {
         title,

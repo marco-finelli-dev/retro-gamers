@@ -1,4 +1,5 @@
 import { client } from './sanity';
+import { PUBLIC_POST_GROQ_FILTER } from './posts';
 export { getPlayableClassicUrl } from './routes.js';
 
 export type PlayableClassicLang = 'it' | 'en';
@@ -211,7 +212,7 @@ const relatedPostFields = `
   "translatedVersions": *[
     _type == "article" &&
     translationOf._ref == ^._id &&
-    coalesce(isPublic, false) == true &&
+    ${PUBLIC_POST_GROQ_FILTER} &&
     !(_id in path("drafts.**"))
   ]{ ${relatedPostCoreFields} }
 `;
@@ -300,7 +301,7 @@ const playableClassicFields = `
   "relatedPosts": *[
     _type == "article" &&
     _id in ^.relatedPosts[]._ref &&
-    coalesce(isPublic, false) == true &&
+    ${PUBLIC_POST_GROQ_FILTER} &&
     !(_id in path("drafts.**"))
   ]{ ${relatedPostFields} },
   relatedPlatforms[]->{ ${platformFields} },

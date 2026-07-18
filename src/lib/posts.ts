@@ -174,6 +174,18 @@ export type Post = {
   [key: string]: any;
 };
 
+/**
+ * Public distribution is opt-out so articles created before `isPublic` was
+ * introduced keep their historical public behaviour.
+ */
+export const PUBLIC_POST_GROQ_FILTER = 'coalesce(isPublic, true) == true';
+
+export function isPostPubliclyDistributed(
+  post: Pick<Post, 'isPublic'> | null | undefined
+) {
+  return post?.isPublic !== false;
+}
+
 // =========================
 // FETCH UNICO
 // =========================
@@ -183,7 +195,7 @@ export async function getAllPosts(): Promise<Post[]> {
     *[
       _type == "article" &&
       defined(slug.current) &&
-      coalesce(isPublic, false) == true &&
+      ${PUBLIC_POST_GROQ_FILTER} &&
       !(_id in path("drafts.**"))
     ] | order(coalesce(publishedAt, _createdAt) desc){
       _id,
@@ -373,12 +385,12 @@ export async function getAllPosts(): Promise<Post[]> {
   return data || [];
 }
 
-export async function getArticleRoutePosts(): Promise<Post[]> {
+export async function getPublicPostSummaries(): Promise<Post[]> {
   const data = await client.fetch(`
     *[
       _type == "article" &&
       defined(slug.current) &&
-      coalesce(isPublic, false) == true &&
+      ${PUBLIC_POST_GROQ_FILTER} &&
       !(_id in path("drafts.**"))
     ] | order(coalesce(publishedAt, _createdAt) desc){
       _id,
@@ -754,6 +766,7 @@ export function getRelatedPosts(
     let score = 0;
 
     if (!post?._id || post._id === currentPost._id) return -999;
+    if (!isPostPubliclyDistributed(post)) return -999;
 
     /*
       Articoli correlati nella stessa lingua.
