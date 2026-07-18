@@ -1,0 +1,282 @@
+.retro-experience-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+[data-retro-experience-launcher] {
+  position: relative;
+  z-index: 100000;
+}
+
+html.has-retro-experience-open,
+html.has-retro-experience-open body {
+  overflow: hidden;
+}
+
+.retro-experience-overlay {
+  position: fixed;
+  z-index: 100000;
+  inset: 0;
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  background: #000;
+  isolation: isolate;
+}
+
+.retro-experience__screen {
+  position: relative;
+  width: min(100vw, 160vh);
+  max-width: 100vw;
+  aspect-ratio: 8 / 5;
+  overflow: hidden;
+}
+
+.retro-experience__screen > img,
+.retro-amiga__stage,
+.retro-amiga__stage > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.retro-experience__screen img {
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+.retro-experience__skip {
+  position: absolute;
+  z-index: 5;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.retro-experience__skip--monkey {
+  top: 4.5%;
+  right: 3.2%;
+  border: 0;
+  padding: 0.25em 0.35em;
+  background: transparent;
+  color: #ef4054;
+  font: 900 clamp(0.72rem, 1.15vw, 1.05rem)/1 ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.08em;
+  text-shadow: 2px 2px 0 #21002c;
+  text-transform: uppercase;
+}
+
+.retro-experience__skip--monkey:hover,
+.retro-experience__skip--monkey:focus-visible {
+  color: #ff6a7b;
+  outline: 0;
+  text-shadow: 2px 2px 0 #21002c;
+}
+
+.retro-experience__skip--amiga {
+  top: 8.4%;
+  left: 2.1%;
+  min-width: clamp(58px, 6.2vw, 90px);
+  border: 2px solid #071b33;
+  border-top-color: #fff;
+  border-left-color: #fff;
+  padding: clamp(3px, 0.35vw, 6px) clamp(7px, 0.7vw, 11px);
+  background: #d8e8f4;
+  color: #064f94;
+  font: 800 clamp(0.68rem, 0.9vw, 0.9rem)/1 ui-monospace, "Courier New", monospace;
+  letter-spacing: 0.02em;
+}
+
+.retro-experience__skip--amiga:hover,
+.retro-experience__skip--amiga:focus-visible {
+  border-color: #fff;
+  border-top-color: #071b33;
+  border-left-color: #071b33;
+  outline: 0;
+  background: #075ba8;
+  color: #fff;
+}
+
+.retro-amiga__stage[hidden] {
+  display: none;
+}
+
+.retro-amiga__icons {
+  position: absolute;
+  z-index: 2;
+  top: 10%;
+  right: 2.4%;
+  display: grid;
+  width: clamp(92px, 14%, 214px);
+  gap: clamp(4px, 1.2vh, 16px);
+  justify-items: center;
+}
+
+.retro-amiga__disk {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  padding: 4px;
+  background: transparent;
+  color: #fff;
+  place-items: center;
+}
+
+.retro-amiga__disk--ram img {
+  width: 66.4%;
+  height: auto;
+}
+
+.retro-amiga__disk--site img {
+  width: 100%;
+  height: auto;
+}
+
+.retro-amiga__disk:focus,
+.retro-amiga__disk:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+
+.retro-monkey__background {
+  position: absolute;
+  inset: 0;
+}
+
+.retro-monkey__choice {
+  position: absolute;
+  z-index: 2;
+  left: 5%;
+  width: 4.85%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  background-color: transparent;
+  box-shadow: none;
+  filter: none;
+  opacity: 1;
+  transform: none;
+}
+
+.retro-monkey__choice--simple {
+  top: 60.15%;
+}
+
+.retro-monkey__choice--all {
+  top: 28.15%;
+}
+
+.retro-monkey__choice:hover,
+.retro-monkey__choice:focus,
+.retro-monkey__choice:focus-visible {
+  appearance: none;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  background: transparent;
+  background-color: transparent;
+  filter: none;
+  opacity: 1;
+  transform: none;
+}
+
+.retro-monkey__choice:disabled {
+  cursor: default;
+}
+
+.retro-monkey__choice-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.retro-monkey__spit {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+.retro-monkey__spit-window {
+  position: absolute;
+  z-index: 2;
+  inset: 1.5%;
+  display: grid;
+  overflow: hidden;
+  pointer-events: none;
+  place-items: center;
+}
+
+.retro-monkey__spit[hidden] {
+  display: none;
+}
+
+:root {
+  --retro-monkey-cursor-size: 35px;
+}
+
+[data-retro-monkey-cursor] {
+  position: fixed;
+  z-index: 100002;
+  top: 0;
+  left: 0;
+  width: var(--retro-monkey-cursor-size);
+  height: var(--retro-monkey-cursor-size);
+  pointer-events: none;
+  will-change: transform;
+}
+
+[data-retro-monkey-cursor][hidden] {
+  display: none;
+}
+
+[data-retro-monkey-cursor] img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  html[data-retro-experience="amiga"],
+  html[data-retro-experience="amiga"] body,
+  html[data-retro-experience="amiga"] body * {
+    cursor: url('/assets/retro-experience/amiga/workbench-cursor-normal-select.webp') 1 1, default;
+  }
+
+  html[data-retro-experience="amiga"] :is(a[href], button, [role="button"], summary, label[for]) {
+    cursor: url('/assets/retro-experience/amiga/workbench-cursor-link-select.webp') 2 2, pointer;
+  }
+
+  html[data-retro-experience="amiga"] :is(input, textarea, [contenteditable="true"], code, pre) {
+    cursor: url('/assets/retro-experience/amiga/workbench-cursor-text-select.webp') 13 13, text;
+  }
+
+  html[data-retro-experience="amiga"].is-retro-navigating,
+  html[data-retro-experience="amiga"].is-retro-navigating body,
+  html[data-retro-experience="amiga"].is-retro-navigating body * {
+    cursor: url('/assets/retro-experience/amiga/worbench-cursor-zz.webp') 15 16, wait;
+  }
+
+  html.has-retro-monkey-cursor,
+  html.has-retro-monkey-cursor body,
+  html.has-retro-monkey-cursor body * {
+    cursor: none !important;
+  }
+}

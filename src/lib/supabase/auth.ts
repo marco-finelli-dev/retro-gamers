@@ -1,5 +1,9 @@
 import { supabaseAdmin, supabasePublic } from './server';
 import { getAvatarPublicUrl, isMissingAvatarColumnError } from './avatars';
+import {
+  normalizePreferredLanguage,
+  normalizeRetroExperience,
+} from '../retro-experience';
 
 export const authAccessCookie = 'rg_access_token';
 export const authRefreshCookie = 'rg_refresh_token';
@@ -15,6 +19,24 @@ const authCookieOptions = {
 
 export function isBlockedProfileStatus(status?: string | null) {
   return status === 'blocked' || status === 'suspended' || status === 'banned';
+}
+
+function isMissingProfilePreferenceColumnError(
+  error: { code?: string; message?: string; details?: string } | null
+) {
+  if (!error) return false;
+
+  const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+
+  return (
+    (message.includes('preferred_language') || message.includes('retro_experience')) &&
+    (
+      error.code === '42703' ||
+      error.code === 'PGRST204' ||
+      message.includes('column') ||
+      message.includes('schema cache')
+    )
+  );
 }
 
 export function setAuthSessionCookies(cookies: any, session: { access_token: string; refresh_token?: string }) {
@@ -59,15 +81,16 @@ export async function getUserProfileFromToken(token: string) {
 
   const user = userData.user;
 
-  const profileSelect = `
+  const getProfileSelect = ({ includeAvatar = true, includePreferences = true } = {}) => `
       id,
       user_id,
       username,
       display_name,
-      avatar_path,
+      ${includeAvatar ? 'avatar_path,' : ''}
       badge_key,
       role,
       status,
+      ${includePreferences ? 'preferred_language, retro_experience,' : ''}
       notify_replies_to_my_comments,
       notify_threads_i_join,
       user_badges (
@@ -77,23 +100,34 @@ export async function getUserProfileFromToken(token: string) {
         image_path
       )
     `;
-  const profileSelectFallback = profileSelect.replace('avatar_path,', '');
+  let includeAvatar = true;
+  let includePreferences = true;
+  let profile: any = null;
+  let profileError: any = null;
 
-  let { data: profile, error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .select(profileSelect)
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (isMissingAvatarColumnError(profileError)) {
-    const fallbackResult = await supabaseAdmin
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const result = await supabaseAdmin
       .from('profiles')
-      .select(profileSelectFallback)
+      .select(getProfileSelect({ includeAvatar, includePreferences }))
       .eq('user_id', user.id)
       .maybeSingle();
 
-    profile = fallbackResult.data;
-    profileError = fallbackResult.error;
+    profile = result.data;
+    profileError = result.error;
+
+    if (!profileError) break;
+
+    if (includePreferences && isMissingProfilePreferenceColumnError(profileError)) {
+      includePreferences = false;
+      continue;
+    }
+
+    if (includeAvatar && isMissingAvatarColumnError(profileError)) {
+      includeAvatar = false;
+      continue;
+    }
+
+    break;
   }
 
   if (profileError) {
@@ -128,6 +162,8 @@ export async function getUserProfileFromToken(token: string) {
     profile: {
       ...profile,
       avatar_url: getAvatarPublicUrl(profile.avatar_path),
+      preferred_language: normalizePreferredLanguage(profile.preferred_language),
+      retro_experience: normalizeRetroExperience(profile.retro_experience),
     },
     error: null,
     status: 200,

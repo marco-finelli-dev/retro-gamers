@@ -22,7 +22,21 @@ const STATIC_LANGUAGE_PAIRS = [
   { it: '/guide/', en: '/en/guides/' },
   { it: '/interviste/', en: '/en/interviews/' },
   { it: '/memories/', en: '/en/memories/' },
-  { it: '/hardware/', en: '/en/hardware/' }
+  { it: '/hardware/', en: '/en/hardware/' },
+  { it: '/community/', en: '/en/community/' },
+  { it: '/badges/', en: '/en/badges/' },
+  { it: '/newsletter/', en: '/en/newsletter/' },
+  { it: '/regolamento-commenti/', en: '/en/comment-rules/' },
+  { it: '/classici-giocabili-oggi/', en: '/en/playable-classics/' },
+  { it: '/classici-giocabili-oggi/policy/', en: '/en/playable-classics/policy/' },
+  { it: '/emulatori/', en: '/en/emulators/' },
+  { it: '/account/', en: '/en/account/' },
+  { it: '/account/login/', en: '/en/account/login/' },
+  { it: '/account/register/', en: '/en/account/register/' },
+  { it: '/account/favorites/', en: '/en/account/favorites/' },
+  { it: '/account/memories/', en: '/en/account/memories/' },
+  { it: '/account/messages/', en: '/en/account/messages/' },
+  { it: '/account/ratings/', en: '/en/account/ratings/' }
 ];
 
 const staticLanguageRoutes = new Map(
@@ -44,9 +58,24 @@ const platformTypeToItalian = {
   consoles: 'console'
 };
 
-function normalizePath(pathname = '/') {
+export function normalizeLanguagePath(pathname = '/') {
   const path = pathname.startsWith('/') ? pathname : `/${pathname}`;
   return path.endsWith('/') ? path : `${path}/`;
+}
+
+function getCurrentUrlParts(currentUrl) {
+  try {
+    const parsed = currentUrl instanceof URL
+      ? currentUrl
+      : new URL(currentUrl || '/', SITE_ORIGIN);
+
+    return {
+      pathname: parsed.pathname,
+      suffix: `${parsed.search}${parsed.hash}`
+    };
+  } catch {
+    return { pathname: '/', suffix: '' };
+  }
 }
 
 function toLocalUrl(value) {
@@ -79,7 +108,7 @@ function getAlternateSwitchUrl(alternateLanguages = [], targetLang) {
 }
 
 function mapItalianPathToEnglish(pathname) {
-  const path = normalizePath(pathname);
+  const path = normalizeLanguagePath(pathname);
 
   if (staticLanguageRoutes.has(path)) {
     return staticLanguageRoutes.get(path);
@@ -123,7 +152,7 @@ function mapItalianPathToEnglish(pathname) {
 }
 
 function mapEnglishPathToItalian(pathname) {
-  const path = normalizePath(pathname);
+  const path = normalizeLanguagePath(pathname);
 
   if (staticLanguageRoutes.has(path)) {
     return staticLanguageRoutes.get(path);
@@ -167,15 +196,15 @@ function mapEnglishPathToItalian(pathname) {
 }
 
 function getMappedSwitchUrl(currentUrl, lang) {
-  const pathname = typeof currentUrl === 'string'
-    ? new URL(currentUrl, SITE_ORIGIN).pathname
-    : currentUrl?.pathname;
+  const { pathname, suffix } = getCurrentUrlParts(currentUrl);
 
   if (!pathname) return '';
 
-  return lang === 'en'
+  const mapped = lang === 'en'
     ? mapEnglishPathToItalian(pathname)
     : mapItalianPathToEnglish(pathname);
+
+  return mapped ? `${mapped}${suffix}` : '';
 }
 
 export function getLanguageSwitchUrl({
@@ -185,11 +214,33 @@ export function getLanguageSwitchUrl({
   alternateLanguages = []
 } = {}) {
   const targetLang = lang === 'en' ? 'it' : 'en';
+  const { suffix } = getCurrentUrlParts(currentUrl);
 
   return (
     getExplicitSwitchUrl(languageSwitch) ||
     getAlternateSwitchUrl(alternateLanguages, targetLang) ||
     getMappedSwitchUrl(currentUrl, lang) ||
-    (lang === 'en' ? '/' : '/en/')
+    `${lang === 'en' ? '/' : '/en/'}${suffix}`
   );
+}
+
+export function getLocalizedLanguageUrl({
+  currentUrl,
+  targetLang = 'it',
+  languageSwitch = null,
+  alternateLanguages = []
+} = {}) {
+  const { pathname, suffix } = getCurrentUrlParts(currentUrl);
+  const currentLang = /^\/en(?:\/|$)/.test(pathname) ? 'en' : 'it';
+
+  if (currentLang === targetLang) {
+    return `${normalizeLanguagePath(pathname)}${suffix}`;
+  }
+
+  return getLanguageSwitchUrl({
+    currentUrl,
+    lang: currentLang,
+    languageSwitch,
+    alternateLanguages
+  });
 }

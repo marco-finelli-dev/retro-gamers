@@ -74,6 +74,30 @@ const accountFavoritesHref = isEnglish ? '/en/account/favorites/' : '/account/fa
 const accountMemoriesHref = isEnglish ? '/en/account/memories/' : '/account/memories/';
 const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/messages/';
 const adminHref = isEnglish ? '/en/admin/' : '/admin/';
+const languageTarget = isEnglish ? 'it' : 'en';
+const initialSession = Astro.locals.userSession;
+const initialProfile = initialSession?.profile;
+const initialUser = initialSession?.user;
+const initialAccountState = !initialSession?.error && initialProfile && initialUser
+  ? {
+      isAuthenticated: true,
+      isStaff: initialProfile.role === 'admin' || initialProfile.role === 'moderator',
+      profile: {
+        role: initialProfile.role,
+        username: initialProfile.username,
+        display_name: initialProfile.display_name,
+        avatar_url: initialProfile.avatar_url,
+      },
+      user: {
+        email: initialUser.email,
+      },
+      preferences: {
+        preferredLanguage: initialProfile.preferred_language,
+        effectiveLanguage: Astro.locals.effectiveLanguage,
+        retroExperience: initialProfile.retro_experience,
+      },
+    }
+  : { isAuthenticated: false };
 ---
 
 <header class="site-header">
@@ -191,6 +215,7 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
             <a
         href={languageUrl}
         class="site-header__language-toggle"
+        data-language-session-override={languageTarget}
         aria-label={languageLabel}
         title={languageLabel}
       >
@@ -204,7 +229,12 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
         />
       </a>
 
-      <div class="site-header__account" data-account-menu data-lang={lang}>
+      <div
+        class="site-header__account"
+        data-account-menu
+        data-lang={lang}
+        data-initial-account-state={JSON.stringify(initialAccountState)}
+      >
         <button
           type="button"
           class="site-header__account-link"
@@ -317,6 +347,16 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
 </header>
 
 <MobileMenu lang={lang} />
+
+<script>
+  import { setLanguageSessionOverride } from '../../lib/preferred-language';
+
+  document.querySelectorAll('[data-language-session-override]').forEach((link) => {
+    link.addEventListener('click', () => {
+      setLanguageSessionOverride(link.dataset.languageSessionOverride);
+    });
+  });
+</script>
 
 <script is:inline>
 (() => {
@@ -466,6 +506,36 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
   let unreadPollingTimer = 0;
   let unreadRefreshInFlight = false;
 
+  const getInitialAccountState = () => {
+    try {
+      return JSON.parse(root?.dataset.initialAccountState || 'null');
+    } catch {
+      return null;
+    }
+  };
+
+  const publishRetroExperienceState = (isAuthenticated, preferences = null) => {
+    const effectiveLanguage = preferences?.effectiveLanguage === 'en'
+      ? 'en'
+      : preferences?.effectiveLanguage === 'it'
+        ? 'it'
+        : preferences?.preferredLanguage === 'en'
+          ? 'en'
+          : 'it';
+    const retroExperience = ['standard', 'amiga', 'monkey'].includes(preferences?.retroExperience)
+      ? preferences.retroExperience
+      : 'standard';
+    const detail = {
+      authenticated: Boolean(isAuthenticated),
+      preferredLanguage: effectiveLanguage,
+      effectiveLanguage,
+      retroExperience
+    };
+
+    window.__rgRetroExperienceProfile = detail;
+    document.dispatchEvent(new CustomEvent('retro-experience:profile', { detail }));
+  };
+
   const getAccountName = (profile, user) =>
     profile?.display_name || profile?.username || user?.email || '';
 
@@ -608,8 +678,15 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
     });
   };
 
-  const setAccountState = (isLoggedIn, isStaff = false, profile = null, user = null) => {
+  const setAccountState = (
+    isLoggedIn,
+    isStaff = false,
+    profile = null,
+    user = null,
+    preferences = null
+  ) => {
     isAccountLoggedIn = Boolean(isLoggedIn);
+    publishRetroExperienceState(isLoggedIn, preferences);
     root?.classList.toggle('is-authenticated', isLoggedIn);
     root?.classList.toggle('is-staff', isLoggedIn && isStaff);
     setAccountAvatar(isLoggedIn, profile, user);
@@ -660,7 +737,8 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
         true,
         staffRoles.has(role),
         result.profile,
-        result.user
+        result.user,
+        result.preferences
       );
       refreshUnreadCount(true).then(scheduleUnreadPolling);
     } catch {
@@ -721,6 +799,22 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
     }
   });
 
-  refreshAccountState();
+  const initialAccountState = getInitialAccountState();
+
+  if (initialAccountState?.isAuthenticated) {
+    setAccountState(
+      true,
+      Boolean(initialAccountState.isStaff),
+      initialAccountState.profile,
+      initialAccountState.user,
+      initialAccountState.preferences
+    );
+    refreshUnreadCount(true).then(scheduleUnreadPolling);
+  } else if (initialAccountState?.isAuthenticated === false) {
+    setAccountState(false);
+    refreshUnreadCount(false);
+  } else {
+    refreshAccountState();
+  }
 })();
 </script>

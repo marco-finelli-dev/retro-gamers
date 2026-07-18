@@ -1,0 +1,602 @@
+---
+import AmigaExperience from './AmigaExperience.astro';
+import MonkeyIslandExperience from './MonkeyIslandExperience.astro';
+import '../../styles/components/retro-experience.css';
+---
+
+<div data-retro-experience-launcher aria-live="polite"></div>
+<AmigaExperience />
+<MonkeyIslandExperience />
+
+<script>
+  import {
+    getPreferredHomeUrl,
+    getRetroExperienceDesktopSupportMediaQuery,
+    isRetroExperienceDesktopSupported,
+    normalizeRetroExperience,
+    resolveEffectiveLanguage,
+    resolveManualRetroLanguage,
+    retroExperienceEvents,
+    retroExperienceSessionKey,
+    type PreferredLanguage,
+    type RetroExperience,
+  } from '../../lib/retro-experience';
+
+  type RetroProfileDetail = {
+    authenticated?: boolean;
+    preferredLanguage?: unknown;
+    effectiveLanguage?: unknown;
+    retroExperience?: unknown;
+    trigger?: unknown;
+  };
+
+  type RetroRuntimeProfile = {
+    authenticated: boolean;
+    preferredLanguage: PreferredLanguage;
+    retroExperience: RetroExperience;
+  };
+
+  declare global {
+    interface Window {
+      __rgRetroExperienceProfile?: RetroProfileDetail;
+    }
+  }
+
+  const launcher = document.querySelector<HTMLElement>('[data-retro-experience-launcher]');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const desktopSupport = getRetroExperienceDesktopSupportMediaQuery();
+  const monkeyCursorFrames = [
+    '/assets/retro-experience/monkey-island/mi-cursor-black.webp',
+    '/assets/retro-experience/monkey-island/mi-cursor-grey.webp',
+    '/assets/retro-experience/monkey-island/mi-cursor-white.webp',
+  ] as const;
+  const monkeyCursorSequence = [0, 1, 2, 1] as const;
+  let currentProfile: RetroRuntimeProfile = {
+    authenticated: false,
+    preferredLanguage: 'it',
+    retroExperience: 'standard',
+  };
+  let closeActiveExperience: ((restoreFocus?: boolean, markCompleted?: boolean) => void) | null = null;
+  let monkeyCursorGeneration = 0;
+  let monkeyCursorState: 'idle' | 'loading' | 'active' = 'idle';
+  let cleanupMonkeyCursor: (() => void) | null = null;
+
+  const getLocalizedValue = (element: HTMLElement, language: PreferredLanguage, prefix = 'label') =>
+    element.dataset[`${prefix}${language === 'en' ? 'En' : 'It'}`] || '';
+
+  const getFocusableElements = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true');
+
+  const activateImages = (container: HTMLElement) => {
+    container.querySelectorAll<HTMLImageElement>('img[data-retro-src]').forEach((image) => {
+      const source = image.dataset.retroSrc;
+      if (source && !image.src) image.src = source;
+    });
+  };
+
+  const rememberIntro = () => {
+    try {
+      window.sessionStorage.setItem(retroExperienceSessionKey, '1');
+    } catch {
+      // A blocked sessionStorage must not prevent the optional experience.
+    }
+  };
+
+  const introWasShown = () => {
+    try {
+      return window.sessionStorage.getItem(retroExperienceSessionKey) === '1';
+    } catch {
+      return false;
+    }
+  };
+
+  const forgetIntro = () => {
+    try {
+      window.sessionStorage.removeItem(retroExperienceSessionKey);
+    } catch {
+      // A blocked sessionStorage must not prevent cleanup.
+    }
+  };
+
+  const resolveDestination = (element: HTMLElement, language: PreferredLanguage) =>
+    element.dataset.retroDestinationKind === 'home'
+      ? getPreferredHomeUrl(language)
+      : element.dataset.retroDestination || '/';
+
+  const beginNavigation = (destination: string) => {
+    document.documentElement.classList.add('is-retro-navigating');
+    window.location.assign(destination);
+  };
+
+  const disableMonkeyCursor = () => {
+    monkeyCursorGeneration += 1;
+    monkeyCursorState = 'idle';
+    cleanupMonkeyCursor?.();
+    cleanupMonkeyCursor = null;
+    document.documentElement.classList.remove('has-retro-monkey-cursor');
+  };
+
+  const preloadMonkeyCursorFrame = (source: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.alt = '';
+    image.decoding = 'async';
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Unable to load Monkey cursor frame: ${source}`));
+    image.src = source;
+  });
+
+  const enableMonkeyCursor = async () => {
+    if (monkeyCursorState !== 'idle') return;
+
+    monkeyCursorState = 'loading';
+    const generation = ++monkeyCursorGeneration;
+
+    try {
+      const preloadedFrames = await Promise.all(monkeyCursorFrames.map(preloadMonkeyCursorFrame));
+
+      if (
+        generation !== monkeyCursorGeneration ||
+        currentProfile.retroExperience !== 'monkey' ||
+        !currentProfile.authenticated ||
+        !isRetroExperienceDesktopSupported(desktopSupport)
+      ) {
+        return;
+      }
+
+      const cursor = document.createElement('div');
+      const cursorImage = preloadedFrames[0];
+      cursor.dataset.retroMonkeyCursor = '';
+      cursor.dataset.frame = '0';
+      cursor.setAttribute('aria-hidden', 'true');
+      cursor.hidden = true;
+      cursorImage.draggable = false;
+      cursor.append(cursorImage);
+      document.body.append(cursor);
+
+      let pointerX = 0;
+      let pointerY = 0;
+      let hasPointerPosition = false;
+      let animationFrame = 0;
+      let renderedFrame = -1;
+      const frameDuration = reducedMotion.matches ? 220 : 160;
+
+      const setCursorVisible = (visible: boolean) => {
+        cursor.hidden = !visible;
+        document.documentElement.classList.toggle('has-retro-monkey-cursor', visible);
+      };
+
+      const renderCursor = (time: number) => {
+        if (hasPointerPosition) {
+          cursor.style.transform = `translate3d(${pointerX}px, ${pointerY}px, 0) translate(-50%, -50%)`;
+        }
+
+        const sequenceIndex = Math.floor(time / frameDuration) % monkeyCursorSequence.length;
+        const nextFrame = monkeyCursorSequence[sequenceIndex];
+
+        if (nextFrame !== renderedFrame) {
+          renderedFrame = nextFrame;
+          cursorImage.src = monkeyCursorFrames[nextFrame];
+          cursor.dataset.frame = String(nextFrame);
+        }
+
+        animationFrame = window.requestAnimationFrame(renderCursor);
+      };
+
+      const onPointerMove = (event: PointerEvent) => {
+        if (event.pointerType === 'touch') return;
+        pointerX = event.clientX;
+        pointerY = event.clientY;
+        hasPointerPosition = true;
+        setCursorVisible(true);
+      };
+      const onPointerOut = (event: PointerEvent) => {
+        if (!event.relatedTarget) setCursorVisible(false);
+      };
+      const onWindowBlur = () => setCursorVisible(false);
+
+      document.addEventListener('pointermove', onPointerMove, { passive: true });
+      document.addEventListener('pointerout', onPointerOut, { passive: true });
+      window.addEventListener('blur', onWindowBlur);
+      animationFrame = window.requestAnimationFrame(renderCursor);
+      monkeyCursorState = 'active';
+
+      cleanupMonkeyCursor = () => {
+        window.cancelAnimationFrame(animationFrame);
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerout', onPointerOut);
+        window.removeEventListener('blur', onWindowBlur);
+        cursor.remove();
+        document.documentElement.classList.remove('has-retro-monkey-cursor');
+      };
+    } catch {
+      if (generation === monkeyCursorGeneration) {
+        monkeyCursorState = 'idle';
+        document.documentElement.classList.remove('has-retro-monkey-cursor');
+      }
+    }
+  };
+
+  const syncMonkeyCursor = () => {
+    const shouldEnable =
+      currentProfile.authenticated &&
+      currentProfile.retroExperience === 'monkey' &&
+      isRetroExperienceDesktopSupported(desktopSupport);
+
+    if (!shouldEnable) {
+      disableMonkeyCursor();
+      return;
+    }
+
+    void enableMonkeyCursor();
+  };
+
+  const localizeOverlay = (overlay: HTMLElement, language: PreferredLanguage) => {
+    const skip = overlay.querySelector<HTMLElement>('[data-retro-skip]');
+    if (skip) skip.textContent = language === 'en' ? 'Skip' : 'Salta';
+
+    overlay.querySelectorAll<HTMLElement>('[data-label-it]').forEach((element) => {
+      element.setAttribute('aria-label', getLocalizedValue(element, language));
+    });
+
+    overlay.querySelectorAll<HTMLElement>('[data-text-it]').forEach((element) => {
+      element.textContent = getLocalizedValue(element, language, 'text');
+    });
+  };
+
+  const prepareAmiga = (
+    overlay: HTMLElement,
+    language: PreferredLanguage,
+    addCleanup: (cleanup: () => void) => void
+  ) => {
+    const boot = overlay.querySelector<HTMLElement>('[data-retro-amiga-boot]');
+    const desktop = overlay.querySelector<HTMLElement>('[data-retro-amiga-desktop]');
+    const disks = Array.from(overlay.querySelectorAll<HTMLButtonElement>('[data-retro-amiga-disk]'));
+    new Set(disks.flatMap((disk) => [
+      disk.dataset.retroInactiveSrc,
+      disk.dataset.retroActiveSrc,
+    ]).filter((source): source is string => Boolean(source))).forEach((source) => {
+      const image = new Image();
+      image.alt = '';
+      image.decoding = 'async';
+      image.src = source;
+    });
+
+    const showDesktop = () => {
+      if (boot) boot.hidden = true;
+      if (desktop) desktop.hidden = false;
+    };
+
+    if (reducedMotion.matches) {
+      showDesktop();
+    } else {
+      const bootTimer = window.setTimeout(showDesktop, 1100);
+      addCleanup(() => window.clearTimeout(bootTimer));
+    }
+
+    const selectDisk = (selected: HTMLButtonElement | null) => {
+      disks.forEach((disk) => {
+        const isSelected = disk === selected;
+        disk.setAttribute('aria-pressed', String(isSelected));
+
+        const image = disk.querySelector<HTMLImageElement>('img');
+        const source = isSelected
+          ? disk.dataset.retroActiveSrc
+          : disk.dataset.retroInactiveSrc;
+
+        if (image && source) image.src = source;
+      });
+    };
+
+    const onDesktopClick = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest('[data-retro-amiga-disk]')) return;
+      selectDisk(null);
+    };
+
+    desktop?.addEventListener('click', onDesktopClick);
+    addCleanup(() => desktop?.removeEventListener('click', onDesktopClick));
+
+    const openDisk = (disk: HTMLButtonElement) => {
+      rememberIntro();
+      beginNavigation(resolveDestination(disk, language));
+    };
+
+    disks.forEach((disk) => {
+      const onClick = () => {
+        selectDisk(disk);
+      };
+      const onFocus = () => selectDisk(disk);
+      const onDoubleClick = () => openDisk(disk);
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        selectDisk(disk);
+        openDisk(disk);
+      };
+
+      disk.addEventListener('click', onClick);
+      disk.addEventListener('focus', onFocus);
+      disk.addEventListener('dblclick', onDoubleClick);
+      disk.addEventListener('keydown', onKeyDown);
+      addCleanup(() => {
+        disk.removeEventListener('click', onClick);
+        disk.removeEventListener('focus', onFocus);
+        disk.removeEventListener('dblclick', onDoubleClick);
+        disk.removeEventListener('keydown', onKeyDown);
+      });
+    });
+  };
+
+  const prepareMonkey = (
+    overlay: HTMLElement,
+    language: PreferredLanguage,
+    addCleanup: (cleanup: () => void) => void
+  ) => {
+    const screen = overlay.querySelector<HTMLImageElement>('[data-retro-monkey-screen]');
+    const choices = Array.from(overlay.querySelectorAll<HTMLButtonElement>('[data-retro-monkey-choice]'));
+    let navigating = false;
+
+    if (screen) {
+      screen.src = language === 'en'
+        ? screen.dataset.retroSrcEn || ''
+        : screen.dataset.retroSrcIt || '';
+    }
+
+    choices.forEach((choice) => {
+      const onChoose = () => {
+        if (navigating) return;
+        navigating = true;
+        rememberIntro();
+        choices.forEach((button) => { button.disabled = true; });
+
+        const spit = choice.querySelector<HTMLImageElement>('[data-retro-monkey-spit]');
+
+        if (spit) {
+          spit.hidden = false;
+        }
+
+        const navigationTimer = window.setTimeout(
+          () => beginNavigation(resolveDestination(choice, language)),
+          reducedMotion.matches ? 200 : 600
+        );
+        addCleanup(() => window.clearTimeout(navigationTimer));
+      };
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        onChoose();
+      };
+
+      choice.addEventListener('click', onChoose);
+      choice.addEventListener('keydown', onKeyDown);
+      addCleanup(() => {
+        choice.removeEventListener('click', onChoose);
+        choice.removeEventListener('keydown', onKeyDown);
+      });
+    });
+  };
+
+  const openExperience = (
+    experience: RetroExperience,
+    language: PreferredLanguage,
+    trigger: Element | null = document.activeElement
+  ) => {
+    if (
+      !launcher ||
+      experience === 'standard' ||
+      !isRetroExperienceDesktopSupported(desktopSupport)
+    ) {
+      closeActiveExperience?.();
+      return;
+    }
+
+    const template = document.querySelector<HTMLTemplateElement>(`template[data-retro-template="${experience}"]`);
+    if (!template) return;
+
+    closeActiveExperience?.(false);
+    launcher.replaceChildren(template.content.cloneNode(true));
+
+    const overlay = launcher.querySelector<HTMLElement>('[data-retro-overlay]');
+    if (!overlay) return;
+
+    const cleanups: Array<() => void> = [];
+    const addCleanup = (cleanup: () => void) => cleanups.push(cleanup);
+    const previousFocus = trigger instanceof HTMLElement ? trigger : null;
+    const scrollPosition = window.scrollY;
+    const wasShownBeforeOpen = introWasShown();
+    let closed = false;
+
+    if (!wasShownBeforeOpen) rememberIntro();
+    localizeOverlay(overlay, language);
+    activateImages(overlay);
+
+    const close = (restoreFocus = true, completed = true) => {
+      if (closed) return;
+      closed = true;
+      if (!completed && !wasShownBeforeOpen) forgetIntro();
+      cleanups.splice(0).forEach((cleanup) => cleanup());
+      launcher.replaceChildren();
+      document.documentElement.classList.remove('has-retro-experience-open');
+      closeActiveExperience = null;
+      window.scrollTo(0, scrollPosition);
+
+      if (restoreFocus && previousFocus?.isConnected) {
+        window.requestAnimationFrame(() => {
+          const fallbackFocus = previousFocus.closest('form')?.querySelector<HTMLElement>(
+            'select[name="retroExperience"], button:not([disabled])'
+          );
+          const focusTarget = previousFocus.matches(':disabled')
+            ? fallbackFocus
+            : previousFocus;
+
+          focusTarget?.focus({ preventScroll: true });
+        });
+      }
+    };
+
+    closeActiveExperience = close;
+    overlay.querySelectorAll<HTMLElement>('[data-retro-close]').forEach((button) => {
+      const onClose = () => close(true, true);
+      button.addEventListener('click', onClose);
+      addCleanup(() => button.removeEventListener('click', onClose));
+    });
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close(true, true);
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const focusable = getFocusableElements(overlay);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    overlay.addEventListener('keydown', onKeyDown);
+    addCleanup(() => overlay.removeEventListener('keydown', onKeyDown));
+
+    if (experience === 'amiga') prepareAmiga(overlay, language, addCleanup);
+    if (experience === 'monkey') prepareMonkey(overlay, language, addCleanup);
+
+    overlay.hidden = false;
+    document.documentElement.classList.add('has-retro-experience-open');
+
+    window.requestAnimationFrame(() => {
+      getFocusableElements(overlay)[0]?.focus({ preventScroll: true });
+    });
+  };
+
+  const applyProfile = (detail: RetroProfileDetail) => {
+    const authenticated = detail.authenticated === true;
+    const profile: RetroRuntimeProfile = {
+      authenticated,
+      preferredLanguage: resolveEffectiveLanguage({
+        sessionOverride: detail.effectiveLanguage,
+        profileLanguage: detail.preferredLanguage,
+        authenticated,
+      }),
+      retroExperience: normalizeRetroExperience(detail.retroExperience),
+    };
+    currentProfile = profile;
+    syncMonkeyCursor();
+
+    if (
+      !profile.authenticated ||
+      profile.retroExperience === 'standard' ||
+      !isRetroExperienceDesktopSupported(desktopSupport)
+    ) {
+      document.documentElement.removeAttribute('data-retro-experience');
+      document.documentElement.classList.remove('is-retro-navigating');
+      if (!profile.authenticated || !isRetroExperienceDesktopSupported(desktopSupport)) {
+        closeActiveExperience?.(true, false);
+      }
+      return;
+    }
+
+    document.documentElement.dataset.retroExperience = profile.retroExperience;
+
+    const isHome = window.location.pathname === '/' || window.location.pathname === '/en/';
+    if (isHome && !introWasShown()) {
+      openExperience(profile.retroExperience, profile.preferredLanguage, null);
+    }
+  };
+
+  document.addEventListener(retroExperienceEvents.profile, (event) => {
+    applyProfile((event as CustomEvent<RetroProfileDetail>).detail || {});
+  });
+
+  document.addEventListener(retroExperienceEvents.launch, (event) => {
+    const detail = (event as CustomEvent<RetroProfileDetail>).detail || {};
+    const preferredLanguage = resolveManualRetroLanguage({
+      selectedLanguage: detail.preferredLanguage,
+      draftLanguage: detail.effectiveLanguage,
+      profileLanguage: currentProfile.preferredLanguage,
+    });
+    const retroExperience = normalizeRetroExperience(detail.retroExperience);
+
+    currentProfile = {
+      authenticated: true,
+      preferredLanguage,
+      retroExperience,
+    };
+    syncMonkeyCursor();
+
+    if (retroExperience === 'standard') {
+      document.documentElement.removeAttribute('data-retro-experience');
+      closeActiveExperience?.();
+      return;
+    }
+
+    if (!isRetroExperienceDesktopSupported(desktopSupport)) {
+      document.documentElement.removeAttribute('data-retro-experience');
+      closeActiveExperience?.(true, false);
+      return;
+    }
+
+    document.documentElement.dataset.retroExperience = retroExperience;
+    openExperience(
+      retroExperience,
+      preferredLanguage,
+      detail.trigger instanceof Element ? detail.trigger : document.activeElement
+    );
+  });
+
+  document.addEventListener('click', (event) => {
+    if (currentProfile.retroExperience !== 'amiga') return;
+    if (!isRetroExperienceDesktopSupported(desktopSupport)) return;
+    if (!(event.target instanceof Element)) return;
+
+    const link = event.target.closest<HTMLAnchorElement>('a[href]');
+    if (!link || link.target || link.download) return;
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const destination = new URL(link.href, window.location.href);
+    if (destination.origin !== window.location.origin) return;
+    if (destination.pathname === window.location.pathname && destination.hash) return;
+
+    document.documentElement.classList.add('is-retro-navigating');
+  }, { capture: true });
+
+  window.addEventListener('pageshow', () => {
+    document.documentElement.classList.remove('is-retro-navigating');
+  });
+
+  const handleDesktopSupportChange = () => {
+    if (!isRetroExperienceDesktopSupported(desktopSupport)) {
+      syncMonkeyCursor();
+      document.documentElement.removeAttribute('data-retro-experience');
+      document.documentElement.classList.remove('is-retro-navigating');
+      closeActiveExperience?.(true, false);
+      return;
+    }
+
+    if (currentProfile.authenticated && currentProfile.retroExperience !== 'standard') {
+      document.documentElement.dataset.retroExperience = currentProfile.retroExperience;
+    }
+    syncMonkeyCursor();
+  };
+
+  desktopSupport?.addEventListener('change', handleDesktopSupportChange);
+
+  window.addEventListener('pagehide', () => {
+    disableMonkeyCursor();
+    closeActiveExperience?.(false, true);
+  }, { once: true });
+
+  if (window.__rgRetroExperienceProfile) {
+    applyProfile(window.__rgRetroExperienceProfile);
+  }
+</script>

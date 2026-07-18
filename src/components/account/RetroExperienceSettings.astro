@@ -1,0 +1,420 @@
+---
+import {
+  normalizePreferredLanguage,
+  normalizeRetroExperience,
+  type PreferredLanguage,
+  type RetroExperience,
+} from '../../lib/retro-experience';
+
+type Props = {
+  lang?: PreferredLanguage;
+  languageSwitchUrl?: string;
+  preferredLanguage?: unknown;
+  retroExperience?: unknown;
+};
+
+const {
+  lang = 'it',
+  languageSwitchUrl = '',
+  preferredLanguage: preferredLanguageProp,
+  retroExperience: retroExperienceProp,
+} = Astro.props as Props;
+
+const currentLang: PreferredLanguage = lang === 'en' ? 'en' : 'it';
+const preferredLanguage = normalizePreferredLanguage(preferredLanguageProp);
+const retroExperience = normalizeRetroExperience(retroExperienceProp);
+
+const copy = {
+  it: {
+    kicker: 'Impostazioni',
+    title: 'Retro Experience',
+    description:
+      'Scegli la lingua dei collegamenti e l’esperienza grafica opzionale con cui entrare nel sito.',
+    language: 'Lingua preferita',
+    italian: 'Italiano',
+    english: 'English',
+    experience: 'Esperienza',
+    standard: 'Standard',
+    amiga: 'Amiga Workbench 1.3',
+    monkey: 'Monkey Island 2',
+    descriptions: {
+      standard: 'Il sito resta nella sua veste normale, senza introduzioni o cursori speciali.',
+      amiga: 'Un breve avvio Amiga apre un desktop Workbench con due dischi interattivi.',
+      monkey: 'La schermata delle difficoltà di Monkey Island 2 diventa il tuo ingresso al sito.',
+    },
+    save: 'Salva preferenze',
+    launch: 'Avvia esperienza',
+    saved: 'Preferenze aggiornate.',
+    standardSaved: 'Preferenze aggiornate. La modalità Standard non mostra un’introduzione.',
+    failed: 'Impossibile aggiornare le preferenze. Riprova.',
+    connection: 'Errore di connessione. Riprova.',
+  },
+  en: {
+    kicker: 'Settings',
+    title: 'Retro Experience',
+    description:
+      'Choose the language for destinations and the optional visual experience used to enter the site.',
+    language: 'Preferred language',
+    italian: 'Italiano',
+    english: 'English',
+    experience: 'Experience',
+    standard: 'Standard',
+    amiga: 'Amiga Workbench 1.3',
+    monkey: 'Monkey Island 2',
+    descriptions: {
+      standard: 'The site keeps its normal appearance, with no intro or special cursors.',
+      amiga: 'A short Amiga boot sequence opens a Workbench desktop with two interactive disks.',
+      monkey: 'The Monkey Island 2 difficulty screen becomes your way into the site.',
+    },
+    save: 'Save preferences',
+    launch: 'Launch experience',
+    saved: 'Preferences updated.',
+    standardSaved: 'Preferences updated. Standard mode does not show an intro.',
+    failed: 'Could not update your preferences. Please try again.',
+    connection: 'Connection error. Please try again.',
+  },
+} as const;
+
+const ui = copy[currentLang];
+---
+
+<section class="retro-settings" aria-labelledby="retro-settings-title">
+  <div class="retro-settings__heading">
+    <p class="account-kicker">{ui.kicker}</p>
+    <h2 id="retro-settings-title">{ui.title}</h2>
+    <p>{ui.description}</p>
+  </div>
+
+  <form
+    class="account-form retro-settings__form"
+    data-retro-settings-form
+    data-copy-saved={ui.saved}
+    data-copy-standard-saved={ui.standardSaved}
+    data-copy-failed={ui.failed}
+    data-copy-connection={ui.connection}
+    data-current-language={currentLang}
+    data-language-switch-url={languageSwitchUrl}
+  >
+    <label>
+      <span>{ui.language}</span>
+      <select name="preferredLanguage" data-retro-settings-language>
+        <option value="it" selected={preferredLanguage === 'it'}>{ui.italian}</option>
+        <option value="en" selected={preferredLanguage === 'en'}>{ui.english}</option>
+      </select>
+    </label>
+
+    <label>
+      <span>{ui.experience}</span>
+      <select name="retroExperience" data-retro-settings-experience>
+        <option value="standard" selected={retroExperience === 'standard'}>{ui.standard}</option>
+        <option value="amiga" selected={retroExperience === 'amiga'}>{ui.amiga}</option>
+        <option value="monkey" selected={retroExperience === 'monkey'}>{ui.monkey}</option>
+      </select>
+    </label>
+
+    <div class="retro-settings__descriptions" aria-live="polite">
+      <p data-retro-settings-description="standard" hidden={retroExperience !== 'standard'}>
+        {ui.descriptions.standard}
+      </p>
+      <p data-retro-settings-description="amiga" hidden={retroExperience !== 'amiga'}>
+        {ui.descriptions.amiga}
+      </p>
+      <p data-retro-settings-description="monkey" hidden={retroExperience !== 'monkey'}>
+        {ui.descriptions.monkey}
+      </p>
+    </div>
+
+    <div class="account-actions">
+      <button type="submit">{ui.save}</button>
+      <button
+        type="button"
+        data-retro-settings-launch
+        aria-describedby="retro-settings-desktop-note"
+        disabled
+      >{ui.launch}</button>
+    </div>
+
+    <p
+      id="retro-settings-desktop-note"
+      class="retro-settings__desktop-note"
+      data-retro-settings-desktop-note
+      hidden
+    >
+      {currentLang === 'en'
+        ? 'Retro Experiences are available on desktop only.'
+        : 'Le Retro Experience sono disponibili solo su desktop.'}
+    </p>
+  </form>
+
+  <p class="account-message" data-retro-settings-message aria-live="polite" hidden></p>
+</section>
+
+<script>
+  import {
+    getRetroExperienceDesktopSupportMediaQuery,
+    isRetroExperienceDesktopSupported,
+    retroExperienceEvents,
+  } from '../../lib/retro-experience';
+  import {
+    clearLanguageSessionOverride,
+    resolveManualRetroLanguage,
+    setLanguageSessionOverride,
+  } from '../../lib/preferred-language';
+
+  const form = document.querySelector('[data-retro-settings-form]');
+  const preferredLanguageSelect = form?.querySelector('[data-retro-settings-language]');
+  const experienceSelect = form?.querySelector('[data-retro-settings-experience]');
+  const launchButton = form?.querySelector('[data-retro-settings-launch]');
+  const message = document.querySelector('[data-retro-settings-message]');
+  const desktopNote = form?.querySelector('[data-retro-settings-desktop-note]');
+  const desktopSupport = getRetroExperienceDesktopSupportMediaQuery();
+  const preferencesDraftKey = 'rg-retro-experience-preferences-draft-v1';
+  const preferencesDraftMaxAge = 2 * 60 * 1000;
+  const clientCopy = {
+    saved: form?.dataset.copySaved || '',
+    standardSaved: form?.dataset.copyStandardSaved || '',
+    failed: form?.dataset.copyFailed || '',
+    connection: form?.dataset.copyConnection || '',
+  };
+
+  const updateDesktopAvailability = () => {
+    const isSupported = isRetroExperienceDesktopSupported(desktopSupport);
+    if (launchButton) launchButton.disabled = !isSupported;
+    if (desktopNote) desktopNote.hidden = isSupported;
+  };
+
+  const showMessage = (text, type = 'ok') => {
+    if (!message) return;
+    message.textContent = text;
+    message.dataset.type = type;
+    message.hidden = false;
+  };
+
+  const updateDescription = () => {
+    const selected = experienceSelect?.value || 'standard';
+
+    document.querySelectorAll('[data-retro-settings-description]').forEach((description) => {
+      description.hidden = description.dataset.retroSettingsDescription !== selected;
+    });
+  };
+
+  const clearPreferencesDraft = () => {
+    try {
+      window.sessionStorage.removeItem(preferencesDraftKey);
+    } catch {
+      // A blocked sessionStorage must not prevent account preferences from working.
+    }
+  };
+
+  const restorePreferencesDraft = () => {
+    let rawDraft = '';
+
+    try {
+      rawDraft = window.sessionStorage.getItem(preferencesDraftKey) || '';
+      window.sessionStorage.removeItem(preferencesDraftKey);
+    } catch {
+      return;
+    }
+
+    if (!rawDraft) return;
+
+    try {
+      const draft = JSON.parse(rawDraft);
+      const isFresh = Number.isFinite(draft?.createdAt) &&
+        Date.now() - draft.createdAt >= 0 &&
+        Date.now() - draft.createdAt <= preferencesDraftMaxAge;
+      const isLanguageValid = draft?.preferredLanguage === 'it' || draft?.preferredLanguage === 'en';
+      const isExperienceValid = ['standard', 'amiga', 'monkey'].includes(draft?.retroExperience);
+
+      if (!isFresh || !isLanguageValid || !isExperienceValid) return;
+
+      if (preferredLanguageSelect) preferredLanguageSelect.value = draft.preferredLanguage;
+      if (experienceSelect) experienceSelect.value = draft.retroExperience;
+      updateDescription();
+    } catch {
+      // Invalid drafts are discarded and saved profile values remain authoritative.
+    }
+  };
+
+  const handlePreferredLanguageChange = () => {
+    if (!form || !preferredLanguageSelect || !experienceSelect) return;
+
+    const preferredLanguage = preferredLanguageSelect.value;
+    const currentLanguage = form.dataset.currentLanguage;
+    const languageSwitchUrl = form.dataset.languageSwitchUrl;
+
+    if (
+      (preferredLanguage !== 'it' && preferredLanguage !== 'en') ||
+      preferredLanguage === currentLanguage ||
+      !languageSwitchUrl
+    ) {
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(preferencesDraftKey, JSON.stringify({
+        preferredLanguage,
+        retroExperience: experienceSelect.value,
+        createdAt: Date.now(),
+      }));
+    } catch {
+      // Navigation still follows the existing language switch if storage is unavailable.
+    }
+
+    setLanguageSessionOverride(preferredLanguage);
+    window.location.assign(languageSwitchUrl);
+  };
+
+  const savePreferences = async (shouldLaunch = false, launchTrigger = null) => {
+    if (!form) return;
+
+    const formData = new FormData(form);
+    const preferredLanguage = resolveManualRetroLanguage({
+      selectedLanguage: String(formData.get('preferredLanguage') || ''),
+    });
+    const retroExperience = String(formData.get('retroExperience') || 'standard');
+    const buttons = form.querySelectorAll('button');
+
+    buttons.forEach((button) => { button.disabled = true; });
+
+    try {
+      const response = await fetch('/api/account/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferredLanguage, retroExperience }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        showMessage(result.error || clientCopy.failed, 'error');
+        return;
+      }
+
+      clearPreferencesDraft();
+      clearLanguageSessionOverride();
+
+      document.dispatchEvent(new CustomEvent(retroExperienceEvents.profile, {
+        detail: {
+          authenticated: true,
+          preferredLanguage,
+          effectiveLanguage: preferredLanguage,
+          retroExperience,
+        },
+      }));
+
+      showMessage(
+        shouldLaunch && retroExperience === 'standard'
+          ? clientCopy.standardSaved
+          : clientCopy.saved
+      );
+
+      if (shouldLaunch) {
+        document.dispatchEvent(new CustomEvent(retroExperienceEvents.launch, {
+          detail: {
+            preferredLanguage,
+            effectiveLanguage: preferredLanguage,
+            retroExperience,
+            trigger: launchTrigger,
+          },
+        }));
+      }
+    } catch {
+      showMessage(clientCopy.connection, 'error');
+    } finally {
+      buttons.forEach((button) => { button.disabled = false; });
+      updateDesktopAvailability();
+    }
+  };
+
+  experienceSelect?.addEventListener('change', updateDescription);
+  preferredLanguageSelect?.addEventListener('change', handlePreferredLanguageChange);
+  desktopSupport?.addEventListener('change', updateDesktopAvailability);
+  restorePreferencesDraft();
+  updateDesktopAvailability();
+  form?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    savePreferences(false);
+  });
+  launchButton?.addEventListener('click', () => savePreferences(true, launchButton));
+</script>
+
+<style>
+  .retro-settings {
+    display: grid;
+    gap: 18px;
+    padding: 20px;
+    border: 1px solid var(--rg-card-border);
+    border-radius: 22px;
+    background:
+      linear-gradient(135deg, rgba(102, 81, 184, 0.11), transparent 68%),
+      var(--rg-card-bg);
+    box-shadow: var(--rg-card-shadow);
+  }
+
+  .retro-settings__heading {
+    display: grid;
+    gap: 8px;
+  }
+
+  .retro-settings__heading h2,
+  .retro-settings__heading p {
+    margin: 0;
+  }
+
+  .retro-settings__heading h2 {
+    color: var(--rg-section-title-color);
+    font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+  }
+
+  .retro-settings__heading p:not(.account-kicker),
+  .retro-settings__descriptions p {
+    max-width: 660px;
+    color: var(--color-text-soft);
+    font-size: 0.92rem;
+    font-weight: 750;
+    line-height: 1.55;
+  }
+
+  .retro-settings__form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 0;
+  }
+
+  .retro-settings__descriptions,
+  .retro-settings__form .account-actions,
+  .retro-settings__desktop-note {
+    grid-column: 1 / -1;
+  }
+
+  .retro-settings__descriptions p {
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--rg-card-border);
+    border-radius: 14px;
+    background: var(--color-glass);
+  }
+
+  .retro-settings__desktop-note {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 0.88rem;
+    font-weight: 800;
+    line-height: 1.5;
+  }
+
+  .retro-settings__descriptions [hidden] {
+    display: none;
+  }
+
+  @media (max-width: 680px) {
+    .retro-settings__form {
+      grid-template-columns: 1fr;
+    }
+
+    .retro-settings__descriptions,
+    .retro-settings__form .account-actions,
+    .retro-settings__desktop-note {
+      grid-column: auto;
+    }
+  }
+</style>

@@ -1,4 +1,14 @@
 import { defineMiddleware } from 'astro:middleware';
+import {
+  getLocalizedLanguageUrl,
+  normalizeLanguagePath,
+} from './lib/language-switch.js';
+import {
+  getLanguageSessionOverrideFromCookies,
+  getRouteLanguage,
+  resolveEffectiveLanguage,
+} from './lib/preferred-language';
+import { getUserSessionFromCookies } from './lib/supabase/auth';
 
 const legacyPlatformRedirects: Record<string, string> = {
   '/piattaforma/master-system/': '/piattaforme/console/sega/master-system/',
@@ -75,8 +85,15 @@ function permanentRedirect(url: URL, destination: string) {
   });
 }
 
+function isPageRequest(request: Request, pathname: string) {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return false;
+  if (pathname.startsWith('/api/') || pathname.startsWith('/_')) return false;
+
+  return request.headers.get('accept')?.includes('text/html') === true;
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
-  const { url } = context;
+  const { request, url } = context;
   const pathname = url.pathname;
 
   if (legacyArticleRedirects[pathname]) {
@@ -127,6 +144,38 @@ export const onRequest = defineMiddleware(async (context, next) => {
     pathname.startsWith('/2024/')
   ) {
     return permanentRedirect(url, '/archivio/');
+  }
+
+  if (isPageRequest(request, pathname)) {
+    const session = await getUserSessionFromCookies(context.cookies);
+    const isAuthenticated = Boolean(!session.error && session.user && session.profile);
+    const routeLanguage = getRouteLanguage(pathname);
+    const sessionOverride = getLanguageSessionOverrideFromCookies(context.cookies);
+    const effectiveLanguage = resolveEffectiveLanguage({
+      sessionOverride,
+      profileLanguage: session.profile?.preferred_language,
+      routeLanguage,
+      authenticated: isAuthenticated,
+    });
+
+    context.locals.userSession = session;
+    context.locals.routeLanguage = routeLanguage;
+    context.locals.effectiveLanguage = effectiveLanguage;
+    context.locals.languageSessionOverride = sessionOverride;
+
+    if (isAuthenticated && effectiveLanguage !== routeLanguage) {
+      const destination = getLocalizedLanguageUrl({
+        currentUrl: url,
+        targetLang: effectiveLanguage,
+      });
+      const target = new URL(destination, url.origin);
+      const currentPath = normalizeLanguagePath(pathname);
+      const targetPath = normalizeLanguagePath(target.pathname);
+
+      if (currentPath !== targetPath || url.search !== target.search) {
+        return context.redirect(target.toString(), 302);
+      }
+    }
   }
 
   return next();

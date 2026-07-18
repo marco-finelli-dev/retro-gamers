@@ -7,6 +7,7 @@ import CommunitySidebarProfile from '../../components/community/CommunitySidebar
 import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
 import CommunityStatList from '../../components/community/CommunityStatList.astro';
 import NewsletterPromo from '../../components/newsletter/NewsletterPromo.astro';
+import RetroExperienceSettings from './RetroExperienceSettings.astro';
 import { getActiveReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
 import { getCommunityRank } from '../../lib/community-rank';
 import {
@@ -19,6 +20,7 @@ import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/commu
 import { getNewsletterSubscriptionForUser } from '../../lib/supabase/newsletter';
 import { supabaseAdmin } from '../../lib/supabase/server';
 import { touchUserActivity } from '../../lib/supabase/user-activity';
+import { getLocalizedLanguageUrl } from '../../lib/language-switch.js';
 
 type AccountLang = 'it' | 'en';
 
@@ -343,6 +345,10 @@ const copy = {
 } as const;
 
 const ui = copy[currentLang];
+const accountLanguageSwitchUrl = getLocalizedLanguageUrl({
+  currentUrl: Astro.url,
+  targetLang: currentLang === 'en' ? 'it' : 'en',
+});
 const title = ui.pageTitle;
 const description = ui.pageDescription;
 const session = await getUserSessionFromCookies(Astro.cookies);
@@ -625,7 +631,7 @@ const clientCopy = currentLang === 'en'
   title={title}
   description={description}
   lang={currentLang}
-  languageSwitch={{ url: currentLang === 'en' ? '/account/' : '/en/account/' }}
+  languageSwitch={{ url: accountLanguageSwitchUrl }}
   alternateLanguages={alternateLanguages}
 >
   <CommunityLayout class="account-community-page" sidebar={isLoggedIn}>
@@ -1173,6 +1179,13 @@ const clientCopy = currentLang === 'en'
                 </div>
               </section>
             )}
+
+            <RetroExperienceSettings
+              lang={currentLang}
+              languageSwitchUrl={accountLanguageSwitchUrl}
+              preferredLanguage={Astro.locals.effectiveLanguage || profile?.preferred_language}
+              retroExperience={profile?.retro_experience}
+            />
 
             <section class="account-settings-section" aria-labelledby="account-settings-title">
               <div class="account-settings-section__heading">

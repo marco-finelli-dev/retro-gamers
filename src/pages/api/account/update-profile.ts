@@ -3,12 +3,21 @@ import { logApiError } from '../../../lib/api-errors';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { touchUserActivity } from '../../../lib/supabase/user-activity';
+import { clearLanguageSessionOverrideCookie } from '../../../lib/preferred-language';
+import {
+  isPreferredLanguage,
+  isRetroExperience,
+  type PreferredLanguage,
+  type RetroExperience,
+} from '../../../lib/retro-experience';
 
 type UpdateProfilePayload = {
   displayName?: string;
   badgeKey?: string;
   bio?: string;
   bioEn?: string;
+  preferredLanguage?: PreferredLanguage;
+  retroExperience?: RetroExperience;
 };
 
 const json = (payload: unknown, status = 200) =>
@@ -42,15 +51,36 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const hasProfileFields = hasDisplayName || hasBadgeKey;
   const hasBio = typeof payload.bio === 'string';
   const hasBioEn = typeof payload.bioEn === 'string';
+  const hasPreferredLanguage = Object.prototype.hasOwnProperty.call(payload, 'preferredLanguage');
+  const hasRetroExperience = Object.prototype.hasOwnProperty.call(payload, 'retroExperience');
+  const hasRetroPreferences = hasPreferredLanguage || hasRetroExperience;
   const updatePayload: {
     display_name?: string;
     badge_key?: string;
     bio?: string | null;
     bio_en?: string | null;
+    preferred_language?: PreferredLanguage;
+    retro_experience?: RetroExperience;
   } = {};
 
-  if (!hasProfileFields && !hasBio && !hasBioEn) {
+  if (!hasProfileFields && !hasBio && !hasBioEn && !hasRetroPreferences) {
     return json({ ok: false, error: 'Nessun dato da aggiornare.' }, 400);
+  }
+
+  if (hasPreferredLanguage) {
+    if (!isPreferredLanguage(payload.preferredLanguage)) {
+      return json({ ok: false, error: 'Lingua preferita non valida.' }, 400);
+    }
+
+    updatePayload.preferred_language = payload.preferredLanguage;
+  }
+
+  if (hasRetroExperience) {
+    if (!isRetroExperience(payload.retroExperience)) {
+      return json({ ok: false, error: 'Retro Experience non valida.' }, 400);
+    }
+
+    updatePayload.retro_experience = payload.retroExperience;
   }
 
   if (hasProfileFields) {
@@ -125,6 +155,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       display_name,
       bio,
       bio_en,
+      preferred_language,
+      retro_experience,
       badge_key,
       role,
       status,
@@ -140,6 +172,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       user_id,
       username,
       display_name,
+      preferred_language,
+      retro_experience,
       badge_key,
       role,
       status,
@@ -184,9 +218,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   await touchUserActivity(session.user.id, 'account-update-profile');
 
+  if (hasPreferredLanguage) {
+    clearLanguageSessionOverrideCookie(cookies);
+  }
+
   return json({
     ok: true,
-    message: (hasBio || hasBioEn) && !hasProfileFields ? 'Bio aggiornata.' : 'Profilo aggiornato.',
+    message: (hasBio || hasBioEn) && !hasProfileFields && !hasRetroPreferences
+      ? 'Bio aggiornata.'
+      : 'Profilo aggiornato.',
     profile,
   });
 };
