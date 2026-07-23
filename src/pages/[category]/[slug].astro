@@ -3,8 +3,8 @@ import Layout from '../../layouts/BaseLayout.astro';
 import ArticlePage from '../../components/article/ArticlePage.astro';
 import PreviewModeBanner from '../../components/common/PreviewModeBanner.astro';
 import {
-  getContentDetailSegment,
   getContentTypeFromRouteSegment,
+  getPostUrl,
   isContentRouteSegment
 } from '../../lib/routes.js';
 
@@ -110,10 +110,21 @@ const post = await sanityClient.fetch(`
 
   translationOf->{
     _id,
+    _type,
     type,
     title,
     "slug": slug.current,
-    language,
+    "language": coalesce(language, "it"),
+    isPublic
+  },
+
+  translatedVersion->{
+    _id,
+    _type,
+    type,
+    title,
+    "slug": slug.current,
+    "language": coalesce(language, "it"),
     isPublic
   },
 
@@ -452,11 +463,14 @@ const portableTextCreators = getCreatorRefsFromPortableText(post.content);
    ENGLISH TRANSLATION
 ======================== */
 
-const directEnglishTranslation =
-  post.translationOf?.language === 'en' &&
-  (isPreview || isPostPubliclyDistributed(post.translationOf))
-    ? post.translationOf
-    : null;
+const directEnglishTranslation = [
+  post.translatedVersion,
+  post.translationOf
+].find((candidate) =>
+  candidate?.slug &&
+  candidate.language === 'en' &&
+  (isPreview || isPostPubliclyDistributed(candidate))
+) || null;
 
 const reverseEnglishTranslationPromise = directEnglishTranslation
   ? Promise.resolve(null)
@@ -466,9 +480,13 @@ const reverseEnglishTranslationPromise = directEnglishTranslation
       defined(slug.current) &&
       language == "en" &&
       ($isPreview || ${PUBLIC_POST_GROQ_FILTER}) &&
-      translationOf._ref == $postId
+      (
+        translationOf._ref == $postId ||
+        translatedVersion._ref == $postId
+      )
     ][0]{
       _id,
+      _type,
       type,
       title,
       "slug": slug.current,
@@ -632,14 +650,14 @@ const canonicalUrl =
 const canonicalPath =
   `/${category}/${slug}/`;
 
-const englishCategory =
-  englishTranslation?.type
-    ? getContentDetailSegment(englishTranslation.type, 'en')
+const englishPath =
+  englishTranslation?.slug
+    ? getPostUrl(englishTranslation)
     : null;
 
 const englishUrl =
-  englishTranslation?.slug && englishCategory
-    ? `${siteUrl}/en/${englishCategory}/${englishTranslation.slug}/`
+  englishPath
+    ? `${siteUrl}${englishPath}`
     : null;
 
 const alternateLanguages = englishUrl
@@ -687,8 +705,8 @@ const alternateLanguages = englishUrl
     hideNewsletterPromo={hideNewsletterPromo}
     isPreview={isPreview}
     languageSwitch={
-      englishUrl && englishCategory
-        ? { url: `/en/${englishCategory}/${englishTranslation.slug}/` }
+      englishPath
+        ? { url: englishPath, language: englishTranslation.language }
         : null
     }
   />

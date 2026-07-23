@@ -59,6 +59,14 @@ const switchCta =
   currentLang === 'en'
     ? '🇮🇹 Leggi in italiano'
     : '🇬🇧 Read in English';
+const switchLanguage =
+  languageSwitch?.language === 'en'
+    ? 'en'
+    : languageSwitch?.language === 'it'
+      ? 'it'
+      : currentLang === 'en'
+        ? 'it'
+        : 'en';
 
 const commentsDiscovery = currentLang === 'en'
   ? {
@@ -86,7 +94,11 @@ const commentsDiscovery = currentLang === 'en'
   <div class="article-post-hero-actions">
     <div class="article-post-hero-actions__language">
       {languageSwitch?.url && (
-        <a href={languageSwitch.url} class="article-language-switch">
+        <a
+          href={languageSwitch.url}
+          class="article-language-switch"
+          data-language-session-override={switchLanguage}
+        >
           {switchCta}
         </a>
       )}
