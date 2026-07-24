@@ -7,15 +7,16 @@ const apiVersion = '2024-01-01';
 const baseClientConfig = {
   projectId,
   dataset,
-  apiVersion,
-  useCdn: false,
+  apiVersion
 };
 
 export const publicClient = createClient({
   ...baseClientConfig,
+  useCdn: true,
   perspective: 'published'
 });
 
+// Alias mantenuto per compatibilità con gli import esistenti.
 export const client = publicClient;
 
 let previewClient;
@@ -30,6 +31,7 @@ export function getPreviewClient() {
   if (!previewClient) {
     previewClient = createClient({
       ...baseClientConfig,
+      useCdn: false,
       perspective: 'drafts',
       token: readToken
     });
