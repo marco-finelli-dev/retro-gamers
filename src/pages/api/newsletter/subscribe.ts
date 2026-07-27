@@ -13,6 +13,7 @@ type NewsletterSubscribePayload = {
   language?: string;
   consent?: boolean;
   source?: string;
+  readerUrl?: string;
 };
 
 const genericMessages = {
@@ -25,6 +26,7 @@ const json = (payload: unknown, status = 200) =>
     status,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
     },
   });
 
@@ -39,6 +41,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const language = normalizeNewsletterLanguage(payload.language);
   const genericMessage = genericMessages[language];
+
+  if (String(payload.readerUrl || '').trim()) {
+    return json({
+      ok: true,
+      message: genericMessage,
+      messageEn: genericMessages.en,
+    });
+  }
 
   try {
     const session = await getUserSessionFromCookies(cookies);

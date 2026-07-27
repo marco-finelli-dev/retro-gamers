@@ -226,6 +226,18 @@ const prefilledEmail = currentUser?.email || '';
 
             <input type="hidden" name="source" value="newsletter-page" />
 
+            <div class="sr-only" aria-hidden="true">
+              <label>
+                Reader URL
+                <input
+                  type="text"
+                  name="readerUrl"
+                  tabindex="-1"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+
             <div class="newsletter-form__actions">
               <button type="submit">{copy.submit}</button>
               <p class="newsletter-form__message" data-newsletter-message aria-live="polite"></p>
@@ -246,6 +258,7 @@ const prefilledEmail = currentUser?.email || '';
       const languageInput = form.elements.namedItem('language');
       const consentInput = form.elements.namedItem('consent');
       const sourceInput = form.elements.namedItem('source');
+      const readerUrlInput = form.elements.namedItem('readerUrl');
 
       const setMessage = (text, type) => {
         if (!(message instanceof HTMLElement)) return;
@@ -302,6 +315,9 @@ const prefilledEmail = currentUser?.email || '';
               language,
               consent: true,
               source,
+              readerUrl: readerUrlInput instanceof HTMLInputElement
+                ? readerUrlInput.value
+                : '',
             }),
           });
           const result = await response.json().catch(() => ({}));

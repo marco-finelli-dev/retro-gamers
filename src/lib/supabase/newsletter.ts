@@ -35,7 +35,12 @@ type AccountNewsletterInput = {
   language?: string | null;
 };
 
-const confirmationResendWindowMs = 10 * 60 * 1000;
+export const NEWSLETTER_CONFIRMATION_COOLDOWN_MS = 10 * 60 * 1000;
+const allowedNewsletterSources = new Set([
+  'website',
+  'newsletter-page',
+  'account',
+]);
 
 export class NewsletterValidationError extends Error {
   status: number;
@@ -64,11 +69,11 @@ export const normalizeNewsletterLanguage = (language?: string | null): Newslette
 export const normalizeNewsletterSource = (source?: string | null) => {
   const normalized = String(source || '').trim().toLowerCase();
 
-  if (!normalized) {
+  if (!normalized || !allowedNewsletterSources.has(normalized)) {
     return 'website';
   }
 
-  return normalized.replace(/[^a-z0-9_-]/g, '-').slice(0, 80) || 'website';
+  return normalized;
 };
 
 export const createNewsletterTokens = () => ({
@@ -78,6 +83,15 @@ export const createNewsletterTokens = () => ({
 
 export const isValidNewsletterToken = (token: string) =>
   tokenPattern.test(String(token || '').trim());
+
+function isWithinNewsletterConfirmationCooldown(value?: string | null) {
+  if (!value) return false;
+
+  const timestamp = new Date(value).getTime();
+
+  return Number.isFinite(timestamp) &&
+    Date.now() - timestamp < NEWSLETTER_CONFIRMATION_COOLDOWN_MS;
+}
 
 export const isNewsletterUnavailableError = (
   error: { code?: string; message?: string; details?: string } | null | undefined
@@ -133,7 +147,6 @@ export async function subscribeToNewsletter({
   }
 
   const now = new Date().toISOString();
-  const { confirmationToken, unsubscribeToken } = createNewsletterTokens();
 
   const { data: existing, error: lookupError } = await supabaseAdmin
     .from('newsletter_subscribers')
@@ -193,6 +206,27 @@ export async function subscribeToNewsletter({
   }
 
   if (existing?.id) {
+    const isConfirmationRecentlySent = await hasRecentNewsletterConfirmationDelivery(existing.id);
+    const isPendingConfirmationRecentlyPrepared =
+      existing.status === 'pending' &&
+      (
+        isWithinNewsletterConfirmationCooldown(existing.updated_at) ||
+        isWithinNewsletterConfirmationCooldown(existing.consent_at) ||
+        isWithinNewsletterConfirmationCooldown(existing.created_at)
+      );
+
+    if (isConfirmationRecentlySent || isPendingConfirmationRecentlyPrepared) {
+      return {
+        ok: true,
+        unavailable: false,
+        subscriber: existing as NewsletterSubscriber,
+        shouldSendConfirmation: false,
+        code: 'confirmation_throttled',
+      };
+    }
+
+    const { confirmationToken, unsubscribeToken } = createNewsletterTokens();
+
     const { data: updated, error: updateError } = await supabaseAdmin
       .from('newsletter_subscribers')
       .update({
@@ -229,6 +263,8 @@ export async function subscribeToNewsletter({
       shouldSendConfirmation: true,
     };
   }
+
+  const { confirmationToken, unsubscribeToken } = createNewsletterTokens();
 
   const { data: inserted, error: insertError } = await supabaseAdmin
     .from('newsletter_subscribers')
@@ -444,8 +480,8 @@ export async function unsubscribeLoggedUserFromNewsletter({
   };
 }
 
-async function hasRecentNewsletterConfirmationDelivery(subscriberId: string) {
-  const cutoff = new Date(Date.now() - confirmationResendWindowMs).toISOString();
+export async function hasRecentNewsletterConfirmationDelivery(subscriberId: string) {
+  const cutoff = new Date(Date.now() - NEWSLETTER_CONFIRMATION_COOLDOWN_MS).toISOString();
 
   const { data, error } = await supabaseAdmin
     .from('newsletter_delivery_logs')
