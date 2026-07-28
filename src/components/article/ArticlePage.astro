@@ -14,6 +14,7 @@ import ArticleComments from './ArticleComments.astro';
 import ArticleCommunityPrompt from './ArticleCommunityPrompt.astro';
 import NewsletterPromo from '../newsletter/NewsletterPromo.astro';
 import { getCanonicalReviewRatingPostId } from '../../lib/review-ratings';
+import { getContentDetailSegment } from '../../lib/routes.js';
 import '../../styles/article/article.css';
 
 const {
@@ -49,6 +50,23 @@ const hasReviewProsCons = isReview && (reviewPros.length > 0 || reviewCons.lengt
 const reviewRatingPostId = isReview
   ? getCanonicalReviewRatingPostId(post)
   : '';
+const getAnalyticsToken = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+const getSlug = (value) =>
+  typeof value === 'string'
+    ? value
+    : value?.current || '';
+const articleAnalyticsLanguage = currentLang === 'en' ? 'en' : 'it';
+const articleAnalyticsContentType = getAnalyticsToken(post?.type || 'article');
+const articleAnalyticsCategorySlug =
+  getAnalyticsToken(getContentDetailSegment(post?.type, articleAnalyticsLanguage)) ||
+  articleAnalyticsContentType;
+const articleAnalyticsSlug = getAnalyticsToken(getSlug(post?.slug));
+const articleAnalyticsAuthorSlug = getAnalyticsToken(getSlug(post?.author?.slug));
 
 const articlePageClass = [
   'article-page',
@@ -87,7 +105,15 @@ const commentsDiscovery = currentLang === 'en'
 
 <ArticleReadingProgress />
 
-<div class={articlePageClass}>
+<div
+  class={articlePageClass}
+  data-rg-article-page
+  data-rg-article-language={articleAnalyticsLanguage}
+  data-rg-article-content-type={articleAnalyticsContentType}
+  data-rg-article-category-slug={articleAnalyticsCategorySlug}
+  data-rg-article-slug={articleAnalyticsSlug}
+  data-rg-article-author-slug={articleAnalyticsAuthorSlug || undefined}
+>
 
   <ArticleHero post={post} />
 
@@ -190,3 +216,30 @@ const commentsDiscovery = currentLang === 'en'
 <ArticleLightbox lang={currentLang} />
 
 <ArticleCommunityPrompt lang={currentLang} />
+
+<script>
+  import { trackRgEvent } from '../../lib/analytics/client';
+
+  document.querySelectorAll('[data-rg-article-page]').forEach((articlePage) => {
+    if (!(articlePage instanceof HTMLElement)) return;
+    if (articlePage.dataset.rgArticleViewTracked === 'true') return;
+
+    const language = articlePage.dataset.rgArticleLanguage === 'en' ? 'en' : 'it';
+    const contentType = articlePage.dataset.rgArticleContentType || '';
+    const categorySlug = articlePage.dataset.rgArticleCategorySlug || '';
+    const articleSlug = articlePage.dataset.rgArticleSlug || '';
+    const authorSlug = articlePage.dataset.rgArticleAuthorSlug || '';
+
+    if (!contentType || !categorySlug || !articleSlug) return;
+
+    articlePage.dataset.rgArticleViewTracked = 'true';
+
+    trackRgEvent('article_view', {
+      language,
+      content_type: contentType,
+      category_slug: categorySlug,
+      article_slug: articleSlug,
+      ...(authorSlug ? { author_slug: authorSlug } : {}),
+    });
+  });
+</script>

@@ -333,6 +333,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
 <script>
   import { getCommunityRank } from '../../lib/community-rank';
+  import { trackRgEvent } from '../../lib/analytics/client';
 
   const commentLabels = {
     it: {
@@ -1254,6 +1255,24 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       });
     };
 
+    const getAnalyticsCommentStatus = (comment) => {
+      const status = String(comment?.status || '').trim().toLowerCase();
+
+      if (status === 'approved' || status === 'published') {
+        return 'published';
+      }
+
+      if (status === 'pending') {
+        return 'pending';
+      }
+
+      if (status === 'rejected') {
+        return 'rejected';
+      }
+
+      return '';
+    };
+
     const handleReaction = async (button) => {
       if (!currentProfile) {
         setStatus(labels.loginToReact, 'error');
@@ -1625,6 +1644,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
       const formData = new FormData(form);
       const body = String(formData.get('body') || '').trim();
+      const parentId = String(formData.get('parentId') || '') || null;
       const submitButton = form.querySelector('button[type="submit"]');
 
       if (!body || !submitButton) return;
@@ -1644,7 +1664,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
             articleLanguage,
             articleTitle,
             articleUrl,
-            parentId: String(formData.get('parentId') || '') || null,
+            parentId,
             body,
             authorName: isGuestComposer ? String(formData.get('authorName') || '') : undefined,
             authorEmail: isGuestComposer ? String(formData.get('authorEmail') || '') : undefined,
@@ -1680,6 +1700,20 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         }
 
         if (result.comment) {
+          const analyticsStatus = getAnalyticsCommentStatus(result.comment);
+
+          if (analyticsStatus !== 'rejected') {
+            trackRgEvent('comment_submit_success', {
+              language: articleLanguage,
+              article_slug: articleSlug,
+              is_reply: Boolean(parentId),
+              is_guest: isGuestComposer,
+              ...(analyticsStatus === 'published' || analyticsStatus === 'pending'
+                ? { status: analyticsStatus }
+                : {}),
+            });
+          }
+
           await loadComments();
         }
       } catch {

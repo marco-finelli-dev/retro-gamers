@@ -190,7 +190,9 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
   </section>
 )}
 
-<script is:inline>
+<script>
+  import { trackRgEvent } from '../../lib/analytics/client';
+
   (() => {
     const formatScore = (value) => {
       const number = Number(value);
@@ -239,6 +241,10 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
       root.dataset.readerRatingReady = 'true';
 
       const postId = root.dataset.postId || '';
+      const articlePage = root.closest('[data-rg-article-page]');
+      const articleSlug = articlePage instanceof HTMLElement
+        ? articlePage.dataset.rgArticleSlug || ''
+        : '';
       const controls = root.querySelector('[data-reader-rating-controls]');
       const auth = root.querySelector('[data-reader-rating-auth]');
       const details = root.querySelector('[data-reader-rating-details]');
@@ -482,6 +488,11 @@ const panelId = `reader-rating-panel-${String(postId || 'review')
           showSubmittedFeedback();
           renderSummary(data);
           setStatus(updatedLabel);
+          trackRgEvent('reader_vote_success', {
+            language: root.dataset.lang === 'en' ? 'en' : 'it',
+            article_slug: articleSlug,
+            score: selectedScore,
+          });
         } catch (error) {
           setStatus(error?.message || 'Rating not updated.', true);
         } finally {
