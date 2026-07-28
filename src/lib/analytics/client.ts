@@ -1,12 +1,15 @@
 type RgAnalyticsLanguage = 'it' | 'en';
 type RgCommentStatus = 'published' | 'pending';
+type RgRegistrationStatus = 'active' | 'pending_verification';
 type RgEventParameterValue = string | number | boolean;
 type RgSanitizedParameters = Record<string, RgEventParameterValue>;
 
 export type RgAnalyticsEventName =
   | 'article_view'
   | 'comment_submit_success'
-  | 'reader_vote_success';
+  | 'reader_vote_success'
+  | 'account_registration_success'
+  | 'download_start';
 
 export type RgArticleViewParameters = {
   language: RgAnalyticsLanguage;
@@ -30,10 +33,26 @@ export type RgReaderVoteSuccessParameters = {
   score: number;
 };
 
+export type RgAccountRegistrationSuccessParameters = {
+  language: RgAnalyticsLanguage;
+  method: 'email';
+  status?: RgRegistrationStatus;
+};
+
+export type RgDownloadStartParameters = {
+  language: RgAnalyticsLanguage;
+  classic_slug: string;
+  package_type?: string;
+  platform_slug?: string;
+  requires_login?: boolean;
+};
+
 export type RgAnalyticsEventParameters = {
   article_view: RgArticleViewParameters;
   comment_submit_success: RgCommentSubmitSuccessParameters;
   reader_vote_success: RgReaderVoteSuccessParameters;
+  account_registration_success: RgAccountRegistrationSuccessParameters;
+  download_start: RgDownloadStartParameters;
 };
 
 type RgAnalyticsConsentState = {
@@ -77,6 +96,8 @@ const allowedEvents = new Set<RgAnalyticsEventName>([
   'article_view',
   'comment_submit_success',
   'reader_vote_success',
+  'account_registration_success',
+  'download_start',
 ]);
 
 let queue: RgQueuedEvent[] = [];
@@ -115,6 +136,9 @@ const normalizeBoolean = (value: unknown): boolean | null =>
 const normalizeCommentStatus = (value: unknown): RgCommentStatus | null =>
   value === 'published' || value === 'pending' ? value : null;
 
+const normalizeRegistrationStatus = (value: unknown): RgRegistrationStatus | null =>
+  value === 'active' || value === 'pending_verification' ? value : null;
+
 const normalizeScore = (value: unknown) => {
   const score = Number(value);
 
@@ -132,6 +156,12 @@ const normalizeScore = (value: unknown) => {
 
 const hasOnlyPlainParameters = (parameters: Record<string, unknown>) =>
   Object.values(parameters).every(isPlainParameterValue);
+
+const hasOnlyKnownKeys = (parameters: Record<string, unknown>, knownKeys: string[]) => {
+  const allowedKeys = new Set(knownKeys);
+
+  return Object.keys(parameters).every((key) => allowedKeys.has(key));
+};
 
 const sanitizeParameters = <TName extends RgAnalyticsEventName>(
   name: TName,
@@ -152,18 +182,28 @@ const sanitizeParameters = <TName extends RgAnalyticsEventName>(
   }
 
   const language = normalizeLanguage(rawParameters.language);
-  const articleSlug = normalizeShortToken(rawParameters.article_slug, 160);
 
-  if (!language || !articleSlug) {
+  if (!language) {
     return null;
   }
 
   if (name === 'article_view') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'language',
+      'content_type',
+      'category_slug',
+      'article_slug',
+      'author_slug',
+    ])) {
+      return null;
+    }
+
+    const articleSlug = normalizeShortToken(rawParameters.article_slug, 160);
     const contentType = normalizeShortToken(rawParameters.content_type, 40);
     const categorySlug = normalizeShortToken(rawParameters.category_slug, 80);
     const authorSlug = normalizeShortToken(rawParameters.author_slug, 120);
 
-    if (!contentType || !categorySlug) {
+    if (!articleSlug || !contentType || !categorySlug) {
       return null;
     }
 
@@ -177,11 +217,22 @@ const sanitizeParameters = <TName extends RgAnalyticsEventName>(
   }
 
   if (name === 'comment_submit_success') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'language',
+      'article_slug',
+      'is_reply',
+      'is_guest',
+      'status',
+    ])) {
+      return null;
+    }
+
+    const articleSlug = normalizeShortToken(rawParameters.article_slug, 160);
     const isReply = normalizeBoolean(rawParameters.is_reply);
     const isGuest = normalizeBoolean(rawParameters.is_guest);
     const status = normalizeCommentStatus(rawParameters.status);
 
-    if (isReply === null || isGuest === null) {
+    if (!articleSlug || isReply === null || isGuest === null) {
       return null;
     }
 
@@ -195,9 +246,18 @@ const sanitizeParameters = <TName extends RgAnalyticsEventName>(
   }
 
   if (name === 'reader_vote_success') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'language',
+      'article_slug',
+      'score',
+    ])) {
+      return null;
+    }
+
+    const articleSlug = normalizeShortToken(rawParameters.article_slug, 160);
     const score = normalizeScore(rawParameters.score);
 
-    if (score === null) {
+    if (!articleSlug || score === null) {
       return null;
     }
 
@@ -205,6 +265,58 @@ const sanitizeParameters = <TName extends RgAnalyticsEventName>(
       language,
       article_slug: articleSlug,
       score,
+    };
+  }
+
+  if (name === 'account_registration_success') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'language',
+      'method',
+      'status',
+    ])) {
+      return null;
+    }
+
+    const method = rawParameters.method === 'email' ? 'email' : null;
+    const status = normalizeRegistrationStatus(rawParameters.status);
+
+    if (!method) {
+      return null;
+    }
+
+    return {
+      language,
+      method,
+      ...(status ? { status } : {}),
+    };
+  }
+
+  if (name === 'download_start') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'language',
+      'classic_slug',
+      'package_type',
+      'platform_slug',
+      'requires_login',
+    ])) {
+      return null;
+    }
+
+    const classicSlug = normalizeShortToken(rawParameters.classic_slug, 160);
+    const packageType = normalizeShortToken(rawParameters.package_type, 60);
+    const platformSlug = normalizeShortToken(rawParameters.platform_slug, 120);
+    const requiresLogin = normalizeBoolean(rawParameters.requires_login);
+
+    if (!classicSlug) {
+      return null;
+    }
+
+    return {
+      language,
+      classic_slug: classicSlug,
+      ...(packageType ? { package_type: packageType } : {}),
+      ...(platformSlug ? { platform_slug: platformSlug } : {}),
+      ...(requiresLogin !== null ? { requires_login: requiresLogin } : {}),
     };
   }
 

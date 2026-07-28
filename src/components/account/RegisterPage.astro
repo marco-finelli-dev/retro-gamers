@@ -166,7 +166,17 @@ const languageSwitch = {
         <span>{copy.divider}</span>
       </div>
 
-      <form class="account-form" data-register-form>
+      <form
+        class="account-form"
+        data-register-form
+        data-client-lang={clientCopy.lang}
+        data-register-failed={clientCopy.registerFailed}
+        data-success-fallback={clientCopy.successFallback}
+        data-connection-error={clientCopy.connectionError}
+        data-missing-resend-email={clientCopy.missingResendEmail}
+        data-resend-failed={clientCopy.resendFailed}
+        data-resend-success={clientCopy.resendSuccess}
+      >
         <label>
           <span>{copy.email}</span>
           <input type="email" name="email" required autocomplete="email" />
@@ -219,11 +229,23 @@ const languageSwitch = {
     </section>
   </div>
 
-  <script define:vars={{ clientCopy }}>
-    const form = document.querySelector('[data-register-form]');
-    const message = document.querySelector('[data-account-message]');
-    const resendButton = document.querySelector('[data-resend-confirmation]');
+  <script>
+    import { trackRgEvent } from '../../lib/analytics/client';
+
+    const form = document.querySelector<HTMLFormElement>('[data-register-form]');
+    const message = document.querySelector<HTMLElement>('[data-account-message]');
+    const resendButton = document.querySelector<HTMLButtonElement>('[data-resend-confirmation]');
+    const clientCopy = {
+      lang: form?.dataset.clientLang === 'en' ? 'en' : 'it',
+      registerFailed: form?.dataset.registerFailed || 'Registration failed. Please check your details and try again.',
+      successFallback: form?.dataset.successFallback || 'Registration received. Check your email to confirm your account.',
+      connectionError: form?.dataset.connectionError || 'Connection error. Please try again.',
+      missingResendEmail: form?.dataset.missingResendEmail || 'Enter your email in the field above, then request a new link.',
+      resendFailed: form?.dataset.resendFailed || 'The request could not be completed. Please try again later.',
+      resendSuccess: form?.dataset.resendSuccess || 'If the address is valid, you will receive a new confirmation email.',
+    };
     let lastConfirmationEmail = '';
+    let registerRequestInFlight = false;
 
     const showMessage = (text, type = 'ok') => {
       if (!message) return;
@@ -242,6 +264,9 @@ const languageSwitch = {
 
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
+
+      if (registerRequestInFlight) return;
+      registerRequestInFlight = true;
 
       const formData = new FormData(form);
       const button = form.querySelector('button[type="submit"]');
@@ -265,7 +290,7 @@ const languageSwitch = {
 
         const result = await response.json();
 
-        if (!result.ok) {
+        if (!response.ok || !result.ok) {
           if (result.code === 'email_not_confirmed') {
             lastConfirmationEmail = email;
           }
@@ -276,10 +301,15 @@ const languageSwitch = {
 
         lastConfirmationEmail = email;
         showMessage(resultMessage(result, 'message', clientCopy.successFallback), 'ok');
+        trackRgEvent('account_registration_success', {
+          language: clientCopy.lang,
+          method: 'email',
+        });
         form.reset();
       } catch {
         showMessage(clientCopy.connectionError, 'error');
       } finally {
+        registerRequestInFlight = false;
         if (button) button.disabled = false;
       }
     });

@@ -477,6 +477,8 @@ const activeDownloadPackages = (classic.downloadPackages || [])
   .map((downloadPackage) => {
     const typeLabel = getPackageTypeLabel(downloadPackage.packageType);
     const platformLabel = downloadPackage.platform ? getName(downloadPackage.platform) : '';
+    const platformSlug = getTaxonomySlug(downloadPackage.platform);
+    const analyticsRequiresLogin = classic.requiresLogin === true || downloadPackage.requiresLogin === true;
     const languageLabel = downloadPackage.language
       ? String(downloadPackage.language).toUpperCase()
       : '';
@@ -498,6 +500,8 @@ const activeDownloadPackages = (classic.downloadPackages || [])
       endpoint: `/api/playable-classics/${classic.slug}/download/${encodeURIComponent(downloadPackage.packageId || '')}`,
       typeLabel,
       platformLabel,
+      platformSlug,
+      analyticsRequiresLogin,
       languageLabel,
       metadata,
     };
@@ -688,6 +692,11 @@ const downloadMessageAttrs = {
                     data-message-forbidden={downloadMessageAttrs.forbidden}
                     data-message-not-found={downloadMessageAttrs.notFound}
                     data-message-unavailable={downloadMessageAttrs.unavailable}
+                    data-analytics-language={currentLang}
+                    data-analytics-classic-slug={classic.slug}
+                    data-analytics-package-type={downloadPackage.packageType}
+                    data-analytics-platform-slug={downloadPackage.platformSlug}
+                    data-analytics-requires-login={downloadPackage.analyticsRequiresLogin ? 'true' : 'false'}
                   >
                     <header class="playable-classic-download-package__header">
                       <div>
@@ -944,6 +953,8 @@ const downloadMessageAttrs = {
   </div>
 
   <script>
+    import { trackRgEvent } from '../../lib/analytics/client';
+
     const downloadRoots = document.querySelectorAll('[data-playable-classic-download]');
 
     downloadRoots.forEach((downloadRoot) => {
@@ -951,6 +962,11 @@ const downloadMessageAttrs = {
       const status = downloadRoot.querySelector('[data-download-status]');
       const loginLink = downloadRoot.querySelector('[data-download-login]');
       const endpoint = downloadRoot.getAttribute('data-endpoint') || '';
+      const analyticsLanguage = downloadRoot.getAttribute('data-analytics-language') === 'en' ? 'en' : 'it';
+      const analyticsClassicSlug = downloadRoot.getAttribute('data-analytics-classic-slug') || '';
+      const analyticsPackageType = downloadRoot.getAttribute('data-analytics-package-type') || '';
+      const analyticsPlatformSlug = downloadRoot.getAttribute('data-analytics-platform-slug') || '';
+      const analyticsRequiresLogin = downloadRoot.getAttribute('data-analytics-requires-login');
       const messages = {
         preparing: downloadRoot.getAttribute('data-message-preparing') || '',
         ready: downloadRoot.getAttribute('data-message-ready') || '',
@@ -1006,6 +1022,20 @@ const downloadMessageAttrs = {
           }
 
           setStatus(messages.ready, 'success');
+
+          try {
+            trackRgEvent('download_start', {
+              language: analyticsLanguage,
+              classic_slug: analyticsClassicSlug,
+              ...(analyticsPackageType ? { package_type: analyticsPackageType } : {}),
+              ...(analyticsPlatformSlug ? { platform_slug: analyticsPlatformSlug } : {}),
+              ...(analyticsRequiresLogin === 'true' || analyticsRequiresLogin === 'false'
+                ? { requires_login: analyticsRequiresLogin === 'true' }
+                : {}),
+            });
+          } catch {
+            // Analytics must never block the download flow.
+          }
 
           const link = document.createElement('a');
           link.href = payload.url;
