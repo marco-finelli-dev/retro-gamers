@@ -287,13 +287,24 @@ const jsonLd = {
 
       const oauthAnalyticsWindow = window as Window & {
         __rgOAuthLoginAnalyticsHandled?: boolean;
+        __rgLanguageSwitchAnalyticsAttached?: boolean;
       };
+
+      const normalizeSwitchLanguage = (value: string | null | undefined): 'it' | 'en' | '' =>
+        value === 'it' || value === 'en' ? value : '';
 
       const normalizeOAuthMethod = (value: string | null): 'google' | 'facebook' | 'apple' | '' =>
         value === 'google' || value === 'facebook' || value === 'apple' ? value : '';
 
       const normalizeLoginDestination = (value: string | null): 'account' | 'previous_page' | 'home' | '' =>
         value === 'account' || value === 'previous_page' || value === 'home'
+          ? value
+          : '';
+
+      const normalizeLanguageSwitchPlacement = (
+        value: string | null | undefined
+      ): 'header' | 'mobile_menu' | 'article_translation' | '' =>
+        value === 'header' || value === 'mobile_menu' || value === 'article_translation'
           ? value
           : '';
 
@@ -339,6 +350,42 @@ const jsonLd = {
           language: document.documentElement.lang === 'en' ? 'en' : 'it',
           method: oauthMethod,
           destination,
+        });
+      }
+
+      if (!oauthAnalyticsWindow.__rgLanguageSwitchAnalyticsAttached) {
+        oauthAnalyticsWindow.__rgLanguageSwitchAnalyticsAttached = true;
+
+        document.addEventListener('click', (event) => {
+          const languageSwitch = event.target instanceof Element
+            ? event.target.closest('[data-rg-language-switch]')
+            : null;
+
+          if (!(languageSwitch instanceof HTMLAnchorElement)) return;
+          if (!languageSwitch.getAttribute('href')) return;
+
+          const fromLanguage = normalizeSwitchLanguage(
+            languageSwitch.dataset.rgLanguageSwitchFrom
+          );
+          const toLanguage = normalizeSwitchLanguage(
+            languageSwitch.dataset.rgLanguageSwitchTo
+          );
+          const placement = normalizeLanguageSwitchPlacement(
+            languageSwitch.dataset.rgLanguageSwitchPlacement
+          );
+
+          if (!fromLanguage || !toLanguage || fromLanguage === toLanguage || !placement) {
+            return;
+          }
+
+          trackRgEvent('language_switch', {
+            from_language: fromLanguage,
+            to_language: toLanguage,
+            placement,
+            ...(languageSwitch.dataset.rgLanguageSwitchContentType
+              ? { content_type: languageSwitch.dataset.rgLanguageSwitchContentType }
+              : {}),
+          });
         });
       }
     </script>

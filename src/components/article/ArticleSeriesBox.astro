@@ -25,6 +25,24 @@ const labels = isEnglish
 const seriesName = isEnglish
   ? series?.nameEn || series?.name
   : series?.name;
+const getAnalyticsToken = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+const getSlug = (item) =>
+  typeof item?.slug === 'string'
+    ? item.slug
+    : item?.slug?.current || '';
+const getPositiveInteger = (value) => {
+  const number = Number(value);
+
+  return Number.isSafeInteger(number) && number > 0 ? number : null;
+};
+const seriesKey = getAnalyticsToken(getSlug(series));
+const fromSlug = getAnalyticsToken(getSlug(post));
+const currentPosition = getPositiveInteger(post?.seriesOrder);
 
 const getSeriesLabel = (item, index) => {
   const fallbackOrder = item.seriesOrder || index + 1;
@@ -59,7 +77,7 @@ const shouldRender =
 ---
 
 {shouldRender && (
-  <aside class="article-series-box">
+  <aside class="article-series-box" data-rg-series-box>
 
     <div class="article-series-box__header">
       <span>{labels.eyebrow}</span>
@@ -69,7 +87,8 @@ const shouldRender =
     <div class="article-series-box__list">
       {items.map((item, index) => {
         const isCurrent = item._id === post._id;
-
+        const targetSlug = getAnalyticsToken(getSlug(item));
+        const targetPosition = getPositiveInteger(item.seriesOrder);
         const label = getSeriesLabel(item, index);
 
         return (
@@ -82,7 +101,19 @@ const shouldRender =
               <small>{labels.current}</small>
             </div>
           ) : (
-            <a href={getPostUrl(item)} class="article-series-box__item">
+            <a
+              href={getPostUrl(item)}
+              class="article-series-box__item"
+              data-rg-series-link
+              data-rg-series-language={lang}
+              data-rg-series-key={seriesKey || undefined}
+              data-rg-series-from-slug={fromSlug || undefined}
+              data-rg-series-to-slug={targetSlug || undefined}
+              data-rg-series-target-type="episode"
+              data-rg-series-placement="series_box"
+              data-rg-series-current-position={currentPosition || undefined}
+              data-rg-series-target-position={targetPosition || undefined}
+            >
               <span>{label}</span>
 
               <strong>{item.title}</strong>
@@ -96,3 +127,49 @@ const shouldRender =
 
   </aside>
 )}
+
+<script>
+  import { trackRgEvent } from '../../lib/analytics/client';
+
+  const getSeriesTargetType = (value): 'episode' | 'series_index' =>
+    value === 'series_index' ? 'series_index' : 'episode';
+
+  const getSeriesPlacement = (value): 'series_box' =>
+    value === 'series_box' ? 'series_box' : 'series_box';
+
+  const getSeriesPosition = (value) => {
+    const number = Number(value);
+
+    return Number.isSafeInteger(number) && number > 0 ? number : null;
+  };
+
+  document.querySelectorAll('[data-rg-series-box]').forEach((seriesBox) => {
+    if (!(seriesBox instanceof HTMLElement)) return;
+    if (seriesBox.dataset.rgSeriesListenerAttached === 'true') return;
+
+    seriesBox.dataset.rgSeriesListenerAttached = 'true';
+
+    seriesBox.addEventListener('click', (event) => {
+      const seriesLink = event.target instanceof Element
+        ? event.target.closest('[data-rg-series-link]')
+        : null;
+
+      if (!(seriesLink instanceof HTMLAnchorElement)) return;
+      if (!seriesLink.getAttribute('href')) return;
+
+      const currentPosition = getSeriesPosition(seriesLink.dataset.rgSeriesCurrentPosition);
+      const targetPosition = getSeriesPosition(seriesLink.dataset.rgSeriesTargetPosition);
+
+      trackRgEvent('series_item_click', {
+        language: seriesLink.dataset.rgSeriesLanguage === 'en' ? 'en' : 'it',
+        series_key: seriesLink.dataset.rgSeriesKey || '',
+        from_slug: seriesLink.dataset.rgSeriesFromSlug || '',
+        ...(seriesLink.dataset.rgSeriesToSlug ? { to_slug: seriesLink.dataset.rgSeriesToSlug } : {}),
+        target_type: getSeriesTargetType(seriesLink.dataset.rgSeriesTargetType),
+        placement: getSeriesPlacement(seriesLink.dataset.rgSeriesPlacement),
+        ...(currentPosition !== null ? { current_position: currentPosition } : {}),
+        ...(targetPosition !== null ? { target_position: targetPosition } : {}),
+      });
+    });
+  });
+</script>

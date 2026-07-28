@@ -1255,6 +1255,29 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       });
     };
 
+    const getReactionAction = (group, requestedReaction): 'add' | 'change' | 'remove' | '' => {
+      if (requestedReaction !== 'like' && requestedReaction !== 'dislike') {
+        return '';
+      }
+
+      if (!(group instanceof HTMLElement)) {
+        return '';
+      }
+
+      const activeButton = group?.querySelector('[data-comment-reaction].is-active');
+      const activeReaction = activeButton?.dataset.commentReaction;
+
+      if (activeReaction === requestedReaction) {
+        return 'remove';
+      }
+
+      if (activeReaction === 'like' || activeReaction === 'dislike') {
+        return 'change';
+      }
+
+      return 'add';
+    };
+
     const getAnalyticsCommentStatus = (comment) => {
       const status = String(comment?.status || '').trim().toLowerCase();
 
@@ -1293,6 +1316,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       const buttons = group
         ? Array.from(group.querySelectorAll('[data-comment-reaction]'))
         : [button];
+      const reactionAction = getReactionAction(group, reaction);
 
       buttons.forEach((reactionButton) => {
         reactionButton.disabled = true;
@@ -1333,6 +1357,13 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
           result.likeUsers,
           result.dislikeUsers
         );
+
+        trackRgEvent('comment_reaction_success', {
+          language: articleLanguage,
+          article_slug: articleSlug,
+          reaction,
+          ...(reactionAction ? { action: reactionAction } : {}),
+        });
       } catch {
         setStatus(labels.reactionError, 'error');
       } finally {

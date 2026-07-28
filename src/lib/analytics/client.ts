@@ -5,6 +5,11 @@ type RgLoginMethod = 'email' | 'google' | 'facebook' | 'apple';
 type RgLoginDestination = 'account' | 'previous_page' | 'home';
 type RgAffiliateProvider = 'amazon' | 'ebay' | 'gog' | 'other';
 type RgAffiliatePlacement = 'affiliate_box' | 'article_body' | 'hardware_card' | 'product_cta';
+type RgCommentReaction = 'like' | 'dislike';
+type RgCommentReactionAction = 'add' | 'change' | 'remove';
+type RgSeriesTargetType = 'episode' | 'series_index';
+type RgSeriesPlacement = 'series_box';
+type RgLanguageSwitchPlacement = 'header' | 'mobile_menu' | 'article_translation';
 type RgEventParameterValue = string | number | boolean;
 type RgSanitizedParameters = Record<string, RgEventParameterValue>;
 
@@ -16,7 +21,10 @@ export type RgAnalyticsEventName =
   | 'download_start'
   | 'login_success'
   | 'playable_classic_open'
-  | 'affiliate_click';
+  | 'affiliate_click'
+  | 'comment_reaction_success'
+  | 'series_item_click'
+  | 'language_switch';
 
 export type RgArticleViewParameters = {
   language: RgAnalyticsLanguage;
@@ -77,6 +85,31 @@ export type RgAffiliateClickParameters = {
   content_type?: string;
 };
 
+export type RgCommentReactionSuccessParameters = {
+  language: RgAnalyticsLanguage;
+  article_slug: string;
+  reaction: RgCommentReaction;
+  action?: RgCommentReactionAction;
+};
+
+export type RgSeriesItemClickParameters = {
+  language: RgAnalyticsLanguage;
+  series_key: string;
+  from_slug: string;
+  to_slug?: string;
+  target_type: RgSeriesTargetType;
+  placement: RgSeriesPlacement;
+  current_position?: number;
+  target_position?: number;
+};
+
+export type RgLanguageSwitchParameters = {
+  from_language: RgAnalyticsLanguage;
+  to_language: RgAnalyticsLanguage;
+  placement: RgLanguageSwitchPlacement;
+  content_type?: string;
+};
+
 export type RgAnalyticsEventParameters = {
   article_view: RgArticleViewParameters;
   comment_submit_success: RgCommentSubmitSuccessParameters;
@@ -86,6 +119,9 @@ export type RgAnalyticsEventParameters = {
   login_success: RgLoginSuccessParameters;
   playable_classic_open: RgPlayableClassicOpenParameters;
   affiliate_click: RgAffiliateClickParameters;
+  comment_reaction_success: RgCommentReactionSuccessParameters;
+  series_item_click: RgSeriesItemClickParameters;
+  language_switch: RgLanguageSwitchParameters;
 };
 
 type RgAnalyticsConsentState = {
@@ -134,6 +170,9 @@ const allowedEvents = new Set<RgAnalyticsEventName>([
   'login_success',
   'playable_classic_open',
   'affiliate_click',
+  'comment_reaction_success',
+  'series_item_click',
+  'language_switch',
 ]);
 
 let queue: RgQueuedEvent[] = [];
@@ -198,6 +237,23 @@ const normalizeAffiliatePlacement = (value: unknown): RgAffiliatePlacement | nul
     ? value
     : null;
 
+const normalizeCommentReaction = (value: unknown): RgCommentReaction | null =>
+  value === 'like' || value === 'dislike' ? value : null;
+
+const normalizeCommentReactionAction = (value: unknown): RgCommentReactionAction | null =>
+  value === 'add' || value === 'change' || value === 'remove' ? value : null;
+
+const normalizeSeriesTargetType = (value: unknown): RgSeriesTargetType | null =>
+  value === 'episode' || value === 'series_index' ? value : null;
+
+const normalizeSeriesPlacement = (value: unknown): RgSeriesPlacement | null =>
+  value === 'series_box' ? value : null;
+
+const normalizeLanguageSwitchPlacement = (value: unknown): RgLanguageSwitchPlacement | null =>
+  value === 'header' || value === 'mobile_menu' || value === 'article_translation'
+    ? value
+    : null;
+
 export function getRgAffiliateProviderFromUrl(value: string): RgAffiliateProvider {
   try {
     const hostname = new URL(value).hostname.toLowerCase().replace(/^www\./, '');
@@ -235,6 +291,16 @@ const normalizeScore = (value: unknown) => {
   return score;
 };
 
+const normalizePositiveInteger = (value: unknown) => {
+  const number = Number(value);
+
+  if (!Number.isSafeInteger(number) || number < 1) {
+    return null;
+  }
+
+  return number;
+};
+
 const hasOnlyPlainParameters = (parameters: Record<string, unknown>) =>
   Object.values(parameters).every(isPlainParameterValue);
 
@@ -260,6 +326,33 @@ const sanitizeParameters = <TName extends RgAnalyticsEventName>(
     )
   )) {
     return null;
+  }
+
+  if (name === 'language_switch') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'from_language',
+      'to_language',
+      'placement',
+      'content_type',
+    ])) {
+      return null;
+    }
+
+    const fromLanguage = normalizeLanguage(rawParameters.from_language);
+    const toLanguage = normalizeLanguage(rawParameters.to_language);
+    const placement = normalizeLanguageSwitchPlacement(rawParameters.placement);
+    const contentType = normalizeShortToken(rawParameters.content_type, 40);
+
+    if (!fromLanguage || !toLanguage || fromLanguage === toLanguage || !placement) {
+      return null;
+    }
+
+    return {
+      from_language: fromLanguage,
+      to_language: toLanguage,
+      placement,
+      ...(contentType ? { content_type: contentType } : {}),
+    };
   }
 
   const language = normalizeLanguage(rawParameters.language);
@@ -484,6 +577,74 @@ const sanitizeParameters = <TName extends RgAnalyticsEventName>(
       placement,
       ...(articleSlug ? { article_slug: articleSlug } : {}),
       ...(contentType ? { content_type: contentType } : {}),
+    };
+  }
+
+  if (name === 'comment_reaction_success') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'language',
+      'article_slug',
+      'reaction',
+      'action',
+    ])) {
+      return null;
+    }
+
+    const articleSlug = normalizeShortToken(rawParameters.article_slug, 160);
+    const reaction = normalizeCommentReaction(rawParameters.reaction);
+    const action = normalizeCommentReactionAction(rawParameters.action);
+
+    if (!articleSlug || !reaction) {
+      return null;
+    }
+
+    return {
+      language,
+      article_slug: articleSlug,
+      reaction,
+      ...(action ? { action } : {}),
+    };
+  }
+
+  if (name === 'series_item_click') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'language',
+      'series_key',
+      'from_slug',
+      'to_slug',
+      'target_type',
+      'placement',
+      'current_position',
+      'target_position',
+    ])) {
+      return null;
+    }
+
+    const seriesKey = normalizeShortToken(rawParameters.series_key, 120);
+    const fromSlug = normalizeShortToken(rawParameters.from_slug, 160);
+    const toSlug = normalizeShortToken(rawParameters.to_slug, 160);
+    const targetType = normalizeSeriesTargetType(rawParameters.target_type);
+    const placement = normalizeSeriesPlacement(rawParameters.placement);
+    const currentPosition = normalizePositiveInteger(rawParameters.current_position);
+    const targetPosition = normalizePositiveInteger(rawParameters.target_position);
+
+    if (!seriesKey || !fromSlug || !targetType || !placement) {
+      return null;
+    }
+
+    if (targetType === 'episode' && !toSlug) {
+      return null;
+    }
+
+    return {
+      language,
+      series_key: seriesKey,
+      from_slug: fromSlug,
+      target_type: targetType,
+      placement,
+      ...(toSlug ? { to_slug: toSlug } : {}),
+      ...(currentPosition !== null ? { current_position: currentPosition } : {}),
+      ...(targetPosition !== null ? { target_position: targetPosition } : {}),
     };
   }
 
