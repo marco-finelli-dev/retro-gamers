@@ -294,6 +294,42 @@ function getStorageUnavailableResponse(): PlayableClassicSignedUrlResult {
   };
 }
 
+function decodeFilenameIfUrlEncoded(filename: string) {
+  if (!/%[0-9a-f]{2}/i.test(filename)) {
+    return filename;
+  }
+
+  try {
+    return decodeURIComponent(filename);
+  } catch {
+    return filename;
+  }
+}
+
+function getDownloadFilenameFromStoragePath(storagePath?: string) {
+  const normalizedPath = String(storagePath || '').replace(/\\/g, '/').trim();
+  const basename = normalizedPath.split('/').filter(Boolean).pop() || '';
+  const decodedBasename = decodeFilenameIfUrlEncoded(basename);
+  const safeBasename = decodedBasename
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\\/]/g, '-')
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .replace(/[<>:"|?*%]/g, '-')
+    .replace(/\s+/g, ' ')
+    .replace(/\.\.+/g, '.')
+    .replace(/^\.+/, '')
+    .trim();
+
+  const safeFilename = safeBasename || 'download.zip';
+
+  if (/\.zip$/i.test(safeFilename)) {
+    return safeFilename.replace(/(\.zip)+$/i, '.zip');
+  }
+
+  return `${safeFilename.replace(/\.+$/, '') || 'download'}.zip`;
+}
+
 export function isPlayableClassicsDownloadStorageConfigured() {
   return Boolean(
     PLAYABLE_CLASSICS_DOWNLOAD_BUCKET &&
@@ -315,7 +351,7 @@ export async function createPlayableClassicSignedUrl(
       downloadPackage.storagePath,
       PLAYABLE_CLASSICS_SIGNED_URL_EXPIRES_IN,
       {
-        download: downloadPackage.title || true,
+        download: getDownloadFilenameFromStoragePath(downloadPackage.storagePath),
       }
     );
 
