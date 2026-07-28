@@ -28,6 +28,8 @@ const {
   type = 'website',
   publishedAt = null,
   updatedAt = null,
+  articleAuthorName = null,
+  articleAuthorUrl = null,
   noindex = false,
   structuredData = []
 } = Astro.props;
@@ -91,6 +93,28 @@ const canonicalUrl = canonical?.startsWith('http')
   : `${siteUrl}${canonical}`;
 
 const ogLocale = lang === 'en' ? 'en_US' : 'it_IT';
+const resolvedArticleAuthorName =
+  typeof articleAuthorName === 'string' && articleAuthorName.trim()
+    ? articleAuthorName.trim()
+    : 'Marco Finelli';
+const resolvedArticleAuthorUrl =
+  typeof articleAuthorUrl === 'string' && articleAuthorUrl.trim()
+    ? articleAuthorUrl.trim()
+    : '';
+const absoluteArticleAuthorUrl = resolvedArticleAuthorUrl
+  ? resolvedArticleAuthorUrl.startsWith('http')
+    ? resolvedArticleAuthorUrl
+    : `${siteUrl}${
+        resolvedArticleAuthorUrl.startsWith('/')
+          ? resolvedArticleAuthorUrl
+          : `/${resolvedArticleAuthorUrl}`
+      }`
+  : '';
+const articleAuthorJsonLd = {
+  '@type': 'Person',
+  name: resolvedArticleAuthorName,
+  ...(absoluteArticleAuthorUrl ? { url: absoluteArticleAuthorUrl } : {})
+};
 
 const organizationJsonLd = {
   '@type': 'Organization',
@@ -128,10 +152,7 @@ const articleJsonLd = {
   image: absoluteImage ? [absoluteImage] : undefined,
   datePublished: publishedAt || undefined,
   dateModified: updatedAt || publishedAt || undefined,
-  author: {
-    '@type': 'Person',
-    name: 'Marco Finelli'
-  },
+  author: articleAuthorJsonLd,
   publisher: {
     '@id': organizationId
   },

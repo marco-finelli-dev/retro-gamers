@@ -116,6 +116,7 @@ const post = await sanityClient.fetch(`
 
   "slug": slug.current,
   publishedAt,
+  lastUpdated,
   seriesOrder,
   seriesLabel,
 
@@ -689,6 +690,18 @@ const alternateLanguages = [
         }
       ])
 ];
+
+const articleAuthorName =
+  post.author?.displayName === 'nickname' && post.author?.nickname
+    ? post.author.nickname
+    : post.author?.name || '';
+const articleAuthorSlug =
+  typeof post.author?.slug === 'string'
+    ? post.author.slug
+    : post.author?.slug?.current || '';
+const articleAuthorUrl = articleAuthorSlug
+  ? `/en/authors/${articleAuthorSlug}/`
+  : '';
 ---
 
 <Layout
@@ -700,6 +713,9 @@ const alternateLanguages = [
   canonical={canonicalUrl}
   type="article"
   publishedAt={post.publishedAt}
+  updatedAt={post.lastUpdated}
+  articleAuthorName={articleAuthorName}
+  articleAuthorUrl={articleAuthorUrl}
   lang="en"
   alternateLanguages={alternateLanguages}
   noindex={isPreview || !isPostPubliclyDistributed(post)}

@@ -676,6 +676,18 @@ const alternateLanguages = englishUrl
       }
     ]
   : [];
+
+const articleAuthorName =
+  post.author?.displayName === 'nickname' && post.author?.nickname
+    ? post.author.nickname
+    : post.author?.name || '';
+const articleAuthorSlug =
+  typeof post.author?.slug === 'string'
+    ? post.author.slug
+    : post.author?.slug?.current || '';
+const articleAuthorUrl = articleAuthorSlug
+  ? `/autori/${articleAuthorSlug}/`
+  : '';
 ---
 
 <Layout
@@ -688,6 +700,8 @@ const alternateLanguages = englishUrl
   type="article"
   publishedAt={post.publishedAt}
   updatedAt={post.lastUpdated}
+  articleAuthorName={articleAuthorName}
+  articleAuthorUrl={articleAuthorUrl}
   lang="it"
   alternateLanguages={alternateLanguages}
   noindex={isPreview || !isPostPubliclyDistributed(post)}
