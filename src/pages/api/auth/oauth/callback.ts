@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import {
   createSupabaseOAuthClient,
   ensureOAuthUserProfile,
+  isSocialOAuthProvider,
   normalizeReturnTo,
   oauthCodeVerifierCookie,
 } from '../../../../lib/supabase/oauth';
@@ -76,10 +77,32 @@ const redirectToLogin = (origin: string, reason = 'oauth') =>
     deleteCookie(oauthCodeVerifierCookie, '/api/auth/oauth'),
   ]);
 
+const getOAuthLoginDestination = (returnTo: string) => {
+  if (returnTo === '/' || returnTo === '/en/' || returnTo === '/en') {
+    return 'home';
+  }
+
+  if (/^\/(?:en\/)?account(?:\/|$)/.test(returnTo)) {
+    return 'account';
+  }
+
+  return 'previous_page';
+};
+
+const addOAuthAnalyticsMarker = (location: string, provider: string, destination: string) => {
+  const targetUrl = new URL(location);
+
+  targetUrl.searchParams.set('rg_oauth_login', provider);
+  targetUrl.searchParams.set('rg_login_destination', destination);
+
+  return targetUrl.toString();
+};
+
 export const GET: APIRoute = async ({ cookies, url }) => {
   const error = url.searchParams.get('error') || url.searchParams.get('error_description');
   const code = url.searchParams.get('code');
   const returnTo = normalizeReturnTo(url.searchParams.get('returnTo'));
+  const provider = url.searchParams.get('provider');
   const codeVerifier = cookies.get(oauthCodeVerifierCookie)?.value || '';
 
   if (error) {
@@ -135,5 +158,10 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     }),
   ];
 
-  return redirect(new URL(returnTo, url.origin).toString(), 303, setCookies);
+  const redirectUrl = new URL(returnTo, url.origin).toString();
+  const finalRedirectUrl = isSocialOAuthProvider(provider)
+    ? addOAuthAnalyticsMarker(redirectUrl, provider, getOAuthLoginDestination(returnTo))
+    : redirectUrl;
+
+  return redirect(finalRedirectUrl, 303, setCookies);
 };

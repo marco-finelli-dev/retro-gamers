@@ -1,8 +1,16 @@
 ---
+import { getRgAffiliateProviderFromUrl } from '../../lib/analytics/client';
+
 const { post } = Astro.props;
 
 const lang = post?.language || 'it';
 const monetization = post?.monetization || {};
+const getAnalyticsToken = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
 const labels = {
   it: {
@@ -43,6 +51,11 @@ const labels = {
 const t = labels[lang] || labels.it;
 
 const affiliateUrl = monetization.affiliateUrl || '';
+const affiliateProvider = getRgAffiliateProviderFromUrl(affiliateUrl);
+const articleSlug = getAnalyticsToken(
+  typeof post?.slug === 'string' ? post.slug : post?.slug?.current
+);
+const contentType = getAnalyticsToken(post?.type || 'article');
 
 const affiliateLabel =
   monetization.affiliateLabel ||
@@ -87,6 +100,12 @@ const isVisible =
         href={affiliateUrl}
         target="_blank"
         rel="sponsored nofollow noopener noreferrer"
+        data-rg-affiliate-link
+        data-rg-affiliate-language={lang === 'en' ? 'en' : 'it'}
+        data-rg-affiliate-provider={affiliateProvider}
+        data-rg-affiliate-placement="affiliate_box"
+        data-rg-affiliate-article-slug={articleSlug || undefined}
+        data-rg-affiliate-content-type={contentType || undefined}
       >
         {affiliateLabel}
       </a>

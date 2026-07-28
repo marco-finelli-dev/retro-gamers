@@ -158,7 +158,13 @@ const commentsDiscovery = currentLang === 'en'
 
       <ArticleAffiliateBox post={post} />
 
-      <ArticleContent content={post.content} lang={currentLang} isPreview={isPreview} />
+      <ArticleContent
+        content={post.content}
+        lang={currentLang}
+        isPreview={isPreview}
+        articleSlug={articleAnalyticsSlug}
+        contentType={articleAnalyticsContentType}
+      />
 
       <aside
         class="article-comments-discovery article-comments-discovery--article-end"
@@ -220,9 +226,29 @@ const commentsDiscovery = currentLang === 'en'
 <script>
   import { trackRgEvent } from '../../lib/analytics/client';
 
+  const getAffiliateProvider = (value) => {
+    if (value === 'amazon' || value === 'ebay' || value === 'gog' || value === 'other') {
+      return value;
+    }
+
+    return 'other';
+  };
+
+  const getAffiliatePlacement = (value) => {
+    if (
+      value === 'affiliate_box' ||
+      value === 'article_body' ||
+      value === 'hardware_card' ||
+      value === 'product_cta'
+    ) {
+      return value;
+    }
+
+    return 'article_body';
+  };
+
   document.querySelectorAll('[data-rg-article-page]').forEach((articlePage) => {
     if (!(articlePage instanceof HTMLElement)) return;
-    if (articlePage.dataset.rgArticleViewTracked === 'true') return;
 
     const language = articlePage.dataset.rgArticleLanguage === 'en' ? 'en' : 'it';
     const contentType = articlePage.dataset.rgArticleContentType || '';
@@ -230,16 +256,46 @@ const commentsDiscovery = currentLang === 'en'
     const articleSlug = articlePage.dataset.rgArticleSlug || '';
     const authorSlug = articlePage.dataset.rgArticleAuthorSlug || '';
 
-    if (!contentType || !categorySlug || !articleSlug) return;
+    if (
+      articlePage.dataset.rgArticleViewTracked !== 'true' &&
+      contentType &&
+      categorySlug &&
+      articleSlug
+    ) {
+      articlePage.dataset.rgArticleViewTracked = 'true';
 
-    articlePage.dataset.rgArticleViewTracked = 'true';
+      trackRgEvent('article_view', {
+        language,
+        content_type: contentType,
+        category_slug: categorySlug,
+        article_slug: articleSlug,
+        ...(authorSlug ? { author_slug: authorSlug } : {}),
+      });
+    }
 
-    trackRgEvent('article_view', {
-      language,
-      content_type: contentType,
-      category_slug: categorySlug,
-      article_slug: articleSlug,
-      ...(authorSlug ? { author_slug: authorSlug } : {}),
+    if (articlePage.dataset.rgAffiliateListenerAttached === 'true') return;
+
+    articlePage.dataset.rgAffiliateListenerAttached = 'true';
+
+    articlePage.addEventListener('click', (event) => {
+      const affiliateLink = event.target instanceof Element
+        ? event.target.closest('[data-rg-affiliate-link]')
+        : null;
+
+      if (!(affiliateLink instanceof HTMLAnchorElement)) return;
+      if (!articlePage.contains(affiliateLink)) return;
+
+      trackRgEvent('affiliate_click', {
+        language: affiliateLink.dataset.rgAffiliateLanguage === 'en' ? 'en' : 'it',
+        provider: getAffiliateProvider(affiliateLink.dataset.rgAffiliateProvider),
+        placement: getAffiliatePlacement(affiliateLink.dataset.rgAffiliatePlacement),
+        ...(affiliateLink.dataset.rgAffiliateArticleSlug || articleSlug
+          ? { article_slug: affiliateLink.dataset.rgAffiliateArticleSlug || articleSlug }
+          : {}),
+        ...(affiliateLink.dataset.rgAffiliateContentType || contentType
+          ? { content_type: affiliateLink.dataset.rgAffiliateContentType || contentType }
+          : {}),
+      });
     });
   });
 </script>

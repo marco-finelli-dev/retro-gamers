@@ -60,7 +60,8 @@ export const GET: APIRoute = async ({ url }) => {
     url.hostname === 'localhost' || url.hostname === '127.0.0.1'
       ? url.origin
       : getSiteUrl();
-  const callbackUrl = `${callbackOrigin}/api/auth/oauth/callback?returnTo=${encodeURIComponent(returnTo)}`;
+  const callbackUrl =
+    `${callbackOrigin}/api/auth/oauth/callback?returnTo=${encodeURIComponent(returnTo)}&provider=${encodeURIComponent(provider)}`;
   const { client, getCodeVerifier } = createSupabaseOAuthClient();
 
   const { data, error } = await client.auth.signInWithOAuth({

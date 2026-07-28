@@ -1,6 +1,10 @@
 type RgAnalyticsLanguage = 'it' | 'en';
 type RgCommentStatus = 'published' | 'pending';
 type RgRegistrationStatus = 'active' | 'pending_verification';
+type RgLoginMethod = 'email' | 'google' | 'facebook' | 'apple';
+type RgLoginDestination = 'account' | 'previous_page' | 'home';
+type RgAffiliateProvider = 'amazon' | 'ebay' | 'gog' | 'other';
+type RgAffiliatePlacement = 'affiliate_box' | 'article_body' | 'hardware_card' | 'product_cta';
 type RgEventParameterValue = string | number | boolean;
 type RgSanitizedParameters = Record<string, RgEventParameterValue>;
 
@@ -9,7 +13,10 @@ export type RgAnalyticsEventName =
   | 'comment_submit_success'
   | 'reader_vote_success'
   | 'account_registration_success'
-  | 'download_start';
+  | 'download_start'
+  | 'login_success'
+  | 'playable_classic_open'
+  | 'affiliate_click';
 
 export type RgArticleViewParameters = {
   language: RgAnalyticsLanguage;
@@ -47,12 +54,38 @@ export type RgDownloadStartParameters = {
   requires_login?: boolean;
 };
 
+export type RgLoginSuccessParameters = {
+  language: RgAnalyticsLanguage;
+  method: RgLoginMethod;
+  destination?: RgLoginDestination;
+};
+
+export type RgPlayableClassicOpenParameters = {
+  language: RgAnalyticsLanguage;
+  classic_slug: string;
+  distribution_type?: string;
+  legal_status?: string;
+  internal_download_available?: boolean;
+  requires_login?: boolean;
+};
+
+export type RgAffiliateClickParameters = {
+  language: RgAnalyticsLanguage;
+  article_slug?: string;
+  provider: RgAffiliateProvider;
+  placement: RgAffiliatePlacement;
+  content_type?: string;
+};
+
 export type RgAnalyticsEventParameters = {
   article_view: RgArticleViewParameters;
   comment_submit_success: RgCommentSubmitSuccessParameters;
   reader_vote_success: RgReaderVoteSuccessParameters;
   account_registration_success: RgAccountRegistrationSuccessParameters;
   download_start: RgDownloadStartParameters;
+  login_success: RgLoginSuccessParameters;
+  playable_classic_open: RgPlayableClassicOpenParameters;
+  affiliate_click: RgAffiliateClickParameters;
 };
 
 type RgAnalyticsConsentState = {
@@ -98,6 +131,9 @@ const allowedEvents = new Set<RgAnalyticsEventName>([
   'reader_vote_success',
   'account_registration_success',
   'download_start',
+  'login_success',
+  'playable_classic_open',
+  'affiliate_click',
 ]);
 
 let queue: RgQueuedEvent[] = [];
@@ -138,6 +174,51 @@ const normalizeCommentStatus = (value: unknown): RgCommentStatus | null =>
 
 const normalizeRegistrationStatus = (value: unknown): RgRegistrationStatus | null =>
   value === 'active' || value === 'pending_verification' ? value : null;
+
+const normalizeLoginMethod = (value: unknown): RgLoginMethod | null =>
+  value === 'email' || value === 'google' || value === 'facebook' || value === 'apple'
+    ? value
+    : null;
+
+const normalizeLoginDestination = (value: unknown): RgLoginDestination | null =>
+  value === 'account' || value === 'previous_page' || value === 'home'
+    ? value
+    : null;
+
+const normalizeAffiliateProvider = (value: unknown): RgAffiliateProvider | null =>
+  value === 'amazon' || value === 'ebay' || value === 'gog' || value === 'other'
+    ? value
+    : null;
+
+const normalizeAffiliatePlacement = (value: unknown): RgAffiliatePlacement | null =>
+  value === 'affiliate_box' ||
+  value === 'article_body' ||
+  value === 'hardware_card' ||
+  value === 'product_cta'
+    ? value
+    : null;
+
+export function getRgAffiliateProviderFromUrl(value: string): RgAffiliateProvider {
+  try {
+    const hostname = new URL(value).hostname.toLowerCase().replace(/^www\./, '');
+
+    if (hostname === 'amzn.to' || hostname.endsWith('.amzn.to') || hostname.includes('amazon.')) {
+      return 'amazon';
+    }
+
+    if (hostname.includes('ebay.') || hostname.endsWith('.rover.ebay.com')) {
+      return 'ebay';
+    }
+
+    if (hostname === 'gog.com' || hostname.endsWith('.gog.com')) {
+      return 'gog';
+    }
+  } catch {
+    return 'other';
+  }
+
+  return 'other';
+}
 
 const normalizeScore = (value: unknown) => {
   const score = Number(value);
@@ -317,6 +398,92 @@ const sanitizeParameters = <TName extends RgAnalyticsEventName>(
       ...(packageType ? { package_type: packageType } : {}),
       ...(platformSlug ? { platform_slug: platformSlug } : {}),
       ...(requiresLogin !== null ? { requires_login: requiresLogin } : {}),
+    };
+  }
+
+  if (name === 'login_success') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'language',
+      'method',
+      'destination',
+    ])) {
+      return null;
+    }
+
+    const method = normalizeLoginMethod(rawParameters.method);
+    const destination = normalizeLoginDestination(rawParameters.destination);
+
+    if (!method) {
+      return null;
+    }
+
+    return {
+      language,
+      method,
+      ...(destination ? { destination } : {}),
+    };
+  }
+
+  if (name === 'playable_classic_open') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'language',
+      'classic_slug',
+      'distribution_type',
+      'legal_status',
+      'internal_download_available',
+      'requires_login',
+    ])) {
+      return null;
+    }
+
+    const classicSlug = normalizeShortToken(rawParameters.classic_slug, 160);
+    const distributionType = normalizeShortToken(rawParameters.distribution_type, 80);
+    const legalStatus = normalizeShortToken(rawParameters.legal_status, 80);
+    const internalDownloadAvailable = normalizeBoolean(rawParameters.internal_download_available);
+    const requiresLogin = normalizeBoolean(rawParameters.requires_login);
+
+    if (!classicSlug) {
+      return null;
+    }
+
+    return {
+      language,
+      classic_slug: classicSlug,
+      ...(distributionType ? { distribution_type: distributionType } : {}),
+      ...(legalStatus ? { legal_status: legalStatus } : {}),
+      ...(internalDownloadAvailable !== null
+        ? { internal_download_available: internalDownloadAvailable }
+        : {}),
+      ...(requiresLogin !== null ? { requires_login: requiresLogin } : {}),
+    };
+  }
+
+  if (name === 'affiliate_click') {
+    if (!hasOnlyKnownKeys(rawParameters, [
+      'language',
+      'article_slug',
+      'provider',
+      'placement',
+      'content_type',
+    ])) {
+      return null;
+    }
+
+    const articleSlug = normalizeShortToken(rawParameters.article_slug, 160);
+    const provider = normalizeAffiliateProvider(rawParameters.provider);
+    const placement = normalizeAffiliatePlacement(rawParameters.placement);
+    const contentType = normalizeShortToken(rawParameters.content_type, 40);
+
+    if (!provider || !placement) {
+      return null;
+    }
+
+    return {
+      language,
+      provider,
+      placement,
+      ...(articleSlug ? { article_slug: articleSlug } : {}),
+      ...(contentType ? { content_type: contentType } : {}),
     };
   }
 

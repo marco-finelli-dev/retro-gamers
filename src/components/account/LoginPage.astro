@@ -166,7 +166,18 @@ const languageSwitch = {
         <span>{copy.divider}</span>
       </div>
 
-      <form class="account-form" data-login-form>
+      <form
+        class="account-form"
+        data-login-form
+        data-client-lang={clientCopy.lang}
+        data-login-failed={clientCopy.loginFailed}
+        data-login-success={clientCopy.loginSuccess}
+        data-email-not-confirmed={clientCopy.emailNotConfirmed}
+        data-connection-error={clientCopy.connectionError}
+        data-missing-resend-email={clientCopy.missingResendEmail}
+        data-resend-failed={clientCopy.resendFailed}
+        data-resend-success={clientCopy.resendSuccess}
+      >
         <input type="hidden" name="returnTo" value={returnTo} />
 
         <label>
@@ -197,10 +208,23 @@ const languageSwitch = {
     </section>
   </div>
 
-  <script define:vars={{ clientCopy }}>
-    const form = document.querySelector('[data-login-form]');
-    const message = document.querySelector('[data-account-message]');
-    const resendButton = document.querySelector('[data-resend-confirmation]');
+  <script>
+    import { trackRgEvent } from '../../lib/analytics/client';
+
+    const form = document.querySelector<HTMLFormElement>('[data-login-form]');
+    const message = document.querySelector<HTMLElement>('[data-account-message]');
+    const resendButton = document.querySelector<HTMLButtonElement>('[data-resend-confirmation]');
+    const clientCopy = {
+      lang: form?.dataset.clientLang === 'en' ? 'en' : 'it',
+      loginFailed: form?.dataset.loginFailed || 'Sign in failed. Check your email and password.',
+      loginSuccess: form?.dataset.loginSuccess || 'Signed in. You can return to the article and comment.',
+      emailNotConfirmed: form?.dataset.emailNotConfirmed || 'Account not confirmed. Check your email or request a new confirmation link.',
+      connectionError: form?.dataset.connectionError || 'Connection error. Please try again.',
+      missingResendEmail: form?.dataset.missingResendEmail || 'Enter your email in the field above, then request a new link.',
+      resendFailed: form?.dataset.resendFailed || 'The request could not be completed. Please try again later.',
+      resendSuccess: form?.dataset.resendSuccess || 'If the address is valid, you will receive a new confirmation email.',
+    };
+    let loginRequestInFlight = false;
 
     const showMessage = (text, type = 'ok') => {
       if (!message) return;
@@ -227,11 +251,29 @@ const languageSwitch = {
       return result?.[key] || fallback;
     };
 
+    const getLoginDestination = (value): 'account' | 'previous_page' | 'home' => {
+      const returnTo = String(value || '').trim();
+
+      if (returnTo === '/' || returnTo === '/en/' || returnTo === '/en') {
+        return 'home';
+      }
+
+      if (/^\/(?:en\/)?account(?:\/|$)/.test(returnTo)) {
+        return 'account';
+      }
+
+      return 'previous_page';
+    };
+
     form?.addEventListener('submit', async (event) => {
       event.preventDefault();
 
+      if (loginRequestInFlight) return;
+      loginRequestInFlight = true;
+
       const formData = new FormData(form);
       const button = form.querySelector('button[type="submit"]');
+      let loginAccepted = false;
 
       if (button) button.disabled = true;
 
@@ -247,12 +289,18 @@ const languageSwitch = {
 
         const result = await response.json();
 
-        if (!result.ok) {
+        if (!response.ok || !result.ok) {
           showMessage(errorMessage(result), 'error');
           return;
         }
 
+        loginAccepted = true;
         showMessage(clientCopy.loginSuccess, 'ok');
+        trackRgEvent('login_success', {
+          language: clientCopy.lang,
+          method: 'email',
+          destination: getLoginDestination(formData.get('returnTo')),
+        });
 
         setTimeout(() => {
           const returnTo = String(formData.get('returnTo') || '/');
@@ -261,7 +309,10 @@ const languageSwitch = {
       } catch {
         showMessage(clientCopy.connectionError, 'error');
       } finally {
-        if (button) button.disabled = false;
+        if (!loginAccepted) {
+          loginRequestInFlight = false;
+          if (button) button.disabled = false;
+        }
       }
     });
 

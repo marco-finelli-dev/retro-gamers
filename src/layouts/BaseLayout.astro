@@ -283,6 +283,66 @@ const jsonLd = {
 
     <script src="/scripts/ui.js" defer></script>
     <script>
+      import { trackRgEvent } from '../lib/analytics/client';
+
+      const oauthAnalyticsWindow = window as Window & {
+        __rgOAuthLoginAnalyticsHandled?: boolean;
+      };
+
+      const normalizeOAuthMethod = (value: string | null): 'google' | 'facebook' | 'apple' | '' =>
+        value === 'google' || value === 'facebook' || value === 'apple' ? value : '';
+
+      const normalizeLoginDestination = (value: string | null): 'account' | 'previous_page' | 'home' | '' =>
+        value === 'account' || value === 'previous_page' || value === 'home'
+          ? value
+          : '';
+
+      const getDestinationFromPath = (pathname: string): 'account' | 'previous_page' | 'home' => {
+        if (pathname === '/' || pathname === '/en/' || pathname === '/en') {
+          return 'home';
+        }
+
+        if (/^\/(?:en\/)?account(?:\/|$)/.test(pathname)) {
+          return 'account';
+        }
+
+        return 'previous_page';
+      };
+
+      const removeOAuthAnalyticsMarker = (url: URL) => {
+        url.searchParams.delete('rg_oauth_login');
+        url.searchParams.delete('rg_login_destination');
+
+        const search = url.searchParams.toString();
+        const cleanedUrl = `${url.pathname}${search ? `?${search}` : ''}${url.hash}`;
+
+        window.history.replaceState(window.history.state, '', cleanedUrl);
+      };
+
+      const currentUrl = new URL(window.location.href);
+      const oauthMethod = normalizeOAuthMethod(currentUrl.searchParams.get('rg_oauth_login'));
+      const oauthDestination = normalizeLoginDestination(
+        currentUrl.searchParams.get('rg_login_destination')
+      );
+
+      if (currentUrl.searchParams.has('rg_oauth_login')) {
+        removeOAuthAnalyticsMarker(currentUrl);
+      }
+
+      if (oauthMethod && !oauthAnalyticsWindow.__rgOAuthLoginAnalyticsHandled) {
+        oauthAnalyticsWindow.__rgOAuthLoginAnalyticsHandled = true;
+
+        const destination =
+          oauthDestination || getDestinationFromPath(window.location.pathname);
+
+        trackRgEvent('login_success', {
+          language: document.documentElement.lang === 'en' ? 'en' : 'it',
+          method: oauthMethod,
+          destination,
+        });
+      }
+    </script>
+    <script>
       import '../scripts/theme.ts';
     </script>
   </body>

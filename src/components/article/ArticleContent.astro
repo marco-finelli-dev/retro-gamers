@@ -5,10 +5,28 @@ import {
   getPlatformUrl as getSharedPlatformUrl,
   getSanityDocumentUrl
 } from '../../lib/routes';
+import { getRgAffiliateProviderFromUrl } from '../../lib/analytics/client';
 import { urlFor } from '../../lib/image';
 import ConsentYouTube from '../common/ConsentYouTube.astro';
 
-const { content = [], lang = 'it', isPreview = false } = Astro.props;
+const {
+  content = [],
+  lang = 'it',
+  isPreview = false,
+  articleSlug = '',
+  contentType = ''
+} = Astro.props;
+
+const getAnalyticsToken = (value = '') =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const articleAnalyticsLanguage = lang === 'en' ? 'en' : 'it';
+const articleAnalyticsSlug = getAnalyticsToken(articleSlug);
+const articleAnalyticsContentType = getAnalyticsToken(contentType);
 
 function escapeHTML(str = '') {
   return String(str).replace(/[&<>"']/g, (char) => ({
@@ -65,7 +83,7 @@ function getCompanyUrl(reference) {
 }
 
 function isAffiliateUrl(url = '') {
-  return /amazon\.|amzn\.to|ebay\.|rover\.ebay/i.test(url);
+  return getRgAffiliateProviderFromUrl(url) !== 'other';
 }
 
 function getExternalRel(url = '') {
@@ -78,6 +96,28 @@ function getExternalClass(url = '') {
   return isAffiliateUrl(url)
     ? 'article-affiliate-link'
     : '';
+}
+
+function getAffiliateAnalyticsAttributes(url = '') {
+  if (!isAffiliateUrl(url)) return '';
+
+  const provider = getRgAffiliateProviderFromUrl(url);
+  const attributes = [
+    'data-rg-affiliate-link',
+    `data-rg-affiliate-language="${escapeHTML(articleAnalyticsLanguage)}"`,
+    `data-rg-affiliate-provider="${escapeHTML(provider)}"`,
+    'data-rg-affiliate-placement="article_body"',
+  ];
+
+  if (articleAnalyticsSlug) {
+    attributes.push(`data-rg-affiliate-article-slug="${escapeHTML(articleAnalyticsSlug)}"`);
+  }
+
+  if (articleAnalyticsContentType) {
+    attributes.push(`data-rg-affiliate-content-type="${escapeHTML(articleAnalyticsContentType)}"`);
+  }
+
+  return ` ${attributes.join(' ')}`;
 }
 
 function getImageUrl(image, width = 980, height = null, fit = null) {
@@ -195,8 +235,9 @@ function renderTextChild(child, markDefs = []) {
       const rel = getExternalRel(def.href);
       const className = getExternalClass(def.href);
       const classAttr = className ? ` class="${className}"` : '';
+      const affiliateAnalyticsAttrs = getAffiliateAnalyticsAttributes(def.href);
 
-      output = `<a href="${escapeHTML(def.href)}" target="_blank" rel="${rel}"${classAttr}>${output}</a>`;
+      output = `<a href="${escapeHTML(def.href)}" target="_blank" rel="${rel}"${classAttr}${affiliateAnalyticsAttrs}>${output}</a>`;
       return;
     }
 

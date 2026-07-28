@@ -507,6 +507,7 @@ const activeDownloadPackages = (classic.downloadPackages || [])
     };
   });
 const hasDownloadPackages = activeDownloadPackages.length > 0;
+const internalDownloadAvailable = hasInternalDownload && hasDownloadPackages;
 const relatedPostTypeLabels: Record<string, string> = isEn
   ? {
       article: 'Article',
@@ -643,7 +644,16 @@ const downloadMessageAttrs = {
   languageSwitch={{ url: languageSwitchUrl }}
   alternateLanguages={alternateLanguages}
 >
-  <div class="playable-classics-page playable-classic-detail">
+  <div
+    class="playable-classics-page playable-classic-detail"
+    data-rg-playable-classic-page
+    data-rg-playable-classic-language={currentLang}
+    data-rg-playable-classic-slug={classic.slug}
+    data-rg-playable-classic-distribution-type={classic.distributionType}
+    data-rg-playable-classic-legal-status={classic.legalStatus}
+    data-rg-playable-classic-internal-download-available={internalDownloadAvailable ? 'true' : 'false'}
+    data-rg-playable-classic-requires-login={classic.requiresLogin ? 'true' : 'false'}
+  >
     <div class="container">
       <a class="playable-classic-back" href={copy.sectionHref}>{copy.backToIndex}</a>
 
@@ -954,6 +964,36 @@ const downloadMessageAttrs = {
 
   <script>
     import { trackRgEvent } from '../../lib/analytics/client';
+
+    const playableClassicPage = document.querySelector('[data-rg-playable-classic-page]');
+
+    if (
+      playableClassicPage instanceof HTMLElement &&
+      playableClassicPage.dataset.rgPlayableClassicOpenTracked !== 'true'
+    ) {
+      const internalDownloadAvailable =
+        playableClassicPage.dataset.rgPlayableClassicInternalDownloadAvailable;
+      const requiresLogin = playableClassicPage.dataset.rgPlayableClassicRequiresLogin;
+
+      playableClassicPage.dataset.rgPlayableClassicOpenTracked = 'true';
+
+      trackRgEvent('playable_classic_open', {
+        language: playableClassicPage.dataset.rgPlayableClassicLanguage === 'en' ? 'en' : 'it',
+        classic_slug: playableClassicPage.dataset.rgPlayableClassicSlug || '',
+        ...(playableClassicPage.dataset.rgPlayableClassicDistributionType
+          ? { distribution_type: playableClassicPage.dataset.rgPlayableClassicDistributionType }
+          : {}),
+        ...(playableClassicPage.dataset.rgPlayableClassicLegalStatus
+          ? { legal_status: playableClassicPage.dataset.rgPlayableClassicLegalStatus }
+          : {}),
+        ...(internalDownloadAvailable === 'true' || internalDownloadAvailable === 'false'
+          ? { internal_download_available: internalDownloadAvailable === 'true' }
+          : {}),
+        ...(requiresLogin === 'true' || requiresLogin === 'false'
+          ? { requires_login: requiresLogin === 'true' }
+          : {}),
+      });
+    }
 
     const downloadRoots = document.querySelectorAll('[data-playable-classic-download]');
 
