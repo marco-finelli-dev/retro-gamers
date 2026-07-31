@@ -5,10 +5,19 @@ import { client } from './sanity';
 // =========================
 
 export type TaxonomyRef = {
+  _id?: string;
   name: string;
   nameEn?: string;
   slug: string;
+  description?: string;
+  descriptionEn?: string;
   logo?: {
+    asset?: {
+      url?: string;
+    };
+    alt?: string;
+  };
+  logoLight?: {
     asset?: {
       url?: string;
     };
@@ -327,10 +336,17 @@ export async function getAllPosts(): Promise<Post[]> {
       },
 
       editorialSeries[]->{
+        _id,
         name,
         nameEn,
         "slug": slug.current,
+        description,
+        descriptionEn,
         logo {
+          asset->{ url },
+          alt
+        },
+        logoLight {
           asset->{ url },
           alt
         }

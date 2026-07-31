@@ -14,17 +14,26 @@ const labels = isEnglish
       eyebrow: 'Editorial series',
       read: 'Read',
       current: 'Current chapter',
-      chapter: 'Chapter'
+      chapter: 'Chapter',
+      showAll: 'Show all chapters',
+      showFewer: 'Show fewer'
     }
   : {
       eyebrow: 'Serie editoriale',
       read: 'Leggi',
       current: 'Stai leggendo',
-      chapter: 'Parte'
+      chapter: 'Capitolo',
+      showAll: 'Mostra tutti i capitoli',
+      showFewer: 'Mostra meno'
     };
 const seriesName = isEnglish
   ? series?.nameEn || series?.name
   : series?.name;
+const seriesDescription = String(
+  isEnglish
+    ? series?.descriptionEn || ''
+    : series?.description || ''
+).trim();
 const getAnalyticsToken = (value) =>
   String(value || '')
     .trim()
@@ -49,13 +58,26 @@ const getSeriesLabel = (item, index) => {
   const fallbackLabel = `${labels.chapter} ${fallbackOrder}`;
   const label = item.seriesLabel || fallbackLabel;
 
-  if (!isEnglish) {
-    return label;
-  }
-
   return label
     .replace(/^Capitolo(\s+\d+)/i, `${labels.chapter}$1`)
     .replace(/^Parte(\s+\d+)/i, `${labels.chapter}$1`);
+};
+
+const getCover = (item) => {
+  const featuredImage = item?.featuredImage;
+  const gameCover = item?.gameInfo?.cover;
+  const cover = featuredImage?.asset?.url
+    ? featuredImage
+    : gameCover?.asset?.url
+      ? gameCover
+      : null;
+
+  return cover?.asset?.url
+    ? {
+        src: cover.asset.url,
+        alt: cover.alt || ''
+      }
+    : null;
 };
 
 const items = seriesPosts
@@ -74,6 +96,23 @@ const items = seriesPosts
 const shouldRender =
   series &&
   items.length > 1;
+const COLLAPSED_ITEMS_LIMIT = 6;
+const hasExpandableList = items.length > COLLAPSED_ITEMS_LIMIT;
+const currentItemIndex = items.findIndex((item) => item._id === post._id);
+const getCollapsedWindowStart = () => {
+  if (!hasExpandableList) return 0;
+  if (currentItemIndex < 0) return 0;
+  if (currentItemIndex < COLLAPSED_ITEMS_LIMIT) return 0;
+
+  const centeredStart = currentItemIndex - 2;
+  const lastPossibleStart = items.length - COLLAPSED_ITEMS_LIMIT;
+
+  return Math.min(Math.max(centeredStart, 0), lastPossibleStart);
+};
+const collapsedWindowStart = getCollapsedWindowStart();
+const collapsedWindowEnd = collapsedWindowStart + COLLAPSED_ITEMS_LIMIT;
+const seriesListId = `article-series-${seriesKey || fromSlug || 'chapters'}-list`;
+const collapsedToggleLabel = `${labels.showAll} (${items.length})`;
 ---
 
 {shouldRender && (
@@ -82,27 +121,64 @@ const shouldRender =
     <div class="article-series-box__header">
       <span>{labels.eyebrow}</span>
       <h2>{seriesName}</h2>
+      {seriesDescription && (
+        <p>{seriesDescription}</p>
+      )}
     </div>
 
-    <div class="article-series-box__list">
+    <div class="article-series-box__list" id={seriesListId}>
       {items.map((item, index) => {
         const isCurrent = item._id === post._id;
+        const isInitiallyVisible =
+          !hasExpandableList ||
+          (index >= collapsedWindowStart && index < collapsedWindowEnd);
+        const isCollapsedExtra = hasExpandableList && !isInitiallyVisible;
+        const itemHref = getSlug(item) ? getPostUrl(item) : '';
         const targetSlug = getAnalyticsToken(getSlug(item));
         const targetPosition = getPositiveInteger(item.seriesOrder);
         const label = getSeriesLabel(item, index);
+        const cover = getCover(item);
+        const coverNode = (
+          <span class="article-series-box__media" aria-hidden="true">
+            {cover ? (
+              <img
+                src={cover.src}
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <span class="article-series-box__media-fallback">RG</span>
+            )}
+          </span>
+        );
+        const contentNode = (
+          <span class="article-series-box__content">
+            <span class="article-series-box__chapter">{label}</span>
+            <strong>{item.title}</strong>
+          </span>
+        );
+        const statusNode = (
+          <small class="article-series-box__status">
+            {isCurrent ? labels.current : labels.read}
+          </small>
+        );
 
         return (
           isCurrent ? (
-            <div class="article-series-box__item is-current">
-              <span>{label}</span>
-
-              <strong>{item.title}</strong>
-
-              <small>{labels.current}</small>
+            <div
+              class="article-series-box__item is-current"
+              aria-current="page"
+              data-rg-series-collapsible={isCollapsedExtra ? '' : undefined}
+              hidden={isCollapsedExtra}
+            >
+              {coverNode}
+              {contentNode}
+              {statusNode}
             </div>
-          ) : (
+          ) : itemHref ? (
             <a
-              href={getPostUrl(item)}
+              href={itemHref}
               class="article-series-box__item"
               data-rg-series-link
               data-rg-series-language={lang}
@@ -113,17 +189,43 @@ const shouldRender =
               data-rg-series-placement="series_box"
               data-rg-series-current-position={currentPosition || undefined}
               data-rg-series-target-position={targetPosition || undefined}
+              data-rg-series-collapsible={isCollapsedExtra ? '' : undefined}
+              hidden={isCollapsedExtra}
             >
-              <span>{label}</span>
-
-              <strong>{item.title}</strong>
-
-              <small>{labels.read}</small>
+              {coverNode}
+              {contentNode}
+              {statusNode}
             </a>
+          ) : (
+            <div
+              class="article-series-box__item is-disabled"
+              data-rg-series-collapsible={isCollapsedExtra ? '' : undefined}
+              hidden={isCollapsedExtra}
+            >
+              {coverNode}
+              {contentNode}
+            </div>
           )
         );
       })}
     </div>
+
+    {hasExpandableList && (
+      <div class="article-series-box__actions">
+        <button
+          class="article-series-box__toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls={seriesListId}
+          data-rg-series-toggle
+          data-rg-series-collapsed-label={collapsedToggleLabel}
+          data-rg-series-expanded-label={labels.showFewer}
+        >
+          <span data-rg-series-toggle-label>{collapsedToggleLabel}</span>
+          <span class="article-series-box__toggle-icon" aria-hidden="true">⌄</span>
+        </button>
+      </div>
+    )}
 
   </aside>
 )}
@@ -150,6 +252,32 @@ const shouldRender =
     seriesBox.dataset.rgSeriesListenerAttached = 'true';
 
     seriesBox.addEventListener('click', (event) => {
+      const seriesToggle = event.target instanceof Element
+        ? event.target.closest('[data-rg-series-toggle]')
+        : null;
+
+      if (seriesToggle instanceof HTMLButtonElement) {
+        const shouldExpand = seriesToggle.getAttribute('aria-expanded') !== 'true';
+        const toggleLabel = seriesToggle.querySelector('[data-rg-series-toggle-label]');
+
+        seriesBox.querySelectorAll('[data-rg-series-collapsible]').forEach((seriesItem) => {
+          if (seriesItem instanceof HTMLElement) {
+            seriesItem.hidden = !shouldExpand;
+          }
+        });
+
+        seriesToggle.setAttribute('aria-expanded', String(shouldExpand));
+        seriesBox.classList.toggle('is-expanded', shouldExpand);
+
+        if (toggleLabel) {
+          toggleLabel.textContent = shouldExpand
+            ? seriesToggle.dataset.rgSeriesExpandedLabel || ''
+            : seriesToggle.dataset.rgSeriesCollapsedLabel || '';
+        }
+
+        return;
+      }
+
       const seriesLink = event.target instanceof Element
         ? event.target.closest('[data-rg-series-link]')
         : null;
