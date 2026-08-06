@@ -282,17 +282,18 @@ export function setDraftModeCookies(
   );
 }
 
-export function clearDraftModeCookies(cookies: {
-  set: (name: string, value: string, options: Record<string, unknown>) => void;
-}) {
-  for (const partitioned of [false, true]) {
-    cookies.set(sanityPreviewSessionCookieName, '', {
-      ...getDraftModeCookieOptions({ partitioned }),
-      maxAge: 0
-    });
-    cookies.set(sanityPreviewPerspectiveCookieName, '', {
-      ...getPerspectiveCookieOptions({ partitioned }),
-      maxAge: 0
-    });
-  }
+export function getClearDraftModeCookieHeaders() {
+  const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
+  const baseAttributes = [
+    'Path=/',
+    'Max-Age=0',
+    ...(isProduction ? ['Secure', 'SameSite=None'] : ['SameSite=Lax'])
+  ];
+  const names = [sanityPreviewSessionCookieName, sanityPreviewPerspectiveCookieName];
+
+  return names.flatMap((name) => {
+    const cookie = [`${name}=`, ...baseAttributes].join('; ');
+
+    return [cookie, `${cookie}; Partitioned`];
+  });
 }
