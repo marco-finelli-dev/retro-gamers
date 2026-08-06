@@ -184,6 +184,12 @@ const jsonLd = {
 };
 
 const isPreview = isDraftMode(Astro.cookies);
+
+if (isPreview) {
+  Astro.response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+  Astro.response.headers.set('Vary', 'Cookie');
+  Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+}
 ---
 
 <html lang={lang}>
