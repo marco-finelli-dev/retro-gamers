@@ -5,7 +5,8 @@ import { getPreviewClient } from '../../../lib/sanity';
 import {
   getSafeRedirectPath,
   hasPreviewCookieSecret,
-  setDraftModeCookie
+  isCrossSiteIframeRequest,
+  setDraftModeCookies
 } from '../../../lib/sanity-preview';
 
 export const GET: APIRoute = async ({ cookies, request, url }) => {
@@ -61,7 +62,10 @@ export const GET: APIRoute = async ({ cookies, request, url }) => {
     });
   }
 
-  setDraftModeCookie(cookies);
+  setDraftModeCookies(cookies, {
+    perspective: previewPerspective,
+    partitioned: isCrossSiteIframeRequest(request)
+  });
 
   return new Response(null, {
     status: 307,

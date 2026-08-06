@@ -13,6 +13,7 @@ const DEFAULT_REDIRECT_PATH = '/';
 const COOKIE_FORMAT_VERSION = 'v1';
 const COOKIE_PAYLOAD_VERSION = 1;
 const MIN_COOKIE_SECRET_LENGTH = 32;
+const SIGNED_PREVIEW_COOKIE_NAME = 'rg-sanity-preview';
 
 const UNSAFE_SCHEME_PATTERN = /^[a-zA-Z][a-zA-Z\d+.-]*:/;
 const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001F\u007F]/;
@@ -24,7 +25,8 @@ const PREVIEW_SEARCH_PARAMS = [
   urlSearchParamPreviewSecret
 ];
 
-export const sanityPreviewCookieName = perspectiveCookieName;
+export const sanityPreviewPerspectiveCookieName = perspectiveCookieName;
+export const sanityPreviewSessionCookieName = SIGNED_PREVIEW_COOKIE_NAME;
 
 function readLocalEnvValue(name: string) {
   if (!import.meta.env.DEV) {
@@ -178,7 +180,14 @@ export function verifySignedPreviewCookie(value: string | undefined) {
   }
 }
 
-export function getDraftModeCookieOptions() {
+export function isCrossSiteIframeRequest(request: Request) {
+  return (
+    request.headers.get('sec-fetch-dest') === 'iframe' &&
+    request.headers.get('sec-fetch-site') === 'cross-site'
+  );
+}
+
+export function getDraftModeCookieOptions({ partitioned = false } = {}) {
   const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
 
   return {
@@ -186,25 +195,28 @@ export function getDraftModeCookieOptions() {
     maxAge: PREVIEW_COOKIE_MAX_AGE,
     path: '/',
     sameSite: isProduction ? 'none' : 'lax',
-    secure: isProduction
+    secure: isProduction,
+    ...(partitioned ? { partitioned: true } : {})
   } as const;
 }
 
-export function getClearDraftModeCookieOptions() {
-  const options = getDraftModeCookieOptions();
+export function getPerspectiveCookieOptions({ partitioned = false } = {}) {
+  const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
 
   return {
-    ...options,
-    maxAge: 0,
-    sameSite: options.sameSite,
-    secure: options.secure
+    httpOnly: false,
+    maxAge: PREVIEW_COOKIE_MAX_AGE,
+    path: '/',
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction,
+    ...(partitioned ? { partitioned: true } : {})
   } as const;
 }
 
 export function isDraftMode(cookies: {
   get: (name: string) => { value?: string } | undefined;
 }) {
-  const previewCookie = cookies.get(sanityPreviewCookieName)?.value;
+  const previewCookie = cookies.get(sanityPreviewSessionCookieName)?.value;
   const verification = verifySignedPreviewCookie(previewCookie);
 
   return verification.isValid && verification.perspective === 'drafts';
@@ -245,18 +257,42 @@ export function getSafeRedirectPath(value: string | null | undefined) {
   }
 }
 
-export function setDraftModeCookie(cookies: {
-  set: (name: string, value: string, options: Record<string, unknown>) => void;
-}) {
+export function setDraftModeCookies(
+  cookies: {
+    set: (name: string, value: string, options: Record<string, unknown>) => void;
+  },
+  {
+    perspective = 'drafts',
+    partitioned = false
+  }: {
+    perspective?: string;
+    partitioned?: boolean;
+  } = {}
+) {
   cookies.set(
-    sanityPreviewCookieName,
-    createSignedPreviewCookie(),
-    getDraftModeCookieOptions()
+    sanityPreviewSessionCookieName,
+    createSignedPreviewCookie({ perspective }),
+    getDraftModeCookieOptions({ partitioned })
+  );
+
+  cookies.set(
+    sanityPreviewPerspectiveCookieName,
+    perspective,
+    getPerspectiveCookieOptions({ partitioned })
   );
 }
 
-export function clearDraftModeCookie(cookies: {
+export function clearDraftModeCookies(cookies: {
   set: (name: string, value: string, options: Record<string, unknown>) => void;
 }) {
-  cookies.set(sanityPreviewCookieName, '', getClearDraftModeCookieOptions());
+  for (const partitioned of [false, true]) {
+    cookies.set(sanityPreviewSessionCookieName, '', {
+      ...getDraftModeCookieOptions({ partitioned }),
+      maxAge: 0
+    });
+    cookies.set(sanityPreviewPerspectiveCookieName, '', {
+      ...getPerspectiveCookieOptions({ partitioned }),
+      maxAge: 0
+    });
+  }
 }

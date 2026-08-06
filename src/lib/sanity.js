@@ -3,6 +3,7 @@ import { createClient } from '@sanity/client';
 const projectId = 'y88ky0mu';
 const dataset = 'production';
 const apiVersion = '2024-01-01';
+const studioUrl = 'https://retro-gamers-studio.vercel.app';
 
 const baseClientConfig = {
   projectId,
@@ -33,7 +34,11 @@ export function getPreviewClient() {
       ...baseClientConfig,
       useCdn: false,
       perspective: 'drafts',
-      token: readToken
+      token: readToken,
+      stega: {
+        enabled: true,
+        studioUrl
+      }
     });
   }
 

@@ -7,9 +7,11 @@ import ConsentAnalytics from '../components/common/ConsentAnalytics.astro';
 import Analytics from '@vercel/analytics/astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
 import CookieConsent from '../components/common/CookieConsent.astro';
+import SanityVisualEditing from '../components/common/SanityVisualEditing';
 import RetroExperienceLauncher from '../components/retro-experience/RetroExperienceLauncher.astro';
 import { getAllPosts } from '../lib/posts';
 import { getLanguageSwitchUrl } from '../lib/language-switch.js';
+import { isDraftMode } from '../lib/sanity-preview';
 import '../styles/components/support.css';
 import '../styles/components/cookie-consent.css';
 
@@ -180,6 +182,8 @@ const jsonLd = {
     ...additionalJsonLdNodes
   ]
 };
+
+const isPreview = isDraftMode(Astro.cookies);
 ---
 
 <html lang={lang}>
@@ -280,6 +284,8 @@ const jsonLd = {
     <CookieConsent />
     <Analytics />
     <SpeedInsights />
+
+    {isPreview && <SanityVisualEditing client:only="react" />}
 
     <script src="/scripts/ui.js" defer></script>
     <script>
