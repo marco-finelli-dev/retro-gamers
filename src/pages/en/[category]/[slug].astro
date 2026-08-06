@@ -37,6 +37,12 @@ const { category, slug } = Astro.params;
 const isPreview = isDraftMode(Astro.cookies);
 const sanityClient = getSanityClient(isPreview);
 
+if (isPreview) {
+  Astro.response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+  Astro.response.headers.set('Vary', 'Cookie');
+  Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+}
+
 const expectedType = category && isContentRouteSegment(category, 'en')
   ? getContentTypeFromRouteSegment(category, 'en')
   : null;
