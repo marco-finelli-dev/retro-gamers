@@ -28,6 +28,8 @@ const copy = isEnglish
       timerLabel: 'Time left',
       scoreLabel: 'Score',
       selectedAnswer: 'Selected answer',
+      answerCorrectLabel: 'Correct answer',
+      answerWrongLabel: 'Your wrong answer',
       correct: 'Correct!',
       wrong: 'Wrong answer',
       timeout: "Time's up",
@@ -87,6 +89,8 @@ const copy = isEnglish
       timerLabel: 'Tempo rimasto',
       scoreLabel: 'Punteggio',
       selectedAnswer: 'Risposta selezionata',
+      answerCorrectLabel: 'Risposta corretta',
+      answerWrongLabel: 'La tua risposta errata',
       correct: 'Corretto!',
       wrong: 'Risposta sbagliata',
       timeout: 'Tempo scaduto',
@@ -157,7 +161,7 @@ const copy = isEnglish
   <p class="quiz-player__message" data-quiz-message aria-live="polite" hidden></p>
 
   <section class="quiz-player__stage" data-quiz-stage hidden>
-    <div class="quiz-player__status">
+    <div class="quiz-player__status" data-quiz-status>
       <span class="quiz-player__mode" data-quiz-mode></span>
       <span class="quiz-player__score" data-quiz-score></span>
     </div>
@@ -201,7 +205,7 @@ const copy = isEnglish
 
     <section class="quiz-player__result" data-quiz-result aria-live="polite" hidden>
       <span class="quiz-eyebrow" data-quiz-result-mode></span>
-      <h2>{copy.resultTitle}</h2>
+      <h2 data-quiz-result-title tabindex="-1">{copy.resultTitle}</h2>
       <p class="quiz-player__result-score" data-quiz-result-score></p>
       <p data-quiz-result-time></p>
       <p data-quiz-result-message></p>
@@ -290,10 +294,12 @@ const copy = isEnglish
       startButton: root.querySelector('[data-quiz-start]'),
       message: root.querySelector('[data-quiz-message]'),
       stage: root.querySelector('[data-quiz-stage]'),
+      status: root.querySelector('[data-quiz-status]'),
       mode: root.querySelector('[data-quiz-mode]'),
       score: root.querySelector('[data-quiz-score]'),
       questionPanel: root.querySelector('[data-quiz-question-panel]'),
       progress: root.querySelector('[data-quiz-progress]'),
+      timerWrap: root.querySelector('[data-quiz-timer-wrap]'),
       timer: root.querySelector('[data-quiz-timer]'),
       timerBar: root.querySelector('[data-quiz-timer-bar]'),
       questionTitle: root.querySelector('[data-quiz-question-title]'),
@@ -306,6 +312,7 @@ const copy = isEnglish
       feedbackExplanation: root.querySelector('[data-quiz-feedback-explanation]'),
       nextButton: root.querySelector('[data-quiz-next]'),
       result: root.querySelector('[data-quiz-result]'),
+      resultTitle: root.querySelector('[data-quiz-result-title]'),
       resultMode: root.querySelector('[data-quiz-result-mode]'),
       resultScore: root.querySelector('[data-quiz-result-score]'),
       resultTime: root.querySelector('[data-quiz-result-time]'),
@@ -439,6 +446,21 @@ const copy = isEnglish
       }
     };
 
+    const focusResult = () => {
+      if (!(elements.result instanceof HTMLElement)) return;
+
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'auto'
+        : 'smooth';
+
+      window.setTimeout(() => {
+        elements.result.scrollIntoView({ behavior, block: 'start' });
+        if (elements.resultTitle instanceof HTMLElement) {
+          elements.resultTitle.focus({ preventScroll: true });
+        }
+      }, 50);
+    };
+
     const showQuestion = (payload) => {
       setAttemptFromPayload(payload);
       state.view = 'question';
@@ -469,29 +491,56 @@ const copy = isEnglish
       const answers = Array.isArray(state.question?.answers)
         ? state.question.answers
         : [];
+      const isReviewState = state.view === 'feedback' || state.view === 'result';
+      const correctAnswerId = isReviewState && state.feedback?.correctAnswerId
+        ? String(state.feedback.correctAnswerId)
+        : '';
 
       answers.forEach((answer, index) => {
         const button = document.createElement('button');
         const answerId = String(answer?.answerId || '');
         const answerText = String(answer?.text || '');
+        const isCorrectAnswer = correctAnswerId === answerId;
+        const isSelectedAnswer = state.selectedAnswerId === answerId;
+        const isWrongSelection =
+          isReviewState &&
+          isSelectedAnswer &&
+          !state.feedback?.timedOut &&
+          !state.feedback?.isCorrect;
+        const statusText = isCorrectAnswer
+          ? copy.answerCorrectLabel
+          : isWrongSelection
+            ? copy.answerWrongLabel
+            : '';
+
         button.type = 'button';
         button.className = 'quiz-player__answer';
         button.dataset.answerId = answerId;
         button.disabled = state.view !== 'question' || state.isSubmitting;
         button.innerHTML = `
           <span class="quiz-player__answer-index" aria-hidden="true">${index + 1}</span>
-          <span></span>
+          <span class="quiz-player__answer-label"></span>
+          <span class="quiz-player__answer-status" aria-hidden="true"></span>
         `;
-        const label = button.querySelector('span:last-child');
+        const label = button.querySelector('.quiz-player__answer-label');
+        const status = button.querySelector('.quiz-player__answer-status');
         if (label) label.textContent = answerText;
+        if (status) {
+          status.textContent = statusText
+            ? `${isCorrectAnswer ? '✓' : '✕'} ${statusText}`
+            : '';
+          status.hidden = !statusText;
+        }
+        button.setAttribute('aria-label', statusText ? `${answerText} - ${statusText}` : answerText);
 
-        if (state.selectedAnswerId === answerId) {
+        if (isSelectedAnswer) {
           button.classList.add('is-selected');
-          if (state.feedback?.timedOut) {
-            button.classList.add('is-timeout');
-          } else if (state.feedback) {
-            button.classList.add(state.feedback.isCorrect ? 'is-correct' : 'is-wrong');
-          }
+        }
+
+        if (isCorrectAnswer) {
+          button.classList.add('is-correct');
+        } else if (isWrongSelection) {
+          button.classList.add('is-wrong');
         }
 
         button.addEventListener('click', () => {
@@ -504,6 +553,10 @@ const copy = isEnglish
     };
 
     const renderStatus = () => {
+      if (elements.status instanceof HTMLElement) {
+        elements.status.hidden = !['question', 'submitting', 'feedback'].includes(state.view);
+      }
+
       if (elements.mode) {
         elements.mode.textContent = copy.mode?.[state.mode] || state.mode || '';
       }
@@ -522,10 +575,16 @@ const copy = isEnglish
     const renderQuestion = () => {
       if (!(elements.questionPanel instanceof HTMLElement)) return;
 
-      const isVisible = ['question', 'submitting', 'feedback'].includes(state.view);
+      const isVisible =
+        ['question', 'submitting', 'feedback'].includes(state.view) ||
+        (state.view === 'result' && state.feedback?.completed === true);
       elements.questionPanel.hidden = !isVisible;
 
       if (!isVisible || !state.question) return;
+
+      if (elements.timerWrap instanceof HTMLElement) {
+        elements.timerWrap.hidden = state.view === 'result';
+      }
 
       if (elements.progress) {
         elements.progress.textContent = `${copy.progressLabel} ${state.currentQuestionIndex + 1} / ${state.totalQuestions}`;
@@ -555,7 +614,9 @@ const copy = isEnglish
     const renderFeedback = () => {
       if (!(elements.feedback instanceof HTMLElement)) return;
 
-      const isVisible = state.view === 'feedback';
+      const isVisible =
+        state.view === 'feedback' ||
+        (state.view === 'result' && state.feedback?.completed === true);
       elements.feedback.hidden = !isVisible;
 
       if (!isVisible || !state.feedback) return;
@@ -632,14 +693,16 @@ const copy = isEnglish
     };
 
     const render = () => {
-      const hasStarted = state.view !== 'intro' && state.view !== 'loading' && state.view !== 'error';
+      const showIntro = state.view === 'intro';
+      const showStage = ['question', 'submitting', 'feedback', 'result'].includes(state.view);
+      root.dataset.state = state.view;
 
       if (elements.intro instanceof HTMLElement) {
-        elements.intro.hidden = hasStarted || state.view === 'loading';
+        elements.intro.hidden = !showIntro;
       }
 
       if (elements.stage instanceof HTMLElement) {
-        elements.stage.hidden = !hasStarted;
+        elements.stage.hidden = !showStage;
       }
 
       if (elements.startButton instanceof HTMLButtonElement) {
@@ -728,6 +791,7 @@ const copy = isEnglish
         completed: result.completed === true,
         awaitingNext: result.awaitingNext === true,
         nextQuestionIndex: result.nextQuestionIndex,
+        correctAnswerId: typeof result.correctAnswerId === 'string' ? result.correctAnswerId : '',
         explanation: typeof result.explanation === 'string' ? result.explanation : '',
       };
       state.isSubmitting = false;
@@ -735,7 +799,6 @@ const copy = isEnglish
 
       if (result.completed === true) {
         state.view = 'result';
-        state.question = null;
         announce(copy.resultTitle);
       } else {
         state.view = 'feedback';
@@ -749,6 +812,9 @@ const copy = isEnglish
       }
 
       render();
+      if (result.completed === true) {
+        focusResult();
+      }
     }
 
     const loadNextQuestion = async () => {

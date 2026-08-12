@@ -510,6 +510,7 @@ begin
     'totalElapsedMs', v_new_total_elapsed_ms,
     'completed', v_is_last_question,
     'explanation', v_explanation,
+    'correctAnswerId', v_answer_key.correct_answer_id,
     'awaitingNext', not v_is_last_question,
     'nextQuestionIndex',
       case

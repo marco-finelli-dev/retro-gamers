@@ -194,7 +194,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return json({ ok: false, error: 'quiz_snapshot_unavailable' }, 503);
     }
 
-    if (answerId !== null && !getVisibleAnswerIds(currentQuestion).includes(answerId)) {
+    const visibleAnswerIds = getVisibleAnswerIds(currentQuestion);
+
+    if (answerId !== null && !visibleAnswerIds.includes(answerId)) {
       return json({ ok: false, error: 'invalid_answer_id' }, 400);
     }
 
@@ -227,10 +229,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     }
 
     const completed = answerResult.completed === true;
+    const rpcCorrectAnswerId = typeof answerResult.correctAnswerId === 'string'
+      ? answerResult.correctAnswerId.trim()
+      : null;
+    const correctAnswerId = rpcCorrectAnswerId && visibleAnswerIds.includes(rpcCorrectAnswerId)
+      ? rpcCorrectAnswerId
+      : null;
     const nextQuestionIndex = completed
       ? null
       : getRpcIntegerOrNull(answerResult.nextQuestionIndex);
     const awaitingNext = !completed && answerResult.awaitingNext === true;
+
+    if (!correctAnswerId) {
+      console.error('Quiz answer RPC returned an invalid correct answer id:', {
+        quizKey: attempt.quiz_key,
+        attemptId: attempt.id,
+        questionId,
+        correctAnswerId: answerResult.correctAnswerId,
+      });
+    }
 
     if (!completed) {
       if (!awaitingNext) {
@@ -272,6 +289,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       explanation: typeof answerResult.explanation === 'string'
         ? answerResult.explanation
         : null,
+      correctAnswerId,
       awaitingNext,
       nextQuestionIndex,
       nextQuestionStartedAt: null,

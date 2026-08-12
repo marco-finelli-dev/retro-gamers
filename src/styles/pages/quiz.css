@@ -251,6 +251,10 @@
   margin-top: 10px;
 }
 
+.quiz-player [hidden] {
+  display: none !important;
+}
+
 .quiz-player__intro,
 .quiz-player__stage,
 .quiz-player__question,
@@ -446,6 +450,24 @@
   transform: none;
 }
 
+.quiz-player[data-state="feedback"] .quiz-player__answer:disabled,
+.quiz-player[data-state="result"] .quiz-player__answer:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.quiz-player[data-state="feedback"] .quiz-player__answer:disabled:hover,
+.quiz-player[data-state="result"] .quiz-player__answer:disabled:hover {
+  transform: none;
+}
+
+.quiz-player[data-state="feedback"] .quiz-player__answer:disabled:not(.is-correct):not(.is-wrong):hover,
+.quiz-player[data-state="result"] .quiz-player__answer:disabled:not(.is-correct):not(.is-wrong):hover {
+  border-color: var(--rg-card-border);
+  background: color-mix(in srgb, var(--rg-card-bg) 88%, transparent);
+  box-shadow: none;
+}
+
 .quiz-player__answer.is-selected {
   border-color: color-mix(in srgb, var(--color-primary) 68%, var(--rg-card-border));
   box-shadow: 0 0 0 3px rgba(34,240,255,0.12);
@@ -455,8 +477,9 @@
 .quiz-player__answer.is-correct {
   border-color: color-mix(in srgb, #6cf7a0 58%, var(--rg-card-border));
   background:
-    linear-gradient(180deg, rgba(108,247,160,0.14), transparent),
+    linear-gradient(180deg, rgba(108,247,160,0.18), transparent),
     var(--rg-card-bg);
+  box-shadow: 0 0 0 3px rgba(108,247,160,0.1);
 }
 
 .quiz-player__answer.is-wrong,
@@ -465,6 +488,10 @@
   background:
     linear-gradient(180deg, rgba(255,107,122,0.14), transparent),
     var(--rg-card-bg);
+}
+
+.quiz-player__answer.is-wrong {
+  box-shadow: 0 0 0 3px rgba(255,107,122,0.1);
 }
 
 .quiz-player__answer-index {
@@ -477,6 +504,21 @@
   color: var(--rg-badge-color);
   font-size: 0.78rem;
   font-weight: 920;
+}
+
+.quiz-player__answer-status {
+  grid-column: 2;
+  color: var(--color-text-soft);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.quiz-player__answer.is-correct .quiz-player__answer-status {
+  color: color-mix(in srgb, #6cf7a0 82%, var(--color-text));
+}
+
+.quiz-player__answer.is-wrong .quiz-player__answer-status {
+  color: color-mix(in srgb, #ff8c98 82%, var(--color-text));
 }
 
 .quiz-player__feedback {
@@ -497,6 +539,11 @@
   color: var(--rg-section-title-color);
   font-size: clamp(1.3rem, 3vw, 2rem);
   font-weight: 920;
+}
+
+.quiz-player__result h2:focus-visible {
+  outline: 3px solid rgba(34,240,255,0.2);
+  outline-offset: 6px;
 }
 
 .quiz-player__guest-note {
