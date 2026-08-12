@@ -4,8 +4,9 @@
 -- Scope:
 -- - creates the private answer key and attempt tables used by Astro server APIs;
 -- - does not expose quiz internals to browser clients;
--- - creates only the submit_quiz_answer RPC for atomic answer submission;
--- - does not create start/resume/leaderboard RPC functions yet.
+-- - creates the start_or_resume_quiz and submit_quiz_answer RPCs for atomic
+--   quiz lifecycle operations;
+-- - does not create leaderboard RPC functions yet.
 --
 -- Editorial rule:
 -- once a quiz has received official attempts, do not change quizKey, questionId,
@@ -505,6 +506,358 @@ $$;
 comment on function public.submit_quiz_answer(uuid, text, text) is
   'Atomically locks an active quiz attempt, records the current answer, advances or completes the attempt, and returns a structured JSON result.';
 
+create or replace function public.start_or_resume_quiz(
+  p_quiz_key text,
+  p_quiz_document_id text,
+  p_quiz_slug text,
+  p_quiz_language text,
+  p_question_order jsonb,
+  p_time_limit_seconds integer,
+  p_user_id uuid default null,
+  p_guest_token_hash text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_quiz_key text;
+  v_quiz_document_id text;
+  v_quiz_slug text;
+  v_quiz_language text;
+  v_guest_token_hash text;
+  v_total_questions integer;
+  v_has_invalid_question_id boolean;
+  v_has_duplicate_question_ids boolean;
+  v_now timestamptz;
+  v_attempt public.quiz_attempts%rowtype;
+  v_existing_attempt public.quiz_attempts%rowtype;
+  v_action text;
+begin
+  v_quiz_key := nullif(btrim(p_quiz_key), '');
+  v_quiz_document_id := nullif(btrim(p_quiz_document_id), '');
+  v_quiz_slug := nullif(btrim(p_quiz_slug), '');
+  v_quiz_language := nullif(btrim(p_quiz_language), '');
+  v_guest_token_hash := nullif(btrim(p_guest_token_hash), '');
+
+  if not (
+    (p_user_id is not null and v_guest_token_hash is null)
+    or
+    (p_user_id is null and v_guest_token_hash is not null)
+  ) then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_identity'
+    );
+  end if;
+
+  if v_quiz_key is null or v_quiz_key !~ '^[a-z0-9]+(-[a-z0-9]+)*$' then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_quiz_key'
+    );
+  end if;
+
+  if v_quiz_document_id is null or v_quiz_slug is null then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_input'
+    );
+  end if;
+
+  if v_quiz_language not in ('it', 'en') then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_quiz_language'
+    );
+  end if;
+
+  if p_time_limit_seconds is null or p_time_limit_seconds not between 5 and 120 then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_time_limit'
+    );
+  end if;
+
+  if p_question_order is null or jsonb_typeof(p_question_order) <> 'array' then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_question_order'
+    );
+  end if;
+
+  v_total_questions := jsonb_array_length(p_question_order);
+
+  if v_total_questions < 1 then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_question_order'
+    );
+  end if;
+
+  select exists (
+    select 1
+    from jsonb_array_elements(p_question_order) as question(value)
+    where jsonb_typeof(question.value) <> 'string'
+      or (question.value #>> '{}') !~ '^[a-z0-9]+(-[a-z0-9]+)*$'
+  )
+  into v_has_invalid_question_id;
+
+  if v_has_invalid_question_id then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_question_order'
+    );
+  end if;
+
+  select count(*) <> count(distinct question.value #>> '{}')
+  into v_has_duplicate_question_ids
+  from jsonb_array_elements(p_question_order) as question(value);
+
+  if v_has_duplicate_question_ids then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_question_order'
+    );
+  end if;
+
+  if p_user_id is not null then
+    v_now := clock_timestamp();
+
+    insert into public.quiz_attempts (
+      quiz_key,
+      quiz_document_id,
+      quiz_slug,
+      quiz_language,
+      user_id,
+      guest_token_hash,
+      status,
+      mode,
+      question_order,
+      current_question_index,
+      current_question_started_at,
+      time_limit_seconds,
+      correct_count,
+      total_questions,
+      total_elapsed_ms,
+      started_at,
+      last_activity_at,
+      expires_at,
+      updated_at
+    )
+    values (
+      v_quiz_key,
+      v_quiz_document_id,
+      v_quiz_slug,
+      v_quiz_language,
+      p_user_id,
+      null,
+      'active',
+      'official',
+      p_question_order,
+      0,
+      v_now,
+      p_time_limit_seconds,
+      0,
+      v_total_questions,
+      0,
+      v_now,
+      v_now,
+      v_now + interval '2 hours',
+      v_now
+    )
+    on conflict (quiz_key, user_id) where mode = 'official' and user_id is not null
+    do nothing
+    returning * into v_attempt;
+
+    if found then
+      v_action := 'created_official';
+    else
+      select *
+      into v_existing_attempt
+      from public.quiz_attempts
+      where quiz_key = v_quiz_key
+        and user_id = p_user_id
+        and mode = 'official'
+      for update;
+
+      if not found then
+        return jsonb_build_object(
+          'ok', false,
+          'error', 'invalid_input'
+        );
+      end if;
+
+      v_now := clock_timestamp();
+
+      if v_existing_attempt.status = 'active'
+        and v_existing_attempt.expires_at > v_now then
+        v_attempt := v_existing_attempt;
+        v_action := 'resumed_official';
+      else
+        if v_existing_attempt.status = 'active'
+          and v_existing_attempt.expires_at <= v_now then
+          update public.quiz_attempts
+          set
+            status = 'expired',
+            last_activity_at = v_now,
+            updated_at = v_now
+          where id = v_existing_attempt.id;
+        end if;
+
+        v_now := clock_timestamp();
+
+        insert into public.quiz_attempts (
+          quiz_key,
+          quiz_document_id,
+          quiz_slug,
+          quiz_language,
+          user_id,
+          guest_token_hash,
+          status,
+          mode,
+          question_order,
+          current_question_index,
+          current_question_started_at,
+          time_limit_seconds,
+          correct_count,
+          total_questions,
+          total_elapsed_ms,
+          started_at,
+          last_activity_at,
+          expires_at,
+          updated_at
+        )
+        values (
+          v_quiz_key,
+          v_quiz_document_id,
+          v_quiz_slug,
+          v_quiz_language,
+          p_user_id,
+          null,
+          'active',
+          'training',
+          p_question_order,
+          0,
+          v_now,
+          p_time_limit_seconds,
+          0,
+          v_total_questions,
+          0,
+          v_now,
+          v_now,
+          v_now + interval '2 hours',
+          v_now
+        )
+        returning * into v_attempt;
+
+        v_action := 'created_training';
+      end if;
+    end if;
+  else
+    perform pg_advisory_xact_lock(
+      hashtextextended('quiz:start:guest:' || v_quiz_key || ':' || v_guest_token_hash, 0)
+    );
+
+    v_now := clock_timestamp();
+
+    select *
+    into v_existing_attempt
+    from public.quiz_attempts
+    where quiz_key = v_quiz_key
+      and guest_token_hash = v_guest_token_hash
+      and mode = 'guest'
+      and status = 'active'
+    order by created_at desc
+    limit 1
+    for update;
+
+    if found and v_existing_attempt.expires_at > v_now then
+      v_attempt := v_existing_attempt;
+      v_action := 'resumed_guest';
+    else
+      if found and v_existing_attempt.expires_at <= v_now then
+        update public.quiz_attempts
+        set
+          status = 'expired',
+          last_activity_at = v_now,
+          updated_at = v_now
+        where id = v_existing_attempt.id;
+      end if;
+
+      v_now := clock_timestamp();
+
+      insert into public.quiz_attempts (
+        quiz_key,
+        quiz_document_id,
+        quiz_slug,
+        quiz_language,
+        user_id,
+        guest_token_hash,
+        status,
+        mode,
+        question_order,
+        current_question_index,
+        current_question_started_at,
+        time_limit_seconds,
+        correct_count,
+        total_questions,
+        total_elapsed_ms,
+        started_at,
+        last_activity_at,
+        expires_at,
+        updated_at
+      )
+      values (
+        v_quiz_key,
+        v_quiz_document_id,
+        v_quiz_slug,
+        v_quiz_language,
+        null,
+        v_guest_token_hash,
+        'active',
+        'guest',
+        p_question_order,
+        0,
+        v_now,
+        p_time_limit_seconds,
+        0,
+        v_total_questions,
+        0,
+        v_now,
+        v_now,
+        v_now + interval '2 hours',
+        v_now
+      )
+      returning * into v_attempt;
+
+      v_action := 'created_guest';
+    end if;
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'action', v_action,
+    'attemptId', v_attempt.id,
+    'mode', v_attempt.mode,
+    'status', v_attempt.status,
+    'quizKey', v_attempt.quiz_key,
+    'quizLanguage', v_attempt.quiz_language,
+    'currentQuestionIndex', v_attempt.current_question_index,
+    'currentQuestionStartedAt', v_attempt.current_question_started_at,
+    'timeLimitSeconds', v_attempt.time_limit_seconds,
+    'totalQuestions', v_attempt.total_questions,
+    'correctCount', v_attempt.correct_count,
+    'totalElapsedMs', v_attempt.total_elapsed_ms,
+    'expiresAt', v_attempt.expires_at
+  );
+end;
+$$;
+
+comment on function public.start_or_resume_quiz(text, text, text, text, jsonb, integer, uuid, text) is
+  'Atomically creates or resumes a Retro-Gamers quiz attempt from a server-validated quiz snapshot.';
+
 alter table public.quiz_answer_keys enable row level security;
 alter table public.quiz_attempts enable row level security;
 alter table public.quiz_attempt_answers enable row level security;
@@ -522,6 +875,10 @@ revoke all on table public.quiz_attempt_answers from anon, authenticated;
 revoke all on function public.submit_quiz_answer(uuid, text, text) from public;
 revoke execute on function public.submit_quiz_answer(uuid, text, text) from anon, authenticated;
 grant execute on function public.submit_quiz_answer(uuid, text, text) to service_role;
+
+revoke all on function public.start_or_resume_quiz(text, text, text, text, jsonb, integer, uuid, text) from public;
+revoke execute on function public.start_or_resume_quiz(text, text, text, text, jsonb, integer, uuid, text) from anon, authenticated;
+grant execute on function public.start_or_resume_quiz(text, text, text, text, jsonb, integer, uuid, text) to service_role;
 
 -- No anon/authenticated RLS policies are created in v1.
 -- Browser access must go through:
