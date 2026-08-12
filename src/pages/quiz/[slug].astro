@@ -1,6 +1,7 @@
 ---
 import '../../styles/pages/quiz.css';
 
+import QuizPlayer from '../../components/quiz/QuizPlayer.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
 import { getAllPosts, groupPosts } from '../../lib/posts';
@@ -34,9 +35,9 @@ const copy = {
   rulesEyebrow: 'Regole',
   rulesTitle: 'Prima di iniziare',
   rules: [
-    'Ogni domanda avrà un timer server-side.',
+    'Ogni domanda usa un timer server-side.',
     'Il primo tentativo degli utenti registrati sarà quello ufficiale.',
-    'Le risposte e il punteggio saranno gestiti dal sistema quiz nel prossimo step.',
+    'Dopo ogni risposta potrai leggere il feedback prima della domanda successiva.',
   ],
   start: 'Inizia il quiz',
   difficultyLabels: {
@@ -164,10 +165,7 @@ const initials = quiz.title
               ))}
             </ul>
 
-            <!-- Q3A placeholder: the future start endpoint/player will wire this button. -->
-            <button class="quiz-detail__start-button" type="button" disabled>
-              {copy.start}
-            </button>
+            <QuizPlayer slug={quiz.slug} language="it" />
           </div>
         </section>
       </article>

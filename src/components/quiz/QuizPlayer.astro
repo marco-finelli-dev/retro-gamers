@@ -1,0 +1,784 @@
+---
+type QuizLanguage = 'it' | 'en';
+
+type Props = {
+  slug: string;
+  language: QuizLanguage;
+};
+
+const { slug, language } = Astro.props as Props;
+const isEnglish = language === 'en';
+const playerId = `quiz-player-${language}-${slug}`;
+
+const copy = isEnglish
+  ? {
+      start: 'Start quiz',
+      startLoading: 'Preparing the quiz...',
+      answerLoading: 'Saving your answer...',
+      nextLoading: 'Loading the next question...',
+      timeoutRetry: 'Synchronizing the timeout...',
+      intro: 'Start when you are ready. The timer begins only when the server opens the question.',
+      mode: {
+        official: 'Official attempt',
+        training: 'Training mode',
+        guest: 'Guest attempt',
+      },
+      guestNote: 'Play freely. You need an account to enter the leaderboard.',
+      progressLabel: 'Question',
+      timerLabel: 'Time left',
+      scoreLabel: 'Score',
+      selectedAnswer: 'Selected answer',
+      correct: 'Correct!',
+      wrong: 'Wrong answer',
+      timeout: "Time's up",
+      noExplanation: 'No explanation is available for this answer.',
+      next: 'Next question',
+      resultTitle: 'Quiz completed',
+      resultScore: 'Final score',
+      resultTime: 'Total time',
+      resultOfficial: 'Official result',
+      resultTraining: 'Training result',
+      resultGuest: 'Guest result',
+      guestResultNote:
+        'This result does not enter the leaderboard. Sign in or create an account to join future official quizzes.',
+      resultMessages: [
+        { min: 90, text: 'Veteran-level knowledge.' },
+        { min: 75, text: 'Excellent memory. A few details caught you out.' },
+        { min: 50, text: 'Good foundation, with more ground still to explore.' },
+        { min: 0, text: 'This quiz put you to the test. You can always try again in training mode.' },
+      ],
+      questionImageAlt: 'Quiz question image',
+      errors: {
+        quiz_not_ready: 'This quiz is not ready yet. Please try again later.',
+        quiz_snapshot_unavailable: 'The quiz data is temporarily unavailable. Please reload the page.',
+        attempt_expired: 'This attempt has expired. Reload the quiz to start again.',
+        attempt_ownership_error: 'This attempt belongs to another session. Reload the quiz to continue.',
+        already_answered: 'The answer is already recorded. Reload the quiz to resume the correct state.',
+        wrong_question: 'The quiz state is out of sync. Reload the quiz to continue.',
+        question_not_started: 'The question timer has not started yet. Reload the quiz to continue.',
+        start_failed: 'The quiz could not be started. Please try again.',
+        answer_failed: 'The answer could not be saved. Please try again.',
+        next_failed: 'The next question could not be loaded. Please try again.',
+        missing_answer: 'The timeout could not be confirmed. Please try again.',
+        invalid_answer_id: 'This answer is not available for the current question.',
+        invalid_attempt: 'This attempt is no longer available. Reload the quiz to continue.',
+        attempt_not_found: 'This attempt is no longer available. Reload the quiz to continue.',
+        attempt_completed: 'This attempt is already complete.',
+        attempt_abandoned: 'This attempt is no longer active.',
+        attempt_not_active: 'This attempt is not active.',
+        network_failure: 'Connection problem. Please check your connection and try again.',
+        generic: 'Something went wrong. Please try again.',
+      },
+    }
+  : {
+      start: 'Inizia il quiz',
+      startLoading: 'Preparo il quiz...',
+      answerLoading: 'Registro la risposta...',
+      nextLoading: 'Carico la prossima domanda...',
+      timeoutRetry: 'Sincronizzo il timeout...',
+      intro: 'Parti quando sei pronto. Il timer inizia solo quando il server apre la domanda.',
+      mode: {
+        official: 'Tentativo ufficiale',
+        training: 'Modalità allenamento',
+        guest: 'Tentativo ospite',
+      },
+      guestNote: 'Gioca liberamente. Per entrare in classifica serve un account.',
+      progressLabel: 'Domanda',
+      timerLabel: 'Tempo rimasto',
+      scoreLabel: 'Punteggio',
+      selectedAnswer: 'Risposta selezionata',
+      correct: 'Corretto!',
+      wrong: 'Risposta sbagliata',
+      timeout: 'Tempo scaduto',
+      noExplanation: 'Non è disponibile una spiegazione per questa risposta.',
+      next: 'Prossima domanda',
+      resultTitle: 'Quiz completato',
+      resultScore: 'Risultato finale',
+      resultTime: 'Tempo totale',
+      resultOfficial: 'Risultato ufficiale',
+      resultTraining: 'Risultato allenamento',
+      resultGuest: 'Risultato ospite',
+      guestResultNote:
+        'Questo risultato non entra in classifica. Accedi o registrati per partecipare ai prossimi quiz ufficiali.',
+      resultMessages: [
+        { min: 90, text: 'Conoscenza da vero veterano.' },
+        { min: 75, text: 'Ottima memoria. Qualche dettaglio ti ha tradito.' },
+        { min: 50, text: "Buona base, ma c'è ancora terreno da esplorare." },
+        { min: 0, text: 'Questo quiz ti ha messo alla prova. Puoi sempre riprovare in allenamento.' },
+      ],
+      questionImageAlt: 'Immagine della domanda del quiz',
+      errors: {
+        quiz_not_ready: 'Questo quiz non è ancora pronto. Riprova più tardi.',
+        quiz_snapshot_unavailable: 'I dati del quiz non sono disponibili al momento. Ricarica la pagina.',
+        attempt_expired: 'Questo tentativo è scaduto. Ricarica il quiz per ricominciare.',
+        attempt_ownership_error: 'Questo tentativo appartiene a un’altra sessione. Ricarica il quiz per continuare.',
+        already_answered: 'La risposta risulta già registrata. Ricarica il quiz per riprendere lo stato corretto.',
+        wrong_question: 'Lo stato del quiz non è sincronizzato. Ricarica il quiz per continuare.',
+        question_not_started: 'Il timer della domanda non è ancora partito. Ricarica il quiz per continuare.',
+        start_failed: 'Non è stato possibile avviare il quiz. Riprova.',
+        answer_failed: 'Non è stato possibile salvare la risposta. Riprova.',
+        next_failed: 'Non è stato possibile caricare la prossima domanda. Riprova.',
+        missing_answer: 'Non è stato possibile confermare il timeout. Riprova.',
+        invalid_answer_id: 'Questa risposta non è disponibile per la domanda corrente.',
+        invalid_attempt: 'Questo tentativo non è più disponibile. Ricarica il quiz per continuare.',
+        attempt_not_found: 'Questo tentativo non è più disponibile. Ricarica il quiz per continuare.',
+        attempt_completed: 'Questo tentativo è già completato.',
+        attempt_abandoned: 'Questo tentativo non è più attivo.',
+        attempt_not_active: 'Questo tentativo non è attivo.',
+        network_failure: 'Problema di connessione. Controlla la rete e riprova.',
+        generic: 'Qualcosa è andato storto. Riprova.',
+      },
+    };
+---
+
+<section
+  class="quiz-player"
+  data-quiz-player
+  data-slug={slug}
+  data-language={language}
+  data-copy={JSON.stringify(copy)}
+  aria-labelledby={`${playerId}-title`}
+>
+  <div class="quiz-player__intro" data-quiz-intro>
+    <h2 id={`${playerId}-title`} class="quiz-player__title">
+      {copy.start}
+    </h2>
+    <p>{copy.intro}</p>
+    <button
+      class="quiz-detail__start-button quiz-player__primary"
+      type="button"
+      data-quiz-start
+      aria-controls={`${playerId}-question`}
+    >
+      {copy.start}
+    </button>
+  </div>
+
+  <p class="quiz-player__message" data-quiz-message aria-live="polite" hidden></p>
+
+  <section class="quiz-player__stage" data-quiz-stage hidden>
+    <div class="quiz-player__status">
+      <span class="quiz-player__mode" data-quiz-mode></span>
+      <span class="quiz-player__score" data-quiz-score></span>
+    </div>
+    <p class="quiz-player__guest-note" data-quiz-guest-note hidden></p>
+
+    <article
+      id={`${playerId}-question`}
+      class="quiz-player__question"
+      data-quiz-question-panel
+      aria-labelledby={`${playerId}-question-title`}
+      hidden
+    >
+      <div class="quiz-player__question-head">
+        <span class="quiz-player__progress" data-quiz-progress></span>
+        <div class="quiz-player__timer" data-quiz-timer-wrap>
+          <span data-quiz-timer-label>{copy.timerLabel}</span>
+          <strong data-quiz-timer>0 s</strong>
+          <span class="quiz-player__timer-bar" aria-hidden="true">
+            <span data-quiz-timer-bar></span>
+          </span>
+        </div>
+      </div>
+
+      <h2 id={`${playerId}-question-title`} class="quiz-player__question-title" data-quiz-question-title tabindex="-1"></h2>
+
+      <figure class="quiz-player__media" data-quiz-media hidden>
+        <img data-quiz-image alt="" loading="lazy" decoding="async" />
+      </figure>
+
+      <div class="quiz-player__answers" data-quiz-answers></div>
+    </article>
+
+    <section class="quiz-player__feedback" data-quiz-feedback aria-live="polite" hidden>
+      <h2 data-quiz-feedback-title></h2>
+      <p class="quiz-player__feedback-selection" data-quiz-feedback-selection hidden></p>
+      <p data-quiz-feedback-explanation></p>
+      <button class="quiz-detail__start-button quiz-player__primary" type="button" data-quiz-next>
+        {copy.next}
+      </button>
+    </section>
+
+    <section class="quiz-player__result" data-quiz-result aria-live="polite" hidden>
+      <span class="quiz-eyebrow" data-quiz-result-mode></span>
+      <h2>{copy.resultTitle}</h2>
+      <p class="quiz-player__result-score" data-quiz-result-score></p>
+      <p data-quiz-result-time></p>
+      <p data-quiz-result-message></p>
+      <p class="quiz-player__guest-note" data-quiz-result-guest hidden></p>
+    </section>
+  </section>
+
+  <span class="quiz-player__sr" data-quiz-live aria-live="polite"></span>
+</section>
+
+<script>
+  const toInteger = (value, fallback = 0) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.trunc(number) : fallback;
+  };
+
+  const delay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+  const formatRemaining = (ms) => {
+    const seconds = Math.max(0, Math.ceil(Number(ms || 0) / 1000));
+    return `${seconds} s`;
+  };
+
+  const formatElapsed = (ms) => {
+    const totalSeconds = Math.max(0, Math.round(Number(ms || 0) / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return minutes > 0
+      ? `${minutes} min ${seconds} s`
+      : `${seconds} s`;
+  };
+
+  const parseCopy = (root) => {
+    try {
+      return JSON.parse(root.dataset.copy || '{}');
+    } catch {
+      return {};
+    }
+  };
+
+  const postJson = async (url, payload) => {
+    let response;
+
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      console.error('Quiz request failed:', error);
+      return { ok: false, error: 'network_failure' };
+    }
+
+    let data = null;
+
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok || !data?.ok) {
+      return {
+        ok: false,
+        error: data?.error || 'network_failure',
+      };
+    }
+
+    return data;
+  };
+
+  const initQuizPlayer = (root) => {
+    if (root.dataset.initialized === 'true') return;
+    root.dataset.initialized = 'true';
+
+    const copy = parseCopy(root);
+    const slug = root.dataset.slug || '';
+    const language = root.dataset.language || 'it';
+    const elements = {
+      intro: root.querySelector('[data-quiz-intro]'),
+      startButton: root.querySelector('[data-quiz-start]'),
+      message: root.querySelector('[data-quiz-message]'),
+      stage: root.querySelector('[data-quiz-stage]'),
+      mode: root.querySelector('[data-quiz-mode]'),
+      score: root.querySelector('[data-quiz-score]'),
+      questionPanel: root.querySelector('[data-quiz-question-panel]'),
+      progress: root.querySelector('[data-quiz-progress]'),
+      timer: root.querySelector('[data-quiz-timer]'),
+      timerBar: root.querySelector('[data-quiz-timer-bar]'),
+      questionTitle: root.querySelector('[data-quiz-question-title]'),
+      media: root.querySelector('[data-quiz-media]'),
+      image: root.querySelector('[data-quiz-image]'),
+      answers: root.querySelector('[data-quiz-answers]'),
+      feedback: root.querySelector('[data-quiz-feedback]'),
+      feedbackTitle: root.querySelector('[data-quiz-feedback-title]'),
+      feedbackSelection: root.querySelector('[data-quiz-feedback-selection]'),
+      feedbackExplanation: root.querySelector('[data-quiz-feedback-explanation]'),
+      nextButton: root.querySelector('[data-quiz-next]'),
+      result: root.querySelector('[data-quiz-result]'),
+      resultMode: root.querySelector('[data-quiz-result-mode]'),
+      resultScore: root.querySelector('[data-quiz-result-score]'),
+      resultTime: root.querySelector('[data-quiz-result-time]'),
+      resultMessage: root.querySelector('[data-quiz-result-message]'),
+      resultGuest: root.querySelector('[data-quiz-result-guest]'),
+      guestNote: root.querySelector('[data-quiz-guest-note]'),
+      live: root.querySelector('[data-quiz-live]'),
+    };
+
+    const state = {
+      view: 'intro',
+      attemptId: '',
+      mode: '',
+      status: '',
+      currentQuestionIndex: 0,
+      totalQuestions: 0,
+      correctCount: 0,
+      totalElapsedMs: 0,
+      timeLimitSeconds: 0,
+      question: null,
+      remainingMs: 0,
+      selectedAnswerId: null,
+      selectedAnswerText: '',
+      feedback: null,
+      isStarting: false,
+      isSubmitting: false,
+      isLoadingNext: false,
+      countdownId: 0,
+      countdownInitialRemaining: 0,
+      countdownInitialStamp: 0,
+    };
+
+    const getErrorMessage = (error) =>
+      copy.errors?.[error] || copy.errors?.generic || 'Something went wrong.';
+
+    const setMessage = (text, type = 'info') => {
+      if (!(elements.message instanceof HTMLElement)) return;
+      elements.message.textContent = text || '';
+      elements.message.dataset.type = type;
+      elements.message.hidden = !text;
+    };
+
+    const announce = (text) => {
+      if (elements.live) {
+        elements.live.textContent = text || '';
+      }
+    };
+
+    const showError = (error) => {
+      console.warn('Quiz player error:', error);
+      state.view = 'error';
+      state.isStarting = false;
+      state.isSubmitting = false;
+      state.isLoadingNext = false;
+      stopCountdown();
+      setMessage(getErrorMessage(error), 'error');
+      render();
+    };
+
+    const setLoadingMessage = (text) => {
+      setMessage(text, 'info');
+      announce(text);
+    };
+
+    const stopCountdown = () => {
+      if (state.countdownId) {
+        window.clearInterval(state.countdownId);
+        state.countdownId = 0;
+      }
+    };
+
+    const updateTimerDisplay = (remainingMs) => {
+      state.remainingMs = Math.max(0, Number(remainingMs || 0));
+
+      if (elements.timer) {
+        elements.timer.textContent = formatRemaining(state.remainingMs);
+      }
+
+      if (elements.timerBar instanceof HTMLElement) {
+        const totalMs = Math.max(1, Number(state.timeLimitSeconds || 0) * 1000);
+        const percent = Math.max(0, Math.min(100, (state.remainingMs / totalMs) * 100));
+        elements.timerBar.style.width = `${percent}%`;
+      }
+    };
+
+    const startCountdown = (remainingMs) => {
+      stopCountdown();
+      state.countdownInitialRemaining = Math.max(0, Number(remainingMs || 0));
+      state.countdownInitialStamp = performance.now();
+      updateTimerDisplay(state.countdownInitialRemaining);
+
+      if (state.countdownInitialRemaining <= 0) {
+        window.setTimeout(() => {
+          if (state.view === 'question' && !state.isSubmitting) {
+            submitAnswer(null, { autoTimeout: true });
+          }
+        }, 0);
+        return;
+      }
+
+      state.countdownId = window.setInterval(() => {
+        const elapsed = performance.now() - state.countdownInitialStamp;
+        const nextRemaining = Math.max(0, state.countdownInitialRemaining - elapsed);
+        updateTimerDisplay(nextRemaining);
+
+        if (nextRemaining <= 0) {
+          stopCountdown();
+          if (state.view === 'question' && !state.isSubmitting) {
+            submitAnswer(null, { autoTimeout: true });
+          }
+        }
+      }, 250);
+    };
+
+    const setAttemptFromPayload = (payload) => {
+      state.attemptId = String(payload.attemptId || state.attemptId || '');
+      state.mode = String(payload.mode || state.mode || '');
+      state.status = String(payload.status || state.status || '');
+      state.currentQuestionIndex = toInteger(payload.currentQuestionIndex, state.currentQuestionIndex);
+      state.totalQuestions = toInteger(payload.totalQuestions, state.totalQuestions);
+      state.correctCount = toInteger(payload.correctCount, state.correctCount);
+      state.totalElapsedMs = toInteger(payload.totalElapsedMs, state.totalElapsedMs);
+      state.timeLimitSeconds = toInteger(payload.timeLimitSeconds, state.timeLimitSeconds);
+      state.remainingMs = toInteger(payload.remainingMs, state.remainingMs);
+      state.question = payload.question || state.question;
+    };
+
+    const focusQuestion = () => {
+      if (elements.questionTitle instanceof HTMLElement) {
+        window.setTimeout(() => elements.questionTitle.focus({ preventScroll: true }), 50);
+      }
+    };
+
+    const showQuestion = (payload) => {
+      setAttemptFromPayload(payload);
+      state.view = 'question';
+      state.selectedAnswerId = null;
+      state.selectedAnswerText = '';
+      state.feedback = null;
+      state.isStarting = false;
+      state.isSubmitting = false;
+      state.isLoadingNext = false;
+      setMessage('', 'info');
+      render();
+      focusQuestion();
+      startCountdown(state.remainingMs);
+
+      if (payload.questionExpired === true || state.remainingMs <= 0) {
+        window.setTimeout(() => {
+          if (state.view === 'question' && !state.isSubmitting) {
+            submitAnswer(null, { autoTimeout: true });
+          }
+        }, 0);
+      }
+    };
+
+    const renderAnswers = () => {
+      if (!elements.answers) return;
+      elements.answers.textContent = '';
+
+      const answers = Array.isArray(state.question?.answers)
+        ? state.question.answers
+        : [];
+
+      answers.forEach((answer, index) => {
+        const button = document.createElement('button');
+        const answerId = String(answer?.answerId || '');
+        const answerText = String(answer?.text || '');
+        button.type = 'button';
+        button.className = 'quiz-player__answer';
+        button.dataset.answerId = answerId;
+        button.disabled = state.view !== 'question' || state.isSubmitting;
+        button.innerHTML = `
+          <span class="quiz-player__answer-index" aria-hidden="true">${index + 1}</span>
+          <span></span>
+        `;
+        const label = button.querySelector('span:last-child');
+        if (label) label.textContent = answerText;
+
+        if (state.selectedAnswerId === answerId) {
+          button.classList.add('is-selected');
+          if (state.feedback?.timedOut) {
+            button.classList.add('is-timeout');
+          } else if (state.feedback) {
+            button.classList.add(state.feedback.isCorrect ? 'is-correct' : 'is-wrong');
+          }
+        }
+
+        button.addEventListener('click', () => {
+          if (state.isSubmitting || state.view !== 'question') return;
+          submitAnswer(answerId, { answerText });
+        });
+
+        elements.answers.append(button);
+      });
+    };
+
+    const renderStatus = () => {
+      if (elements.mode) {
+        elements.mode.textContent = copy.mode?.[state.mode] || state.mode || '';
+      }
+
+      if (elements.score) {
+        elements.score.textContent = `${copy.scoreLabel}: ${state.correctCount} / ${state.totalQuestions || 0}`;
+      }
+
+      if (elements.guestNote instanceof HTMLElement) {
+        const showGuestNote = state.mode === 'guest' && ['question', 'submitting', 'feedback'].includes(state.view);
+        elements.guestNote.hidden = !showGuestNote;
+        elements.guestNote.textContent = showGuestNote ? copy.guestNote : '';
+      }
+    };
+
+    const renderQuestion = () => {
+      if (!(elements.questionPanel instanceof HTMLElement)) return;
+
+      const isVisible = ['question', 'submitting', 'feedback'].includes(state.view);
+      elements.questionPanel.hidden = !isVisible;
+
+      if (!isVisible || !state.question) return;
+
+      if (elements.progress) {
+        elements.progress.textContent = `${copy.progressLabel} ${state.currentQuestionIndex + 1} / ${state.totalQuestions}`;
+      }
+
+      if (elements.questionTitle) {
+        elements.questionTitle.textContent = String(state.question.text || '');
+      }
+
+      const image = state.question.image;
+
+      if (elements.media instanceof HTMLElement && elements.image instanceof HTMLImageElement) {
+        if (image?.url) {
+          elements.image.src = String(image.url);
+          elements.image.alt = String(image.alt || copy.questionImageAlt || '');
+          elements.media.hidden = false;
+        } else {
+          elements.image.removeAttribute('src');
+          elements.image.alt = '';
+          elements.media.hidden = true;
+        }
+      }
+
+      renderAnswers();
+    };
+
+    const renderFeedback = () => {
+      if (!(elements.feedback instanceof HTMLElement)) return;
+
+      const isVisible = state.view === 'feedback';
+      elements.feedback.hidden = !isVisible;
+
+      if (!isVisible || !state.feedback) return;
+
+      const title = state.feedback.timedOut
+        ? copy.timeout
+        : state.feedback.isCorrect
+          ? copy.correct
+          : copy.wrong;
+
+      if (elements.feedbackTitle) {
+        elements.feedbackTitle.textContent = title;
+      }
+
+      if (elements.feedbackSelection instanceof HTMLElement) {
+        elements.feedbackSelection.hidden = !state.selectedAnswerText;
+        elements.feedbackSelection.textContent = state.selectedAnswerText
+          ? `${copy.selectedAnswer}: ${state.selectedAnswerText}`
+          : '';
+      }
+
+      if (elements.feedbackExplanation) {
+        elements.feedbackExplanation.textContent =
+          state.feedback.explanation || copy.noExplanation || '';
+      }
+
+      if (elements.nextButton instanceof HTMLButtonElement) {
+        elements.nextButton.hidden = state.feedback.completed;
+        elements.nextButton.disabled = state.isLoadingNext;
+        elements.nextButton.textContent = state.isLoadingNext ? copy.nextLoading : copy.next;
+      }
+    };
+
+    const renderResult = () => {
+      if (!(elements.result instanceof HTMLElement)) return;
+
+      const isVisible = state.view === 'result';
+      elements.result.hidden = !isVisible;
+
+      if (!isVisible) return;
+
+      const percent = state.totalQuestions > 0
+        ? Math.round((state.correctCount / state.totalQuestions) * 100)
+        : 0;
+      const resultMessage = (copy.resultMessages || [])
+        .find((item) => percent >= Number(item.min || 0))?.text || '';
+      const resultMode = state.mode === 'official'
+        ? copy.resultOfficial
+        : state.mode === 'training'
+          ? copy.resultTraining
+          : copy.resultGuest;
+
+      if (elements.resultMode) {
+        elements.resultMode.textContent = resultMode;
+      }
+
+      if (elements.resultScore) {
+        elements.resultScore.textContent =
+          `${copy.resultScore}: ${state.correctCount} / ${state.totalQuestions} (${percent}%)`;
+      }
+
+      if (elements.resultTime) {
+        elements.resultTime.textContent = `${copy.resultTime}: ${formatElapsed(state.totalElapsedMs)}`;
+      }
+
+      if (elements.resultMessage) {
+        elements.resultMessage.textContent = resultMessage;
+      }
+
+      if (elements.resultGuest instanceof HTMLElement) {
+        elements.resultGuest.hidden = state.mode !== 'guest';
+        elements.resultGuest.textContent = state.mode === 'guest' ? copy.guestResultNote : '';
+      }
+    };
+
+    const render = () => {
+      const hasStarted = state.view !== 'intro' && state.view !== 'loading' && state.view !== 'error';
+
+      if (elements.intro instanceof HTMLElement) {
+        elements.intro.hidden = hasStarted || state.view === 'loading';
+      }
+
+      if (elements.stage instanceof HTMLElement) {
+        elements.stage.hidden = !hasStarted;
+      }
+
+      if (elements.startButton instanceof HTMLButtonElement) {
+        elements.startButton.disabled = state.isStarting;
+        elements.startButton.textContent = state.isStarting ? copy.startLoading : copy.start;
+      }
+
+      renderStatus();
+      renderQuestion();
+      renderFeedback();
+      renderResult();
+
+      root.classList.toggle('is-loading', state.view === 'loading' || state.isStarting);
+      root.classList.toggle('is-submitting', state.isSubmitting);
+    };
+
+    const handleStart = async () => {
+      if (state.isStarting) return;
+
+      state.isStarting = true;
+      state.view = 'loading';
+      setLoadingMessage(copy.startLoading);
+      render();
+
+      const result = await postJson('/api/quiz/start', {
+        slug,
+        language,
+      });
+
+      if (!result.ok) {
+        showError(result.error);
+        return;
+      }
+
+      if (result.redirectRequired && result.resumeUrl) {
+        window.location.assign(String(result.resumeUrl));
+        return;
+      }
+
+      if (!result.question || !result.attemptId) {
+        showError('quiz_snapshot_unavailable');
+        return;
+      }
+
+      showQuestion(result);
+    };
+
+    const submitAnswerRequest = (answerId) =>
+      postJson('/api/quiz/answer', {
+        attemptId: state.attemptId,
+        questionId: state.question?.questionId,
+        answerId,
+      });
+
+    async function submitAnswer(answerId, { answerText = '', autoTimeout = false } = {}) {
+      if (state.isSubmitting || !state.attemptId || !state.question?.questionId) return;
+
+      state.isSubmitting = true;
+      state.view = 'submitting';
+      state.selectedAnswerId = answerId;
+      state.selectedAnswerText = answerText;
+      stopCountdown();
+      setLoadingMessage(autoTimeout ? copy.timeoutRetry : copy.answerLoading);
+      render();
+
+      let result = await submitAnswerRequest(answerId);
+
+      if (!result.ok && autoTimeout && result.error === 'missing_answer') {
+        setLoadingMessage(copy.timeoutRetry);
+        await delay(1100);
+        result = await submitAnswerRequest(null);
+      }
+
+      if (!result.ok) {
+        showError(result.error);
+        return;
+      }
+
+      state.status = String(result.status || state.status || '');
+      state.correctCount = toInteger(result.correctCount, state.correctCount);
+      state.totalQuestions = toInteger(result.totalQuestions, state.totalQuestions);
+      state.totalElapsedMs = toInteger(result.totalElapsedMs, state.totalElapsedMs);
+      state.feedback = {
+        isCorrect: result.isCorrect === true,
+        timedOut: result.timedOut === true,
+        completed: result.completed === true,
+        awaitingNext: result.awaitingNext === true,
+        nextQuestionIndex: result.nextQuestionIndex,
+        explanation: typeof result.explanation === 'string' ? result.explanation : '',
+      };
+      state.isSubmitting = false;
+      setMessage('', 'info');
+
+      if (result.completed === true) {
+        state.view = 'result';
+        state.question = null;
+        announce(copy.resultTitle);
+      } else {
+        state.view = 'feedback';
+        announce(
+          state.feedback.timedOut
+            ? copy.timeout
+            : state.feedback.isCorrect
+              ? copy.correct
+              : copy.wrong
+        );
+      }
+
+      render();
+    }
+
+    const loadNextQuestion = async () => {
+      if (state.isLoadingNext || !state.attemptId) return;
+
+      state.isLoadingNext = true;
+      setLoadingMessage(copy.nextLoading);
+      render();
+
+      const result = await postJson('/api/quiz/next', {
+        attemptId: state.attemptId,
+      });
+
+      if (!result.ok) {
+        showError(result.error);
+        return;
+      }
+
+      if (!result.question) {
+        showError('quiz_snapshot_unavailable');
+        return;
+      }
+
+      showQuestion(result);
+    };
+
+    elements.startButton?.addEventListener('click', handleStart);
+    elements.nextButton?.addEventListener('click', loadNextQuestion);
+    render();
+  };
+
+  document.querySelectorAll('[data-quiz-player]').forEach(initQuizPlayer);
+</script>
