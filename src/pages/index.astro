@@ -24,6 +24,7 @@ import { getNewsletterSubscriptionForUser } from '../lib/supabase/newsletter';
 import { getLatestCommunityComments } from '../lib/supabase/community-hub';
 import { getHomePlayableClassics } from '../lib/playable-classics';
 import { getHomeEmulatorTools } from '../lib/emulator-tools';
+import { getPublishedQuizSummaries } from '../lib/quiz';
 
 const allPosts = await getAllPosts();
 
@@ -61,11 +62,13 @@ const withCommentCounts = (posts) =>
 const [
   latestCommunityComments,
   playableClassics,
-  emulatorTools
+  emulatorTools,
+  quizzes
 ] = await Promise.all([
   getLatestCommunityComments('it', 10, allPosts),
   getHomePlayableClassics('it', 4),
-  getHomeEmulatorTools('it', 4)
+  getHomeEmulatorTools('it', 4),
+  getPublishedQuizSummaries('it')
 ]);
 const viewerSession = await getUserSessionFromCookies(Astro.cookies);
 let hideNewsletterPromo = false;
@@ -125,6 +128,7 @@ const alternateLanguages = [
       <CommunityStrip
         lang="it"
         latestComments={latestCommunityComments}
+        quizzes={quizzes}
         isLoggedIn={!viewerSession.error && Boolean(viewerSession.user)}
       />
     </div>

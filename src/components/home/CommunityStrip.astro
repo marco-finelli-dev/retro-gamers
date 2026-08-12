@@ -1,5 +1,7 @@
 ---
 import UserAvatar from '../account/UserAvatar.astro';
+import { urlFor } from '../../lib/image';
+import { getQuizUrl, type QuizSummary } from '../../lib/quiz';
 import type { CommunityHubComment } from '../../lib/supabase/community-hub';
 
 type Lang = 'it' | 'en';
@@ -7,114 +9,240 @@ type Lang = 'it' | 'en';
 interface Props {
   lang?: Lang;
   latestComments?: CommunityHubComment[];
+  quizzes?: QuizSummary[];
   isLoggedIn?: boolean;
 }
 
 const {
   lang = 'it',
   latestComments = [],
+  quizzes = [],
   isLoggedIn = false,
 } = Astro.props;
 
 const isEn = lang === 'en';
 const comments = latestComments.slice(0, 10);
+const publishedQuizzes = quizzes;
+const hasSingleQuiz = publishedQuizzes.length === 1;
 const sectionId = `home-community-strip-title-${lang}`;
+const quizTitleId = `home-community-quiz-title-${lang}`;
+const voicesTitleId = `home-community-voices-title-${lang}`;
 
 const copy = isEn
   ? {
-      title: 'Community voices',
-      text: 'Comments, memories and conversations from readers who are bringing Retro-Gamers.it to life beyond the articles.',
+      eyebrow: 'Community',
+      title: 'Retro-Gamers Community',
+      text: 'Play, comment and take part in the life of Retro-Gamers.',
+      quizTitle: 'Retro-Gamers Quiz',
+      quizAll: 'All quizzes',
+      quizCta: 'Play',
+      voicesTitle: 'Community voices',
+      voicesText: 'Comments, memories and conversations from readers who are bringing Retro-Gamers.it to life beyond the articles.',
       primary: 'Visit the community',
       secondary: isLoggedIn ? 'Go to your account' : 'Create your profile',
       empty: 'The first memories will arrive with the readers.',
-      kicker: 'Community',
       fromArticle: 'From',
       readDiscussion: 'Read the discussion',
       profileLabel: 'Profile',
       railLabel: 'Latest reader memories',
+      quizRailLabel: 'Published Retro-Gamers quizzes',
+      questions: 'questions',
+      seconds: 's',
+      difficultyLabels: {
+        easy: 'Easy',
+        medium: 'Medium',
+        hard: 'Hard',
+        expert: 'Expert',
+      },
     }
   : {
-      title: 'Le voci della community',
-      text: 'Commenti, ricordi e discussioni dai lettori che stanno dando vita a Retro-Gamers.it oltre gli articoli.',
+      eyebrow: 'Community',
+      title: 'Community Retro-Gamers',
+      text: 'Gioca, commenta e partecipa alla vita del sito.',
+      quizTitle: 'Quiz Retro-Gamers',
+      quizAll: 'Tutti i quiz',
+      quizCta: 'Gioca',
+      voicesTitle: 'Le voci della community',
+      voicesText: 'Commenti, ricordi e discussioni dai lettori che stanno dando vita a Retro-Gamers.it oltre gli articoli.',
       primary: 'Vai alla community',
       secondary: isLoggedIn ? 'Vai al tuo account' : 'Crea il tuo profilo',
       empty: 'Le prime memorie arriveranno con i lettori.',
-      kicker: 'Community',
       fromArticle: 'Da',
       readDiscussion: 'Leggi la discussione',
       profileLabel: 'Profilo',
       railLabel: 'Ultime memorie dai lettori',
+      quizRailLabel: 'Quiz Retro-Gamers pubblicati',
+      questions: 'domande',
+      seconds: 's',
+      difficultyLabels: {
+        easy: 'Facile',
+        medium: 'Medio',
+        hard: 'Difficile',
+        expert: 'Esperto',
+      },
     };
 
 const communityHref = isEn ? '/en/community/' : '/community/';
+const quizHref = isEn ? '/en/quiz/' : '/quiz/';
 const profileHref = isEn
   ? (isLoggedIn ? '/en/account/' : '/en/account/register/')
   : (isLoggedIn ? '/account/' : '/account/register/');
+
+const getQuizCoverUrl = (quiz: QuizSummary) => {
+  if (!quiz.coverImage?.asset) return '';
+
+  return urlFor(quiz.coverImage)
+    .width(480)
+    .height(360)
+    .fit('crop')
+    .quality(74)
+    .auto('format')
+    .url();
+};
+
+const getQuizDifficultyLabel = (difficulty?: string) =>
+  difficulty && (copy.difficultyLabels as Record<string, string>)[difficulty]
+    ? (copy.difficultyLabels as Record<string, string>)[difficulty]
+    : difficulty || '';
 ---
 
 <section class="section-box home-community-strip" aria-labelledby={sectionId}>
   <div class="home-community-strip__header">
     <div>
-      <span class="home-community-strip__kicker">{copy.kicker}</span>
+      <span class="home-community-strip__kicker">{copy.eyebrow}</span>
       <h2 id={sectionId}>{copy.title}</h2>
       <p>{copy.text}</p>
     </div>
-
-    <div class="home-community-strip__actions" aria-label={copy.kicker}>
-      <a class="home-community-strip__link home-community-strip__link--primary" href={communityHref}>
-        {copy.primary}
-      </a>
-      <a class="home-community-strip__link home-community-strip__link--secondary" href={profileHref}>
-        {copy.secondary}
-      </a>
-    </div>
   </div>
 
-  <div class="home-community-strip__comments" aria-label={copy.railLabel} tabindex="0">
-    {comments.length > 0 ? (
-      comments.map((comment) => (
-        <article class="home-community-strip__comment">
-          <header>
-            <UserAvatar
-              name={comment.authorName}
-              src={comment.avatarUrl}
-              size="sm"
-              label={`${copy.profileLabel}: ${comment.authorName}`}
-            />
+  {publishedQuizzes.length > 0 && (
+    <section class="home-community-strip__block home-community-strip__block--quiz" aria-labelledby={quizTitleId}>
+      <header class="home-community-strip__block-header">
+        <h3 id={quizTitleId}>{copy.quizTitle}</h3>
+        <a class="home-community-strip__link home-community-strip__link--primary" href={quizHref}>
+          {copy.quizAll}
+        </a>
+      </header>
 
-            <div class="home-community-strip__author">
-              <strong>
-                {comment.profileUrl ? (
-                  <a href={comment.profileUrl}>{comment.authorName}</a>
+      <div
+        class={`home-community-strip__quiz-grid${hasSingleQuiz ? ' home-community-strip__quiz-grid--featured' : ''}`}
+        aria-label={copy.quizRailLabel}
+      >
+        {publishedQuizzes.map((quiz) => {
+          const coverUrl = getQuizCoverUrl(quiz);
+          const difficulty = getQuizDifficultyLabel(quiz.difficulty);
+          const href = getQuizUrl(quiz, isEn ? 'en' : 'it');
+          const quizExcerpt = quiz.excerpt || quiz.subtitle || '';
+
+          return (
+            <a
+              class={`home-community-strip__quiz-card${hasSingleQuiz ? ' home-community-strip__quiz-card--featured' : ''}`}
+              href={href}
+            >
+              <span class="home-community-strip__quiz-media">
+                {coverUrl ? (
+                  <img
+                    src={coverUrl}
+                    alt={quiz.coverImage?.alt || quiz.title}
+                    width="480"
+                    height="360"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : (
-                  comment.authorName
+                  <span class="home-community-strip__quiz-fallback" aria-hidden="true">
+                    {quiz.title?.slice(0, 2).toUpperCase()}
+                  </span>
                 )}
-              </strong>
+              </span>
 
-              {comment.badgeLabel && (
-                <span class="home-community-strip__badge">
-                  {comment.badgeImageUrl && (
-                    <img src={comment.badgeImageUrl} alt="" loading="lazy" decoding="async" />
+              <span class="home-community-strip__quiz-body">
+                <span class="home-community-strip__quiz-meta">
+                  {difficulty && <span>{difficulty}</span>}
+                  {Number.isFinite(quiz.questionCount) && (
+                    <span>{quiz.questionCount} {copy.questions}</span>
                   )}
-                  {comment.badgeLabel}
+                  {quiz.timeLimitSeconds && (
+                    <span>{quiz.timeLimitSeconds} {copy.seconds}</span>
+                  )}
                 </span>
-              )}
-            </div>
-          </header>
 
-          <p>{comment.excerpt}</p>
-
-          <footer>
-            <span>{copy.fromArticle}</span>
-            <a class="home-community-strip__article" href={comment.articleUrl}>{comment.articleTitle}</a>
-            <a class="home-community-strip__discussion" href={comment.articleUrl}>
-              {copy.readDiscussion}
+                <strong>{quiz.title}</strong>
+                {hasSingleQuiz && quizExcerpt && (
+                  <span class="home-community-strip__quiz-excerpt">{quizExcerpt}</span>
+                )}
+                <span class="home-community-strip__quiz-cta">{copy.quizCta}</span>
+              </span>
             </a>
-          </footer>
-        </article>
-      ))
-    ) : (
-      <p class="home-community-strip__empty">{copy.empty}</p>
-    )}
-  </div>
+          );
+        })}
+      </div>
+    </section>
+  )}
+
+  <section class="home-community-strip__block home-community-strip__block--voices" aria-labelledby={voicesTitleId}>
+    <header class="home-community-strip__block-header home-community-strip__block-header--with-copy">
+      <div>
+        <h3 id={voicesTitleId}>{copy.voicesTitle}</h3>
+        <p>{copy.voicesText}</p>
+      </div>
+
+      <div class="home-community-strip__actions" aria-label={copy.voicesTitle}>
+        <a class="home-community-strip__link home-community-strip__link--primary" href={communityHref}>
+          {copy.primary}
+        </a>
+        <a class="home-community-strip__link home-community-strip__link--secondary" href={profileHref}>
+          {copy.secondary}
+        </a>
+      </div>
+    </header>
+
+    <div class="home-community-strip__comments" aria-label={copy.railLabel} tabindex="0">
+      {comments.length > 0 ? (
+        comments.map((comment) => (
+          <article class="home-community-strip__comment">
+            <header>
+              <UserAvatar
+                name={comment.authorName}
+                src={comment.avatarUrl}
+                size="sm"
+                label={`${copy.profileLabel}: ${comment.authorName}`}
+              />
+
+              <div class="home-community-strip__author">
+                <strong>
+                  {comment.profileUrl ? (
+                    <a href={comment.profileUrl}>{comment.authorName}</a>
+                  ) : (
+                    comment.authorName
+                  )}
+                </strong>
+
+                {comment.badgeLabel && (
+                  <span class="home-community-strip__badge">
+                    {comment.badgeImageUrl && (
+                      <img src={comment.badgeImageUrl} alt="" loading="lazy" decoding="async" />
+                    )}
+                    {comment.badgeLabel}
+                  </span>
+                )}
+              </div>
+            </header>
+
+            <p>{comment.excerpt}</p>
+
+            <footer>
+              <span>{copy.fromArticle}</span>
+              <a class="home-community-strip__article" href={comment.articleUrl}>{comment.articleTitle}</a>
+              <a class="home-community-strip__discussion" href={comment.articleUrl}>
+                {copy.readDiscussion}
+              </a>
+            </footer>
+          </article>
+        ))
+      ) : (
+        <p class="home-community-strip__empty">{copy.empty}</p>
+      )}
+    </div>
+  </section>
 </section>
