@@ -4,9 +4,12 @@ type QuizLanguage = 'it' | 'en';
 type Props = {
   slug: string;
   language: QuizLanguage;
+  rulesEyebrow?: string;
+  rulesTitle?: string;
+  rules?: string[];
 };
 
-const { slug, language } = Astro.props as Props;
+const { slug, language, rulesEyebrow = '', rulesTitle = '', rules = [] } = Astro.props as Props;
 const isEnglish = language === 'en';
 const playerId = `quiz-player-${language}-${slug}`;
 
@@ -155,13 +158,22 @@ const copy = isEnglish
   data-slug={slug}
   data-language={language}
   data-copy={JSON.stringify(copy)}
-  aria-labelledby={`${playerId}-title`}
+  aria-label={isEnglish ? 'Quiz player' : 'Player quiz'}
 >
   <div class="quiz-player__intro" data-quiz-intro>
+    {rulesEyebrow && <span class="quiz-eyebrow">{rulesEyebrow}</span>}
     <h2 id={`${playerId}-title`} class="quiz-player__title">
-      {copy.start}
+      {rulesTitle || copy.start}
     </h2>
-    <p>{copy.intro}</p>
+    {rules.length > 0 ? (
+      <ul>
+        {rules.map((rule) => (
+          <li>{rule}</li>
+        ))}
+      </ul>
+    ) : (
+      <p>{copy.intro}</p>
+    )}
     <button
       class="quiz-detail__start-button quiz-player__primary"
       type="button"
@@ -355,7 +367,6 @@ const copy = isEnglish
       isSubmitting: false,
       isLoadingNext: false,
       isRevealingResult: false,
-      resultCelebrationPlayed: false,
       countdownId: 0,
       countdownInitialRemaining: 0,
       countdownInitialStamp: 0,
@@ -384,7 +395,6 @@ const copy = isEnglish
       state.isSubmitting = false;
       state.isLoadingNext = false;
       state.isRevealingResult = false;
-      state.resultCelebrationPlayed = false;
       stopCountdown();
       setMessage(getErrorMessage(error), 'error');
       render();
@@ -489,7 +499,7 @@ const copy = isEnglish
       }
     };
 
-    const focusResult = () => {
+    const scrollResultIntoView = () => {
       if (!(elements.result instanceof HTMLElement)) return;
 
       const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -498,68 +508,15 @@ const copy = isEnglish
 
       window.setTimeout(() => {
         elements.result.scrollIntoView({ behavior, block: 'start' });
-        if (elements.resultTitle instanceof HTMLElement) {
-          elements.resultTitle.focus({ preventScroll: true });
-        }
       }, 50);
     };
 
-    const launchPerfectResultCelebration = () => {
-      if (
-        state.resultCelebrationPlayed ||
-        state.totalQuestions <= 0 ||
-        state.correctCount !== state.totalQuestions ||
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
-        !(elements.result instanceof HTMLElement)
-      ) {
-        return;
-      }
+    const focusResult = () => {
+      if (!(elements.resultTitle instanceof HTMLElement)) return;
 
-      state.resultCelebrationPlayed = true;
-
-      const rect = elements.result.getBoundingClientRect();
-      const originX = rect.left + rect.width / 2;
-      const originY = Math.max(86, rect.top + Math.min(rect.height * 0.42, 150));
-      const layer = document.createElement('div');
-      const colors = [
-        'var(--color-primary)',
-        'color-mix(in srgb, var(--color-primary) 62%, #ffffff)',
-        'color-mix(in srgb, #6cf7a0 72%, var(--color-primary))',
-        'color-mix(in srgb, #ffd166 74%, var(--color-primary))',
-      ];
-
-      layer.className = 'quiz-player__celebration';
-      layer.setAttribute('aria-hidden', 'true');
-
-      for (let index = 0; index < 28; index += 1) {
-        const particle = document.createElement('span');
-        const spread = Math.min(window.innerWidth * 0.78, 760);
-        const endX = (Math.random() - 0.5) * spread;
-        const midY = -90 - Math.random() * 210;
-        const endY = 70 + Math.random() * 180;
-        const size = 5 + Math.random() * 7;
-        const spin = 180 + Math.random() * 520;
-
-        particle.className = 'quiz-player__confetti';
-        particle.style.left = `${originX}px`;
-        particle.style.top = `${originY}px`;
-        particle.style.width = `${size}px`;
-        particle.style.height = `${Math.max(4, size * (0.48 + Math.random() * 0.36))}px`;
-        particle.style.borderRadius = Math.random() > 0.7 ? '999px' : '2px';
-        particle.style.background = colors[index % colors.length];
-        particle.style.setProperty('--mid-x', `${endX * 0.62}px`);
-        particle.style.setProperty('--mid-y', `${midY}px`);
-        particle.style.setProperty('--end-x', `${endX}px`);
-        particle.style.setProperty('--end-y', `${endY}px`);
-        particle.style.setProperty('--mid-spin', `${spin * 0.55}deg`);
-        particle.style.setProperty('--spin', `${spin}deg`);
-        particle.style.setProperty('--duration', `${1500 + Math.random() * 450}ms`);
-        particle.style.setProperty('--delay', `${Math.random() * 130}ms`);
-        layer.append(particle);
-      }
-
-      document.body.append(layer);
-      window.setTimeout(() => layer.remove(), 2200);
+      window.setTimeout(() => {
+        elements.resultTitle.focus({ preventScroll: true });
+      }, 50);
     };
 
     const showQuestion = (payload) => {
@@ -572,7 +529,6 @@ const copy = isEnglish
       state.isSubmitting = false;
       state.isLoadingNext = false;
       state.isRevealingResult = false;
-      state.resultCelebrationPlayed = false;
       setMessage('', 'info');
       render();
       focusQuestion();
@@ -971,13 +927,13 @@ const copy = isEnglish
       setMessage('', 'info');
       announce(copy.resultLoading);
       render();
+      scrollResultIntoView();
       await delay(1700);
 
       state.isRevealingResult = false;
       state.view = 'result';
       announce(copy.resultTitle);
       render();
-      launchPerfectResultCelebration();
       focusResult();
     };
 

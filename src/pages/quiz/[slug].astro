@@ -155,19 +155,13 @@ const initials = quiz.title
           </div>
         </header>
 
-        <section class="quiz-panel" aria-labelledby="quiz-rules">
-          <div class="quiz-panel__content quiz-detail__rules">
-            <span>{copy.rulesEyebrow}</span>
-            <h2 id="quiz-rules">{copy.rulesTitle}</h2>
-            <ul>
-              {copy.rules.map((rule) => (
-                <li>{rule}</li>
-              ))}
-            </ul>
-
-            <QuizPlayer slug={quiz.slug} language="it" />
-          </div>
-        </section>
+        <QuizPlayer
+          slug={quiz.slug}
+          language="it"
+          rulesEyebrow={copy.rulesEyebrow}
+          rulesTitle={copy.rulesTitle}
+          rules={copy.rules}
+        />
       </article>
     </div>
   </div>
