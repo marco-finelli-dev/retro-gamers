@@ -19,6 +19,7 @@ import {
   normalizeSlug,
   parseRpcJson,
   preflightAnswerKeys,
+  selectQuestionOrderForAttempt,
   validateAttemptOwnership,
   validateQuizSnapshot,
   type AttemptSnapshot,
@@ -69,6 +70,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return json({ ok: false, error: 'quiz_not_ready' }, 503);
     }
 
+    const candidateQuestionOrder = selectQuestionOrderForAttempt(
+      quizValidation.questionOrder,
+      quizValidation.questionsPerAttempt
+    );
+
     const session = await getUserSessionFromCookies(cookies);
 
     if (session.user?.id && (session.error || !session.profile)) {
@@ -85,7 +91,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         p_quiz_document_id: quiz._id,
         p_quiz_slug: quiz.slug,
         p_quiz_language: language,
-        p_question_order: quizValidation.questionOrder,
+        p_question_order: candidateQuestionOrder,
         p_time_limit_seconds: quiz.timeLimitSeconds,
         p_user_id: userId,
         p_guest_token_hash: guestIdentity?.tokenHash || null,

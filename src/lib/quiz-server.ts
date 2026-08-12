@@ -1,6 +1,12 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { urlFor } from './image';
-import type { QuizLanguage, QuizRuntime, QuizRuntimeQuestion } from './quiz';
+import {
+  MAX_QUESTIONS_PER_ATTEMPT,
+  getQuizQuestionsPerAttempt,
+  type QuizLanguage,
+  type QuizRuntime,
+  type QuizRuntimeQuestion,
+} from './quiz';
 import { supabaseAdmin } from './supabase/server';
 
 export type AttemptSnapshot = {
@@ -121,11 +127,53 @@ export const getVisibleAnswerIds = (question: QuizRuntimeQuestion) => {
     .filter(Boolean);
 };
 
+const isValidRuntimeQuestion = (question: QuizRuntimeQuestion | null | undefined) => {
+  if (!question) return false;
+
+  const questionId = String(question.questionId || '').trim();
+
+  if (question.questionId !== questionId || !isTechnicalId(questionId)) {
+    return false;
+  }
+
+  if (!String(question.text || '').trim()) {
+    return false;
+  }
+
+  const answers = Array.isArray(question.answers) ? question.answers : [];
+  const answerIds = getVisibleAnswerIds(question);
+
+  return (
+    answers.length === 4 &&
+    answerIds.length === 4 &&
+    new Set(answerIds).size === answerIds.length &&
+    answers.every((answer) => {
+      const answerId = String(answer.answerId || '').trim();
+
+      return (
+        answer.answerId === answerId &&
+        isTechnicalId(answerId) &&
+        Boolean(String(answer.text || '').trim())
+      );
+    })
+  );
+};
+
+const getRuntimeQuestionMap = (quiz: QuizRuntime) => {
+  const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
+
+  return new Map(
+    questions
+      .map((question) => [String(question.questionId || '').trim(), question] as const)
+      .filter(([questionId]) => Boolean(questionId))
+  );
+};
+
 export const validateQuizSnapshot = (
   quiz: QuizRuntime | null,
   language: QuizLanguage
 ): (
-  | { ok: true; questionOrder: string[] }
+  | { ok: true; questionOrder: string[]; questionsPerAttempt: number }
   | { ok: false; error: 'quiz_not_found' | 'quiz_not_ready'; status: number; details: string }
 ) => {
   if (!quiz) {
@@ -155,6 +203,7 @@ export const validateQuizSnapshot = (
 
   const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
   const questionOrder = getQuestionOrder(quiz);
+  const questionsPerAttempt = getQuizQuestionsPerAttempt(quiz);
 
   if (questions.length < 1 || questionOrder.length !== questions.length) {
     return {
@@ -174,21 +223,7 @@ export const validateQuizSnapshot = (
     };
   }
 
-  const invalidQuestion = questions.find((question) => {
-    if (!isTechnicalId(question.questionId) || !String(question.text || '').trim()) {
-      return true;
-    }
-
-    const answers = Array.isArray(question.answers) ? question.answers : [];
-    const answerIds = getVisibleAnswerIds(question);
-
-    return (
-      answers.length !== 4 ||
-      answerIds.length !== 4 ||
-      new Set(answerIds).size !== answerIds.length ||
-      answers.some((answer) => !isTechnicalId(answer.answerId) || !String(answer.text || '').trim())
-    );
-  });
+  const invalidQuestion = questions.find((question) => !isValidRuntimeQuestion(question));
 
   if (invalidQuestion) {
     return {
@@ -199,10 +234,46 @@ export const validateQuizSnapshot = (
     };
   }
 
+  if (
+    !Number.isInteger(questionsPerAttempt) ||
+    questionsPerAttempt < 1 ||
+    questionsPerAttempt > MAX_QUESTIONS_PER_ATTEMPT ||
+    questionsPerAttempt > questions.length
+  ) {
+    return {
+      ok: false,
+      error: 'quiz_not_ready',
+      status: 503,
+      details: 'invalid_questions_per_attempt',
+    };
+  }
+
   return {
     ok: true,
     questionOrder,
+    questionsPerAttempt,
   };
+};
+
+export const selectQuestionOrderForAttempt = (
+  questionOrder: string[],
+  questionsPerAttempt: number
+) => {
+  if (questionsPerAttempt >= questionOrder.length) {
+    return [...questionOrder];
+  }
+
+  const shuffled = [...questionOrder];
+
+  for (let index = 0; index < questionsPerAttempt; index += 1) {
+    const swapIndex = randomInt(index, shuffled.length);
+    const currentQuestionId = shuffled[index];
+
+    shuffled[index] = shuffled[swapIndex];
+    shuffled[swapIndex] = currentQuestionId;
+  }
+
+  return shuffled.slice(0, questionsPerAttempt);
 };
 
 export const preflightAnswerKeys = async (quiz: QuizRuntime, questionOrder: string[]) => {
@@ -389,9 +460,6 @@ export const normalizeQuestionOrder = (value: unknown): string[] => {
   return [];
 };
 
-const areQuestionOrdersEqual = (left: string[], right: string[]) =>
-  left.length === right.length && left.every((questionId, index) => questionId === right[index]);
-
 const createdActions = new Set([
   'created_official',
   'created_training',
@@ -407,12 +475,34 @@ export const getAttemptRuntimeCompatibility = (
   const attemptQuestionOrder = normalizeQuestionOrder(attempt.question_order);
   const mismatches: string[] = [];
   const isCreatedAttempt = typeof action === 'string' && createdActions.has(action);
+  const runtimeQuestionIdSet = new Set(runtimeQuestionOrder);
+  const runtimeQuestionMap = getRuntimeQuestionMap(quiz);
+  const expectedQuestionsPerAttempt = getQuizQuestionsPerAttempt(quiz);
 
   if (attempt.quiz_document_id !== quiz._id) mismatches.push('quiz_document_id');
   if (attempt.quiz_key !== quiz.quizKey) mismatches.push('quiz_key');
   if (attempt.quiz_language !== quiz.language) mismatches.push('quiz_language');
-  if (!areQuestionOrdersEqual(attemptQuestionOrder, runtimeQuestionOrder)) {
-    mismatches.push('question_order');
+  if (attemptQuestionOrder.length !== Number(attempt.total_questions)) {
+    mismatches.push('question_order_length');
+  }
+  if (new Set(attemptQuestionOrder).size !== attemptQuestionOrder.length) {
+    mismatches.push('question_order_duplicates');
+  }
+  if (attemptQuestionOrder.some((questionId) => !runtimeQuestionIdSet.has(questionId))) {
+    mismatches.push('question_order_unknown_question');
+  }
+  if (
+    attemptQuestionOrder.some((questionId) =>
+      !isValidRuntimeQuestion(runtimeQuestionMap.get(questionId))
+    )
+  ) {
+    mismatches.push('question_order_invalid_question');
+  }
+  if (
+    isCreatedAttempt &&
+    attemptQuestionOrder.length !== expectedQuestionsPerAttempt
+  ) {
+    mismatches.push('questions_per_attempt');
   }
   if (Number(attempt.time_limit_seconds) !== Number(quiz.timeLimitSeconds)) {
     mismatches.push('time_limit_seconds');
