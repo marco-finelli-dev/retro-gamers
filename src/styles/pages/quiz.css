@@ -260,6 +260,9 @@
 .quiz-player__feedback,
 .quiz-player__result,
 .quiz-player__message {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   border: 1px solid var(--rg-card-border);
   border-radius: 18px;
   background:
@@ -279,7 +282,7 @@
 .quiz-player__intro {
   display: grid;
   gap: 14px;
-  max-width: 820px;
+  max-width: none;
 }
 
 .quiz-player__title,
@@ -329,6 +332,8 @@
   display: grid;
   align-items: start;
   gap: 16px;
+  width: 100%;
+  min-width: 0;
   padding: 0;
 }
 
@@ -552,11 +557,14 @@
 
 .quiz-player__result {
   display: grid;
-  justify-self: start;
-  width: min(100%, 720px);
+  justify-self: stretch;
   gap: 12px;
   padding: clamp(18px, 3vw, 28px);
   scroll-margin-top: clamp(120px, 10vw, 148px);
+}
+
+.quiz-player__result > * {
+  max-width: 760px;
 }
 
 .quiz-player__result.is-loading {
