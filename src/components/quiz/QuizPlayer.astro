@@ -35,6 +35,8 @@ const copy = isEnglish
       timeout: "Time's up",
       noExplanation: 'No explanation is available for this answer.',
       next: 'Next question',
+      seeResult: 'See your result',
+      resultLoading: "Let's see how you did...",
       resultTitle: 'Quiz completed',
       resultScore: 'Final score',
       resultTime: 'Total time',
@@ -96,6 +98,8 @@ const copy = isEnglish
       timeout: 'Tempo scaduto',
       noExplanation: 'Non è disponibile una spiegazione per questa risposta.',
       next: 'Prossima domanda',
+      seeResult: 'Vedi il risultato',
+      resultLoading: "Vediamo com'è andata...",
       resultTitle: 'Quiz completato',
       resultScore: 'Risultato finale',
       resultTime: 'Tempo totale',
@@ -340,6 +344,7 @@ const copy = isEnglish
       isStarting: false,
       isSubmitting: false,
       isLoadingNext: false,
+      isRevealingResult: false,
       countdownId: 0,
       countdownInitialRemaining: 0,
       countdownInitialStamp: 0,
@@ -367,6 +372,7 @@ const copy = isEnglish
       state.isStarting = false;
       state.isSubmitting = false;
       state.isLoadingNext = false;
+      state.isRevealingResult = false;
       stopCountdown();
       setMessage(getErrorMessage(error), 'error');
       render();
@@ -470,6 +476,7 @@ const copy = isEnglish
       state.isStarting = false;
       state.isSubmitting = false;
       state.isLoadingNext = false;
+      state.isRevealingResult = false;
       setMessage('', 'info');
       render();
       focusQuestion();
@@ -491,7 +498,7 @@ const copy = isEnglish
       const answers = Array.isArray(state.question?.answers)
         ? state.question.answers
         : [];
-      const isReviewState = state.view === 'feedback' || state.view === 'result';
+      const isReviewState = state.view === 'feedback';
       const correctAnswerId = isReviewState && state.feedback?.correctAnswerId
         ? String(state.feedback.correctAnswerId)
         : '';
@@ -575,15 +582,13 @@ const copy = isEnglish
     const renderQuestion = () => {
       if (!(elements.questionPanel instanceof HTMLElement)) return;
 
-      const isVisible =
-        ['question', 'submitting', 'feedback'].includes(state.view) ||
-        (state.view === 'result' && state.feedback?.completed === true);
+      const isVisible = ['question', 'submitting', 'feedback'].includes(state.view);
       elements.questionPanel.hidden = !isVisible;
 
       if (!isVisible || !state.question) return;
 
       if (elements.timerWrap instanceof HTMLElement) {
-        elements.timerWrap.hidden = state.view === 'result';
+        elements.timerWrap.hidden = state.view === 'feedback';
       }
 
       if (elements.progress) {
@@ -614,9 +619,7 @@ const copy = isEnglish
     const renderFeedback = () => {
       if (!(elements.feedback instanceof HTMLElement)) return;
 
-      const isVisible =
-        state.view === 'feedback' ||
-        (state.view === 'result' && state.feedback?.completed === true);
+      const isVisible = state.view === 'feedback';
       elements.feedback.hidden = !isVisible;
 
       if (!isVisible || !state.feedback) return;
@@ -644,19 +647,35 @@ const copy = isEnglish
       }
 
       if (elements.nextButton instanceof HTMLButtonElement) {
-        elements.nextButton.hidden = state.feedback.completed;
-        elements.nextButton.disabled = state.isLoadingNext;
-        elements.nextButton.textContent = state.isLoadingNext ? copy.nextLoading : copy.next;
+        elements.nextButton.hidden = false;
+        elements.nextButton.disabled = state.isLoadingNext || state.isRevealingResult;
+        elements.nextButton.textContent = state.feedback.completed
+          ? copy.seeResult
+          : state.isLoadingNext
+            ? copy.nextLoading
+            : copy.next;
       }
     };
 
     const renderResult = () => {
       if (!(elements.result instanceof HTMLElement)) return;
 
-      const isVisible = state.view === 'result';
+      const isLoadingResult = state.view === 'resultLoading';
+      const isVisible = isLoadingResult || state.view === 'result';
       elements.result.hidden = !isVisible;
+      elements.result.classList.toggle('is-loading', isLoadingResult);
 
       if (!isVisible) return;
+
+      if (isLoadingResult) {
+        if (elements.resultMode) elements.resultMode.textContent = '';
+        if (elements.resultTitle) elements.resultTitle.textContent = copy.resultLoading;
+        if (elements.resultScore instanceof HTMLElement) elements.resultScore.hidden = true;
+        if (elements.resultTime instanceof HTMLElement) elements.resultTime.hidden = true;
+        if (elements.resultMessage instanceof HTMLElement) elements.resultMessage.hidden = true;
+        if (elements.resultGuest instanceof HTMLElement) elements.resultGuest.hidden = true;
+        return;
+      }
 
       const percent = state.totalQuestions > 0
         ? Math.round((state.correctCount / state.totalQuestions) * 100)
@@ -673,16 +692,23 @@ const copy = isEnglish
         elements.resultMode.textContent = resultMode;
       }
 
-      if (elements.resultScore) {
+      if (elements.resultTitle) {
+        elements.resultTitle.textContent = copy.resultTitle;
+      }
+
+      if (elements.resultScore instanceof HTMLElement) {
+        elements.resultScore.hidden = false;
         elements.resultScore.textContent =
           `${copy.resultScore}: ${state.correctCount} / ${state.totalQuestions} (${percent}%)`;
       }
 
-      if (elements.resultTime) {
+      if (elements.resultTime instanceof HTMLElement) {
+        elements.resultTime.hidden = false;
         elements.resultTime.textContent = `${copy.resultTime}: ${formatElapsed(state.totalElapsedMs)}`;
       }
 
-      if (elements.resultMessage) {
+      if (elements.resultMessage instanceof HTMLElement) {
+        elements.resultMessage.hidden = false;
         elements.resultMessage.textContent = resultMessage;
       }
 
@@ -694,7 +720,7 @@ const copy = isEnglish
 
     const render = () => {
       const showIntro = state.view === 'intro';
-      const showStage = ['question', 'submitting', 'feedback', 'result'].includes(state.view);
+      const showStage = ['question', 'submitting', 'feedback', 'resultLoading', 'result'].includes(state.view);
       root.dataset.state = state.view;
 
       if (elements.intro instanceof HTMLElement) {
@@ -715,7 +741,7 @@ const copy = isEnglish
       renderFeedback();
       renderResult();
 
-      root.classList.toggle('is-loading', state.view === 'loading' || state.isStarting);
+      root.classList.toggle('is-loading', state.view === 'loading' || state.view === 'resultLoading' || state.isStarting);
       root.classList.toggle('is-submitting', state.isSubmitting);
     };
 
@@ -798,8 +824,14 @@ const copy = isEnglish
       setMessage('', 'info');
 
       if (result.completed === true) {
-        state.view = 'result';
-        announce(copy.resultTitle);
+        state.view = 'feedback';
+        announce(
+          state.feedback.timedOut
+            ? copy.timeout
+            : state.feedback.isCorrect
+              ? copy.correct
+              : copy.wrong
+        );
       } else {
         state.view = 'feedback';
         announce(
@@ -812,9 +844,6 @@ const copy = isEnglish
       }
 
       render();
-      if (result.completed === true) {
-        focusResult();
-      }
     }
 
     const loadNextQuestion = async () => {
@@ -841,8 +870,34 @@ const copy = isEnglish
       showQuestion(result);
     };
 
+    const revealResult = async () => {
+      if (state.isRevealingResult || !state.feedback?.completed) return;
+
+      state.isRevealingResult = true;
+      state.view = 'resultLoading';
+      setMessage('', 'info');
+      announce(copy.resultLoading);
+      render();
+      await delay(1700);
+
+      state.isRevealingResult = false;
+      state.view = 'result';
+      announce(copy.resultTitle);
+      render();
+      focusResult();
+    };
+
+    const handleFeedbackAction = () => {
+      if (state.feedback?.completed) {
+        revealResult();
+        return;
+      }
+
+      loadNextQuestion();
+    };
+
     elements.startButton?.addEventListener('click', handleStart);
-    elements.nextButton?.addEventListener('click', loadNextQuestion);
+    elements.nextButton?.addEventListener('click', handleFeedbackAction);
     render();
   };
 
