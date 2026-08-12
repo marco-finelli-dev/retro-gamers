@@ -4,8 +4,8 @@
 -- Scope:
 -- - creates the private answer key and attempt tables used by Astro server APIs;
 -- - does not expose quiz internals to browser clients;
--- - creates the start_or_resume_quiz and submit_quiz_answer RPCs for atomic
---   quiz lifecycle operations;
+-- - creates the start_or_resume_quiz, start_quiz_question and
+--   submit_quiz_answer RPCs for atomic quiz lifecycle operations;
 -- - does not create leaderboard RPC functions yet.
 --
 -- Editorial rule:
@@ -58,7 +58,7 @@ create table if not exists public.quiz_attempts (
   mode text not null,
   question_order jsonb not null,
   current_question_index integer not null default 0,
-  current_question_started_at timestamptz not null default now(),
+  current_question_started_at timestamptz null,
   time_limit_seconds integer not null,
   correct_count integer not null default 0,
   total_questions integer not null,
@@ -133,9 +133,13 @@ comment on column public.quiz_attempts.mode is
 comment on column public.quiz_attempts.question_order is
   'JSON array of questionId values fixed at attempt start for validation and resume.';
 comment on column public.quiz_attempts.current_question_started_at is
-  'Server-authoritative start time for the current question. Browser timers are cosmetic.';
+  'Server-authoritative start time for the current question. NULL means active attempt between questions with no running timer.';
 comment on column public.quiz_attempts.expires_at is
   'Set by the API, initially planned as started_at + 2 hours.';
+
+alter table public.quiz_attempts
+  alter column current_question_started_at drop not null,
+  alter column current_question_started_at drop default;
 
 create unique index if not exists quiz_attempts_one_official_per_user_quiz_idx
   on public.quiz_attempts (quiz_key, user_id)
@@ -384,6 +388,15 @@ begin
     );
   end if;
 
+  if v_attempt.current_question_started_at is null then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'question_not_started',
+      'status', v_attempt.status,
+      'questionIndex', v_attempt.current_question_index
+    );
+  end if;
+
   v_answered_at := clock_timestamp();
   v_elapsed_ms := greatest(
     0,
@@ -476,7 +489,7 @@ begin
     current_question_started_at =
       case
         when v_is_last_question then current_question_started_at
-        else v_answered_at
+        else null
       end,
     correct_count = v_new_correct_count,
     total_elapsed_ms = v_new_total_elapsed_ms,
@@ -497,11 +510,13 @@ begin
     'totalElapsedMs', v_new_total_elapsed_ms,
     'completed', v_is_last_question,
     'explanation', v_explanation,
+    'awaitingNext', not v_is_last_question,
     'nextQuestionIndex',
       case
         when v_is_last_question then null
         else v_next_question_index
-      end
+      end,
+    'nextQuestionStartedAt', null
   );
 end;
 $$;
@@ -660,7 +675,7 @@ begin
       'official',
       p_question_order,
       0,
-      v_now,
+      null,
       p_time_limit_seconds,
       0,
       v_total_questions,
@@ -743,7 +758,7 @@ begin
           'training',
           p_question_order,
           0,
-          v_now,
+          null,
           p_time_limit_seconds,
           0,
           v_total_questions,
@@ -823,7 +838,7 @@ begin
         'guest',
         p_question_order,
         0,
-        v_now,
+        null,
         p_time_limit_seconds,
         0,
         v_total_questions,
@@ -861,6 +876,111 @@ $$;
 comment on function public.start_or_resume_quiz(text, text, text, text, jsonb, integer, uuid, text) is
   'Atomically creates or resumes a Retro-Gamers quiz attempt from a server-validated quiz snapshot.';
 
+create or replace function public.start_quiz_question(
+  p_attempt_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_attempt public.quiz_attempts%rowtype;
+  v_now timestamptz;
+  v_started_at timestamptz;
+begin
+  select *
+  into v_attempt
+  from public.quiz_attempts
+  where id = p_attempt_id
+  for update;
+
+  if not found then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_attempt'
+    );
+  end if;
+
+  if v_attempt.status <> 'active' then
+    return jsonb_build_object(
+      'ok', false,
+      'error',
+        case v_attempt.status
+          when 'completed' then 'attempt_completed'
+          when 'abandoned' then 'attempt_abandoned'
+          when 'expired' then 'attempt_expired'
+          else 'attempt_not_active'
+        end,
+      'status', v_attempt.status,
+      'questionIndex', v_attempt.current_question_index
+    );
+  end if;
+
+  v_now := clock_timestamp();
+
+  if v_attempt.expires_at <= v_now then
+    update public.quiz_attempts
+    set
+      status = 'expired',
+      last_activity_at = v_now,
+      updated_at = v_now
+    where id = v_attempt.id;
+
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'attempt_expired',
+      'status', 'expired',
+      'questionIndex', v_attempt.current_question_index
+    );
+  end if;
+
+  if v_attempt.current_question_index < 0
+    or v_attempt.current_question_index >= v_attempt.total_questions then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_attempt',
+      'status', v_attempt.status,
+      'questionIndex', v_attempt.current_question_index
+    );
+  end if;
+
+  if v_attempt.current_question_started_at is null then
+    v_started_at := clock_timestamp();
+
+    update public.quiz_attempts
+    set
+      current_question_started_at = v_started_at,
+      last_activity_at = v_started_at,
+      updated_at = v_started_at
+    where id = v_attempt.id;
+
+    return jsonb_build_object(
+      'ok', true,
+      'action', 'started_question',
+      'attemptId', v_attempt.id,
+      'status', 'active',
+      'questionIndex', v_attempt.current_question_index,
+      'questionStartedAt', v_started_at,
+      'timeLimitSeconds', v_attempt.time_limit_seconds
+    );
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'action', 'resumed_question',
+    'attemptId', v_attempt.id,
+    'status', 'active',
+    'questionIndex', v_attempt.current_question_index,
+    'questionStartedAt', v_attempt.current_question_started_at,
+    'timeLimitSeconds', v_attempt.time_limit_seconds
+  );
+end;
+$$;
+
+comment on function public.start_quiz_question(uuid) is
+  'Atomically starts the server-authoritative timer for the current quiz question, or resumes it without resetting time.';
+
 alter table public.quiz_answer_keys enable row level security;
 alter table public.quiz_attempts enable row level security;
 alter table public.quiz_attempt_answers enable row level security;
@@ -882,6 +1002,10 @@ grant execute on function public.submit_quiz_answer(uuid, text, text) to service
 revoke all on function public.start_or_resume_quiz(text, text, text, text, jsonb, integer, uuid, text) from public;
 revoke execute on function public.start_or_resume_quiz(text, text, text, text, jsonb, integer, uuid, text) from anon, authenticated;
 grant execute on function public.start_or_resume_quiz(text, text, text, text, jsonb, integer, uuid, text) to service_role;
+
+revoke all on function public.start_quiz_question(uuid) from public;
+revoke execute on function public.start_quiz_question(uuid) from anon, authenticated;
+grant execute on function public.start_quiz_question(uuid) to service_role;
 
 -- No anon/authenticated RLS policies are created in v1.
 -- Browser access must go through:

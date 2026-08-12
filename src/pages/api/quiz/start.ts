@@ -7,10 +7,13 @@ import {
   fetchAttemptSnapshot,
   getAttemptPublicState,
   getAttemptRuntimeCompatibility,
+  getQuestionTimerState,
   getPublicQuestion,
+  getRpcIntegerOrNull,
+  getRpcTimestampOrNull,
   getQuizGuestIdentity,
+  getStartQuestionFailureResponse,
   getStartFailureResponse,
-  getTimerState,
   json,
   normalizeLanguage,
   normalizeSlug,
@@ -219,12 +222,62 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return json({ ok: false, error: 'quiz_snapshot_unavailable' }, 503);
     }
 
+    const { data: questionStartData, error: questionStartError } =
+      await supabaseAdmin.rpc('start_quiz_question', {
+        p_attempt_id: attempt.id,
+      });
+
+    if (questionStartError) {
+      console.error('Quiz question start RPC failed:', {
+        quizKey: quiz.quizKey,
+        attemptId: attempt.id,
+        code: questionStartError.code,
+        message: questionStartError.message,
+      });
+
+      return json({ ok: false, error: 'start_failed' }, 500);
+    }
+
+    const questionStartResult = parseRpcJson(questionStartData);
+
+    if (!questionStartResult?.ok) {
+      const failure = getStartQuestionFailureResponse(
+        questionStartResult?.error,
+        'start_failed'
+      );
+
+      return json({ ok: false, error: failure.error }, failure.status);
+    }
+
+    const startedQuestionIndex = getRpcIntegerOrNull(questionStartResult.questionIndex);
+    const currentQuestionStartedAt = getRpcTimestampOrNull(
+      questionStartResult.questionStartedAt
+    );
+
+    if (
+      startedQuestionIndex !== attempt.current_question_index ||
+      !currentQuestionStartedAt
+    ) {
+      console.error('Quiz question start RPC returned an inconsistent state:', {
+        quizKey: quiz.quizKey,
+        attemptId: attempt.id,
+        expectedQuestionIndex: attempt.current_question_index,
+        startedQuestionIndex: questionStartResult.questionIndex,
+        questionStartedAt: questionStartResult.questionStartedAt,
+      });
+
+      return json({ ok: false, error: 'quiz_snapshot_unavailable' }, 503);
+    }
+
     return json({
       ok: true,
       action: startResult.action || null,
+      questionAction: questionStartResult.action || null,
       ...getAttemptPublicState(attempt),
+      currentQuestionIndex: startedQuestionIndex,
+      currentQuestionStartedAt,
       redirectRequired: false,
-      ...getTimerState(attempt),
+      ...getQuestionTimerState(currentQuestionStartedAt, attempt.time_limit_seconds),
       question,
     });
   } catch (error) {
