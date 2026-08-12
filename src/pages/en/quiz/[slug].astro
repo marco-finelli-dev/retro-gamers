@@ -3,6 +3,7 @@ import '../../../styles/pages/quiz.css';
 
 import QuizLeaderboard from '../../../components/quiz/QuizLeaderboard.astro';
 import QuizPlayer from '../../../components/quiz/QuizPlayer.astro';
+import QuizStaffLeaderboard from '../../../components/quiz/QuizStaffLeaderboard.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { urlFor } from '../../../lib/image';
 import { getAllPosts } from '../../../lib/posts';
@@ -11,6 +12,10 @@ import {
   getQuizUrl,
   type QuizLanguage,
 } from '../../../lib/quiz';
+import {
+  getUserSessionFromCookies,
+  isStaffProfile,
+} from '../../../lib/supabase/auth';
 
 const { slug } = Astro.params;
 const quiz = await getPublishedQuizBySlug(slug || '', 'en');
@@ -22,6 +27,10 @@ if (!quiz) {
 const allPosts = await getAllPosts();
 const headerReviews = allPosts.filter((post) => post.type === 'review' && post.language === 'en');
 const headerNews = allPosts.filter((post) => post.type === 'news' && post.language === 'en');
+const staffSession = await getUserSessionFromCookies(Astro.cookies);
+const canViewStaffLeaderboard = Boolean(
+  staffSession.user && isStaffProfile(staffSession.profile)
+);
 
 const copy = {
   sectionTitle: 'Retro-Gamers Quiz',
@@ -169,6 +178,9 @@ const initials = quiz.title
         />
 
         <QuizLeaderboard slug={quiz.slug} language="en" />
+        {canViewStaffLeaderboard && (
+          <QuizStaffLeaderboard slug={quiz.slug} language="en" />
+        )}
       </article>
     </div>
   </div>

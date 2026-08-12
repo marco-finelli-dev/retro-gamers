@@ -1,0 +1,306 @@
+---
+type QuizLanguage = 'it' | 'en';
+
+type Props = {
+  slug: string;
+  language: QuizLanguage;
+};
+
+const { slug, language } = Astro.props as Props;
+const isEnglish = language === 'en';
+const leaderboardId = `quiz-staff-leaderboard-${language}-${slug}`;
+
+const copy = isEnglish
+  ? {
+      eyebrow: 'Staff leaderboard',
+      title: "The team's internal challenge",
+      loading: 'Loading staff leaderboard...',
+      error: 'Staff leaderboard temporarily unavailable.',
+      emptyTitle: 'No staff results available yet.',
+      staffResults: (count: number) =>
+        count === 1 ? '1 staff result' : `${count} staff results`,
+      score: 'Score',
+      time: 'Time',
+    }
+  : {
+      eyebrow: 'Classifica staff',
+      title: 'La sfida interna della redazione',
+      loading: 'Carico la classifica staff...',
+      error: 'Classifica staff momentaneamente non disponibile.',
+      emptyTitle: 'Nessun risultato staff disponibile.',
+      staffResults: (count: number) =>
+        count === 1 ? '1 risultato staff' : `${count} risultati staff`,
+      score: 'Punteggio',
+      time: 'Tempo',
+    };
+
+const clientCopy = {
+  ...copy,
+  staffResults: undefined,
+};
+---
+
+<section
+  id={leaderboardId}
+  class="quiz-leaderboard quiz-leaderboard--staff"
+  data-quiz-staff-leaderboard
+  data-slug={slug}
+  data-language={language}
+  data-copy={JSON.stringify(clientCopy)}
+  aria-labelledby={`${leaderboardId}-title`}
+>
+  <header class="quiz-leaderboard__header">
+    <div>
+      <span class="quiz-eyebrow">{copy.eyebrow}</span>
+      <h2 id={`${leaderboardId}-title`}>{copy.title}</h2>
+    </div>
+    <p class="quiz-leaderboard__total" data-quiz-staff-leaderboard-total aria-live="polite">
+      {copy.loading}
+    </p>
+  </header>
+
+  <div class="quiz-leaderboard__body" data-quiz-staff-leaderboard-body aria-live="polite">
+    <div class="quiz-leaderboard__skeleton" aria-hidden="true">
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+</section>
+
+<script>
+  const formatQuizStaffLeaderboardTime = (ms) => {
+    const totalSeconds = Math.max(0, Math.round(Number(ms || 0) / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const paddedSeconds = String(seconds).padStart(2, '0');
+
+    return minutes > 0
+      ? `${minutes} min ${paddedSeconds} s`
+      : `${seconds} s`;
+  };
+
+  const escapeQuizStaffLeaderboardText = (value) =>
+    String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+  const getQuizStaffLeaderboardInitials = (name) => {
+    const parts = String(name || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2);
+
+    return (parts.map((part) => part[0]).join('') || 'RG').toUpperCase();
+  };
+
+  const getQuizStaffLeaderboardProfileUrl = (username, language) => {
+    const normalizedUsername = String(username || '').trim().toLowerCase();
+
+    if (!normalizedUsername) return '';
+
+    return language === 'en'
+      ? `/en/users/${encodeURIComponent(normalizedUsername)}/`
+      : `/utenti/${encodeURIComponent(normalizedUsername)}/`;
+  };
+
+  const getQuizStaffLeaderboardRankLabel = (rank) => {
+    const value = Number(rank || 0);
+
+    if (value === 1) return 'Ⅰ';
+    if (value === 2) return 'Ⅱ';
+    if (value === 3) return 'Ⅲ';
+
+    return String(value || '');
+  };
+
+  const renderQuizStaffLeaderboardRow = (entry, copy, language) => {
+    const rank = Number(entry?.rank || 0);
+    const username = String(entry?.username || '').trim();
+    const displayName = String(entry?.displayName || username || 'Retro Gamer').trim();
+    const profileUrl = getQuizStaffLeaderboardProfileUrl(username, language);
+    const initials = getQuizStaffLeaderboardInitials(displayName || username);
+    const avatarUrl = String(entry?.avatarUrl || '').trim();
+    const score = `${Number(entry?.correctCount || 0)} / ${Number(entry?.totalQuestions || 0)}`;
+    const time = formatQuizStaffLeaderboardTime(entry?.totalElapsedMs);
+    const rankClass = rank >= 1 && rank <= 3 ? ` is-podium is-podium-${rank}` : '';
+    const profileLabel = language === 'en'
+      ? `${displayName} profile`
+      : `Profilo di ${displayName}`;
+    const avatarLabel = language === 'en'
+      ? `${displayName} avatar`
+      : `Avatar di ${displayName}`;
+    const nameMarkup = profileUrl
+      ? `<a href="${profileUrl}" aria-label="${escapeQuizStaffLeaderboardText(profileLabel)}">${escapeQuizStaffLeaderboardText(displayName)}</a>`
+      : `<span>${escapeQuizStaffLeaderboardText(displayName)}</span>`;
+    const avatarMarkup = avatarUrl
+      ? `<img src="${escapeQuizStaffLeaderboardText(avatarUrl)}" alt="${escapeQuizStaffLeaderboardText(avatarLabel)}" loading="lazy" decoding="async" />`
+      : `<span aria-hidden="true">${escapeQuizStaffLeaderboardText(initials)}</span>`;
+    const badgeMarkup = entry?.badgeKey
+      ? `<span class="quiz-leaderboard__badge">${escapeQuizStaffLeaderboardText(entry.badgeKey)}</span>`
+      : '';
+
+    return `
+      <article class="quiz-leaderboard__row${rankClass}" aria-label="#${rank} ${escapeQuizStaffLeaderboardText(displayName)}">
+        <div class="quiz-leaderboard__rank" aria-label="#${rank}">
+          <span aria-hidden="true">${escapeQuizStaffLeaderboardText(getQuizStaffLeaderboardRankLabel(rank))}</span>
+        </div>
+        <div class="quiz-leaderboard__profile">
+          <div class="quiz-leaderboard__avatar">
+            ${avatarMarkup}
+          </div>
+          <div class="quiz-leaderboard__identity">
+            <div class="quiz-leaderboard__name">
+              ${nameMarkup}
+            </div>
+            ${badgeMarkup}
+          </div>
+        </div>
+        <div class="quiz-leaderboard__metric">
+          <span>${escapeQuizStaffLeaderboardText(copy.score || '')}</span>
+          <strong>${escapeQuizStaffLeaderboardText(score)}</strong>
+        </div>
+        <div class="quiz-leaderboard__metric">
+          <span>${escapeQuizStaffLeaderboardText(copy.time || '')}</span>
+          <strong>${escapeQuizStaffLeaderboardText(time)}</strong>
+        </div>
+      </article>
+    `;
+  };
+
+  const initQuizStaffLeaderboard = (root) => {
+    if (root.dataset.initialized === 'true') return;
+    root.dataset.initialized = 'true';
+
+    const slug = root.dataset.slug || '';
+    const language = root.dataset.language || 'it';
+    const body = root.querySelector('[data-quiz-staff-leaderboard-body]');
+    const total = root.querySelector('[data-quiz-staff-leaderboard-total]');
+    let copy = {};
+
+    try {
+      copy = JSON.parse(root.dataset.copy || '{}');
+    } catch {
+      copy = {};
+    }
+
+    const getStaffResultsLabel = (count) => {
+      const value = Number(count || 0);
+
+      if (language === 'en') {
+        return value === 1 ? '1 staff result' : `${value} staff results`;
+      }
+
+      return value === 1 ? '1 risultato staff' : `${value} risultati staff`;
+    };
+
+    const setLoading = () => {
+      root.dataset.state = 'loading';
+      if (total) total.textContent = copy.loading || '';
+      if (body) {
+        body.innerHTML = `
+          <div class="quiz-leaderboard__skeleton" aria-hidden="true">
+            <span></span>
+            <span></span>
+          </div>
+        `;
+      }
+    };
+
+    const setError = () => {
+      root.dataset.state = 'error';
+      if (total) total.textContent = '';
+      if (body) {
+        body.innerHTML = `
+          <div class="quiz-leaderboard__empty">
+            <h3>${escapeQuizStaffLeaderboardText(copy.error || '')}</h3>
+          </div>
+        `;
+      }
+    };
+
+    const renderStaffLeaderboard = (payload) => {
+      const entries = Array.isArray(payload?.leaderboard) ? payload.leaderboard : [];
+      const totalStaff = Number(payload?.totalStaff || entries.length || 0);
+
+      root.dataset.state = 'ready';
+
+      if (total) {
+        total.textContent = getStaffResultsLabel(totalStaff);
+      }
+
+      if (!body) return;
+
+      if (entries.length === 0) {
+        body.innerHTML = `
+          <div class="quiz-leaderboard__empty">
+            <h3>${escapeQuizStaffLeaderboardText(copy.emptyTitle || '')}</h3>
+          </div>
+        `;
+        return;
+      }
+
+      body.innerHTML = `
+        <div class="quiz-leaderboard__rows">
+          ${entries.map((entry) => renderQuizStaffLeaderboardRow(entry, copy, language)).join('')}
+        </div>
+      `;
+    };
+
+    const fetchStaffLeaderboard = async () => {
+      setLoading();
+
+      const params = new URLSearchParams({
+        slug,
+        language,
+        limit: '10',
+      });
+
+      let response;
+      let payload;
+
+      try {
+        response = await fetch(`/api/quiz/staff-leaderboard?${params.toString()}`, {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            Accept: 'application/json',
+          },
+        });
+        payload = await response.json();
+      } catch (error) {
+        console.error('Quiz staff leaderboard request failed:', error);
+        setError();
+        return;
+      }
+
+      if (!response.ok || !payload?.ok) {
+        setError();
+        return;
+      }
+
+      renderStaffLeaderboard(payload);
+    };
+
+    document.addEventListener('rg:quiz-completed', (event) => {
+      const detail = event instanceof CustomEvent ? event.detail || {} : {};
+
+      if (
+        detail &&
+        (!detail.slug || detail.slug === slug) &&
+        (!detail.language || detail.language === language)
+      ) {
+        fetchStaffLeaderboard();
+      }
+    });
+
+    fetchStaffLeaderboard();
+  };
+
+  document
+    .querySelectorAll('[data-quiz-staff-leaderboard]')
+    .forEach(initQuizStaffLeaderboard);
+</script>
