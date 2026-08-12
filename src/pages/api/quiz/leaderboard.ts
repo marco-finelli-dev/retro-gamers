@@ -156,7 +156,6 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 
     return jsonNoStore({
       ok: true,
-      quizKey: quiz.quizKey,
       totalEligible,
       leaderboard,
       currentUser,

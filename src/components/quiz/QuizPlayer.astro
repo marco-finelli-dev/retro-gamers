@@ -936,6 +936,12 @@ const copy = isEnglish
       state.view = 'result';
       announce(copy.resultTitle);
       render();
+      document.dispatchEvent(new CustomEvent('rg:quiz-completed', {
+        detail: {
+          slug,
+          language,
+        },
+      }));
       focusResult();
     };
 
