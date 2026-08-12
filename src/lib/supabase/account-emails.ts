@@ -99,19 +99,19 @@ export async function sendNewReaderRegistrationAdminEmail({
       <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%; border-collapse:collapse; margin:0;">
         <tr>
           <td style="padding:8px 0; color:#647883; width:150px;">Email</td>
-          <td style="padding:8px 0; color:#10202a;"><strong>${escapeEmailHtml(email || 'Non disponibile')}</strong></td>
+          <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(email || 'Non disponibile')}</strong></td>
         </tr>
         <tr>
           <td style="padding:8px 0; color:#647883;">Username</td>
-          <td style="padding:8px 0; color:#10202a;"><strong>${escapeEmailHtml(username)}</strong></td>
+          <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(username)}</strong></td>
         </tr>
         <tr>
           <td style="padding:8px 0; color:#647883;">Display name</td>
-          <td style="padding:8px 0; color:#10202a;"><strong>${escapeEmailHtml(displayName)}</strong></td>
+          <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(displayName)}</strong></td>
         </tr>
         <tr>
           <td style="padding:8px 0; color:#647883;">Data registrazione</td>
-          <td style="padding:8px 0; color:#10202a;"><strong>${escapeEmailHtml(formatDate(createdAt))}</strong></td>
+          <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(formatDate(createdAt))}</strong></td>
         </tr>
       </table>
       <p style="margin:18px 0 0 0; color:#647883;">

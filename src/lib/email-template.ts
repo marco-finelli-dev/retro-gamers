@@ -84,6 +84,10 @@ export function renderRetroGamersEmail({
         color: #5b6472;
       }
 
+      .rg-email-value {
+        color: #10202a;
+      }
+
       .rg-email-brand,
       .rg-email-link,
       .rg-email-text a,
@@ -126,6 +130,10 @@ export function renderRetroGamersEmail({
         .rg-email-muted,
         .rg-email-footer {
           color: #b8c4cc !important;
+        }
+
+        .rg-email-value {
+          color: #f3f7f8 !important;
         }
 
         .rg-email-brand,
