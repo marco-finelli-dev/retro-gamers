@@ -38,7 +38,7 @@ export const TECHNICAL_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const QUIZ_GUEST_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
