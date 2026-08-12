@@ -558,21 +558,30 @@
 .quiz-player__result {
   display: grid;
   justify-self: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
   gap: 12px;
   padding: clamp(18px, 3vw, 28px);
   scroll-margin-top: clamp(120px, 10vw, 148px);
 }
 
-.quiz-player__result > * {
+.quiz-player__result-content {
+  display: grid;
+  gap: 12px;
+  width: 100%;
   max-width: 760px;
+  min-width: 0;
 }
 
 .quiz-player__result.is-loading {
-  justify-items: start;
+  justify-items: stretch;
 }
 
 .quiz-player__result.is-loading::after {
   content: "";
+  justify-self: start;
   width: 38px;
   height: 38px;
   border: 3px solid color-mix(in srgb, var(--color-primary) 28%, var(--rg-card-border));
