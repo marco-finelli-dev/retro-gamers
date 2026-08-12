@@ -1,0 +1,162 @@
+---
+import '../../../styles/pages/quiz.css';
+
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { urlFor } from '../../../lib/image';
+import { getAllPosts } from '../../../lib/posts';
+import {
+  getPublishedQuizSummaries,
+  getQuizUrl,
+  type QuizSummary,
+} from '../../../lib/quiz';
+import { createCollectionPageStructuredData, createListItems } from '../../../lib/structured-data.js';
+
+const copy = {
+  title: 'Retro-Gamers Quiz',
+  description:
+    'Test your retrogaming knowledge with editorial quizzes from Retro-Gamers.it.',
+  canonical: 'https://www.retro-gamers.it/en/quiz/',
+  languageSwitch: '/quiz/',
+  eyebrow: 'Retro Quiz',
+  heroTitle: 'Retro-Gamers Quiz',
+  heroText:
+    'Quick challenges about consoles, home computers, arcades, graphic adventures and video game culture. Pick a quiz and get ready for the next start.',
+  emptyTitle: 'No public quizzes yet',
+  emptyText:
+    'The first quizzes will appear here after editorial review.',
+  open: 'Open quiz',
+  difficulty: 'Difficulty',
+  questions: 'Questions',
+  time: 'Time',
+  secondsPerQuestion: 's per question',
+  difficultyLabels: {
+    easy: 'Easy',
+    medium: 'Medium',
+    hard: 'Hard',
+    expert: 'Expert',
+  },
+};
+
+const [quizzes, allPosts] = await Promise.all([
+  getPublishedQuizSummaries('en'),
+  getAllPosts(),
+]);
+
+const headerReviews = allPosts.filter((post) => post.type === 'review' && post.language === 'en');
+const headerNews = allPosts.filter((post) => post.type === 'news' && post.language === 'en');
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/quiz/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/quiz/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/quiz/' },
+];
+
+const structuredData = createCollectionPageStructuredData({
+  url: copy.canonical,
+  name: copy.title,
+  description: copy.description,
+  lang: 'en',
+  items: createListItems(quizzes, (quiz) => ({
+    name: quiz.title,
+    url: getQuizUrl(quiz, 'en'),
+  })),
+});
+
+const getCoverUrl = (quiz: QuizSummary) => {
+  if (!quiz.coverImage?.asset) return '';
+
+  return urlFor(quiz.coverImage)
+    .width(760)
+    .height(470)
+    .fit('crop')
+    .quality(76)
+    .auto('format')
+    .url();
+};
+
+const getDifficultyLabel = (difficulty?: string) =>
+  difficulty && (copy.difficultyLabels as Record<string, string>)[difficulty]
+    ? (copy.difficultyLabels as Record<string, string>)[difficulty]
+    : difficulty || '';
+---
+
+<BaseLayout
+  reviews={headerReviews}
+  news={headerNews}
+  title={copy.title}
+  description={copy.description}
+  image="/og-image.jpg"
+  canonical={copy.canonical}
+  lang="en"
+  languageSwitch={copy.languageSwitch}
+  alternateLanguages={alternateLanguages}
+  structuredData={structuredData}
+>
+  <div class="quiz-page">
+    <div class="container">
+      <section class="quiz-hero">
+        <div class="quiz-hero__content">
+          <span class="quiz-eyebrow">{copy.eyebrow}</span>
+          <h1>{copy.heroTitle}</h1>
+          <p>{copy.heroText}</p>
+        </div>
+      </section>
+
+      {quizzes.length > 0 ? (
+        <div class="quiz-grid" aria-label="Published quizzes">
+          {quizzes.map((quiz) => {
+            const coverUrl = getCoverUrl(quiz);
+            const difficulty = getDifficultyLabel(quiz.difficulty);
+            const href = getQuizUrl(quiz, 'en');
+
+            return (
+              <a class="quiz-card" href={href}>
+                <span class="quiz-card__media">
+                  {coverUrl ? (
+                    <img
+                      src={coverUrl}
+                      alt={quiz.coverImage?.alt || quiz.title}
+                      width="760"
+                      height="470"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span class="quiz-card__fallback" aria-hidden="true">
+                      {quiz.title?.slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </span>
+
+                <span class="quiz-card__body">
+                  <span class="quiz-card__meta">
+                    {difficulty && <span>{copy.difficulty}: {difficulty}</span>}
+                    {Number.isFinite(quiz.questionCount) && (
+                      <small>{copy.questions}: {quiz.questionCount}</small>
+                    )}
+                    {quiz.timeLimitSeconds && (
+                      <small>{copy.time}: {quiz.timeLimitSeconds}{copy.secondsPerQuestion}</small>
+                    )}
+                  </span>
+
+                  <h2>{quiz.title}</h2>
+
+                  {(quiz.excerpt || quiz.subtitle) && (
+                    <p>{quiz.excerpt || quiz.subtitle}</p>
+                  )}
+
+                  <span class="quiz-card__cta">{copy.open}</span>
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      ) : (
+        <section class="quiz-empty">
+          <h2>{copy.emptyTitle}</h2>
+          <p>{copy.emptyText}</p>
+        </section>
+      )}
+    </div>
+  </div>
+</BaseLayout>

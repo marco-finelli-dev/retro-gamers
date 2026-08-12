@@ -1,0 +1,176 @@
+---
+import '../../styles/pages/quiz.css';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { urlFor } from '../../lib/image';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+import {
+  getPublishedQuizBySlug,
+  getQuizUrl,
+  type QuizLanguage,
+} from '../../lib/quiz';
+
+const { slug } = Astro.params;
+const quiz = await getPublishedQuizBySlug(slug || '', 'it');
+
+if (!quiz) {
+  return Astro.rewrite('/404');
+}
+
+const allPosts = await getAllPosts();
+const groupedPosts = groupPosts(allPosts);
+
+const copy = {
+  sectionTitle: 'Quiz Retro-Gamers',
+  sectionHref: '/quiz/',
+  canonicalBase: 'https://www.retro-gamers.it/quiz',
+  languageSwitch: '/en/quiz/',
+  defaultDescription: (title: string) =>
+    `${title}: quiz di cultura retrogaming su console, home computer, arcade e videogiochi classici.`,
+  difficulty: 'Difficoltà',
+  questions: 'Domande',
+  time: 'Tempo',
+  secondsPerQuestion: 'secondi per domanda',
+  rulesEyebrow: 'Regole',
+  rulesTitle: 'Prima di iniziare',
+  rules: [
+    'Ogni domanda avrà un timer server-side.',
+    'Il primo tentativo degli utenti registrati sarà quello ufficiale.',
+    'Le risposte e il punteggio saranno gestiti dal sistema quiz nel prossimo step.',
+  ],
+  start: 'Inizia il quiz',
+  difficultyLabels: {
+    easy: 'Facile',
+    medium: 'Medio',
+    hard: 'Difficile',
+    expert: 'Esperto',
+  },
+};
+
+const canonicalUrl = `${copy.canonicalBase}/${quiz.slug}/`;
+const translatedVersion =
+  quiz.translatedVersion?.slug
+    ? quiz.translatedVersion
+    : (quiz.translatedVersions || []).find((version) =>
+        version?.slug && version.language !== 'it'
+      ) || null;
+const translatedLanguage: QuizLanguage =
+  translatedVersion?.language === 'en' ? 'en' : 'it';
+const translatedPath = translatedVersion
+  ? getQuizUrl(translatedVersion, translatedLanguage)
+  : '';
+const translatedUrl = translatedPath ? `https://www.retro-gamers.it${translatedPath}` : '';
+const languageSwitchUrl = translatedPath || copy.languageSwitch;
+const alternateLanguages = [
+  { lang: 'it', url: canonicalUrl },
+  ...(translatedUrl
+    ? [
+        { lang: translatedLanguage, url: translatedUrl },
+        { lang: 'x-default', url: canonicalUrl },
+      ]
+    : []),
+];
+
+const pageTitle = quiz.seoTitle || quiz.title;
+const pageDescription =
+  quiz.metaDescription ||
+  quiz.excerpt ||
+  quiz.subtitle ||
+  copy.defaultDescription(quiz.title);
+const coverUrl = quiz.coverImage?.asset
+  ? urlFor(quiz.coverImage)
+      .width(1280)
+      .height(720)
+      .fit('crop')
+      .quality(78)
+      .auto('format')
+      .url()
+  : '';
+const pageImage = coverUrl || '/og-image.jpg';
+const difficultyLabels = copy.difficultyLabels as Record<string, string>;
+const difficulty = quiz.difficulty
+  ? difficultyLabels[quiz.difficulty] || quiz.difficulty
+  : '';
+const initials = quiz.title
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0])
+  .join('')
+  .toUpperCase();
+---
+
+<BaseLayout
+  reviews={groupedPosts.allReviews}
+  news={groupedPosts.allNews}
+  title={pageTitle}
+  description={pageDescription}
+  image={pageImage}
+  canonical={canonicalUrl}
+  lang="it"
+  languageSwitch={languageSwitchUrl}
+  alternateLanguages={alternateLanguages}
+>
+  <div class="quiz-page">
+    <div class="container">
+      <article class="quiz-detail">
+        <a class="quiz-detail__breadcrumb" href={copy.sectionHref}>
+          ← {copy.sectionTitle}
+        </a>
+
+        <header class="quiz-detail-hero">
+          <div class="quiz-detail-hero__content">
+            <span class="quiz-eyebrow">Retro Quiz</span>
+            <h1>{quiz.title}</h1>
+            {(quiz.subtitle || quiz.excerpt) && (
+              <p>{quiz.subtitle || quiz.excerpt}</p>
+            )}
+
+            <div class="quiz-detail__facts" aria-label="Informazioni quiz">
+              {difficulty && <span>{copy.difficulty}: {difficulty}</span>}
+              {Number.isFinite(quiz.questionCount) && (
+                <span>{copy.questions}: {quiz.questionCount}</span>
+              )}
+              {quiz.timeLimitSeconds && (
+                <span>{copy.time}: {quiz.timeLimitSeconds} {copy.secondsPerQuestion}</span>
+              )}
+            </div>
+          </div>
+
+          <div class="quiz-detail-hero__media">
+            {coverUrl ? (
+              <img
+                src={coverUrl}
+                alt={quiz.coverImage?.alt || quiz.title}
+                width="1280"
+                height="720"
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+              />
+            ) : (
+              <span class="quiz-detail-hero__fallback" aria-hidden="true">{initials}</span>
+            )}
+          </div>
+        </header>
+
+        <section class="quiz-panel" aria-labelledby="quiz-rules">
+          <div class="quiz-panel__content quiz-detail__rules">
+            <span>{copy.rulesEyebrow}</span>
+            <h2 id="quiz-rules">{copy.rulesTitle}</h2>
+            <ul>
+              {copy.rules.map((rule) => (
+                <li>{rule}</li>
+              ))}
+            </ul>
+
+            <!-- Q3A placeholder: the future start endpoint/player will wire this button. -->
+            <button class="quiz-detail__start-button" type="button" disabled>
+              {copy.start}
+            </button>
+          </div>
+        </section>
+      </article>
+    </div>
+  </div>
+</BaseLayout>
