@@ -214,3 +214,25 @@ export async function getPublishedQuizRuntimeBySlug(
 
   return data || null;
 }
+
+export async function getPublishedQuizRuntimeById(
+  id: string
+): Promise<QuizRuntime | null> {
+  const normalizedId = String(id || '').trim();
+
+  if (!normalizedId) return null;
+
+  const data = await publicFreshClient.fetch(
+    `
+      *[
+        ${publicQuizFilter} &&
+        _id == $id
+      ][0] {
+        ${quizRuntimeFields}
+      }
+    `,
+    { id: normalizedId }
+  );
+
+  return data || null;
+}
