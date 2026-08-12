@@ -4,7 +4,8 @@
 -- Scope:
 -- - creates the private answer key and attempt tables used by Astro server APIs;
 -- - does not expose quiz internals to browser clients;
--- - does not create RPC functions for start/answer/finish yet.
+-- - creates only the submit_quiz_answer RPC for atomic answer submission;
+-- - does not create start/resume/leaderboard RPC functions yet.
 --
 -- Editorial rule:
 -- once a quiz has received official attempts, do not change quizKey, questionId,
@@ -232,6 +233,278 @@ before update on public.quiz_attempts
 for each row
 execute function public.set_quiz_updated_at();
 
+create or replace function public.submit_quiz_answer(
+  p_attempt_id uuid,
+  p_question_id text,
+  p_answer_id text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_attempt public.quiz_attempts%rowtype;
+  v_answer_key public.quiz_answer_keys%rowtype;
+  v_existing_answer public.quiz_attempt_answers%rowtype;
+  v_now timestamptz;
+  v_answered_at timestamptz;
+  v_question_id text;
+  v_answer_id text;
+  v_expected_question_id text;
+  v_elapsed_ms integer;
+  v_grace_ms integer := 1000;
+  v_limit_ms integer;
+  v_timed_out boolean;
+  v_is_correct boolean := false;
+  v_is_last_question boolean;
+  v_next_question_index integer;
+  v_new_status text;
+  v_new_correct_count integer;
+  v_new_total_elapsed_ms integer;
+  v_explanation text;
+begin
+  v_question_id := nullif(btrim(p_question_id), '');
+  v_answer_id := nullif(btrim(p_answer_id), '');
+
+  select *
+  into v_attempt
+  from public.quiz_attempts
+  where id = p_attempt_id
+  for update;
+
+  if not found then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_attempt'
+    );
+  end if;
+
+  if v_question_id is null or v_question_id !~ '^[a-z0-9]+(-[a-z0-9]+)*$' then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_question_id',
+      'status', v_attempt.status
+    );
+  end if;
+
+  select *
+  into v_existing_answer
+  from public.quiz_attempt_answers
+  where attempt_id = p_attempt_id
+    and question_id = v_question_id;
+
+  if found then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'already_answered',
+      'status', v_attempt.status,
+      'questionIndex', v_existing_answer.question_index,
+      'isCorrect', v_existing_answer.is_correct,
+      'timedOut', v_existing_answer.timed_out,
+      'elapsedMs', v_existing_answer.elapsed_ms
+    );
+  end if;
+
+  if v_attempt.status <> 'active' then
+    return jsonb_build_object(
+      'ok', false,
+      'error',
+        case v_attempt.status
+          when 'completed' then 'attempt_completed'
+          when 'abandoned' then 'attempt_abandoned'
+          when 'expired' then 'attempt_expired'
+          else 'attempt_not_active'
+        end,
+      'status', v_attempt.status
+    );
+  end if;
+
+  v_now := clock_timestamp();
+
+  if v_attempt.expires_at <= v_now then
+    update public.quiz_attempts
+    set
+      status = 'expired',
+      last_activity_at = v_now,
+      updated_at = v_now
+    where id = v_attempt.id;
+
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'attempt_expired',
+      'status', 'expired'
+    );
+  end if;
+
+  if v_attempt.current_question_index < 0
+    or v_attempt.current_question_index >= v_attempt.total_questions then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_attempt',
+      'status', v_attempt.status
+    );
+  end if;
+
+  v_expected_question_id := v_attempt.question_order ->> v_attempt.current_question_index;
+
+  if v_expected_question_id is null or v_expected_question_id = '' then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'invalid_attempt',
+      'status', v_attempt.status
+    );
+  end if;
+
+  if v_question_id <> v_expected_question_id then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'wrong_question',
+      'status', v_attempt.status,
+      'questionIndex', v_attempt.current_question_index
+    );
+  end if;
+
+  select *
+  into v_answer_key
+  from public.quiz_answer_keys
+  where quiz_key = v_attempt.quiz_key
+    and question_id = v_expected_question_id;
+
+  if not found then
+    return jsonb_build_object(
+      'ok', false,
+      'error', 'missing_answer_key',
+      'status', v_attempt.status,
+      'questionIndex', v_attempt.current_question_index
+    );
+  end if;
+
+  v_answered_at := clock_timestamp();
+  v_elapsed_ms := greatest(
+    0,
+    floor(extract(epoch from (v_answered_at - v_attempt.current_question_started_at)) * 1000)::integer
+  );
+  v_limit_ms := (v_attempt.time_limit_seconds * 1000) + v_grace_ms;
+  v_timed_out := v_elapsed_ms > v_limit_ms;
+
+  if v_timed_out then
+    v_answer_id := null;
+    v_is_correct := false;
+  else
+    if v_answer_id is null then
+      return jsonb_build_object(
+        'ok', false,
+        'error', 'missing_answer',
+        'status', v_attempt.status,
+        'questionIndex', v_attempt.current_question_index
+      );
+    end if;
+
+    if v_answer_id !~ '^[a-z0-9]+(-[a-z0-9]+)*$' then
+      return jsonb_build_object(
+        'ok', false,
+        'error', 'invalid_answer_id',
+        'status', v_attempt.status,
+        'questionIndex', v_attempt.current_question_index
+      );
+    end if;
+
+    -- Sanity owns the four visible answerId values for each localized question.
+    -- This RPC only verifies correctness against the private answer key. The
+    -- Astro API must validate that p_answer_id belongs to the current Sanity
+    -- question before calling this function.
+    v_is_correct := v_answer_id = v_answer_key.correct_answer_id;
+  end if;
+
+  v_is_last_question := v_attempt.current_question_index = v_attempt.total_questions - 1;
+  v_next_question_index :=
+    case
+      when v_is_last_question then v_attempt.total_questions
+      else v_attempt.current_question_index + 1
+    end;
+  v_new_status := case when v_is_last_question then 'completed' else 'active' end;
+  v_new_correct_count := v_attempt.correct_count + case when v_is_correct then 1 else 0 end;
+  v_new_total_elapsed_ms := v_attempt.total_elapsed_ms + v_elapsed_ms;
+  v_explanation :=
+    case
+      when v_attempt.quiz_language = 'en' then v_answer_key.explanation_en
+      else v_answer_key.explanation_it
+    end;
+
+  begin
+    insert into public.quiz_attempt_answers (
+      attempt_id,
+      question_id,
+      answer_id,
+      question_index,
+      is_correct,
+      timed_out,
+      question_started_at,
+      answered_at,
+      elapsed_ms
+    )
+    values (
+      v_attempt.id,
+      v_expected_question_id,
+      v_answer_id,
+      v_attempt.current_question_index,
+      v_is_correct,
+      v_timed_out,
+      v_attempt.current_question_started_at,
+      v_answered_at,
+      v_elapsed_ms
+    );
+  exception
+    when unique_violation then
+      return jsonb_build_object(
+        'ok', false,
+        'error', 'already_answered',
+        'status', v_attempt.status,
+        'questionIndex', v_attempt.current_question_index
+      );
+  end;
+
+  update public.quiz_attempts
+  set
+    status = v_new_status,
+    current_question_index = v_next_question_index,
+    current_question_started_at =
+      case
+        when v_is_last_question then current_question_started_at
+        else v_answered_at
+      end,
+    correct_count = v_new_correct_count,
+    total_elapsed_ms = v_new_total_elapsed_ms,
+    last_activity_at = v_answered_at,
+    completed_at = case when v_is_last_question then v_answered_at else completed_at end,
+    updated_at = v_answered_at
+  where id = v_attempt.id;
+
+  return jsonb_build_object(
+    'ok', true,
+    'status', v_new_status,
+    'questionIndex', v_attempt.current_question_index,
+    'isCorrect', v_is_correct,
+    'timedOut', v_timed_out,
+    'elapsedMs', v_elapsed_ms,
+    'correctCount', v_new_correct_count,
+    'totalQuestions', v_attempt.total_questions,
+    'totalElapsedMs', v_new_total_elapsed_ms,
+    'completed', v_is_last_question,
+    'explanation', v_explanation,
+    'nextQuestionIndex',
+      case
+        when v_is_last_question then null
+        else v_next_question_index
+      end
+  );
+end;
+$$;
+
+comment on function public.submit_quiz_answer(uuid, text, text) is
+  'Atomically locks an active quiz attempt, records the current answer, advances or completes the attempt, and returns a structured JSON result.';
+
 alter table public.quiz_answer_keys enable row level security;
 alter table public.quiz_attempts enable row level security;
 alter table public.quiz_attempt_answers enable row level security;
@@ -245,6 +518,10 @@ grant all on table public.quiz_attempt_answers to service_role;
 revoke all on table public.quiz_answer_keys from anon, authenticated;
 revoke all on table public.quiz_attempts from anon, authenticated;
 revoke all on table public.quiz_attempt_answers from anon, authenticated;
+
+revoke all on function public.submit_quiz_answer(uuid, text, text) from public;
+revoke execute on function public.submit_quiz_answer(uuid, text, text) from anon, authenticated;
+grant execute on function public.submit_quiz_answer(uuid, text, text) to service_role;
 
 -- No anon/authenticated RLS policies are created in v1.
 -- Browser access must go through:
