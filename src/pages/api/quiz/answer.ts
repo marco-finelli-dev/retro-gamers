@@ -74,7 +74,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const attemptId = normalizeAttemptId(payload.attemptId);
   const questionId = normalizeQuestionId(payload.questionId);
-  const answerId = normalizeAnswerId(payload.answerId);
+  const hasAnswerId = Object.prototype.hasOwnProperty.call(payload, 'answerId');
+  const answerId = hasAnswerId ? normalizeAnswerId(payload.answerId) : undefined;
 
   if (!attemptId || !questionId || answerId === undefined) {
     return json({ ok: false, error: 'invalid_request' }, 400);
