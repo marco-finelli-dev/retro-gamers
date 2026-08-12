@@ -17,6 +17,12 @@ export const publicClient = createClient({
   perspective: 'published'
 });
 
+export const publicFreshClient = createClient({
+  ...baseClientConfig,
+  useCdn: false,
+  perspective: 'published'
+});
+
 // Alias mantenuto per compatibilità con gli import esistenti.
 export const client = publicClient;
 

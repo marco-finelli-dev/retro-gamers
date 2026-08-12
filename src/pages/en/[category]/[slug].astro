@@ -8,7 +8,7 @@ import {
   isContentRouteSegment
 } from '../../../lib/routes.js';
 
-import { getSanityClient } from '../../../lib/sanity';
+import { getSanityClient, publicFreshClient } from '../../../lib/sanity';
 import { isDraftMode } from '../../../lib/sanity-preview';
 import {
   PUBLIC_POST_GROQ_FILTER,
@@ -36,6 +36,7 @@ const { category, slug } = Astro.params;
 
 const isPreview = isDraftMode(Astro.cookies);
 const sanityClient = getSanityClient(isPreview);
+const articleDetailClient = isPreview ? sanityClient : publicFreshClient;
 
 if (isPreview) {
   Astro.response.headers.set('Cache-Control', 'private, no-store, max-age=0');
@@ -101,7 +102,7 @@ function getEditorialPageTitle(post, fallbackSlug = '') {
    POST
 ======================== */
 
-const post = await sanityClient.fetch(`
+const post = await articleDetailClient.fetch(`
 *[
   _type == "article" &&
   slug.current == $slug &&
