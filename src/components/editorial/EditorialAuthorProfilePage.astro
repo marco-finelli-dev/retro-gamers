@@ -6,6 +6,7 @@ import CommunityLayout from '../community/CommunityLayout.astro';
 import CommunitySidebarProfile from '../community/CommunitySidebarProfile.astro';
 import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
 import CommunityStatList from '../community/CommunityStatList.astro';
+import { getPublicAuthorRoleLabel } from '../../lib/editorial/labels';
 import {
   fetchEditorialAuthorProfile,
   fetchPublishedArticleCountForAuthor,
@@ -26,17 +27,19 @@ const copy = isEnglish
       kicker: 'Editorial area',
       title: 'Author profile',
       description:
-        'Update only your public Sanity author profile. Editorial role, slug and mapping are managed separately.',
+        'Update only your public Sanity author profile. Editorial role and public slug are managed separately.',
       deniedTitle: 'Editorial access required',
       deniedDescription:
         'This page is available only to active editorial contributors linked to a Sanity author profile.',
       missingAuthorTitle: 'Sanity author not found',
       missingAuthorDescription:
-        'Your editorial mapping points to a Sanity author that is not available in the published dataset. Profile editing is blocked until the mapping is fixed.',
+        'Your editorial access is linked to an author profile that is not available in the published dataset. Profile editing is blocked until the link is fixed.',
       back: 'Back to dashboard',
       publicProfileIt: 'Italian author page',
       publicProfileEn: 'English author page',
       profileLabel: 'Author identity',
+      overviewLabel: 'Overview',
+      tools: 'Tools',
       accountCta: 'Go to account',
       name: 'Name',
       nickname: 'Nickname',
@@ -59,17 +62,31 @@ const copy = isEnglish
       twitch: 'Twitch',
       save: 'Save profile',
       saving: 'Saving...',
-      saved: 'Profile updated.',
+      saved: 'Profile saved.',
       upload: 'Upload image',
       uploading: 'Uploading...',
+      uploadSaved: 'Image uploaded.',
       uploadHelpAvatar: 'JPG, PNG or WebP. Max 2 MB. The previous asset is not deleted.',
       uploadHelpCover: 'JPG, PNG or WebP. Max 5 MB. The previous asset is not deleted.',
+      currentImage: 'Current image',
+      currentCover: 'Current cover',
+      noCurrentImage: 'No current avatar image',
+      noCurrentCover: 'No current cover image',
+      localPreview: 'Selected preview',
+      recommendedAvatar: 'Recommended: 1000 × 1000 px, 1:1. JPG, PNG or WebP. Max 2 MB.',
+      recommendedCover: 'Recommended: 1600 × 600 px, panoramic 8:3. JPG, PNG or WebP. Max 5 MB.',
+      coverCropNote:
+        'Keep faces, text and important elements near the centre: the cover may be cropped on smaller screens.',
+      fileReady: 'File ready',
+      recommendedFormat: 'Recommended format.',
+      ratioWarningAvatar: 'Usable image, but the recommended ratio is 1:1.',
+      ratioWarningCover: 'Usable image, but the recommended ratio is 8:3.',
+      lowResolutionWarning: 'Low resolution: the result may look less sharp.',
       chooseFile: 'Choose a file or drop it here',
       dropFile: 'Drop the image here',
-      readonlyData: 'Read-only data',
+      readonlyData: 'Editorial information',
       slug: 'Slug',
       authorRole: 'Public author role',
-      mapping: 'Sanity author ID',
       completeness: 'Profile completeness',
       publishedArticles: 'Published articles',
       notSet: 'Not set',
@@ -78,6 +95,10 @@ const copy = isEnglish
       invalidUrl: 'Use complete http or https URLs.',
       invalidAlt: 'Alt text is required for uploads and must stay under 120 characters.',
       invalidFile: 'Use a JPG, PNG or WebP image within the allowed size.',
+      invalidMime: 'Use JPG, PNG or WebP. SVG is not allowed.',
+      invalidSizeAvatar: 'Avatar images must be 2 MB or smaller.',
+      invalidSizeCover: 'Cover images must be 5 MB or smaller.',
+      unsaved: 'Unsaved changes',
     }
   : {
       pageTitle: 'Profilo autore | Retro-Gamers.it',
@@ -85,17 +106,19 @@ const copy = isEnglish
       kicker: 'Area redazione',
       title: 'Profilo autore',
       description:
-        'Aggiorna soltanto il tuo profilo autore pubblico Sanity. Ruolo editoriale, slug e mapping sono gestiti separatamente.',
+        'Aggiorna soltanto il tuo profilo autore pubblico Sanity. Ruolo editoriale e slug pubblico sono gestiti separatamente.',
       deniedTitle: 'Accesso redazionale richiesto',
       deniedDescription:
         'Questa pagina è disponibile solo per collaboratori redazionali attivi collegati a un profilo autore Sanity.',
       missingAuthorTitle: 'Autore Sanity non trovato',
       missingAuthorDescription:
-        'Il mapping editoriale punta a un autore Sanity non disponibile nel dataset pubblicato. La modifica del profilo resta bloccata finché il mapping non viene corretto.',
+        'Il tuo accesso redazionale è collegato a un profilo autore non disponibile nel dataset pubblicato. La modifica del profilo resta bloccata finché il collegamento non viene corretto.',
       back: 'Torna alla dashboard',
       publicProfileIt: 'Pagina autore italiana',
       publicProfileEn: 'Pagina autore inglese',
       profileLabel: 'Identità autore',
+      overviewLabel: 'Panoramica',
+      tools: 'Strumenti',
       accountCta: 'Vai all’account',
       name: 'Nome',
       nickname: 'Nickname',
@@ -118,17 +141,31 @@ const copy = isEnglish
       twitch: 'Twitch',
       save: 'Salva profilo',
       saving: 'Salvataggio...',
-      saved: 'Profilo aggiornato.',
+      saved: 'Profilo salvato.',
       upload: 'Carica immagine',
       uploading: 'Caricamento...',
+      uploadSaved: 'Immagine caricata.',
       uploadHelpAvatar: 'JPG, PNG o WebP. Max 2 MB. L’asset precedente non viene eliminato.',
       uploadHelpCover: 'JPG, PNG o WebP. Max 5 MB. L’asset precedente non viene eliminato.',
+      currentImage: 'Immagine attuale',
+      currentCover: 'Cover attuale',
+      noCurrentImage: 'Nessuna immagine autore impostata',
+      noCurrentCover: 'Nessuna cover autore impostata',
+      localPreview: 'Preview selezionata',
+      recommendedAvatar: 'Consigliato: 1000 × 1000 px, rapporto 1:1. JPG, PNG o WebP. Max 2 MB.',
+      recommendedCover: 'Consigliato: 1600 × 600 px, panoramica 8:3. JPG, PNG o WebP. Max 5 MB.',
+      coverCropNote:
+        'Mantieni volti, testi ed elementi importanti nella zona centrale: su mobile la cover può essere ritagliata.',
+      fileReady: 'File pronto',
+      recommendedFormat: 'Formato consigliato.',
+      ratioWarningAvatar: 'Immagine utilizzabile, ma il rapporto consigliato è 1:1.',
+      ratioWarningCover: 'Immagine utilizzabile, ma il rapporto consigliato è 8:3.',
+      lowResolutionWarning: 'Risoluzione bassa: il risultato potrebbe essere meno nitido.',
       chooseFile: 'Scegli un file o trascinalo qui',
       dropFile: 'Rilascia l’immagine qui',
-      readonlyData: 'Dati non modificabili',
+      readonlyData: 'Informazioni editoriali',
       slug: 'Slug',
       authorRole: 'Ruolo autore pubblico',
-      mapping: 'Sanity author ID',
       completeness: 'Completezza profilo',
       publishedArticles: 'Articoli pubblicati',
       notSet: 'Non impostato',
@@ -137,6 +174,10 @@ const copy = isEnglish
       invalidUrl: 'Usa URL completi con http o https.',
       invalidAlt: 'L’alt text è richiesto per gli upload e deve restare sotto 120 caratteri.',
       invalidFile: 'Usa un’immagine JPG, PNG o WebP entro la dimensione consentita.',
+      invalidMime: 'Usa JPG, PNG o WebP. SVG non è consentito.',
+      invalidSizeAvatar: 'Le immagini autore devono essere al massimo 2 MB.',
+      invalidSizeCover: 'Le cover devono essere al massimo 5 MB.',
+      unsaved: 'Modifiche non salvate',
     };
 
 let author = null;
@@ -156,6 +197,11 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
 const sidebarName = author?.displayName === 'nickname' && author.nickname
   ? author.nickname
   : author?.name || '';
+const authorPublicUrlIt = author?.slug ? `/autori/${author.slug}/` : '';
+const authorPublicUrlEn = author?.slug ? `/en/authors/${author.slug}/` : '';
+const authorRoleLabel = author
+  ? getPublicAuthorRoleLabel(author.role, currentLang)
+  : '';
 ---
 
 <BaseLayout
@@ -176,18 +222,26 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
         />
 
         <CommunityStatList
-          title={copy.profileLabel}
+          title={copy.overviewLabel}
           items={[
             { label: copy.publishedArticles, value: publishedArticleCount },
             { label: copy.completeness, value: author.completeness.label },
           ]}
         />
 
-        <CommunitySidebarSection title={copy.profileLabel}>
+        <CommunitySidebarSection title={copy.tools}>
           <div class="community-link-list">
             <a href={dashboardHref}>{copy.back}</a>
-            {author.publicUrls.it && <a href={author.publicUrls.it}>{copy.publicProfileIt}</a>}
-            {author.publicUrls.en && <a href={author.publicUrls.en}>{copy.publicProfileEn}</a>}
+            {authorPublicUrlIt && (
+              <a href={authorPublicUrlIt} data-language-session-override="it">
+                {copy.publicProfileIt}
+              </a>
+            )}
+            {authorPublicUrlEn && (
+              <a href={authorPublicUrlEn} data-language-session-override="en">
+                {copy.publicProfileEn}
+              </a>
+            )}
           </div>
         </CommunitySidebarSection>
       </Fragment>
@@ -213,12 +267,6 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
         <p class="editorial-kicker">{copy.profileLabel}</p>
         <h2>{copy.missingAuthorTitle}</h2>
         <p>{copy.missingAuthorDescription}</p>
-        <dl class="editorial-definition-list">
-          <div>
-            <dt>{copy.mapping}</dt>
-            <dd><code>{access.context.sanityAuthorId}</code></dd>
-          </div>
-        </dl>
       </section>
     )}
 
@@ -238,17 +286,17 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
 
           <div class="editorial-profile-summary__body">
             <div class="editorial-profile-summary__avatar">
-              {author.image?.asset?.url ? (
-                <img
-                  src={author.image.asset.url}
-                  alt={author.image.alt || ''}
-                  width="132"
-                  height="132"
-                  data-editor-avatar-preview
-                />
-              ) : (
-                <span aria-hidden="true">{author.name.slice(0, 1).toUpperCase()}</span>
-              )}
+              <img
+                src={author.image?.asset?.url || ''}
+                alt={author.image?.alt || ''}
+                width="132"
+                height="132"
+                hidden={!author.image?.asset?.url}
+                data-editor-avatar-preview
+              />
+              <span aria-hidden="true" hidden={Boolean(author.image?.asset?.url)} data-editor-avatar-placeholder>
+                {author.name.slice(0, 1).toUpperCase()}
+              </span>
             </div>
 
             <div>
@@ -365,6 +413,7 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
               <a href={dashboardHref}>{copy.back}</a>
             </div>
 
+            <p class="editorial-message editorial-message--unsaved" data-editor-unsaved-message hidden>{copy.unsaved}</p>
             <p class="editorial-message" data-editor-profile-message hidden></p>
           </form>
         </section>
@@ -375,6 +424,35 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
               <p class="editorial-kicker">{copy.image}</p>
               <h2>{copy.image}</h2>
               <p>{copy.uploadHelpAvatar}</p>
+              <p class="editorial-upload-guidance">{copy.recommendedAvatar}</p>
+            </div>
+
+            <div class="editorial-current-media editorial-current-media--avatar">
+              <span>{copy.currentImage}</span>
+              <div class="editorial-current-media__frame editorial-current-media__frame--avatar">
+                <img
+                  src={author.image?.asset?.url || ''}
+                  alt={author.image?.alt || ''}
+                  hidden={!author.image?.asset?.url}
+                  data-editor-avatar-preview
+                />
+                <span
+                  class="editorial-current-media__placeholder"
+                  hidden={Boolean(author.image?.asset?.url)}
+                  data-editor-avatar-placeholder
+                >
+                  {copy.noCurrentImage}
+                </span>
+              </div>
+            </div>
+
+            <div class="editorial-local-preview editorial-local-preview--avatar" data-editor-local-preview hidden>
+              <span>{copy.localPreview}</span>
+              <div class="editorial-local-preview__frame editorial-local-preview__frame--avatar">
+                <img alt="" data-editor-local-preview-image />
+              </div>
+              <p class="editorial-file-meta" data-editor-file-meta></p>
+              <p class="editorial-file-advice" data-editor-file-advice></p>
             </div>
 
             <label class="editorial-dropzone" data-editor-dropzone>
@@ -391,6 +469,36 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
               <p class="editorial-kicker">{copy.cover}</p>
               <h2>{copy.cover}</h2>
               <p>{copy.uploadHelpCover}</p>
+              <p class="editorial-upload-guidance">{copy.recommendedCover}</p>
+              <p class="editorial-upload-guidance">{copy.coverCropNote}</p>
+            </div>
+
+            <div class="editorial-current-media editorial-current-media--cover">
+              <span>{copy.currentCover}</span>
+              <div class="editorial-current-media__frame editorial-current-media__frame--cover">
+                <img
+                  src={author.cover?.asset?.url || ''}
+                  alt={author.cover?.alt || ''}
+                  hidden={!author.cover?.asset?.url}
+                  data-editor-cover-preview
+                />
+                <span
+                  class="editorial-current-media__placeholder"
+                  hidden={Boolean(author.cover?.asset?.url)}
+                  data-editor-cover-placeholder
+                >
+                  {copy.noCurrentCover}
+                </span>
+              </div>
+            </div>
+
+            <div class="editorial-local-preview editorial-local-preview--cover" data-editor-local-preview hidden>
+              <span>{copy.localPreview}</span>
+              <div class="editorial-local-preview__frame editorial-local-preview__frame--cover">
+                <img alt="" data-editor-local-preview-image />
+              </div>
+              <p class="editorial-file-meta" data-editor-file-meta></p>
+              <p class="editorial-file-advice" data-editor-file-advice></p>
             </div>
 
             <label class="editorial-dropzone" data-editor-dropzone>
@@ -416,11 +524,7 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
             </div>
             <div>
               <dt>{copy.authorRole}</dt>
-              <dd>{author.role || copy.notSet}</dd>
-            </div>
-            <div>
-              <dt>{copy.mapping}</dt>
-              <dd><code>{author._id}</code></dd>
+              <dd>{authorRoleLabel || copy.notSet}</dd>
             </div>
           </dl>
         </section>
@@ -437,38 +541,106 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
   const isEnglish = root.dataset.lang === 'en';
   const messages = isEnglish
     ? {
-        saved: 'Profile updated.',
+        saved: 'Profile saved.',
         saving: 'Saving...',
         uploading: 'Uploading...',
+        upload: 'Upload image',
+        uploadSaved: 'Image uploaded.',
         error: 'Unable to update the profile. Please try again.',
         conflict: 'The author profile changed while you were editing. Reload the page and try again.',
         richBioReadOnly: 'This biography contains formatting or links. Edit it from Sanity Studio to avoid losing them.',
         invalidUrl: 'Use complete http or https URLs.',
         invalidAlt: 'Alt text is required for uploads and must stay under 120 characters.',
         invalidFile: 'Use a JPG, PNG or WebP image within the allowed size.',
+        invalidMime: 'Use JPG, PNG or WebP. SVG is not allowed.',
+        invalidSizeAvatar: 'Avatar images must be 2 MB or smaller.',
+        invalidSizeCover: 'Cover images must be 5 MB or smaller.',
         chooseFile: 'Choose a file or drop it here',
         dropFile: 'Drop the image here',
+        fileReady: 'File ready',
+        recommendedFormat: 'Recommended format.',
+        ratioWarningAvatar: 'Usable image, but the recommended ratio is 1:1.',
+        ratioWarningCover: 'Usable image, but the recommended ratio is 8:3.',
+        lowResolutionWarning: 'Low resolution: the result may look less sharp.',
       }
     : {
-        saved: 'Profilo aggiornato.',
+        saved: 'Profilo salvato.',
         saving: 'Salvataggio...',
         uploading: 'Caricamento...',
+        upload: 'Carica immagine',
+        uploadSaved: 'Immagine caricata.',
         error: 'Non riesco ad aggiornare il profilo. Riprova.',
         conflict: 'Il profilo autore è cambiato mentre lo stavi modificando. Ricarica la pagina e riprova.',
         richBioReadOnly: 'Questa bio contiene formattazione o link. Modificala da Sanity Studio per evitare di perderli.',
         invalidUrl: 'Usa URL completi con http o https.',
         invalidAlt: 'L’alt text è richiesto per gli upload e deve restare sotto 120 caratteri.',
         invalidFile: 'Usa un’immagine JPG, PNG o WebP entro la dimensione consentita.',
+        invalidMime: 'Usa JPG, PNG o WebP. SVG non è consentito.',
+        invalidSizeAvatar: 'Le immagini autore devono essere al massimo 2 MB.',
+        invalidSizeCover: 'Le cover devono essere al massimo 5 MB.',
         chooseFile: 'Scegli un file o trascinalo qui',
         dropFile: 'Rilascia l’immagine qui',
+        fileReady: 'File pronto',
+        recommendedFormat: 'Formato consigliato.',
+        ratioWarningAvatar: 'Immagine utilizzabile, ma il rapporto consigliato è 1:1.',
+        ratioWarningCover: 'Immagine utilizzabile, ma il rapporto consigliato è 8:3.',
+        lowResolutionWarning: 'Risoluzione bassa: il risultato potrebbe essere meno nitido.',
       };
 
   const form = root.querySelector('[data-editor-profile-form]');
   const revInput = root.querySelector('[data-editor-profile-rev]');
   const saveButton = root.querySelector('[data-editor-save-button]');
   const profileMessage = root.querySelector('[data-editor-profile-message]');
+  const unsavedMessage = root.querySelector('[data-editor-unsaved-message]');
   const completenessNode = root.querySelector('[data-editor-completeness]');
   const selectedFiles = new WeakMap();
+  const selectedObjectUrls = new WeakMap();
+  const allowedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+  const uploadConfig = {
+    avatar: {
+      maxSize: 2 * 1024 * 1024,
+      minWidth: 500,
+      minHeight: 500,
+      ratio: 1,
+      tolerance: 0.08,
+      invalidSize: messages.invalidSizeAvatar,
+      ratioWarning: messages.ratioWarningAvatar,
+      previewSelector: '[data-editor-avatar-preview]',
+      placeholderSelector: '[data-editor-avatar-placeholder]',
+    },
+    cover: {
+      maxSize: 5 * 1024 * 1024,
+      minWidth: 1000,
+      minHeight: 375,
+      ratio: 1600 / 600,
+      tolerance: 0.15,
+      invalidSize: messages.invalidSizeCover,
+      ratioWarning: messages.ratioWarningCover,
+      previewSelector: '[data-editor-cover-preview]',
+      placeholderSelector: '[data-editor-cover-placeholder]',
+    },
+  };
+  let profileSnapshot = '';
+
+  const getProfileSnapshot = () => {
+    if (!form) return '';
+
+    return new URLSearchParams(new FormData(form)).toString();
+  };
+
+  const setUnsavedState = () => {
+    if (!unsavedMessage || !profileSnapshot) return;
+
+    unsavedMessage.hidden = getProfileSnapshot() === profileSnapshot;
+  };
+
+  const markProfileClean = () => {
+    profileSnapshot = getProfileSnapshot();
+
+    if (unsavedMessage) {
+      unsavedMessage.hidden = true;
+    }
+  };
 
   const setMessage = (node, text, tone = 'info') => {
     if (!node) return;
@@ -490,6 +662,200 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
     return messages.error;
   };
 
+  const formatFileSize = (bytes) => {
+    const size = Number(bytes || 0);
+
+    if (size >= 1024 * 1024) {
+      return `${(size / (1024 * 1024)).toFixed(size >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+    }
+
+    return `${Math.max(1, Math.round(size / 1024))} KB`;
+  };
+
+  const getBlockingFileError = (file, assetType) => {
+    const config = uploadConfig[assetType] || uploadConfig.avatar;
+    const fileType = String(file?.type || '').toLowerCase();
+    const fileName = String(file?.name || '').toLowerCase();
+
+    if (
+      !file ||
+      !allowedImageMimeTypes.has(fileType) ||
+      fileType === 'image/svg+xml' ||
+      fileName.endsWith('.svg')
+    ) {
+      return messages.invalidMime;
+    }
+
+    if (file.size > config.maxSize) {
+      return config.invalidSize;
+    }
+
+    return '';
+  };
+
+  const getImageDimensions = (file) =>
+    new Promise((resolve) => {
+      if (!file || !allowedImageMimeTypes.has(file.type)) {
+        resolve(null);
+        return;
+      }
+
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+
+      image.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve({
+          width: image.naturalWidth,
+          height: image.naturalHeight,
+        });
+      };
+
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+
+      image.src = url;
+    });
+
+  const setAdvice = (node, text, tone = 'info') => {
+    if (!node) return;
+
+    node.textContent = text;
+    node.dataset.tone = tone;
+  };
+
+  const getImageAdvice = (dimensions, assetType) => {
+    const config = uploadConfig[assetType] || uploadConfig.avatar;
+
+    if (!dimensions) {
+      return {
+        text: '',
+        tone: 'info',
+      };
+    }
+
+    const warnings = [];
+    const ratio = dimensions.width / Math.max(dimensions.height, 1);
+    const ratioDelta = Math.abs(ratio - config.ratio) / config.ratio;
+
+    if (ratioDelta > config.tolerance) {
+      warnings.push(config.ratioWarning);
+    }
+
+    if (dimensions.width < config.minWidth || dimensions.height < config.minHeight) {
+      warnings.push(messages.lowResolutionWarning);
+    }
+
+    if (warnings.length) {
+      return {
+        text: warnings.join(' '),
+        tone: 'warning',
+      };
+    }
+
+    return {
+      text: messages.recommendedFormat,
+      tone: 'success',
+    };
+  };
+
+  const clearSelectedFile = (uploadForm) => {
+    const objectUrl = selectedObjectUrls.get(uploadForm);
+
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl);
+      selectedObjectUrls.delete(uploadForm);
+    }
+
+    selectedFiles.delete(uploadForm);
+
+    const localPreview = uploadForm.querySelector('[data-editor-local-preview]');
+    const localPreviewImage = uploadForm.querySelector('[data-editor-local-preview-image]');
+    const fileMeta = uploadForm.querySelector('[data-editor-file-meta]');
+    const fileAdvice = uploadForm.querySelector('[data-editor-file-advice]');
+    const fileInput = uploadForm.querySelector('input[type="file"]');
+    const dropLabel = uploadForm.querySelector('[data-editor-drop-label]');
+
+    if (localPreview) {
+      localPreview.hidden = true;
+    }
+
+    if (localPreviewImage) {
+      localPreviewImage.removeAttribute('src');
+    }
+
+    if (fileMeta) {
+      fileMeta.textContent = '';
+    }
+
+    if (fileAdvice) {
+      fileAdvice.textContent = '';
+      fileAdvice.dataset.tone = 'info';
+    }
+
+    if (fileInput) {
+      fileInput.value = '';
+    }
+
+    if (dropLabel) {
+      dropLabel.textContent = messages.chooseFile;
+    }
+  };
+
+  const updateSelectedFilePreview = async (uploadForm, file, assetType) => {
+    if (!file) return;
+
+    const oldObjectUrl = selectedObjectUrls.get(uploadForm);
+
+    if (oldObjectUrl) {
+      URL.revokeObjectURL(oldObjectUrl);
+    }
+
+    selectedFiles.set(uploadForm, file);
+
+    const dropLabel = uploadForm.querySelector('[data-editor-drop-label]');
+    const localPreview = uploadForm.querySelector('[data-editor-local-preview]');
+    const localPreviewImage = uploadForm.querySelector('[data-editor-local-preview-image]');
+    const fileMeta = uploadForm.querySelector('[data-editor-file-meta]');
+    const fileAdvice = uploadForm.querySelector('[data-editor-file-advice]');
+    const blockingError = getBlockingFileError(file, assetType);
+    const dimensions = await getImageDimensions(file);
+
+    if (dropLabel) {
+      dropLabel.textContent = file.name || messages.fileReady;
+    }
+
+    if (localPreview) {
+      localPreview.hidden = false;
+    }
+
+    if (localPreviewImage && allowedImageMimeTypes.has(file.type)) {
+      const objectUrl = URL.createObjectURL(file);
+      selectedObjectUrls.set(uploadForm, objectUrl);
+      localPreviewImage.src = objectUrl;
+    } else if (localPreviewImage) {
+      localPreviewImage.removeAttribute('src');
+    }
+
+    if (fileMeta) {
+      const dimensionLabel = dimensions
+        ? `${dimensions.width} × ${dimensions.height} px`
+        : messages.fileReady;
+      const typeLabel = file.type || 'file';
+      fileMeta.textContent = `${dimensionLabel} · ${formatFileSize(file.size)} · ${typeLabel}`;
+    }
+
+    if (blockingError) {
+      setAdvice(fileAdvice, blockingError, 'error');
+      return;
+    }
+
+    const advice = getImageAdvice(dimensions, assetType);
+    setAdvice(fileAdvice, advice.text, advice.tone);
+  };
+
   const updateAuthorState = (author) => {
     if (!author) return;
 
@@ -505,26 +871,38 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
       completenessNode.textContent = author.completeness.label;
     }
 
-    const avatar = root.querySelector('[data-editor-avatar-preview]');
-    const cover = root.querySelector('[data-editor-cover-preview]');
+    const updatePreviews = (selector, placeholderSelector, image) => {
+      const url = image?.asset?.url || '';
+      const alt = image?.alt || '';
 
-    if (avatar && author.image?.asset?.url) {
-      avatar.src = author.image.asset.url;
-      avatar.alt = author.image.alt || '';
-    }
+      root.querySelectorAll(selector).forEach((node) => {
+        node.src = url;
+        node.alt = alt;
+        node.hidden = !url;
+      });
 
-    if (cover && author.cover?.asset?.url) {
-      cover.src = author.cover.asset.url;
-      cover.alt = author.cover.alt || '';
-    }
+      root.querySelectorAll(placeholderSelector).forEach((node) => {
+        node.hidden = Boolean(url);
+      });
+    };
+
+    updatePreviews('[data-editor-avatar-preview]', '[data-editor-avatar-placeholder]', author.image);
+    updatePreviews('[data-editor-cover-preview]', '[data-editor-cover-placeholder]', author.cover);
   };
+
+  markProfileClean();
+
+  form?.addEventListener('input', setUnsavedState);
+  form?.addEventListener('change', setUnsavedState);
 
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     setMessage(profileMessage, messages.saving);
+    const saveButtonText = saveButton?.textContent || '';
 
     if (saveButton) {
       saveButton.disabled = true;
+      saveButton.textContent = messages.saving;
     }
 
     const payload = Object.fromEntries(new FormData(form).entries());
@@ -546,11 +924,13 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
 
       updateAuthorState(result.author);
       setMessage(profileMessage, messages.saved, 'success');
+      markProfileClean();
     } catch {
       setMessage(profileMessage, messages.error, 'error');
     } finally {
       if (saveButton) {
         saveButton.disabled = false;
+        saveButton.textContent = saveButtonText || (isEnglish ? 'Save profile' : 'Salva profilo');
       }
     }
   });
@@ -563,17 +943,8 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
     const messageNode = uploadForm.querySelector('[data-editor-upload-message]');
     const assetType = uploadForm.dataset.assetType === 'cover' ? 'cover' : 'avatar';
 
-    const setSelectedFile = (file) => {
-      if (!file) return;
-      selectedFiles.set(uploadForm, file);
-
-      if (dropLabel) {
-        dropLabel.textContent = file.name || messages.chooseFile;
-      }
-    };
-
     fileInput?.addEventListener('change', () => {
-      setSelectedFile(fileInput.files?.[0]);
+      updateSelectedFilePreview(uploadForm, fileInput.files?.[0], assetType);
     });
 
     dropzone?.addEventListener('dragover', (event) => {
@@ -594,7 +965,7 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
     dropzone?.addEventListener('drop', (event) => {
       event.preventDefault();
       dropzone.dataset.dragActive = 'false';
-      setSelectedFile(event.dataTransfer?.files?.[0]);
+      updateSelectedFilePreview(uploadForm, event.dataTransfer?.files?.[0], assetType);
     });
 
     uploadForm.addEventListener('submit', async (event) => {
@@ -604,14 +975,23 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
       const file = selectedFiles.get(uploadForm) || fileInput?.files?.[0];
       const altInput = form?.querySelector(`[name="${assetType === 'cover' ? 'coverAlt' : 'imageAlt'}"]`);
       const alt = String(altInput?.value || '').trim();
+      const uploadButtonText = submitButton?.textContent || '';
 
       if (!file || !alt) {
         setMessage(messageNode, !file ? messages.invalidFile : messages.invalidAlt, 'error');
         return;
       }
 
+      const fileError = getBlockingFileError(file, assetType);
+
+      if (fileError) {
+        setMessage(messageNode, fileError, 'error');
+        return;
+      }
+
       if (submitButton) {
         submitButton.disabled = true;
+        submitButton.textContent = messages.uploading;
       }
 
       const payload = new FormData();
@@ -633,12 +1013,15 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
         }
 
         updateAuthorState(result.author);
-        setMessage(messageNode, messages.saved, 'success');
+        clearSelectedFile(uploadForm);
+        markProfileClean();
+        setMessage(messageNode, messages.uploadSaved, 'success');
       } catch {
         setMessage(messageNode, messages.error, 'error');
       } finally {
         if (submitButton) {
           submitButton.disabled = false;
+          submitButton.textContent = uploadButtonText || messages.upload;
         }
       }
     });

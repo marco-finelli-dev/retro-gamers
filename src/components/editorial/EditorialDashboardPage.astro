@@ -6,6 +6,7 @@ import CommunityLayout from '../community/CommunityLayout.astro';
 import CommunitySidebarProfile from '../community/CommunitySidebarProfile.astro';
 import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
 import CommunityStatList from '../community/CommunityStatList.astro';
+import { getEditorialRoleLabel, getPublicAuthorRoleLabel } from '../../lib/editorial/labels';
 import {
   fetchEditorialAuthorProfile,
   fetchPublishedArticleCountForAuthor,
@@ -32,13 +33,14 @@ const copy = isEnglish
         'This area is available only to active editorial contributors linked to a Sanity author profile.',
       missingAuthorTitle: 'Sanity author not found',
       missingAuthorDescription:
-        'Your editorial mapping points to a Sanity author that is not available in the published dataset. Profile editing is blocked until the mapping is fixed.',
+        'Your editorial access is linked to an author profile that is not available in the published dataset. Profile editing is blocked until the link is fixed.',
       profileLabel: 'Author identity',
+      overviewLabel: 'Overview',
       editorialRole: 'Editorial role',
       authorRole: 'Public author role',
-      mapping: 'Sanity author ID',
       publishedArticles: 'Published articles',
       completeness: 'Profile completeness',
+      completenessHint: 'Informative profile checklist',
       dashboardLinks: 'Workspace',
       editProfile: 'Edit author profile',
       publicProfileIt: 'Italian author page',
@@ -62,13 +64,14 @@ const copy = isEnglish
         'Quest’area è disponibile solo per collaboratori redazionali attivi collegati a un profilo autore Sanity.',
       missingAuthorTitle: 'Autore Sanity non trovato',
       missingAuthorDescription:
-        'Il mapping editoriale punta a un autore Sanity non disponibile nel dataset pubblicato. La modifica del profilo resta bloccata finché il mapping non viene corretto.',
+        'Il tuo accesso redazionale è collegato a un profilo autore non disponibile nel dataset pubblicato. La modifica del profilo resta bloccata finché il collegamento non viene corretto.',
       profileLabel: 'Identità autore',
+      overviewLabel: 'Panoramica',
       editorialRole: 'Ruolo redazionale',
       authorRole: 'Ruolo autore pubblico',
-      mapping: 'Sanity author ID',
       publishedArticles: 'Articoli pubblicati',
       completeness: 'Completezza profilo',
+      completenessHint: 'Checklist informativa del profilo',
       dashboardLinks: 'Strumenti',
       editProfile: 'Modifica profilo autore',
       publicProfileIt: 'Pagina autore italiana',
@@ -98,6 +101,14 @@ const languageSwitch = isEnglish ? '/account/editor/' : '/en/account/editor/';
 const sidebarName = author?.displayName === 'nickname' && author.nickname
   ? author.nickname
   : author?.name || (access.ok ? String(access.context.profile?.display_name || '') : '');
+const authorPublicUrlIt = author?.slug ? `/autori/${author.slug}/` : '';
+const authorPublicUrlEn = author?.slug ? `/en/authors/${author.slug}/` : '';
+const editorialRoleLabel = access.ok
+  ? getEditorialRoleLabel(access.context.editorialRole, currentLang)
+  : '';
+const authorRoleLabel = author
+  ? getPublicAuthorRoleLabel(author.role, currentLang)
+  : '';
 ---
 
 <BaseLayout
@@ -118,7 +129,7 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
         />
 
         <CommunityStatList
-          title={copy.profileLabel}
+          title={copy.overviewLabel}
           items={[
             { label: copy.publishedArticles, value: publishedArticleCount },
             { label: copy.completeness, value: author.completeness.label },
@@ -128,8 +139,16 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
         <CommunitySidebarSection title={copy.dashboardLinks}>
           <div class="community-link-list">
             <a href={profileHref}>{copy.editProfile}</a>
-            {author.publicUrls.it && <a href={author.publicUrls.it}>{copy.publicProfileIt}</a>}
-            {author.publicUrls.en && <a href={author.publicUrls.en}>{copy.publicProfileEn}</a>}
+            {authorPublicUrlIt && (
+              <a href={authorPublicUrlIt} data-language-session-override="it">
+                {copy.publicProfileIt}
+              </a>
+            )}
+            {authorPublicUrlEn && (
+              <a href={authorPublicUrlEn} data-language-session-override="en">
+                {copy.publicProfileEn}
+              </a>
+            )}
           </div>
         </CommunitySidebarSection>
       </Fragment>
@@ -155,61 +174,30 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
         <p class="editorial-kicker">{copy.profileLabel}</p>
         <h2>{copy.missingAuthorTitle}</h2>
         <p>{copy.missingAuthorDescription}</p>
-        <dl class="editorial-definition-list">
-          <div>
-            <dt>{copy.mapping}</dt>
-            <dd><code>{access.context.sanityAuthorId}</code></dd>
-          </div>
-        </dl>
       </section>
     )}
 
     {access.ok && author && (
       <div class="editorial-dashboard-grid">
         <section class="editorial-card editorial-author-card">
-          <div class="editorial-author-card__media">
-            {author.image?.asset?.url ? (
-              <img
-                src={author.image.asset.url}
-                alt={author.image.alt || ''}
-                width="160"
-                height="160"
-              />
-            ) : (
-              <span aria-hidden="true">{author.name.slice(0, 1).toUpperCase()}</span>
-            )}
-          </div>
-
           <div class="editorial-author-card__body">
-            <p class="editorial-kicker">{copy.profileLabel}</p>
-            <h2>{author.displayName === 'nickname' && author.nickname ? author.nickname : author.name}</h2>
+            <p class="editorial-kicker">{copy.overviewLabel}</p>
+            <h2>
+              {isEnglish
+                ? 'Your editorial workspace'
+                : 'Il tuo spazio redazionale'}
+            </h2>
             <dl class="editorial-definition-list">
               <div>
                 <dt>{copy.editorialRole}</dt>
-                <dd>{access.context.editorialRole}</dd>
+                <dd>{editorialRoleLabel}</dd>
               </div>
               <div>
                 <dt>{copy.authorRole}</dt>
-                <dd>{author.role || copy.notSet}</dd>
-              </div>
-              <div>
-                <dt>{copy.mapping}</dt>
-                <dd><code>{author._id}</code></dd>
+                <dd>{authorRoleLabel || copy.notSet}</dd>
               </div>
             </dl>
           </div>
-        </section>
-
-        <section class="editorial-card editorial-card--compact">
-          <p class="editorial-kicker">{copy.publishedArticles}</p>
-          <strong>{publishedArticleCount}</strong>
-          <span>{copy.publishedArticles}</span>
-        </section>
-
-        <section class="editorial-card editorial-card--compact">
-          <p class="editorial-kicker">{copy.completeness}</p>
-          <strong>{author.completeness.label}</strong>
-          <span>{copy.completeness}</span>
         </section>
 
         <section class="editorial-card editorial-action-card">
@@ -223,6 +211,15 @@ const sidebarName = author?.displayName === 'nickname' && author.nickname
             </p>
           </div>
           <a class="editorial-button" href={profileHref}>{copy.editProfile}</a>
+        </section>
+
+        <section class="editorial-card editorial-action-card">
+          <div>
+            <p class="editorial-kicker">{copy.completeness}</p>
+            <h2>{author.completeness.label}</h2>
+            <p>{copy.completenessHint}</p>
+          </div>
+          <span class="editorial-pill">{publishedArticleCount} {copy.publishedArticles.toLowerCase()}</span>
         </section>
 
         <section class="editorial-card editorial-action-card editorial-action-card--disabled" aria-disabled="true">

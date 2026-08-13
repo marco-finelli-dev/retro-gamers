@@ -368,16 +368,53 @@ function getPublicAuthorUrls(slug: string) {
   };
 }
 
-function getCompleteness(author: Pick<EditorialAuthorProfile, 'name' | 'displayName' | 'bioText' | 'bioEnText' | 'image' | 'cover'>) {
+function getCompleteness(
+  author: Pick<
+    EditorialAuthorProfile,
+    | 'name'
+    | 'nickname'
+    | 'displayName'
+    | 'bioText'
+    | 'bioEnText'
+    | 'website'
+    | 'facebook'
+    | 'twitter'
+    | 'tiktok'
+    | 'youtube'
+    | 'twitch'
+    | 'image'
+    | 'cover'
+    | 'slug'
+  >
+) {
+  const hasDisplayIdentity =
+    author.displayName === 'real' ||
+    Boolean(author.displayName === 'nickname' && author.nickname);
+  const hasOnlinePresence = Boolean(
+    author.website ||
+      author.facebook ||
+      author.twitter ||
+      author.tiktok ||
+      author.youtube ||
+      author.twitch
+  );
+  const hasAvatar = Boolean(
+    (author.image?.asset?._id || author.image?.asset?.url) &&
+      author.image?.alt
+  );
+  const hasCover = Boolean(
+    (author.cover?.asset?._id || author.cover?.asset?.url) &&
+      author.cover?.alt
+  );
   const checks = [
     author.name,
-    author.displayName,
+    hasDisplayIdentity,
     author.bioText,
     author.bioEnText,
-    author.image?.asset?._id || author.image?.asset?.url,
-    author.image?.alt,
-    author.cover?.asset?._id || author.cover?.asset?.url,
-    author.cover?.alt,
+    hasAvatar,
+    hasCover,
+    hasOnlinePresence,
+    author.slug,
   ];
   const completed = checks.filter((value) => String(value || '').trim()).length;
   const total = checks.length;
