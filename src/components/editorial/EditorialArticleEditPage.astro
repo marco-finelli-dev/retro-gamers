@@ -30,6 +30,7 @@ const copy = isEnglish
       dashboard: 'Editorial dashboard',
       articles: 'Article workspace',
       newArticle: 'New article',
+      editorLoading: 'Loading editor…',
       labels: {
         title: 'Title',
         subtitle: 'Subtitle',
@@ -81,6 +82,7 @@ const copy = isEnglish
       dashboard: 'Dashboard redazionale',
       articles: 'Editor articoli',
       newArticle: 'Nuovo articolo',
+      editorLoading: 'Caricamento editor…',
       labels: {
         title: 'Titolo',
         subtitle: 'Sottotitolo',
@@ -220,12 +222,17 @@ if (access.ok) {
 
     {article && (
       <ArticlePortableTextEditor
-        client:load
+        client:only="react"
         article={article}
         lang={currentLang}
         saveEndpoint={`/api/editor/articles/${encodeURIComponent(id)}`}
         labels={copy.labels}
-      />
+      >
+        <section slot="fallback" class="editorial-card editorial-card--notice" aria-live="polite">
+          <p class="editorial-kicker">{copy.kicker}</p>
+          <p>{copy.editorLoading}</p>
+        </section>
+      </ArticlePortableTextEditor>
     )}
   </CommunityLayout>
 </BaseLayout>
