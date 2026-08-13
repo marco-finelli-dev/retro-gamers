@@ -65,6 +65,29 @@ type EditorialArticleAuthorInfo = {
   slug: string;
 };
 
+export type EditorialArticleFeaturedImageAsset = {
+  _id: string;
+  url: string;
+  originalFilename: string;
+  size: number | null;
+  mimeType: string;
+  metadata: {
+    dimensions: {
+      width: number | null;
+      height: number | null;
+      aspectRatio: number | null;
+    } | null;
+  };
+};
+
+export type EditorialArticleFeaturedImage = {
+  _type: 'image';
+  alt: string;
+  crop: Record<string, unknown> | null;
+  hotspot: Record<string, unknown> | null;
+  asset: EditorialArticleFeaturedImageAsset | null;
+};
+
 export type EditorialArticleGameInfo = {
   releaseYear: number | null;
   mediaFormat: EditorialArticleMediaFormat[];
@@ -104,6 +127,7 @@ export type EditorialArticleDraft = {
   content: PortableTextBlock[];
   authorId: string;
   author: EditorialArticleAuthorInfo | null;
+  featuredImage: EditorialArticleFeaturedImage | null;
   gameInfo: EditorialArticleGameInfo;
   rating: EditorialArticleRating;
   pros: string[];
@@ -138,6 +162,8 @@ const validImageDisplayModes = new Set(['cover', 'contain', 'wide', 'natural']);
 const validImageRowLayouts = new Set(['standard', 'uniformHeight']);
 const validAsideTones = new Set(['neutral', 'info', 'highlight']);
 const validMediaFormats = new Set<string>(editorialArticleMediaFormats);
+const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const featuredImageMaxFileSize = 5 * 1024 * 1024;
 const validPageLinkPaths = new Set([
   '/',
   '/en/',
@@ -295,6 +321,65 @@ function normalizeImageValue(value: unknown) {
   if (isPlainObject(value.hotspot)) image.hotspot = value.hotspot;
 
   return image;
+}
+
+function normalizeAssetDocument(
+  value: Record<string, unknown> | null | undefined,
+  fallbackId = ''
+): EditorialArticleFeaturedImageAsset | null {
+  const assetId = normalizeSanityRootDocumentId(value?._id || fallbackId);
+  const url = normalizeString(value?.url, 1200).trim();
+
+  if (!assetId && !url) return null;
+
+  const metadata = isPlainObject(value?.metadata) ? value.metadata : {};
+  const dimensions = isPlainObject(metadata.dimensions) ? metadata.dimensions : null;
+
+  return {
+    _id: assetId,
+    url,
+    originalFilename: normalizeString(value?.originalFilename, 500).trim(),
+    size: normalizeOptionalNumber(value?.size),
+    mimeType: normalizeString(value?.mimeType, 120).trim(),
+    metadata: {
+      dimensions: dimensions
+        ? {
+            width: normalizeOptionalNumber(dimensions.width),
+            height: normalizeOptionalNumber(dimensions.height),
+            aspectRatio: normalizeOptionalNumber(dimensions.aspectRatio),
+          }
+        : null,
+    },
+  };
+}
+
+function normalizeFeaturedImage(value: unknown): EditorialArticleFeaturedImage | null {
+  if (!isPlainObject(value)) return null;
+
+  const assetReference = normalizeReference(value.asset);
+  const populatedAsset = isPlainObject(value.asset)
+    ? normalizeAssetDocument(value.asset as Record<string, unknown>, assetReference?._ref || '')
+    : null;
+  const asset = populatedAsset || (assetReference
+    ? {
+        _id: assetReference._ref,
+        url: '',
+        originalFilename: '',
+        size: null,
+        mimeType: '',
+        metadata: { dimensions: null },
+      }
+    : null);
+
+  if (!asset) return null;
+
+  return {
+    _type: 'image',
+    alt: normalizeString(value.alt, 120).trim(),
+    crop: isPlainObject(value.crop) ? value.crop : null,
+    hotspot: isPlainObject(value.hotspot) ? value.hotspot : null,
+    asset,
+  };
 }
 
 function normalizeContentImage(block: Record<string, unknown>) {
@@ -663,6 +748,37 @@ async function fetchAuthorInfo(authorId: string) {
   }
 }
 
+async function hydrateFeaturedImage(
+  featuredImage: EditorialArticleFeaturedImage | null
+): Promise<EditorialArticleFeaturedImage | null> {
+  const assetId = featuredImage?.asset?._id || '';
+
+  if (!featuredImage || !assetId || featuredImage.asset?.url) {
+    return featuredImage;
+  }
+
+  try {
+    const assetDocument = await getSanityRawClient().getDocument<Record<string, unknown>>(assetId);
+    const asset = normalizeAssetDocument(assetDocument || null, assetId);
+
+    return {
+      ...featuredImage,
+      asset: asset || featuredImage.asset,
+    };
+  } catch (error) {
+    logApiError('editorial-article.featured-image.asset', error);
+
+    return featuredImage;
+  }
+}
+
+async function hydrateDraftArticleFeaturedImage(article: EditorialArticleDraft) {
+  return {
+    ...article,
+    featuredImage: await hydrateFeaturedImage(article.featuredImage),
+  };
+}
+
 function normalizeDraftArticle(
   document: Record<string, unknown> | null,
   author: EditorialArticleAuthorInfo | null = null
@@ -688,6 +804,7 @@ function normalizeDraftArticle(
     content: normalizePortableTextContent(document.content),
     authorId: authorReference?._ref || '',
     author,
+    featuredImage: normalizeFeaturedImage(document.featuredImage),
     gameInfo: normalizeGameInfo(document.gameInfo),
     rating: normalizeRating(document.rating),
     pros: normalizeStringArray(document.pros),
@@ -1153,8 +1270,9 @@ export async function fetchEditableEditorialArticle({
     }
 
     const author = await fetchAuthorInfo(draft.authorId);
+    const article = await hydrateDraftArticleFeaturedImage({ ...draft, author });
 
-    return { ok: true as const, ownership, article: { ...draft, author } };
+    return { ok: true as const, ownership, article };
   } catch (error) {
     logApiError('editorial-article.fetch', error);
     return { ok: false as const, status: 500, error: 'article_fetch_failed' };
@@ -1185,6 +1303,16 @@ function getPatchFromPayload(payload: Record<string, unknown>, currentArticle: E
 
   Object.assign(set, reviewPatch.set);
   unset.push(...reviewPatch.unset);
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'featuredImageAlt') && currentArticle.featuredImage?.asset) {
+    const featuredImageAlt = normalizeString(payload.featuredImageAlt, 120).trim();
+
+    if (featuredImageAlt) {
+      set['featuredImage.alt'] = featuredImageAlt;
+    } else {
+      unset.push('featuredImage.alt');
+    }
+  }
 
   if (nextSlug) {
     set.slug = {
@@ -1254,6 +1382,7 @@ export async function updateEditableEditorialArticle({
     if (!normalizedArticle) {
       return { ok: false as const, status: 502, error: 'sanity_article_invalid' };
     }
+    const article = await hydrateDraftArticleFeaturedImage(normalizedArticle);
 
     const auditLogged = await recordArticleAudit({
       actorUserId: context.user.id,
@@ -1263,13 +1392,13 @@ export async function updateEditableEditorialArticle({
       nextWorkflowStatus: fetchResult.ownership.workflowStatus,
       metadata: {
         fields:
-          'title,subtitle,cardExcerpt,excerpt,seoTitle,type,language,slug,content,gameInfo.releaseYear,gameInfo.mediaFormat,rating,pros,cons,seriesOrder,seriesLabel',
+          'title,subtitle,cardExcerpt,excerpt,seoTitle,type,language,slug,content,featuredImage.alt,gameInfo.releaseYear,gameInfo.mediaFormat,rating,pros,cons,seriesOrder,seriesLabel',
       },
     });
 
     return {
       ok: true as const,
-      article: normalizedArticle,
+      article,
       auditLogged,
     };
   } catch (error) {
@@ -1279,6 +1408,212 @@ export async function updateEditableEditorialArticle({
 
     logApiError('editorial-article.update', error);
     return { ok: false as const, status: 500, error: 'article_save_failed' };
+  }
+}
+
+function isUploadFile(value: FormDataEntryValue | null): value is File {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      typeof (value as File).arrayBuffer === 'function' &&
+      typeof (value as File).type === 'string' &&
+      typeof (value as File).size === 'number' &&
+      typeof (value as File).name === 'string'
+  );
+}
+
+function getSafeFeaturedImageFilename(file: File) {
+  const extension = file.type === 'image/png'
+    ? 'png'
+    : file.type === 'image/webp'
+      ? 'webp'
+      : 'jpg';
+
+  return `editorial-article-featured-${Date.now()}.${extension}`;
+}
+
+function getFeaturedImageAltFromFormData(
+  formData: FormData,
+  currentArticle: EditorialArticleDraft
+) {
+  if (formData.has('alt')) {
+    return normalizeString(formData.get('alt'), 120).trim();
+  }
+
+  return currentArticle.featuredImage?.alt || '';
+}
+
+export async function updateEditorialArticleFeaturedImage({
+  context,
+  rootDocumentId,
+  formData,
+}: {
+  context: EditableEditorialContext;
+  rootDocumentId: unknown;
+  formData: FormData;
+}) {
+  const action = normalizeString(formData.get('action'), 40).trim() || 'replace';
+  const revisionId = normalizeString(formData.get('_rev'), 160).trim();
+
+  if (!revisionId) {
+    return { ok: false as const, status: 400, error: 'missing_revision' };
+  }
+
+  if (action !== 'replace' && action !== 'remove') {
+    return { ok: false as const, status: 400, error: 'invalid_featured_image_action' };
+  }
+
+  const fetchResult = await fetchEditableEditorialArticle({ context, rootDocumentId });
+
+  if (!fetchResult.ok) return fetchResult;
+
+  if (fetchResult.article._rev !== revisionId) {
+    return { ok: false as const, status: 409, error: 'revision_conflict' };
+  }
+
+  const draftDocumentId = getDraftDocumentId(fetchResult.ownership.sanityDocumentId);
+  let assetUploaded = false;
+  let articleUpdated = false;
+
+  try {
+    if (action === 'remove') {
+      const updated = await getSanityWriteClient()
+        .patch(draftDocumentId)
+        .ifRevisionId(revisionId)
+        .unset(['featuredImage'])
+        .commit<Record<string, unknown>>();
+      articleUpdated = true;
+      const normalizedArticle = normalizeDraftArticle(updated, fetchResult.article.author);
+
+      if (!normalizedArticle) {
+        return {
+          ok: false as const,
+          status: 502,
+          error: 'sanity_article_invalid',
+          assetUploaded,
+          articleUpdated,
+        };
+      }
+
+      const article = await hydrateDraftArticleFeaturedImage(normalizedArticle);
+      const auditLogged = await recordArticleAudit({
+        actorUserId: context.user.id,
+        action: 'article_saved',
+        sanityDocumentId: fetchResult.ownership.sanityDocumentId,
+        previousWorkflowStatus: fetchResult.ownership.workflowStatus,
+        nextWorkflowStatus: fetchResult.ownership.workflowStatus,
+        metadata: {
+          fields: 'featuredImage',
+          imageAction: 'remove',
+        },
+      });
+
+      return {
+        ok: true as const,
+        article,
+        action,
+        assetUploaded,
+        articleUpdated,
+        auditLogged,
+      };
+    }
+
+    const file = formData.get('file');
+
+    if (!isUploadFile(file)) {
+      return { ok: false as const, status: 400, error: 'missing_file' };
+    }
+
+    if (!allowedFeaturedImageMimeTypes.has(file.type)) {
+      return { ok: false as const, status: 400, error: 'invalid_file_type' };
+    }
+
+    if (file.size <= 0 || file.size > featuredImageMaxFileSize) {
+      return { ok: false as const, status: 400, error: 'invalid_file_size' };
+    }
+
+    const alt = getFeaturedImageAltFromFormData(formData, fetchResult.article);
+    const arrayBuffer = await file.arrayBuffer();
+    const asset = await getSanityWriteClient().assets.upload(
+      'image',
+      Buffer.from(arrayBuffer),
+      {
+        filename: getSafeFeaturedImageFilename(file),
+        contentType: file.type,
+      }
+    );
+    assetUploaded = true;
+    const imageValue: Record<string, unknown> = {
+      _type: 'image',
+      asset: {
+        _type: 'reference',
+        _ref: asset._id,
+      },
+    };
+
+    if (alt) {
+      imageValue.alt = alt;
+    }
+
+    const updated = await getSanityWriteClient()
+      .patch(draftDocumentId)
+      .ifRevisionId(revisionId)
+      .set({ featuredImage: imageValue })
+      .commit<Record<string, unknown>>();
+    articleUpdated = true;
+    const normalizedArticle = normalizeDraftArticle(updated, fetchResult.article.author);
+
+    if (!normalizedArticle) {
+      return {
+        ok: false as const,
+        status: 502,
+        error: 'sanity_article_invalid',
+        assetUploaded,
+        articleUpdated,
+      };
+    }
+
+    const article = await hydrateDraftArticleFeaturedImage(normalizedArticle);
+    const auditLogged = await recordArticleAudit({
+      actorUserId: context.user.id,
+      action: 'article_saved',
+      sanityDocumentId: fetchResult.ownership.sanityDocumentId,
+      previousWorkflowStatus: fetchResult.ownership.workflowStatus,
+      nextWorkflowStatus: fetchResult.ownership.workflowStatus,
+      metadata: {
+        fields: 'featuredImage',
+        imageAction: 'replace',
+      },
+    });
+
+    return {
+      ok: true as const,
+      article,
+      action,
+      assetUploaded,
+      articleUpdated,
+      auditLogged,
+    };
+  } catch (error) {
+    if (isRevisionConflict(error)) {
+      return {
+        ok: false as const,
+        status: 409,
+        error: 'revision_conflict',
+        assetUploaded,
+        articleUpdated,
+      };
+    }
+
+    logApiError('editorial-article.featured-image.update', error);
+
+    return {
+      ok: false as const,
+      status: 500,
+      error: assetUploaded ? 'featured_image_update_failed' : 'featured_image_upload_failed',
+      assetUploaded,
+      articleUpdated,
+    };
   }
 }
 

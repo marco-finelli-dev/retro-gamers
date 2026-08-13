@@ -51,6 +51,29 @@ type EditableArticleAuthor = {
   slug: string;
 } | null;
 
+type EditableArticleFeaturedImageAsset = {
+  _id: string;
+  url: string;
+  originalFilename: string;
+  size: number | null;
+  mimeType: string;
+  metadata: {
+    dimensions: {
+      width: number | null;
+      height: number | null;
+      aspectRatio: number | null;
+    } | null;
+  };
+};
+
+type EditableArticleFeaturedImage = {
+  _type: 'image';
+  alt: string;
+  crop: Record<string, unknown> | null;
+  hotspot: Record<string, unknown> | null;
+  asset: EditableArticleFeaturedImageAsset | null;
+} | null;
+
 type EditableArticleGameInfo = {
   releaseYear: number | null;
   mediaFormat: MediaFormat[];
@@ -74,6 +97,7 @@ type EditableArticle = {
   reviewStatus: string;
   content: PortableTextBlock[];
   author: EditableArticleAuthor;
+  featuredImage: EditableArticleFeaturedImage;
   gameInfo: EditableArticleGameInfo;
   rating: EditableArticleRating;
   pros: string[];
@@ -96,6 +120,30 @@ type Labels = {
   inspectorFeaturedImage: string;
   inspectorReview: string;
   futureSlot: string;
+  featuredImageCurrent: string;
+  featuredImageEmpty: string;
+  featuredImageUpload: string;
+  featuredImageUploading: string;
+  featuredImageReplace: string;
+  featuredImageRemove: string;
+  featuredImageRemoving: string;
+  featuredImageUploaded: string;
+  featuredImageRemoved: string;
+  featuredImageAlt: string;
+  featuredImageAltWarning: string;
+  featuredImageFormats: string;
+  featuredImageChooseFile: string;
+  featuredImageDropFile: string;
+  featuredImageNewPreview: string;
+  featuredImageFileReady: string;
+  featuredImageInvalidType: string;
+  featuredImageInvalidSize: string;
+  featuredImageMissingFile: string;
+  featuredImageConflict: string;
+  featuredImageGenericError: string;
+  featuredImageRemoveConfirm: string;
+  featuredImageMetadataUnavailable: string;
+  featuredImageAssetId: string;
   cardExcerpt: string;
   excerpt: string;
   seoTitle: string;
@@ -187,6 +235,8 @@ const mediaFormatOptions: MediaFormat[] = [
   'other',
 ];
 const ratingFields: RatingField[] = ['grafica', 'sonoro', 'giocabilita', 'longevita', 'overall'];
+const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const featuredImageMaxFileSize = 5 * 1024 * 1024;
 
 const mediaFormatLabels: Record<ArticleLanguage, Record<MediaFormat, string>> = {
   it: {
@@ -505,6 +555,84 @@ function CharacterCounter({
   );
 }
 
+type SelectedFeaturedImageFile = {
+  file: File;
+  previewUrl: string;
+  width: number | null;
+  height: number | null;
+};
+
+function formatFileSize(size: number | null | undefined) {
+  if (!size || !Number.isFinite(size)) return '';
+
+  if (size >= 1024 * 1024) {
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(size / 1024))} KB`;
+}
+
+function getImageDimensions(file: File): Promise<{ width: number | null; height: number | null }> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve({
+        width: image.naturalWidth || null,
+        height: image.naturalHeight || null,
+      });
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve({ width: null, height: null });
+    };
+
+    image.src = objectUrl;
+  });
+}
+
+function getFileValidationError(file: File | null | undefined, labels: Labels) {
+  if (!file) return labels.featuredImageMissingFile;
+
+  if (!allowedFeaturedImageMimeTypes.has(file.type)) {
+    return labels.featuredImageInvalidType;
+  }
+
+  if (file.size <= 0 || file.size > featuredImageMaxFileSize) {
+    return labels.featuredImageInvalidSize;
+  }
+
+  return '';
+}
+
+function getAssetMetadataLabel(asset: EditableArticleFeaturedImageAsset | null, labels: Labels) {
+  if (!asset) return labels.featuredImageMetadataUnavailable;
+
+  const dimensions = asset.metadata.dimensions;
+  const parts = [
+    dimensions?.width && dimensions?.height ? `${dimensions.width} × ${dimensions.height}px` : '',
+    formatFileSize(asset.size),
+    asset.mimeType,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(' · ') : labels.featuredImageMetadataUnavailable;
+}
+
+function getSelectedFileMetadataLabel(selection: SelectedFeaturedImageFile | null) {
+  if (!selection) return '';
+
+  const parts = [
+    selection.width && selection.height ? `${selection.width} × ${selection.height}px` : '',
+    formatFileSize(selection.file.size),
+    selection.file.type,
+  ].filter(Boolean);
+
+  return parts.join(' · ');
+}
+
 function parseOptionalNumber(value: string) {
   if (!value.trim()) return null;
 
@@ -648,6 +776,12 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const [status, setStatus] = useState('');
   const [statusTone, setStatusTone] = useState<'success' | 'error' | ''>('');
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedFeaturedFile, setSelectedFeaturedFile] = useState<SelectedFeaturedImageFile | null>(null);
+  const [featuredImageStatus, setFeaturedImageStatus] = useState('');
+  const [featuredImageStatusTone, setFeaturedImageStatusTone] = useState<'success' | 'error' | ''>('');
+  const [isFeaturedImageUploading, setIsFeaturedImageUploading] = useState(false);
+  const [isFeaturedImageRemoving, setIsFeaturedImageRemoving] = useState(false);
+  const [isFeaturedImageDragActive, setIsFeaturedImageDragActive] = useState(false);
   const nodes = useMemo(
     () => [
       defineBlockObject({
@@ -670,11 +804,150 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     [labels]
   );
 
+  useEffect(() => () => {
+    if (selectedFeaturedFile?.previewUrl) {
+      URL.revokeObjectURL(selectedFeaturedFile.previewUrl);
+    }
+  }, [selectedFeaturedFile]);
+
   const updateField = <Field extends keyof EditableArticle>(field: Field, value: EditableArticle[Field]) => {
     setDraft((current) => ({
       ...current,
       [field]: value,
     }));
+  };
+
+  const updateFeaturedImageAlt = (value: string) => {
+    const alt = value.slice(0, 120);
+
+    setDraft((current) => ({
+      ...current,
+      featuredImage: current.featuredImage
+        ? {
+            ...current.featuredImage,
+            alt,
+          }
+        : {
+            _type: 'image',
+            alt,
+            crop: null,
+            hotspot: null,
+            asset: null,
+          },
+    }));
+  };
+
+  const clearSelectedFeaturedFile = () => {
+    setSelectedFeaturedFile(null);
+    setFeaturedImageStatus('');
+    setFeaturedImageStatusTone('');
+  };
+
+  const selectFeaturedFile = async (file: File | null | undefined) => {
+    const error = getFileValidationError(file, labels);
+
+    if (error || !file) {
+      setFeaturedImageStatus(error);
+      setFeaturedImageStatusTone('error');
+      return;
+    }
+
+    const dimensions = await getImageDimensions(file);
+
+    setSelectedFeaturedFile({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      width: dimensions.width,
+      height: dimensions.height,
+    });
+    setFeaturedImageStatus(labels.featuredImageFileReady);
+    setFeaturedImageStatusTone('success');
+  };
+
+  const syncFeaturedImageArticle = (articleUpdate: EditableArticle) => {
+    setDraft((current) => ({
+      ...current,
+      _rev: articleUpdate._rev,
+      featuredImage: articleUpdate.featuredImage,
+    }));
+  };
+
+  const uploadFeaturedImage = async () => {
+    if (isFeaturedImageUploading || !selectedFeaturedFile) return;
+
+    setIsFeaturedImageUploading(true);
+    setFeaturedImageStatus(labels.featuredImageUploading);
+    setFeaturedImageStatusTone('');
+
+    try {
+      const formData = new FormData();
+      formData.set('action', 'replace');
+      formData.set('_rev', draft._rev);
+      formData.set('alt', draft.featuredImage?.alt || '');
+      formData.set('file', selectedFeaturedFile.file);
+      const response = await fetch(`${saveEndpoint.replace(/\/$/, '')}/featured-image`, {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result?.ok || !result.article) {
+        throw new Error(result?.error || 'featured_image_upload_failed');
+      }
+
+      syncFeaturedImageArticle(result.article);
+      setSelectedFeaturedFile(null);
+      setFeaturedImageStatus(labels.featuredImageUploaded);
+      setFeaturedImageStatusTone('success');
+    } catch (error) {
+      const message = error instanceof Error && error.message === 'revision_conflict'
+        ? labels.featuredImageConflict
+        : labels.featuredImageGenericError;
+
+      setFeaturedImageStatus(message);
+      setFeaturedImageStatusTone('error');
+    } finally {
+      setIsFeaturedImageUploading(false);
+    }
+  };
+
+  const removeFeaturedImage = async () => {
+    if (isFeaturedImageRemoving || !draft.featuredImage?.asset) return;
+
+    if (!window.confirm(labels.featuredImageRemoveConfirm)) return;
+
+    setIsFeaturedImageRemoving(true);
+    setFeaturedImageStatus('');
+    setFeaturedImageStatusTone('');
+
+    try {
+      const formData = new FormData();
+      formData.set('action', 'remove');
+      formData.set('_rev', draft._rev);
+      const response = await fetch(`${saveEndpoint.replace(/\/$/, '')}/featured-image`, {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result?.ok || !result.article) {
+        throw new Error(result?.error || 'featured_image_remove_failed');
+      }
+
+      syncFeaturedImageArticle(result.article);
+      setSelectedFeaturedFile(null);
+      setFeaturedImageStatus(labels.featuredImageRemoved);
+      setFeaturedImageStatusTone('success');
+    } catch (error) {
+      const message = error instanceof Error && error.message === 'revision_conflict'
+        ? labels.featuredImageConflict
+        : labels.featuredImageGenericError;
+
+      setFeaturedImageStatus(message);
+      setFeaturedImageStatusTone('error');
+    } finally {
+      setIsFeaturedImageRemoving(false);
+    }
   };
 
   const updateGameInfo = <Field extends keyof EditableArticleGameInfo>(
@@ -723,6 +996,11 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const showReviewSection = draft.type === 'review' || hasReviewData(draft);
   const isReviewEditoriallyActive =
     draft.type === 'review' && ['inProgress', 'done'].includes(draft.reviewStatus);
+  const featuredImage = draft.featuredImage;
+  const featuredImageAsset = featuredImage?.asset || null;
+  const hasFeaturedImage = Boolean(featuredImageAsset?._id || featuredImageAsset?.url);
+  const featuredImageAlt = featuredImage?.alt || '';
+  const selectedFeaturedFileMetadata = getSelectedFileMetadataLabel(selectedFeaturedFile);
 
   const saveArticle = async () => {
     if (isSaving) return;
@@ -747,6 +1025,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
           type: draft.type,
           language: draft.language,
           slug: draft.slug,
+          featuredImageAlt: draft.featuredImage?.alt || '',
           gameInfo: draft.gameInfo,
           rating: draft.rating,
           pros: draft.pros,
@@ -963,9 +1242,148 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
             )}
           </details>
 
-          <details className="editorial-inspector-section">
+          <details className="editorial-inspector-section" open>
             <summary>{labels.inspectorFeaturedImage}</summary>
-            <p className="editorial-inspector-section__placeholder">{labels.futureSlot}</p>
+
+            <div className="editorial-featured-image-control">
+              <div className="editorial-current-media editorial-current-media--featured">
+                <span>{labels.featuredImageCurrent}</span>
+                <div className="editorial-current-media__frame editorial-current-media__frame--featured">
+                  {featuredImageAsset?.url ? (
+                    <img
+                      src={featuredImageAsset.url}
+                      alt={featuredImageAlt || labels.inspectorFeaturedImage}
+                    />
+                  ) : (
+                    <span className="editorial-current-media__placeholder">
+                      {labels.featuredImageEmpty}
+                    </span>
+                  )}
+                </div>
+                {featuredImageAsset ? (
+                  <>
+                    <p className="editorial-file-meta">
+                      {getAssetMetadataLabel(featuredImageAsset, labels)}
+                    </p>
+                    {featuredImageAsset._id && (
+                      <p className="editorial-file-meta">
+                        {labels.featuredImageAssetId}: <code>{featuredImageAsset._id}</code>
+                      </p>
+                    )}
+                  </>
+                ) : null}
+              </div>
+
+              {(hasFeaturedImage || selectedFeaturedFile) && (
+                <label className="editorial-field">
+                  <span>{labels.featuredImageAlt}</span>
+                  <input
+                    value={featuredImageAlt}
+                    maxLength={120}
+                    onChange={(event) => updateFeaturedImageAlt(event.target.value)}
+                  />
+                  <CharacterCounter
+                    value={featuredImageAlt}
+                    max={120}
+                    warning={labels.cardExcerptWarning}
+                  />
+                  {hasFeaturedImage && !featuredImageAlt.trim() && (
+                    <p className="editorial-character-count" data-warning="true">
+                      {labels.featuredImageAltWarning}
+                    </p>
+                  )}
+                </label>
+              )}
+
+              {selectedFeaturedFile && (
+                <div className="editorial-local-preview editorial-local-preview--featured">
+                  <span>{labels.featuredImageNewPreview}</span>
+                  <div className="editorial-local-preview__frame editorial-local-preview__frame--featured">
+                    <img src={selectedFeaturedFile.previewUrl} alt="" aria-hidden="true" />
+                  </div>
+                  {selectedFeaturedFileMetadata && (
+                    <p className="editorial-file-meta">{selectedFeaturedFileMetadata}</p>
+                  )}
+                </div>
+              )}
+
+              <div className="editorial-featured-image-control__actions">
+                <label
+                  className="editorial-dropzone editorial-dropzone--compact"
+                  data-drag-active={isFeaturedImageDragActive ? 'true' : 'false'}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsFeaturedImageDragActive(true);
+                  }}
+                  onDragLeave={() => setIsFeaturedImageDragActive(false)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setIsFeaturedImageDragActive(false);
+                    selectFeaturedFile(event.dataTransfer.files?.[0]);
+                  }}
+                >
+                  <span>
+                    {hasFeaturedImage ? labels.featuredImageReplace : labels.featuredImageChooseFile}
+                  </span>
+                  <small>{labels.featuredImageDropFile}</small>
+                  <input
+                    key={selectedFeaturedFile?.previewUrl || 'featured-image-input'}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(event) => selectFeaturedFile(event.target.files?.[0])}
+                  />
+                </label>
+
+                <p className="editorial-file-meta">{labels.featuredImageFormats}</p>
+
+                <div className="editorial-featured-image-control__buttons">
+                  <button
+                    type="button"
+                    className="editorial-mini-button"
+                    onClick={uploadFeaturedImage}
+                    disabled={!selectedFeaturedFile || isFeaturedImageUploading || isFeaturedImageRemoving}
+                  >
+                    {isFeaturedImageUploading
+                      ? labels.featuredImageUploading
+                      : hasFeaturedImage
+                        ? labels.featuredImageReplace
+                        : labels.featuredImageUpload}
+                  </button>
+
+                  {selectedFeaturedFile && (
+                    <button
+                      type="button"
+                      className="editorial-mini-button"
+                      onClick={clearSelectedFeaturedFile}
+                      disabled={isFeaturedImageUploading || isFeaturedImageRemoving}
+                    >
+                      {labels.removeItem}
+                    </button>
+                  )}
+
+                  {hasFeaturedImage && (
+                    <button
+                      type="button"
+                      className="editorial-mini-button editorial-mini-button--danger"
+                      onClick={removeFeaturedImage}
+                      disabled={isFeaturedImageUploading || isFeaturedImageRemoving}
+                    >
+                      {isFeaturedImageRemoving ? labels.featuredImageRemoving : labels.featuredImageRemove}
+                    </button>
+                  )}
+                </div>
+
+                {featuredImageStatus && (
+                  <p
+                    className="editorial-message"
+                    data-tone={featuredImageStatusTone || undefined}
+                    aria-live="polite"
+                  >
+                    {featuredImageStatus}
+                  </p>
+                )}
+              </div>
+            </div>
           </details>
 
           {showReviewSection && (
