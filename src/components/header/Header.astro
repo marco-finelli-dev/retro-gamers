@@ -74,16 +74,27 @@ const accountFavoritesHref = isEnglish ? '/en/account/favorites/' : '/account/fa
 const accountMemoriesHref = isEnglish ? '/en/account/memories/' : '/account/memories/';
 const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/messages/';
 const accountEditorHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
+const accountAdminHref = isEnglish ? '/en/admin/' : '/admin/';
+const accountModerationHref = isEnglish ? '/en/admin/comments/' : '/admin/comments/';
 const languageTarget = isEnglish ? 'it' : 'en';
+const currentLanguageTarget = isEnglish ? 'en' : 'it';
 const initialSession = Astro.locals.userSession;
 const initialProfile = initialSession?.profile;
 const initialUser = initialSession?.user;
+const initialCommunityArea =
+  initialProfile?.status === 'active' && initialProfile?.role === 'admin'
+    ? 'admin'
+    : initialProfile?.status === 'active' && initialProfile?.role === 'moderator'
+      ? 'moderator'
+      : '';
 const initialAccountState = !initialSession?.error && initialProfile && initialUser
   ? {
       isAuthenticated: true,
+      communityArea: initialCommunityArea,
       hasEditorialAccess: false,
       profile: {
         role: initialProfile.role,
+        status: initialProfile.status,
         username: initialProfile.username,
         display_name: initialProfile.display_name,
         avatar_url: initialProfile.avatar_url,
@@ -304,8 +315,34 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
               {isEnglish ? 'Public profile' : 'Profilo pubblico'}
             </a>
 
-            <a href={accountEditorHref} role="menuitem" data-account-editorial-area hidden>
+            <a
+              href={accountEditorHref}
+              role="menuitem"
+              data-account-editorial-area
+              data-language-session-override={currentLanguageTarget}
+              hidden
+            >
               {isEnglish ? 'Editorial area' : 'Area redazione'}
+            </a>
+
+            <a
+              href={accountAdminHref}
+              role="menuitem"
+              data-account-admin-area
+              data-language-session-override={currentLanguageTarget}
+              hidden
+            >
+              {isEnglish ? 'Administration area' : 'Area amministrazione'}
+            </a>
+
+            <a
+              href={accountModerationHref}
+              role="menuitem"
+              data-account-moderation-area
+              data-language-session-override={currentLanguageTarget}
+              hidden
+            >
+              {isEnglish ? 'Moderation area' : 'Area moderazione'}
             </a>
 
             <button type="button" role="menuitem" data-account-logout>
@@ -552,6 +589,24 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
   const getAccountAvatarUrl = (profile) =>
     String(profile?.avatar_url || profile?.avatarUrl || '').trim();
 
+  const getCommunityArea = (profile) => {
+    if (String(profile?.status || '') !== 'active') {
+      return '';
+    }
+
+    const role = String(profile?.role || '');
+
+    if (role === 'admin') {
+      return 'admin';
+    }
+
+    if (role === 'moderator') {
+      return 'moderator';
+    }
+
+    return '';
+  };
+
   const getPublicProfileUrl = (profile) => {
     const username = String(profile?.username || '').trim().toLowerCase();
 
@@ -684,18 +739,26 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
   const setAccountState = (
     isLoggedIn,
     hasEditorialAccess = false,
+    communityArea = '',
     profile = null,
     user = null,
     preferences = null
   ) => {
+    const isAdmin = communityArea === 'admin';
+    const isModerator = communityArea === 'moderator';
+    const isStaff = isAdmin || isModerator;
+
     isAccountLoggedIn = Boolean(isLoggedIn);
     publishRetroExperienceState(isLoggedIn, preferences);
     root?.classList.toggle('is-authenticated', isLoggedIn);
+    root?.classList.toggle('is-staff', isLoggedIn && isStaff);
     root?.classList.toggle('has-editorial-access', isLoggedIn && hasEditorialAccess);
     setAccountAvatar(isLoggedIn, profile, user);
 
     const accountLabel = isLoggedIn
-      ? (isEnglish ? 'User account' : 'Account utente')
+      ? (isStaff
+          ? (isEnglish ? 'Staff account' : 'Account staff')
+          : (isEnglish ? 'User account' : 'Account utente'))
       : 'Account';
 
     trigger?.setAttribute('aria-label', accountLabel);
@@ -711,6 +774,14 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
 
     document.querySelectorAll('[data-account-editorial-area]').forEach((node) => {
       node.hidden = !hasEditorialAccess;
+    });
+
+    document.querySelectorAll('[data-account-admin-area]').forEach((node) => {
+      node.hidden = !isAdmin;
+    });
+
+    document.querySelectorAll('[data-account-moderation-area]').forEach((node) => {
+      node.hidden = !isModerator;
     });
 
     document.querySelectorAll('[data-mobile-account-guest]').forEach((node) => {
@@ -736,6 +807,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
       setAccountState(
         true,
         result?.editorial?.hasAccess === true,
+        getCommunityArea(result.profile),
         result.profile,
         result.user,
         result.preferences
@@ -805,6 +877,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
     setAccountState(
       true,
       Boolean(initialAccountState.hasEditorialAccess),
+      initialAccountState.communityArea || '',
       initialAccountState.profile,
       initialAccountState.user,
       initialAccountState.preferences

@@ -87,6 +87,8 @@ const accountLabels = isEnglish
       memories: 'My memories',
       messages: 'Messages',
       editorialTools: 'Editorial area',
+      administrationArea: 'Administration area',
+      moderationArea: 'Moderation area',
       signOut: 'Sign out'
     }
   : {
@@ -97,6 +99,8 @@ const accountLabels = isEnglish
       memories: 'Le mie memorie',
       messages: 'Messaggi',
       editorialTools: 'Area redazione',
+      administrationArea: 'Area amministrazione',
+      moderationArea: 'Area moderazione',
       signOut: 'Esci'
     };
 
@@ -106,6 +110,9 @@ const accountFavoritesHref = isEnglish ? '/en/account/favorites/' : '/account/fa
 const accountMemoriesHref = isEnglish ? '/en/account/memories/' : '/account/memories/';
 const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/messages/';
 const accountEditorHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
+const accountAdminHref = isEnglish ? '/en/admin/' : '/admin/';
+const accountModerationHref = isEnglish ? '/en/admin/comments/' : '/admin/comments/';
+const currentLanguageTarget = isEnglish ? 'en' : 'it';
 ---
 
 <div class="mobile-menu" id="mobile-menu" aria-hidden="true" inert data-mobile-menu>
@@ -155,7 +162,34 @@ const accountEditorHref = isEnglish ? '/en/account/editor/' : '/account/editor/'
           <a href={accountHref} data-account-public-profile hidden>
             {isEnglish ? 'Public profile' : 'Profilo pubblico'}
           </a>
-          <a href={accountEditorHref} data-account-editorial-area hidden>{accountLabels.editorialTools}</a>
+
+          <a
+            href={accountEditorHref}
+            data-account-editorial-area
+            data-language-session-override={currentLanguageTarget}
+            hidden
+          >
+            {accountLabels.editorialTools}
+          </a>
+
+          <a
+            href={accountAdminHref}
+            data-account-admin-area
+            data-language-session-override={currentLanguageTarget}
+            hidden
+          >
+            {accountLabels.administrationArea}
+          </a>
+
+          <a
+            href={accountModerationHref}
+            data-account-moderation-area
+            data-language-session-override={currentLanguageTarget}
+            hidden
+          >
+            {accountLabels.moderationArea}
+          </a>
+
           <button type="button" data-account-logout>{accountLabels.signOut}</button>
         </div>
       </div>

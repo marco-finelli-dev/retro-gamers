@@ -72,7 +72,7 @@ const copy = isEnglish
       currentCover: 'Current cover',
       noCurrentImage: 'No current avatar image',
       noCurrentCover: 'No current cover image',
-      localPreview: 'Selected preview',
+      localPreview: 'New image',
       recommendedAvatar: 'Recommended: 1000 × 1000 px, 1:1. JPG, PNG or WebP. Max 2 MB.',
       recommendedCover: 'Recommended: 1600 × 600 px, panoramic 8:3. JPG, PNG or WebP. Max 5 MB.',
       coverCropNote:
@@ -151,7 +151,7 @@ const copy = isEnglish
       currentCover: 'Cover attuale',
       noCurrentImage: 'Nessuna immagine autore impostata',
       noCurrentCover: 'Nessuna cover autore impostata',
-      localPreview: 'Preview selezionata',
+      localPreview: 'Nuova immagine',
       recommendedAvatar: 'Consigliato: 1000 × 1000 px, rapporto 1:1. JPG, PNG o WebP. Max 2 MB.',
       recommendedCover: 'Consigliato: 1600 × 600 px, panoramica 8:3. JPG, PNG o WebP. Max 5 MB.',
       coverCropNote:
@@ -420,7 +420,7 @@ const authorRoleLabel = author
 
         <section class="editorial-assets-grid">
           <form class="editorial-card editorial-upload-card" data-editor-upload-form data-asset-type="avatar">
-            <div>
+            <div class="editorial-upload-card__header">
               <p class="editorial-kicker">{copy.image}</p>
               <h2>{copy.image}</h2>
               <p>{copy.uploadHelpAvatar}</p>
@@ -455,17 +455,19 @@ const authorRoleLabel = author
               <p class="editorial-file-advice" data-editor-file-advice></p>
             </div>
 
-            <label class="editorial-dropzone" data-editor-dropzone>
-              <input type="file" name="file" accept="image/jpeg,image/png,image/webp" />
-              <span data-editor-drop-label>{copy.chooseFile}</span>
-            </label>
+            <div class="editorial-upload-card__controls">
+              <label class="editorial-dropzone" data-editor-dropzone>
+                <input type="file" name="file" accept="image/jpeg,image/png,image/webp" />
+                <span data-editor-drop-label>{copy.chooseFile}</span>
+              </label>
 
-            <button type="submit" class="editorial-button">{copy.upload}</button>
-            <p class="editorial-message" data-editor-upload-message hidden></p>
+              <button type="submit" class="editorial-button">{copy.upload}</button>
+              <p class="editorial-message" data-editor-upload-message hidden></p>
+            </div>
           </form>
 
           <form class="editorial-card editorial-upload-card" data-editor-upload-form data-asset-type="cover">
-            <div>
+            <div class="editorial-upload-card__header">
               <p class="editorial-kicker">{copy.cover}</p>
               <h2>{copy.cover}</h2>
               <p>{copy.uploadHelpCover}</p>
@@ -501,13 +503,15 @@ const authorRoleLabel = author
               <p class="editorial-file-advice" data-editor-file-advice></p>
             </div>
 
-            <label class="editorial-dropzone" data-editor-dropzone>
-              <input type="file" name="file" accept="image/jpeg,image/png,image/webp" />
-              <span data-editor-drop-label>{copy.chooseFile}</span>
-            </label>
+            <div class="editorial-upload-card__controls">
+              <label class="editorial-dropzone" data-editor-dropzone>
+                <input type="file" name="file" accept="image/jpeg,image/png,image/webp" />
+                <span data-editor-drop-label>{copy.chooseFile}</span>
+              </label>
 
-            <button type="submit" class="editorial-button">{copy.upload}</button>
-            <p class="editorial-message" data-editor-upload-message hidden></p>
+              <button type="submit" class="editorial-button">{copy.upload}</button>
+              <p class="editorial-message" data-editor-upload-message hidden></p>
+            </div>
           </form>
         </section>
 

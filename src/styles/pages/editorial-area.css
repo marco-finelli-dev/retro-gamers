@@ -257,8 +257,15 @@
 .editorial-form-grid,
 .editorial-assets-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.editorial-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.editorial-assets-grid {
+  grid-template-columns: 1fr;
 }
 
 .editorial-form label {
@@ -340,7 +347,18 @@
 .editorial-upload-card {
   display: grid;
   align-content: start;
-  gap: 16px;
+  gap: 20px;
+}
+
+.editorial-upload-card__header {
+  grid-area: header;
+}
+
+.editorial-upload-card__controls {
+  display: grid;
+  grid-area: controls;
+  align-content: start;
+  gap: 14px;
 }
 
 .editorial-upload-guidance {
@@ -354,6 +372,18 @@
 .editorial-local-preview {
   display: grid;
   gap: 10px;
+}
+
+.editorial-current-media {
+  grid-area: current;
+}
+
+.editorial-local-preview {
+  grid-area: local;
+}
+
+.editorial-local-preview[hidden] {
+  display: none;
 }
 
 .editorial-current-media > span,
@@ -379,7 +409,7 @@
 .editorial-current-media__frame--avatar,
 .editorial-local-preview__frame--avatar {
   aspect-ratio: 1;
-  width: min(220px, 100%);
+  width: min(240px, 100%);
 }
 
 .editorial-current-media__frame--cover,
@@ -479,6 +509,30 @@
   color: var(--color-danger, #ff6b6b);
 }
 
+@media (min-width: 841px) {
+  .editorial-upload-card[data-asset-type="avatar"] {
+    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+    grid-template-areas:
+      "header header"
+      "current controls"
+      "local controls";
+    align-items: start;
+  }
+
+  .editorial-upload-card[data-asset-type="cover"] {
+    grid-template-areas:
+      "header"
+      "current"
+      "local"
+      "controls";
+  }
+
+  .editorial-upload-card[data-asset-type="cover"] .editorial-current-media__frame--cover,
+  .editorial-upload-card[data-asset-type="cover"] .editorial-local-preview__frame--cover {
+    min-height: 0;
+  }
+}
+
 @media (max-width: 840px) {
   .editorial-dashboard-grid,
   .editorial-form-grid,
@@ -497,5 +551,13 @@
   .editorial-profile-summary__avatar {
     width: 96px;
     height: 96px;
+  }
+
+  .editorial-upload-card {
+    grid-template-areas:
+      "header"
+      "current"
+      "local"
+      "controls";
   }
 }
