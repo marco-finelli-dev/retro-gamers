@@ -471,7 +471,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
             !isSelf && (viewerRole === 'admin' || (viewerRole === 'moderator' && role === 'user')),
           canManageBadges: viewerRole === 'admin' && badgeManagementAvailable,
           editorialAccess: {
-            canManage: canManageEditorialAccess && !isSelf,
+            canManage: canManageEditorialAccess,
             databaseAvailable: editorialDatabaseAvailable,
             error: editorialDatabaseError,
             profile: editorialProfileByUserId.get(profile.user_id) || null,
