@@ -1443,6 +1443,42 @@ function getFeaturedImageAltFromFormData(
   return currentArticle.featuredImage?.alt || '';
 }
 
+function getFeaturedImageAssetRef(document: Record<string, unknown> | null | undefined) {
+  if (!isPlainObject(document?.featuredImage)) return '';
+  const featuredImage = document.featuredImage;
+  if (!isPlainObject(featuredImage.asset)) return '';
+
+  return normalizeString(featuredImage.asset._ref, 220).trim();
+}
+
+function logFeaturedImageResult({
+  context,
+  rootDocumentId,
+  draftDocumentId,
+  assetUploadSucceeded,
+  articlePatchSucceeded,
+  resultRevision,
+  failureCode = null,
+}: {
+  context: 'featured_image_replace' | 'featured_image_remove';
+  rootDocumentId: string;
+  draftDocumentId: string;
+  assetUploadSucceeded: boolean;
+  articlePatchSucceeded: boolean;
+  resultRevision?: string | null;
+  failureCode?: string | null;
+}) {
+  console.info('Editorial featured image mutation:', {
+    context,
+    rootDocumentId,
+    draftDocumentId,
+    assetUploadSucceeded,
+    articlePatchSucceeded,
+    resultRevision: resultRevision || null,
+    failureCode,
+  });
+}
+
 export async function updateEditorialArticleFeaturedImage({
   context,
   rootDocumentId,
@@ -1472,20 +1508,54 @@ export async function updateEditorialArticleFeaturedImage({
   }
 
   const draftDocumentId = getDraftDocumentId(fetchResult.ownership.sanityDocumentId);
+  const safeRootDocumentId = fetchResult.ownership.sanityDocumentId;
   let assetUploaded = false;
   let articleUpdated = false;
 
   try {
     if (action === 'remove') {
-      const updated = await getSanityWriteClient()
+      await getSanityWriteClient()
         .patch(draftDocumentId)
         .ifRevisionId(revisionId)
         .unset(['featuredImage'])
         .commit<Record<string, unknown>>();
       articleUpdated = true;
-      const normalizedArticle = normalizeDraftArticle(updated, fetchResult.article.author);
+      const readBack = await getSanityRawClient().getDocument<Record<string, unknown>>(draftDocumentId);
+      const resultRevision = typeof readBack?._rev === 'string' ? readBack._rev : null;
+
+      if (!readBack || isPlainObject(readBack.featuredImage)) {
+        logFeaturedImageResult({
+          context: 'featured_image_remove',
+          rootDocumentId: safeRootDocumentId,
+          draftDocumentId,
+          assetUploadSucceeded: assetUploaded,
+          articlePatchSucceeded: articleUpdated,
+          resultRevision,
+          failureCode: 'featured_image_remove_not_persisted',
+        });
+
+        return {
+          ok: false as const,
+          status: 502,
+          error: 'featured_image_remove_not_persisted',
+          assetUploaded,
+          articleUpdated,
+        };
+      }
+
+      const normalizedArticle = normalizeDraftArticle(readBack, fetchResult.article.author);
 
       if (!normalizedArticle) {
+        logFeaturedImageResult({
+          context: 'featured_image_remove',
+          rootDocumentId: safeRootDocumentId,
+          draftDocumentId,
+          assetUploadSucceeded: assetUploaded,
+          articlePatchSucceeded: articleUpdated,
+          resultRevision,
+          failureCode: 'sanity_article_invalid',
+        });
+
         return {
           ok: false as const,
           status: 502,
@@ -1496,6 +1566,14 @@ export async function updateEditorialArticleFeaturedImage({
       }
 
       const article = await hydrateDraftArticleFeaturedImage(normalizedArticle);
+      logFeaturedImageResult({
+        context: 'featured_image_remove',
+        rootDocumentId: safeRootDocumentId,
+        draftDocumentId,
+        assetUploadSucceeded: assetUploaded,
+        articlePatchSucceeded: articleUpdated,
+        resultRevision: article._rev,
+      });
       const auditLogged = await recordArticleAudit({
         actorUserId: context.user.id,
         action: 'article_saved',
@@ -1555,15 +1633,49 @@ export async function updateEditorialArticleFeaturedImage({
       imageValue.alt = alt;
     }
 
-    const updated = await getSanityWriteClient()
+    await getSanityWriteClient()
       .patch(draftDocumentId)
       .ifRevisionId(revisionId)
       .set({ featuredImage: imageValue })
       .commit<Record<string, unknown>>();
     articleUpdated = true;
-    const normalizedArticle = normalizeDraftArticle(updated, fetchResult.article.author);
+    const readBack = await getSanityRawClient().getDocument<Record<string, unknown>>(draftDocumentId);
+    const resultRevision = typeof readBack?._rev === 'string' ? readBack._rev : null;
+    const persistedAssetRef = getFeaturedImageAssetRef(readBack);
+
+    if (!readBack || persistedAssetRef !== asset._id) {
+      logFeaturedImageResult({
+        context: 'featured_image_replace',
+        rootDocumentId: safeRootDocumentId,
+        draftDocumentId,
+        assetUploadSucceeded: assetUploaded,
+        articlePatchSucceeded: articleUpdated,
+        resultRevision,
+        failureCode: 'featured_image_not_persisted',
+      });
+
+      return {
+        ok: false as const,
+        status: 502,
+        error: 'featured_image_not_persisted',
+        assetUploaded,
+        articleUpdated,
+      };
+    }
+
+    const normalizedArticle = normalizeDraftArticle(readBack, fetchResult.article.author);
 
     if (!normalizedArticle) {
+      logFeaturedImageResult({
+        context: 'featured_image_replace',
+        rootDocumentId: safeRootDocumentId,
+        draftDocumentId,
+        assetUploadSucceeded: assetUploaded,
+        articlePatchSucceeded: articleUpdated,
+        resultRevision,
+        failureCode: 'sanity_article_invalid',
+      });
+
       return {
         ok: false as const,
         status: 502,
@@ -1574,6 +1686,14 @@ export async function updateEditorialArticleFeaturedImage({
     }
 
     const article = await hydrateDraftArticleFeaturedImage(normalizedArticle);
+    logFeaturedImageResult({
+      context: 'featured_image_replace',
+      rootDocumentId: safeRootDocumentId,
+      draftDocumentId,
+      assetUploadSucceeded: assetUploaded,
+      articlePatchSucceeded: articleUpdated,
+      resultRevision: article._rev,
+    });
     const auditLogged = await recordArticleAudit({
       actorUserId: context.user.id,
       action: 'article_saved',
@@ -1596,6 +1716,16 @@ export async function updateEditorialArticleFeaturedImage({
     };
   } catch (error) {
     if (isRevisionConflict(error)) {
+      logFeaturedImageResult({
+        context: action === 'remove' ? 'featured_image_remove' : 'featured_image_replace',
+        rootDocumentId: safeRootDocumentId,
+        draftDocumentId,
+        assetUploadSucceeded: assetUploaded,
+        articlePatchSucceeded: articleUpdated,
+        resultRevision: null,
+        failureCode: 'revision_conflict',
+      });
+
       return {
         ok: false as const,
         status: 409,
@@ -1606,6 +1736,15 @@ export async function updateEditorialArticleFeaturedImage({
     }
 
     logApiError('editorial-article.featured-image.update', error);
+    logFeaturedImageResult({
+      context: action === 'remove' ? 'featured_image_remove' : 'featured_image_replace',
+      rootDocumentId: safeRootDocumentId,
+      draftDocumentId,
+      assetUploadSucceeded: assetUploaded,
+      articlePatchSucceeded: articleUpdated,
+      resultRevision: null,
+      failureCode: assetUploaded ? 'featured_image_update_failed' : 'featured_image_upload_failed',
+    });
 
     return {
       ok: false as const,

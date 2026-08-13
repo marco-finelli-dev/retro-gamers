@@ -13,7 +13,7 @@ import {
 } from '@portabletext/editor';
 import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
 import * as selectors from '@portabletext/editor/selectors';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 type ArticleType =
   | 'review'
@@ -122,7 +122,6 @@ type Labels = {
   futureSlot: string;
   featuredImageCurrent: string;
   featuredImageEmpty: string;
-  featuredImageUpload: string;
   featuredImageUploading: string;
   featuredImageReplace: string;
   featuredImageRemove: string;
@@ -136,6 +135,7 @@ type Labels = {
   featuredImageDropFile: string;
   featuredImageNewPreview: string;
   featuredImageFileReady: string;
+  featuredImageCancelSelection: string;
   featuredImageInvalidType: string;
   featuredImageInvalidSize: string;
   featuredImageMissingFile: string;
@@ -155,6 +155,7 @@ type Labels = {
   gameData: string;
   releaseYear: string;
   mediaFormat: string;
+  multiSelectPlaceholder: string;
   ratingSection: string;
   grafica: string;
   sonoro: string;
@@ -669,6 +670,105 @@ function getRatingLabel(field: RatingField, labels: Labels) {
   return labels.overall;
 }
 
+type MultiSelectOption<Value extends string> = {
+  value: Value;
+  label: string;
+};
+
+function getMultiSelectSummary<Value extends string>(
+  values: Value[],
+  options: MultiSelectOption<Value>[],
+  placeholder: string
+) {
+  const labels = values
+    .map((value) => options.find((option) => option.value === value)?.label || '')
+    .filter(Boolean);
+
+  if (labels.length === 0) return placeholder;
+  if (labels.length <= 2) return labels.join(', ');
+
+  return `${labels.slice(0, 2).join(', ')} +${labels.length - 2}`;
+}
+
+function MultiSelect<Value extends string>({
+  label,
+  placeholder,
+  values,
+  options,
+  onChange,
+}: {
+  label: string;
+  placeholder: string;
+  values: Value[];
+  options: MultiSelectOption<Value>[];
+  onChange: (values: Value[]) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuId = useId();
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const summary = getMultiSelectSummary(values, options, placeholder);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isOpen]);
+
+  const toggleValue = (value: Value) => {
+    onChange(values.includes(value)
+      ? values.filter((item) => item !== value)
+      : [...values, value]);
+  };
+
+  return (
+    <div className="editorial-multiselect" ref={rootRef}>
+      <button
+        type="button"
+        className="editorial-multiselect__trigger"
+        aria-label={label}
+        aria-expanded={isOpen}
+        aria-controls={menuId}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span>{summary}</span>
+        <span aria-hidden="true">▾</span>
+      </button>
+
+      {isOpen && (
+        <div className="editorial-multiselect__menu" id={menuId} role="group" aria-label={label}>
+          {options.map((option) => (
+            <label className="editorial-multiselect__option" key={option.value}>
+              <input
+                type="checkbox"
+                checked={values.includes(option.value)}
+                onChange={() => toggleValue(option.value)}
+              />
+              <span>{option.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReviewStringListEditor({
   title,
   values,
@@ -803,6 +903,13 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     ],
     [labels]
   );
+  const mediaFormatSelectOptions = useMemo<MultiSelectOption<MediaFormat>[]>(
+    () => mediaFormatOptions.map((format) => ({
+      value: format,
+      label: mediaFormatLabels[lang][format],
+    })),
+    [lang]
+  );
 
   useEffect(() => () => {
     if (selectedFeaturedFile?.previewUrl) {
@@ -872,8 +979,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     }));
   };
 
-  const uploadFeaturedImage = async () => {
-    if (isFeaturedImageUploading || !selectedFeaturedFile) return;
+  const persistSelectedFeaturedImage = async (revisionId: string) => {
+    if (!selectedFeaturedFile) return null;
 
     setIsFeaturedImageUploading(true);
     setFeaturedImageStatus(labels.featuredImageUploading);
@@ -882,7 +989,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     try {
       const formData = new FormData();
       formData.set('action', 'replace');
-      formData.set('_rev', draft._rev);
+      formData.set('_rev', revisionId);
       formData.set('alt', draft.featuredImage?.alt || '');
       formData.set('file', selectedFeaturedFile.file);
       const response = await fetch(`${saveEndpoint.replace(/\/$/, '')}/featured-image`, {
@@ -899,6 +1006,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
       setSelectedFeaturedFile(null);
       setFeaturedImageStatus(labels.featuredImageUploaded);
       setFeaturedImageStatusTone('success');
+
+      return result.article as EditableArticle;
     } catch (error) {
       const message = error instanceof Error && error.message === 'revision_conflict'
         ? labels.featuredImageConflict
@@ -906,6 +1015,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
 
       setFeaturedImageStatus(message);
       setFeaturedImageStatusTone('error');
+      throw error;
     } finally {
       setIsFeaturedImageUploading(false);
     }
@@ -963,23 +1073,6 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     }));
   };
 
-  const toggleMediaFormat = (format: MediaFormat) => {
-    setDraft((current) => {
-      const isSelected = current.gameInfo.mediaFormat.includes(format);
-      const mediaFormat = isSelected
-        ? current.gameInfo.mediaFormat.filter((item) => item !== format)
-        : [...current.gameInfo.mediaFormat, format];
-
-      return {
-        ...current,
-        gameInfo: {
-          ...current.gameInfo,
-          mediaFormat,
-        },
-      };
-    });
-  };
-
   const updateRating = <Field extends keyof EditableArticleRating>(
     field: Field,
     value: EditableArticleRating[Field]
@@ -1002,6 +1095,26 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const featuredImageAlt = featuredImage?.alt || '';
   const selectedFeaturedFileMetadata = getSelectedFileMetadataLabel(selectedFeaturedFile);
 
+  const getArticleSavePayload = (articleDraft: EditableArticle) => ({
+    _rev: articleDraft._rev,
+    title: articleDraft.title,
+    subtitle: articleDraft.subtitle,
+    cardExcerpt: articleDraft.cardExcerpt,
+    excerpt: articleDraft.excerpt,
+    seoTitle: articleDraft.seoTitle,
+    type: articleDraft.type,
+    language: articleDraft.language,
+    slug: articleDraft.slug,
+    featuredImageAlt: articleDraft.featuredImage?.alt || '',
+    gameInfo: articleDraft.gameInfo,
+    rating: articleDraft.rating,
+    pros: articleDraft.pros,
+    cons: articleDraft.cons,
+    seriesOrder: articleDraft.seriesOrder,
+    seriesLabel: articleDraft.seriesLabel,
+    content,
+  });
+
   const saveArticle = async () => {
     if (isSaving) return;
 
@@ -1010,30 +1123,26 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     setStatusTone('');
 
     try {
+      let articleForSave = draft;
+
+      if (selectedFeaturedFile) {
+        const articleAfterImageSave = await persistSelectedFeaturedImage(draft._rev);
+
+        if (articleAfterImageSave) {
+          articleForSave = {
+            ...draft,
+            _rev: articleAfterImageSave._rev,
+            featuredImage: articleAfterImageSave.featuredImage,
+          };
+        }
+      }
+
       const response = await fetch(saveEndpoint, {
         method: 'PATCH',
         headers: {
           'content-type': 'application/json',
         },
-        body: JSON.stringify({
-          _rev: draft._rev,
-          title: draft.title,
-          subtitle: draft.subtitle,
-          cardExcerpt: draft.cardExcerpt,
-          excerpt: draft.excerpt,
-          seoTitle: draft.seoTitle,
-          type: draft.type,
-          language: draft.language,
-          slug: draft.slug,
-          featuredImageAlt: draft.featuredImage?.alt || '',
-          gameInfo: draft.gameInfo,
-          rating: draft.rating,
-          pros: draft.pros,
-          cons: draft.cons,
-          seriesOrder: draft.seriesOrder,
-          seriesLabel: draft.seriesLabel,
-          content,
-        }),
+        body: JSON.stringify(getArticleSavePayload(articleForSave)),
       });
       const result = await response.json();
 
@@ -1246,33 +1355,56 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
             <summary>{labels.inspectorFeaturedImage}</summary>
 
             <div className="editorial-featured-image-control">
-              <div className="editorial-current-media editorial-current-media--featured">
-                <span>{labels.featuredImageCurrent}</span>
-                <div className="editorial-current-media__frame editorial-current-media__frame--featured">
-                  {featuredImageAsset?.url ? (
-                    <img
-                      src={featuredImageAsset.url}
-                      alt={featuredImageAlt || labels.inspectorFeaturedImage}
-                    />
-                  ) : (
-                    <span className="editorial-current-media__placeholder">
-                      {labels.featuredImageEmpty}
-                    </span>
+              {selectedFeaturedFile && (
+                <div className="editorial-local-preview editorial-local-preview--featured">
+                  <span>{labels.featuredImageNewPreview}</span>
+                  <div className="editorial-local-preview__frame editorial-local-preview__frame--featured">
+                    <img src={selectedFeaturedFile.previewUrl} alt="" aria-hidden="true" />
+                  </div>
+                  {selectedFeaturedFileMetadata && (
+                    <p className="editorial-file-meta">{selectedFeaturedFileMetadata}</p>
                   )}
                 </div>
-                {featuredImageAsset ? (
-                  <>
+              )}
+
+              {(!selectedFeaturedFile && hasFeaturedImage) && (
+                <div className="editorial-current-media editorial-current-media--featured">
+                  <span>{labels.featuredImageCurrent}</span>
+                  <div className="editorial-current-media__frame editorial-current-media__frame--featured">
+                    <img
+                      src={featuredImageAsset?.url || ''}
+                      alt={featuredImageAlt || labels.inspectorFeaturedImage}
+                    />
+                  </div>
+                  <p className="editorial-file-meta">
+                    {getAssetMetadataLabel(featuredImageAsset, labels)}
+                  </p>
+                  {featuredImageAsset?._id && (
                     <p className="editorial-file-meta">
-                      {getAssetMetadataLabel(featuredImageAsset, labels)}
+                      {labels.featuredImageAssetId}: <code>{featuredImageAsset._id}</code>
                     </p>
-                    {featuredImageAsset._id && (
-                      <p className="editorial-file-meta">
-                        {labels.featuredImageAssetId}: <code>{featuredImageAsset._id}</code>
-                      </p>
-                    )}
-                  </>
-                ) : null}
-              </div>
+                  )}
+                </div>
+              )}
+
+              {(selectedFeaturedFile && hasFeaturedImage) && (
+                <div className="editorial-current-media editorial-current-media--featured editorial-current-media--reference">
+                  <span>{labels.featuredImageCurrent}</span>
+                  <div className="editorial-current-media__frame editorial-current-media__frame--featured">
+                    <img
+                      src={featuredImageAsset?.url || ''}
+                      alt={featuredImageAlt || labels.inspectorFeaturedImage}
+                    />
+                  </div>
+                  <p className="editorial-file-meta">
+                    {getAssetMetadataLabel(featuredImageAsset, labels)}
+                  </p>
+                </div>
+              )}
+
+              {(!selectedFeaturedFile && !hasFeaturedImage) && (
+                <p className="editorial-inspector-section__placeholder">{labels.featuredImageEmpty}</p>
+              )}
 
               {(hasFeaturedImage || selectedFeaturedFile) && (
                 <label className="editorial-field">
@@ -1293,18 +1425,6 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                     </p>
                   )}
                 </label>
-              )}
-
-              {selectedFeaturedFile && (
-                <div className="editorial-local-preview editorial-local-preview--featured">
-                  <span>{labels.featuredImageNewPreview}</span>
-                  <div className="editorial-local-preview__frame editorial-local-preview__frame--featured">
-                    <img src={selectedFeaturedFile.previewUrl} alt="" aria-hidden="true" />
-                  </div>
-                  {selectedFeaturedFileMetadata && (
-                    <p className="editorial-file-meta">{selectedFeaturedFileMetadata}</p>
-                  )}
-                </div>
               )}
 
               <div className="editorial-featured-image-control__actions">
@@ -1337,19 +1457,6 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 <p className="editorial-file-meta">{labels.featuredImageFormats}</p>
 
                 <div className="editorial-featured-image-control__buttons">
-                  <button
-                    type="button"
-                    className="editorial-mini-button"
-                    onClick={uploadFeaturedImage}
-                    disabled={!selectedFeaturedFile || isFeaturedImageUploading || isFeaturedImageRemoving}
-                  >
-                    {isFeaturedImageUploading
-                      ? labels.featuredImageUploading
-                      : hasFeaturedImage
-                        ? labels.featuredImageReplace
-                        : labels.featuredImageUpload}
-                  </button>
-
                   {selectedFeaturedFile && (
                     <button
                       type="button"
@@ -1357,7 +1464,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       onClick={clearSelectedFeaturedFile}
                       disabled={isFeaturedImageUploading || isFeaturedImageRemoving}
                     >
-                      {labels.removeItem}
+                      {labels.featuredImageCancelSelection}
                     </button>
                   )}
 
@@ -1402,21 +1509,16 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   />
                 </label>
 
-                <fieldset className="editorial-review-fieldset">
-                  <legend>{labels.mediaFormat}</legend>
-                  <div className="editorial-checkbox-list">
-                    {mediaFormatOptions.map((format) => (
-                      <label key={format}>
-                        <input
-                          type="checkbox"
-                          checked={draft.gameInfo.mediaFormat.includes(format)}
-                          onChange={() => toggleMediaFormat(format)}
-                        />
-                        <span>{mediaFormatLabels[lang][format]}</span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
+                <div className="editorial-field">
+                  <span>{labels.mediaFormat}</span>
+                  <MultiSelect
+                    label={labels.mediaFormat}
+                    placeholder={labels.multiSelectPlaceholder}
+                    values={draft.gameInfo.mediaFormat}
+                    options={mediaFormatSelectOptions}
+                    onChange={(values) => updateGameInfo('mediaFormat', values)}
+                  />
+                </div>
               </div>
 
               <div className="editorial-inspector-subsection">
