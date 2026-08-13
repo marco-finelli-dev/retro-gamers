@@ -13,7 +13,7 @@ import {
 } from '@portabletext/editor';
 import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
 import * as selectors from '@portabletext/editor/selectors';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type ArticleType =
   | 'review'
@@ -27,6 +27,39 @@ type ArticleType =
 
 type ArticleLanguage = 'it' | 'en';
 
+type MediaFormat =
+  | 'cartridge'
+  | 'floppy'
+  | 'tape'
+  | 'cdrom'
+  | 'gdrom'
+  | 'dvdrom'
+  | 'hucard'
+  | 'arcade_pcb'
+  | 'digital'
+  | 'other';
+
+type RatingField = 'grafica' | 'sonoro' | 'giocabilita' | 'longevita' | 'overall';
+
+type EditableArticleAuthor = {
+  _id: string;
+  name: string;
+  nickname: string;
+  displayName: 'real' | 'nickname';
+  label: string;
+  role: string;
+  slug: string;
+} | null;
+
+type EditableArticleGameInfo = {
+  releaseYear: number | null;
+  mediaFormat: MediaFormat[];
+};
+
+type EditableArticleRating = Record<RatingField, number | null> & {
+  summary: string;
+};
+
 type EditableArticle = {
   _id: string;
   _rev: string;
@@ -38,7 +71,16 @@ type EditableArticle = {
   type: ArticleType;
   language: ArticleLanguage;
   slug: string;
+  reviewStatus: string;
   content: PortableTextBlock[];
+  author: EditableArticleAuthor;
+  gameInfo: EditableArticleGameInfo;
+  rating: EditableArticleRating;
+  pros: string[];
+  cons: string[];
+  hasEditorialSeries: boolean;
+  seriesOrder: number | null;
+  seriesLabel: string;
 };
 
 type Labels = {
@@ -60,6 +102,29 @@ type Labels = {
   type: string;
   language: string;
   slug: string;
+  author: string;
+  authorMissing: string;
+  gameData: string;
+  releaseYear: string;
+  mediaFormat: string;
+  ratingSection: string;
+  grafica: string;
+  sonoro: string;
+  giocabilita: string;
+  longevita: string;
+  overall: string;
+  ratingSummary: string;
+  overallWarning: string;
+  pros: string;
+  cons: string;
+  addItem: string;
+  removeItem: string;
+  moveUp: string;
+  moveDown: string;
+  emptyListItem: string;
+  editorialSeriesReadOnly: string;
+  seriesOrder: string;
+  seriesLabel: string;
   save: string;
   saving: string;
   saved: string;
@@ -109,6 +174,46 @@ const articleTypes: ArticleType[] = [
 ];
 
 const languages: ArticleLanguage[] = ['it', 'en'];
+const mediaFormatOptions: MediaFormat[] = [
+  'cartridge',
+  'floppy',
+  'tape',
+  'cdrom',
+  'gdrom',
+  'dvdrom',
+  'hucard',
+  'arcade_pcb',
+  'digital',
+  'other',
+];
+const ratingFields: RatingField[] = ['grafica', 'sonoro', 'giocabilita', 'longevita', 'overall'];
+
+const mediaFormatLabels: Record<ArticleLanguage, Record<MediaFormat, string>> = {
+  it: {
+    cartridge: 'Cartuccia',
+    floppy: 'Floppy disk',
+    tape: 'Cassetta / tape',
+    cdrom: 'CD-ROM',
+    gdrom: 'GD-ROM',
+    dvdrom: 'DVD-ROM',
+    hucard: 'HuCard',
+    arcade_pcb: 'PCB arcade',
+    digital: 'Digitale',
+    other: 'Altro',
+  },
+  en: {
+    cartridge: 'Cartridge',
+    floppy: 'Floppy disk',
+    tape: 'Tape',
+    cdrom: 'CD-ROM',
+    gdrom: 'GD-ROM',
+    dvdrom: 'DVD-ROM',
+    hucard: 'HuCard',
+    arcade_pcb: 'Arcade PCB',
+    digital: 'Digital',
+    other: 'Other',
+  },
+};
 
 const schemaDefinition = defineSchema({
   decorators: [{ name: 'strong' }, { name: 'em' }],
@@ -400,6 +505,143 @@ function CharacterCounter({
   );
 }
 
+function parseOptionalNumber(value: string) {
+  if (!value.trim()) return null;
+
+  const number = Number(value);
+
+  return Number.isFinite(number) ? number : null;
+}
+
+function createUiKey() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `item-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function hasReviewData(article: EditableArticle) {
+  return Boolean(
+    article.gameInfo.releaseYear !== null ||
+    article.gameInfo.mediaFormat.length > 0 ||
+    ratingFields.some((field) => article.rating[field] !== null) ||
+    article.rating.summary.trim() ||
+    article.pros.some((item) => item.trim()) ||
+    article.cons.some((item) => item.trim())
+  );
+}
+
+function getRatingLabel(field: RatingField, labels: Labels) {
+  if (field === 'grafica') return labels.grafica;
+  if (field === 'sonoro') return labels.sonoro;
+  if (field === 'giocabilita') return labels.giocabilita;
+  if (field === 'longevita') return labels.longevita;
+
+  return labels.overall;
+}
+
+function ReviewStringListEditor({
+  title,
+  values,
+  labels,
+  onChange,
+}: {
+  title: string;
+  values: string[];
+  labels: Labels;
+  onChange: (values: string[]) => void;
+}) {
+  const [itemKeys, setItemKeys] = useState(() => values.map(() => createUiKey()));
+
+  useEffect(() => {
+    setItemKeys((current) => values.map((_, index) => current[index] || createUiKey()));
+  }, [values.length]);
+
+  const updateItem = (index: number, value: string) => {
+    const nextValues = [...values];
+    nextValues[index] = value;
+    onChange(nextValues);
+  };
+
+  const addItem = () => {
+    onChange([...values, '']);
+    setItemKeys((current) => [...current, createUiKey()]);
+  };
+
+  const removeItem = (index: number) => {
+    onChange(values.filter((_, itemIndex) => itemIndex !== index));
+    setItemKeys((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const moveItem = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= values.length) return;
+
+    const nextValues = [...values];
+    const nextKeys = [...itemKeys];
+    [nextValues[index], nextValues[nextIndex]] = [nextValues[nextIndex], nextValues[index]];
+    [nextKeys[index], nextKeys[nextIndex]] = [nextKeys[nextIndex], nextKeys[index]];
+    onChange(nextValues);
+    setItemKeys(nextKeys);
+  };
+
+  return (
+    <div className="editorial-review-list-editor">
+      <div className="editorial-review-list-editor__header">
+        <span>{title}</span>
+        <button type="button" className="editorial-mini-button" onClick={addItem}>
+          + {labels.addItem}
+        </button>
+      </div>
+
+      <div className="editorial-review-list-editor__items">
+        {values.map((value, index) => (
+          <div className="editorial-review-list-editor__item" key={itemKeys[index] || index}>
+            <input
+              value={value}
+              placeholder={labels.emptyListItem}
+              aria-label={`${title} ${index + 1}`}
+              onChange={(event) => updateItem(index, event.target.value)}
+            />
+            <div className="editorial-review-list-editor__actions">
+              <button
+                type="button"
+                className="editorial-mini-button"
+                onClick={() => moveItem(index, -1)}
+                disabled={index === 0}
+                aria-label={`${labels.moveUp}: ${title} ${index + 1}`}
+                title={labels.moveUp}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                className="editorial-mini-button"
+                onClick={() => moveItem(index, 1)}
+                disabled={index === values.length - 1}
+                aria-label={`${labels.moveDown}: ${title} ${index + 1}`}
+                title={labels.moveDown}
+              >
+                ↓
+              </button>
+              <button
+                type="button"
+                className="editorial-mini-button editorial-mini-button--danger"
+                onClick={() => removeItem(index)}
+                aria-label={`${labels.removeItem}: ${title} ${index + 1}`}
+                title={labels.removeItem}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ArticlePortableTextEditor({ article, lang, articlesHref, saveEndpoint, labels }: Props) {
   const [draft, setDraft] = useState<EditableArticle>(article);
   const [content, setContent] = useState<PortableTextBlock[]>(article.content || []);
@@ -428,12 +670,59 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     [labels]
   );
 
-  const updateField = (field: keyof EditableArticle, value: string) => {
+  const updateField = <Field extends keyof EditableArticle>(field: Field, value: EditableArticle[Field]) => {
     setDraft((current) => ({
       ...current,
       [field]: value,
     }));
   };
+
+  const updateGameInfo = <Field extends keyof EditableArticleGameInfo>(
+    field: Field,
+    value: EditableArticleGameInfo[Field]
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      gameInfo: {
+        ...current.gameInfo,
+        [field]: value,
+      },
+    }));
+  };
+
+  const toggleMediaFormat = (format: MediaFormat) => {
+    setDraft((current) => {
+      const isSelected = current.gameInfo.mediaFormat.includes(format);
+      const mediaFormat = isSelected
+        ? current.gameInfo.mediaFormat.filter((item) => item !== format)
+        : [...current.gameInfo.mediaFormat, format];
+
+      return {
+        ...current,
+        gameInfo: {
+          ...current.gameInfo,
+          mediaFormat,
+        },
+      };
+    });
+  };
+
+  const updateRating = <Field extends keyof EditableArticleRating>(
+    field: Field,
+    value: EditableArticleRating[Field]
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      rating: {
+        ...current.rating,
+        [field]: value,
+      },
+    }));
+  };
+
+  const showReviewSection = draft.type === 'review' || hasReviewData(draft);
+  const isReviewEditoriallyActive =
+    draft.type === 'review' && ['inProgress', 'done'].includes(draft.reviewStatus);
 
   const saveArticle = async () => {
     if (isSaving) return;
@@ -458,6 +747,12 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
           type: draft.type,
           language: draft.language,
           slug: draft.slug,
+          gameInfo: draft.gameInfo,
+          rating: draft.rating,
+          pros: draft.pros,
+          cons: draft.cons,
+          seriesOrder: draft.seriesOrder,
+          seriesLabel: draft.seriesLabel,
           content,
         }),
       });
@@ -589,6 +884,12 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 onChange={(event) => updateField('slug', event.target.value)}
               />
             </label>
+
+            <div className="editorial-readonly-field">
+              <span>{labels.author}</span>
+              <p>{draft.author?.label || labels.authorMissing}</p>
+              {draft.author?.slug && <code>{draft.author.slug}</code>}
+            </div>
           </details>
 
           <details className="editorial-inspector-section" open>
@@ -634,7 +935,32 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
 
           <details className="editorial-inspector-section">
             <summary>{labels.inspectorRelations}</summary>
-            <p className="editorial-inspector-section__placeholder">{labels.futureSlot}</p>
+            {draft.hasEditorialSeries ? (
+              <div className="editorial-inspector-subsection">
+                <p className="editorial-inspector-section__placeholder">
+                  {labels.editorialSeriesReadOnly}
+                </p>
+                <label className="editorial-field">
+                  <span>{labels.seriesOrder}</span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={draft.seriesOrder ?? ''}
+                    onChange={(event) => updateField('seriesOrder', parseOptionalNumber(event.target.value))}
+                  />
+                </label>
+                <label className="editorial-field">
+                  <span>{labels.seriesLabel}</span>
+                  <input
+                    value={draft.seriesLabel}
+                    onChange={(event) => updateField('seriesLabel', event.target.value)}
+                  />
+                </label>
+              </div>
+            ) : (
+              <p className="editorial-inspector-section__placeholder">{labels.futureSlot}</p>
+            )}
           </details>
 
           <details className="editorial-inspector-section">
@@ -642,10 +968,88 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
             <p className="editorial-inspector-section__placeholder">{labels.futureSlot}</p>
           </details>
 
-          {draft.type === 'review' && (
-            <details className="editorial-inspector-section">
+          {showReviewSection && (
+            <details className="editorial-inspector-section" open>
               <summary>{labels.inspectorReview}</summary>
-              <p className="editorial-inspector-section__placeholder">{labels.futureSlot}</p>
+
+              <div className="editorial-inspector-subsection">
+                <h3>{labels.gameData}</h3>
+                <label className="editorial-field">
+                  <span>{labels.releaseYear}</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={draft.gameInfo.releaseYear ?? ''}
+                    onChange={(event) => updateGameInfo('releaseYear', parseOptionalNumber(event.target.value))}
+                  />
+                </label>
+
+                <fieldset className="editorial-review-fieldset">
+                  <legend>{labels.mediaFormat}</legend>
+                  <div className="editorial-checkbox-list">
+                    {mediaFormatOptions.map((format) => (
+                      <label key={format}>
+                        <input
+                          type="checkbox"
+                          checked={draft.gameInfo.mediaFormat.includes(format)}
+                          onChange={() => toggleMediaFormat(format)}
+                        />
+                        <span>{mediaFormatLabels[lang][format]}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              </div>
+
+              <div className="editorial-inspector-subsection">
+                <h3>{labels.ratingSection}</h3>
+                <div className="editorial-rating-grid">
+                  {ratingFields.map((field) => (
+                    <label className="editorial-field" key={field}>
+                      <span>{getRatingLabel(field, labels)}</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        step="0.5"
+                        value={draft.rating[field] ?? ''}
+                        onChange={(event) => updateRating(field, parseOptionalNumber(event.target.value))}
+                      />
+                    </label>
+                  ))}
+                </div>
+                {isReviewEditoriallyActive && draft.rating.overall === null && (
+                  <p className="editorial-character-count" data-warning="true">
+                    {labels.overallWarning}
+                  </p>
+                )}
+              </div>
+
+              <div className="editorial-inspector-subsection">
+                <label className="editorial-field">
+                  <span>{labels.ratingSummary}</span>
+                  <textarea
+                    value={draft.rating.summary}
+                    rows={5}
+                    onChange={(event) => updateRating('summary', event.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div className="editorial-inspector-subsection">
+                <ReviewStringListEditor
+                  title={labels.pros}
+                  values={draft.pros}
+                  labels={labels}
+                  onChange={(values) => updateField('pros', values)}
+                />
+                <ReviewStringListEditor
+                  title={labels.cons}
+                  values={draft.cons}
+                  labels={labels}
+                  onChange={(values) => updateField('cons', values)}
+                />
+              </div>
             </details>
           )}
         </aside>

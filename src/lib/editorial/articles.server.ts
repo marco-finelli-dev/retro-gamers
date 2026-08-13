@@ -29,8 +29,50 @@ export const editorialArticleTypes = [
 
 export const editorialArticleLanguages = ['it', 'en'] as const;
 
+export const editorialArticleMediaFormats = [
+  'cartridge',
+  'floppy',
+  'tape',
+  'cdrom',
+  'gdrom',
+  'dvdrom',
+  'hucard',
+  'arcade_pcb',
+  'digital',
+  'other',
+] as const;
+
+const editorialArticleRatingFields = [
+  'grafica',
+  'sonoro',
+  'giocabilita',
+  'longevita',
+  'overall',
+] as const;
+
 type EditorialArticleType = (typeof editorialArticleTypes)[number];
 type EditorialArticleLanguage = (typeof editorialArticleLanguages)[number];
+type EditorialArticleMediaFormat = (typeof editorialArticleMediaFormats)[number];
+type EditorialArticleRatingField = (typeof editorialArticleRatingFields)[number];
+
+type EditorialArticleAuthorInfo = {
+  _id: string;
+  name: string;
+  nickname: string;
+  displayName: 'real' | 'nickname';
+  label: string;
+  role: string;
+  slug: string;
+};
+
+export type EditorialArticleGameInfo = {
+  releaseYear: number | null;
+  mediaFormat: EditorialArticleMediaFormat[];
+};
+
+export type EditorialArticleRating = Record<EditorialArticleRatingField, number | null> & {
+  summary: string;
+};
 
 type EditableEditorialContext = EditorialSessionContext & {
   user: NonNullable<EditorialSessionContext['user']>;
@@ -61,6 +103,14 @@ export type EditorialArticleDraft = {
   reviewStatus: string;
   content: PortableTextBlock[];
   authorId: string;
+  author: EditorialArticleAuthorInfo | null;
+  gameInfo: EditorialArticleGameInfo;
+  rating: EditorialArticleRating;
+  pros: string[];
+  cons: string[];
+  hasEditorialSeries: boolean;
+  seriesOrder: number | null;
+  seriesLabel: string;
   updatedAt: string | null;
   createdAt: string | null;
 };
@@ -87,6 +137,7 @@ const validDecorators = new Set(['strong', 'em']);
 const validImageDisplayModes = new Set(['cover', 'contain', 'wide', 'natural']);
 const validImageRowLayouts = new Set(['standard', 'uniformHeight']);
 const validAsideTones = new Set(['neutral', 'info', 'highlight']);
+const validMediaFormats = new Set<string>(editorialArticleMediaFormats);
 const validPageLinkPaths = new Set([
   '/',
   '/en/',
@@ -516,7 +567,106 @@ function normalizeEditableArticleRootDocumentId(value: unknown) {
   return normalizeSanityRootDocumentId(rootDocumentId);
 }
 
-function normalizeDraftArticle(document: Record<string, unknown> | null): EditorialArticleDraft | null {
+function normalizeDisplayNameMode(value: unknown): 'real' | 'nickname' {
+  return value === 'nickname' ? 'nickname' : 'real';
+}
+
+function normalizeAuthorInfo(
+  document: Record<string, unknown> | null,
+  fallbackId = ''
+): EditorialArticleAuthorInfo | null {
+  if (!document || document._type !== 'author') return null;
+
+  const name = normalizeString(document.name, 160).trim();
+  const nickname = normalizeString(document.nickname, 160).trim();
+  const displayName = normalizeDisplayNameMode(document.displayName);
+  const slugValue = isPlainObject(document.slug) ? normalizeString(document.slug.current, 96).trim() : '';
+  const label = displayName === 'nickname' && nickname ? nickname : name || nickname || fallbackId;
+
+  return {
+    _id: String(document._id || fallbackId || ''),
+    name,
+    nickname,
+    displayName,
+    label,
+    role: normalizeString(document.role, 80).trim(),
+    slug: slugValue,
+  };
+}
+
+function normalizeOptionalNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function normalizeGameInfo(value: unknown): EditorialArticleGameInfo {
+  const gameInfo = isPlainObject(value) ? value : {};
+  const mediaFormat = Array.isArray(gameInfo.mediaFormat)
+    ? Array.from(
+        new Set(
+          gameInfo.mediaFormat
+            .map((item) => normalizeString(item, 40).trim())
+            .filter((item): item is EditorialArticleMediaFormat =>
+              validMediaFormats.has(item)
+            )
+        )
+      )
+    : [];
+
+  return {
+    releaseYear: normalizeOptionalNumber(gameInfo.releaseYear),
+    mediaFormat,
+  };
+}
+
+function normalizeRating(value: unknown): EditorialArticleRating {
+  const rating = isPlainObject(value) ? value : {};
+
+  return {
+    grafica: normalizeOptionalNumber(rating.grafica),
+    sonoro: normalizeOptionalNumber(rating.sonoro),
+    giocabilita: normalizeOptionalNumber(rating.giocabilita),
+    longevita: normalizeOptionalNumber(rating.longevita),
+    overall: normalizeOptionalNumber(rating.overall),
+    summary: normalizeString(rating.summary, 2000).trim(),
+  };
+}
+
+function normalizeStringArray(value: unknown, maxLength = 220) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => normalizeString(item, maxLength).trim())
+    .filter(Boolean);
+}
+
+function normalizeOptionalPositiveNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1
+    ? value
+    : null;
+}
+
+function hasEditorialSeriesValue(value: unknown) {
+  return Array.isArray(value) && value.length > 0;
+}
+
+async function fetchAuthorInfo(authorId: string) {
+  if (!authorId) return null;
+
+  try {
+    const authorDocument = await getSanityRawClient().getDocument<Record<string, unknown>>(authorId);
+
+    return normalizeAuthorInfo(authorDocument || null, authorId);
+  } catch (error) {
+    logApiError('editorial-article.fetch.author', error);
+
+    return null;
+  }
+}
+
+function normalizeDraftArticle(
+  document: Record<string, unknown> | null,
+  author: EditorialArticleAuthorInfo | null = null
+): EditorialArticleDraft | null {
   if (!document || document._type !== 'article') return null;
 
   const slugValue = isPlainObject(document.slug) ? document.slug.current : '';
@@ -537,9 +687,175 @@ function normalizeDraftArticle(document: Record<string, unknown> | null): Editor
     reviewStatus: normalizeString(document.reviewStatus, 80),
     content: normalizePortableTextContent(document.content),
     authorId: authorReference?._ref || '',
+    author,
+    gameInfo: normalizeGameInfo(document.gameInfo),
+    rating: normalizeRating(document.rating),
+    pros: normalizeStringArray(document.pros),
+    cons: normalizeStringArray(document.cons),
+    hasEditorialSeries: hasEditorialSeriesValue(document.editorialSeries),
+    seriesOrder: normalizeOptionalPositiveNumber(document.seriesOrder),
+    seriesLabel: normalizeString(document.seriesLabel, 160).trim(),
     updatedAt: typeof document._updatedAt === 'string' ? document._updatedAt : null,
     createdAt: typeof document._createdAt === 'string' ? document._createdAt : null,
   };
+}
+
+function validateOptionalFiniteNumber(value: unknown, field: string) {
+  if (value === null || value === undefined || value === '') return null;
+
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`invalid_${field}`);
+  }
+
+  return value;
+}
+
+function validateOptionalPositiveNumber(value: unknown, field: string) {
+  const number = validateOptionalFiniteNumber(value, field);
+
+  if (number === null) return null;
+
+  if (number < 1) {
+    throw new Error(`invalid_${field}`);
+  }
+
+  return number;
+}
+
+function validateRatingValue(value: unknown, field: EditorialArticleRatingField) {
+  const number = validateOptionalFiniteNumber(value, `rating_${field}`);
+
+  if (number === null) return null;
+
+  if (number < 1 || number > 10 || !Number.isInteger(number * 2)) {
+    throw new Error(`invalid_rating_${field}`);
+  }
+
+  return number;
+}
+
+function validateMediaFormats(value: unknown) {
+  if (value === null || value === undefined) return [];
+
+  if (!Array.isArray(value)) {
+    throw new Error('invalid_gameInfo_mediaFormat');
+  }
+
+  const formats: EditorialArticleMediaFormat[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value) {
+    const format = normalizeString(item, 40).trim();
+
+    if (!validMediaFormats.has(format)) {
+      throw new Error('invalid_gameInfo_mediaFormat');
+    }
+
+    if (!seen.has(format)) {
+      seen.add(format);
+      formats.push(format as EditorialArticleMediaFormat);
+    }
+  }
+
+  return formats;
+}
+
+function validateStringArray(value: unknown, field: string, maxLength = 220) {
+  if (value === null || value === undefined) return [];
+
+  if (!Array.isArray(value)) {
+    throw new Error(`invalid_${field}`);
+  }
+
+  return value
+    .map((item) => {
+      if (typeof item !== 'string') {
+        throw new Error(`invalid_${field}`);
+      }
+
+      return normalizeString(item, maxLength).trim();
+    })
+    .filter(Boolean);
+}
+
+function getReviewPatchFields(payload: Record<string, unknown>) {
+  const set: Record<string, unknown> = {};
+  const unset: string[] = [];
+  const hasGameInfo = Object.prototype.hasOwnProperty.call(payload, 'gameInfo');
+  const hasRating = Object.prototype.hasOwnProperty.call(payload, 'rating');
+
+  if (hasGameInfo && !isPlainObject(payload.gameInfo)) {
+    throw new Error('invalid_gameInfo');
+  }
+
+  if (hasRating && !isPlainObject(payload.rating)) {
+    throw new Error('invalid_rating');
+  }
+
+  const gameInfo = hasGameInfo ? payload.gameInfo as Record<string, unknown> : {};
+  const rating = hasRating ? payload.rating as Record<string, unknown> : {};
+  const releaseYear = validateOptionalFiniteNumber(gameInfo.releaseYear, 'gameInfo_releaseYear');
+  const mediaFormat = validateMediaFormats(gameInfo.mediaFormat);
+
+  if (releaseYear === null) {
+    unset.push('gameInfo.releaseYear');
+  } else {
+    set['gameInfo.releaseYear'] = releaseYear;
+  }
+
+  if (mediaFormat.length === 0) {
+    unset.push('gameInfo.mediaFormat');
+  } else {
+    set['gameInfo.mediaFormat'] = mediaFormat;
+  }
+
+  for (const field of editorialArticleRatingFields) {
+    const value = validateRatingValue(rating[field], field);
+
+    if (value === null) {
+      unset.push(`rating.${field}`);
+    } else {
+      set[`rating.${field}`] = value;
+    }
+  }
+
+  const summary = normalizeOptionalString(rating.summary, 2000);
+  if (summary) {
+    set['rating.summary'] = summary;
+  } else {
+    unset.push('rating.summary');
+  }
+
+  const pros = validateStringArray(payload.pros, 'pros', 220);
+  const cons = validateStringArray(payload.cons, 'cons', 220);
+
+  if (pros.length > 0) {
+    set.pros = pros;
+  } else {
+    unset.push('pros');
+  }
+
+  if (cons.length > 0) {
+    set.cons = cons;
+  } else {
+    unset.push('cons');
+  }
+
+  const seriesOrder = validateOptionalPositiveNumber(payload.seriesOrder, 'seriesOrder');
+  if (seriesOrder === null) {
+    unset.push('seriesOrder');
+  } else {
+    set.seriesOrder = seriesOrder;
+  }
+
+  const seriesLabel = normalizeOptionalString(payload.seriesLabel, 160);
+  if (seriesLabel) {
+    set.seriesLabel = seriesLabel;
+  } else {
+    unset.push('seriesLabel');
+  }
+
+  return { set, unset };
 }
 
 async function fetchOwnership(rootDocumentId: string) {
@@ -836,7 +1152,9 @@ export async function fetchEditableEditorialArticle({
       return { ok: false as const, status: 409, error: 'public_flag_conflict' };
     }
 
-    return { ok: true as const, ownership, article: draft };
+    const author = await fetchAuthorInfo(draft.authorId);
+
+    return { ok: true as const, ownership, article: { ...draft, author } };
   } catch (error) {
     logApiError('editorial-article.fetch', error);
     return { ok: false as const, status: 500, error: 'article_fetch_failed' };
@@ -863,6 +1181,10 @@ function getPatchFromPayload(payload: Record<string, unknown>, currentArticle: E
     content: nextContent,
   };
   const unset: string[] = [];
+  const reviewPatch = getReviewPatchFields(payload);
+
+  Object.assign(set, reviewPatch.set);
+  unset.push(...reviewPatch.unset);
 
   if (nextSlug) {
     set.slug = {
@@ -927,7 +1249,7 @@ export async function updateEditableEditorialArticle({
     const updated = await sanityPatch.commit<Record<string, unknown>>({
       autoGenerateArrayKeys: true,
     });
-    const normalizedArticle = normalizeDraftArticle(updated);
+    const normalizedArticle = normalizeDraftArticle(updated, fetchResult.article.author);
 
     if (!normalizedArticle) {
       return { ok: false as const, status: 502, error: 'sanity_article_invalid' };
@@ -940,7 +1262,8 @@ export async function updateEditableEditorialArticle({
       previousWorkflowStatus: fetchResult.ownership.workflowStatus,
       nextWorkflowStatus: fetchResult.ownership.workflowStatus,
       metadata: {
-        fields: 'title,subtitle,cardExcerpt,excerpt,seoTitle,type,language,slug,content',
+        fields:
+          'title,subtitle,cardExcerpt,excerpt,seoTitle,type,language,slug,content,gameInfo.releaseYear,gameInfo.mediaFormat,rating,pros,cons,seriesOrder,seriesLabel',
       },
     });
 
