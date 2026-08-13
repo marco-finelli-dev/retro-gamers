@@ -5,6 +5,7 @@ import NewsMenu from './NewsMenu.astro';
 import PlatformsMenu from './PlatformsMenu.astro';
 import MobileMenu from './MobileMenu.astro';
 import { getArchiveUrl } from '../../lib/routes.js';
+import { getEditorialSessionForUserSession } from '../../lib/editorial/session.server';
 import '../../styles/components/header/header.css';
 
 const {
@@ -81,6 +82,9 @@ const currentLanguageTarget = isEnglish ? 'en' : 'it';
 const initialSession = Astro.locals.userSession;
 const initialProfile = initialSession?.profile;
 const initialUser = initialSession?.user;
+const initialEditorialSession = !initialSession?.error && initialProfile && initialUser
+  ? await getEditorialSessionForUserSession(initialSession)
+  : null;
 const initialCommunityArea =
   initialProfile?.status === 'active' && initialProfile?.role === 'admin'
     ? 'admin'
@@ -88,10 +92,10 @@ const initialCommunityArea =
       ? 'moderator'
       : '';
 const initialAccountState = !initialSession?.error && initialProfile && initialUser
-  ? {
+    ? {
       isAuthenticated: true,
       communityArea: initialCommunityArea,
-      hasEditorialAccess: false,
+      hasEditorialAccess: initialEditorialSession?.isEditorialActive === true,
       profile: {
         role: initialProfile.role,
         status: initialProfile.status,

@@ -69,7 +69,7 @@
 }
 
 .editorial-dashboard-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .editorial-author-card,
@@ -107,6 +107,14 @@
 
 .editorial-action-card {
   grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.editorial-area-page .community-sidebar-section .community-link-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.editorial-area-page .community-sidebar-section .community-link-list a {
+  width: 100%;
 }
 
 .editorial-action-card--disabled {
@@ -517,6 +525,10 @@
       "current controls"
       "local controls";
     align-items: start;
+  }
+
+  .editorial-upload-card[data-asset-type="avatar"] .editorial-upload-card__controls {
+    align-self: center;
   }
 
   .editorial-upload-card[data-asset-type="cover"] {
