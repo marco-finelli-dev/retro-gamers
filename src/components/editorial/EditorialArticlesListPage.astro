@@ -1,0 +1,189 @@
+---
+import '../../styles/pages/editorial-area.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../community/CommunityHero.astro';
+import CommunityLayout from '../community/CommunityLayout.astro';
+import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+import {
+  fetchOwnEditorialArticles,
+  getEditorialArticleEditPath,
+  requireEditorialArticleContext,
+} from '../../lib/editorial/articles.server';
+import { getEditorialRoleLabel } from '../../lib/editorial/labels';
+
+type EditorialLang = 'it' | 'en';
+
+const { lang = 'it' } = Astro.props as { lang?: EditorialLang };
+const currentLang: EditorialLang = lang === 'en' ? 'en' : 'it';
+const isEnglish = currentLang === 'en';
+const access = await requireEditorialArticleContext(Astro.cookies);
+
+const copy = isEnglish
+  ? {
+      pageTitle: 'Article workspace | Retro-Gamers.it',
+      pageDescription: 'Manage your Retro-Gamers article drafts.',
+      kicker: 'Editorial area',
+      title: 'Article workspace',
+      description:
+        'Create and edit your private Sanity article drafts. Publishing and review actions are intentionally not active in this step.',
+      deniedTitle: 'Editorial access required',
+      deniedDescription:
+        'This workspace is available only to active editorial contributors.',
+      newArticle: 'New article',
+      edit: 'Edit',
+      draft: 'Draft',
+      missingDraft: 'Sanity draft not found',
+      noArticlesTitle: 'No editorial drafts yet',
+      noArticlesText: 'Create your first draft to start writing inside the custom editor.',
+      dashboard: 'Editorial dashboard',
+      profile: 'Author profile',
+      role: 'Editorial role',
+      type: 'Type',
+      language: 'Language',
+      updated: 'Updated',
+      untitled: 'Untitled draft',
+    }
+  : {
+      pageTitle: 'Editor articoli | Retro-Gamers.it',
+      pageDescription: 'Gestisci le tue bozze articolo su Retro-Gamers.it.',
+      kicker: 'Area redazione',
+      title: 'Editor articoli',
+      description:
+        'Crea e modifica le tue bozze private Sanity. Pubblicazione e revisione restano volutamente non attive in questo step.',
+      deniedTitle: 'Accesso redazionale richiesto',
+      deniedDescription:
+        'Questo workspace è disponibile solo per collaboratori redazionali attivi.',
+      newArticle: 'Nuovo articolo',
+      edit: 'Modifica',
+      draft: 'Bozza',
+      missingDraft: 'Bozza Sanity non trovata',
+      noArticlesTitle: 'Nessuna bozza redazionale',
+      noArticlesText: 'Crea la prima bozza per iniziare a scrivere nel custom editor.',
+      dashboard: 'Dashboard redazionale',
+      profile: 'Profilo autore',
+      role: 'Ruolo redazionale',
+      type: 'Tipo',
+      language: 'Lingua',
+      updated: 'Aggiornato',
+      untitled: 'Bozza senza titolo',
+    };
+
+const dashboardHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
+const profileHref = isEnglish ? '/en/account/editor/profile/' : '/account/editor/profile/';
+const newArticleHref = isEnglish ? '/en/account/editor/articles/new/' : '/account/editor/articles/new/';
+const languageSwitch = isEnglish ? '/account/editor/articles/' : '/en/account/editor/articles/';
+let items = [];
+let listError = '';
+
+if (access.ok) {
+  const result = await fetchOwnEditorialArticles(access.context);
+
+  if (result.ok) {
+    items = result.items;
+  } else {
+    listError = result.error;
+  }
+}
+---
+
+<BaseLayout
+  lang={currentLang}
+  title={copy.pageTitle}
+  description={copy.pageDescription}
+  canonical={Astro.url.href}
+  languageSwitch={languageSwitch}
+  noindex={true}
+>
+  <CommunityLayout class="editorial-area-page editorial-workspace-page" sidebar={access.ok}>
+    {access.ok && (
+      <Fragment slot="sidebar">
+        <CommunitySidebarSection title={copy.kicker}>
+          <div class="community-link-list">
+            <a href={dashboardHref}>{copy.dashboard}</a>
+            <a href={profileHref}>{copy.profile}</a>
+            <a href={newArticleHref}>{copy.newArticle}</a>
+          </div>
+        </CommunitySidebarSection>
+        <CommunitySidebarSection title={copy.role}>
+          <p>{getEditorialRoleLabel(access.context.editorialRole, currentLang)}</p>
+        </CommunitySidebarSection>
+      </Fragment>
+    )}
+
+    <CommunityHero
+      kicker={copy.kicker}
+      title={copy.title}
+      description={copy.description}
+    />
+
+    {!access.ok && (
+      <section class="editorial-card editorial-card--notice">
+        <p class="editorial-kicker">{copy.kicker}</p>
+        <h2>{copy.deniedTitle}</h2>
+        <p>{copy.deniedDescription}</p>
+      </section>
+    )}
+
+    {access.ok && (
+      <section class="editorial-card editorial-article-list">
+        <div class="editorial-article-list__header">
+          <div>
+            <p class="editorial-kicker">{copy.draft}</p>
+            <h2>{copy.title}</h2>
+          </div>
+          <a class="editorial-button" href={newArticleHref}>{copy.newArticle}</a>
+        </div>
+
+        {listError && (
+          <p class="editorial-message" data-tone="error">{listError}</p>
+        )}
+
+        {!listError && items.length === 0 && (
+          <div class="editorial-empty-state">
+            <h3>{copy.noArticlesTitle}</h3>
+            <p>{copy.noArticlesText}</p>
+          </div>
+        )}
+
+        {!listError && items.length > 0 && (
+          <div class="editorial-article-list__items">
+            {items.map((item) => {
+              const article = item.draft;
+              const href = getEditorialArticleEditPath(item.sanityDocumentId, currentLang);
+
+              return (
+                <article class="editorial-article-row">
+                  <div>
+                    <p class="editorial-kicker">{article?.language || '—'} · {article?.type || copy.type}</p>
+                    <h3>{article?.title || copy.untitled}</h3>
+                    <dl class="editorial-article-row__meta">
+                      <div>
+                        <dt>{copy.language}</dt>
+                        <dd>{article?.language || '—'}</dd>
+                      </div>
+                      <div>
+                        <dt>{copy.type}</dt>
+                        <dd>{article?.type || '—'}</dd>
+                      </div>
+                      <div>
+                        <dt>{copy.updated}</dt>
+                        <dd>{article?.updatedAt ? new Date(article.updatedAt).toLocaleString(isEnglish ? 'en' : 'it') : '—'}</dd>
+                      </div>
+                    </dl>
+                    {!article && (
+                      <p class="editorial-message" data-tone="error">{copy.missingDraft}</p>
+                    )}
+                  </div>
+
+                  {article && (
+                    <a class="editorial-button" href={href}>{copy.edit}</a>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    )}
+  </CommunityLayout>
+</BaseLayout>

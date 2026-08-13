@@ -1,0 +1,191 @@
+---
+import '../../styles/pages/editorial-area.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../community/CommunityHero.astro';
+import CommunityLayout from '../community/CommunityLayout.astro';
+import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+import {
+  editorialArticleLanguages,
+  editorialArticleTypes,
+  requireEditorialArticleContext,
+} from '../../lib/editorial/articles.server';
+import { canCreateArticle } from '../../lib/editorial/permissions';
+
+type EditorialLang = 'it' | 'en';
+
+const { lang = 'it' } = Astro.props as { lang?: EditorialLang };
+const currentLang: EditorialLang = lang === 'en' ? 'en' : 'it';
+const isEnglish = currentLang === 'en';
+const access = await requireEditorialArticleContext(Astro.cookies);
+const canCreate = access.ok && canCreateArticle(access.context);
+
+const copy = isEnglish
+  ? {
+      pageTitle: 'New article | Retro-Gamers.it',
+      pageDescription: 'Create a private Retro-Gamers article draft.',
+      kicker: 'Article editor',
+      title: 'New article',
+      description:
+        'Create a private Sanity draft linked to your author profile. It will not be published or submitted for review.',
+      deniedTitle: 'Article creation unavailable',
+      deniedDescription:
+        'Your editorial profile does not currently allow article creation.',
+      language: 'Language',
+      type: 'Article type',
+      create: 'Create draft',
+      creating: 'Creating draft…',
+      dashboard: 'Editorial dashboard',
+      articles: 'Article workspace',
+      error: 'The draft could not be created. Try again in a moment.',
+    }
+  : {
+      pageTitle: 'Nuovo articolo | Retro-Gamers.it',
+      pageDescription: 'Crea una bozza articolo privata su Retro-Gamers.it.',
+      kicker: 'Editor articoli',
+      title: 'Nuovo articolo',
+      description:
+        'Crea una bozza privata Sanity collegata al tuo profilo autore. Non verrà pubblicata né inviata in revisione.',
+      deniedTitle: 'Creazione articolo non disponibile',
+      deniedDescription:
+        'Il tuo profilo redazionale non consente attualmente la creazione di articoli.',
+      language: 'Lingua',
+      type: 'Tipo articolo',
+      create: 'Crea bozza',
+      creating: 'Creazione bozza…',
+      dashboard: 'Dashboard redazionale',
+      articles: 'Editor articoli',
+      error: 'Non è stato possibile creare la bozza. Riprova tra poco.',
+    };
+
+const dashboardHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
+const articlesHref = isEnglish ? '/en/account/editor/articles/' : '/account/editor/articles/';
+const languageSwitch = isEnglish ? '/account/editor/articles/new/' : '/en/account/editor/articles/new/';
+---
+
+<BaseLayout
+  lang={currentLang}
+  title={copy.pageTitle}
+  description={copy.pageDescription}
+  canonical={Astro.url.href}
+  languageSwitch={languageSwitch}
+  noindex={true}
+>
+  <CommunityLayout class="editorial-area-page editorial-workspace-page" sidebar={access.ok}>
+    {access.ok && (
+      <Fragment slot="sidebar">
+        <CommunitySidebarSection title={copy.kicker}>
+          <div class="community-link-list">
+            <a href={dashboardHref}>{copy.dashboard}</a>
+            <a href={articlesHref}>{copy.articles}</a>
+          </div>
+        </CommunitySidebarSection>
+      </Fragment>
+    )}
+
+    <CommunityHero
+      kicker={copy.kicker}
+      title={copy.title}
+      description={copy.description}
+    />
+
+    {(!access.ok || !canCreate) && (
+      <section class="editorial-card editorial-card--notice">
+        <p class="editorial-kicker">{copy.kicker}</p>
+        <h2>{copy.deniedTitle}</h2>
+        <p>{copy.deniedDescription}</p>
+      </section>
+    )}
+
+    {access.ok && canCreate && (
+      <section class="editorial-card editorial-card--notice editorial-new-article-card">
+        <form class="editorial-form" data-editorial-new-article-form>
+          <label>
+            <span>{copy.language}</span>
+            <select name="language">
+              {editorialArticleLanguages.map((language) => (
+                <option value={language} selected={language === currentLang}>{language.toUpperCase()}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>{copy.type}</span>
+            <select name="type">
+              {editorialArticleTypes.map((type) => (
+                <option value={type} selected={type === 'article'}>{type}</option>
+              ))}
+            </select>
+          </label>
+
+          <div class="editorial-form-actions">
+            <button class="editorial-button" type="submit" data-label-ready={copy.create} data-label-busy={copy.creating}>
+              {copy.create}
+            </button>
+            <a href={articlesHref}>{copy.articles}</a>
+          </div>
+          <p class="editorial-message" data-editorial-new-article-status aria-live="polite"></p>
+        </form>
+      </section>
+    )}
+  </CommunityLayout>
+</BaseLayout>
+
+<script define:vars={{ currentLang, genericError: copy.error }}>
+  const form = document.querySelector('[data-editorial-new-article-form]');
+
+  if (form) {
+    const status = form.querySelector('[data-editorial-new-article-status]');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (submitButton?.disabled) return;
+
+      const data = new FormData(form);
+      const readyLabel = submitButton?.dataset.labelReady || submitButton?.textContent || '';
+      const busyLabel = submitButton?.dataset.labelBusy || readyLabel;
+
+      if (status) {
+        status.textContent = '';
+        status.removeAttribute('data-tone');
+      }
+
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = busyLabel;
+      }
+
+      try {
+        const response = await fetch('/api/editor/articles', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            language: data.get('language'),
+            type: data.get('type'),
+            uiLanguage: currentLang,
+          }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result?.ok || !result?.editUrl) {
+          throw new Error(result?.error || 'create_failed');
+        }
+
+        window.location.assign(result.editUrl);
+      } catch (error) {
+        if (status) {
+          status.textContent = genericError;
+          status.dataset.tone = 'error';
+        }
+
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = readyLabel;
+        }
+      }
+    });
+  }
+</script>

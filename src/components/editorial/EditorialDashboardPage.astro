@@ -47,7 +47,9 @@ const copy = isEnglish
       publicProfileEn: 'English author page',
       articleEditorTitle: 'Article editor',
       articleEditorDescription:
-        'Draft creation, article editing and review workflow are intentionally not part of this step.',
+        'Create and edit private article drafts in the custom editorial workspace.',
+      manageArticles: 'Manage articles',
+      newArticle: 'New article',
       unavailable: 'Not available yet',
       notSet: 'Not set',
       loginCta: 'Go to account',
@@ -78,7 +80,9 @@ const copy = isEnglish
       publicProfileEn: 'Pagina autore inglese',
       articleEditorTitle: 'Editor articoli',
       articleEditorDescription:
-        'Creazione bozze, modifica articoli e workflow di revisione sono volutamente fuori da questo step.',
+        'Crea e modifica bozze private nel workspace redazionale custom.',
+      manageArticles: 'Gestisci articoli',
+      newArticle: 'Nuovo articolo',
       unavailable: 'Non disponibile ancora',
       notSet: 'Non impostato',
       loginCta: 'Vai all’account',
@@ -96,6 +100,8 @@ if (access.ok) {
 }
 
 const profileHref = isEnglish ? '/en/account/editor/profile/' : '/account/editor/profile/';
+const articlesHref = isEnglish ? '/en/account/editor/articles/' : '/account/editor/articles/';
+const newArticleHref = isEnglish ? '/en/account/editor/articles/new/' : '/account/editor/articles/new/';
 const accountHref = isEnglish ? '/en/account/' : '/account/';
 const languageSwitch = isEnglish ? '/account/editor/' : '/en/account/editor/';
 const sidebarName = author?.displayName === 'nickname' && author.nickname
@@ -222,13 +228,16 @@ const authorRoleLabel = author
           <span class="editorial-pill">{publishedArticleCount} {copy.publishedArticles.toLowerCase()}</span>
         </section>
 
-        <section class="editorial-card editorial-action-card editorial-action-card--disabled" aria-disabled="true">
+        <section class="editorial-card editorial-action-card">
           <div>
-            <p class="editorial-kicker">{copy.unavailable}</p>
+            <p class="editorial-kicker">{copy.dashboardLinks}</p>
             <h2>{copy.articleEditorTitle}</h2>
             <p>{copy.articleEditorDescription}</p>
           </div>
-          <span class="editorial-pill">{copy.unavailable}</span>
+          <div class="editorial-action-card__actions">
+            <a class="editorial-button" href={articlesHref}>{copy.manageArticles}</a>
+            <a href={newArticleHref}>{copy.newArticle}</a>
+          </div>
         </section>
       </div>
     )}

@@ -11,6 +11,7 @@ const baseWriteClientConfig = {
 };
 
 let sanityWriteClient: SanityClient | null = null;
+let sanityRawClient: SanityClient | null = null;
 
 function assertServerRuntime() {
   if (typeof window !== 'undefined') {
@@ -51,4 +52,23 @@ export function getSanityWriteClient() {
   }
 
   return sanityWriteClient;
+}
+
+export function getSanityRawClient() {
+  const token = getSanityWriteToken();
+
+  if (!token) {
+    throw new Error('Sanity write token is not configured.');
+  }
+
+  if (!sanityRawClient) {
+    sanityRawClient = createClient({
+      ...baseWriteClientConfig,
+      token,
+      useCdn: false,
+      perspective: 'raw',
+    });
+  }
+
+  return sanityRawClient;
 }

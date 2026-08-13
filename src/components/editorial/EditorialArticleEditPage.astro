@@ -1,0 +1,195 @@
+---
+import '../../styles/pages/editorial-area.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../community/CommunityHero.astro';
+import CommunityLayout from '../community/CommunityLayout.astro';
+import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+import ArticlePortableTextEditor from './ArticlePortableTextEditor';
+import {
+  fetchEditableEditorialArticle,
+  requireEditorialArticleContext,
+} from '../../lib/editorial/articles.server';
+
+type EditorialLang = 'it' | 'en';
+
+const { lang = 'it', id = '' } = Astro.props as { lang?: EditorialLang; id?: string };
+const currentLang: EditorialLang = lang === 'en' ? 'en' : 'it';
+const isEnglish = currentLang === 'en';
+const access = await requireEditorialArticleContext(Astro.cookies);
+
+const copy = isEnglish
+  ? {
+      pageTitle: 'Edit article | Retro-Gamers.it',
+      pageDescription: 'Edit your Retro-Gamers article draft.',
+      kicker: 'Article editor',
+      title: 'Edit draft',
+      description:
+        'Manual save only. Publishing, preview and review submission are not enabled in this step.',
+      deniedTitle: 'Draft unavailable',
+      deniedDescription: 'The draft is missing or you do not have permission to edit it.',
+      dashboard: 'Editorial dashboard',
+      articles: 'Article workspace',
+      newArticle: 'New article',
+      labels: {
+        title: 'Title',
+        subtitle: 'Subtitle',
+        content: 'Article body',
+        sidebar: 'Article settings',
+        cardExcerpt: 'Card excerpt',
+        excerpt: 'Meta description',
+        seoTitle: 'SEO title',
+        type: 'Type',
+        language: 'Language',
+        slug: 'Slug',
+        save: 'Save draft',
+        saving: 'Saving…',
+        saved: 'Draft saved.',
+        conflict: 'This draft changed elsewhere. Reload the page before saving again.',
+        genericError: 'The draft could not be saved.',
+        manualSave: 'Manual save. No publishing action is available here.',
+        counters: 'SEO and card copy',
+        normal: 'Normal',
+        h2: 'H2',
+        h3: 'H3',
+        quote: 'Quote',
+        bullet: 'Bullet list',
+        number: 'Numbered list',
+        bold: 'Bold',
+        italic: 'Italic',
+        externalLink: 'External link',
+        linkPrompt: 'External URL',
+        preservedObject: 'Preserved for round-trip. Image and gallery editing arrives in the next step.',
+        image: 'Image block',
+        imageRow: 'Image series',
+        video: 'Video block',
+        asideBox: 'Aside box',
+        unsupportedObject: 'Custom block',
+        cardExcerptWarning: 'recommended limit exceeded',
+        excerptWarning: 'recommended SEO limit exceeded',
+        seoTitleHint: 'Recommended: concise, without the site name.',
+      },
+    }
+  : {
+      pageTitle: 'Modifica articolo | Retro-Gamers.it',
+      pageDescription: 'Modifica la tua bozza articolo su Retro-Gamers.it.',
+      kicker: 'Editor articoli',
+      title: 'Modifica bozza',
+      description:
+        'Salvataggio manuale. Pubblicazione, anteprima e invio in revisione non sono abilitati in questo step.',
+      deniedTitle: 'Bozza non disponibile',
+      deniedDescription: 'La bozza non esiste o non hai i permessi per modificarla.',
+      dashboard: 'Dashboard redazionale',
+      articles: 'Editor articoli',
+      newArticle: 'Nuovo articolo',
+      labels: {
+        title: 'Titolo',
+        subtitle: 'Sottotitolo',
+        content: 'Corpo articolo',
+        sidebar: 'Impostazioni articolo',
+        cardExcerpt: 'Riassunto card',
+        excerpt: 'Meta description',
+        seoTitle: 'SEO title',
+        type: 'Tipo',
+        language: 'Lingua',
+        slug: 'Slug',
+        save: 'Salva bozza',
+        saving: 'Salvataggio…',
+        saved: 'Bozza salvata.',
+        conflict: 'Questa bozza è cambiata altrove. Ricarica la pagina prima di salvare di nuovo.',
+        genericError: 'Non è stato possibile salvare la bozza.',
+        manualSave: 'Salvataggio manuale. Nessuna azione di pubblicazione è disponibile qui.',
+        counters: 'SEO e testi card',
+        normal: 'Normale',
+        h2: 'H2',
+        h3: 'H3',
+        quote: 'Citazione',
+        bullet: 'Lista bullet',
+        number: 'Lista numerata',
+        bold: 'Grassetto',
+        italic: 'Corsivo',
+        externalLink: 'Link esterno',
+        linkPrompt: 'URL esterno',
+        preservedObject: 'Preservato per il round-trip. Editing immagini e gallerie arriva nello step successivo.',
+        image: 'Blocco immagine',
+        imageRow: 'Serie immagini',
+        video: 'Blocco video',
+        asideBox: 'Box curiosità',
+        unsupportedObject: 'Blocco custom',
+        cardExcerptWarning: 'limite consigliato superato',
+        excerptWarning: 'limite SEO consigliato superato',
+        seoTitleHint: 'Consigliato: breve, senza nome del sito.',
+      },
+    };
+
+const dashboardHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
+const articlesHref = isEnglish ? '/en/account/editor/articles/' : '/account/editor/articles/';
+const newArticleHref = isEnglish ? '/en/account/editor/articles/new/' : '/account/editor/articles/new/';
+const languageSwitch = isEnglish
+  ? `/account/editor/articles/${encodeURIComponent(id)}/`
+  : `/en/account/editor/articles/${encodeURIComponent(id)}/`;
+let article = null;
+let error = '';
+
+if (access.ok) {
+  const result = await fetchEditableEditorialArticle({
+    context: access.context,
+    rootDocumentId: id,
+  });
+
+  if (result.ok) {
+    article = result.article;
+  } else {
+    error = result.error;
+  }
+} else {
+  error = access.error;
+}
+---
+
+<BaseLayout
+  lang={currentLang}
+  title={copy.pageTitle}
+  description={copy.pageDescription}
+  canonical={Astro.url.href}
+  languageSwitch={languageSwitch}
+  noindex={true}
+>
+  <CommunityLayout class="editorial-area-page editorial-workspace-page" sidebar={access.ok}>
+    {access.ok && (
+      <Fragment slot="sidebar">
+        <CommunitySidebarSection title={copy.kicker}>
+          <div class="community-link-list">
+            <a href={dashboardHref}>{copy.dashboard}</a>
+            <a href={articlesHref}>{copy.articles}</a>
+            <a href={newArticleHref}>{copy.newArticle}</a>
+          </div>
+        </CommunitySidebarSection>
+      </Fragment>
+    )}
+
+    <CommunityHero
+      kicker={copy.kicker}
+      title={copy.title}
+      description={copy.description}
+    />
+
+    {!article && (
+      <section class="editorial-card editorial-card--notice">
+        <p class="editorial-kicker">{copy.kicker}</p>
+        <h2>{copy.deniedTitle}</h2>
+        <p>{copy.deniedDescription}</p>
+        {error && <p class="editorial-message" data-tone="error">{error}</p>}
+      </section>
+    )}
+
+    {article && (
+      <ArticlePortableTextEditor
+        client:load
+        article={article}
+        lang={currentLang}
+        saveEndpoint={`/api/editor/articles/${encodeURIComponent(id)}`}
+        labels={copy.labels}
+      />
+    )}
+  </CommunityLayout>
+</BaseLayout>
