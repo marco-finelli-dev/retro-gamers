@@ -54,7 +54,14 @@ type EditorialArticleType = (typeof editorialArticleTypes)[number];
 type EditorialArticleLanguage = (typeof editorialArticleLanguages)[number];
 type EditorialArticleMediaFormat = (typeof editorialArticleMediaFormats)[number];
 type EditorialArticleRatingField = (typeof editorialArticleRatingFields)[number];
-type EditorialArticleReferenceTargetType = 'category' | 'platform' | 'creator' | 'taxonomy' | 'article';
+type EditorialArticleReferenceTargetType =
+  | 'category'
+  | 'platform'
+  | 'creator'
+  | 'taxonomy'
+  | 'article'
+  | 'playableClassic'
+  | 'emulatorTool';
 type EditorialArticleReferenceField =
   | 'categories'
   | 'editorialSeries'
@@ -66,7 +73,14 @@ type EditorialArticleReferenceField =
   | 'manufacturer'
   | 'modes'
   | 'series';
-type EditorialArticleReferenceKind = EditorialArticleReferenceField | 'translationOf';
+type EditorialArticleReferenceKind =
+  | EditorialArticleReferenceField
+  | 'translationOf'
+  | 'internalLink'
+  | 'platformLink'
+  | 'creatorLink'
+  | 'companyLink'
+  | 'taxonomyLink';
 
 type EditorialArticleAuthorInfo = {
   _id: string;
@@ -195,6 +209,8 @@ const validDecorators = new Set(['strong', 'em']);
 const validImageDisplayModes = new Set(['cover', 'contain', 'wide', 'natural']);
 const validImageRowLayouts = new Set(['standard', 'uniformHeight']);
 const validAsideTones = new Set(['neutral', 'info', 'highlight']);
+const validTaxonomyReferenceTypes = ['genre', 'developer', 'publisher', 'manufacturer', 'mode', 'series', 'editorialSeries'];
+const companyTaxonomyTypes = ['developer', 'publisher', 'manufacturer'];
 const validMediaFormats = new Set<string>(editorialArticleMediaFormats);
 const editorialArticleReferenceFields: EditorialArticleReferenceField[] = [
   'categories',
@@ -212,8 +228,10 @@ const editorialArticleReferenceKindConfig: Record<
   EditorialArticleReferenceKind,
   {
     field?: EditorialArticleReferenceField;
-    targetType: EditorialArticleReferenceTargetType;
+    targetType?: EditorialArticleReferenceTargetType;
+    targetTypes?: EditorialArticleReferenceTargetType[];
     taxonomyType?: string;
+    taxonomyTypes?: string[];
     multiple: boolean;
   }
 > = {
@@ -233,12 +251,25 @@ const editorialArticleReferenceKindConfig: Record<
   modes: { field: 'modes', targetType: 'taxonomy', taxonomyType: 'mode', multiple: true },
   series: { field: 'series', targetType: 'taxonomy', taxonomyType: 'series', multiple: true },
   translationOf: { targetType: 'article', multiple: false },
+  internalLink: { targetTypes: ['article', 'playableClassic', 'emulatorTool'], multiple: false },
+  platformLink: { targetType: 'platform', multiple: false },
+  creatorLink: { targetType: 'creator', multiple: false },
+  companyLink: { targetType: 'taxonomy', taxonomyTypes: companyTaxonomyTypes, multiple: false },
+  taxonomyLink: { targetType: 'taxonomy', taxonomyTypes: validTaxonomyReferenceTypes, multiple: false },
 };
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const featuredImageMaxFileSize = 5 * 1024 * 1024;
 const validPageLinkPaths = new Set([
   '/',
   '/en/',
+  '/recensioni/',
+  '/en/reviews/',
+  '/speciali/',
+  '/en/features/',
+  '/guide/',
+  '/en/guides/',
+  '/memories/',
+  '/en/memories/',
   '/archivio/',
   '/en/archive/',
   '/piattaforme/',
@@ -463,8 +494,10 @@ function normalizeReferenceSearchResult(
       .join(' · ');
   } else {
     const title = normalizeString(document.title, 220).trim();
-    label = title || slug || id;
+    const name = normalizeString(document.name, 220).trim();
+    label = title || name || slug || id;
     secondaryLabel = [
+      normalizeString(document._type, 80).trim(),
       language ? language.toUpperCase() : '',
       slug ? `/${slug}/` : '',
       String(document._id || '').startsWith('drafts.') ? 'draft' : '',
@@ -818,6 +851,72 @@ export function normalizePortableTextContent(value: unknown): PortableTextBlock[
   if (!Array.isArray(value)) return [];
 
   return value.map((block) => normalizePortableTextBlock(block));
+}
+
+function collectPortableTextAnnotationReferences(
+  blocks: PortableTextBlock[],
+  references: Array<{ annotationType: EditorialArticleReferenceKind; id: string }> = []
+) {
+  for (const block of blocks) {
+    if (!isPlainObject(block)) continue;
+
+    if (block._type === 'block' && Array.isArray(block.markDefs)) {
+      for (const markDef of block.markDefs) {
+        if (!isPlainObject(markDef)) continue;
+        const annotationType = normalizeString(markDef._type, 80).trim() as EditorialArticleReferenceKind;
+
+        if (
+          annotationType !== 'internalLink' &&
+          annotationType !== 'platformLink' &&
+          annotationType !== 'taxonomyLink' &&
+          annotationType !== 'creatorLink' &&
+          annotationType !== 'companyLink'
+        ) {
+          continue;
+        }
+
+        const reference = normalizeReference(markDef.reference);
+        if (reference) {
+          references.push({ annotationType, id: reference._ref });
+        }
+      }
+    }
+
+    if (block._type === 'asideBox' && Array.isArray(block.content)) {
+      collectPortableTextAnnotationReferences(block.content as PortableTextBlock[], references);
+    }
+  }
+
+  return references;
+}
+
+async function validatePortableTextAnnotationReferences(content: PortableTextBlock[]) {
+  const references = collectPortableTextAnnotationReferences(content);
+  if (references.length === 0) return;
+
+  const ids = Array.from(new Set(references.map((reference) => reference.id)));
+  const documents = await getSanityRawClient().fetch<Record<string, unknown>[]>(
+    '*[_id in $ids || _id in $draftIds]{_id,_type,type,language}',
+    {
+      ids,
+      draftIds: ids.map((id) => `drafts.${id}`),
+    }
+  );
+  const documentMap = new Map<string, Record<string, unknown>>();
+
+  for (const document of documents || []) {
+    const id = normalizeArticleReferenceRootId(document._id);
+    if (!id || documentMap.has(id)) continue;
+    documentMap.set(id, document);
+  }
+
+  for (const reference of references) {
+    const config = editorialArticleReferenceKindConfig[reference.annotationType];
+
+    if (!isDocumentValidForReferenceConfig(documentMap.get(reference.id), config)) {
+      throw new Error(`invalid_${reference.annotationType}`);
+    }
+  }
 }
 
 function normalizeOwnership(row: EditorialDocumentRow | null): EditorialDocumentOwnership | null {
@@ -1209,15 +1308,27 @@ function getReferenceSearchProjection() {
   return '{_id,_type,title,titleEn,name,nameEn,role,roleEn,platformType,type,language,slug}';
 }
 
+function getConfigTargetTypes(config: typeof editorialArticleReferenceKindConfig[EditorialArticleReferenceKind]) {
+  return config.targetTypes || (config.targetType ? [config.targetType] : []);
+}
+
+function getConfigTaxonomyTypes(config: typeof editorialArticleReferenceKindConfig[EditorialArticleReferenceKind]) {
+  return config.taxonomyTypes || (config.taxonomyType ? [config.taxonomyType] : []);
+}
+
 function dedupeReferenceSearchResults(
   documents: Record<string, unknown>[],
-  targetType: EditorialArticleReferenceTargetType
+  targetType: EditorialArticleReferenceTargetType | EditorialArticleReferenceTargetType[]
 ) {
   const items: EditorialArticleReference[] = [];
   const seen = new Set<string>();
+  const targetTypes = Array.isArray(targetType) ? targetType : [targetType];
 
   for (const document of documents || []) {
-    const item = normalizeReferenceSearchResult(document, targetType);
+    const documentType = normalizeString(document._type, 80).trim() as EditorialArticleReferenceTargetType;
+    if (!targetTypes.includes(documentType)) continue;
+
+    const item = normalizeReferenceSearchResult(document, documentType);
 
     if (!item || seen.has(item.id)) continue;
 
@@ -1255,15 +1366,39 @@ export async function searchEditorialReferences({
   const rawClient = getSanityRawClient();
 
   try {
+    if (config.targetTypes) {
+      const currentId = normalizeEditableArticleRootDocumentId(currentArticleId);
+      const draftId = currentId ? getDraftDocumentId(currentId) : '';
+      const documents = await rawClient.fetch<Record<string, unknown>[]>(
+        `*[
+          _type in $targetTypes &&
+          _id != $currentId &&
+          _id != $draftId &&
+          (!$hasSearch || title match $search || name match $search || slug.current match $search)
+        ] | order(_updatedAt desc)[0...$limit] ${projection}`,
+        {
+          targetTypes: config.targetTypes,
+          currentId,
+          draftId,
+          hasSearch,
+          search,
+          limit: safeLimit,
+        }
+      );
+
+      return { ok: true as const, items: dedupeReferenceSearchResults(documents || [], config.targetTypes) };
+    }
+
     if (config.targetType === 'taxonomy') {
+      const taxonomyTypes = getConfigTaxonomyTypes(config);
       const documents = await rawClient.fetch<Record<string, unknown>[]>(
         `*[
           _type == "taxonomy" &&
-          $taxonomyType in type &&
+          count(type[@ in $taxonomyTypes]) > 0 &&
           (!$hasSearch || name match $search || nameEn match $search || slug.current match $search)
         ] | order(coalesce(name, nameEn, slug.current) asc)[0...$limit] ${projection}`,
         {
-          taxonomyType: config.taxonomyType,
+          taxonomyTypes,
           hasSearch,
           search,
           limit: safeLimit,
@@ -1399,8 +1534,10 @@ async function fetchReferenceValidationDocuments(
 ) {
   if (ids.length === 0) return new Map<string, Record<string, unknown>>();
 
+  const targetTypes = getConfigTargetTypes(config);
+  const includeDraftIds = targetTypes.includes('article');
   const documents = await getSanityRawClient().fetch<Record<string, unknown>[]>(
-    config.targetType === 'article'
+    includeDraftIds
       ? '*[_id in $ids || _id in $draftIds]{_id,_type,type,language}'
       : '*[_id in $ids]{_id,_type,type,language}',
     {
@@ -1419,6 +1556,25 @@ async function fetchReferenceValidationDocuments(
   return map;
 }
 
+function isDocumentValidForReferenceConfig(
+  document: Record<string, unknown> | undefined,
+  config: typeof editorialArticleReferenceKindConfig[EditorialArticleReferenceKind]
+) {
+  if (!document) return false;
+
+  const targetTypes = getConfigTargetTypes(config);
+  if (!targetTypes.includes(document._type as EditorialArticleReferenceTargetType)) return false;
+
+  if (document._type === 'taxonomy') {
+    const taxonomyTypes = getConfigTaxonomyTypes(config);
+    if (taxonomyTypes.length > 0 && !normalizeTaxonomyTypes(document.type).some((type) => taxonomyTypes.includes(type))) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 async function validateReferenceArrayField({
   field,
   ids,
@@ -1434,11 +1590,7 @@ async function validateReferenceArrayField({
   for (const id of ids) {
     const document = documents.get(id);
 
-    if (!document || document._type !== config.targetType) {
-      throw new Error(`invalid_${field}`);
-    }
-
-    if (config.targetType === 'taxonomy' && !normalizeTaxonomyTypes(document.type).includes(config.taxonomyType || '')) {
+    if (!isDocumentValidForReferenceConfig(document, config)) {
       throw new Error(`invalid_${field}`);
     }
   }
@@ -1918,6 +2070,7 @@ async function getPatchFromPayload(
   }
 
   const nextContent = normalizePortableTextContent(payload.content);
+  await validatePortableTextAnnotationReferences(nextContent);
   const nextSlug = normalizeSlug(payload.slug);
   const nextLanguage = validateArticleLanguage(payload.language);
   const set: Record<string, unknown> = {

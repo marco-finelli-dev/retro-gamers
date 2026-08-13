@@ -6,6 +6,7 @@ import {
   useEditor,
   useEditorSelector,
   type PortableTextBlock,
+  type PortableTextObject,
   type RenderAnnotationFunction,
   type RenderDecoratorFunction,
   type RenderListItemFunction,
@@ -52,10 +53,17 @@ type RelationKind =
   | 'modes'
   | 'series'
   | 'translationOf';
+type ReferenceAnnotationName =
+  | 'internalLink'
+  | 'platformLink'
+  | 'creatorLink'
+  | 'companyLink'
+  | 'taxonomyLink';
+type AnnotationName = ReferenceAnnotationName | 'pageLink';
 
 type EditableArticleReference = {
   id: string;
-  type: 'category' | 'platform' | 'creator' | 'taxonomy' | 'article';
+  type: 'category' | 'platform' | 'creator' | 'taxonomy' | 'article' | 'playableClassic' | 'emulatorTool';
   label: string;
   slug: string;
   language: ArticleLanguage | null;
@@ -249,6 +257,16 @@ type Labels = {
   italic: string;
   externalLink: string;
   linkPrompt: string;
+  internalLink: string;
+  platformLink: string;
+  creatorLink: string;
+  companyLink: string;
+  taxonomyLink: string;
+  pageLink: string;
+  annotationCurrentTarget: string;
+  annotationRemove: string;
+  annotationNoSelection: string;
+  pageLinkSelectPlaceholder: string;
   preservedObject: string;
   image: string;
   imageRow: string;
@@ -297,6 +315,40 @@ const ratingSelectValues = Array.from({ length: 19 }, (_, index) => 1 + index * 
 const releaseYearSelectValues = Array.from({ length: 91 }, (_, index) => 2050 - index);
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const featuredImageMaxFileSize = 5 * 1024 * 1024;
+const referenceAnnotationControls: Array<{
+  name: ReferenceAnnotationName;
+  icon: string;
+}> = [
+  { name: 'internalLink', icon: '📄' },
+  { name: 'platformLink', icon: '🖥️' },
+  { name: 'creatorLink', icon: '👤' },
+  { name: 'companyLink', icon: '🏢' },
+  { name: 'taxonomyLink', icon: '🏷️' },
+];
+const pageLinkOptions: Array<{ label: string; path: string }> = [
+  { label: 'Home IT', path: '/' },
+  { label: 'Home EN', path: '/en/' },
+  { label: 'Recensioni IT', path: '/recensioni/' },
+  { label: 'Reviews EN', path: '/en/reviews/' },
+  { label: 'Speciali IT', path: '/speciali/' },
+  { label: 'Features EN', path: '/en/features/' },
+  { label: 'Guide IT', path: '/guide/' },
+  { label: 'Guides EN', path: '/en/guides/' },
+  { label: 'Memories IT', path: '/memories/' },
+  { label: 'Memories EN', path: '/en/memories/' },
+  { label: 'Archivio IT', path: '/archivio/' },
+  { label: 'Archive EN', path: '/en/archive/' },
+  { label: 'Piattaforme IT', path: '/piattaforme/' },
+  { label: 'Platforms EN', path: '/en/platforms/' },
+  { label: 'Console IT', path: '/piattaforme/console/' },
+  { label: 'Consoles EN', path: '/en/platforms/consoles/' },
+  { label: 'Computer IT', path: '/piattaforme/computer/' },
+  { label: 'Computers EN', path: '/en/platforms/computers/' },
+  { label: 'Arcade IT', path: '/piattaforme/arcade/' },
+  { label: 'Arcade EN', path: '/en/platforms/arcade/' },
+  { label: 'Hardware IT', path: '/hardware/' },
+  { label: 'Hardware EN', path: '/en/hardware/' },
+];
 
 const mediaFormatLabels: Record<ArticleLanguage, Record<MediaFormat, string>> = {
   it: {
@@ -419,20 +471,297 @@ function ObjectBlock({ attributes, children, node, labels }: any) {
   );
 }
 
-function Toolbar({ labels }: { labels: Labels }) {
+function ReferenceAnnotationPopover({
+  annotationName,
+  label,
+  activeAnnotation,
+  currentArticleId,
+  language,
+  labels,
+  onApply,
+  onRemove,
+}: {
+  annotationName: ReferenceAnnotationName;
+  label: string;
+  activeAnnotation: PortableTextObject | null;
+  currentArticleId: string;
+  language: ArticleLanguage;
+  labels: Labels;
+  onApply: (value: Record<string, unknown>) => void;
+  onRemove: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [items, setItems] = useState<EditableArticleReference[]>([]);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const searchId = useId();
+  const listboxId = useId();
+  const currentTarget = getActiveAnnotationTarget(activeAnnotation);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setStatus('loading');
+
+      try {
+        const params = new URLSearchParams({
+          kind: annotationName,
+          q: query,
+          language,
+          limit: '12',
+          currentArticleId,
+        });
+        const response = await fetch(`/api/editor/references?${params.toString()}`, {
+          headers: { accept: 'application/json' },
+          signal: controller.signal,
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result?.ok || !Array.isArray(result.items)) {
+          throw new Error(result?.error || 'reference_search_failed');
+        }
+
+        setItems(result.items);
+        setStatus('idle');
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setItems([]);
+        setStatus('error');
+      }
+    }, 220);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [annotationName, currentArticleId, language, query]);
+
+  const selectItem = (item: EditableArticleReference) => {
+    onApply({
+      reference: {
+        _type: 'reference',
+        _ref: item.id,
+      },
+    });
+  };
+
+  return (
+    <div className="editorial-pte-link-popover" role="dialog" aria-label={label}>
+      {currentTarget && (
+        <p className="editorial-pte-link-popover__current">
+          {labels.annotationCurrentTarget}: <code>{currentTarget}</code>
+        </p>
+      )}
+
+      <label className="editorial-relation-picker__search" htmlFor={searchId}>
+        <span className="sr-only">{label}</span>
+        <input
+          id={searchId}
+          value={query}
+          placeholder={labels.relationSearchPlaceholder}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </label>
+
+      <div
+        className="editorial-relation-picker__menu"
+        id={listboxId}
+        role="listbox"
+        aria-label={label}
+      >
+        {status === 'loading' && (
+          <p className="editorial-relation-picker__state">{labels.relationLoading}</p>
+        )}
+        {status === 'error' && (
+          <p className="editorial-relation-picker__state" data-tone="error">
+            {labels.relationSearchError}
+          </p>
+        )}
+        {status !== 'loading' && status !== 'error' && items.length === 0 && (
+          <p className="editorial-relation-picker__state">{labels.relationNoResults}</p>
+        )}
+        {status !== 'error' && items.map((item) => {
+          const isSelected = currentTarget === item.id;
+
+          return (
+            <button
+              type="button"
+              className="editorial-relation-picker__option"
+              key={item.id}
+              onClick={() => selectItem(item)}
+              aria-selected={isSelected}
+              role="option"
+            >
+              <span>{item.label}</span>
+              {item.secondaryLabel && <small>{item.secondaryLabel}</small>}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeAnnotation && (
+        <button
+          type="button"
+          className="editorial-mini-button editorial-mini-button--danger"
+          onClick={onRemove}
+        >
+          {labels.annotationRemove}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PageLinkPopover({
+  label,
+  activeAnnotation,
+  labels,
+  onApply,
+  onRemove,
+}: {
+  label: string;
+  activeAnnotation: PortableTextObject | null;
+  labels: Labels;
+  onApply: (value: Record<string, unknown>) => void;
+  onRemove: () => void;
+}) {
+  const currentTarget = getActiveAnnotationTarget(activeAnnotation);
+
+  return (
+    <div className="editorial-pte-link-popover" role="dialog" aria-label={label}>
+      {currentTarget && (
+        <p className="editorial-pte-link-popover__current">
+          {labels.annotationCurrentTarget}: <code>{currentTarget}</code>
+        </p>
+      )}
+
+      <div className="editorial-relation-picker__menu" role="listbox" aria-label={label}>
+        <p className="editorial-relation-picker__state">{labels.pageLinkSelectPlaceholder}</p>
+        {pageLinkOptions.map((item) => (
+          <button
+            type="button"
+            className="editorial-relation-picker__option"
+            key={item.path}
+            onClick={() => onApply({ path: item.path })}
+            aria-selected={currentTarget === item.path}
+            role="option"
+          >
+            <span>{item.label}</span>
+            <small>{item.path}</small>
+          </button>
+        ))}
+      </div>
+
+      {activeAnnotation && (
+        <button
+          type="button"
+          className="editorial-mini-button editorial-mini-button--danger"
+          onClick={onRemove}
+        >
+          {labels.annotationRemove}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Toolbar({
+  labels,
+  language,
+  currentArticleId,
+}: {
+  labels: Labels;
+  language: ArticleLanguage;
+  currentArticleId: string;
+}) {
   const editor = useEditor();
   const activeStyle = useEditorSelector(editor, selectors.getActiveStyle);
   const activeListItem = useEditorSelector(editor, selectors.getActiveListItem);
+  const activeAnnotations = useEditorSelector(editor, selectors.getActiveAnnotations);
+  const selectedText = useEditorSelector(editor, selectors.getSelectionText);
+  const selectedTextBlocks = useEditorSelector(editor, selectors.getSelectedTextBlocks);
   const isBoldActive = useEditorSelector(editor, selectors.isActiveDecorator('strong'));
   const isItalicActive = useEditorSelector(editor, selectors.isActiveDecorator('em'));
   const isBlockquoteActive = useEditorSelector(editor, selectors.isActiveStyle('blockquote'));
   const blockStyle = activeStyle === 'h2' || activeStyle === 'h3' ? activeStyle : 'normal';
+  const [openAnnotation, setOpenAnnotation] = useState<AnnotationName | null>(null);
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const hasTextSelection = selectedText.trim().length > 0;
 
   const focus = () => editor.send({ type: 'focus' });
   const send = (event: Parameters<typeof editor.send>[0]) => {
     editor.send(event);
     focus();
   };
+  const getActiveAnnotation = (annotationName: AnnotationName | 'link') =>
+    activeAnnotations.find((annotation) => annotation._type === annotationName) || null;
+  const getActiveAnnotationPath = (annotation: PortableTextObject | null) => {
+    const key = typeof annotation?._key === 'string' ? annotation._key : '';
+    if (!key) return null;
+
+    for (const block of selectedTextBlocks) {
+      const markDefs = Array.isArray(block.node.markDefs) ? block.node.markDefs : [];
+      if (markDefs.some((markDef) => markDef?._key === key)) {
+        return [...block.path, 'markDefs', { _key: key }];
+      }
+    }
+
+    return null;
+  };
+  const applyAnnotation = (annotationName: AnnotationName, value: Record<string, unknown>) => {
+    const activeAnnotation = getActiveAnnotation(annotationName);
+    const activePath = getActiveAnnotationPath(activeAnnotation);
+
+    if (activePath) {
+      send({
+        type: 'annotation.set',
+        at: activePath,
+        props: value,
+      });
+    } else if (hasTextSelection) {
+      send({
+        type: 'annotation.add',
+        annotation: {
+          name: annotationName,
+          value,
+        },
+      });
+    }
+
+    setOpenAnnotation(null);
+  };
+  const removeAnnotation = (annotationName: AnnotationName) => {
+    send({
+      type: 'annotation.remove',
+      annotation: {
+        name: annotationName,
+      },
+    });
+    setOpenAnnotation(null);
+  };
+
+  useEffect(() => {
+    if (!openAnnotation) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) {
+        setOpenAnnotation(null);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpenAnnotation(null);
+        focus();
+      }
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [openAnnotation]);
 
   const addExternalLink = () => {
     const href = window.prompt(labels.linkPrompt, 'https://');
@@ -463,7 +792,7 @@ function Toolbar({ labels }: { labels: Labels }) {
   };
 
   return (
-    <div className="editorial-pte-toolbar" aria-label={labels.content}>
+    <div className="editorial-pte-toolbar" aria-label={labels.content} ref={toolbarRef}>
       <div className="editorial-pte-toolbar__group" role="group" aria-label={labels.blockStyle}>
         <label className="editorial-pte-toolbar__style">
           <span className="sr-only">{labels.blockStyle}</span>
@@ -549,11 +878,88 @@ function Toolbar({ labels }: { labels: Labels }) {
           className="editorial-pte-toolbar__button"
           type="button"
           aria-label={labels.externalLink}
+          aria-pressed={Boolean(getActiveAnnotation('link'))}
           title={labels.externalLink}
           onClick={addExternalLink}
         >
           <ToolbarIcon name="link" />
         </button>
+      </div>
+
+      <div
+        className="editorial-pte-toolbar__group"
+        role="group"
+        aria-label={`${labels.internalLink} / ${labels.platformLink} / ${labels.creatorLink}`}
+      >
+        {referenceAnnotationControls.map((control) => {
+          const label = getAnnotationLabel(control.name, labels);
+          const activeAnnotation = getActiveAnnotation(control.name);
+          const canOpen = hasTextSelection || Boolean(activeAnnotation);
+          const isOpen = openAnnotation === control.name;
+
+          return (
+            <div className="editorial-pte-toolbar__annotation" key={control.name}>
+              <button
+                className="editorial-pte-toolbar__button"
+                type="button"
+                aria-label={label}
+                aria-pressed={Boolean(activeAnnotation)}
+                aria-expanded={isOpen}
+                title={canOpen ? label : labels.annotationNoSelection}
+                disabled={!canOpen}
+                onClick={() => setOpenAnnotation(isOpen ? null : control.name)}
+              >
+                <span className="editorial-pte-toolbar__emoji" aria-hidden="true">{control.icon}</span>
+              </button>
+              {isOpen && (
+                <ReferenceAnnotationPopover
+                  annotationName={control.name}
+                  label={label}
+                  activeAnnotation={activeAnnotation}
+                  currentArticleId={currentArticleId}
+                  language={language}
+                  labels={labels}
+                  onApply={(value) => applyAnnotation(control.name, value)}
+                  onRemove={() => removeAnnotation(control.name)}
+                />
+              )}
+            </div>
+          );
+        })}
+
+        {(() => {
+          const annotationName: AnnotationName = 'pageLink';
+          const label = getAnnotationLabel(annotationName, labels);
+          const activeAnnotation = getActiveAnnotation(annotationName);
+          const canOpen = hasTextSelection || Boolean(activeAnnotation);
+          const isOpen = openAnnotation === annotationName;
+
+          return (
+            <div className="editorial-pte-toolbar__annotation">
+              <button
+                className="editorial-pte-toolbar__button"
+                type="button"
+                aria-label={label}
+                aria-pressed={Boolean(activeAnnotation)}
+                aria-expanded={isOpen}
+                title={canOpen ? label : labels.annotationNoSelection}
+                disabled={!canOpen}
+                onClick={() => setOpenAnnotation(isOpen ? null : annotationName)}
+              >
+                <span className="editorial-pte-toolbar__emoji" aria-hidden="true">📃</span>
+              </button>
+              {isOpen && (
+                <PageLinkPopover
+                  label={label}
+                  activeAnnotation={activeAnnotation}
+                  labels={labels}
+                  onApply={(value) => applyAnnotation(annotationName, value)}
+                  onRemove={() => removeAnnotation(annotationName)}
+                />
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -727,6 +1133,31 @@ function getRatingLabel(field: RatingField, labels: Labels) {
   if (field === 'longevita') return labels.longevita;
 
   return labels.overall;
+}
+
+function getAnnotationLabel(annotationName: AnnotationName, labels: Labels) {
+  if (annotationName === 'internalLink') return labels.internalLink;
+  if (annotationName === 'platformLink') return labels.platformLink;
+  if (annotationName === 'creatorLink') return labels.creatorLink;
+  if (annotationName === 'companyLink') return labels.companyLink;
+  if (annotationName === 'taxonomyLink') return labels.taxonomyLink;
+
+  return labels.pageLink;
+}
+
+function getActiveAnnotationTarget(annotation: PortableTextObject | null | undefined) {
+  if (!annotation) return '';
+
+  if (annotation._type === 'pageLink') {
+    return typeof annotation.path === 'string' ? annotation.path : '';
+  }
+
+  const reference = annotation.reference;
+  if (reference && typeof reference === 'object' && '_ref' in reference) {
+    return typeof reference._ref === 'string' ? reference._ref : '';
+  }
+
+  return '';
 }
 
 type MultiSelectOption<Value extends string> = {
@@ -1561,7 +1992,11 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 }}
               />
               <NodePlugin nodes={nodes} />
-              <Toolbar labels={labels} />
+              <Toolbar
+                labels={labels}
+                language={draft.language}
+                currentArticleId={getRootArticleId(draft._id)}
+              />
               <PortableTextEditable
                 className="editorial-pte"
                 renderAnnotation={renderAnnotation}
