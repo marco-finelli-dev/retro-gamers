@@ -150,6 +150,17 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       banned: 'Bannato'
     };
 
+    const editorialRoleLabels = {
+      contributor: 'Contributor',
+      editor: 'Editor',
+      editorial_admin: 'Editorial admin'
+    };
+
+    const editorialStatusLabels = {
+      active: 'Attivo',
+      suspended: 'Sospeso'
+    };
+
     const getBadgeLabel = (badge) =>
       badge?.labelIt || badge?.labelEn || badge?.key || 'Badge';
 
@@ -164,6 +175,18 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
 
       return `/${value.replace(/^\/+/, '')}`;
     };
+
+    const slugifyAuthorName = (value) =>
+      String(value || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/['’]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .replace(/-{2,}/g, '-')
+        .slice(0, 96);
 
     const renderRoleActions = (user) => {
       if (!user.canManageRole || viewerRole !== 'admin') {
@@ -254,6 +277,176 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
           </div>
 
           ${assignMarkup}
+        </section>
+      `;
+    };
+
+    const renderEditorialAccess = (user) => {
+      const editorial = user.editorialAccess || {};
+
+      if (!editorial.canManage) {
+        return '';
+      }
+
+      if (!editorial.databaseAvailable) {
+        const isDatabaseMissing = editorial.error === 'Editorial database not initialized';
+
+        return `
+          <section class="admin-user-card__editorial" aria-label="Accesso redazione">
+            <div class="admin-user-card__editorial-header">
+              <div>
+                <h3>Accesso redazione</h3>
+                <p>${isDatabaseMissing ? 'Database editoriale non inizializzato.' : 'Accesso redazione temporaneamente non disponibile.'}</p>
+              </div>
+            </div>
+            <p class="admin-user-card__notice">
+              ${isDatabaseMissing
+                ? 'Applica prima lo SQL editoriale in Supabase. La gestione community resta disponibile.'
+                : 'Riprova più tardi. La gestione community resta disponibile.'
+              }
+            </p>
+          </section>
+        `;
+      }
+
+      const profile = editorial.profile;
+      const author = profile?.author || null;
+      const authorName = author
+        ? author.nickname
+          ? `${author.nickname} (${author.name})`
+          : author.name
+        : '';
+      const suggestedName = user.displayName || user.username || '';
+      const suggestedSlug = slugifyAuthorName(suggestedName);
+
+      if (!profile) {
+        return `
+          <section class="admin-user-card__editorial" aria-label="Accesso redazione" data-editorial-section>
+            <div class="admin-user-card__editorial-header">
+              <div>
+                <h3>Accesso redazione</h3>
+                <p>Questo account non ha accesso alla redazione.</p>
+              </div>
+            </div>
+
+            <button type="button" class="admin-user-card__editorial-primary" data-editorial-action="show-enable">
+              Abilita accesso redazione
+            </button>
+
+            <div class="admin-user-card__editorial-form" data-editorial-enable-form hidden>
+              <label>
+                <span>Ruolo editoriale</span>
+                <select data-editorial-role-select>
+                  <option value="contributor">Contributor</option>
+                  <option value="editor">Editor</option>
+                  <option value="editorial_admin">Editorial admin</option>
+                </select>
+              </label>
+
+              <fieldset>
+                <legend>Identità autore Sanity</legend>
+                <label>
+                  <input type="radio" name="editorial-author-mode-${escapeHtml(user.userId)}" value="existing" checked data-editorial-author-mode />
+                  Associa autore esistente
+                </label>
+                <label>
+                  <input type="radio" name="editorial-author-mode-${escapeHtml(user.userId)}" value="new" data-editorial-author-mode />
+                  Crea nuovo autore
+                </label>
+              </fieldset>
+
+              <div data-editorial-existing-author-panel>
+                <label>
+                  <span>Cerca autore</span>
+                  <input type="search" data-editorial-author-search placeholder="Nome, nickname o slug" autocomplete="off" />
+                </label>
+                <button type="button" data-editorial-action="search-authors">Cerca autore</button>
+                <input type="hidden" data-editorial-selected-author-id value="" />
+                <div class="admin-user-card__editorial-results" data-editorial-author-results aria-live="polite"></div>
+              </div>
+
+              <div data-editorial-new-author-panel hidden>
+                <label>
+                  <span>Nome</span>
+                  <input type="text" data-editorial-author-name value="${escapeHtml(suggestedName)}" maxlength="120" />
+                </label>
+                <label>
+                  <span>Nickname opzionale</span>
+                  <input type="text" data-editorial-author-nickname maxlength="120" />
+                </label>
+                <label>
+                  <span>Firma pubblica</span>
+                  <select data-editorial-author-display-name>
+                    <option value="real">Nome reale</option>
+                    <option value="nickname">Nickname</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Slug</span>
+                  <input type="text" data-editorial-author-slug value="${escapeHtml(suggestedSlug)}" maxlength="96" />
+                </label>
+              </div>
+
+              <button type="button" class="admin-user-card__editorial-primary" data-editorial-action="save-access">
+                Salva accesso redazione
+              </button>
+            </div>
+          </section>
+        `;
+      }
+
+      return `
+        <section class="admin-user-card__editorial" aria-label="Accesso redazione" data-editorial-section>
+          <div class="admin-user-card__editorial-header">
+            <div>
+              <h3>Accesso redazione</h3>
+              <p>Mapping privato tra account community e autore Sanity.</p>
+            </div>
+          </div>
+
+          <dl class="admin-user-card__editorial-facts">
+            <div>
+              <dt>Ruolo</dt>
+              <dd>${escapeHtml(editorialRoleLabels[profile.editorialRole] || profile.editorialRole)}</dd>
+            </div>
+            <div>
+              <dt>Stato</dt>
+              <dd>${escapeHtml(editorialStatusLabels[profile.status] || profile.status)}</dd>
+            </div>
+            <div>
+              <dt>Autore Sanity</dt>
+              <dd>
+                ${author
+                  ? `
+                    <strong>${escapeHtml(authorName)}</strong>
+                    ${author.slug ? `<span>/${escapeHtml(author.slug)}/</span>` : ''}
+                    <span>ID: ${escapeHtml(profile.sanityAuthorId)}</span>
+                    ${author.role ? `<span>Ruolo pubblico autore: ${escapeHtml(author.role)}</span>` : ''}
+                  `
+                  : `
+                    <strong>Autore non risolto</strong>
+                    <span>ID: ${escapeHtml(profile.sanityAuthorId)}</span>
+                  `
+                }
+              </dd>
+            </div>
+          </dl>
+
+          <div class="admin-user-card__editorial-update">
+            <label>
+              <span>Ruolo editoriale</span>
+              <select data-editorial-update-role>
+                ${Object.entries(editorialRoleLabels).map(([value, label]) => `
+                  <option value="${escapeHtml(value)}" ${profile.editorialRole === value ? 'selected' : ''}>${escapeHtml(label)}</option>
+                `).join('')}
+              </select>
+            </label>
+            <button type="button" data-editorial-action="update-access">Cambia ruolo</button>
+            ${profile.status === 'active'
+              ? '<button type="button" data-editorial-action="suspend-access" data-confirm="Sospendere l’accesso redazione per questo account?">Sospendi accesso</button>'
+              : '<button type="button" data-editorial-action="activate-access">Riattiva accesso</button>'
+            }
+          </div>
         </section>
       `;
     };
@@ -359,6 +552,8 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
 
           ${renderBadgeManagement(user)}
 
+          ${renderEditorialAccess(user)}
+
           <div class="admin-user-card__actions">
             ${publicProfileHref ? `<a class="admin-user-card__profile-link" href="${escapeHtml(publicProfileHref)}">Vedi profilo</a>` : ''}
             ${user.isSelf ? '<span class="admin-user-card__notice">Il tuo account è protetto da modifiche dirette.</span>' : ''}
@@ -406,8 +601,255 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       }
     };
 
+    const editorialErrorLabels = {
+      unauthorized: 'Permessi insufficienti.',
+      suspended_admin: 'Admin non attivo: accesso redazione non consentito.',
+      target_user_missing: 'Utente di destinazione non trovato.',
+      target_user_unavailable: 'Utente di destinazione non disponibile.',
+      author_missing: 'Autore Sanity non trovato.',
+      'author missing': 'Autore Sanity non trovato.',
+      author_already_linked: 'Questo autore Sanity è già collegato a un altro account.',
+      mapping_already_exists: 'Questo account ha già un autore collegato. Il cambio autore richiede un flusso dedicato.',
+      invalid_author: 'Dati autore non validi.',
+      invalid_request: 'Richiesta non valida.',
+      invalid_status: 'Stato editoriale non valido.',
+      'invalid editorial role': 'Ruolo editoriale non valido.',
+      slug_already_exists: 'Slug autore già esistente.',
+      editorial_database_not_initialized: 'Database editoriale non inizializzato.',
+      'Sanity unavailable': 'Sanity non disponibile.',
+      mapping_failed: 'Mapping editoriale non completato.',
+    };
+
+    const getEditorialErrorMessage = (error) =>
+      editorialErrorLabels[error] || error || 'Operazione editoriale non riuscita.';
+
+    const getEditorialSection = (element) =>
+      element?.closest?.('[data-editorial-section]');
+
+    const syncEditorialAuthorMode = (section) => {
+      const mode = section?.querySelector('[data-editorial-author-mode]:checked')?.value || 'existing';
+      const existingPanel = section?.querySelector('[data-editorial-existing-author-panel]');
+      const newPanel = section?.querySelector('[data-editorial-new-author-panel]');
+
+      if (existingPanel) existingPanel.hidden = mode !== 'existing';
+      if (newPanel) newPanel.hidden = mode !== 'new';
+    };
+
+    const renderEditorialAuthorResults = (section, authors) => {
+      const resultsNode = section?.querySelector('[data-editorial-author-results]');
+      const selectedInput = section?.querySelector('[data-editorial-selected-author-id]');
+
+      if (!resultsNode) return;
+
+      if (selectedInput) selectedInput.value = '';
+
+      if (!authors?.length) {
+        resultsNode.innerHTML = '<p class="admin-user-card__notice">Nessun autore trovato.</p>';
+        return;
+      }
+
+      resultsNode.innerHTML = authors.map((author) => {
+        const title = author.nickname
+          ? `${author.nickname} (${author.name})`
+          : author.name;
+        const facts = [
+          author.slug ? `/${author.slug}/` : '',
+          author.role ? `Ruolo pubblico: ${author.role}` : '',
+          `ID: ${author._id}`
+        ].filter(Boolean).join(' · ');
+
+        return `
+          <button type="button" data-editorial-action="select-author" data-editorial-author-id="${escapeHtml(author._id)}">
+            ${author.imagePreviewUrl ? `<img src="${escapeHtml(author.imagePreviewUrl)}" alt="" loading="lazy" decoding="async" />` : ''}
+            <span>
+              <strong>${escapeHtml(title)}</strong>
+              <small>${escapeHtml(facts)}</small>
+            </span>
+          </button>
+        `;
+      }).join('');
+    };
+
+    const submitEditorialRequest = async (url, options) => {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options?.headers || {})
+        }
+      });
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(getEditorialErrorMessage(result.error));
+      }
+
+      return result;
+    };
+
+    const handleEditorialAction = async (button) => {
+      const section = getEditorialSection(button);
+      const card = button.closest('[data-user-id]');
+      const targetUserId = card?.dataset.userId;
+      const action = button.dataset.editorialAction;
+
+      if (!section || !targetUserId || !action) return false;
+
+      if (action === 'show-enable') {
+        const form = section.querySelector('[data-editorial-enable-form]');
+        if (form) {
+          form.hidden = false;
+          button.hidden = true;
+          syncEditorialAuthorMode(section);
+        }
+        return true;
+      }
+
+      if (action === 'select-author') {
+        const selectedInput = section.querySelector('[data-editorial-selected-author-id]');
+        const authorId = button.dataset.editorialAuthorId || '';
+
+        if (selectedInput) selectedInput.value = authorId;
+
+        section.querySelectorAll('[data-editorial-action="select-author"]').forEach((node) => {
+          node.setAttribute('aria-pressed', node === button ? 'true' : 'false');
+        });
+
+        return true;
+      }
+
+      const confirmation = button.dataset.confirm;
+      if (confirmation && !window.confirm(confirmation)) {
+        return true;
+      }
+
+      button.disabled = true;
+      showMessage('');
+
+      try {
+        if (action === 'search-authors') {
+          const query = section.querySelector('[data-editorial-author-search]')?.value || '';
+          const response = await fetch(`/api/admin/editorial/authors/search?q=${encodeURIComponent(query)}`);
+          const result = await response.json();
+
+          if (!result.ok) {
+            throw new Error(getEditorialErrorMessage(result.error));
+          }
+
+          renderEditorialAuthorResults(section, result.authors || []);
+          button.disabled = false;
+          return true;
+        }
+
+        if (action === 'save-access') {
+          const role = section.querySelector('[data-editorial-role-select]')?.value || 'contributor';
+          const mode = section.querySelector('[data-editorial-author-mode]:checked')?.value || 'existing';
+
+          if (mode === 'existing') {
+            const sanityAuthorId = section.querySelector('[data-editorial-selected-author-id]')?.value || '';
+
+            if (!sanityAuthorId) {
+              throw new Error('Seleziona un autore Sanity.');
+            }
+
+            await submitEditorialRequest('/api/admin/editorial/profiles/link', {
+              method: 'POST',
+              body: JSON.stringify({
+                targetUserId,
+                sanityAuthorId,
+                editorialRole: role,
+              }),
+            });
+          } else {
+            await submitEditorialRequest('/api/admin/editorial/authors/create', {
+              method: 'POST',
+              body: JSON.stringify({
+                targetUserId,
+                name: section.querySelector('[data-editorial-author-name]')?.value || '',
+                nickname: section.querySelector('[data-editorial-author-nickname]')?.value || '',
+                displayName: section.querySelector('[data-editorial-author-display-name]')?.value || 'real',
+                slug: section.querySelector('[data-editorial-author-slug]')?.value || '',
+                editorialRole: role,
+              }),
+            });
+          }
+
+          showMessage('Accesso redazione aggiornato.', 'ok');
+          await loadUser();
+          return true;
+        }
+
+        if (action === 'update-access' || action === 'suspend-access' || action === 'activate-access') {
+          const body = action === 'update-access'
+            ? { editorialRole: section.querySelector('[data-editorial-update-role]')?.value || 'contributor' }
+            : { status: action === 'suspend-access' ? 'suspended' : 'active' };
+
+          await submitEditorialRequest(`/api/admin/editorial/profiles/${encodeURIComponent(targetUserId)}`, {
+            method: 'PATCH',
+            body: JSON.stringify(body),
+          });
+
+          showMessage('Accesso redazione aggiornato.', 'ok');
+          await loadUser();
+          return true;
+        }
+      } catch (error) {
+        showMessage(error instanceof Error ? error.message : 'Operazione editoriale non riuscita.', 'error');
+        button.disabled = false;
+        return true;
+      }
+
+      button.disabled = false;
+      return false;
+    };
+
+    detailNode?.addEventListener('change', (event) => {
+      const target = event.target;
+
+      if (!(target instanceof Element)) return;
+
+      if (target.matches('[data-editorial-author-mode]')) {
+        syncEditorialAuthorMode(getEditorialSection(target));
+      }
+    });
+
+    detailNode?.addEventListener('input', (event) => {
+      const target = event.target;
+
+      if (!(target instanceof HTMLInputElement)) return;
+
+      if (target.matches('[data-editorial-author-slug]')) {
+        target.dataset.edited = '1';
+        return;
+      }
+
+      if (!target.matches('[data-editorial-author-name], [data-editorial-author-nickname]')) {
+        return;
+      }
+
+      const section = getEditorialSection(target);
+      const slugInput = section?.querySelector('[data-editorial-author-slug]');
+
+      if (!(slugInput instanceof HTMLInputElement) || slugInput.dataset.edited === '1') {
+        return;
+      }
+
+      const nickname = section?.querySelector('[data-editorial-author-nickname]')?.value || '';
+      const name = section?.querySelector('[data-editorial-author-name]')?.value || '';
+      slugInput.value = slugifyAuthorName(nickname || name);
+    });
+
     detailNode?.addEventListener('click', async (event) => {
       const target = event.target;
+      const editorialButton = target instanceof Element
+        ? target.closest('button[data-editorial-action]')
+        : null;
+
+      if (editorialButton) {
+        const handled = await handleEditorialAction(editorialButton);
+        if (handled) return;
+      }
+
       const badgeButton = target instanceof Element
         ? target.closest('button[data-badge-action]')
         : null;

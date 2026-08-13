@@ -706,6 +706,259 @@ html[data-theme="light"] .admin-user-card__avatar {
   font-weight: 750;
 }
 
+.admin-user-card__editorial {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--rg-card-bg) 74%, transparent);
+}
+
+.admin-user-card__editorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-user-card__editorial h3 {
+  margin: 0 0 4px;
+  color: var(--rg-section-title-color);
+  font-size: 0.98rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-user-card__editorial p {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+  font-weight: 760;
+}
+
+.admin-user-card__editorial-form,
+.admin-user-card__editorial-update {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-user-card__editorial-form label,
+.admin-user-card__editorial-update label {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-user-card__editorial-form label span,
+.admin-user-card__editorial-update label span {
+  color: var(--color-text-soft);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-user-card__editorial-form input,
+.admin-user-card__editorial-form select,
+.admin-user-card__editorial-update select {
+  min-height: 40px;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0 12px;
+  background: var(--color-glass);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.admin-user-card__editorial-form select,
+.admin-user-card__editorial-update select {
+  padding-right: var(--rg-select-caret-padding);
+  background-image: var(--rg-select-caret-icon);
+  background-repeat: no-repeat;
+  background-position: var(--rg-select-caret-position);
+  background-size: var(--rg-select-caret-size);
+}
+
+.admin-user-card__editorial-form input:focus,
+.admin-user-card__editorial-form select:focus,
+.admin-user-card__editorial-update select:focus {
+  outline: none;
+  border-color: var(--rg-cta-border);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+
+.admin-user-card__editorial-form fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: 16px;
+}
+
+.admin-user-card__editorial-form legend {
+  padding: 0 6px;
+  color: var(--color-text-soft);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-user-card__editorial-form fieldset label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+  font-weight: 850;
+}
+
+.admin-user-card__editorial-form fieldset input {
+  min-height: 0;
+}
+
+.admin-user-card__editorial-form [data-editorial-existing-author-panel],
+.admin-user-card__editorial-form [data-editorial-new-author-panel] {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-user-card__editorial-results {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-user-card__editorial-results button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 8px 10px;
+  background: var(--color-glass);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-user-card__editorial-results button[aria-pressed="true"] {
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-hover-bg);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.admin-user-card__editorial-results button:hover,
+.admin-user-card__editorial-results button:focus-visible {
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-hover-bg);
+  outline: none;
+}
+
+.admin-user-card__editorial-results img {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.admin-user-card__editorial-results span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-user-card__editorial-results strong {
+  color: var(--color-text);
+  font-weight: 900;
+}
+
+.admin-user-card__editorial-results small {
+  color: var(--color-text-soft);
+  font-size: 0.78rem;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.admin-user-card__editorial-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.admin-user-card__editorial-facts > div {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--color-border);
+  border-radius: 16px;
+  background: var(--color-glass);
+}
+
+.admin-user-card__editorial-facts dt {
+  margin: 0 0 4px;
+  color: var(--color-text-soft);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-user-card__editorial-facts dd {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.admin-user-card__editorial-facts dd span {
+  color: var(--color-text-soft);
+  font-size: 0.82rem;
+}
+
+.admin-user-card__editorial-update {
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  align-items: end;
+}
+
+.admin-user-card__editorial button:not([data-editorial-action="select-author"]),
+.admin-user-card__editorial-primary {
+  min-height: 40px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 16px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-user-card__editorial button:not([data-editorial-action="select-author"]):hover,
+.admin-user-card__editorial button:not([data-editorial-action="select-author"]):focus-visible,
+.admin-user-card__editorial-primary:hover,
+.admin-user-card__editorial-primary:focus-visible {
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.admin-user-card__editorial button:not([data-editorial-action="select-author"]):disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 @media (max-width: 720px) {
   .admin-users-page {
     width: min(100% - 24px, 1180px);
@@ -807,5 +1060,9 @@ html[data-theme="light"] .admin-user-card__avatar {
 
   .admin-user-card__actions button {
     flex: 1 1 auto;
+  }
+
+  .admin-user-card__editorial-update {
+    grid-template-columns: 1fr;
   }
 }

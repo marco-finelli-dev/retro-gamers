@@ -6,6 +6,11 @@ import {
   type ReaderBadge,
 } from '../../../../lib/badges';
 import { calculateCommunityPoints } from '../../../../lib/community-points';
+import {
+  fetchEditorialProfilesByUserIds,
+  type EditorialProfileSummary,
+} from '../../../../lib/editorial/admin.server';
+import { canAdministerEditorialAccess } from '../../../../lib/editorial/permissions';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
 import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supabase/auth';
 import { getAvatarPublicUrl, isMissingAvatarColumnError } from '../../../../lib/supabase/avatars';
@@ -16,6 +21,7 @@ const json = (payload: unknown, status = 200) =>
     status,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'private, no-store',
     },
   });
 
@@ -379,6 +385,23 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     const activeBadgeByKey = new Map(activeBadges.map((badge) => [badge.key, badge]));
     const viewerRole = session.profile.role === 'admin' ? 'admin' : 'moderator';
     const badgeManagementAvailable = badgeAssignmentsResult.available;
+    const canManageEditorialAccess = canAdministerEditorialAccess({ profile: session.profile });
+    let editorialDatabaseAvailable = false;
+    let editorialDatabaseError: string | null = null;
+    let editorialProfileByUserId = new Map<string, EditorialProfileSummary>();
+
+    if (isDetailRequest && detailUserId && canManageEditorialAccess) {
+      try {
+        const editorialResult = await fetchEditorialProfilesByUserIds([detailUserId]);
+        editorialDatabaseAvailable = editorialResult.available;
+        editorialDatabaseError = editorialResult.error;
+        editorialProfileByUserId = editorialResult.profilesByUserId;
+      } catch (error) {
+        logApiError('admin-users-list.editorial-access', error);
+        editorialDatabaseAvailable = false;
+        editorialDatabaseError = 'Editorial access unavailable';
+      }
+    }
 
     let users = profiles
       .filter((profile) => !detailUserId || profile.user_id === detailUserId)
@@ -447,6 +470,12 @@ export const GET: APIRoute = async ({ cookies, url }) => {
           canManageStatus:
             !isSelf && (viewerRole === 'admin' || (viewerRole === 'moderator' && role === 'user')),
           canManageBadges: viewerRole === 'admin' && badgeManagementAvailable,
+          editorialAccess: {
+            canManage: canManageEditorialAccess && !isSelf,
+            databaseAvailable: editorialDatabaseAvailable,
+            error: editorialDatabaseError,
+            profile: editorialProfileByUserId.get(profile.user_id) || null,
+          },
         };
       });
 
@@ -535,6 +564,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
     return json({
       ok: true,
       viewerRole,
+      canManageEditorialAccess,
       badgeManagementAvailable,
       availableBadges: activeBadges.map(serializeBadge),
       users,
