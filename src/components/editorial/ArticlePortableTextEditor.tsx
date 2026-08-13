@@ -5,6 +5,8 @@ import {
   PortableTextEditable,
   useEditor,
   useEditorSelector,
+  type AnnotationPath,
+  type EditorSelection,
   type PortableTextBlock,
   type PortableTextObject,
   type RenderAnnotationFunction,
@@ -14,7 +16,8 @@ import {
 } from '@portabletext/editor';
 import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
 import * as selectors from '@portabletext/editor/selectors';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 type ArticleType =
   | 'review'
@@ -265,6 +268,7 @@ type Labels = {
   pageLink: string;
   annotationCurrentTarget: string;
   annotationRemove: string;
+  annotationClose: string;
   annotationNoSelection: string;
   pageLinkSelectPlaceholder: string;
   preservedObject: string;
@@ -471,7 +475,7 @@ function ObjectBlock({ attributes, children, node, labels }: any) {
   );
 }
 
-function ReferenceAnnotationPopover({
+function ReferenceAnnotationPicker({
   annotationName,
   label,
   activeAnnotation,
@@ -495,7 +499,12 @@ function ReferenceAnnotationPopover({
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const searchId = useId();
   const listboxId = useId();
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const currentTarget = getActiveAnnotationTarget(activeAnnotation);
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -545,9 +554,9 @@ function ReferenceAnnotationPopover({
   };
 
   return (
-    <div className="editorial-pte-link-popover" role="dialog" aria-label={label}>
+    <>
       {currentTarget && (
-        <p className="editorial-pte-link-popover__current">
+        <p className="editorial-pte-modal__current">
           {labels.annotationCurrentTarget}: <code>{currentTarget}</code>
         </p>
       )}
@@ -555,6 +564,7 @@ function ReferenceAnnotationPopover({
       <label className="editorial-relation-picker__search" htmlFor={searchId}>
         <span className="sr-only">{label}</span>
         <input
+          ref={searchInputRef}
           id={searchId}
           value={query}
           placeholder={labels.relationSearchPlaceholder}
@@ -607,11 +617,11 @@ function ReferenceAnnotationPopover({
           {labels.annotationRemove}
         </button>
       )}
-    </div>
+    </>
   );
 }
 
-function PageLinkPopover({
+function PageLinkPicker({
   label,
   activeAnnotation,
   labels,
@@ -625,11 +635,16 @@ function PageLinkPopover({
   onRemove: () => void;
 }) {
   const currentTarget = getActiveAnnotationTarget(activeAnnotation);
+  const firstButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    firstButtonRef.current?.focus();
+  }, []);
 
   return (
-    <div className="editorial-pte-link-popover" role="dialog" aria-label={label}>
+    <>
       {currentTarget && (
-        <p className="editorial-pte-link-popover__current">
+        <p className="editorial-pte-modal__current">
           {labels.annotationCurrentTarget}: <code>{currentTarget}</code>
         </p>
       )}
@@ -638,6 +653,7 @@ function PageLinkPopover({
         <p className="editorial-relation-picker__state">{labels.pageLinkSelectPlaceholder}</p>
         {pageLinkOptions.map((item) => (
           <button
+            ref={item.path === pageLinkOptions[0]?.path ? firstButtonRef : undefined}
             type="button"
             className="editorial-relation-picker__option"
             key={item.path}
@@ -660,7 +676,81 @@ function PageLinkPopover({
           {labels.annotationRemove}
         </button>
       )}
-    </div>
+    </>
+  );
+}
+
+function getAnnotationIcon(annotationName: AnnotationName) {
+  if (annotationName === 'pageLink') return '📃';
+
+  return referenceAnnotationControls.find((control) => control.name === annotationName)?.icon || '';
+}
+
+function AnnotationModal({
+  title,
+  labels,
+  children,
+  onClose,
+}: {
+  title: string;
+  labels: Labels;
+  children: ReactNode;
+  onClose: () => void;
+}) {
+  const titleId = useId();
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [onClose]);
+
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="editorial-pte-modal"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="editorial-pte-modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="editorial-pte-modal__header">
+          <h2 id={titleId}>{title}</h2>
+          <button
+            type="button"
+            className="editorial-pte-modal__close"
+            aria-label={labels.annotationClose}
+            title={labels.annotationClose}
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="editorial-pte-modal__body">
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -677,13 +767,21 @@ function Toolbar({
   const activeStyle = useEditorSelector(editor, selectors.getActiveStyle);
   const activeListItem = useEditorSelector(editor, selectors.getActiveListItem);
   const activeAnnotations = useEditorSelector(editor, selectors.getActiveAnnotations);
+  const selection = useEditorSelector(editor, selectors.getSelection);
   const selectedText = useEditorSelector(editor, selectors.getSelectionText);
   const selectedTextBlocks = useEditorSelector(editor, selectors.getSelectedTextBlocks);
   const isBoldActive = useEditorSelector(editor, selectors.isActiveDecorator('strong'));
   const isItalicActive = useEditorSelector(editor, selectors.isActiveDecorator('em'));
   const isBlockquoteActive = useEditorSelector(editor, selectors.isActiveStyle('blockquote'));
   const blockStyle = activeStyle === 'h2' || activeStyle === 'h3' ? activeStyle : 'normal';
-  const [openAnnotation, setOpenAnnotation] = useState<AnnotationName | null>(null);
+  const [annotationModal, setAnnotationModal] = useState<{
+    annotationName: AnnotationName;
+    activeAnnotation: PortableTextObject | null;
+    activePath: AnnotationPath | null;
+    selection: EditorSelection;
+    hasTextSelection: boolean;
+    trigger: HTMLButtonElement | null;
+  } | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const hasTextSelection = selectedText.trim().length > 0;
 
@@ -694,74 +792,87 @@ function Toolbar({
   };
   const getActiveAnnotation = (annotationName: AnnotationName | 'link') =>
     activeAnnotations.find((annotation) => annotation._type === annotationName) || null;
-  const getActiveAnnotationPath = (annotation: PortableTextObject | null) => {
+  const getActiveAnnotationPath = (annotation: PortableTextObject | null): AnnotationPath | null => {
     const key = typeof annotation?._key === 'string' ? annotation._key : '';
     if (!key) return null;
 
     for (const block of selectedTextBlocks) {
       const markDefs = Array.isArray(block.node.markDefs) ? block.node.markDefs : [];
       if (markDefs.some((markDef) => markDef?._key === key)) {
-        return [...block.path, 'markDefs', { _key: key }];
+        return [...block.path, 'markDefs', { _key: key }] as AnnotationPath;
       }
     }
 
     return null;
   };
-  const applyAnnotation = (annotationName: AnnotationName, value: Record<string, unknown>) => {
+  const restoreSelection = (selectionSnapshot: EditorSelection) => {
+    if (selectionSnapshot) {
+      editor.send({
+        type: 'select',
+        at: selectionSnapshot,
+      });
+    }
+  };
+  const openAnnotationModal = (annotationName: AnnotationName, trigger: HTMLButtonElement) => {
     const activeAnnotation = getActiveAnnotation(annotationName);
-    const activePath = getActiveAnnotationPath(activeAnnotation);
+    const canOpen = hasTextSelection || Boolean(activeAnnotation);
 
-    if (activePath) {
+    if (!canOpen) return;
+
+    setAnnotationModal({
+      annotationName,
+      activeAnnotation,
+      activePath: getActiveAnnotationPath(activeAnnotation),
+      selection,
+      hasTextSelection,
+      trigger,
+    });
+  };
+  const closeAnnotationModal = () => {
+    const trigger = annotationModal?.trigger;
+    setAnnotationModal(null);
+
+    window.setTimeout(() => {
+      trigger?.focus();
+    }, 0);
+  };
+  const applyAnnotation = (value: Record<string, unknown>) => {
+    if (!annotationModal) return;
+
+    restoreSelection(annotationModal.selection);
+
+    if (annotationModal.activePath) {
       send({
         type: 'annotation.set',
-        at: activePath,
+        at: annotationModal.activePath,
         props: value,
       });
-    } else if (hasTextSelection) {
+    } else if (annotationModal.hasTextSelection && annotationModal.selection) {
       send({
         type: 'annotation.add',
+        at: annotationModal.selection,
         annotation: {
-          name: annotationName,
+          name: annotationModal.annotationName,
           value,
         },
       });
     }
 
-    setOpenAnnotation(null);
+    setAnnotationModal(null);
   };
-  const removeAnnotation = (annotationName: AnnotationName) => {
+  const removeAnnotation = () => {
+    if (!annotationModal) return;
+
+    restoreSelection(annotationModal.selection);
     send({
       type: 'annotation.remove',
+      ...(annotationModal.selection ? { at: annotationModal.selection } : {}),
       annotation: {
-        name: annotationName,
+        name: annotationModal.annotationName,
       },
     });
-    setOpenAnnotation(null);
+    setAnnotationModal(null);
   };
-
-  useEffect(() => {
-    if (!openAnnotation) return;
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) {
-        setOpenAnnotation(null);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpenAnnotation(null);
-        focus();
-      }
-    };
-
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [openAnnotation]);
 
   const addExternalLink = () => {
     const href = window.prompt(labels.linkPrompt, 'https://');
@@ -895,7 +1006,7 @@ function Toolbar({
           const label = getAnnotationLabel(control.name, labels);
           const activeAnnotation = getActiveAnnotation(control.name);
           const canOpen = hasTextSelection || Boolean(activeAnnotation);
-          const isOpen = openAnnotation === control.name;
+          const isOpen = annotationModal?.annotationName === control.name;
 
           return (
             <div className="editorial-pte-toolbar__annotation" key={control.name}>
@@ -907,22 +1018,17 @@ function Toolbar({
                 aria-expanded={isOpen}
                 title={canOpen ? label : labels.annotationNoSelection}
                 disabled={!canOpen}
-                onClick={() => setOpenAnnotation(isOpen ? null : control.name)}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => {
+                  if (isOpen) {
+                    closeAnnotationModal();
+                  } else {
+                    openAnnotationModal(control.name, event.currentTarget);
+                  }
+                }}
               >
                 <span className="editorial-pte-toolbar__emoji" aria-hidden="true">{control.icon}</span>
               </button>
-              {isOpen && (
-                <ReferenceAnnotationPopover
-                  annotationName={control.name}
-                  label={label}
-                  activeAnnotation={activeAnnotation}
-                  currentArticleId={currentArticleId}
-                  language={language}
-                  labels={labels}
-                  onApply={(value) => applyAnnotation(control.name, value)}
-                  onRemove={() => removeAnnotation(control.name)}
-                />
-              )}
             </div>
           );
         })}
@@ -932,7 +1038,7 @@ function Toolbar({
           const label = getAnnotationLabel(annotationName, labels);
           const activeAnnotation = getActiveAnnotation(annotationName);
           const canOpen = hasTextSelection || Boolean(activeAnnotation);
-          const isOpen = openAnnotation === annotationName;
+          const isOpen = annotationModal?.annotationName === annotationName;
 
           return (
             <div className="editorial-pte-toolbar__annotation">
@@ -944,23 +1050,50 @@ function Toolbar({
                 aria-expanded={isOpen}
                 title={canOpen ? label : labels.annotationNoSelection}
                 disabled={!canOpen}
-                onClick={() => setOpenAnnotation(isOpen ? null : annotationName)}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => {
+                  if (isOpen) {
+                    closeAnnotationModal();
+                  } else {
+                    openAnnotationModal(annotationName, event.currentTarget);
+                  }
+                }}
               >
                 <span className="editorial-pte-toolbar__emoji" aria-hidden="true">📃</span>
               </button>
-              {isOpen && (
-                <PageLinkPopover
-                  label={label}
-                  activeAnnotation={activeAnnotation}
-                  labels={labels}
-                  onApply={(value) => applyAnnotation(annotationName, value)}
-                  onRemove={() => removeAnnotation(annotationName)}
-                />
-              )}
             </div>
           );
         })()}
       </div>
+
+      {annotationModal && (
+        <AnnotationModal
+          title={`${getAnnotationIcon(annotationModal.annotationName)} ${getAnnotationLabel(annotationModal.annotationName, labels)}`}
+          labels={labels}
+          onClose={closeAnnotationModal}
+        >
+          {annotationModal.annotationName === 'pageLink' ? (
+            <PageLinkPicker
+              label={getAnnotationLabel(annotationModal.annotationName, labels)}
+              activeAnnotation={annotationModal.activeAnnotation}
+              labels={labels}
+              onApply={applyAnnotation}
+              onRemove={removeAnnotation}
+            />
+          ) : (
+            <ReferenceAnnotationPicker
+              annotationName={annotationModal.annotationName}
+              label={getAnnotationLabel(annotationModal.annotationName, labels)}
+              activeAnnotation={annotationModal.activeAnnotation}
+              currentArticleId={currentArticleId}
+              language={language}
+              labels={labels}
+              onApply={applyAnnotation}
+              onRemove={removeAnnotation}
+            />
+          )}
+        </AnnotationModal>
+      )}
     </div>
   );
 }
