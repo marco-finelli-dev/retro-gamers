@@ -1,9 +1,8 @@
 ---
 import '../../styles/pages/editorial-area.css';
+import '../../styles/pages/community.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CommunityHero from '../community/CommunityHero.astro';
-import CommunityLayout from '../community/CommunityLayout.astro';
-import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
 import ArticlePortableTextEditor from './ArticlePortableTextEditor';
 import {
   fetchEditableEditorialArticle,
@@ -31,11 +30,20 @@ const copy = isEnglish
       articles: 'Article workspace',
       newArticle: 'New article',
       editorLoading: 'Loading editor…',
+      backToArticles: 'Back to articles',
       labels: {
         title: 'Title',
         subtitle: 'Subtitle',
         content: 'Article body',
         sidebar: 'Article settings',
+        backToArticles: 'Back to articles',
+        draftStatus: 'Draft',
+        inspectorArticle: 'Article',
+        inspectorSeo: 'SEO and card copy',
+        inspectorRelations: 'Relations',
+        inspectorFeaturedImage: 'Featured image',
+        inspectorReview: 'Review',
+        futureSlot: 'Prepared for the next editor step. Existing Sanity data remains untouched.',
         cardExcerpt: 'Card excerpt',
         excerpt: 'Meta description',
         seoTitle: 'SEO title',
@@ -49,11 +57,12 @@ const copy = isEnglish
         genericError: 'The draft could not be saved.',
         manualSave: 'Manual save. No publishing action is available here.',
         counters: 'SEO and card copy',
+        blockStyle: 'Block style',
         normal: 'Normal',
-        h2: 'H2',
-        h3: 'H3',
-        quote: 'Quote',
-        bullet: 'Bullet list',
+        h2: 'Title H2',
+        h3: 'Title H3',
+        quote: 'Blockquote',
+        bullet: 'Bulleted list',
         number: 'Numbered list',
         bold: 'Bold',
         italic: 'Italic',
@@ -83,11 +92,20 @@ const copy = isEnglish
       articles: 'Editor articoli',
       newArticle: 'Nuovo articolo',
       editorLoading: 'Caricamento editor…',
+      backToArticles: 'Torna agli articoli',
       labels: {
         title: 'Titolo',
         subtitle: 'Sottotitolo',
         content: 'Corpo articolo',
         sidebar: 'Impostazioni articolo',
+        backToArticles: 'Torna agli articoli',
+        draftStatus: 'Bozza',
+        inspectorArticle: 'Articolo',
+        inspectorSeo: 'SEO e testi card',
+        inspectorRelations: 'Relazioni',
+        inspectorFeaturedImage: 'Immagine principale',
+        inspectorReview: 'Recensione',
+        futureSlot: 'Preparato per il prossimo step editor. I dati Sanity esistenti restano invariati.',
         cardExcerpt: 'Riassunto card',
         excerpt: 'Meta description',
         seoTitle: 'SEO title',
@@ -101,11 +119,12 @@ const copy = isEnglish
         genericError: 'Non è stato possibile salvare la bozza.',
         manualSave: 'Salvataggio manuale. Nessuna azione di pubblicazione è disponibile qui.',
         counters: 'SEO e testi card',
+        blockStyle: 'Stile blocco',
         normal: 'Normale',
-        h2: 'H2',
-        h3: 'H3',
+        h2: 'Titolo H2',
+        h3: 'Titolo H3',
         quote: 'Citazione',
-        bullet: 'Lista bullet',
+        bullet: 'Lista puntata',
         number: 'Lista numerata',
         bold: 'Grassetto',
         italic: 'Corsivo',
@@ -193,24 +212,20 @@ if (access.ok) {
   languageSwitch={languageSwitch}
   noindex={true}
 >
-  <CommunityLayout class="editorial-area-page editorial-workspace-page" sidebar={access.ok}>
-    {access.ok && (
-      <Fragment slot="sidebar">
-        <CommunitySidebarSection title={copy.kicker}>
-          <div class="community-link-list">
-            <a href={dashboardHref}>{copy.dashboard}</a>
-            <a href={articlesHref}>{copy.articles}</a>
-            <a href={newArticleHref}>{copy.newArticle}</a>
-          </div>
-        </CommunitySidebarSection>
-      </Fragment>
-    )}
-
+  <div class="editorial-area-page editorial-workspace-page editorial-edit-workspace-page">
     <CommunityHero
       kicker={copy.kicker}
       title={copy.title}
       description={copy.description}
     />
+
+    {access.ok && (
+      <nav class="editorial-edit-workspace-nav" aria-label={copy.kicker}>
+        <a href={dashboardHref}>{copy.dashboard}</a>
+        <a href={articlesHref}>{copy.articles}</a>
+        <a href={newArticleHref}>{copy.newArticle}</a>
+      </nav>
+    )}
 
     {!article && (
       <section class="editorial-card editorial-card--notice">
@@ -225,6 +240,7 @@ if (access.ok) {
         client:only="react"
         article={article}
         lang={currentLang}
+        articlesHref={articlesHref}
         saveEndpoint={`/api/editor/articles/${encodeURIComponent(id)}`}
         labels={copy.labels}
       >
@@ -234,5 +250,5 @@ if (access.ok) {
         </section>
       </ArticlePortableTextEditor>
     )}
-  </CommunityLayout>
+  </div>
 </BaseLayout>

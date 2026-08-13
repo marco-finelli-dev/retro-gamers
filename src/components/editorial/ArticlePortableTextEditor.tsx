@@ -4,6 +4,7 @@ import {
   EditorProvider,
   PortableTextEditable,
   useEditor,
+  useEditorSelector,
   type PortableTextBlock,
   type RenderAnnotationFunction,
   type RenderDecoratorFunction,
@@ -11,6 +12,7 @@ import {
   type RenderStyleFunction,
 } from '@portabletext/editor';
 import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
+import * as selectors from '@portabletext/editor/selectors';
 import { useMemo, useState } from 'react';
 
 type ArticleType =
@@ -44,6 +46,14 @@ type Labels = {
   subtitle: string;
   content: string;
   sidebar: string;
+  backToArticles: string;
+  draftStatus: string;
+  inspectorArticle: string;
+  inspectorSeo: string;
+  inspectorRelations: string;
+  inspectorFeaturedImage: string;
+  inspectorReview: string;
+  futureSlot: string;
   cardExcerpt: string;
   excerpt: string;
   seoTitle: string;
@@ -57,6 +67,7 @@ type Labels = {
   genericError: string;
   manualSave: string;
   counters: string;
+  blockStyle: string;
   normal: string;
   h2: string;
   h3: string;
@@ -81,6 +92,7 @@ type Labels = {
 type Props = {
   article: EditableArticle;
   lang: ArticleLanguage;
+  articlesHref: string;
   saveEndpoint: string;
   labels: Labels;
 };
@@ -194,6 +206,12 @@ function ObjectBlock({ attributes, children, node, labels }: any) {
 
 function Toolbar({ labels }: { labels: Labels }) {
   const editor = useEditor();
+  const activeStyle = useEditorSelector(editor, selectors.getActiveStyle);
+  const activeListItem = useEditorSelector(editor, selectors.getActiveListItem);
+  const isBoldActive = useEditorSelector(editor, selectors.isActiveDecorator('strong'));
+  const isItalicActive = useEditorSelector(editor, selectors.isActiveDecorator('em'));
+  const isBlockquoteActive = useEditorSelector(editor, selectors.isActiveStyle('blockquote'));
+  const blockStyle = activeStyle === 'h2' || activeStyle === 'h3' ? activeStyle : 'normal';
 
   const focus = () => editor.send({ type: 'focus' });
   const send = (event: Parameters<typeof editor.send>[0]) => {
@@ -231,34 +249,130 @@ function Toolbar({ labels }: { labels: Labels }) {
 
   return (
     <div className="editorial-pte-toolbar" aria-label={labels.content}>
-      <button type="button" onClick={() => send({ type: 'decorator.toggle', decorator: 'strong' })}>
-        {labels.bold}
-      </button>
-      <button type="button" onClick={() => send({ type: 'decorator.toggle', decorator: 'em' })}>
-        {labels.italic}
-      </button>
-      <button type="button" onClick={() => send({ type: 'style.toggle', style: 'normal' })}>
-        {labels.normal}
-      </button>
-      <button type="button" onClick={() => send({ type: 'style.toggle', style: 'h2' })}>
-        {labels.h2}
-      </button>
-      <button type="button" onClick={() => send({ type: 'style.toggle', style: 'h3' })}>
-        {labels.h3}
-      </button>
-      <button type="button" onClick={() => send({ type: 'style.toggle', style: 'blockquote' })}>
-        {labels.quote}
-      </button>
-      <button type="button" onClick={() => send({ type: 'list item.toggle', listItem: 'bullet' })}>
-        {labels.bullet}
-      </button>
-      <button type="button" onClick={() => send({ type: 'list item.toggle', listItem: 'number' })}>
-        {labels.number}
-      </button>
-      <button type="button" onClick={addExternalLink}>
-        {labels.externalLink}
-      </button>
+      <div className="editorial-pte-toolbar__group" role="group" aria-label={labels.blockStyle}>
+        <label className="editorial-pte-toolbar__style">
+          <span className="sr-only">{labels.blockStyle}</span>
+          <select
+            value={blockStyle}
+            aria-label={labels.blockStyle}
+            title={labels.blockStyle}
+            onChange={(event) => send({ type: 'style.toggle', style: event.target.value })}
+          >
+            <option value="normal">{labels.normal}</option>
+            <option value="h2">{labels.h2}</option>
+            <option value="h3">{labels.h3}</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="editorial-pte-toolbar__group" role="group" aria-label={`${labels.bold} / ${labels.italic}`}>
+        <button
+          className="editorial-pte-toolbar__button"
+          type="button"
+          aria-label={labels.bold}
+          aria-pressed={isBoldActive}
+          title={labels.bold}
+          onClick={() => send({ type: 'decorator.toggle', decorator: 'strong' })}
+        >
+          <span className="editorial-pte-toolbar__letter editorial-pte-toolbar__letter--bold" aria-hidden="true">
+            B
+          </span>
+        </button>
+        <button
+          className="editorial-pte-toolbar__button"
+          type="button"
+          aria-label={labels.italic}
+          aria-pressed={isItalicActive}
+          title={labels.italic}
+          onClick={() => send({ type: 'decorator.toggle', decorator: 'em' })}
+        >
+          <span className="editorial-pte-toolbar__letter editorial-pte-toolbar__letter--italic" aria-hidden="true">
+            I
+          </span>
+        </button>
+      </div>
+
+      <div
+        className="editorial-pte-toolbar__group"
+        role="group"
+        aria-label={`${labels.quote} / ${labels.bullet} / ${labels.number}`}
+      >
+        <button
+          className="editorial-pte-toolbar__button"
+          type="button"
+          aria-label={labels.quote}
+          aria-pressed={isBlockquoteActive}
+          title={labels.quote}
+          onClick={() => send({ type: 'style.toggle', style: 'blockquote' })}
+        >
+          <ToolbarIcon name="quote" />
+        </button>
+        <button
+          className="editorial-pte-toolbar__button"
+          type="button"
+          aria-label={labels.bullet}
+          aria-pressed={activeListItem === 'bullet'}
+          title={labels.bullet}
+          onClick={() => send({ type: 'list item.toggle', listItem: 'bullet' })}
+        >
+          <ToolbarIcon name="bullet" />
+        </button>
+        <button
+          className="editorial-pte-toolbar__button"
+          type="button"
+          aria-label={labels.number}
+          aria-pressed={activeListItem === 'number'}
+          title={labels.number}
+          onClick={() => send({ type: 'list item.toggle', listItem: 'number' })}
+        >
+          <ToolbarIcon name="number" />
+        </button>
+      </div>
+
+      <div className="editorial-pte-toolbar__group" role="group" aria-label={labels.externalLink}>
+        <button
+          className="editorial-pte-toolbar__button"
+          type="button"
+          aria-label={labels.externalLink}
+          title={labels.externalLink}
+          onClick={addExternalLink}
+        >
+          <ToolbarIcon name="link" />
+        </button>
+      </div>
     </div>
+  );
+}
+
+function ToolbarIcon({ name }: { name: 'quote' | 'bullet' | 'number' | 'link' }) {
+  if (name === 'quote') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+        <path d="M8.8 7.2c-1.9 1-3.1 2.6-3.1 4.4h3.6v5.2H4.2v-4.6c0-3.2 1.6-5.7 4.6-7.4v2.4Zm10 0c-1.9 1-3.1 2.6-3.1 4.4h3.6v5.2h-5.1v-4.6c0-3.2 1.6-5.7 4.6-7.4v2.4Z" />
+      </svg>
+    );
+  }
+
+  if (name === 'bullet') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+        <path d="M6.2 8.1a1.4 1.4 0 1 1 0-2.8 1.4 1.4 0 0 1 0 2.8Zm3.4-2h10.2v1.4H9.6V6.1Zm-3.4 7.3a1.4 1.4 0 1 1 0-2.8 1.4 1.4 0 0 1 0 2.8Zm3.4-2h10.2v1.4H9.6v-1.4Zm-3.4 7.3a1.4 1.4 0 1 1 0-2.8 1.4 1.4 0 0 1 0 2.8Zm3.4-2h10.2v1.4H9.6v-1.4Z" />
+      </svg>
+    );
+  }
+
+  if (name === 'number') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+        <path d="M4.6 8V6.9h1V4.8h-.9v-1h2.3v3.1h.8V8H4.6Zm5-3.2h10.2v1.4H9.6V4.8Zm0 3h10.2v1.4H9.6V7.8ZM4.4 15v-.9l1.9-1.7c.2-.2.3-.4.3-.6 0-.3-.2-.5-.6-.5-.4 0-.7.2-1 .5l-.7-.8c.5-.6 1.1-.9 1.8-.9 1 0 1.7.6 1.7 1.5 0 .6-.3 1.1-.8 1.6l-.8.7h1.7V15H4.4Zm5.2-3.3h10.2v1.4H9.6v-1.4Zm0 3h10.2v1.4H9.6v-1.4Zm-5.2 5.4.6-.8c.3.3.7.5 1.1.5.5 0 .8-.2.8-.6 0-.4-.3-.6-.9-.6h-.6v-.9H6c.5 0 .8-.2.8-.6 0-.3-.3-.5-.7-.5-.4 0-.7.2-1 .5l-.6-.8c.4-.5 1-.8 1.7-.8 1 0 1.8.5 1.8 1.4 0 .5-.3.9-.8 1.1.6.2.9.6.9 1.2 0 1-.8 1.6-2 1.6-.7 0-1.3-.2-1.7-.7Zm5.2-2.4h10.2v1.4H9.6v-1.4Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <path d="M9.7 14.3a1 1 0 0 1 0-1.4l4.1-4.1a2.5 2.5 0 0 1 3.5 3.5l-1.4 1.4a1 1 0 1 1-1.4-1.4l1.4-1.4a.5.5 0 0 0-.7-.7l-4.1 4.1a1 1 0 0 1-1.4 0Zm-3 3a2.5 2.5 0 0 1 0-3.5l1.4-1.4a1 1 0 0 1 1.4 1.4l-1.4 1.4a.5.5 0 1 0 .7.7l4.1-4.1a1 1 0 0 1 1.4 1.4l-4.1 4.1a2.5 2.5 0 0 1-3.5 0Z" />
+    </svg>
   );
 }
 
@@ -286,7 +400,7 @@ function CharacterCounter({
   );
 }
 
-export default function ArticlePortableTextEditor({ article, lang, saveEndpoint, labels }: Props) {
+export default function ArticlePortableTextEditor({ article, lang, articlesHref, saveEndpoint, labels }: Props) {
   const [draft, setDraft] = useState<EditableArticle>(article);
   const [content, setContent] = useState<PortableTextBlock[]>(article.content || []);
   const [status, setStatus] = useState('');
@@ -372,7 +486,12 @@ export default function ArticlePortableTextEditor({ article, lang, saveEndpoint,
   return (
     <div className="editorial-article-editor" data-editorial-article-editor>
       <div className="editorial-article-editor__topbar">
-        <p>{labels.manualSave}</p>
+        <a className="editorial-article-editor__back" href={articlesHref}>
+          ← {labels.backToArticles}
+        </a>
+        <p className="editorial-article-editor__state" data-tone={statusTone || undefined} aria-live="polite">
+          {status || labels.draftStatus}
+        </p>
         <button className="editorial-button" type="button" onClick={saveArticle} disabled={isSaving}>
           {isSaving ? labels.saving : labels.save}
         </button>
@@ -433,9 +552,11 @@ export default function ArticlePortableTextEditor({ article, lang, saveEndpoint,
           </section>
         </main>
 
-        <aside className="editorial-article-editor__sidebar" aria-label={labels.sidebar}>
-          <section className="editorial-card editorial-card--compact">
-            <p className="editorial-kicker">{labels.sidebar}</p>
+        <aside className="editorial-article-editor__inspector" aria-label={labels.sidebar}>
+          <p className="editorial-kicker">{labels.sidebar}</p>
+
+          <details className="editorial-inspector-section" open>
+            <summary>{labels.inspectorArticle}</summary>
 
             <label className="editorial-field">
               <span>{labels.type}</span>
@@ -468,10 +589,10 @@ export default function ArticlePortableTextEditor({ article, lang, saveEndpoint,
                 onChange={(event) => updateField('slug', event.target.value)}
               />
             </label>
-          </section>
+          </details>
 
-          <section className="editorial-card editorial-card--compact">
-            <p className="editorial-kicker">{labels.counters}</p>
+          <details className="editorial-inspector-section" open>
+            <summary>{labels.inspectorSeo}</summary>
 
             <label className="editorial-field">
               <span>{labels.cardExcerpt}</span>
@@ -509,15 +630,24 @@ export default function ArticlePortableTextEditor({ article, lang, saveEndpoint,
               />
               <p className="editorial-character-count">{labels.seoTitleHint}</p>
             </label>
-          </section>
+          </details>
 
-          <p className="editorial-message" data-tone={statusTone || undefined} aria-live="polite">
-            {status}
-          </p>
+          <details className="editorial-inspector-section">
+            <summary>{labels.inspectorRelations}</summary>
+            <p className="editorial-inspector-section__placeholder">{labels.futureSlot}</p>
+          </details>
 
-          <button className="editorial-button editorial-article-editor__save" type="button" onClick={saveArticle} disabled={isSaving}>
-            {isSaving ? labels.saving : labels.save}
-          </button>
+          <details className="editorial-inspector-section">
+            <summary>{labels.inspectorFeaturedImage}</summary>
+            <p className="editorial-inspector-section__placeholder">{labels.futureSlot}</p>
+          </details>
+
+          {draft.type === 'review' && (
+            <details className="editorial-inspector-section">
+              <summary>{labels.inspectorReview}</summary>
+              <p className="editorial-inspector-section__placeholder">{labels.futureSlot}</p>
+            </details>
+          )}
         </aside>
       </div>
     </div>
