@@ -156,6 +156,7 @@ type Labels = {
   releaseYear: string;
   mediaFormat: string;
   multiSelectPlaceholder: string;
+  multiSelectRemoveValue: string;
   ratingSection: string;
   grafica: string;
   sonoro: string;
@@ -696,17 +697,20 @@ function MultiSelect<Value extends string>({
   values,
   options,
   onChange,
+  removeLabel,
 }: {
   label: string;
   placeholder: string;
   values: Value[];
   options: MultiSelectOption<Value>[];
   onChange: (values: Value[]) => void;
+  removeLabel: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const summary = getMultiSelectSummary(values, options, placeholder);
+  const selectedOptions = options.filter((option) => values.includes(option.value));
 
   useEffect(() => {
     if (!isOpen) return;
@@ -731,10 +735,15 @@ function MultiSelect<Value extends string>({
     };
   }, [isOpen]);
 
-  const toggleValue = (value: Value) => {
-    onChange(values.includes(value)
-      ? values.filter((item) => item !== value)
-      : [...values, value]);
+  const selectValue = (value: Value) => {
+    if (!values.includes(value)) {
+      onChange([...values, value]);
+    }
+    setIsOpen(false);
+  };
+
+  const removeValue = (value: Value) => {
+    onChange(values.filter((item) => item !== value));
   };
 
   return (
@@ -752,16 +761,46 @@ function MultiSelect<Value extends string>({
       </button>
 
       {isOpen && (
-        <div className="editorial-multiselect__menu" id={menuId} role="group" aria-label={label}>
-          {options.map((option) => (
-            <label className="editorial-multiselect__option" key={option.value}>
-              <input
-                type="checkbox"
-                checked={values.includes(option.value)}
-                onChange={() => toggleValue(option.value)}
-              />
+        <div
+          className="editorial-multiselect__menu"
+          id={menuId}
+          role="listbox"
+          aria-label={label}
+          aria-multiselectable="true"
+        >
+          {options.map((option) => {
+            const isSelected = values.includes(option.value);
+
+            return (
+              <button
+                type="button"
+                className="editorial-multiselect__option"
+                key={option.value}
+                onClick={() => selectValue(option.value)}
+                disabled={isSelected}
+                aria-selected={isSelected}
+                role="option"
+              >
+                <span>{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {selectedOptions.length > 0 && (
+        <div className="editorial-multiselect__chips" aria-label={label}>
+          {selectedOptions.map((option) => (
+            <button
+              type="button"
+              className="editorial-multiselect__chip"
+              key={option.value}
+              onClick={() => removeValue(option.value)}
+              aria-label={`${removeLabel}: ${option.label}`}
+            >
               <span>{option.label}</span>
-            </label>
+              <span aria-hidden="true">×</span>
+            </button>
           ))}
         </div>
       )}
@@ -1387,25 +1426,6 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 </div>
               )}
 
-              {(selectedFeaturedFile && hasFeaturedImage) && (
-                <div className="editorial-current-media editorial-current-media--featured editorial-current-media--reference">
-                  <span>{labels.featuredImageCurrent}</span>
-                  <div className="editorial-current-media__frame editorial-current-media__frame--featured">
-                    <img
-                      src={featuredImageAsset?.url || ''}
-                      alt={featuredImageAlt || labels.inspectorFeaturedImage}
-                    />
-                  </div>
-                  <p className="editorial-file-meta">
-                    {getAssetMetadataLabel(featuredImageAsset, labels)}
-                  </p>
-                </div>
-              )}
-
-              {(!selectedFeaturedFile && !hasFeaturedImage) && (
-                <p className="editorial-inspector-section__placeholder">{labels.featuredImageEmpty}</p>
-              )}
-
               {(hasFeaturedImage || selectedFeaturedFile) && (
                 <label className="editorial-field">
                   <span>{labels.featuredImageAlt}</span>
@@ -1427,34 +1447,48 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 </label>
               )}
 
-              <div className="editorial-featured-image-control__actions">
-                <label
-                  className="editorial-dropzone editorial-dropzone--compact"
-                  data-drag-active={isFeaturedImageDragActive ? 'true' : 'false'}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    setIsFeaturedImageDragActive(true);
-                  }}
-                  onDragLeave={() => setIsFeaturedImageDragActive(false)}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    setIsFeaturedImageDragActive(false);
-                    selectFeaturedFile(event.dataTransfer.files?.[0]);
-                  }}
+              {selectedFeaturedFile && featuredImageStatus && (
+                <p
+                  className="editorial-message"
+                  data-tone={featuredImageStatusTone || undefined}
+                  aria-live="polite"
                 >
-                  <span>
-                    {hasFeaturedImage ? labels.featuredImageReplace : labels.featuredImageChooseFile}
-                  </span>
-                  <small>{labels.featuredImageDropFile}</small>
-                  <input
-                    key={selectedFeaturedFile?.previewUrl || 'featured-image-input'}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(event) => selectFeaturedFile(event.target.files?.[0])}
-                  />
-                </label>
+                  {featuredImageStatus}
+                </p>
+              )}
 
-                <p className="editorial-file-meta">{labels.featuredImageFormats}</p>
+              <div className="editorial-featured-image-control__actions">
+                {!selectedFeaturedFile && (
+                  <>
+                    <label
+                      className="editorial-dropzone editorial-dropzone--compact"
+                      data-drag-active={isFeaturedImageDragActive ? 'true' : 'false'}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        setIsFeaturedImageDragActive(true);
+                      }}
+                      onDragLeave={() => setIsFeaturedImageDragActive(false)}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        setIsFeaturedImageDragActive(false);
+                        selectFeaturedFile(event.dataTransfer.files?.[0]);
+                      }}
+                    >
+                      <span>
+                        {hasFeaturedImage ? labels.featuredImageReplace : labels.featuredImageChooseFile}
+                      </span>
+                      <small>{labels.featuredImageDropFile}</small>
+                      <input
+                        key={selectedFeaturedFile?.previewUrl || 'featured-image-input'}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(event) => selectFeaturedFile(event.target.files?.[0])}
+                      />
+                    </label>
+
+                    <p className="editorial-file-meta">{labels.featuredImageFormats}</p>
+                  </>
+                )}
 
                 <div className="editorial-featured-image-control__buttons">
                   {selectedFeaturedFile && (
@@ -1468,7 +1502,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                     </button>
                   )}
 
-                  {hasFeaturedImage && (
+                  {hasFeaturedImage && !selectedFeaturedFile && (
                     <button
                       type="button"
                       className="editorial-mini-button editorial-mini-button--danger"
@@ -1480,7 +1514,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   )}
                 </div>
 
-                {featuredImageStatus && (
+                {!selectedFeaturedFile && featuredImageStatus && (
                   <p
                     className="editorial-message"
                     data-tone={featuredImageStatusTone || undefined}
@@ -1516,6 +1550,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                     placeholder={labels.multiSelectPlaceholder}
                     values={draft.gameInfo.mediaFormat}
                     options={mediaFormatSelectOptions}
+                    removeLabel={labels.multiSelectRemoveValue}
                     onChange={(values) => updateGameInfo('mediaFormat', values)}
                   />
                 </div>
