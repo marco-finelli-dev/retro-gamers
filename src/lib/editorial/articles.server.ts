@@ -507,6 +507,15 @@ function getDraftDocumentId(rootDocumentId: string) {
   return `drafts.${rootDocumentId}`;
 }
 
+function normalizeEditableArticleRootDocumentId(value: unknown) {
+  const documentId = String(value || '').trim();
+  const rootDocumentId = documentId.startsWith('drafts.')
+    ? documentId.slice('drafts.'.length)
+    : documentId;
+
+  return normalizeSanityRootDocumentId(rootDocumentId);
+}
+
 function normalizeDraftArticle(document: Record<string, unknown> | null): EditorialArticleDraft | null {
   if (!document || document._type !== 'article') return null;
 
@@ -774,7 +783,7 @@ export async function fetchEditableEditorialArticle({
   context: EditableEditorialContext;
   rootDocumentId: unknown;
 }) {
-  const sanityDocumentId = normalizeSanityRootDocumentId(rootDocumentId);
+  const sanityDocumentId = normalizeEditableArticleRootDocumentId(rootDocumentId);
 
   if (!sanityDocumentId) {
     return { ok: false as const, status: 400, error: 'invalid_article_id' };
@@ -799,7 +808,15 @@ export async function fetchEditableEditorialArticle({
 
   try {
     const document = await getSanityRawClient().getDocument<Record<string, unknown>>(getDraftDocumentId(sanityDocumentId));
-    const draft = normalizeDraftArticle(document || null);
+    let draft: EditorialArticleDraft | null;
+
+    try {
+      draft = normalizeDraftArticle(document || null);
+    } catch (error) {
+      logApiError('editorial-article.fetch.normalize', error);
+
+      return { ok: false as const, status: 422, error: 'malformed_draft' };
+    }
 
     if (!draft) {
       return { ok: false as const, status: 404, error: 'sanity_draft_missing' };

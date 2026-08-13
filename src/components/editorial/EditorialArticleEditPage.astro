@@ -26,7 +26,7 @@ const copy = isEnglish
       description:
         'Manual save only. Publishing, preview and review submission are not enabled in this step.',
       deniedTitle: 'Draft unavailable',
-      deniedDescription: 'The draft is missing or you do not have permission to edit it.',
+      deniedDescription: 'This draft could not be loaded.',
       dashboard: 'Editorial dashboard',
       articles: 'Article workspace',
       newArticle: 'New article',
@@ -77,7 +77,7 @@ const copy = isEnglish
       description:
         'Salvataggio manuale. Pubblicazione, anteprima e invio in revisione non sono abilitati in questo step.',
       deniedTitle: 'Bozza non disponibile',
-      deniedDescription: 'La bozza non esiste o non hai i permessi per modificarla.',
+      deniedDescription: 'Non è stato possibile caricare questa bozza.',
       dashboard: 'Dashboard redazionale',
       articles: 'Editor articoli',
       newArticle: 'Nuovo articolo',
@@ -130,19 +130,56 @@ const languageSwitch = isEnglish
 let article = null;
 let error = '';
 
+const toClientArticle = (value) => JSON.parse(JSON.stringify(value));
+const getLoggableRootDocumentId = (value) => {
+  const documentId = String(value || '').trim();
+
+  if (
+    documentId &&
+    !documentId.startsWith('drafts.') &&
+    /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(documentId)
+  ) {
+    return documentId;
+  }
+
+  return '[invalid]';
+};
+const logEditPageFailure = ({
+  rootDocumentId,
+  failureCode,
+  status,
+}) => {
+  console.error('Editorial article edit page load failed:', {
+    context: 'editorial-article.edit-page',
+    rootDocumentId: getLoggableRootDocumentId(rootDocumentId),
+    failureCode,
+    status,
+  });
+};
+
 if (access.ok) {
   const result = await fetchEditableEditorialArticle({
     context: access.context,
     rootDocumentId: id,
   });
 
-  if (result.ok) {
-    article = result.article;
+  if (result.ok && result.article) {
+    article = toClientArticle(result.article);
   } else {
-    error = result.error;
+    error = 'draft_load_failed';
+    logEditPageFailure({
+      rootDocumentId: id,
+      failureCode: result.error || 'article_missing',
+      status: result.status || 500,
+    });
   }
 } else {
-  error = access.error;
+  error = 'draft_load_failed';
+  logEditPageFailure({
+    rootDocumentId: id,
+    failureCode: access.error,
+    status: access.status,
+  });
 }
 ---
 
@@ -177,8 +214,7 @@ if (access.ok) {
       <section class="editorial-card editorial-card--notice">
         <p class="editorial-kicker">{copy.kicker}</p>
         <h2>{copy.deniedTitle}</h2>
-        <p>{copy.deniedDescription}</p>
-        {error && <p class="editorial-message" data-tone="error">{error}</p>}
+        <p class="editorial-message" data-tone={error ? 'error' : undefined}>{copy.deniedDescription}</p>
       </section>
     )}
 
