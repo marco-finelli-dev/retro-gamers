@@ -54,6 +54,19 @@ type EditorialArticleType = (typeof editorialArticleTypes)[number];
 type EditorialArticleLanguage = (typeof editorialArticleLanguages)[number];
 type EditorialArticleMediaFormat = (typeof editorialArticleMediaFormats)[number];
 type EditorialArticleRatingField = (typeof editorialArticleRatingFields)[number];
+type EditorialArticleReferenceTargetType = 'category' | 'platform' | 'creator' | 'taxonomy' | 'article';
+type EditorialArticleReferenceField =
+  | 'categories'
+  | 'editorialSeries'
+  | 'platforms'
+  | 'creators'
+  | 'genres'
+  | 'developers'
+  | 'publishers'
+  | 'manufacturer'
+  | 'modes'
+  | 'series';
+type EditorialArticleReferenceKind = EditorialArticleReferenceField | 'translationOf';
 
 type EditorialArticleAuthorInfo = {
   _id: string;
@@ -86,6 +99,16 @@ export type EditorialArticleFeaturedImage = {
   crop: Record<string, unknown> | null;
   hotspot: Record<string, unknown> | null;
   asset: EditorialArticleFeaturedImageAsset | null;
+};
+
+export type EditorialArticleReference = {
+  id: string;
+  type: EditorialArticleReferenceTargetType;
+  label: string;
+  slug: string;
+  language: EditorialArticleLanguage | null;
+  secondaryLabel: string;
+  key?: string;
 };
 
 export type EditorialArticleGameInfo = {
@@ -128,6 +151,17 @@ export type EditorialArticleDraft = {
   authorId: string;
   author: EditorialArticleAuthorInfo | null;
   featuredImage: EditorialArticleFeaturedImage | null;
+  categories: EditorialArticleReference[];
+  editorialSeries: EditorialArticleReference[];
+  platforms: EditorialArticleReference[];
+  creators: EditorialArticleReference[];
+  genres: EditorialArticleReference[];
+  developers: EditorialArticleReference[];
+  publishers: EditorialArticleReference[];
+  manufacturer: EditorialArticleReference[];
+  modes: EditorialArticleReference[];
+  series: EditorialArticleReference[];
+  translationOf: EditorialArticleReference | null;
   gameInfo: EditorialArticleGameInfo;
   rating: EditorialArticleRating;
   pros: string[];
@@ -162,6 +196,44 @@ const validImageDisplayModes = new Set(['cover', 'contain', 'wide', 'natural']);
 const validImageRowLayouts = new Set(['standard', 'uniformHeight']);
 const validAsideTones = new Set(['neutral', 'info', 'highlight']);
 const validMediaFormats = new Set<string>(editorialArticleMediaFormats);
+const editorialArticleReferenceFields: EditorialArticleReferenceField[] = [
+  'categories',
+  'editorialSeries',
+  'platforms',
+  'creators',
+  'genres',
+  'developers',
+  'publishers',
+  'manufacturer',
+  'modes',
+  'series',
+];
+const editorialArticleReferenceKindConfig: Record<
+  EditorialArticleReferenceKind,
+  {
+    field?: EditorialArticleReferenceField;
+    targetType: EditorialArticleReferenceTargetType;
+    taxonomyType?: string;
+    multiple: boolean;
+  }
+> = {
+  categories: { field: 'categories', targetType: 'category', multiple: true },
+  editorialSeries: {
+    field: 'editorialSeries',
+    targetType: 'taxonomy',
+    taxonomyType: 'editorialSeries',
+    multiple: true,
+  },
+  platforms: { field: 'platforms', targetType: 'platform', multiple: true },
+  creators: { field: 'creators', targetType: 'creator', multiple: true },
+  genres: { field: 'genres', targetType: 'taxonomy', taxonomyType: 'genre', multiple: true },
+  developers: { field: 'developers', targetType: 'taxonomy', taxonomyType: 'developer', multiple: true },
+  publishers: { field: 'publishers', targetType: 'taxonomy', taxonomyType: 'publisher', multiple: true },
+  manufacturer: { field: 'manufacturer', targetType: 'taxonomy', taxonomyType: 'manufacturer', multiple: true },
+  modes: { field: 'modes', targetType: 'taxonomy', taxonomyType: 'mode', multiple: true },
+  series: { field: 'series', targetType: 'taxonomy', taxonomyType: 'series', multiple: true },
+  translationOf: { targetType: 'article', multiple: false },
+};
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const featuredImageMaxFileSize = 5 * 1024 * 1024;
 const validPageLinkPaths = new Set([
@@ -279,6 +351,135 @@ function normalizeReference(value: unknown) {
     _type: 'reference',
     _ref: ref,
     ...(value._weak === true ? { _weak: true } : {}),
+  };
+}
+
+function normalizeReferenceId(value: unknown) {
+  if (isPlainObject(value)) {
+    return normalizeSanityRootDocumentId(value.id || value._id || value._ref);
+  }
+
+  return normalizeSanityRootDocumentId(value);
+}
+
+function normalizeArticleReferenceRootId(value: unknown) {
+  const raw = String(value || '').trim();
+  const rootId = raw.startsWith('drafts.') ? raw.slice('drafts.'.length) : raw;
+
+  return normalizeSanityRootDocumentId(rootId);
+}
+
+function normalizeReferenceArray(value: unknown, targetType: EditorialArticleReferenceTargetType): EditorialArticleReference[] {
+  if (!Array.isArray(value)) return [];
+
+  const references: EditorialArticleReference[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value) {
+    const reference = normalizeReference(item);
+
+    if (!reference || seen.has(reference._ref)) continue;
+
+    seen.add(reference._ref);
+    references.push({
+      id: reference._ref,
+      type: targetType,
+      label: reference._ref,
+      slug: '',
+      language: null,
+      secondaryLabel: '',
+      ...(isPlainObject(item) && typeof item._key === 'string'
+        ? { key: normalizeKey(item._key) }
+        : {}),
+    });
+  }
+
+  return references;
+}
+
+function normalizeSingleArticleReference(value: unknown): EditorialArticleReference | null {
+  const reference = normalizeReference(value);
+
+  if (!reference) return null;
+
+  return {
+    id: reference._ref,
+    type: 'article',
+    label: reference._ref,
+    slug: '',
+    language: null,
+    secondaryLabel: '',
+  };
+}
+
+function normalizeTaxonomyTypes(value: unknown) {
+  return Array.isArray(value)
+    ? value.map((item) => normalizeString(item, 80).trim()).filter(Boolean)
+    : [];
+}
+
+function normalizeReferenceSearchResult(
+  document: Record<string, unknown> | null | undefined,
+  targetType: EditorialArticleReferenceTargetType,
+  fallbackId = ''
+): EditorialArticleReference | null {
+  if (!document || document._type !== targetType) return null;
+
+  const id = normalizeArticleReferenceRootId(document._id || fallbackId);
+  if (!id) return null;
+
+  const slug = isPlainObject(document.slug)
+    ? normalizeString(document.slug.current, 120).trim()
+    : normalizeString(document.slug, 120).trim();
+  const language = normalizeString(document.language, 8).trim();
+  let label = '';
+  let secondaryLabel = '';
+
+  if (targetType === 'category') {
+    const title = normalizeString(document.title, 160).trim();
+    const titleEn = normalizeString(document.titleEn, 160).trim();
+    label = title || titleEn || slug || id;
+    secondaryLabel = [titleEn && titleEn !== title ? titleEn : '', slug ? `/${slug}/` : '']
+      .filter(Boolean)
+      .join(' · ');
+  } else if (targetType === 'platform') {
+    const name = normalizeString(document.name, 160).trim();
+    const platformType = normalizeString(document.platformType, 80).trim();
+    label = name || slug || id;
+    secondaryLabel = [platformType, slug ? `/${slug}/` : ''].filter(Boolean).join(' · ');
+  } else if (targetType === 'creator') {
+    const name = normalizeString(document.name, 160).trim();
+    const role = normalizeString(document.role, 160).trim();
+    const roleEn = normalizeString(document.roleEn, 160).trim();
+    label = name || slug || id;
+    secondaryLabel = [role || roleEn, slug ? `/${slug}/` : ''].filter(Boolean).join(' · ');
+  } else if (targetType === 'taxonomy') {
+    const name = normalizeString(document.name, 160).trim();
+    const nameEn = normalizeString(document.nameEn, 160).trim();
+    const types = normalizeTaxonomyTypes(document.type);
+    label = name || nameEn || slug || id;
+    secondaryLabel = [nameEn && nameEn !== name ? nameEn : '', types.join(', '), slug ? `/${slug}/` : '']
+      .filter(Boolean)
+      .join(' · ');
+  } else {
+    const title = normalizeString(document.title, 220).trim();
+    label = title || slug || id;
+    secondaryLabel = [
+      language ? language.toUpperCase() : '',
+      slug ? `/${slug}/` : '',
+      String(document._id || '').startsWith('drafts.') ? 'draft' : '',
+    ].filter(Boolean).join(' · ');
+  }
+
+  return {
+    id,
+    type: targetType,
+    label,
+    slug,
+    language: editorialArticleLanguages.includes(language as EditorialArticleLanguage)
+      ? language as EditorialArticleLanguage
+      : null,
+    secondaryLabel,
   };
 }
 
@@ -779,6 +980,81 @@ async function hydrateDraftArticleFeaturedImage(article: EditorialArticleDraft) 
   };
 }
 
+function collectArticleReferenceIds(article: EditorialArticleDraft) {
+  const ids = new Set<string>();
+
+  for (const field of editorialArticleReferenceFields) {
+    for (const reference of article[field]) {
+      ids.add(reference.id);
+    }
+  }
+
+  if (article.translationOf) {
+    ids.add(article.translationOf.id);
+  }
+
+  return [...ids];
+}
+
+async function hydrateDraftArticleReferences(article: EditorialArticleDraft): Promise<EditorialArticleDraft> {
+  const ids = collectArticleReferenceIds(article);
+
+  if (ids.length === 0) return article;
+
+  try {
+    const documents = await getSanityRawClient().fetch<Record<string, unknown>[]>(
+      '*[_id in $ids || _id in $draftIds]{_id,_type,title,titleEn,name,nameEn,role,roleEn,platformType,type,language,slug}',
+      {
+        ids,
+        draftIds: ids.map((id) => `drafts.${id}`),
+      }
+    );
+    const documentMap = new Map<string, Record<string, unknown>>();
+
+    for (const document of documents || []) {
+      const id = normalizeArticleReferenceRootId(document._id);
+      if (!id || (documentMap.has(id) && String(document._id || '').startsWith('drafts.'))) continue;
+      documentMap.set(id, document);
+    }
+
+    const hydrateReference = (reference: EditorialArticleReference) => {
+      const normalized = normalizeReferenceSearchResult(documentMap.get(reference.id), reference.type, reference.id);
+
+      return normalized
+        ? { ...normalized, ...(reference.key ? { key: reference.key } : {}) }
+        : reference;
+    };
+
+    const hydrated: EditorialArticleDraft = {
+      ...article,
+      categories: article.categories.map(hydrateReference),
+      editorialSeries: article.editorialSeries.map(hydrateReference),
+      platforms: article.platforms.map(hydrateReference),
+      creators: article.creators.map(hydrateReference),
+      genres: article.genres.map(hydrateReference),
+      developers: article.developers.map(hydrateReference),
+      publishers: article.publishers.map(hydrateReference),
+      manufacturer: article.manufacturer.map(hydrateReference),
+      modes: article.modes.map(hydrateReference),
+      series: article.series.map(hydrateReference),
+      translationOf: article.translationOf ? hydrateReference(article.translationOf) : null,
+    };
+
+    return {
+      ...hydrated,
+      hasEditorialSeries: hydrated.editorialSeries.length > 0,
+    };
+  } catch (error) {
+    logApiError('editorial-article.references.hydrate', error);
+
+    return article;
+  }
+}
+
+async function hydrateDraftArticle(article: EditorialArticleDraft) {
+  return hydrateDraftArticleReferences(await hydrateDraftArticleFeaturedImage(article));
+}
+
 function normalizeDraftArticle(
   document: Record<string, unknown> | null,
   author: EditorialArticleAuthorInfo | null = null
@@ -805,6 +1081,17 @@ function normalizeDraftArticle(
     authorId: authorReference?._ref || '',
     author,
     featuredImage: normalizeFeaturedImage(document.featuredImage),
+    categories: normalizeReferenceArray(document.categories, 'category'),
+    editorialSeries: normalizeReferenceArray(document.editorialSeries, 'taxonomy'),
+    platforms: normalizeReferenceArray(document.platforms, 'platform'),
+    creators: normalizeReferenceArray(document.creators, 'creator'),
+    genres: normalizeReferenceArray(document.genres, 'taxonomy'),
+    developers: normalizeReferenceArray(document.developers, 'taxonomy'),
+    publishers: normalizeReferenceArray(document.publishers, 'taxonomy'),
+    manufacturer: normalizeReferenceArray(document.manufacturer, 'taxonomy'),
+    modes: normalizeReferenceArray(document.modes, 'taxonomy'),
+    series: normalizeReferenceArray(document.series, 'taxonomy'),
+    translationOf: normalizeSingleArticleReference(document.translationOf),
     gameInfo: normalizeGameInfo(document.gameInfo),
     rating: normalizeRating(document.rating),
     pros: normalizeStringArray(document.pros),
@@ -893,6 +1180,346 @@ function validateStringArray(value: unknown, field: string, maxLength = 220) {
       return normalizeString(item, maxLength).trim();
     })
     .filter(Boolean);
+}
+
+function normalizeReferenceKind(value: unknown): EditorialArticleReferenceKind | null {
+  const kind = normalizeString(value, 80).trim();
+
+  return Object.prototype.hasOwnProperty.call(editorialArticleReferenceKindConfig, kind)
+    ? kind as EditorialArticleReferenceKind
+    : null;
+}
+
+function normalizeSearchLimit(value: unknown) {
+  const limit = Number(value);
+
+  if (!Number.isFinite(limit)) return 12;
+
+  return Math.min(30, Math.max(1, Math.trunc(limit)));
+}
+
+function normalizeSearchTerm(value: unknown) {
+  return normalizeString(value, 80)
+    .replace(/[*]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getReferenceSearchProjection() {
+  return '{_id,_type,title,titleEn,name,nameEn,role,roleEn,platformType,type,language,slug}';
+}
+
+function dedupeReferenceSearchResults(
+  documents: Record<string, unknown>[],
+  targetType: EditorialArticleReferenceTargetType
+) {
+  const items: EditorialArticleReference[] = [];
+  const seen = new Set<string>();
+
+  for (const document of documents || []) {
+    const item = normalizeReferenceSearchResult(document, targetType);
+
+    if (!item || seen.has(item.id)) continue;
+
+    seen.add(item.id);
+    items.push(item);
+  }
+
+  return items;
+}
+
+export async function searchEditorialReferences({
+  kind,
+  q,
+  language,
+  limit,
+  currentArticleId,
+}: {
+  kind: unknown;
+  q?: unknown;
+  language?: unknown;
+  limit?: unknown;
+  currentArticleId?: unknown;
+}) {
+  const normalizedKind = normalizeReferenceKind(kind);
+  if (!normalizedKind) {
+    return { ok: false as const, status: 400, error: 'invalid_reference_kind' };
+  }
+
+  const config = editorialArticleReferenceKindConfig[normalizedKind];
+  const searchTerm = normalizeSearchTerm(q);
+  const search = searchTerm ? `${searchTerm}*` : '';
+  const hasSearch = Boolean(search);
+  const safeLimit = normalizeSearchLimit(limit);
+  const projection = getReferenceSearchProjection();
+  const rawClient = getSanityRawClient();
+
+  try {
+    if (config.targetType === 'taxonomy') {
+      const documents = await rawClient.fetch<Record<string, unknown>[]>(
+        `*[
+          _type == "taxonomy" &&
+          $taxonomyType in type &&
+          (!$hasSearch || name match $search || nameEn match $search || slug.current match $search)
+        ] | order(coalesce(name, nameEn, slug.current) asc)[0...$limit] ${projection}`,
+        {
+          taxonomyType: config.taxonomyType,
+          hasSearch,
+          search,
+          limit: safeLimit,
+        }
+      );
+
+      return { ok: true as const, items: dedupeReferenceSearchResults(documents || [], 'taxonomy') };
+    }
+
+    if (config.targetType === 'category') {
+      const documents = await rawClient.fetch<Record<string, unknown>[]>(
+        `*[
+          _type == "category" &&
+          (!$hasSearch || title match $search || titleEn match $search || slug.current match $search)
+        ] | order(coalesce(title, titleEn, slug.current) asc)[0...$limit] ${projection}`,
+        { hasSearch, search, limit: safeLimit }
+      );
+
+      return { ok: true as const, items: dedupeReferenceSearchResults(documents || [], 'category') };
+    }
+
+    if (config.targetType === 'platform') {
+      const documents = await rawClient.fetch<Record<string, unknown>[]>(
+        `*[
+          _type == "platform" &&
+          (!$hasSearch || name match $search || platformType match $search || slug.current match $search)
+        ] | order(coalesce(name, slug.current) asc)[0...$limit] ${projection}`,
+        { hasSearch, search, limit: safeLimit }
+      );
+
+      return { ok: true as const, items: dedupeReferenceSearchResults(documents || [], 'platform') };
+    }
+
+    if (config.targetType === 'creator') {
+      const documents = await rawClient.fetch<Record<string, unknown>[]>(
+        `*[
+          _type == "creator" &&
+          (!$hasSearch || name match $search || role match $search || roleEn match $search || slug.current match $search)
+        ] | order(coalesce(name, slug.current) asc)[0...$limit] ${projection}`,
+        { hasSearch, search, limit: safeLimit }
+      );
+
+      return { ok: true as const, items: dedupeReferenceSearchResults(documents || [], 'creator') };
+    }
+
+    const articleLanguage = validateArticleLanguage(language);
+    const currentId = normalizeEditableArticleRootDocumentId(currentArticleId);
+    const draftId = currentId ? getDraftDocumentId(currentId) : '';
+    const documents = await rawClient.fetch<Record<string, unknown>[]>(
+      `*[
+        _type == "article" &&
+        coalesce(language, "it") != $language &&
+        _id != $currentId &&
+        _id != $draftId &&
+        (!$hasSearch || title match $search || slug.current match $search)
+      ] | order(_updatedAt desc)[0...$limit] ${projection}`,
+      {
+        language: articleLanguage,
+        currentId,
+        draftId,
+        hasSearch,
+        search,
+        limit: safeLimit,
+      }
+    );
+
+    return { ok: true as const, items: dedupeReferenceSearchResults(documents || [], 'article') };
+  } catch (error) {
+    logApiError('editorial-references.search', error);
+
+    return { ok: false as const, status: 500, error: 'reference_search_failed' };
+  }
+}
+
+function getPayloadReferenceId(value: unknown) {
+  if (isPlainObject(value)) {
+    return normalizeReferenceId(value);
+  }
+
+  return normalizeReferenceId(value);
+}
+
+function getPayloadReferenceIds(value: unknown, field: string) {
+  if (value === null || value === undefined) return [];
+
+  if (!Array.isArray(value)) {
+    throw new Error(`invalid_${field}`);
+  }
+
+  const ids: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value) {
+    const id = getPayloadReferenceId(item);
+
+    if (!id) {
+      throw new Error(`invalid_${field}`);
+    }
+
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+
+  return ids;
+}
+
+function getExistingReferenceKeyMap(references: EditorialArticleReference[]) {
+  return new Map(
+    references
+      .filter((reference) => reference.key)
+      .map((reference) => [reference.id, reference.key as string])
+  );
+}
+
+function createReferenceArrayForPatch(
+  ids: string[],
+  existingReferences: EditorialArticleReference[]
+) {
+  const existingKeys = getExistingReferenceKeyMap(existingReferences);
+
+  return ids.map((id) => ({
+    _key: existingKeys.get(id) || normalizeKey(''),
+    _type: 'reference',
+    _ref: id,
+  }));
+}
+
+async function fetchReferenceValidationDocuments(
+  ids: string[],
+  config: typeof editorialArticleReferenceKindConfig[EditorialArticleReferenceKind]
+) {
+  if (ids.length === 0) return new Map<string, Record<string, unknown>>();
+
+  const documents = await getSanityRawClient().fetch<Record<string, unknown>[]>(
+    config.targetType === 'article'
+      ? '*[_id in $ids || _id in $draftIds]{_id,_type,type,language}'
+      : '*[_id in $ids]{_id,_type,type,language}',
+    {
+      ids,
+      draftIds: ids.map((id) => `drafts.${id}`),
+    }
+  );
+  const map = new Map<string, Record<string, unknown>>();
+
+  for (const document of documents || []) {
+    const id = normalizeArticleReferenceRootId(document._id);
+    if (!id || map.has(id)) continue;
+    map.set(id, document);
+  }
+
+  return map;
+}
+
+async function validateReferenceArrayField({
+  field,
+  ids,
+  currentArticle,
+}: {
+  field: EditorialArticleReferenceField;
+  ids: string[];
+  currentArticle: EditorialArticleDraft;
+}) {
+  const config = editorialArticleReferenceKindConfig[field];
+  const documents = await fetchReferenceValidationDocuments(ids, config);
+
+  for (const id of ids) {
+    const document = documents.get(id);
+
+    if (!document || document._type !== config.targetType) {
+      throw new Error(`invalid_${field}`);
+    }
+
+    if (config.targetType === 'taxonomy' && !normalizeTaxonomyTypes(document.type).includes(config.taxonomyType || '')) {
+      throw new Error(`invalid_${field}`);
+    }
+  }
+
+  return createReferenceArrayForPatch(ids, currentArticle[field]);
+}
+
+async function validateTranslationReference({
+  value,
+  language,
+  currentRootDocumentId,
+}: {
+  value: unknown;
+  language: EditorialArticleLanguage;
+  currentRootDocumentId: string;
+}) {
+  if (value === null || value === undefined || value === '') return null;
+
+  const id = getPayloadReferenceId(value);
+
+  if (!id || id === currentRootDocumentId) {
+    throw new Error('invalid_translationOf');
+  }
+
+  const config = editorialArticleReferenceKindConfig.translationOf;
+  const documents = await fetchReferenceValidationDocuments([id], config);
+  const document = documents.get(id);
+
+  if (!document || document._type !== 'article') {
+    throw new Error('invalid_translationOf');
+  }
+
+  const translationLanguage = normalizeArticleLanguage(document.language);
+
+  if (translationLanguage === language) {
+    throw new Error('invalid_translationOf_language');
+  }
+
+  return {
+    _type: 'reference',
+    _ref: id,
+  };
+}
+
+async function getRelationPatchFields(
+  payload: Record<string, unknown>,
+  currentArticle: EditorialArticleDraft,
+  nextLanguage: EditorialArticleLanguage,
+  currentRootDocumentId: string
+) {
+  const set: Record<string, unknown> = {};
+  const unset: string[] = [];
+
+  for (const field of editorialArticleReferenceFields) {
+    if (!Object.prototype.hasOwnProperty.call(payload, field)) continue;
+
+    const ids = getPayloadReferenceIds(payload[field], field);
+    const references = await validateReferenceArrayField({ field, ids, currentArticle });
+
+    if (references.length > 0) {
+      set[field] = references;
+    } else {
+      unset.push(field);
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'translationOf')) {
+    const translationOf = await validateTranslationReference({
+      value: payload.translationOf,
+      language: nextLanguage,
+      currentRootDocumentId,
+    });
+
+    if (translationOf) {
+      set.translationOf = translationOf;
+    } else {
+      unset.push('translationOf');
+    }
+  }
+
+  return { set, unset };
 }
 
 function getReviewPatchFields(payload: Record<string, unknown>) {
@@ -1270,7 +1897,7 @@ export async function fetchEditableEditorialArticle({
     }
 
     const author = await fetchAuthorInfo(draft.authorId);
-    const article = await hydrateDraftArticleFeaturedImage({ ...draft, author });
+    const article = await hydrateDraftArticle({ ...draft, author });
 
     return { ok: true as const, ownership, article };
   } catch (error) {
@@ -1279,7 +1906,11 @@ export async function fetchEditableEditorialArticle({
   }
 }
 
-function getPatchFromPayload(payload: Record<string, unknown>, currentArticle: EditorialArticleDraft) {
+async function getPatchFromPayload(
+  payload: Record<string, unknown>,
+  currentArticle: EditorialArticleDraft,
+  currentRootDocumentId: string
+) {
   const revisionId = normalizeString(payload._rev, 160).trim();
 
   if (!revisionId || revisionId !== currentArticle._rev) {
@@ -1288,6 +1919,7 @@ function getPatchFromPayload(payload: Record<string, unknown>, currentArticle: E
 
   const nextContent = normalizePortableTextContent(payload.content);
   const nextSlug = normalizeSlug(payload.slug);
+  const nextLanguage = validateArticleLanguage(payload.language);
   const set: Record<string, unknown> = {
     title: normalizeString(payload.title, 300).trim(),
     subtitle: normalizeString(payload.subtitle, 500).trim(),
@@ -1295,14 +1927,17 @@ function getPatchFromPayload(payload: Record<string, unknown>, currentArticle: E
     excerpt: normalizeString(payload.excerpt, 500).trim(),
     seoTitle: normalizeString(payload.seoTitle, 140).trim(),
     type: validateArticleType(payload.type),
-    language: validateArticleLanguage(payload.language),
+    language: nextLanguage,
     content: nextContent,
   };
   const unset: string[] = [];
   const reviewPatch = getReviewPatchFields(payload);
+  const relationPatch = await getRelationPatchFields(payload, currentArticle, nextLanguage, currentRootDocumentId);
 
   Object.assign(set, reviewPatch.set);
+  Object.assign(set, relationPatch.set);
   unset.push(...reviewPatch.unset);
+  unset.push(...relationPatch.unset);
 
   if (Object.prototype.hasOwnProperty.call(payload, 'featuredImageAlt') && currentArticle.featuredImage?.asset) {
     const featuredImageAlt = normalizeString(payload.featuredImageAlt, 120).trim();
@@ -1351,7 +1986,7 @@ export async function updateEditableEditorialArticle({
   let patch;
 
   try {
-    patch = getPatchFromPayload(payload, fetchResult.article);
+    patch = await getPatchFromPayload(payload, fetchResult.article, fetchResult.ownership.sanityDocumentId);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'invalid_article';
 
@@ -1382,7 +2017,7 @@ export async function updateEditableEditorialArticle({
     if (!normalizedArticle) {
       return { ok: false as const, status: 502, error: 'sanity_article_invalid' };
     }
-    const article = await hydrateDraftArticleFeaturedImage(normalizedArticle);
+    const article = await hydrateDraftArticle(normalizedArticle);
 
     const auditLogged = await recordArticleAudit({
       actorUserId: context.user.id,
@@ -1392,7 +2027,7 @@ export async function updateEditableEditorialArticle({
       nextWorkflowStatus: fetchResult.ownership.workflowStatus,
       metadata: {
         fields:
-          'title,subtitle,cardExcerpt,excerpt,seoTitle,type,language,slug,content,featuredImage.alt,gameInfo.releaseYear,gameInfo.mediaFormat,rating,pros,cons,seriesOrder,seriesLabel',
+          'title,subtitle,cardExcerpt,excerpt,seoTitle,type,language,slug,content,featuredImage.alt,categories,editorialSeries,platforms,creators,genres,developers,publishers,manufacturer,modes,series,translationOf,gameInfo.releaseYear,gameInfo.mediaFormat,rating,pros,cons,seriesOrder,seriesLabel',
       },
     });
 
@@ -1565,7 +2200,7 @@ export async function updateEditorialArticleFeaturedImage({
         };
       }
 
-      const article = await hydrateDraftArticleFeaturedImage(normalizedArticle);
+      const article = await hydrateDraftArticle(normalizedArticle);
       logFeaturedImageResult({
         context: 'featured_image_remove',
         rootDocumentId: safeRootDocumentId,
@@ -1685,7 +2320,7 @@ export async function updateEditorialArticleFeaturedImage({
       };
     }
 
-    const article = await hydrateDraftArticleFeaturedImage(normalizedArticle);
+    const article = await hydrateDraftArticle(normalizedArticle);
     logFeaturedImageResult({
       context: 'featured_image_replace',
       rootDocumentId: safeRootDocumentId,

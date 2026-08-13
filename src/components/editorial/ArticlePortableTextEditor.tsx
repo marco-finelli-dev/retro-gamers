@@ -40,6 +40,28 @@ type MediaFormat =
   | 'other';
 
 type RatingField = 'grafica' | 'sonoro' | 'giocabilita' | 'longevita' | 'overall';
+type RelationKind =
+  | 'categories'
+  | 'editorialSeries'
+  | 'platforms'
+  | 'creators'
+  | 'genres'
+  | 'developers'
+  | 'publishers'
+  | 'manufacturer'
+  | 'modes'
+  | 'series'
+  | 'translationOf';
+
+type EditableArticleReference = {
+  id: string;
+  type: 'category' | 'platform' | 'creator' | 'taxonomy' | 'article';
+  label: string;
+  slug: string;
+  language: ArticleLanguage | null;
+  secondaryLabel: string;
+  key?: string;
+};
 
 type EditableArticleAuthor = {
   _id: string;
@@ -98,6 +120,17 @@ type EditableArticle = {
   content: PortableTextBlock[];
   author: EditableArticleAuthor;
   featuredImage: EditableArticleFeaturedImage;
+  categories: EditableArticleReference[];
+  editorialSeries: EditableArticleReference[];
+  platforms: EditableArticleReference[];
+  creators: EditableArticleReference[];
+  genres: EditableArticleReference[];
+  developers: EditableArticleReference[];
+  publishers: EditableArticleReference[];
+  manufacturer: EditableArticleReference[];
+  modes: EditableArticleReference[];
+  series: EditableArticleReference[];
+  translationOf: EditableArticleReference | null;
   gameInfo: EditableArticleGameInfo;
   rating: EditableArticleRating;
   pros: string[];
@@ -152,6 +185,29 @@ type Labels = {
   slug: string;
   author: string;
   authorMissing: string;
+  classificationSection: string;
+  relationsSection: string;
+  categories: string;
+  editorialSeries: string;
+  platforms: string;
+  creators: string;
+  genres: string;
+  developers: string;
+  publishers: string;
+  manufacturer: string;
+  modes: string;
+  gameSeries: string;
+  translationOf: string;
+  relationSearchPlaceholder: string;
+  relationLoading: string;
+  relationNoResults: string;
+  relationSearchError: string;
+  relationRemoveValue: string;
+  platformsRecommended: string;
+  creatorsRecommended: string;
+  developersRecommended: string;
+  publishersRecommended: string;
+  manufacturerRecommended: string;
   gameData: string;
   releaseYear: string;
   mediaFormat: string;
@@ -808,6 +864,206 @@ function MultiSelect<Value extends string>({
   );
 }
 
+function getRootArticleId(value: string) {
+  return value.startsWith('drafts.') ? value.slice('drafts.'.length) : value;
+}
+
+function RelationPicker({
+  label,
+  kind,
+  values,
+  onChange,
+  language,
+  currentArticleId,
+  multiple = true,
+  labels,
+}: {
+  label: string;
+  kind: RelationKind;
+  values: EditableArticleReference[];
+  onChange: (values: EditableArticleReference[]) => void;
+  language: ArticleLanguage;
+  currentArticleId: string;
+  multiple?: boolean;
+  labels: Labels;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [items, setItems] = useState<EditableArticleReference[]>([]);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const listboxId = useId();
+  const searchId = useId();
+  const selectedIds = useMemo(() => new Set(values.map((value) => value.id)), [values]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setStatus('loading');
+
+      try {
+        const params = new URLSearchParams({
+          kind,
+          q: query,
+          language,
+          limit: '12',
+          currentArticleId,
+        });
+        const response = await fetch(`/api/editor/references?${params.toString()}`, {
+          headers: { accept: 'application/json' },
+          signal: controller.signal,
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result?.ok || !Array.isArray(result.items)) {
+          throw new Error(result?.error || 'reference_search_failed');
+        }
+
+        setItems(result.items);
+        setStatus('idle');
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setItems([]);
+        setStatus('error');
+      }
+    }, 220);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [currentArticleId, isOpen, kind, language, query]);
+
+  const summary = values.length > 0
+    ? values.map((value) => value.label).slice(0, 2).join(', ') + (values.length > 2 ? ` +${values.length - 2}` : '')
+    : labels.relationSearchPlaceholder;
+
+  const selectItem = (item: EditableArticleReference) => {
+    if (selectedIds.has(item.id)) {
+      setIsOpen(false);
+      return;
+    }
+
+    onChange(multiple ? [...values, item] : [item]);
+    setIsOpen(false);
+    setQuery('');
+  };
+
+  const removeItem = (id: string) => {
+    onChange(values.filter((value) => value.id !== id));
+  };
+
+  return (
+    <div className="editorial-relation-picker" ref={rootRef}>
+      <button
+        type="button"
+        className="editorial-multiselect__trigger"
+        aria-label={label}
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span>{summary}</span>
+        <span aria-hidden="true">▾</span>
+      </button>
+
+      {values.length > 0 && (
+        <div className="editorial-relation-picker__chips" aria-label={label}>
+          {values.map((value) => (
+            <button
+              type="button"
+              className="editorial-relation-picker__chip"
+              key={value.id}
+              onClick={() => removeItem(value.id)}
+              aria-label={`${labels.relationRemoveValue}: ${value.label}`}
+            >
+              <span>{value.label}</span>
+              <span aria-hidden="true">×</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isOpen && (
+        <div className="editorial-relation-picker__panel">
+          <label className="editorial-relation-picker__search" htmlFor={searchId}>
+            <span className="sr-only">{label}</span>
+            <input
+              id={searchId}
+              value={query}
+              placeholder={labels.relationSearchPlaceholder}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+
+          <div
+            className="editorial-relation-picker__menu"
+            id={listboxId}
+            role="listbox"
+            aria-label={label}
+            aria-multiselectable={multiple ? 'true' : undefined}
+          >
+            {status === 'loading' && (
+              <p className="editorial-relation-picker__state">{labels.relationLoading}</p>
+            )}
+            {status === 'error' && (
+              <p className="editorial-relation-picker__state" data-tone="error">
+                {labels.relationSearchError}
+              </p>
+            )}
+            {status !== 'loading' && status !== 'error' && items.length === 0 && (
+              <p className="editorial-relation-picker__state">{labels.relationNoResults}</p>
+            )}
+            {status !== 'error' && items.map((item) => {
+              const isSelected = selectedIds.has(item.id);
+
+              return (
+                <button
+                  type="button"
+                  className="editorial-relation-picker__option"
+                  key={item.id}
+                  onClick={() => selectItem(item)}
+                  disabled={isSelected}
+                  aria-selected={isSelected}
+                  role="option"
+                >
+                  <span>{item.label}</span>
+                  {item.secondaryLabel && <small>{item.secondaryLabel}</small>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReviewStringListEditor({
   title,
   values,
@@ -1125,9 +1381,40 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     }));
   };
 
+  const updateRelationField = (
+    field: Exclude<RelationKind, 'translationOf'>,
+    value: EditableArticleReference[]
+  ) => {
+    setDraft((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === 'editorialSeries' ? { hasEditorialSeries: value.length > 0 } : {}),
+    }));
+  };
+
+  const updateTranslationOf = (value: EditableArticleReference[]) => {
+    setDraft((current) => ({
+      ...current,
+      translationOf: value[0] || null,
+    }));
+  };
+
   const showReviewSection = draft.type === 'review' || hasReviewData(draft);
   const isReviewEditoriallyActive =
     draft.type === 'review' && ['inProgress', 'done'].includes(draft.reviewStatus);
+  const showSeriesFields =
+    draft.editorialSeries.length > 0 ||
+    draft.seriesOrder !== null ||
+    Boolean(draft.seriesLabel.trim());
+  const hasReviewRelations = [
+    draft.genres,
+    draft.developers,
+    draft.publishers,
+    draft.modes,
+    draft.series,
+  ].some((values) => values.length > 0);
+  const showReviewRelations = draft.type === 'review' || hasReviewRelations;
+  const showHardwareRelations = draft.type === 'hardware' || draft.manufacturer.length > 0;
   const featuredImage = draft.featuredImage;
   const featuredImageAsset = featuredImage?.asset || null;
   const hasFeaturedImage = Boolean(featuredImageAsset?._id || featuredImageAsset?.url);
@@ -1145,6 +1432,17 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     language: articleDraft.language,
     slug: articleDraft.slug,
     featuredImageAlt: articleDraft.featuredImage?.alt || '',
+    categories: articleDraft.categories,
+    editorialSeries: articleDraft.editorialSeries,
+    platforms: articleDraft.platforms,
+    creators: articleDraft.creators,
+    genres: articleDraft.genres,
+    developers: articleDraft.developers,
+    publishers: articleDraft.publishers,
+    manufacturer: articleDraft.manufacturer,
+    modes: articleDraft.modes,
+    series: articleDraft.series,
+    translationOf: articleDraft.translationOf,
     gameInfo: articleDraft.gameInfo,
     rating: articleDraft.rating,
     pros: articleDraft.pros,
@@ -1360,34 +1658,215 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
             </label>
           </details>
 
-          <details className="editorial-inspector-section">
+          <details className="editorial-inspector-section" open>
             <summary>{labels.inspectorRelations}</summary>
-            {draft.hasEditorialSeries ? (
-              <div className="editorial-inspector-subsection">
-                <p className="editorial-inspector-section__placeholder">
-                  {labels.editorialSeriesReadOnly}
-                </p>
+
+            <div className="editorial-inspector-subsection">
+              <h3>{labels.classificationSection}</h3>
+
+              <label className="editorial-field">
+                <span>{labels.categories}</span>
+                <RelationPicker
+                  label={labels.categories}
+                  kind="categories"
+                  values={draft.categories}
+                  onChange={(values) => updateRelationField('categories', values)}
+                  language={draft.language}
+                  currentArticleId={getRootArticleId(draft._id)}
+                  labels={labels}
+                />
+              </label>
+
+              <label className="editorial-field">
+                <span>{labels.editorialSeries}</span>
+                <RelationPicker
+                  label={labels.editorialSeries}
+                  kind="editorialSeries"
+                  values={draft.editorialSeries}
+                  onChange={(values) => updateRelationField('editorialSeries', values)}
+                  language={draft.language}
+                  currentArticleId={getRootArticleId(draft._id)}
+                  labels={labels}
+                />
+              </label>
+
+              {showSeriesFields && (
+                <>
+                  <label className="editorial-field">
+                    <span>{labels.seriesOrder}</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={draft.seriesOrder ?? ''}
+                      onChange={(event) => updateField('seriesOrder', parseOptionalNumber(event.target.value))}
+                    />
+                  </label>
+                  <label className="editorial-field">
+                    <span>{labels.seriesLabel}</span>
+                    <input
+                      value={draft.seriesLabel}
+                      onChange={(event) => updateField('seriesLabel', event.target.value)}
+                    />
+                  </label>
+                </>
+              )}
+            </div>
+
+            <div className="editorial-inspector-subsection">
+              <h3>{labels.relationsSection}</h3>
+
+              <label className="editorial-field">
+                <span>{labels.platforms}</span>
+                <RelationPicker
+                  label={labels.platforms}
+                  kind="platforms"
+                  values={draft.platforms}
+                  onChange={(values) => updateRelationField('platforms', values)}
+                  language={draft.language}
+                  currentArticleId={getRootArticleId(draft._id)}
+                  labels={labels}
+                />
+                {['review', 'hardware', 'guide'].includes(draft.type) && draft.platforms.length === 0 && (
+                  <p className="editorial-character-count" data-warning="true">
+                    {labels.platformsRecommended}
+                  </p>
+                )}
+              </label>
+
+              <label className="editorial-field">
+                <span>{labels.creators}</span>
+                <RelationPicker
+                  label={labels.creators}
+                  kind="creators"
+                  values={draft.creators}
+                  onChange={(values) => updateRelationField('creators', values)}
+                  language={draft.language}
+                  currentArticleId={getRootArticleId(draft._id)}
+                  labels={labels}
+                />
+                {draft.type === 'interview' && draft.creators.length === 0 && (
+                  <p className="editorial-character-count" data-warning="true">
+                    {labels.creatorsRecommended}
+                  </p>
+                )}
+              </label>
+
+              <label className="editorial-field">
+                <span>{labels.translationOf}</span>
+                <RelationPicker
+                  label={labels.translationOf}
+                  kind="translationOf"
+                  values={draft.translationOf ? [draft.translationOf] : []}
+                  onChange={updateTranslationOf}
+                  language={draft.language}
+                  currentArticleId={getRootArticleId(draft._id)}
+                  multiple={false}
+                  labels={labels}
+                />
+              </label>
+
+              {showHardwareRelations && (
                 <label className="editorial-field">
-                  <span>{labels.seriesOrder}</span>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={draft.seriesOrder ?? ''}
-                    onChange={(event) => updateField('seriesOrder', parseOptionalNumber(event.target.value))}
+                  <span>{labels.manufacturer}</span>
+                  <RelationPicker
+                    label={labels.manufacturer}
+                    kind="manufacturer"
+                    values={draft.manufacturer}
+                    onChange={(values) => updateRelationField('manufacturer', values)}
+                    language={draft.language}
+                    currentArticleId={getRootArticleId(draft._id)}
+                    labels={labels}
                   />
+                  {draft.type === 'hardware' && draft.manufacturer.length === 0 && (
+                    <p className="editorial-character-count" data-warning="true">
+                      {labels.manufacturerRecommended}
+                    </p>
+                  )}
                 </label>
-                <label className="editorial-field">
-                  <span>{labels.seriesLabel}</span>
-                  <input
-                    value={draft.seriesLabel}
-                    onChange={(event) => updateField('seriesLabel', event.target.value)}
-                  />
-                </label>
-              </div>
-            ) : (
-              <p className="editorial-inspector-section__placeholder">{labels.futureSlot}</p>
-            )}
+              )}
+
+              {showReviewRelations && (
+                <div className="editorial-inspector-subsection editorial-inspector-subsection--nested">
+                  <h3>{labels.inspectorReview}</h3>
+
+                  <label className="editorial-field">
+                    <span>{labels.genres}</span>
+                    <RelationPicker
+                      label={labels.genres}
+                      kind="genres"
+                      values={draft.genres}
+                      onChange={(values) => updateRelationField('genres', values)}
+                      language={draft.language}
+                      currentArticleId={getRootArticleId(draft._id)}
+                      labels={labels}
+                    />
+                  </label>
+
+                  <label className="editorial-field">
+                    <span>{labels.developers}</span>
+                    <RelationPicker
+                      label={labels.developers}
+                      kind="developers"
+                      values={draft.developers}
+                      onChange={(values) => updateRelationField('developers', values)}
+                      language={draft.language}
+                      currentArticleId={getRootArticleId(draft._id)}
+                      labels={labels}
+                    />
+                    {draft.type === 'review' && draft.developers.length === 0 && (
+                      <p className="editorial-character-count" data-warning="true">
+                        {labels.developersRecommended}
+                      </p>
+                    )}
+                  </label>
+
+                  <label className="editorial-field">
+                    <span>{labels.publishers}</span>
+                    <RelationPicker
+                      label={labels.publishers}
+                      kind="publishers"
+                      values={draft.publishers}
+                      onChange={(values) => updateRelationField('publishers', values)}
+                      language={draft.language}
+                      currentArticleId={getRootArticleId(draft._id)}
+                      labels={labels}
+                    />
+                    {draft.type === 'review' && draft.publishers.length === 0 && (
+                      <p className="editorial-character-count" data-warning="true">
+                        {labels.publishersRecommended}
+                      </p>
+                    )}
+                  </label>
+
+                  <label className="editorial-field">
+                    <span>{labels.modes}</span>
+                    <RelationPicker
+                      label={labels.modes}
+                      kind="modes"
+                      values={draft.modes}
+                      onChange={(values) => updateRelationField('modes', values)}
+                      language={draft.language}
+                      currentArticleId={getRootArticleId(draft._id)}
+                      labels={labels}
+                    />
+                  </label>
+
+                  <label className="editorial-field">
+                    <span>{labels.gameSeries}</span>
+                    <RelationPicker
+                      label={labels.gameSeries}
+                      kind="series"
+                      values={draft.series}
+                      onChange={(values) => updateRelationField('series', values)}
+                      language={draft.language}
+                      currentArticleId={getRootArticleId(draft._id)}
+                      labels={labels}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
           </details>
 
           <details className="editorial-inspector-section" open>
