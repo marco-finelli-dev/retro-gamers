@@ -293,6 +293,8 @@ const mediaFormatOptions: MediaFormat[] = [
   'other',
 ];
 const ratingFields: RatingField[] = ['grafica', 'sonoro', 'giocabilita', 'longevita', 'overall'];
+const ratingSelectValues = Array.from({ length: 19 }, (_, index) => 1 + index * 0.5);
+const releaseYearSelectValues = Array.from({ length: 91 }, (_, index) => 2050 - index);
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const featuredImageMaxFileSize = 5 * 1024 * 1024;
 
@@ -2014,12 +2016,15 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 <h3>{labels.gameData}</h3>
                 <label className="editorial-field">
                   <span>{labels.releaseYear}</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
+                  <select
                     value={draft.gameInfo.releaseYear ?? ''}
                     onChange={(event) => updateGameInfo('releaseYear', parseOptionalNumber(event.target.value))}
-                  />
+                  >
+                    <option value="">—</option>
+                    {releaseYearSelectValues.map((year) => (
+                      <option value={year} key={year}>{year}</option>
+                    ))}
+                  </select>
                 </label>
 
                 <div className="editorial-field">
@@ -2041,14 +2046,17 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   {ratingFields.map((field) => (
                     <label className="editorial-field" key={field}>
                       <span>{getRatingLabel(field, labels)}</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max="10"
-                        step="0.5"
+                      <select
                         value={draft.rating[field] ?? ''}
                         onChange={(event) => updateRating(field, parseOptionalNumber(event.target.value))}
-                      />
+                      >
+                        <option value="">—</option>
+                        {ratingSelectValues.map((rating) => (
+                          <option value={rating} key={rating}>
+                            {lang === 'it' ? String(rating).replace('.', ',') : rating}
+                          </option>
+                        ))}
+                      </select>
                     </label>
                   ))}
                 </div>
