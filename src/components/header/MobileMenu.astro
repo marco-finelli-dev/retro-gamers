@@ -86,7 +86,7 @@ const accountLabels = isEnglish
       favorites: 'Favorites',
       memories: 'My memories',
       messages: 'Messages',
-      editorialTools: 'Editorial tools',
+      editorialTools: 'Editorial area',
       signOut: 'Sign out'
     }
   : {
@@ -105,7 +105,7 @@ const accountHref = isEnglish ? '/en/account/' : '/account/';
 const accountFavoritesHref = isEnglish ? '/en/account/favorites/' : '/account/favorites/';
 const accountMemoriesHref = isEnglish ? '/en/account/memories/' : '/account/memories/';
 const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/messages/';
-const adminHref = isEnglish ? '/en/admin/' : '/admin/';
+const accountEditorHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
 ---
 
 <div class="mobile-menu" id="mobile-menu" aria-hidden="true" inert data-mobile-menu>
@@ -155,7 +155,7 @@ const adminHref = isEnglish ? '/en/admin/' : '/admin/';
           <a href={accountHref} data-account-public-profile hidden>
             {isEnglish ? 'Public profile' : 'Profilo pubblico'}
           </a>
-          <a href={adminHref} data-account-staff hidden>{accountLabels.editorialTools}</a>
+          <a href={accountEditorHref} data-account-editorial-area hidden>{accountLabels.editorialTools}</a>
           <button type="button" data-account-logout>{accountLabels.signOut}</button>
         </div>
       </div>

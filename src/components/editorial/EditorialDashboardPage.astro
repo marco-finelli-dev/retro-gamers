@@ -1,0 +1,239 @@
+---
+import '../../styles/pages/editorial-area.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../community/CommunityHero.astro';
+import CommunityLayout from '../community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../community/CommunitySidebarProfile.astro';
+import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+import CommunityStatList from '../community/CommunityStatList.astro';
+import {
+  fetchEditorialAuthorProfile,
+  fetchPublishedArticleCountForAuthor,
+  requireActiveEditorialAuthorContext,
+} from '../../lib/editorial/profile.server';
+
+type EditorialLang = 'it' | 'en';
+
+const { lang = 'it' } = Astro.props as { lang?: EditorialLang };
+const currentLang: EditorialLang = lang === 'en' ? 'en' : 'it';
+const isEnglish = currentLang === 'en';
+const access = await requireActiveEditorialAuthorContext(Astro.cookies);
+
+const copy = isEnglish
+  ? {
+      pageTitle: 'Editorial area | Retro-Gamers.it',
+      pageDescription: 'Your private editorial dashboard on Retro-Gamers.it.',
+      kicker: 'Editorial area',
+      title: 'Editorial dashboard',
+      description:
+        'A first private workspace for your Retro-Gamers author identity. The article editor will arrive in a separate step.',
+      deniedTitle: 'Editorial access required',
+      deniedDescription:
+        'This area is available only to active editorial contributors linked to a Sanity author profile.',
+      missingAuthorTitle: 'Sanity author not found',
+      missingAuthorDescription:
+        'Your editorial mapping points to a Sanity author that is not available in the published dataset. Profile editing is blocked until the mapping is fixed.',
+      profileLabel: 'Author identity',
+      editorialRole: 'Editorial role',
+      authorRole: 'Public author role',
+      mapping: 'Sanity author ID',
+      publishedArticles: 'Published articles',
+      completeness: 'Profile completeness',
+      dashboardLinks: 'Workspace',
+      editProfile: 'Edit author profile',
+      publicProfileIt: 'Italian author page',
+      publicProfileEn: 'English author page',
+      articleEditorTitle: 'Article editor',
+      articleEditorDescription:
+        'Draft creation, article editing and review workflow are intentionally not part of this step.',
+      unavailable: 'Not available yet',
+      notSet: 'Not set',
+      loginCta: 'Go to account',
+    }
+  : {
+      pageTitle: 'Area redazione | Retro-Gamers.it',
+      pageDescription: 'La tua dashboard redazionale privata su Retro-Gamers.it.',
+      kicker: 'Area redazione',
+      title: 'Dashboard redazionale',
+      description:
+        'Un primo spazio privato per la tua identità autore su Retro-Gamers. L’editor articoli arriverà in un cantiere separato.',
+      deniedTitle: 'Accesso redazionale richiesto',
+      deniedDescription:
+        'Quest’area è disponibile solo per collaboratori redazionali attivi collegati a un profilo autore Sanity.',
+      missingAuthorTitle: 'Autore Sanity non trovato',
+      missingAuthorDescription:
+        'Il mapping editoriale punta a un autore Sanity non disponibile nel dataset pubblicato. La modifica del profilo resta bloccata finché il mapping non viene corretto.',
+      profileLabel: 'Identità autore',
+      editorialRole: 'Ruolo redazionale',
+      authorRole: 'Ruolo autore pubblico',
+      mapping: 'Sanity author ID',
+      publishedArticles: 'Articoli pubblicati',
+      completeness: 'Completezza profilo',
+      dashboardLinks: 'Strumenti',
+      editProfile: 'Modifica profilo autore',
+      publicProfileIt: 'Pagina autore italiana',
+      publicProfileEn: 'Pagina autore inglese',
+      articleEditorTitle: 'Editor articoli',
+      articleEditorDescription:
+        'Creazione bozze, modifica articoli e workflow di revisione sono volutamente fuori da questo step.',
+      unavailable: 'Non disponibile ancora',
+      notSet: 'Non impostato',
+      loginCta: 'Vai all’account',
+    };
+
+let author = null;
+let publishedArticleCount = 0;
+
+if (access.ok) {
+  author = await fetchEditorialAuthorProfile(access.context.sanityAuthorId);
+
+  if (author) {
+    publishedArticleCount = await fetchPublishedArticleCountForAuthor(access.context.sanityAuthorId);
+  }
+}
+
+const profileHref = isEnglish ? '/en/account/editor/profile/' : '/account/editor/profile/';
+const accountHref = isEnglish ? '/en/account/' : '/account/';
+const languageSwitch = isEnglish ? '/account/editor/' : '/en/account/editor/';
+const sidebarName = author?.displayName === 'nickname' && author.nickname
+  ? author.nickname
+  : author?.name || (access.ok ? String(access.context.profile?.display_name || '') : '');
+---
+
+<BaseLayout
+  lang={currentLang}
+  title={copy.pageTitle}
+  description={copy.pageDescription}
+  canonical={Astro.url.href}
+  languageSwitch={languageSwitch}
+  noindex={true}
+>
+  <CommunityLayout class="editorial-area-page" sidebar={access.ok && Boolean(author)}>
+    {access.ok && author && (
+      <Fragment slot="sidebar">
+        <CommunitySidebarProfile
+          label={copy.profileLabel}
+          name={sidebarName || author.name}
+          avatarUrl={author.image?.asset?.url || ''}
+        />
+
+        <CommunityStatList
+          title={copy.profileLabel}
+          items={[
+            { label: copy.publishedArticles, value: publishedArticleCount },
+            { label: copy.completeness, value: author.completeness.label },
+          ]}
+        />
+
+        <CommunitySidebarSection title={copy.dashboardLinks}>
+          <div class="community-link-list">
+            <a href={profileHref}>{copy.editProfile}</a>
+            {author.publicUrls.it && <a href={author.publicUrls.it}>{copy.publicProfileIt}</a>}
+            {author.publicUrls.en && <a href={author.publicUrls.en}>{copy.publicProfileEn}</a>}
+          </div>
+        </CommunitySidebarSection>
+      </Fragment>
+    )}
+
+    <CommunityHero
+      kicker={copy.kicker}
+      title={copy.title}
+      description={copy.description}
+    />
+
+    {!access.ok && (
+      <section class="editorial-card editorial-card--notice">
+        <p class="editorial-kicker">{copy.kicker}</p>
+        <h2>{copy.deniedTitle}</h2>
+        <p>{copy.deniedDescription}</p>
+        <a class="editorial-button" href={accountHref}>{copy.loginCta}</a>
+      </section>
+    )}
+
+    {access.ok && !author && (
+      <section class="editorial-card editorial-card--notice">
+        <p class="editorial-kicker">{copy.profileLabel}</p>
+        <h2>{copy.missingAuthorTitle}</h2>
+        <p>{copy.missingAuthorDescription}</p>
+        <dl class="editorial-definition-list">
+          <div>
+            <dt>{copy.mapping}</dt>
+            <dd><code>{access.context.sanityAuthorId}</code></dd>
+          </div>
+        </dl>
+      </section>
+    )}
+
+    {access.ok && author && (
+      <div class="editorial-dashboard-grid">
+        <section class="editorial-card editorial-author-card">
+          <div class="editorial-author-card__media">
+            {author.image?.asset?.url ? (
+              <img
+                src={author.image.asset.url}
+                alt={author.image.alt || ''}
+                width="160"
+                height="160"
+              />
+            ) : (
+              <span aria-hidden="true">{author.name.slice(0, 1).toUpperCase()}</span>
+            )}
+          </div>
+
+          <div class="editorial-author-card__body">
+            <p class="editorial-kicker">{copy.profileLabel}</p>
+            <h2>{author.displayName === 'nickname' && author.nickname ? author.nickname : author.name}</h2>
+            <dl class="editorial-definition-list">
+              <div>
+                <dt>{copy.editorialRole}</dt>
+                <dd>{access.context.editorialRole}</dd>
+              </div>
+              <div>
+                <dt>{copy.authorRole}</dt>
+                <dd>{author.role || copy.notSet}</dd>
+              </div>
+              <div>
+                <dt>{copy.mapping}</dt>
+                <dd><code>{author._id}</code></dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        <section class="editorial-card editorial-card--compact">
+          <p class="editorial-kicker">{copy.publishedArticles}</p>
+          <strong>{publishedArticleCount}</strong>
+          <span>{copy.publishedArticles}</span>
+        </section>
+
+        <section class="editorial-card editorial-card--compact">
+          <p class="editorial-kicker">{copy.completeness}</p>
+          <strong>{author.completeness.label}</strong>
+          <span>{copy.completeness}</span>
+        </section>
+
+        <section class="editorial-card editorial-action-card">
+          <div>
+            <p class="editorial-kicker">{copy.dashboardLinks}</p>
+            <h2>{copy.editProfile}</h2>
+            <p>
+              {isEnglish
+                ? 'Update the public author information that appears on Retro-Gamers.it.'
+                : 'Aggiorna le informazioni pubbliche autore mostrate su Retro-Gamers.it.'}
+            </p>
+          </div>
+          <a class="editorial-button" href={profileHref}>{copy.editProfile}</a>
+        </section>
+
+        <section class="editorial-card editorial-action-card editorial-action-card--disabled" aria-disabled="true">
+          <div>
+            <p class="editorial-kicker">{copy.unavailable}</p>
+            <h2>{copy.articleEditorTitle}</h2>
+            <p>{copy.articleEditorDescription}</p>
+          </div>
+          <span class="editorial-pill">{copy.unavailable}</span>
+        </section>
+      </div>
+    )}
+  </CommunityLayout>
+</BaseLayout>

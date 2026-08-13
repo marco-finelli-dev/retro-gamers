@@ -4,12 +4,14 @@ import {
   getLanguageSessionOverrideFromCookies,
   resolveEffectiveLanguage,
 } from '../../../lib/preferred-language';
+import { getEditorialSessionForUserSession } from '../../../lib/editorial/session.server';
 
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
     status,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'private, no-store, max-age=0',
     },
   });
 
@@ -45,6 +47,7 @@ export const GET: APIRoute = async ({ cookies }) => {
     profileLanguage: preferredLanguage,
     authenticated: true,
   });
+  const editorialSession = await getEditorialSessionForUserSession(session);
 
   return json({
     ok: true,
@@ -59,6 +62,9 @@ export const GET: APIRoute = async ({ cookies }) => {
       preferredLanguage,
       effectiveLanguage,
       retroExperience,
+    },
+    editorial: {
+      hasAccess: editorialSession.isEditorialActive,
     },
   });
 };

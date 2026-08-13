@@ -18,6 +18,8 @@ type EditorialProfileRow = {
   updated_at?: string | null;
 };
 
+type UserSession = Awaited<ReturnType<typeof getUserSessionFromCookies>>;
+
 const missingEditorialSchemaSignals = [
   'editorial_profiles',
   'schema cache',
@@ -121,6 +123,10 @@ function createEditorialContext({
 export async function getEditorialSessionFromCookies(cookies: Parameters<typeof getUserSessionFromCookies>[0]) {
   const session = await getUserSessionFromCookies(cookies);
 
+  return getEditorialSessionForUserSession(session);
+}
+
+export async function getEditorialSessionForUserSession(session: UserSession) {
   if (session.error || !session.user || !session.profile) {
     return createEditorialContext({
       user: null,

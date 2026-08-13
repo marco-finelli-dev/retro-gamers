@@ -73,7 +73,7 @@ const accountHref = isEnglish ? '/en/account/' : '/account/';
 const accountFavoritesHref = isEnglish ? '/en/account/favorites/' : '/account/favorites/';
 const accountMemoriesHref = isEnglish ? '/en/account/memories/' : '/account/memories/';
 const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/messages/';
-const adminHref = isEnglish ? '/en/admin/' : '/admin/';
+const accountEditorHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
 const languageTarget = isEnglish ? 'it' : 'en';
 const initialSession = Astro.locals.userSession;
 const initialProfile = initialSession?.profile;
@@ -81,7 +81,7 @@ const initialUser = initialSession?.user;
 const initialAccountState = !initialSession?.error && initialProfile && initialUser
   ? {
       isAuthenticated: true,
-      isStaff: initialProfile.role === 'admin' || initialProfile.role === 'moderator',
+      hasEditorialAccess: false,
       profile: {
         role: initialProfile.role,
         username: initialProfile.username,
@@ -304,8 +304,8 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
               {isEnglish ? 'Public profile' : 'Profilo pubblico'}
             </a>
 
-            <a href={adminHref} role="menuitem" data-account-staff hidden>
-              {isEnglish ? 'Editorial tools' : 'Area redazione'}
+            <a href={accountEditorHref} role="menuitem" data-account-editorial-area hidden>
+              {isEnglish ? 'Editorial area' : 'Area redazione'}
             </a>
 
             <button type="button" role="menuitem" data-account-logout>
@@ -504,7 +504,6 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
   const trigger = root?.querySelector('[data-account-menu-toggle]');
   const panel = root?.querySelector('[data-account-menu-panel]');
   const isEnglish = root?.dataset.lang === 'en';
-  const staffRoles = new Set(['admin', 'moderator']);
   const unreadPollingIntervalMs = 55_000;
   let isAccountLoggedIn = false;
   let unreadPollingTimer = 0;
@@ -684,7 +683,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
 
   const setAccountState = (
     isLoggedIn,
-    isStaff = false,
+    hasEditorialAccess = false,
     profile = null,
     user = null,
     preferences = null
@@ -692,13 +691,11 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
     isAccountLoggedIn = Boolean(isLoggedIn);
     publishRetroExperienceState(isLoggedIn, preferences);
     root?.classList.toggle('is-authenticated', isLoggedIn);
-    root?.classList.toggle('is-staff', isLoggedIn && isStaff);
+    root?.classList.toggle('has-editorial-access', isLoggedIn && hasEditorialAccess);
     setAccountAvatar(isLoggedIn, profile, user);
 
     const accountLabel = isLoggedIn
-      ? (isStaff
-          ? (isEnglish ? 'Staff account' : 'Account staff')
-          : (isEnglish ? 'User account' : 'Account utente'))
+      ? (isEnglish ? 'User account' : 'Account utente')
       : 'Account';
 
     trigger?.setAttribute('aria-label', accountLabel);
@@ -712,8 +709,8 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
       node.hidden = !isLoggedIn;
     });
 
-    document.querySelectorAll('[data-account-staff]').forEach((node) => {
-      node.hidden = !isStaff;
+    document.querySelectorAll('[data-account-editorial-area]').forEach((node) => {
+      node.hidden = !hasEditorialAccess;
     });
 
     document.querySelectorAll('[data-mobile-account-guest]').forEach((node) => {
@@ -729,7 +726,6 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
     try {
       const response = await fetch('/api/auth/me');
       const result = await response.json();
-      const role = result?.profile?.role;
 
       if (!response.ok || !result.ok || !result.profile) {
         setAccountState(false);
@@ -739,7 +735,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
 
       setAccountState(
         true,
-        staffRoles.has(role),
+        result?.editorial?.hasAccess === true,
         result.profile,
         result.user,
         result.preferences
@@ -808,7 +804,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
   if (initialAccountState?.isAuthenticated) {
     setAccountState(
       true,
-      Boolean(initialAccountState.isStaff),
+      Boolean(initialAccountState.hasEditorialAccess),
       initialAccountState.profile,
       initialAccountState.user,
       initialAccountState.preferences

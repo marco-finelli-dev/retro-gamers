@@ -1,0 +1,648 @@
+---
+import '../../styles/pages/editorial-area.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from '../community/CommunityHero.astro';
+import CommunityLayout from '../community/CommunityLayout.astro';
+import CommunitySidebarProfile from '../community/CommunitySidebarProfile.astro';
+import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+import CommunityStatList from '../community/CommunityStatList.astro';
+import {
+  fetchEditorialAuthorProfile,
+  fetchPublishedArticleCountForAuthor,
+  requireActiveEditorialAuthorContext,
+} from '../../lib/editorial/profile.server';
+
+type EditorialLang = 'it' | 'en';
+
+const { lang = 'it' } = Astro.props as { lang?: EditorialLang };
+const currentLang: EditorialLang = lang === 'en' ? 'en' : 'it';
+const isEnglish = currentLang === 'en';
+const access = await requireActiveEditorialAuthorContext(Astro.cookies);
+
+const copy = isEnglish
+  ? {
+      pageTitle: 'Author profile | Retro-Gamers.it',
+      pageDescription: 'Edit your public Retro-Gamers author profile.',
+      kicker: 'Editorial area',
+      title: 'Author profile',
+      description:
+        'Update only your public Sanity author profile. Editorial role, slug and mapping are managed separately.',
+      deniedTitle: 'Editorial access required',
+      deniedDescription:
+        'This page is available only to active editorial contributors linked to a Sanity author profile.',
+      missingAuthorTitle: 'Sanity author not found',
+      missingAuthorDescription:
+        'Your editorial mapping points to a Sanity author that is not available in the published dataset. Profile editing is blocked until the mapping is fixed.',
+      back: 'Back to dashboard',
+      publicProfileIt: 'Italian author page',
+      publicProfileEn: 'English author page',
+      profileLabel: 'Author identity',
+      accountCta: 'Go to account',
+      name: 'Name',
+      nickname: 'Nickname',
+      displayName: 'Display name mode',
+      displayNameReal: 'Use real name',
+      displayNameNickname: 'Use nickname',
+      bio: 'Italian bio',
+      bioEn: 'English bio',
+      richBioReadOnly:
+        'This biography contains formatting or links. To avoid losing them, edit it from Sanity Studio.',
+      image: 'Avatar image',
+      cover: 'Cover image',
+      imageAlt: 'Avatar alt text',
+      coverAlt: 'Cover alt text',
+      website: 'Website',
+      facebook: 'Facebook',
+      twitter: 'X / Twitter',
+      tiktok: 'TikTok',
+      youtube: 'YouTube',
+      twitch: 'Twitch',
+      save: 'Save profile',
+      saving: 'Saving...',
+      saved: 'Profile updated.',
+      upload: 'Upload image',
+      uploading: 'Uploading...',
+      uploadHelpAvatar: 'JPG, PNG or WebP. Max 2 MB. The previous asset is not deleted.',
+      uploadHelpCover: 'JPG, PNG or WebP. Max 5 MB. The previous asset is not deleted.',
+      chooseFile: 'Choose a file or drop it here',
+      dropFile: 'Drop the image here',
+      readonlyData: 'Read-only data',
+      slug: 'Slug',
+      authorRole: 'Public author role',
+      mapping: 'Sanity author ID',
+      completeness: 'Profile completeness',
+      publishedArticles: 'Published articles',
+      notSet: 'Not set',
+      error: 'Unable to update the profile. Please try again.',
+      conflict: 'The author profile changed while you were editing. Reload the page and try again.',
+      invalidUrl: 'Use complete http or https URLs.',
+      invalidAlt: 'Alt text is required for uploads and must stay under 120 characters.',
+      invalidFile: 'Use a JPG, PNG or WebP image within the allowed size.',
+    }
+  : {
+      pageTitle: 'Profilo autore | Retro-Gamers.it',
+      pageDescription: 'Modifica il tuo profilo autore pubblico su Retro-Gamers.it.',
+      kicker: 'Area redazione',
+      title: 'Profilo autore',
+      description:
+        'Aggiorna soltanto il tuo profilo autore pubblico Sanity. Ruolo editoriale, slug e mapping sono gestiti separatamente.',
+      deniedTitle: 'Accesso redazionale richiesto',
+      deniedDescription:
+        'Questa pagina è disponibile solo per collaboratori redazionali attivi collegati a un profilo autore Sanity.',
+      missingAuthorTitle: 'Autore Sanity non trovato',
+      missingAuthorDescription:
+        'Il mapping editoriale punta a un autore Sanity non disponibile nel dataset pubblicato. La modifica del profilo resta bloccata finché il mapping non viene corretto.',
+      back: 'Torna alla dashboard',
+      publicProfileIt: 'Pagina autore italiana',
+      publicProfileEn: 'Pagina autore inglese',
+      profileLabel: 'Identità autore',
+      accountCta: 'Vai all’account',
+      name: 'Nome',
+      nickname: 'Nickname',
+      displayName: 'Nome visualizzato',
+      displayNameReal: 'Usa nome reale',
+      displayNameNickname: 'Usa nickname',
+      bio: 'Bio in italiano',
+      bioEn: 'Bio in inglese',
+      richBioReadOnly:
+        'Questa bio contiene formattazione o link. Per evitare di perderli, modificala da Sanity Studio.',
+      image: 'Immagine autore',
+      cover: 'Cover autore',
+      imageAlt: 'Alt text immagine autore',
+      coverAlt: 'Alt text cover',
+      website: 'Sito web',
+      facebook: 'Facebook',
+      twitter: 'X / Twitter',
+      tiktok: 'TikTok',
+      youtube: 'YouTube',
+      twitch: 'Twitch',
+      save: 'Salva profilo',
+      saving: 'Salvataggio...',
+      saved: 'Profilo aggiornato.',
+      upload: 'Carica immagine',
+      uploading: 'Caricamento...',
+      uploadHelpAvatar: 'JPG, PNG o WebP. Max 2 MB. L’asset precedente non viene eliminato.',
+      uploadHelpCover: 'JPG, PNG o WebP. Max 5 MB. L’asset precedente non viene eliminato.',
+      chooseFile: 'Scegli un file o trascinalo qui',
+      dropFile: 'Rilascia l’immagine qui',
+      readonlyData: 'Dati non modificabili',
+      slug: 'Slug',
+      authorRole: 'Ruolo autore pubblico',
+      mapping: 'Sanity author ID',
+      completeness: 'Completezza profilo',
+      publishedArticles: 'Articoli pubblicati',
+      notSet: 'Non impostato',
+      error: 'Non riesco ad aggiornare il profilo. Riprova.',
+      conflict: 'Il profilo autore è cambiato mentre lo stavi modificando. Ricarica la pagina e riprova.',
+      invalidUrl: 'Usa URL completi con http o https.',
+      invalidAlt: 'L’alt text è richiesto per gli upload e deve restare sotto 120 caratteri.',
+      invalidFile: 'Usa un’immagine JPG, PNG o WebP entro la dimensione consentita.',
+    };
+
+let author = null;
+let publishedArticleCount = 0;
+
+if (access.ok) {
+  author = await fetchEditorialAuthorProfile(access.context.sanityAuthorId);
+
+  if (author) {
+    publishedArticleCount = await fetchPublishedArticleCountForAuthor(access.context.sanityAuthorId);
+  }
+}
+
+const dashboardHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
+const accountHref = isEnglish ? '/en/account/' : '/account/';
+const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/editor/profile/';
+const sidebarName = author?.displayName === 'nickname' && author.nickname
+  ? author.nickname
+  : author?.name || '';
+---
+
+<BaseLayout
+  lang={currentLang}
+  title={copy.pageTitle}
+  description={copy.pageDescription}
+  canonical={Astro.url.href}
+  languageSwitch={languageSwitch}
+  noindex={true}
+>
+  <CommunityLayout class="editorial-area-page editorial-profile-page" sidebar={access.ok && Boolean(author)}>
+    {access.ok && author && (
+      <Fragment slot="sidebar">
+        <CommunitySidebarProfile
+          label={copy.profileLabel}
+          name={sidebarName || author.name}
+          avatarUrl={author.image?.asset?.url || ''}
+        />
+
+        <CommunityStatList
+          title={copy.profileLabel}
+          items={[
+            { label: copy.publishedArticles, value: publishedArticleCount },
+            { label: copy.completeness, value: author.completeness.label },
+          ]}
+        />
+
+        <CommunitySidebarSection title={copy.profileLabel}>
+          <div class="community-link-list">
+            <a href={dashboardHref}>{copy.back}</a>
+            {author.publicUrls.it && <a href={author.publicUrls.it}>{copy.publicProfileIt}</a>}
+            {author.publicUrls.en && <a href={author.publicUrls.en}>{copy.publicProfileEn}</a>}
+          </div>
+        </CommunitySidebarSection>
+      </Fragment>
+    )}
+
+    <CommunityHero
+      kicker={copy.kicker}
+      title={copy.title}
+      description={copy.description}
+    />
+
+    {!access.ok && (
+      <section class="editorial-card editorial-card--notice">
+        <p class="editorial-kicker">{copy.kicker}</p>
+        <h2>{copy.deniedTitle}</h2>
+        <p>{copy.deniedDescription}</p>
+        <a class="editorial-button" href={accountHref}>{copy.accountCta}</a>
+      </section>
+    )}
+
+    {access.ok && !author && (
+      <section class="editorial-card editorial-card--notice">
+        <p class="editorial-kicker">{copy.profileLabel}</p>
+        <h2>{copy.missingAuthorTitle}</h2>
+        <p>{copy.missingAuthorDescription}</p>
+        <dl class="editorial-definition-list">
+          <div>
+            <dt>{copy.mapping}</dt>
+            <dd><code>{access.context.sanityAuthorId}</code></dd>
+          </div>
+        </dl>
+      </section>
+    )}
+
+    {access.ok && author && (
+      <div class="editorial-profile-shell" data-editor-profile-root data-lang={currentLang}>
+        <section class="editorial-card editorial-profile-summary">
+          {author.cover?.asset?.url && (
+            <img
+              class="editorial-profile-summary__cover"
+              src={author.cover.asset.url}
+              alt={author.cover.alt || ''}
+              width="1180"
+              height="420"
+              data-editor-cover-preview
+            />
+          )}
+
+          <div class="editorial-profile-summary__body">
+            <div class="editorial-profile-summary__avatar">
+              {author.image?.asset?.url ? (
+                <img
+                  src={author.image.asset.url}
+                  alt={author.image.alt || ''}
+                  width="132"
+                  height="132"
+                  data-editor-avatar-preview
+                />
+              ) : (
+                <span aria-hidden="true">{author.name.slice(0, 1).toUpperCase()}</span>
+              )}
+            </div>
+
+            <div>
+              <p class="editorial-kicker">{copy.profileLabel}</p>
+              <h2>{sidebarName || author.name}</h2>
+              <p>{copy.completeness}: <strong data-editor-completeness>{author.completeness.label}</strong></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="editorial-card">
+          <div class="editorial-section-heading">
+            <p class="editorial-kicker">{copy.profileLabel}</p>
+            <h2>{copy.title}</h2>
+            <p>
+              {isEnglish
+                ? 'Only whitelisted public author fields are editable here.'
+                : 'Qui sono modificabili solo i campi pubblici autore esplicitamente consentiti.'}
+            </p>
+          </div>
+
+          <form class="editorial-form" data-editor-profile-form>
+            <input type="hidden" name="_rev" value={author._rev} data-editor-profile-rev />
+
+            <div class="editorial-form-grid">
+              <label>
+                <span>{copy.name}</span>
+                <input name="name" value={author.name} maxlength="120" required />
+              </label>
+
+              <label>
+                <span>{copy.nickname}</span>
+                <input name="nickname" value={author.nickname} maxlength="120" />
+              </label>
+
+              <label>
+                <span>{copy.displayName}</span>
+                <select name="displayName">
+                  <option value="real" selected={author.displayName !== 'nickname'}>{copy.displayNameReal}</option>
+                  <option value="nickname" selected={author.displayName === 'nickname'}>{copy.displayNameNickname}</option>
+                </select>
+              </label>
+
+              <label>
+                <span>{copy.website}</span>
+                <input name="website" type="url" value={author.website} placeholder="https://…" />
+              </label>
+            </div>
+
+            {author.bioEditable ? (
+              <label>
+                <span>{copy.bio}</span>
+                <textarea name="bioText" rows="8" maxlength="3000">{author.bioText}</textarea>
+              </label>
+            ) : (
+              <div class="editorial-readonly-field">
+                <span>{copy.bio}</span>
+                <p>{copy.richBioReadOnly}</p>
+                <pre>{author.bioText}</pre>
+              </div>
+            )}
+
+            {author.bioEnEditable ? (
+              <label>
+                <span>{copy.bioEn}</span>
+                <textarea name="bioEnText" rows="8" maxlength="3000">{author.bioEnText}</textarea>
+              </label>
+            ) : (
+              <div class="editorial-readonly-field">
+                <span>{copy.bioEn}</span>
+                <p>{copy.richBioReadOnly}</p>
+                <pre>{author.bioEnText}</pre>
+              </div>
+            )}
+
+            <div class="editorial-form-grid">
+              <label>
+                <span>{copy.facebook}</span>
+                <input name="facebook" type="url" value={author.facebook} placeholder="https://…" />
+              </label>
+              <label>
+                <span>{copy.twitter}</span>
+                <input name="twitter" type="url" value={author.twitter} placeholder="https://…" />
+              </label>
+              <label>
+                <span>{copy.tiktok}</span>
+                <input name="tiktok" type="url" value={author.tiktok} placeholder="https://…" />
+              </label>
+              <label>
+                <span>{copy.youtube}</span>
+                <input name="youtube" type="url" value={author.youtube} placeholder="https://…" />
+              </label>
+              <label>
+                <span>{copy.twitch}</span>
+                <input name="twitch" type="url" value={author.twitch} placeholder="https://…" />
+              </label>
+            </div>
+
+            <div class="editorial-form-grid">
+              <label>
+                <span>{copy.imageAlt}</span>
+                <input name="imageAlt" value={author.image?.alt || ''} maxlength="120" />
+              </label>
+              <label>
+                <span>{copy.coverAlt}</span>
+                <input name="coverAlt" value={author.cover?.alt || ''} maxlength="120" />
+              </label>
+            </div>
+
+            <div class="editorial-form-actions">
+              <button type="submit" class="editorial-button" data-editor-save-button>
+                {copy.save}
+              </button>
+              <a href={dashboardHref}>{copy.back}</a>
+            </div>
+
+            <p class="editorial-message" data-editor-profile-message hidden></p>
+          </form>
+        </section>
+
+        <section class="editorial-assets-grid">
+          <form class="editorial-card editorial-upload-card" data-editor-upload-form data-asset-type="avatar">
+            <div>
+              <p class="editorial-kicker">{copy.image}</p>
+              <h2>{copy.image}</h2>
+              <p>{copy.uploadHelpAvatar}</p>
+            </div>
+
+            <label class="editorial-dropzone" data-editor-dropzone>
+              <input type="file" name="file" accept="image/jpeg,image/png,image/webp" />
+              <span data-editor-drop-label>{copy.chooseFile}</span>
+            </label>
+
+            <button type="submit" class="editorial-button">{copy.upload}</button>
+            <p class="editorial-message" data-editor-upload-message hidden></p>
+          </form>
+
+          <form class="editorial-card editorial-upload-card" data-editor-upload-form data-asset-type="cover">
+            <div>
+              <p class="editorial-kicker">{copy.cover}</p>
+              <h2>{copy.cover}</h2>
+              <p>{copy.uploadHelpCover}</p>
+            </div>
+
+            <label class="editorial-dropzone" data-editor-dropzone>
+              <input type="file" name="file" accept="image/jpeg,image/png,image/webp" />
+              <span data-editor-drop-label>{copy.chooseFile}</span>
+            </label>
+
+            <button type="submit" class="editorial-button">{copy.upload}</button>
+            <p class="editorial-message" data-editor-upload-message hidden></p>
+          </form>
+        </section>
+
+        <section class="editorial-card">
+          <div class="editorial-section-heading">
+            <p class="editorial-kicker">{copy.readonlyData}</p>
+            <h2>{copy.readonlyData}</h2>
+          </div>
+
+          <dl class="editorial-definition-list editorial-definition-list--grid">
+            <div>
+              <dt>{copy.slug}</dt>
+              <dd>{author.slug || copy.notSet}</dd>
+            </div>
+            <div>
+              <dt>{copy.authorRole}</dt>
+              <dd>{author.role || copy.notSet}</dd>
+            </div>
+            <div>
+              <dt>{copy.mapping}</dt>
+              <dd><code>{author._id}</code></dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+    )}
+  </CommunityLayout>
+
+  <script is:inline>
+(() => {
+  const root = document.querySelector('[data-editor-profile-root]');
+
+  if (!root) return;
+
+  const isEnglish = root.dataset.lang === 'en';
+  const messages = isEnglish
+    ? {
+        saved: 'Profile updated.',
+        saving: 'Saving...',
+        uploading: 'Uploading...',
+        error: 'Unable to update the profile. Please try again.',
+        conflict: 'The author profile changed while you were editing. Reload the page and try again.',
+        richBioReadOnly: 'This biography contains formatting or links. Edit it from Sanity Studio to avoid losing them.',
+        invalidUrl: 'Use complete http or https URLs.',
+        invalidAlt: 'Alt text is required for uploads and must stay under 120 characters.',
+        invalidFile: 'Use a JPG, PNG or WebP image within the allowed size.',
+        chooseFile: 'Choose a file or drop it here',
+        dropFile: 'Drop the image here',
+      }
+    : {
+        saved: 'Profilo aggiornato.',
+        saving: 'Salvataggio...',
+        uploading: 'Caricamento...',
+        error: 'Non riesco ad aggiornare il profilo. Riprova.',
+        conflict: 'Il profilo autore è cambiato mentre lo stavi modificando. Ricarica la pagina e riprova.',
+        richBioReadOnly: 'Questa bio contiene formattazione o link. Modificala da Sanity Studio per evitare di perderli.',
+        invalidUrl: 'Usa URL completi con http o https.',
+        invalidAlt: 'L’alt text è richiesto per gli upload e deve restare sotto 120 caratteri.',
+        invalidFile: 'Usa un’immagine JPG, PNG o WebP entro la dimensione consentita.',
+        chooseFile: 'Scegli un file o trascinalo qui',
+        dropFile: 'Rilascia l’immagine qui',
+      };
+
+  const form = root.querySelector('[data-editor-profile-form]');
+  const revInput = root.querySelector('[data-editor-profile-rev]');
+  const saveButton = root.querySelector('[data-editor-save-button]');
+  const profileMessage = root.querySelector('[data-editor-profile-message]');
+  const completenessNode = root.querySelector('[data-editor-completeness]');
+  const selectedFiles = new WeakMap();
+
+  const setMessage = (node, text, tone = 'info') => {
+    if (!node) return;
+
+    node.textContent = text;
+    node.hidden = !text;
+    node.dataset.tone = tone;
+  };
+
+  const getErrorMessage = (error) => {
+    if (error === 'revision_conflict') return messages.conflict;
+    if (error === 'invalid_url') return messages.invalidUrl;
+    if (error === 'rich_bio_readonly') return messages.richBioReadOnly;
+    if (error === 'invalid_alt') return messages.invalidAlt;
+    if (error === 'invalid_file_type' || error === 'invalid_file_size' || error === 'missing_file') {
+      return messages.invalidFile;
+    }
+
+    return messages.error;
+  };
+
+  const updateAuthorState = (author) => {
+    if (!author) return;
+
+    if (revInput) {
+      revInput.value = author._rev || revInput.value;
+    }
+
+    root.querySelectorAll('[data-editor-profile-rev]').forEach((node) => {
+      node.value = author._rev || node.value;
+    });
+
+    if (completenessNode && author.completeness?.label) {
+      completenessNode.textContent = author.completeness.label;
+    }
+
+    const avatar = root.querySelector('[data-editor-avatar-preview]');
+    const cover = root.querySelector('[data-editor-cover-preview]');
+
+    if (avatar && author.image?.asset?.url) {
+      avatar.src = author.image.asset.url;
+      avatar.alt = author.image.alt || '';
+    }
+
+    if (cover && author.cover?.asset?.url) {
+      cover.src = author.cover.asset.url;
+      cover.alt = author.cover.alt || '';
+    }
+  };
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    setMessage(profileMessage, messages.saving);
+
+    if (saveButton) {
+      saveButton.disabled = true;
+    }
+
+    const payload = Object.fromEntries(new FormData(form).entries());
+
+    try {
+      const response = await fetch('/api/editor/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        setMessage(profileMessage, getErrorMessage(result?.error), 'error');
+        return;
+      }
+
+      updateAuthorState(result.author);
+      setMessage(profileMessage, messages.saved, 'success');
+    } catch {
+      setMessage(profileMessage, messages.error, 'error');
+    } finally {
+      if (saveButton) {
+        saveButton.disabled = false;
+      }
+    }
+  });
+
+  root.querySelectorAll('[data-editor-upload-form]').forEach((uploadForm) => {
+    const dropzone = uploadForm.querySelector('[data-editor-dropzone]');
+    const dropLabel = uploadForm.querySelector('[data-editor-drop-label]');
+    const fileInput = uploadForm.querySelector('input[type="file"]');
+    const submitButton = uploadForm.querySelector('button[type="submit"]');
+    const messageNode = uploadForm.querySelector('[data-editor-upload-message]');
+    const assetType = uploadForm.dataset.assetType === 'cover' ? 'cover' : 'avatar';
+
+    const setSelectedFile = (file) => {
+      if (!file) return;
+      selectedFiles.set(uploadForm, file);
+
+      if (dropLabel) {
+        dropLabel.textContent = file.name || messages.chooseFile;
+      }
+    };
+
+    fileInput?.addEventListener('change', () => {
+      setSelectedFile(fileInput.files?.[0]);
+    });
+
+    dropzone?.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      dropzone.dataset.dragActive = 'true';
+      if (dropLabel) {
+        dropLabel.textContent = messages.dropFile;
+      }
+    });
+
+    dropzone?.addEventListener('dragleave', () => {
+      dropzone.dataset.dragActive = 'false';
+      if (dropLabel && !selectedFiles.get(uploadForm)) {
+        dropLabel.textContent = messages.chooseFile;
+      }
+    });
+
+    dropzone?.addEventListener('drop', (event) => {
+      event.preventDefault();
+      dropzone.dataset.dragActive = 'false';
+      setSelectedFile(event.dataTransfer?.files?.[0]);
+    });
+
+    uploadForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setMessage(messageNode, messages.uploading);
+
+      const file = selectedFiles.get(uploadForm) || fileInput?.files?.[0];
+      const altInput = form?.querySelector(`[name="${assetType === 'cover' ? 'coverAlt' : 'imageAlt'}"]`);
+      const alt = String(altInput?.value || '').trim();
+
+      if (!file || !alt) {
+        setMessage(messageNode, !file ? messages.invalidFile : messages.invalidAlt, 'error');
+        return;
+      }
+
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+
+      const payload = new FormData();
+      payload.set('assetType', assetType);
+      payload.set('_rev', revInput?.value || '');
+      payload.set('alt', alt);
+      payload.set('file', file);
+
+      try {
+        const response = await fetch('/api/editor/assets', {
+          method: 'POST',
+          body: payload,
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          setMessage(messageNode, getErrorMessage(result?.error), 'error');
+          return;
+        }
+
+        updateAuthorState(result.author);
+        setMessage(messageNode, messages.saved, 'success');
+      } catch {
+        setMessage(messageNode, messages.error, 'error');
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+        }
+      }
+    });
+  });
+})();
+  </script>
+</BaseLayout>
