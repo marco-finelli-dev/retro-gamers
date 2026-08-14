@@ -16,7 +16,7 @@ import {
 } from '@portabletext/editor';
 import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
 import * as selectors from '@portabletext/editor/selectors';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { urlFor } from '../../lib/image';
 
@@ -307,6 +307,7 @@ type Labels = {
   removeImage: string;
   replaceImage: string;
   bodyImageDragHandle: string;
+  bodyImageMenu: string;
   bodyImageCurrent: string;
   bodyImageNew: string;
   bodyImageAlt: string;
@@ -608,6 +609,18 @@ function getImageDisplayModeLabel(mode: ImageDisplayMode, labels: Labels) {
   return labels.bodyImageDisplayCover;
 }
 
+function getBodyImageNaturalWidth(image: BodyImageBlock) {
+  const asset = image.asset;
+
+  if (asset && 'dimensions' in asset) {
+    const width = Number(asset.dimensions?.width);
+
+    return Number.isFinite(width) && width > 0 ? width : null;
+  }
+
+  return null;
+}
+
 function createBodyImageBlockValue({
   assetId,
   alt,
@@ -686,8 +699,37 @@ function ImageObjectBlock({
   const editor = useEditor();
   const image = node as BodyImageBlock;
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const previewUrl = getBodyImagePreviewUrl(image, 720, assetPreviewUrls);
   const displayMode = normalizeImageDisplayMode(image.displayMode, image.isWide);
+  const naturalWidth = getBodyImageNaturalWidth(image);
+  const previewMaxWidth = naturalWidth ? `min(${Math.min(naturalWidth, 720)}px, 100%)` : undefined;
+  const showDisplayMode = displayMode !== 'cover';
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isMenuOpen]);
 
   const applyImageUpdate = (value: Record<string, unknown>, resetCropHotspot = false) => {
     if (resetCropHotspot) {
@@ -713,6 +755,7 @@ function ImageObjectBlock({
       at: path,
     });
     editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
   };
 
   const selectImageBlock = () => {
@@ -720,6 +763,16 @@ function ImageObjectBlock({
       type: 'select.block',
       at: path,
     });
+  };
+
+  const startImageDrag = (event: DragEvent<HTMLElement>) => {
+    selectImageBlock();
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const openImageModal = () => {
+    setIsMenuOpen(false);
+    setIsModalOpen(true);
   };
 
   const removeImageBlock = () => {
@@ -730,6 +783,7 @@ function ImageObjectBlock({
       at: path,
     });
     editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
   };
 
   return (
@@ -742,41 +796,42 @@ function ImageObjectBlock({
     >
       {children}
       <div className="editorial-pte__image-content" contentEditable={false}>
-        <div className="editorial-pte__image-chrome" aria-label={labels.image}>
-          <span
-            className="editorial-pte__image-handle"
-            draggable={!readOnly}
-            title={labels.bodyImageDragHandle}
-            onMouseDown={selectImageBlock}
-            onDragStart={selectImageBlock}
-            aria-hidden="true"
+        <div className="editorial-pte__image-menu" ref={menuRef}>
+          <button
+            type="button"
+            className="editorial-pte__image-menu-button"
+            aria-label={labels.bodyImageMenu}
+            title={labels.bodyImageMenu}
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            onClick={() => setIsMenuOpen((value) => !value)}
           >
-            ⋮⋮
-          </span>
-          <div className="editorial-pte__image-move" aria-label={labels.image}>
-            <button
-              type="button"
-              className="editorial-mini-button editorial-mini-button--subtle"
-              onClick={() => moveImageBlock('up')}
-              aria-label={`${labels.moveUp}: ${labels.image}`}
-              title={labels.moveUp}
-            >
-              ↑
+            …
+          </button>
+          <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
+            <button type="button" role="menuitem" onClick={openImageModal}>
+              {labels.editImage}
             </button>
-            <button
-              type="button"
-              className="editorial-mini-button editorial-mini-button--subtle"
-              onClick={() => moveImageBlock('down')}
-              aria-label={`${labels.moveDown}: ${labels.image}`}
-              title={labels.moveDown}
-            >
-              ↓
+            <button type="button" role="menuitem" onClick={() => moveImageBlock('up')}>
+              {labels.moveUp}
+            </button>
+            <button type="button" role="menuitem" onClick={() => moveImageBlock('down')}>
+              {labels.moveDown}
+            </button>
+            <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeImageBlock}>
+              {labels.removeImage}
             </button>
           </div>
         </div>
 
-        <figure className="editorial-pte__image-figure">
-          <div className="editorial-pte__image-preview">
+        <figure
+          className="editorial-pte__image-figure"
+          draggable={!readOnly}
+          title={labels.bodyImageDragHandle}
+          onMouseDown={selectImageBlock}
+          onDragStart={startImageDrag}
+        >
+          <div className="editorial-pte__image-preview" style={previewMaxWidth ? { maxWidth: previewMaxWidth } : undefined}>
             {previewUrl ? (
               <img src={previewUrl} alt={image.alt || ''} loading="lazy" decoding="async" draggable={false} />
             ) : (
@@ -786,21 +841,13 @@ function ImageObjectBlock({
           {image.caption && <figcaption>{image.caption}</figcaption>}
         </figure>
 
-        <div className="editorial-pte__image-meta">
+        {showDisplayMode && (
+          <div className="editorial-pte__image-meta">
           <span className="editorial-pte__image-mode">
             {getImageDisplayModeLabel(displayMode, labels)}
           </span>
-          {!image.alt && <small>{labels.bodyImageAltWarning}</small>}
-        </div>
-
-        <div className="editorial-pte__image-actions">
-          <button type="button" className="editorial-mini-button" onClick={() => setIsModalOpen(true)}>
-            {labels.editImage}
-          </button>
-          <button type="button" className="editorial-mini-button editorial-mini-button--danger" onClick={removeImageBlock}>
-            {labels.removeImage}
-          </button>
-        </div>
+          </div>
+        )}
       </div>
 
       {isModalOpen && (
