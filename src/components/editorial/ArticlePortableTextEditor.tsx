@@ -16,7 +16,7 @@ import {
 } from '@portabletext/editor';
 import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
 import * as selectors from '@portabletext/editor/selectors';
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { urlFor } from '../../lib/image';
 
@@ -187,6 +187,8 @@ type Labels = {
   subtitle: string;
   content: string;
   sidebar: string;
+  settingsButton: string;
+  settingsButtonActive: string;
   closeSettings: string;
   mobileEditingNotice: string;
   backToArticles: string;
@@ -482,7 +484,18 @@ const schemaDefinition = defineSchema({
   lists: [{ name: 'bullet' }, { name: 'number' }],
   inlineObjects: [],
   blockObjects: [
-    { name: 'image' },
+    {
+      name: 'image',
+      fields: [
+        { name: 'asset', type: 'object' },
+        { name: 'crop', type: 'object' },
+        { name: 'hotspot', type: 'object' },
+        { name: 'alt', type: 'string' },
+        { name: 'caption', type: 'string' },
+        { name: 'displayMode', type: 'string' },
+        { name: 'isWide', type: 'boolean' },
+      ],
+    },
     { name: 'imageRow' },
     { name: 'video' },
     { name: 'asideBox' },
@@ -544,12 +557,19 @@ function getBodyImageAssetUrl(image: BodyImageBlock | null | undefined) {
   return '';
 }
 
-function getBodyImagePreviewUrl(image: BodyImageBlock | null | undefined, width = 980) {
+function getBodyImagePreviewUrl(
+  image: BodyImageBlock | null | undefined,
+  width = 980,
+  previewUrls: Record<string, string> = {}
+) {
+  const assetRef = getBodyImageAssetRef(image);
+
+  if (assetRef && previewUrls[assetRef]) return previewUrls[assetRef];
+
   const directUrl = getBodyImageAssetUrl(image);
 
   if (directUrl) return directUrl;
 
-  const assetRef = getBodyImageAssetRef(image);
   if (!assetRef) return '';
 
   try {
@@ -649,11 +669,22 @@ function getBodyImageMetadataLabel(image: BodyImageBlock | null | undefined, lab
   return assetRef ? assetRef : labels.featuredImageMetadataUnavailable;
 }
 
-function ImageObjectBlock({ attributes, children, node, path, focused, selected, labels, saveEndpoint }: any) {
+function ImageObjectBlock({
+  attributes,
+  children,
+  node,
+  path,
+  focused,
+  selected,
+  labels,
+  saveEndpoint,
+  assetPreviewUrls,
+  onAssetPreview,
+}: any) {
   const editor = useEditor();
   const image = node as BodyImageBlock;
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const previewUrl = getBodyImagePreviewUrl(image);
+  const previewUrl = getBodyImagePreviewUrl(image, 720, assetPreviewUrls);
   const displayMode = normalizeImageDisplayMode(image.displayMode, image.isWide);
   const assetRef = getBodyImageAssetRef(image);
 
@@ -675,6 +706,14 @@ function ImageObjectBlock({ attributes, children, node, path, focused, selected,
     setIsModalOpen(false);
   };
 
+  const moveImageBlock = (direction: 'up' | 'down') => {
+    editor.send({
+      type: direction === 'up' ? 'move.block up' : 'move.block down',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+  };
+
   const removeImageBlock = () => {
     if (!window.confirm(labels.bodyImageRemoveConfirm)) return;
 
@@ -694,6 +733,27 @@ function ImageObjectBlock({ attributes, children, node, path, focused, selected,
       data-selected={selected ? 'true' : undefined}
     >
       {children}
+      <div className="editorial-pte__image-move" aria-label={labels.image}>
+        <span className="editorial-pte__image-handle" aria-hidden="true">⋮⋮</span>
+        <button
+          type="button"
+          className="editorial-mini-button"
+          onClick={() => moveImageBlock('up')}
+          aria-label={`${labels.moveUp}: ${labels.image}`}
+          title={labels.moveUp}
+        >
+          ↑
+        </button>
+        <button
+          type="button"
+          className="editorial-mini-button"
+          onClick={() => moveImageBlock('down')}
+          aria-label={`${labels.moveDown}: ${labels.image}`}
+          title={labels.moveDown}
+        >
+          ↓
+        </button>
+      </div>
       <div className="editorial-pte__image-preview">
         {previewUrl ? (
           <img src={previewUrl} alt={image.alt || ''} loading="lazy" decoding="async" />
@@ -725,6 +785,8 @@ function ImageObjectBlock({ attributes, children, node, path, focused, selected,
           labels={labels}
           saveEndpoint={saveEndpoint}
           initialImage={image}
+          assetPreviewUrls={assetPreviewUrls}
+          onAssetPreview={onAssetPreview}
           onApply={applyImageUpdate}
           onClose={() => setIsModalOpen(false)}
         />
@@ -733,7 +795,16 @@ function ImageObjectBlock({ attributes, children, node, path, focused, selected,
   );
 }
 
-function ObjectBlock({ attributes, children, node, labels, saveEndpoint, ...props }: any) {
+function ObjectBlock({
+  attributes,
+  children,
+  node,
+  labels,
+  saveEndpoint,
+  assetPreviewUrls,
+  onAssetPreview,
+  ...props
+}: any) {
   const type = typeof node?._type === 'string' ? node._type : '';
 
   if (type === 'image') {
@@ -743,6 +814,8 @@ function ObjectBlock({ attributes, children, node, labels, saveEndpoint, ...prop
         labels={labels}
         node={node}
         saveEndpoint={saveEndpoint}
+        assetPreviewUrls={assetPreviewUrls}
+        onAssetPreview={onAssetPreview}
         {...props}
       >
         {children}
@@ -1078,6 +1151,8 @@ function BodyImageModal({
   labels,
   saveEndpoint,
   initialImage = null,
+  assetPreviewUrls = {},
+  onAssetPreview,
   onApply,
   onClose,
 }: {
@@ -1085,6 +1160,8 @@ function BodyImageModal({
   labels: Labels;
   saveEndpoint: string;
   initialImage?: BodyImageBlock | null;
+  assetPreviewUrls?: Record<string, string>;
+  onAssetPreview?: (assetId: string, url: string) => void;
   onApply: (value: Record<string, unknown>, resetCropHotspot?: boolean) => void;
   onClose: () => void;
 }) {
@@ -1103,7 +1180,7 @@ function BodyImageModal({
   const [displayMode, setDisplayMode] = useState<ImageDisplayMode>(
     normalizeImageDisplayMode(initialImage?.displayMode, initialImage?.isWide)
   );
-  const currentPreviewUrl = getBodyImagePreviewUrl(initialImage);
+  const currentPreviewUrl = getBodyImagePreviewUrl(initialImage, 720, assetPreviewUrls);
   const selectedMetadata = getSelectedBodyImageMetadataLabel(selectedFile);
   const currentMetadata = getBodyImageMetadataLabel(initialImage, labels);
   const title = mode === 'insert' ? labels.insertImage : labels.editImage;
@@ -1179,6 +1256,9 @@ function BodyImageModal({
       if (selectedFile) {
         const uploadedAsset = await uploadSelectedFile();
         assetId = uploadedAsset?.id || '';
+        if (assetId && uploadedAsset?.url) {
+          onAssetPreview?.(assetId, uploadedAsset.url);
+        }
         resetCropHotspot = Boolean(initialImage);
       }
 
@@ -1227,16 +1307,6 @@ function BodyImageModal({
           </div>
         )}
 
-        {selectedFile && (
-          <div className="editorial-local-preview editorial-local-preview--body-image">
-            <span>{labels.bodyImageNew}</span>
-            <div className="editorial-local-preview__frame editorial-local-preview__frame--body-image">
-              <img src={selectedFile.previewUrl} alt="" />
-            </div>
-            {selectedMetadata && <p className="editorial-file-meta">{selectedMetadata}</p>}
-          </div>
-        )}
-
         <label
           className="editorial-dropzone editorial-dropzone--body-image"
           data-drag-active={isDragActive ? 'true' : undefined}
@@ -1268,6 +1338,16 @@ function BodyImageModal({
         </label>
         <p className="editorial-file-meta">{labels.bodyImageFormats}</p>
 
+        {selectedFile && (
+          <div className="editorial-local-preview editorial-local-preview--body-image">
+            <span>{labels.bodyImageNew}</span>
+            <div className="editorial-local-preview__frame editorial-local-preview__frame--body-image">
+              <img src={selectedFile.previewUrl} alt="" />
+            </div>
+            {selectedMetadata && <p className="editorial-file-meta">{selectedMetadata}</p>}
+          </div>
+        )}
+
         <label className="editorial-field" htmlFor={altId}>
           <span>{labels.bodyImageAlt}</span>
           <AutoGrowTextField
@@ -1282,7 +1362,11 @@ function BodyImageModal({
           />
         </label>
         <CharacterCounter value={alt} max={120} warning={labels.cardExcerptWarning} />
-        {!alt.trim() && <p className="editorial-file-advice" data-tone="warning">{labels.bodyImageAltWarning}</p>}
+        {(selectedFile || initialImage) && !alt.trim() && (
+          <p className="editorial-file-advice editorial-file-advice--subtle-warning" data-tone="warning">
+            {labels.bodyImageAltWarning}
+          </p>
+        )}
 
         <label className="editorial-field" htmlFor={captionId}>
           <span>{labels.bodyImageCaption}</span>
@@ -1349,11 +1433,15 @@ function Toolbar({
   language,
   currentArticleId,
   saveEndpoint,
+  assetPreviewUrls,
+  onAssetPreview,
 }: {
   labels: Labels;
   language: ArticleLanguage;
   currentArticleId: string;
   saveEndpoint: string;
+  assetPreviewUrls: Record<string, string>;
+  onAssetPreview: (assetId: string, url: string) => void;
 }) {
   const editor = useEditor();
   const activeStyle = useEditorSelector(editor, selectors.getActiveStyle);
@@ -1745,6 +1833,8 @@ function Toolbar({
           mode="insert"
           labels={labels}
           saveEndpoint={saveEndpoint}
+          assetPreviewUrls={assetPreviewUrls}
+          onAssetPreview={onAssetPreview}
           onApply={insertImageBlock}
           onClose={closeImageModal}
         />
@@ -2531,27 +2621,68 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const [isFeaturedImageRemoving, setIsFeaturedImageRemoving] = useState(false);
   const [isFeaturedImageDragActive, setIsFeaturedImageDragActive] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
   const inspectorId = useId();
+  const rememberBodyImagePreview = useCallback((assetId: string, url: string) => {
+    if (!assetId || !url) return;
+
+    setBodyImagePreviewUrls((current) => ({
+      ...current,
+      [assetId]: url,
+    }));
+  }, []);
   const nodes = useMemo(
     () => [
       defineBlockObject({
         type: 'image',
-        render: (props) => <ObjectBlock {...props} labels={labels} saveEndpoint={saveEndpoint} />,
+        render: (props) => (
+          <ObjectBlock
+            {...props}
+            labels={labels}
+            saveEndpoint={saveEndpoint}
+            assetPreviewUrls={bodyImagePreviewUrls}
+            onAssetPreview={rememberBodyImagePreview}
+          />
+        ),
       }),
       defineBlockObject({
         type: 'imageRow',
-        render: (props) => <ObjectBlock {...props} labels={labels} saveEndpoint={saveEndpoint} />,
+        render: (props) => (
+          <ObjectBlock
+            {...props}
+            labels={labels}
+            saveEndpoint={saveEndpoint}
+            assetPreviewUrls={bodyImagePreviewUrls}
+            onAssetPreview={rememberBodyImagePreview}
+          />
+        ),
       }),
       defineBlockObject({
         type: 'video',
-        render: (props) => <ObjectBlock {...props} labels={labels} saveEndpoint={saveEndpoint} />,
+        render: (props) => (
+          <ObjectBlock
+            {...props}
+            labels={labels}
+            saveEndpoint={saveEndpoint}
+            assetPreviewUrls={bodyImagePreviewUrls}
+            onAssetPreview={rememberBodyImagePreview}
+          />
+        ),
       }),
       defineBlockObject({
         type: 'asideBox',
-        render: (props) => <ObjectBlock {...props} labels={labels} saveEndpoint={saveEndpoint} />,
+        render: (props) => (
+          <ObjectBlock
+            {...props}
+            labels={labels}
+            saveEndpoint={saveEndpoint}
+            assetPreviewUrls={bodyImagePreviewUrls}
+            onAssetPreview={rememberBodyImagePreview}
+          />
+        ),
       }),
     ],
-    [labels, saveEndpoint]
+    [bodyImagePreviewUrls, labels, rememberBodyImagePreview, saveEndpoint]
   );
   const mediaFormatSelectOptions = useMemo<MultiSelectOption<MediaFormat>[]>(
     () => mediaFormatOptions.map((format) => ({
@@ -2887,9 +3018,10 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
             type="button"
             aria-expanded={isInspectorOpen}
             aria-controls={inspectorId}
+            data-active={isInspectorOpen ? 'true' : undefined}
             onClick={() => setIsInspectorOpen(true)}
           >
-            ⚙ {labels.sidebar}
+            ⚙ {isInspectorOpen ? labels.settingsButtonActive : labels.settingsButton}
           </button>
           <button className="editorial-button" type="button" onClick={saveArticle} disabled={isSaving}>
             {isSaving ? labels.saving : labels.save}
@@ -2946,6 +3078,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 language={draft.language}
                 currentArticleId={getRootArticleId(draft._id)}
                 saveEndpoint={saveEndpoint}
+                assetPreviewUrls={bodyImagePreviewUrls}
+                onAssetPreview={rememberBodyImagePreview}
               />
               <PortableTextEditable
                 className="editorial-pte"
