@@ -107,6 +107,19 @@ export type EditorialArticleFeaturedImageAsset = {
   };
 };
 
+export type EditorialArticleBodyImageAsset = {
+  id: string;
+  url: string;
+  originalFilename: string;
+  mimeType: string;
+  size: number | null;
+  dimensions: {
+    width: number | null;
+    height: number | null;
+    aspectRatio: number | null;
+  } | null;
+};
+
 export type EditorialArticleFeaturedImage = {
   _type: 'image';
   alt: string;
@@ -259,6 +272,8 @@ const editorialArticleReferenceKindConfig: Record<
 };
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const featuredImageMaxFileSize = 5 * 1024 * 1024;
+const allowedBodyImageMimeTypes = allowedFeaturedImageMimeTypes;
+const bodyImageMaxFileSize = featuredImageMaxFileSize;
 const validPageLinkPaths = new Set([
   '/',
   '/en/',
@@ -2220,6 +2235,31 @@ function getSafeFeaturedImageFilename(file: File) {
   return `editorial-article-featured-${Date.now()}.${extension}`;
 }
 
+function getSafeBodyImageFilename(file: File) {
+  const extension = file.type === 'image/png'
+    ? 'png'
+    : file.type === 'image/webp'
+      ? 'webp'
+      : 'jpg';
+
+  return `editorial-article-body-${Date.now()}.${extension}`;
+}
+
+function toBodyImageAssetDto(asset: Record<string, unknown>): EditorialArticleBodyImageAsset | null {
+  const normalized = normalizeAssetDocument(asset);
+
+  if (!normalized?._id || !normalized.url) return null;
+
+  return {
+    id: normalized._id,
+    url: normalized.url,
+    originalFilename: normalized.originalFilename,
+    mimeType: normalized.mimeType,
+    size: normalized.size,
+    dimensions: normalized.metadata.dimensions,
+  };
+}
+
 function getFeaturedImageAltFromFormData(
   formData: FormData,
   currentArticle: EditorialArticleDraft
@@ -2265,6 +2305,60 @@ function logFeaturedImageResult({
     resultRevision: resultRevision || null,
     failureCode,
   });
+}
+
+export async function uploadEditorialArticleBodyImageAsset({
+  context,
+  rootDocumentId,
+  formData,
+}: {
+  context: EditableEditorialContext;
+  rootDocumentId: unknown;
+  formData: FormData;
+}) {
+  const fetchResult = await fetchEditableEditorialArticle({ context, rootDocumentId });
+
+  if (!fetchResult.ok) return fetchResult;
+
+  const file = formData.get('file');
+
+  if (!isUploadFile(file)) {
+    return { ok: false as const, status: 400, error: 'missing_file' };
+  }
+
+  if (!allowedBodyImageMimeTypes.has(file.type)) {
+    return { ok: false as const, status: 400, error: 'invalid_file_type' };
+  }
+
+  if (file.size <= 0 || file.size > bodyImageMaxFileSize) {
+    return { ok: false as const, status: 400, error: 'invalid_file_size' };
+  }
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const asset = await getSanityWriteClient().assets.upload(
+      'image',
+      Buffer.from(arrayBuffer),
+      {
+        filename: getSafeBodyImageFilename(file),
+        contentType: file.type,
+      }
+    );
+    const assetDto = toBodyImageAssetDto(asset as Record<string, unknown>);
+
+    if (!assetDto) {
+      return { ok: false as const, status: 502, error: 'sanity_asset_invalid' };
+    }
+
+    return {
+      ok: true as const,
+      asset: assetDto,
+    };
+  } catch (error) {
+    logApiError('editorial-article.body-image.upload', error);
+
+    return { ok: false as const, status: 500, error: 'body_image_upload_failed' };
+  }
 }
 
 export async function updateEditorialArticleFeaturedImage({

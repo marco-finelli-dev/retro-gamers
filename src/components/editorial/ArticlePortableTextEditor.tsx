@@ -18,6 +18,7 @@ import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
 import * as selectors from '@portabletext/editor/selectors';
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { urlFor } from '../../lib/image';
 
 type ArticleType =
   | 'review'
@@ -63,6 +64,36 @@ type ReferenceAnnotationName =
   | 'companyLink'
   | 'taxonomyLink';
 type AnnotationName = ReferenceAnnotationName | 'pageLink';
+type ImageDisplayMode = 'cover' | 'contain' | 'wide' | 'natural';
+
+type BodyImageAssetReference = {
+  _type?: 'reference';
+  _ref?: string;
+};
+
+type BodyImageBlock = PortableTextObject & {
+  _type: 'image';
+  asset?: BodyImageAssetReference | EditableArticleBodyImageAsset | null;
+  crop?: Record<string, unknown>;
+  hotspot?: Record<string, unknown>;
+  alt?: string;
+  caption?: string;
+  displayMode?: string;
+  isWide?: boolean;
+};
+
+type EditableArticleBodyImageAsset = {
+  id: string;
+  url: string;
+  originalFilename: string;
+  mimeType: string;
+  size: number | null;
+  dimensions: {
+    width: number | null;
+    height: number | null;
+    aspectRatio: number | null;
+  } | null;
+};
 
 type EditableArticleReference = {
   id: string;
@@ -156,6 +187,8 @@ type Labels = {
   subtitle: string;
   content: string;
   sidebar: string;
+  closeSettings: string;
+  mobileEditingNotice: string;
   backToArticles: string;
   draftStatus: string;
   inspectorArticle: string;
@@ -266,6 +299,32 @@ type Labels = {
   companyLink: string;
   taxonomyLink: string;
   pageLink: string;
+  insertImage: string;
+  editImage: string;
+  updateImage: string;
+  removeImage: string;
+  replaceImage: string;
+  bodyImageCurrent: string;
+  bodyImageNew: string;
+  bodyImageAlt: string;
+  bodyImageAltWarning: string;
+  bodyImageCaption: string;
+  bodyImageDisplayMode: string;
+  bodyImageDisplayCover: string;
+  bodyImageDisplayContain: string;
+  bodyImageDisplayWide: string;
+  bodyImageDisplayNatural: string;
+  bodyImageFormats: string;
+  bodyImageChooseFile: string;
+  bodyImageDropFile: string;
+  bodyImageReady: string;
+  bodyImageUploading: string;
+  bodyImageUploadFailed: string;
+  bodyImageMissingFile: string;
+  bodyImageCancelSelection: string;
+  bodyImageNoPreview: string;
+  bodyImageRemoveConfirm: string;
+  bodyImageOrphanNotice: string;
   annotationCurrentTarget: string;
   annotationRemove: string;
   annotationClose: string;
@@ -319,6 +378,7 @@ const ratingSelectValues = Array.from({ length: 19 }, (_, index) => 1 + index * 
 const releaseYearSelectValues = Array.from({ length: 91 }, (_, index) => 2050 - index);
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const featuredImageMaxFileSize = 5 * 1024 * 1024;
+const imageDisplayModes: ImageDisplayMode[] = ['cover', 'contain', 'wide', 'natural'];
 const referenceAnnotationControls: Array<{
   name: ReferenceAnnotationName;
   icon: string;
@@ -463,8 +523,232 @@ function getObjectLabel(type: string, labels: Labels) {
   return labels.unsupportedObject;
 }
 
-function ObjectBlock({ attributes, children, node, labels }: any) {
+function getBodyImageAssetRef(image: BodyImageBlock | null | undefined) {
+  const asset = image?.asset;
+
+  if (!asset || typeof asset !== 'object') return '';
+
+  if ('_ref' in asset && typeof asset._ref === 'string') return asset._ref;
+  if ('id' in asset && typeof asset.id === 'string') return asset.id;
+
+  return '';
+}
+
+function getBodyImageAssetUrl(image: BodyImageBlock | null | undefined) {
+  const asset = image?.asset;
+
+  if (asset && typeof asset === 'object' && 'url' in asset && typeof asset.url === 'string') {
+    return asset.url;
+  }
+
+  return '';
+}
+
+function getBodyImagePreviewUrl(image: BodyImageBlock | null | undefined, width = 980) {
+  const directUrl = getBodyImageAssetUrl(image);
+
+  if (directUrl) return directUrl;
+
+  const assetRef = getBodyImageAssetRef(image);
+  if (!assetRef) return '';
+
+  try {
+    return urlFor({
+      _type: 'image',
+      asset: {
+        _type: 'reference',
+        _ref: assetRef,
+      },
+      ...(image?.crop ? { crop: image.crop } : {}),
+      ...(image?.hotspot ? { hotspot: image.hotspot } : {}),
+    })
+      .width(width)
+      .quality(76)
+      .auto('format')
+      .url();
+  } catch {
+    return '';
+  }
+}
+
+function normalizeImageDisplayMode(value: unknown, isWide?: boolean): ImageDisplayMode {
+  return imageDisplayModes.includes(value as ImageDisplayMode)
+    ? value as ImageDisplayMode
+    : isWide
+      ? 'wide'
+      : 'cover';
+}
+
+function getImageDisplayModeLabel(mode: ImageDisplayMode, labels: Labels) {
+  if (mode === 'contain') return labels.bodyImageDisplayContain;
+  if (mode === 'wide') return labels.bodyImageDisplayWide;
+  if (mode === 'natural') return labels.bodyImageDisplayNatural;
+
+  return labels.bodyImageDisplayCover;
+}
+
+function createBodyImageBlockValue({
+  assetId,
+  alt,
+  caption,
+  displayMode,
+}: {
+  assetId: string;
+  alt: string;
+  caption: string;
+  displayMode: ImageDisplayMode;
+}) {
+  return {
+    asset: {
+      _type: 'reference',
+      _ref: assetId,
+    },
+    alt: normalizeSingleLineValue(alt, 'space').slice(0, 120).trim(),
+    caption: normalizeSingleLineValue(caption, 'space').slice(0, 500).trim(),
+    displayMode,
+  };
+}
+
+function getBodyImageUploadEndpoint(saveEndpoint: string) {
+  return `${saveEndpoint.replace(/\/$/, '')}/assets/image`;
+}
+
+function getBodyImageMetadataLabel(image: BodyImageBlock | null | undefined, labels: Labels) {
+  const asset = image?.asset;
+
+  if (!asset || typeof asset !== 'object') return labels.featuredImageMetadataUnavailable;
+
+  if ('dimensions' in asset) {
+    const bodyAsset = asset as EditableArticleBodyImageAsset;
+    const parts = [
+      bodyAsset.dimensions?.width && bodyAsset.dimensions?.height
+        ? `${bodyAsset.dimensions.width} × ${bodyAsset.dimensions.height}px`
+        : '',
+      formatFileSize(bodyAsset.size),
+      bodyAsset.mimeType,
+    ].filter(Boolean);
+
+    if (parts.length > 0) return parts.join(' · ');
+  }
+
+  if ('metadata' in asset) {
+    const featuredAsset = asset as EditableArticleFeaturedImageAsset;
+    const parts = [
+      featuredAsset.metadata.dimensions?.width && featuredAsset.metadata.dimensions?.height
+        ? `${featuredAsset.metadata.dimensions.width} × ${featuredAsset.metadata.dimensions.height}px`
+        : '',
+      formatFileSize(featuredAsset.size),
+      featuredAsset.mimeType,
+    ].filter(Boolean);
+
+    if (parts.length > 0) return parts.join(' · ');
+  }
+
+  const assetRef = getBodyImageAssetRef(image);
+
+  return assetRef ? assetRef : labels.featuredImageMetadataUnavailable;
+}
+
+function ImageObjectBlock({ attributes, children, node, path, focused, selected, labels, saveEndpoint }: any) {
+  const editor = useEditor();
+  const image = node as BodyImageBlock;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const previewUrl = getBodyImagePreviewUrl(image);
+  const displayMode = normalizeImageDisplayMode(image.displayMode, image.isWide);
+  const assetRef = getBodyImageAssetRef(image);
+
+  const applyImageUpdate = (value: Record<string, unknown>, resetCropHotspot = false) => {
+    if (resetCropHotspot) {
+      editor.send({
+        type: 'block.unset',
+        at: path,
+        props: ['crop', 'hotspot'],
+      });
+    }
+
+    editor.send({
+      type: 'block.set',
+      at: path,
+      props: value,
+    });
+    editor.send({ type: 'focus' });
+    setIsModalOpen(false);
+  };
+
+  const removeImageBlock = () => {
+    if (!window.confirm(labels.bodyImageRemoveConfirm)) return;
+
+    editor.send({
+      type: 'delete.block',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+  };
+
+  return (
+    <div
+      {...attributes}
+      className="editorial-pte__object editorial-pte__image-object"
+      contentEditable={false}
+      data-focused={focused ? 'true' : undefined}
+      data-selected={selected ? 'true' : undefined}
+    >
+      {children}
+      <div className="editorial-pte__image-preview">
+        {previewUrl ? (
+          <img src={previewUrl} alt={image.alt || ''} loading="lazy" decoding="async" />
+        ) : (
+          <div className="editorial-current-media__placeholder">{labels.bodyImageNoPreview}</div>
+        )}
+      </div>
+      <div className="editorial-pte__image-meta">
+        <strong>{labels.image}</strong>
+        <span>
+          {getImageDisplayModeLabel(displayMode, labels)}
+          {assetRef ? ` · ${assetRef}` : ''}
+        </span>
+        {image.caption && <p>{image.caption}</p>}
+        {!image.alt && <small>{labels.bodyImageAltWarning}</small>}
+      </div>
+      <div className="editorial-pte__image-actions">
+        <button type="button" className="editorial-mini-button" onClick={() => setIsModalOpen(true)}>
+          {labels.editImage}
+        </button>
+        <button type="button" className="editorial-mini-button editorial-mini-button--danger" onClick={removeImageBlock}>
+          {labels.removeImage}
+        </button>
+      </div>
+
+      {isModalOpen && (
+        <BodyImageModal
+          mode="edit"
+          labels={labels}
+          saveEndpoint={saveEndpoint}
+          initialImage={image}
+          onApply={applyImageUpdate}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function ObjectBlock({ attributes, children, node, labels, saveEndpoint, ...props }: any) {
   const type = typeof node?._type === 'string' ? node._type : '';
+
+  if (type === 'image') {
+    return (
+      <ImageObjectBlock
+        attributes={attributes}
+        labels={labels}
+        node={node}
+        saveEndpoint={saveEndpoint}
+        {...props}
+      >
+        {children}
+      </ImageObjectBlock>
+    );
+  }
 
   return (
     <div {...attributes} className="editorial-pte__object" contentEditable={false}>
@@ -691,11 +975,13 @@ function AnnotationModal({
   labels,
   children,
   onClose,
+  panelClassName = '',
 }: {
   title: string;
   labels: Labels;
   children: ReactNode;
   onClose: () => void;
+  panelClassName?: string;
 }) {
   const titleId = useId();
 
@@ -726,7 +1012,7 @@ function AnnotationModal({
       }}
     >
       <div
-        className="editorial-pte-modal__panel"
+        className={`editorial-pte-modal__panel${panelClassName ? ` ${panelClassName}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -754,14 +1040,320 @@ function AnnotationModal({
   );
 }
 
+type SelectedBodyImageFile = {
+  file: File;
+  previewUrl: string;
+  width: number | null;
+  height: number | null;
+};
+
+function getBodyImageFileValidationError(file: File | null | undefined, labels: Labels) {
+  if (!file) return labels.bodyImageMissingFile;
+
+  if (!allowedFeaturedImageMimeTypes.has(file.type)) {
+    return labels.featuredImageInvalidType;
+  }
+
+  if (file.size <= 0 || file.size > featuredImageMaxFileSize) {
+    return labels.featuredImageInvalidSize;
+  }
+
+  return '';
+}
+
+function getSelectedBodyImageMetadataLabel(selection: SelectedBodyImageFile | null) {
+  if (!selection) return '';
+
+  const parts = [
+    selection.width && selection.height ? `${selection.width} × ${selection.height}px` : '',
+    formatFileSize(selection.file.size),
+    selection.file.type,
+  ].filter(Boolean);
+
+  return parts.join(' · ');
+}
+
+function BodyImageModal({
+  mode,
+  labels,
+  saveEndpoint,
+  initialImage = null,
+  onApply,
+  onClose,
+}: {
+  mode: 'insert' | 'edit';
+  labels: Labels;
+  saveEndpoint: string;
+  initialImage?: BodyImageBlock | null;
+  onApply: (value: Record<string, unknown>, resetCropHotspot?: boolean) => void;
+  onClose: () => void;
+}) {
+  const fileInputId = useId();
+  const altId = useId();
+  const captionId = useId();
+  const displayModeId = useId();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedFile, setSelectedFile] = useState<SelectedBodyImageFile | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [status, setStatus] = useState('');
+  const [statusTone, setStatusTone] = useState<'success' | 'error' | ''>('');
+  const [alt, setAlt] = useState(initialImage?.alt || '');
+  const [caption, setCaption] = useState(initialImage?.caption || '');
+  const [displayMode, setDisplayMode] = useState<ImageDisplayMode>(
+    normalizeImageDisplayMode(initialImage?.displayMode, initialImage?.isWide)
+  );
+  const currentPreviewUrl = getBodyImagePreviewUrl(initialImage);
+  const selectedMetadata = getSelectedBodyImageMetadataLabel(selectedFile);
+  const currentMetadata = getBodyImageMetadataLabel(initialImage, labels);
+  const title = mode === 'insert' ? labels.insertImage : labels.editImage;
+  const submitLabel = mode === 'insert' ? labels.insertImage : labels.updateImage;
+
+  useEffect(() => () => {
+    if (selectedFile?.previewUrl) {
+      URL.revokeObjectURL(selectedFile.previewUrl);
+    }
+  }, [selectedFile]);
+
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setStatus('');
+    setStatusTone('');
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const selectFile = async (file: File | null | undefined) => {
+    const error = getBodyImageFileValidationError(file, labels);
+
+    if (error || !file) {
+      setStatus(error);
+      setStatusTone('error');
+      return;
+    }
+
+    const dimensions = await getImageDimensions(file);
+
+    setSelectedFile({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      width: dimensions.width,
+      height: dimensions.height,
+    });
+    setStatus(labels.bodyImageReady);
+    setStatusTone('success');
+  };
+
+  const uploadSelectedFile = async () => {
+    if (!selectedFile) return null;
+
+    const formData = new FormData();
+    formData.set('file', selectedFile.file);
+
+    const response = await fetch(getBodyImageUploadEndpoint(saveEndpoint), {
+      method: 'POST',
+      body: formData,
+    });
+    const result = await response.json();
+
+    if (!response.ok || !result?.ok || !result.asset?.id) {
+      throw new Error(result?.error || 'body_image_upload_failed');
+    }
+
+    return result.asset as EditableArticleBodyImageAsset;
+  };
+
+  const applyImage = async () => {
+    if (isUploading) return;
+
+    let assetId = getBodyImageAssetRef(initialImage);
+    let resetCropHotspot = false;
+
+    setIsUploading(true);
+    setStatus(selectedFile ? labels.bodyImageUploading : '');
+    setStatusTone('');
+
+    try {
+      if (selectedFile) {
+        const uploadedAsset = await uploadSelectedFile();
+        assetId = uploadedAsset?.id || '';
+        resetCropHotspot = Boolean(initialImage);
+      }
+
+      if (!assetId) {
+        setStatus(labels.bodyImageMissingFile);
+        setStatusTone('error');
+        return;
+      }
+
+      onApply(
+        createBodyImageBlockValue({
+          assetId,
+          alt,
+          caption,
+          displayMode,
+        }),
+        resetCropHotspot
+      );
+    } catch {
+      setStatus(labels.bodyImageUploadFailed);
+      setStatusTone('error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <AnnotationModal
+      title={`🖼️ ${title}`}
+      labels={labels}
+      onClose={onClose}
+      panelClassName="editorial-pte-modal__panel--image"
+    >
+      <div className="editorial-body-image-modal">
+        {mode === 'edit' && (
+          <div className="editorial-current-media editorial-current-media--body-image">
+            <span>{labels.bodyImageCurrent}</span>
+            <div className="editorial-current-media__frame editorial-current-media__frame--body-image">
+              {currentPreviewUrl ? (
+                <img src={currentPreviewUrl} alt={initialImage?.alt || ''} loading="lazy" decoding="async" />
+              ) : (
+                <div className="editorial-current-media__placeholder">{labels.bodyImageNoPreview}</div>
+              )}
+            </div>
+            <p className="editorial-file-meta">{currentMetadata}</p>
+          </div>
+        )}
+
+        {selectedFile && (
+          <div className="editorial-local-preview editorial-local-preview--body-image">
+            <span>{labels.bodyImageNew}</span>
+            <div className="editorial-local-preview__frame editorial-local-preview__frame--body-image">
+              <img src={selectedFile.previewUrl} alt="" />
+            </div>
+            {selectedMetadata && <p className="editorial-file-meta">{selectedMetadata}</p>}
+          </div>
+        )}
+
+        <label
+          className="editorial-dropzone editorial-dropzone--body-image"
+          data-drag-active={isDragActive ? 'true' : undefined}
+          htmlFor={fileInputId}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            setIsDragActive(true);
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragActive(true);
+          }}
+          onDragLeave={() => setIsDragActive(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragActive(false);
+            void selectFile(event.dataTransfer.files?.[0]);
+          }}
+        >
+          <span>{mode === 'edit' ? labels.replaceImage : labels.bodyImageChooseFile}</span>
+          <small>{labels.bodyImageDropFile}</small>
+          <input
+            ref={fileInputRef}
+            id={fileInputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) => void selectFile(event.currentTarget.files?.[0])}
+          />
+        </label>
+        <p className="editorial-file-meta">{labels.bodyImageFormats}</p>
+
+        <label className="editorial-field" htmlFor={altId}>
+          <span>{labels.bodyImageAlt}</span>
+          <AutoGrowTextField
+            id={altId}
+            value={alt}
+            rows={2}
+            maxRows={4}
+            maxLength={120}
+            ariaLabel={labels.bodyImageAlt}
+            singleLine
+            onChange={setAlt}
+          />
+        </label>
+        <CharacterCounter value={alt} max={120} warning={labels.cardExcerptWarning} />
+        {!alt.trim() && <p className="editorial-file-advice" data-tone="warning">{labels.bodyImageAltWarning}</p>}
+
+        <label className="editorial-field" htmlFor={captionId}>
+          <span>{labels.bodyImageCaption}</span>
+          <AutoGrowTextField
+            id={captionId}
+            value={caption}
+            rows={2}
+            maxRows={4}
+            maxLength={500}
+            ariaLabel={labels.bodyImageCaption}
+            singleLine
+            onChange={setCaption}
+          />
+        </label>
+
+        <label className="editorial-field" htmlFor={displayModeId}>
+          <span>{labels.bodyImageDisplayMode}</span>
+          <select
+            id={displayModeId}
+            value={displayMode}
+            onChange={(event) => setDisplayMode(normalizeImageDisplayMode(event.target.value))}
+          >
+            {imageDisplayModes.map((modeOption) => (
+              <option key={modeOption} value={modeOption}>
+                {getImageDisplayModeLabel(modeOption, labels)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <p className="editorial-file-meta">{labels.bodyImageOrphanNotice}</p>
+
+        {status && (
+          <p className="editorial-file-advice" data-tone={statusTone || undefined} aria-live="polite">
+            {status}
+          </p>
+        )}
+
+        <div className="editorial-body-image-modal__actions">
+          {selectedFile && (
+            <button type="button" className="editorial-mini-button" onClick={clearSelectedFile} disabled={isUploading}>
+              {labels.bodyImageCancelSelection}
+            </button>
+          )}
+          <button type="button" className="editorial-mini-button" onClick={onClose} disabled={isUploading}>
+            {labels.annotationClose}
+          </button>
+          <button
+            type="button"
+            className="editorial-button editorial-body-image-modal__submit"
+            onClick={applyImage}
+            disabled={isUploading || (mode === 'insert' && !selectedFile)}
+          >
+            {isUploading ? labels.bodyImageUploading : submitLabel}
+          </button>
+        </div>
+      </div>
+    </AnnotationModal>
+  );
+}
+
 function Toolbar({
   labels,
   language,
   currentArticleId,
+  saveEndpoint,
 }: {
   labels: Labels;
   language: ArticleLanguage;
   currentArticleId: string;
+  saveEndpoint: string;
 }) {
   const editor = useEditor();
   const activeStyle = useEditorSelector(editor, selectors.getActiveStyle);
@@ -780,6 +1372,10 @@ function Toolbar({
     activePath: AnnotationPath | null;
     selection: EditorSelection;
     hasTextSelection: boolean;
+    trigger: HTMLButtonElement | null;
+  } | null>(null);
+  const [imageModal, setImageModal] = useState<{
+    selection: EditorSelection;
     trigger: HTMLButtonElement | null;
   } | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
@@ -872,6 +1468,35 @@ function Toolbar({
       },
     });
     setAnnotationModal(null);
+  };
+  const openImageModal = (trigger: HTMLButtonElement) => {
+    setImageModal({
+      selection,
+      trigger,
+    });
+  };
+  const closeImageModal = () => {
+    const trigger = imageModal?.trigger;
+    setImageModal(null);
+
+    window.setTimeout(() => {
+      trigger?.focus();
+    }, 0);
+  };
+  const insertImageBlock = (value: Record<string, unknown>) => {
+    if (!imageModal) return;
+
+    restoreSelection(imageModal.selection);
+    editor.send({
+      type: 'insert.block object',
+      placement: 'after',
+      blockObject: {
+        name: 'image',
+        value,
+      },
+    });
+    editor.send({ type: 'focus' });
+    setImageModal(null);
   };
 
   const addExternalLink = () => {
@@ -1066,6 +1691,26 @@ function Toolbar({
         })()}
       </div>
 
+      <div className="editorial-pte-toolbar__group" role="group" aria-label={labels.insertImage}>
+        <button
+          className="editorial-pte-toolbar__button"
+          type="button"
+          aria-label={labels.insertImage}
+          aria-expanded={Boolean(imageModal)}
+          title={labels.insertImage}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={(event) => {
+            if (imageModal) {
+              closeImageModal();
+            } else {
+              openImageModal(event.currentTarget);
+            }
+          }}
+        >
+          <span className="editorial-pte-toolbar__emoji" aria-hidden="true">🖼️</span>
+        </button>
+      </div>
+
       {annotationModal && (
         <AnnotationModal
           title={`${getAnnotationIcon(annotationModal.annotationName)} ${getAnnotationLabel(annotationModal.annotationName, labels)}`}
@@ -1093,6 +1738,16 @@ function Toolbar({
             />
           )}
         </AnnotationModal>
+      )}
+
+      {imageModal && (
+        <BodyImageModal
+          mode="insert"
+          labels={labels}
+          saveEndpoint={saveEndpoint}
+          onApply={insertImageBlock}
+          onClose={closeImageModal}
+        />
       )}
     </div>
   );
@@ -1151,6 +1806,135 @@ function CharacterCounter({
       {count} / {max}
       {isWarning ? ` · ${warning}` : ''}
     </p>
+  );
+}
+
+function normalizeSingleLineValue(value: string, newlineReplacement: 'space' | 'remove') {
+  const replacement = newlineReplacement === 'space' ? ' ' : '';
+
+  return value.replace(/[\r\n]+/g, replacement);
+}
+
+function AutoGrowTextField({
+  id,
+  value,
+  onChange,
+  rows = 2,
+  maxRows = 6,
+  maxLength,
+  ariaLabel,
+  placeholder,
+  singleLine = false,
+  newlineReplacement = 'space',
+  className = '',
+}: {
+  id?: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+  maxRows?: number;
+  maxLength?: number;
+  ariaLabel?: string;
+  placeholder?: string;
+  singleLine?: boolean;
+  newlineReplacement?: 'space' | 'remove';
+  className?: string;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = 'auto';
+
+    const styles = window.getComputedStyle(textarea);
+    const lineHeight = Number.parseFloat(styles.lineHeight) || 24;
+    const verticalChrome = textarea.offsetHeight - textarea.clientHeight;
+    const maxHeight = (lineHeight * maxRows) + verticalChrome;
+    const nextHeight = Math.min(textarea.scrollHeight, maxHeight);
+
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }, [maxRows, value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      id={id}
+      className={`editorial-autogrow-field${className ? ` ${className}` : ''}`}
+      value={value}
+      rows={rows}
+      maxLength={maxLength}
+      aria-label={ariaLabel}
+      placeholder={placeholder}
+      onKeyDown={(event) => {
+        if (singleLine && event.key === 'Enter') {
+          event.preventDefault();
+        }
+      }}
+      onChange={(event) => {
+        const nextValue = singleLine
+          ? normalizeSingleLineValue(event.target.value, newlineReplacement)
+          : event.target.value;
+
+        onChange(nextValue);
+      }}
+    />
+  );
+}
+
+function ArticleSettingsDrawer({
+  id,
+  title,
+  closeLabel,
+  children,
+  onClose,
+}: {
+  id: string;
+  title: string;
+  closeLabel: string;
+  children: ReactNode;
+  onClose: () => void;
+}) {
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="editorial-article-editor__drawer"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <aside
+        className="editorial-article-editor__inspector"
+        id={id}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${id}-title`}
+      >
+        <div className="editorial-article-editor__drawer-header">
+          <div>
+            <p className="editorial-kicker">{title}</p>
+            <h2 id={`${id}-title`}>{title}</h2>
+          </div>
+          <button
+            type="button"
+            className="editorial-mini-button editorial-article-editor__drawer-close"
+            onClick={onClose}
+            aria-label={closeLabel}
+            title={closeLabel}
+          >
+            ×
+          </button>
+        </div>
+        {children}
+      </aside>
+    </div>,
+    document.body
   );
 }
 
@@ -1687,11 +2471,14 @@ function ReviewStringListEditor({
       <div className="editorial-review-list-editor__items">
         {values.map((value, index) => (
           <div className="editorial-review-list-editor__item" key={itemKeys[index] || index}>
-            <input
+            <AutoGrowTextField
               value={value}
               placeholder={labels.emptyListItem}
-              aria-label={`${title} ${index + 1}`}
-              onChange={(event) => updateItem(index, event.target.value)}
+              ariaLabel={`${title} ${index + 1}`}
+              rows={2}
+              maxRows={4}
+              singleLine
+              onChange={(nextValue) => updateItem(index, nextValue)}
             />
             <div className="editorial-review-list-editor__actions">
               <button
@@ -1743,26 +2530,28 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const [isFeaturedImageUploading, setIsFeaturedImageUploading] = useState(false);
   const [isFeaturedImageRemoving, setIsFeaturedImageRemoving] = useState(false);
   const [isFeaturedImageDragActive, setIsFeaturedImageDragActive] = useState(false);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const inspectorId = useId();
   const nodes = useMemo(
     () => [
       defineBlockObject({
         type: 'image',
-        render: (props) => <ObjectBlock {...props} labels={labels} />,
+        render: (props) => <ObjectBlock {...props} labels={labels} saveEndpoint={saveEndpoint} />,
       }),
       defineBlockObject({
         type: 'imageRow',
-        render: (props) => <ObjectBlock {...props} labels={labels} />,
+        render: (props) => <ObjectBlock {...props} labels={labels} saveEndpoint={saveEndpoint} />,
       }),
       defineBlockObject({
         type: 'video',
-        render: (props) => <ObjectBlock {...props} labels={labels} />,
+        render: (props) => <ObjectBlock {...props} labels={labels} saveEndpoint={saveEndpoint} />,
       }),
       defineBlockObject({
         type: 'asideBox',
-        render: (props) => <ObjectBlock {...props} labels={labels} />,
+        render: (props) => <ObjectBlock {...props} labels={labels} saveEndpoint={saveEndpoint} />,
       }),
     ],
-    [labels]
+    [labels, saveEndpoint]
   );
   const mediaFormatSelectOptions = useMemo<MultiSelectOption<MediaFormat>[]>(
     () => mediaFormatOptions.map((format) => ({
@@ -1777,6 +2566,20 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
       URL.revokeObjectURL(selectedFeaturedFile.previewUrl);
     }
   }, [selectedFeaturedFile]);
+
+  useEffect(() => {
+    if (!isInspectorOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsInspectorOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isInspectorOpen]);
 
   const updateField = <Field extends keyof EditableArticle>(field: Field, value: EditableArticle[Field]) => {
     setDraft((current) => ({
@@ -2078,10 +2881,23 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
         <p className="editorial-article-editor__state" data-tone={statusTone || undefined} aria-live="polite">
           {status || labels.draftStatus}
         </p>
-        <button className="editorial-button" type="button" onClick={saveArticle} disabled={isSaving}>
-          {isSaving ? labels.saving : labels.save}
-        </button>
+        <div className="editorial-article-editor__actions">
+          <button
+            className="editorial-mini-button editorial-article-editor__settings-toggle"
+            type="button"
+            aria-expanded={isInspectorOpen}
+            aria-controls={inspectorId}
+            onClick={() => setIsInspectorOpen(true)}
+          >
+            ⚙ {labels.sidebar}
+          </button>
+          <button className="editorial-button" type="button" onClick={saveArticle} disabled={isSaving}>
+            {isSaving ? labels.saving : labels.save}
+          </button>
+        </div>
       </div>
+
+      <p className="editorial-mobile-editing-notice">{labels.mobileEditingNotice}</p>
 
       <div className="editorial-article-editor__shell">
         <main className="editorial-article-editor__canvas">
@@ -2129,6 +2945,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 labels={labels}
                 language={draft.language}
                 currentArticleId={getRootArticleId(draft._id)}
+                saveEndpoint={saveEndpoint}
               />
               <PortableTextEditable
                 className="editorial-pte"
@@ -2140,10 +2957,51 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
               />
             </EditorProvider>
           </section>
-        </main>
 
-        <aside className="editorial-article-editor__inspector" aria-label={labels.sidebar}>
-          <p className="editorial-kicker">{labels.sidebar}</p>
+          {showReviewSection && (
+            <section className="editorial-pte-card editorial-review-main-card" aria-labelledby="editorial-review-main-title">
+              <div className="editorial-pte-card__header">
+                <div>
+                  <p className="editorial-kicker">{labels.inspectorReview}</p>
+                  <h2 id="editorial-review-main-title">{labels.ratingSummary}</h2>
+                </div>
+              </div>
+
+              <label className="editorial-field">
+                <span>{labels.ratingSummary}</span>
+                <textarea
+                  value={draft.rating.summary}
+                  rows={5}
+                  onChange={(event) => updateRating('summary', event.target.value)}
+                />
+              </label>
+
+              <div className="editorial-review-main-card__lists">
+                <ReviewStringListEditor
+                  title={labels.pros}
+                  values={draft.pros}
+                  labels={labels}
+                  onChange={(values) => updateField('pros', values)}
+                />
+                <ReviewStringListEditor
+                  title={labels.cons}
+                  values={draft.cons}
+                  labels={labels}
+                  onChange={(values) => updateField('cons', values)}
+                />
+              </div>
+            </section>
+          )}
+        </main>
+      </div>
+
+      {isInspectorOpen && (
+        <ArticleSettingsDrawer
+          id={inspectorId}
+          title={labels.sidebar}
+          closeLabel={labels.closeSettings}
+          onClose={() => setIsInspectorOpen(false)}
+        >
 
           <details className="editorial-inspector-section" open>
             <summary>{labels.inspectorArticle}</summary>
@@ -2174,9 +3032,13 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
 
             <label className="editorial-field">
               <span>{labels.slug}</span>
-              <input
+              <AutoGrowTextField
                 value={draft.slug}
-                onChange={(event) => updateField('slug', event.target.value)}
+                rows={2}
+                maxRows={4}
+                singleLine
+                newlineReplacement="remove"
+                onChange={(value) => updateField('slug', value)}
               />
             </label>
 
@@ -2220,9 +3082,12 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
 
             <label className="editorial-field">
               <span>{labels.seoTitle}</span>
-              <input
+              <AutoGrowTextField
                 value={draft.seoTitle}
-                onChange={(event) => updateField('seoTitle', event.target.value)}
+                rows={2}
+                maxRows={4}
+                singleLine
+                onChange={(value) => updateField('seoTitle', value)}
               />
               <p className="editorial-character-count">{labels.seoTitleHint}</p>
             </label>
@@ -2478,10 +3343,13 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
               {(hasFeaturedImage || selectedFeaturedFile) && (
                 <label className="editorial-field">
                   <span>{labels.featuredImageAlt}</span>
-                  <input
+                  <AutoGrowTextField
                     value={featuredImageAlt}
                     maxLength={120}
-                    onChange={(event) => updateFeaturedImageAlt(event.target.value)}
+                    rows={2}
+                    maxRows={4}
+                    singleLine
+                    onChange={updateFeaturedImageAlt}
                   />
                   <CharacterCounter
                     value={featuredImageAlt}
@@ -2635,35 +3503,10 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 )}
               </div>
 
-              <div className="editorial-inspector-subsection">
-                <label className="editorial-field">
-                  <span>{labels.ratingSummary}</span>
-                  <textarea
-                    value={draft.rating.summary}
-                    rows={5}
-                    onChange={(event) => updateRating('summary', event.target.value)}
-                  />
-                </label>
-              </div>
-
-              <div className="editorial-inspector-subsection">
-                <ReviewStringListEditor
-                  title={labels.pros}
-                  values={draft.pros}
-                  labels={labels}
-                  onChange={(values) => updateField('pros', values)}
-                />
-                <ReviewStringListEditor
-                  title={labels.cons}
-                  values={draft.cons}
-                  labels={labels}
-                  onChange={(values) => updateField('cons', values)}
-                />
-              </div>
             </details>
           )}
-        </aside>
-      </div>
+        </ArticleSettingsDrawer>
+      )}
     </div>
   );
 }
