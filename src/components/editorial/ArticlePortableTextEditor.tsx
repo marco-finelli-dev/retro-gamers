@@ -306,6 +306,7 @@ type Labels = {
   updateImage: string;
   removeImage: string;
   replaceImage: string;
+  bodyImageDragHandle: string;
   bodyImageCurrent: string;
   bodyImageNew: string;
   bodyImageAlt: string;
@@ -680,13 +681,13 @@ function ImageObjectBlock({
   saveEndpoint,
   assetPreviewUrls,
   onAssetPreview,
+  readOnly,
 }: any) {
   const editor = useEditor();
   const image = node as BodyImageBlock;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const previewUrl = getBodyImagePreviewUrl(image, 720, assetPreviewUrls);
   const displayMode = normalizeImageDisplayMode(image.displayMode, image.isWide);
-  const assetRef = getBodyImageAssetRef(image);
 
   const applyImageUpdate = (value: Record<string, unknown>, resetCropHotspot = false) => {
     if (resetCropHotspot) {
@@ -714,6 +715,13 @@ function ImageObjectBlock({
     editor.send({ type: 'focus' });
   };
 
+  const selectImageBlock = () => {
+    editor.send({
+      type: 'select.block',
+      at: path,
+    });
+  };
+
   const removeImageBlock = () => {
     if (!window.confirm(labels.bodyImageRemoveConfirm)) return;
 
@@ -728,55 +736,71 @@ function ImageObjectBlock({
     <div
       {...attributes}
       className="editorial-pte__object editorial-pte__image-object"
-      contentEditable={false}
       data-focused={focused ? 'true' : undefined}
       data-selected={selected ? 'true' : undefined}
+      data-display-mode={displayMode}
     >
       {children}
-      <div className="editorial-pte__image-move" aria-label={labels.image}>
-        <span className="editorial-pte__image-handle" aria-hidden="true">⋮⋮</span>
-        <button
-          type="button"
-          className="editorial-mini-button"
-          onClick={() => moveImageBlock('up')}
-          aria-label={`${labels.moveUp}: ${labels.image}`}
-          title={labels.moveUp}
-        >
-          ↑
-        </button>
-        <button
-          type="button"
-          className="editorial-mini-button"
-          onClick={() => moveImageBlock('down')}
-          aria-label={`${labels.moveDown}: ${labels.image}`}
-          title={labels.moveDown}
-        >
-          ↓
-        </button>
-      </div>
-      <div className="editorial-pte__image-preview">
-        {previewUrl ? (
-          <img src={previewUrl} alt={image.alt || ''} loading="lazy" decoding="async" />
-        ) : (
-          <div className="editorial-current-media__placeholder">{labels.bodyImageNoPreview}</div>
-        )}
-      </div>
-      <div className="editorial-pte__image-meta">
-        <strong>{labels.image}</strong>
-        <span>
-          {getImageDisplayModeLabel(displayMode, labels)}
-          {assetRef ? ` · ${assetRef}` : ''}
-        </span>
-        {image.caption && <p>{image.caption}</p>}
-        {!image.alt && <small>{labels.bodyImageAltWarning}</small>}
-      </div>
-      <div className="editorial-pte__image-actions">
-        <button type="button" className="editorial-mini-button" onClick={() => setIsModalOpen(true)}>
-          {labels.editImage}
-        </button>
-        <button type="button" className="editorial-mini-button editorial-mini-button--danger" onClick={removeImageBlock}>
-          {labels.removeImage}
-        </button>
+      <div className="editorial-pte__image-content" contentEditable={false}>
+        <div className="editorial-pte__image-chrome" aria-label={labels.image}>
+          <span
+            className="editorial-pte__image-handle"
+            draggable={!readOnly}
+            title={labels.bodyImageDragHandle}
+            onMouseDown={selectImageBlock}
+            onDragStart={selectImageBlock}
+            aria-hidden="true"
+          >
+            ⋮⋮
+          </span>
+          <div className="editorial-pte__image-move" aria-label={labels.image}>
+            <button
+              type="button"
+              className="editorial-mini-button editorial-mini-button--subtle"
+              onClick={() => moveImageBlock('up')}
+              aria-label={`${labels.moveUp}: ${labels.image}`}
+              title={labels.moveUp}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              className="editorial-mini-button editorial-mini-button--subtle"
+              onClick={() => moveImageBlock('down')}
+              aria-label={`${labels.moveDown}: ${labels.image}`}
+              title={labels.moveDown}
+            >
+              ↓
+            </button>
+          </div>
+        </div>
+
+        <figure className="editorial-pte__image-figure">
+          <div className="editorial-pte__image-preview">
+            {previewUrl ? (
+              <img src={previewUrl} alt={image.alt || ''} loading="lazy" decoding="async" draggable={false} />
+            ) : (
+              <div className="editorial-current-media__placeholder">{labels.bodyImageNoPreview}</div>
+            )}
+          </div>
+          {image.caption && <figcaption>{image.caption}</figcaption>}
+        </figure>
+
+        <div className="editorial-pte__image-meta">
+          <span className="editorial-pte__image-mode">
+            {getImageDisplayModeLabel(displayMode, labels)}
+          </span>
+          {!image.alt && <small>{labels.bodyImageAltWarning}</small>}
+        </div>
+
+        <div className="editorial-pte__image-actions">
+          <button type="button" className="editorial-mini-button" onClick={() => setIsModalOpen(true)}>
+            {labels.editImage}
+          </button>
+          <button type="button" className="editorial-mini-button editorial-mini-button--danger" onClick={removeImageBlock}>
+            {labels.removeImage}
+          </button>
+        </div>
       </div>
 
       {isModalOpen && (
@@ -1363,7 +1387,7 @@ function BodyImageModal({
         </label>
         <CharacterCounter value={alt} max={120} warning={labels.cardExcerptWarning} />
         {(selectedFile || initialImage) && !alt.trim() && (
-          <p className="editorial-file-advice editorial-file-advice--subtle-warning" data-tone="warning">
+          <p className="editorial-file-advice editorial-file-advice--subtle-warning">
             {labels.bodyImageAltWarning}
           </p>
         )}
@@ -3006,12 +3030,15 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   return (
     <div className="editorial-article-editor" data-editorial-article-editor>
       <div className="editorial-article-editor__topbar">
-        <a className="editorial-article-editor__back" href={articlesHref}>
-          ← {labels.backToArticles}
-        </a>
-        <p className="editorial-article-editor__state" data-tone={statusTone || undefined} aria-live="polite">
-          {status || labels.draftStatus}
-        </p>
+        <div className="editorial-article-editor__topbar-main">
+          <a className="editorial-article-editor__back" href={articlesHref}>
+            ← {labels.backToArticles}
+          </a>
+          <p className="editorial-article-editor__state" data-tone={statusTone || undefined} aria-live="polite">
+            <span aria-hidden="true">●</span>
+            {status || labels.draftStatus}
+          </p>
+        </div>
         <div className="editorial-article-editor__actions">
           <button
             className="editorial-mini-button editorial-article-editor__settings-toggle"
@@ -3019,7 +3046,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
             aria-expanded={isInspectorOpen}
             aria-controls={inspectorId}
             data-active={isInspectorOpen ? 'true' : undefined}
-            onClick={() => setIsInspectorOpen(true)}
+            onClick={() => setIsInspectorOpen((value) => !value)}
           >
             ⚙ {isInspectorOpen ? labels.settingsButtonActive : labels.settingsButton}
           </button>
