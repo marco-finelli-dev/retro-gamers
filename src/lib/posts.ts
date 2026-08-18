@@ -215,8 +215,9 @@ export async function getAllPosts(): Promise<Post[]> {
       cardExcerpt,
       subtitle,
       seoTitle,
-     publishedAt,
+      publishedAt,
       lastUpdated,
+      promoteOnUpdate,
       featuredUntil,
       type,
       isPublic,
@@ -509,22 +510,6 @@ export function sortPostsForHome(posts: Post[] = []) {
     (a, b) =>
       getHomeEditorialTimestamp(b) -
       getHomeEditorialTimestamp(a)
-  );
-}
-
-function getEditorialTimestamp(post: Post) {
-  const date = post.lastUpdated || post.publishedAt;
-
-  if (!date) return 0;
-
-  const timestamp = new Date(date).getTime();
-
-  return Number.isFinite(timestamp) ? timestamp : 0;
-}
-
-function sortByEditorialDate(posts: Post[] = []) {
-  return [...posts].sort(
-    (a, b) => getEditorialTimestamp(b) - getEditorialTimestamp(a)
   );
 }
 
