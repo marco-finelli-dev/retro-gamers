@@ -102,6 +102,7 @@ export type Post = {
   cardExcerpt?: string;
   publishedAt?: string;
   lastUpdated?: string;
+  promoteOnUpdate?: boolean;
   featuredUntil?: string;
   type?: string;
   isPublic?: boolean;
@@ -490,6 +491,43 @@ function hasImage(post: Post) {
   return Boolean(post.featuredImage?.asset?.url);
 }
 
+function getHomeEditorialTimestamp(post: Post) {
+  const date =
+    post.promoteOnUpdate && post.lastUpdated
+      ? post.lastUpdated
+      : post.publishedAt;
+
+  if (!date) return 0;
+
+  const timestamp = new Date(date).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+export function sortPostsForHome(posts: Post[] = []) {
+  return [...posts].sort(
+    (a, b) =>
+      getHomeEditorialTimestamp(b) -
+      getHomeEditorialTimestamp(a)
+  );
+}
+
+function getEditorialTimestamp(post: Post) {
+  const date = post.lastUpdated || post.publishedAt;
+
+  if (!date) return 0;
+
+  const timestamp = new Date(date).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function sortByEditorialDate(posts: Post[] = []) {
+  return [...posts].sort(
+    (a, b) => getEditorialTimestamp(b) - getEditorialTimestamp(a)
+  );
+}
+
 function isOlderThanDays(post: Post, days: number, today = new Date()) {
   if (!post.publishedAt) return false;
 
@@ -608,13 +646,19 @@ export function groupPosts(posts: Post[] = []) {
     La home italiana deve restare italiana.
     Gli articoli inglesi avranno sezioni dedicate sotto /en/.
   */
-  const italianPosts = normalized.filter((post) => post.language !== 'en');
+    const italianPosts = normalized.filter((post) => post.language !== 'en');
 
-  const usedIds = new Set<string>();
-
-  const allWithImage = italianPosts.filter(hasImage);
-  const featuredPost = getActiveFeaturedPost(italianPosts);
-
+    /*
+    Per Hero e Latest un articolo aggiornato viene ripromosso
+    soltanto quando la scelta editoriale è esplicita.
+    */
+    const homeEditorialPosts = sortPostsForHome(italianPosts);
+    
+    const usedIds = new Set<string>();
+    
+    const allWithImage = homeEditorialPosts.filter(hasImage);
+    const featuredPost = getActiveFeaturedPost(italianPosts);
+    
   /*
     HERO:
     prende gli ultimi contenuti italiani con immagine.
@@ -715,9 +759,9 @@ export function groupPosts(posts: Post[] = []) {
     LATEST:
     ultimi contenuti italiani non ancora usati nella home.
   */
-  const latest = takeUnused(italianPosts, usedIds, 6, {
-    requireImage: true
-  });
+    const latest = takeUnused(homeEditorialPosts, usedIds, 6, {
+      requireImage: true
+    });
 
   return {
     hero,

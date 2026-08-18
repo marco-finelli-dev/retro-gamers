@@ -14,7 +14,11 @@ import NewsletterPromo from '../../components/newsletter/NewsletterPromo.astro';
 
 import '../../styles/pages/home.css';
 
-import { getActiveFeaturedPost, getAllPosts } from '../../lib/posts';
+import {
+  getActiveFeaturedPost,
+  getAllPosts,
+  sortPostsForHome
+} from '../../lib/posts';
 import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
@@ -40,6 +44,8 @@ const englishPosts = allPosts
       new Date(a.publishedAt || 0).getTime()
     );
   });
+
+const homeEditorialPosts = sortPostsForHome(englishPosts);
 
 const headerReviews = englishPosts.filter((post) => post.type === 'review');
 const headerNews = englishPosts.filter((post) => post.type === 'news');
@@ -131,8 +137,8 @@ if (featuredPost) {
 const remainingHeroSlots = Math.max(0, 4 - hero.length);
 
 if (remainingHeroSlots > 0) {
-  hero.push(...takeUnused(
-    englishPosts.filter(hasImage),
+    hero.push(...takeUnused(
+    homeEditorialPosts.filter(hasImage),
     remainingHeroSlots,
     { requireImage: true }
   ));
@@ -190,7 +196,7 @@ const hardware = takeUnused(
 
 const news = englishPosts.filter((post) => post.type === 'news');
 
-const latest = takeUnused(englishPosts, 6, {
+const latest = takeUnused(homeEditorialPosts, 6, {
   requireImage: true
 });
 
