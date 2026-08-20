@@ -224,6 +224,8 @@ type Labels = {
   sidebar: string;
   settingsButton: string;
   settingsButtonActive: string;
+  preview: string;
+  previewUnavailable: string;
   closeSettings: string;
   mobileEditingNotice: string;
   backToArticles: string;
@@ -800,6 +802,10 @@ function getBodyImageHeaderTitle(image: BodyImageBlock | null | undefined, label
   return labels.image;
 }
 
+function getImageRowHeaderTitle(labels: Labels, imageCount: number) {
+  return imageCount > 0 ? `${labels.imageRow} (${imageCount})` : labels.imageRow;
+}
+
 function getBodyImageAssetRef(image: BodyImageBlock | null | undefined) {
   const asset = image?.asset;
 
@@ -1365,7 +1371,7 @@ function ImageRowObjectBlock({
       <div className="editorial-pte__image-content editorial-pte__image-row-content" contentEditable={false}>
         <MediaBlockHeader
           icon="🖼"
-          title={labels.imageRow}
+          title={getImageRowHeaderTitle(labels, images.length)}
           menuLabel={labels.imageRowMenu}
           isMenuOpen={isMenuOpen}
           menuRef={menuRef}
@@ -5170,6 +5176,14 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
             onClick={() => setIsInspectorOpen((value) => !value)}
           >
             ⚙ {isInspectorOpen ? labels.settingsButtonActive : labels.settingsButton}
+          </button>
+          <button
+            className="editorial-article-editor__settings-toggle editorial-article-editor__preview-action"
+            type="button"
+            title={labels.previewUnavailable}
+            disabled
+          >
+            👁 {labels.preview}
           </button>
           <button className="editorial-button" type="button" onClick={saveArticle} disabled={isSaving}>
             {isSaving ? labels.saving : labels.save}
