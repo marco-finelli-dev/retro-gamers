@@ -1711,6 +1711,52 @@
   justify-content: flex-end;
 }
 
+.editorial-pte-toolbar__document-actions .editorial-article-editor__state {
+  flex: 0 1 auto;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  line-height: 1;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+
+.editorial-pte-toolbar__document-actions .editorial-article-editor__state span {
+  color: color-mix(in srgb, currentColor 72%, transparent);
+  font-size: 0.68rem;
+}
+
+.editorial-pte-toolbar__document-actions .editorial-article-editor__state[data-tone="success"] {
+  color: color-mix(in srgb, var(--color-success, #27d59a) 86%, var(--rg-section-title-color));
+}
+
+.editorial-pte-toolbar__document-actions .editorial-article-editor__state[data-tone="error"] {
+  color: color-mix(in srgb, var(--color-danger, #ff6b6b) 90%, var(--rg-section-title-color));
+}
+
+.editorial-pte-toolbar__document-actions .editorial-article-editor__settings-toggle,
+.editorial-pte-toolbar__document-actions .editorial-button,
+.editorial-pte-toolbar__document-actions .editorial-article-editor__exit {
+  min-height: 38px;
+  height: 38px;
+  font-size: 0.84rem;
+  line-height: 1;
+}
+
+.editorial-pte-toolbar__document-actions .editorial-button {
+  padding: 0 16px;
+}
+
+.editorial-pte-toolbar__document-actions .editorial-article-editor__preview-action {
+  border-color: color-mix(in srgb, var(--rg-badge-border) 82%, var(--color-primary));
+  background: color-mix(in srgb, var(--rg-panel-bg) 98%, var(--rg-badge-bg));
+}
+
 .editorial-pte-toolbar__menu {
   position: relative;
   display: flex;
@@ -1769,11 +1815,11 @@
   top: calc(100% + 8px);
   left: 0;
   display: grid;
-  min-width: 220px;
-  gap: 4px;
-  padding: 8px;
+  min-width: 200px;
+  gap: 2px;
+  padding: 6px;
   border: 1px solid color-mix(in srgb, var(--rg-badge-border) 82%, var(--color-primary));
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--rg-panel-bg);
   box-shadow:
     0 18px 48px rgba(0, 0, 0, 0.22),
@@ -1791,19 +1837,19 @@
 
 .editorial-pte-toolbar__menu-item {
   display: flex;
-  min-height: 38px;
+  min-height: 34px;
   width: 100%;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 6px 9px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 10px;
   background: transparent;
   color: var(--rg-section-title-color);
   cursor: pointer;
   font: inherit;
-  font-size: 0.88rem;
-  font-weight: 750;
+  font-size: 0.84rem;
+  font-weight: 760;
   line-height: 1.2;
   text-align: left;
   transition:
@@ -2299,9 +2345,21 @@
     box-shadow var(--transition-fast);
 }
 
+.editorial-pte__image-object:not(.editorial-pte__aside-object) {
+  border-color: color-mix(in srgb, var(--rg-card-border) 92%, var(--color-primary));
+  background: var(--rg-card-bg);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
 .editorial-pte__image-object:hover {
   border-color: color-mix(in srgb, var(--color-primary) 24%, var(--rg-card-border));
   background: color-mix(in srgb, var(--rg-card-bg) 46%, transparent);
+}
+
+.editorial-pte__image-object:not(.editorial-pte__aside-object):hover {
+  border-color: color-mix(in srgb, var(--color-primary) 34%, var(--rg-card-border));
+  background: color-mix(in srgb, var(--rg-card-bg) 96%, var(--color-primary) 4%);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
 }
 
 .editorial-pte__image-object[data-focused="true"],
@@ -2309,6 +2367,15 @@
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--rg-card-border));
   background: color-mix(in srgb, var(--rg-card-bg) 58%, transparent);
   box-shadow: 0 0 0 2px var(--color-primary-soft);
+}
+
+.editorial-pte__image-object:not(.editorial-pte__aside-object)[data-focused="true"],
+.editorial-pte__image-object:not(.editorial-pte__aside-object)[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--rg-card-border));
+  background: color-mix(in srgb, var(--rg-card-bg) 94%, var(--color-primary) 6%);
+  box-shadow:
+    0 0 0 2px var(--color-primary-soft),
+    0 16px 38px rgba(0, 0, 0, 0.16);
 }
 
 .editorial-pte__image-content {

@@ -3682,6 +3682,19 @@ function Toolbar({
     editor.send({ type: 'focus' });
     setAsideBoxModal(null);
   };
+  const insertMenuLabels = language === 'en'
+    ? {
+      image: 'Image',
+      imageRow: 'Image series',
+      video: 'Video',
+      asideBox: 'Info box',
+    }
+    : {
+      image: 'Immagine',
+      imageRow: 'Serie immagini',
+      video: 'Video',
+      asideBox: 'Box informativo',
+    };
 
   const addExternalLink = () => {
     const href = window.prompt(labels.linkPrompt, 'https://');
@@ -3957,22 +3970,22 @@ function Toolbar({
             type="button"
             role="menuitem"
             aria-expanded={Boolean(imageModal)}
-            title={labels.insertImage}
+            title={insertMenuLabels.image}
             onMouseDown={(event) => event.preventDefault()}
             onClick={(event) => runToolbarAction(() => openImageModal(event.currentTarget))}
           >
-            {labels.insertImage}
+            {insertMenuLabels.image}
           </button>
           <button
             className="editorial-pte-toolbar__menu-item"
             type="button"
             role="menuitem"
             aria-expanded={Boolean(imageRowModal)}
-            title={labels.insertImageRow}
+            title={insertMenuLabels.imageRow}
             onMouseDown={(event) => event.preventDefault()}
             onClick={(event) => runToolbarAction(() => openImageRowModal(event.currentTarget))}
           >
-            {labels.insertImageRow}
+            {insertMenuLabels.imageRow}
           </button>
           {isBodyToolbar && (
             <>
@@ -3981,22 +3994,22 @@ function Toolbar({
                 type="button"
                 role="menuitem"
                 aria-expanded={Boolean(videoModal)}
-                title={labels.insertVideo}
+                title={insertMenuLabels.video}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={(event) => runToolbarAction(() => openVideoModal(event.currentTarget))}
               >
-                {labels.insertVideo}
+                {insertMenuLabels.video}
               </button>
               <button
                 className="editorial-pte-toolbar__menu-item"
                 type="button"
                 role="menuitem"
                 aria-expanded={Boolean(asideBoxModal)}
-                title={labels.insertAsideBox}
+                title={insertMenuLabels.asideBox}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={(event) => runToolbarAction(() => openAsideBoxModal(event.currentTarget))}
               >
-                {labels.insertAsideBox}
+                {insertMenuLabels.asideBox}
               </button>
             </>
           )}
