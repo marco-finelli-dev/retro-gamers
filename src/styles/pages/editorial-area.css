@@ -2382,30 +2382,19 @@
 
 .editorial-pte__image-object {
   gap: 0;
-  padding: clamp(8px, 1.6vw, 14px);
+  padding: clamp(12px, 2vw, 18px);
   border-style: solid;
-  border-color: transparent;
-  background: transparent;
+  border-color: color-mix(in srgb, var(--rg-card-border) 92%, var(--color-primary));
+  background: var(--rg-card-bg);
   color: var(--color-text);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
   transition:
     border-color var(--transition-fast),
     background var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
-.editorial-pte__image-object:not(.editorial-pte__aside-object) {
-  padding: clamp(12px, 2vw, 18px);
-  border-color: color-mix(in srgb, var(--rg-card-border) 92%, var(--color-primary));
-  background: var(--rg-card-bg);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-}
-
 .editorial-pte__image-object:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 24%, var(--rg-card-border));
-  background: color-mix(in srgb, var(--rg-card-bg) 46%, transparent);
-}
-
-.editorial-pte__image-object:not(.editorial-pte__aside-object):hover {
   border-color: color-mix(in srgb, var(--color-primary) 34%, var(--rg-card-border));
   background: color-mix(in srgb, var(--rg-card-bg) 96%, var(--color-primary) 4%);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
@@ -2413,13 +2402,6 @@
 
 .editorial-pte__image-object[data-focused="true"],
 .editorial-pte__image-object[data-selected="true"] {
-  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--rg-card-border));
-  background: color-mix(in srgb, var(--rg-card-bg) 58%, transparent);
-  box-shadow: 0 0 0 2px var(--color-primary-soft);
-}
-
-.editorial-pte__image-object:not(.editorial-pte__aside-object)[data-focused="true"],
-.editorial-pte__image-object:not(.editorial-pte__aside-object)[data-selected="true"] {
   border-color: color-mix(in srgb, var(--color-primary) 55%, var(--rg-card-border));
   background: color-mix(in srgb, var(--rg-card-bg) 94%, var(--color-primary) 6%);
   box-shadow:
@@ -2436,7 +2418,7 @@
   user-select: none;
 }
 
-.editorial-pte__image-object:not(.editorial-pte__aside-object) .editorial-pte__image-content {
+.editorial-pte__image-content {
   gap: 0;
 }
 
@@ -2451,17 +2433,13 @@
   padding: 8px 8px 8px 12px;
   border: 1px solid color-mix(in srgb, var(--rg-badge-border) 88%, var(--color-primary));
   border-radius: 15px;
-  background: color-mix(in srgb, var(--rg-badge-bg) 92%, transparent);
+  background: color-mix(in srgb, var(--rg-badge-bg) 78%, var(--rg-card-bg));
   color: var(--rg-badge-color);
+  margin-bottom: clamp(14px, 2vw, 18px);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
-.editorial-pte__image-object:not(.editorial-pte__aside-object) .editorial-pte__media-header {
-  margin-bottom: clamp(14px, 2vw, 18px);
-  background: color-mix(in srgb, var(--rg-badge-bg) 78%, var(--rg-card-bg));
-}
-
-.editorial-pte__image-object:not(.editorial-pte__aside-object) .editorial-pte__media-header::after {
+.editorial-pte__media-header::after {
   position: absolute;
   right: 10px;
   bottom: -8px;
@@ -2785,6 +2763,9 @@
   min-width: 0;
   gap: 12px;
   margin: 0;
+  padding: clamp(16px, 2.5vw, 24px);
+  border: 1px solid color-mix(in srgb, var(--rg-card-border) 82%, transparent);
+  border-radius: 16px;
   cursor: grab;
 }
 
@@ -2796,14 +2777,10 @@
 .editorial-pte__video-card {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  padding: clamp(16px, 2.5vw, 24px);
-  border: 1px solid color-mix(in srgb, var(--rg-card-border) 82%, transparent);
-  border-radius: 18px;
   background:
     radial-gradient(circle at 0% 0%, rgba(64, 224, 255, 0.13), transparent 34%),
-    linear-gradient(135deg, rgba(10, 16, 28, 0.84), rgba(36, 24, 78, 0.46)),
-    var(--rg-card-bg);
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.18);
+    color-mix(in srgb, var(--color-surface) 78%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent);
 }
 
 .editorial-pte__video-icon {
@@ -2850,18 +2827,16 @@
 }
 
 .editorial-pte__aside-card {
-  padding: clamp(16px, 2.5vw, 24px);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--rg-card-border));
-  border-radius: 18px;
+  border-color: color-mix(in srgb, var(--color-primary) 22%, var(--rg-card-border));
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 24%),
-    var(--rg-card-bg);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.14);
+    color-mix(in srgb, var(--color-surface) 78%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent);
 }
 
 .editorial-pte__aside-object[data-tone="neutral"] .editorial-pte__aside-card {
   border-color: var(--rg-card-border);
-  background: var(--rg-card-bg);
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
 }
 
 .editorial-pte__aside-object[data-tone="highlight"] .editorial-pte__aside-card {
@@ -2869,7 +2844,7 @@
   background:
     radial-gradient(circle at 100% 0%, rgba(102, 81, 184, 0.16), transparent 36%),
     linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 28%),
-    var(--rg-card-bg);
+    color-mix(in srgb, var(--color-surface) 78%, transparent);
 }
 
 .editorial-pte__aside-card-header {

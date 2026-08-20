@@ -435,6 +435,9 @@ type Labels = {
   imageRow: string;
   video: string;
   asideBox: string;
+  imageBlockHeader: string;
+  videoBlockHeader: string;
+  asideBoxHeader: string;
   unsupportedObject: string;
   cardExcerptWarning: string;
   excerptWarning: string;
@@ -798,17 +801,8 @@ function getTextBlockPreview(block: PortableTextBlock) {
     .trim();
 }
 
-function getBodyImageHeaderTitle(image: BodyImageBlock | null | undefined, labels: Labels) {
-  const asset = image?.asset;
-
-  if (asset && typeof asset === 'object' && 'originalFilename' in asset && typeof asset.originalFilename === 'string') {
-    return asset.originalFilename.trim() || labels.image;
-  }
-
-  if (typeof image?.caption === 'string' && image.caption.trim()) return image.caption.trim();
-  if (typeof image?.alt === 'string' && image.alt.trim()) return image.alt.trim();
-
-  return labels.image;
+function getBodyImageHeaderTitle(labels: Labels) {
+  return labels.imageBlockHeader;
 }
 
 function getImageRowHeaderTitle(labels: Labels, imageCount: number) {
@@ -1212,7 +1206,7 @@ function ImageObjectBlock({
       <div className="editorial-pte__image-content" contentEditable={false}>
         <MediaBlockHeader
           icon="🖼"
-          title={getBodyImageHeaderTitle(image, labels)}
+          title={getBodyImageHeaderTitle(labels)}
           menuLabel={labels.bodyImageMenu}
           isMenuOpen={isMenuOpen}
           menuRef={menuRef}
@@ -1474,7 +1468,6 @@ function VideoObjectBlock({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const url = typeof video.url === 'string' ? video.url.trim() : '';
-  const title = typeof video.title === 'string' && video.title.trim() ? video.title.trim() : 'Video YouTube';
   const domain = getVideoDomain(url);
 
   useEffect(() => {
@@ -1567,7 +1560,7 @@ function VideoObjectBlock({
       <div className="editorial-pte__image-content editorial-pte__custom-content" contentEditable={false}>
         <MediaBlockHeader
           icon="▶"
-          title={title}
+          title={labels.videoBlockHeader}
           menuLabel={labels.videoMenu}
           isMenuOpen={isMenuOpen}
           menuRef={menuRef}
@@ -1723,7 +1716,6 @@ function AsideBoxObjectBlock({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const tone = normalizeAsideTone(asideBox.tone);
-  const title = typeof asideBox.title === 'string' ? asideBox.title.trim() : '';
   const content = normalizeAsideContentForEditor(asideBox.content);
 
   useEffect(() => {
@@ -1817,7 +1809,7 @@ function AsideBoxObjectBlock({
       <div className="editorial-pte__image-content editorial-pte__custom-content" contentEditable={false}>
         <MediaBlockHeader
           icon="💬"
-          title={title || 'Box'}
+          title={labels.asideBoxHeader}
           menuLabel={labels.asideBoxMenu}
           isMenuOpen={isMenuOpen}
           menuRef={menuRef}
