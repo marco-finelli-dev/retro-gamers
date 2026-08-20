@@ -288,6 +288,10 @@ type Labels = {
   excerpt: string;
   seoTitle: string;
   type: string;
+  typeChangeConfirmTitle: string;
+  typeChangeConfirmText: string;
+  typeChangeCancel: string;
+  typeChangeConfirm: string;
   language: string;
   slug: string;
   author: string;
@@ -3444,8 +3448,31 @@ function AsideBoxModal({
 
 type ToolbarMenu = 'structure' | 'text' | 'link' | 'insert';
 type SaveMode = 'manual' | 'autosave';
+type TypeChangeRequest = {
+  nextType: ArticleType;
+  cleanupItems: string[];
+};
 
 const AUTOSAVE_IDLE_DELAY_MS = 12000;
+
+function createEmptyGameInfo(): EditableArticleGameInfo {
+  return {
+    releaseYear: null,
+    mediaFormat: [],
+    cover: null,
+  };
+}
+
+function createEmptyRating(): EditableArticleRating {
+  return {
+    grafica: null,
+    sonoro: null,
+    giocabilita: null,
+    longevita: null,
+    overall: null,
+    summary: '',
+  };
+}
 
 function getEditableArticleSnapshot(articleDraft: EditableArticle, contentValue: PortableTextBlock[]) {
   return JSON.stringify({
@@ -3511,6 +3538,48 @@ function ExitConfirmationModal({
           </button>
           <button type="button" className="editorial-mini-button" onClick={onCancel} disabled={isSaving}>
             {labels.exitCancel}
+          </button>
+        </div>
+      </div>
+    </AnnotationModal>
+  );
+}
+
+function TypeChangeConfirmationModal({
+  labels,
+  cleanupItems,
+  onConfirm,
+  onCancel,
+}: {
+  labels: Labels;
+  cleanupItems: string[];
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <AnnotationModal
+      title={labels.typeChangeConfirmTitle}
+      labels={labels}
+      onClose={onCancel}
+      panelClassName="editorial-pte-modal__panel--exit"
+    >
+      <div className="editorial-exit-modal">
+        <p>{labels.typeChangeConfirmText}</p>
+
+        {cleanupItems.length > 0 && (
+          <ul>
+            {cleanupItems.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        )}
+
+        <div className="editorial-exit-modal__actions">
+          <button type="button" className="editorial-mini-button" onClick={onCancel}>
+            {labels.typeChangeCancel}
+          </button>
+          <button type="button" className="editorial-mini-button editorial-mini-button--danger" onClick={onConfirm}>
+            {labels.typeChangeConfirm}
           </button>
         </div>
       </div>
@@ -4557,11 +4626,73 @@ function hasReviewData(article: EditableArticle) {
   return Boolean(
     article.gameInfo.releaseYear !== null ||
     article.gameInfo.mediaFormat.length > 0 ||
+    article.gameInfo.cover?.asset ||
+    article.gameInfo.cover?.alt.trim() ||
     ratingFields.some((field) => article.rating[field] !== null) ||
     article.rating.summary.trim() ||
     article.pros.some((item) => item.trim()) ||
     article.cons.some((item) => item.trim())
   );
+}
+
+function getTypeChangeCleanupItems(
+  article: EditableArticle,
+  nextType: ArticleType,
+  labels: Labels,
+  hasPendingGameCoverFile: boolean
+) {
+  const items = new Set<string>();
+
+  if (nextType !== 'review') {
+    if (
+      article.gameInfo.releaseYear !== null ||
+      article.gameInfo.mediaFormat.length > 0 ||
+      article.gameInfo.cover?.asset ||
+      article.gameInfo.cover?.alt.trim() ||
+      hasPendingGameCoverFile
+    ) {
+      items.add(labels.gameData);
+    }
+
+    if (ratingFields.some((field) => article.rating[field] !== null) || article.rating.summary.trim()) {
+      items.add(labels.ratingSection);
+    }
+
+    if (article.pros.some((item) => item.trim())) items.add(labels.pros);
+    if (article.cons.some((item) => item.trim())) items.add(labels.cons);
+    if (article.genres.length > 0) items.add(labels.genres);
+    if (article.developers.length > 0) items.add(labels.developers);
+    if (article.publishers.length > 0) items.add(labels.publishers);
+    if (article.modes.length > 0) items.add(labels.modes);
+    if (article.series.length > 0) items.add(labels.gameSeries);
+  }
+
+  if (nextType !== 'hardware' && article.manufacturer.length > 0) {
+    items.add(labels.manufacturer);
+  }
+
+  return Array.from(items);
+}
+
+function applyTypeSpecificCleanup(article: EditableArticle, nextType: ArticleType): EditableArticle {
+  return {
+    ...article,
+    type: nextType,
+    ...(nextType !== 'review'
+      ? {
+          genres: [],
+          developers: [],
+          publishers: [],
+          modes: [],
+          series: [],
+          gameInfo: createEmptyGameInfo(),
+          rating: createEmptyRating(),
+          pros: [],
+          cons: [],
+        }
+      : {}),
+    ...(nextType !== 'hardware' ? { manufacturer: [] } : {}),
+  };
 }
 
 function getRatingLabel(field: RatingField, labels: Labels) {
@@ -5062,6 +5193,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const [isGameCoverDragActive, setIsGameCoverDragActive] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [typeChangeRequest, setTypeChangeRequest] = useState<TypeChangeRequest | null>(null);
   const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
   const inspectorId = useId();
   const rememberBodyImagePreview = useCallback((assetId: string, url: string) => {
@@ -5180,6 +5312,39 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
       ...current,
       [field]: value,
     }));
+  };
+
+  const applyTypeChange = (nextType: ArticleType) => {
+    setDraft((current) => applyTypeSpecificCleanup(current, nextType));
+
+    if (nextType !== 'review') {
+      setSelectedGameCoverFile(null);
+      setGameCoverStatus('');
+      setGameCoverStatusTone('');
+    }
+  };
+
+  const requestTypeChange = (nextType: ArticleType) => {
+    if (nextType === draft.type) return;
+
+    const cleanupItems = getTypeChangeCleanupItems(draft, nextType, labels, Boolean(selectedGameCoverFile));
+
+    if (cleanupItems.length === 0) {
+      applyTypeChange(nextType);
+      return;
+    }
+
+    setTypeChangeRequest({
+      nextType,
+      cleanupItems,
+    });
+  };
+
+  const confirmTypeChange = () => {
+    if (!typeChangeRequest) return;
+
+    applyTypeChange(typeChangeRequest.nextType);
+    setTypeChangeRequest(null);
   };
 
   const updateFeaturedImageAlt = (value: string) => {
@@ -5836,7 +6001,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
               <span>{labels.type}</span>
               <select
                 value={draft.type}
-                onChange={(event) => updateField('type', event.target.value as ArticleType)}
+                onChange={(event) => requestTypeChange(event.target.value as ArticleType)}
               >
                 {articleTypes.map((type) => (
                   <option value={type} key={type}>{type}</option>
@@ -6476,6 +6641,15 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
           onSaveAndClose={saveAndExit}
           onDiscard={discardAndExit}
           onCancel={() => setIsExitModalOpen(false)}
+        />
+      )}
+
+      {typeChangeRequest && (
+        <TypeChangeConfirmationModal
+          labels={labels}
+          cleanupItems={typeChangeRequest.cleanupItems}
+          onConfirm={confirmTypeChange}
+          onCancel={() => setTypeChangeRequest(null)}
         />
       )}
     </div>

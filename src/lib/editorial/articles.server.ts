@@ -251,6 +251,13 @@ const editorialArticleReferenceFields: EditorialArticleReferenceField[] = [
   'modes',
   'series',
 ];
+const reviewSpecificReferenceFields: EditorialArticleReferenceField[] = [
+  'genres',
+  'developers',
+  'publishers',
+  'modes',
+  'series',
+];
 const editorialArticleReferenceKindConfig: Record<
   EditorialArticleReferenceKind,
   {
@@ -1783,67 +1790,74 @@ async function getRelationPatchFields(
   return { set, unset };
 }
 
-function getReviewPatchFields(payload: Record<string, unknown>) {
+function getReviewPatchFields(payload: Record<string, unknown>, {
+  includeReviewData = true,
+}: {
+  includeReviewData?: boolean;
+} = {}) {
   const set: Record<string, unknown> = {};
   const unset: string[] = [];
-  const hasGameInfo = Object.prototype.hasOwnProperty.call(payload, 'gameInfo');
-  const hasRating = Object.prototype.hasOwnProperty.call(payload, 'rating');
 
-  if (hasGameInfo && !isPlainObject(payload.gameInfo)) {
-    throw new Error('invalid_gameInfo');
-  }
+  if (includeReviewData) {
+    const hasGameInfo = Object.prototype.hasOwnProperty.call(payload, 'gameInfo');
+    const hasRating = Object.prototype.hasOwnProperty.call(payload, 'rating');
 
-  if (hasRating && !isPlainObject(payload.rating)) {
-    throw new Error('invalid_rating');
-  }
-
-  const gameInfo = hasGameInfo ? payload.gameInfo as Record<string, unknown> : {};
-  const rating = hasRating ? payload.rating as Record<string, unknown> : {};
-  const releaseYear = validateOptionalFiniteNumber(gameInfo.releaseYear, 'gameInfo_releaseYear');
-  const mediaFormat = validateMediaFormats(gameInfo.mediaFormat);
-
-  if (releaseYear === null) {
-    unset.push('gameInfo.releaseYear');
-  } else {
-    set['gameInfo.releaseYear'] = releaseYear;
-  }
-
-  if (mediaFormat.length === 0) {
-    unset.push('gameInfo.mediaFormat');
-  } else {
-    set['gameInfo.mediaFormat'] = mediaFormat;
-  }
-
-  for (const field of editorialArticleRatingFields) {
-    const value = validateRatingValue(rating[field], field);
-
-    if (value === null) {
-      unset.push(`rating.${field}`);
-    } else {
-      set[`rating.${field}`] = value;
+    if (hasGameInfo && !isPlainObject(payload.gameInfo)) {
+      throw new Error('invalid_gameInfo');
     }
-  }
 
-  const summary = normalizeOptionalString(rating.summary, 2000);
-  if (summary) {
-    set['rating.summary'] = summary;
-  } else {
-    unset.push('rating.summary');
-  }
+    if (hasRating && !isPlainObject(payload.rating)) {
+      throw new Error('invalid_rating');
+    }
 
-  const pros = validateStringArray(payload.pros, 'pros', 220);
-  const cons = validateStringArray(payload.cons, 'cons', 220);
+    const gameInfo = hasGameInfo ? payload.gameInfo as Record<string, unknown> : {};
+    const rating = hasRating ? payload.rating as Record<string, unknown> : {};
+    const releaseYear = validateOptionalFiniteNumber(gameInfo.releaseYear, 'gameInfo_releaseYear');
+    const mediaFormat = validateMediaFormats(gameInfo.mediaFormat);
 
-  if (pros.length > 0) {
-    set.pros = pros;
-  } else {
-    unset.push('pros');
-  }
+    if (releaseYear === null) {
+      unset.push('gameInfo.releaseYear');
+    } else {
+      set['gameInfo.releaseYear'] = releaseYear;
+    }
 
-  if (cons.length > 0) {
-    set.cons = cons;
-  } else {
-    unset.push('cons');
+    if (mediaFormat.length === 0) {
+      unset.push('gameInfo.mediaFormat');
+    } else {
+      set['gameInfo.mediaFormat'] = mediaFormat;
+    }
+
+    for (const field of editorialArticleRatingFields) {
+      const value = validateRatingValue(rating[field], field);
+
+      if (value === null) {
+        unset.push(`rating.${field}`);
+      } else {
+        set[`rating.${field}`] = value;
+      }
+    }
+
+    const summary = normalizeOptionalString(rating.summary, 2000);
+    if (summary) {
+      set['rating.summary'] = summary;
+    } else {
+      unset.push('rating.summary');
+    }
+
+    const pros = validateStringArray(payload.pros, 'pros', 220);
+    const cons = validateStringArray(payload.cons, 'cons', 220);
+
+    if (pros.length > 0) {
+      set.pros = pros;
+    } else {
+      unset.push('pros');
+    }
+
+    if (cons.length > 0) {
+      set.cons = cons;
+    } else {
+      unset.push('cons');
+    }
   }
 
   const seriesOrder = validateOptionalPositiveNumber(payload.seriesOrder, 'seriesOrder');
@@ -2317,24 +2331,62 @@ async function getPatchFromPayload(
   await validatePortableTextAnnotationReferences(nextContent);
   const nextSlug = normalizeSlug(payload.slug);
   const nextLanguage = validateArticleLanguage(payload.language);
+  const nextType = validateArticleType(payload.type);
+  const typeChanged = nextType !== currentArticle.type;
+  const removeReviewSpecificData = typeChanged && nextType !== 'review';
+  const removeHardwareSpecificData = typeChanged && nextType !== 'hardware';
+  const relationPayload = { ...payload };
+
+  if (removeReviewSpecificData) {
+    for (const field of reviewSpecificReferenceFields) {
+      delete relationPayload[field];
+    }
+  }
+
+  if (removeHardwareSpecificData) {
+    delete relationPayload.manufacturer;
+  }
+
   const set: Record<string, unknown> = {
     title: normalizeString(payload.title, 300).trim(),
     subtitle: normalizeString(payload.subtitle, 500).trim(),
     cardExcerpt: normalizeString(payload.cardExcerpt, 500).trim(),
     excerpt: normalizeString(payload.excerpt, 500).trim(),
     seoTitle: normalizeString(payload.seoTitle, 140).trim(),
-    type: validateArticleType(payload.type),
+    type: nextType,
     language: nextLanguage,
     content: nextContent,
   };
   const unset: string[] = [];
-  const reviewPatch = getReviewPatchFields(payload);
-  const relationPatch = await getRelationPatchFields(payload, currentArticle, nextLanguage, currentRootDocumentId);
+  const pushUnset = (path: string) => {
+    if (!unset.includes(path)) unset.push(path);
+  };
+  const reviewPatch = getReviewPatchFields(payload, {
+    includeReviewData: !removeReviewSpecificData,
+  });
+  const relationPatch = await getRelationPatchFields(relationPayload, currentArticle, nextLanguage, currentRootDocumentId);
 
   Object.assign(set, reviewPatch.set);
   Object.assign(set, relationPatch.set);
   unset.push(...reviewPatch.unset);
   unset.push(...relationPatch.unset);
+
+  if (removeReviewSpecificData) {
+    pushUnset('gameInfo');
+    pushUnset('rating');
+    pushUnset('pros');
+    pushUnset('cons');
+
+    for (const field of reviewSpecificReferenceFields) {
+      delete set[field];
+      pushUnset(field);
+    }
+  }
+
+  if (removeHardwareSpecificData) {
+    delete set.manufacturer;
+    pushUnset('manufacturer');
+  }
 
   if (Object.prototype.hasOwnProperty.call(payload, 'featuredImageAlt') && currentArticle.featuredImage?.asset) {
     const featuredImageAlt = normalizeString(payload.featuredImageAlt, 120).trim();
@@ -2346,7 +2398,7 @@ async function getPatchFromPayload(
     }
   }
 
-  if (Object.prototype.hasOwnProperty.call(payload, 'gameCoverAlt') && currentArticle.gameInfo.cover?.asset) {
+  if (nextType === 'review' && Object.prototype.hasOwnProperty.call(payload, 'gameCoverAlt') && currentArticle.gameInfo.cover?.asset) {
     const gameCoverAlt = normalizeString(payload.gameCoverAlt, 120).trim();
 
     if (gameCoverAlt) {
