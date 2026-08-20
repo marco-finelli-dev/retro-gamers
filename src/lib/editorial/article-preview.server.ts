@@ -1,5 +1,5 @@
 import { getSanityRawClient } from '../sanity-write.server';
-import type { Post } from '../posts';
+import { PUBLIC_POST_GROQ_FILTER, type Post } from '../posts';
 
 const editorialArticlePreviewProjection = `{
   _id,
@@ -236,7 +236,7 @@ const editorialArticlePreviewProjection = `{
       caption,
       displayMode,
       isWide,
-      asset->{ url }
+      asset->{ url, mimeType, extension, originalFilename }
     },
 
     _type == "imageRow" => {
@@ -249,7 +249,7 @@ const editorialArticlePreviewProjection = `{
         caption,
         displayMode,
         image{
-          asset->{ url }
+          asset->{ url, mimeType, extension, originalFilename }
         }
       }
     },
@@ -329,7 +329,7 @@ const editorialArticlePreviewProjection = `{
           caption,
           displayMode,
           isWide,
-          asset->{ url }
+          asset->{ url, mimeType, extension, originalFilename }
         },
 
         _type == "imageRow" => {
@@ -342,7 +342,7 @@ const editorialArticlePreviewProjection = `{
             caption,
             displayMode,
             image{
-              asset->{ url }
+              asset->{ url, mimeType, extension, originalFilename }
             }
           }
         }
@@ -366,4 +366,52 @@ export async function fetchEditorialArticlePreviewPost(documentId: string): Prom
     `*[_type == "article" && _id == $documentId][0]${editorialArticlePreviewProjection}`,
     { documentId: id }
   );
+}
+
+export async function fetchEditorialArticlePreviewSeriesPosts({
+  seriesId,
+  language,
+}: {
+  seriesId: string;
+  language: 'it' | 'en';
+}): Promise<Post[]> {
+  const normalizedSeriesId = String(seriesId || '').trim();
+  const normalizedLanguage = language === 'en' ? 'en' : 'it';
+
+  if (!normalizedSeriesId) return [];
+
+  return await getSanityRawClient().fetch<Post[]>(
+    `*[
+      _type == "article" &&
+      defined(slug.current) &&
+      !(_id in path("drafts.**")) &&
+      ${PUBLIC_POST_GROQ_FILTER} &&
+      coalesce(language, "it") == $language &&
+      references($seriesId)
+    ] | order(coalesce(seriesOrder, 999) asc, coalesce(publishedAt, _createdAt) asc) {
+      _id,
+      type,
+      "language": coalesce(language, "it"),
+      title,
+      subtitle,
+      "slug": slug.current,
+      publishedAt,
+      seriesOrder,
+      seriesLabel,
+      featuredImage {
+        alt,
+        asset->{ url }
+      },
+      gameInfo {
+        cover {
+          alt,
+          asset->{ url }
+        }
+      }
+    }`,
+    {
+      seriesId: normalizedSeriesId,
+      language: normalizedLanguage,
+    }
+  ) || [];
 }

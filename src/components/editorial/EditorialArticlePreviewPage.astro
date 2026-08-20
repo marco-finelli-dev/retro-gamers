@@ -4,8 +4,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArticlePage from '../article/ArticlePage.astro';
 import { getCreatorRefsFromPortableText, getCreatorsReferencingArticle, mergeCreatorRefs } from '../../lib/creators';
 import { fetchPreviewableEditorialArticle, requireEditorialArticleContext } from '../../lib/editorial/articles.server';
-import { fetchEditorialArticlePreviewPost } from '../../lib/editorial/article-preview.server';
+import {
+  fetchEditorialArticlePreviewPost,
+  fetchEditorialArticlePreviewSeriesPosts
+} from '../../lib/editorial/article-preview.server';
 import { getPublicPostSummaries, getRelatedPosts } from '../../lib/posts';
+import {
+  attachApprovedCommentCounts,
+  getApprovedCommentCountMap
+} from '../../lib/supabase/comment-counts';
 
 type EditorialLang = 'it' | 'en';
 
@@ -85,6 +92,21 @@ function getEditorialPageTitle(post, fallback = '') {
     : seoTitle || title || copy.pageTitle;
 }
 
+function getNormalizedDocumentId(value = '') {
+  return String(value || '').replace(/^drafts\./, '');
+}
+
+function mergePreviewSeriesPosts(currentPost, seriesPosts = []) {
+  if (!currentPost?.editorialSeries?.[0]?._id) return [];
+
+  const currentRootId = getNormalizedDocumentId(currentPost._id);
+  const hasCurrentPost = seriesPosts.some((item) =>
+    getNormalizedDocumentId(item?._id) === currentRootId
+  );
+
+  return hasCurrentPost ? seriesPosts : [...seriesPosts, currentPost];
+}
+
 let post = null;
 let error = '';
 let documentLifecycle = 'missing';
@@ -116,10 +138,23 @@ if (access.ok) {
   error = access.error || 'unauthorized';
 }
 
-const publicPostSummaries = post ? await getPublicPostSummaries() : [];
 const rootPostId = String(post?._id || '').replace(/^drafts\./, '');
 const portableTextCreators = getCreatorRefsFromPortableText(post?.content || []);
-const inverseCreators = post ? await getCreatorsReferencingArticle(rootPostId) : [];
+const seriesId = post?.editorialSeries?.[0]?._id || '';
+const [
+  publicPostSummaries,
+  inverseCreators,
+  previewSeriesPosts,
+] = post
+  ? await Promise.all([
+      getPublicPostSummaries(),
+      getCreatorsReferencingArticle(rootPostId),
+      fetchEditorialArticlePreviewSeriesPosts({
+        seriesId,
+        language: currentLang,
+      }),
+    ])
+  : [[], [], []];
 
 const hydratedPost = post
   ? {
@@ -133,24 +168,41 @@ const hydratedPost = post
 const headerPosts = publicPostSummaries.filter((item) => (item.language || 'it') === currentLang);
 const headerReviews = headerPosts.filter((item) => item.type === 'review');
 const headerNews = headerPosts.filter((item) => item.type === 'news');
-const relatedPosts = hydratedPost ? getRelatedPosts(hydratedPost, publicPostSummaries, 3) : [];
-const pageTitle = getEditorialPageTitle(hydratedPost, hydratedPost?.slug);
+const relatedCandidatePosts = publicPostSummaries.filter((item) =>
+  getNormalizedDocumentId(item?._id) !== rootPostId
+);
+const relatedPosts = hydratedPost ? getRelatedPosts(hydratedPost, relatedCandidatePosts, 3) : [];
+const commentCountMap = hydratedPost
+  ? await getApprovedCommentCountMap([hydratedPost, ...relatedPosts], currentLang)
+  : new Map();
+const hydratedPostWithCommentCount = hydratedPost
+  ? attachApprovedCommentCounts([hydratedPost], commentCountMap, currentLang)[0]
+  : null;
+const relatedPostsWithCommentCounts = attachApprovedCommentCounts(
+  relatedPosts,
+  commentCountMap,
+  currentLang
+);
+const seriesPosts = hydratedPostWithCommentCount
+  ? mergePreviewSeriesPosts(hydratedPostWithCommentCount, previewSeriesPosts)
+  : [];
+const pageTitle = getEditorialPageTitle(hydratedPostWithCommentCount, hydratedPostWithCommentCount?.slug);
 const pageDescription =
-  hydratedPost?.excerpt ||
-  hydratedPost?.subtitle ||
+  hydratedPostWithCommentCount?.excerpt ||
+  hydratedPostWithCommentCount?.subtitle ||
   copy.fallbackDescription;
 const pageImage =
-  hydratedPost?.featuredImage?.asset?.url ||
-  hydratedPost?.gameInfo?.cover?.asset?.url ||
+  hydratedPostWithCommentCount?.featuredImage?.asset?.url ||
+  hydratedPostWithCommentCount?.gameInfo?.cover?.asset?.url ||
   '/og-image.jpg';
 const articleAuthorName =
-  hydratedPost?.author?.displayName === 'nickname' && hydratedPost?.author?.nickname
-    ? hydratedPost.author.nickname
-    : hydratedPost?.author?.name || '';
+  hydratedPostWithCommentCount?.author?.displayName === 'nickname' && hydratedPostWithCommentCount?.author?.nickname
+    ? hydratedPostWithCommentCount.author.nickname
+    : hydratedPostWithCommentCount?.author?.name || '';
 const articleAuthorSlug =
-  typeof hydratedPost?.author?.slug === 'string'
-    ? hydratedPost.author.slug
-    : hydratedPost?.author?.slug?.current || '';
+  typeof hydratedPostWithCommentCount?.author?.slug === 'string'
+    ? hydratedPostWithCommentCount.author.slug
+    : hydratedPostWithCommentCount?.author?.slug?.current || '';
 const articleAuthorUrl = articleAuthorSlug
   ? currentLang === 'en'
     ? `/en/authors/${articleAuthorSlug}/`
@@ -167,8 +219,8 @@ const articleAuthorUrl = articleAuthorSlug
   image={pageImage}
   canonical={Astro.url.href}
   type={post ? 'article' : 'website'}
-  publishedAt={hydratedPost?.publishedAt}
-  updatedAt={hydratedPost?.lastUpdated}
+  publishedAt={hydratedPostWithCommentCount?.publishedAt}
+  updatedAt={hydratedPostWithCommentCount?.lastUpdated}
   articleAuthorName={articleAuthorName}
   articleAuthorUrl={articleAuthorUrl}
   noindex={true}
@@ -185,13 +237,13 @@ const articleAuthorUrl = articleAuthorSlug
       <a href={editHref}>{copy.backToEditor}</a>
     </aside>
 
-    {hydratedPost ? (
+    {hydratedPostWithCommentCount ? (
       <ArticlePage
-        post={hydratedPost}
-        relatedPosts={relatedPosts}
-        seriesPosts={[]}
+        post={hydratedPostWithCommentCount}
+        relatedPosts={relatedPostsWithCommentCounts}
+        seriesPosts={seriesPosts}
         comments={[]}
-        hideNewsletterPromo={true}
+        hideNewsletterPromo={false}
         isPreview={true}
         disableCommunity={true}
       />
