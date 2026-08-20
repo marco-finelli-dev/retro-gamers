@@ -36,6 +36,8 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       ok: true,
       article: result.article,
       ownership: result.ownership,
+      documentLifecycle: result.documentLifecycle,
+      documentSource: result.documentSource,
     });
   } catch (error) {
     logApiError('editorial-articles.get-api', error);

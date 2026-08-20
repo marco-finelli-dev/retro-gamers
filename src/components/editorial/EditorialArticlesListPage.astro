@@ -32,7 +32,13 @@ const copy = isEnglish
       newArticle: 'New article',
       edit: 'Edit',
       draft: 'Draft',
-      missingDraft: 'Sanity draft not found',
+      missingDraft: 'Sanity document not found',
+      lifecycle: {
+        draft: 'DRAFT',
+        revision_draft: 'UNPUBLISHED CHANGES',
+        published: 'PUBLISHED',
+        missing: 'SANITY DOCUMENT NOT FOUND',
+      },
       noArticlesTitle: 'No editorial drafts yet',
       noArticlesText: 'Create your first draft to start writing inside the custom editor.',
       dashboard: 'Editorial dashboard',
@@ -56,7 +62,13 @@ const copy = isEnglish
       newArticle: 'Nuovo articolo',
       edit: 'Modifica',
       draft: 'Bozza',
-      missingDraft: 'Bozza Sanity non trovata',
+      missingDraft: 'Documento Sanity non trovato',
+      lifecycle: {
+        draft: 'BOZZA',
+        revision_draft: 'MODIFICHE NON PUBBLICATE',
+        published: 'PUBBLICATO',
+        missing: 'DOCUMENTO SANITY NON TROVATO',
+      },
       noArticlesTitle: 'Nessuna bozza redazionale',
       noArticlesText: 'Crea la prima bozza per iniziare a scrivere nel custom editor.',
       dashboard: 'Dashboard redazionale',
@@ -148,13 +160,16 @@ if (access.ok) {
         {!listError && items.length > 0 && (
           <div class="editorial-article-list__items">
             {items.map((item) => {
-              const article = item.draft;
+              const article = item.article || item.draft;
               const href = getEditorialArticleEditPath(item.sanityDocumentId, currentLang);
+              const lifecycle = item.sanityLifecycle || 'missing';
+              const lifecycleLabel = copy.lifecycle[lifecycle] || copy.lifecycle.missing;
+              const updatedAt = article?.updatedAt || item.updatedAt;
 
               return (
                 <article class="editorial-article-row">
                   <div>
-                    <p class="editorial-kicker">{article?.language || '—'} · {article?.type || copy.type}</p>
+                    <p class="editorial-kicker">{lifecycleLabel}</p>
                     <h3>{article?.title || copy.untitled}</h3>
                     <dl class="editorial-article-row__meta">
                       <div>
@@ -167,7 +182,7 @@ if (access.ok) {
                       </div>
                       <div>
                         <dt>{copy.updated}</dt>
-                        <dd>{article?.updatedAt ? new Date(article.updatedAt).toLocaleString(isEnglish ? 'en' : 'it') : '—'}</dd>
+                        <dd>{updatedAt ? new Date(updatedAt).toLocaleString(isEnglish ? 'en' : 'it') : '—'}</dd>
                       </div>
                     </dl>
                     {!article && (

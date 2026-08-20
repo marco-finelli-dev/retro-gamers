@@ -54,6 +54,12 @@ type EditorialArticleType = (typeof editorialArticleTypes)[number];
 type EditorialArticleLanguage = (typeof editorialArticleLanguages)[number];
 type EditorialArticleMediaFormat = (typeof editorialArticleMediaFormats)[number];
 type EditorialArticleRatingField = (typeof editorialArticleRatingFields)[number];
+export type EditorialArticleSanityLifecycle =
+  | 'draft'
+  | 'revision_draft'
+  | 'published'
+  | 'missing';
+type EditorialArticleSanitySource = 'draft' | 'published';
 type EditorialArticleReferenceTargetType =
   | 'category'
   | 'platform'
@@ -164,6 +170,9 @@ type EditorialDocumentRow = {
 export type EditorialArticleDraft = {
   _id: string;
   _rev: string;
+  rootDocumentId: string;
+  documentSource: EditorialArticleSanitySource;
+  documentLifecycle: EditorialArticleSanityLifecycle;
   title: string;
   subtitle: string;
   cardExcerpt: string;
@@ -203,8 +212,11 @@ export type EditorialArticleDraft = {
 export type EditorialArticleListItem = {
   sanityDocumentId: string;
   workflowStatus: EditorialWorkflowStatus;
+  sanityLifecycle: EditorialArticleSanityLifecycle;
+  documentSource: EditorialArticleSanitySource | null;
   updatedAt: string | null;
   createdAt: string | null;
+  article: EditorialArticleDraft | null;
   draft: EditorialArticleDraft | null;
 };
 
@@ -958,6 +970,71 @@ function getDraftDocumentId(rootDocumentId: string) {
   return `drafts.${rootDocumentId}`;
 }
 
+function getArticleDocumentSource(documentId: unknown): EditorialArticleSanitySource {
+  return String(documentId || '').startsWith('drafts.') ? 'draft' : 'published';
+}
+
+function getSanityLifecycleFromDocuments({
+  draftDocument,
+  publishedDocument,
+}: {
+  draftDocument: Record<string, unknown> | null;
+  publishedDocument: Record<string, unknown> | null;
+}): EditorialArticleSanityLifecycle {
+  if (draftDocument && publishedDocument) return 'revision_draft';
+  if (draftDocument) return 'draft';
+  if (publishedDocument) return 'published';
+
+  return 'missing';
+}
+
+function getPreferredSanityArticleDocument({
+  draftDocument,
+  publishedDocument,
+}: {
+  draftDocument: Record<string, unknown> | null;
+  publishedDocument: Record<string, unknown> | null;
+}) {
+  if (draftDocument) {
+    return { source: 'draft' as const, document: draftDocument };
+  }
+
+  if (publishedDocument) {
+    return { source: 'published' as const, document: publishedDocument };
+  }
+
+  return { source: null, document: null };
+}
+
+async function fetchSanityArticleDocumentPair(rootDocumentId: string) {
+  const draftDocumentId = getDraftDocumentId(rootDocumentId);
+  const [draftDocument, publishedDocument] = await Promise.all([
+    getSanityRawClient().getDocument<Record<string, unknown>>(draftDocumentId),
+    getSanityRawClient().getDocument<Record<string, unknown>>(rootDocumentId),
+  ]);
+
+  const safeDraftDocument = draftDocument && draftDocument._type === 'article' ? draftDocument : null;
+  const safePublishedDocument = publishedDocument && publishedDocument._type === 'article'
+    ? publishedDocument
+    : null;
+  const preferred = getPreferredSanityArticleDocument({
+    draftDocument: safeDraftDocument,
+    publishedDocument: safePublishedDocument,
+  });
+
+  return {
+    draftDocumentId,
+    draftDocument: safeDraftDocument,
+    publishedDocument: safePublishedDocument,
+    lifecycle: getSanityLifecycleFromDocuments({
+      draftDocument: safeDraftDocument,
+      publishedDocument: safePublishedDocument,
+    }),
+    documentSource: preferred.source,
+    document: preferred.document,
+  };
+}
+
 function normalizeEditableArticleRootDocumentId(value: unknown) {
   const documentId = String(value || '').trim();
   const rootDocumentId = documentId.startsWith('drafts.')
@@ -1171,16 +1248,26 @@ async function hydrateDraftArticle(article: EditorialArticleDraft) {
 
 function normalizeDraftArticle(
   document: Record<string, unknown> | null,
-  author: EditorialArticleAuthorInfo | null = null
+  author: EditorialArticleAuthorInfo | null = null,
+  state: {
+    rootDocumentId?: string;
+    documentSource?: EditorialArticleSanitySource;
+    documentLifecycle?: EditorialArticleSanityLifecycle;
+  } = {}
 ): EditorialArticleDraft | null {
   if (!document || document._type !== 'article') return null;
 
   const slugValue = isPlainObject(document.slug) ? document.slug.current : '';
   const authorReference = isPlainObject(document.author) ? normalizeReference(document.author) : null;
+  const rootDocumentId = state.rootDocumentId || normalizeArticleReferenceRootId(document._id);
+  const documentSource = state.documentSource || getArticleDocumentSource(document._id);
 
   return {
     _id: String(document._id || ''),
     _rev: String(document._rev || ''),
+    rootDocumentId,
+    documentSource,
+    documentLifecycle: state.documentLifecycle || (documentSource === 'draft' ? 'draft' : 'published'),
     title: normalizeString(document.title, 300),
     subtitle: normalizeString(document.subtitle, 500),
     cardExcerpt: normalizeString(document.cardExcerpt, 500),
@@ -1976,27 +2063,38 @@ export async function fetchOwnEditorialArticles(context: EditableEditorialContex
 
   const rows = (data || []) as EditorialDocumentRow[];
   const items: EditorialArticleListItem[] = [];
-  const rawClient = getSanityRawClient();
 
   for (const row of rows) {
     const ownership = normalizeOwnership(row);
     if (!ownership) continue;
 
-    let draft: EditorialArticleDraft | null = null;
+    let article: EditorialArticleDraft | null = null;
+    let sanityLifecycle: EditorialArticleSanityLifecycle = 'missing';
+    let documentSource: EditorialArticleSanitySource | null = null;
 
     try {
-      const document = await rawClient.getDocument<Record<string, unknown>>(getDraftDocumentId(ownership.sanityDocumentId));
-      draft = normalizeDraftArticle(document || null);
+      const resolved = await fetchSanityArticleDocumentPair(ownership.sanityDocumentId);
+
+      sanityLifecycle = resolved.lifecycle;
+      documentSource = resolved.documentSource;
+      article = normalizeDraftArticle(resolved.document || null, null, {
+        rootDocumentId: ownership.sanityDocumentId,
+        documentSource: resolved.documentSource || undefined,
+        documentLifecycle: resolved.lifecycle,
+      });
     } catch (error) {
-      logApiError('editorial-article.list.draft', error);
+      logApiError('editorial-article.list.sanity', error);
     }
 
     items.push({
       sanityDocumentId: ownership.sanityDocumentId,
       workflowStatus: ownership.workflowStatus,
+      sanityLifecycle,
+      documentSource,
       createdAt: row.created_at || null,
       updatedAt: row.updated_at || null,
-      draft,
+      article,
+      draft: article,
     });
   }
 
@@ -2034,39 +2132,66 @@ export async function fetchEditableEditorialArticle({
   }
 
   try {
-    const document = await getSanityRawClient().getDocument<Record<string, unknown>>(getDraftDocumentId(sanityDocumentId));
-    let draft: EditorialArticleDraft | null;
+    const resolved = await fetchSanityArticleDocumentPair(sanityDocumentId);
 
-    try {
-      draft = normalizeDraftArticle(document || null);
-    } catch (error) {
-      logApiError('editorial-article.fetch.normalize', error);
-
-      return { ok: false as const, status: 422, error: 'malformed_draft' };
-    }
-
-    if (!draft) {
-      return { ok: false as const, status: 404, error: 'sanity_draft_missing' };
-    }
-
-    const conflict = getOwnershipConflict(ownership, draft.authorId);
-    if (conflict.hasConflict || draft.authorId !== context.sanityAuthorId) {
+    if (!resolved.document || !resolved.documentSource) {
       return {
         ok: false as const,
-        status: 409,
-        error: 'author_ownership_conflict',
-        conflict,
+        status: 404,
+        error: 'sanity_document_missing',
+        documentLifecycle: resolved.lifecycle,
       };
     }
 
-    if (draft.isPublic) {
-      return { ok: false as const, status: 409, error: 'public_flag_conflict' };
+    const normalizedDocuments = [resolved.draftDocument, resolved.publishedDocument]
+      .filter((document): document is Record<string, unknown> => Boolean(document))
+      .map((document) => normalizeDraftArticle(document, null, {
+        rootDocumentId: ownership.sanityDocumentId,
+        documentSource: getArticleDocumentSource(document._id),
+        documentLifecycle: resolved.lifecycle,
+      }));
+
+    if (normalizedDocuments.some((document) => !document)) {
+      return { ok: false as const, status: 422, error: 'malformed_article' };
     }
 
-    const author = await fetchAuthorInfo(draft.authorId);
-    const article = await hydrateDraftArticle({ ...draft, author });
+    for (const document of normalizedDocuments as EditorialArticleDraft[]) {
+      const conflict = getOwnershipConflict(ownership, document.authorId);
 
-    return { ok: true as const, ownership, article };
+      if (conflict.hasConflict || document.authorId !== context.sanityAuthorId) {
+        return {
+          ok: false as const,
+          status: 409,
+          error: 'author_ownership_conflict',
+          conflict,
+          documentLifecycle: resolved.lifecycle,
+        };
+      }
+    }
+
+    const selectedArticle = normalizeDraftArticle(resolved.document, null, {
+      rootDocumentId: ownership.sanityDocumentId,
+      documentSource: resolved.documentSource,
+      documentLifecycle: resolved.lifecycle,
+    });
+
+    if (!selectedArticle) {
+      return { ok: false as const, status: 422, error: 'malformed_article' };
+    }
+
+    const author = await fetchAuthorInfo(selectedArticle.authorId);
+    const article = await hydrateDraftArticle({ ...selectedArticle, author });
+
+    return {
+      ok: true as const,
+      ownership,
+      article,
+      documentLifecycle: resolved.lifecycle,
+      documentSource: resolved.documentSource,
+      sourceDocument: resolved.document,
+      draftDocument: resolved.draftDocument,
+      publishedDocument: resolved.publishedDocument,
+    };
   } catch (error) {
     logApiError('editorial-article.fetch', error);
     return { ok: false as const, status: 500, error: 'article_fetch_failed' };
@@ -2129,6 +2254,107 @@ async function getPatchFromPayload(
   return { set, unset };
 }
 
+type EditorialArticlePatch = Awaited<ReturnType<typeof getPatchFromPayload>>;
+
+function clonePublishedDocumentAsDraft(
+  publishedDocument: Record<string, unknown>,
+  draftDocumentId: string
+) {
+  const draftDocument = JSON.parse(JSON.stringify(publishedDocument)) as Record<string, unknown>;
+
+  draftDocument._id = draftDocumentId;
+  delete draftDocument._rev;
+  delete draftDocument._createdAt;
+  delete draftDocument._updatedAt;
+
+  return draftDocument;
+}
+
+function setPlainDocumentPath(
+  document: Record<string, unknown>,
+  path: string,
+  value: unknown
+) {
+  const segments = path.split('.').filter(Boolean);
+  let target = document;
+
+  for (const segment of segments.slice(0, -1)) {
+    const current = target[segment];
+
+    if (!isPlainObject(current)) {
+      target[segment] = {};
+    }
+
+    target = target[segment] as Record<string, unknown>;
+  }
+
+  const finalSegment = segments.at(-1);
+  if (finalSegment) {
+    target[finalSegment] = value;
+  }
+}
+
+function unsetPlainDocumentPath(document: Record<string, unknown>, path: string) {
+  const segments = path.split('.').filter(Boolean);
+  let target = document;
+
+  for (const segment of segments.slice(0, -1)) {
+    const current = target[segment];
+
+    if (!isPlainObject(current)) return;
+
+    target = current;
+  }
+
+  const finalSegment = segments.at(-1);
+  if (finalSegment) {
+    delete target[finalSegment];
+  }
+}
+
+function applyArticlePatchToPlainDocument(
+  document: Record<string, unknown>,
+  patch: EditorialArticlePatch
+) {
+  for (const [path, value] of Object.entries(patch.set)) {
+    setPlainDocumentPath(document, path, value);
+  }
+
+  for (const path of patch.unset) {
+    unsetPlainDocumentPath(document, path);
+  }
+
+  return document;
+}
+
+async function createDraftFromPublishedArticle({
+  rootDocumentId,
+  revisionId,
+  patch,
+}: {
+  rootDocumentId: string;
+  revisionId: string;
+  patch: EditorialArticlePatch;
+}) {
+  const resolved = await fetchSanityArticleDocumentPair(rootDocumentId);
+
+  if (resolved.draftDocument) {
+    throw new Error('revision_conflict');
+  }
+
+  if (!resolved.publishedDocument || resolved.publishedDocument._rev !== revisionId) {
+    throw new Error('revision_conflict');
+  }
+
+  const draftDocumentId = getDraftDocumentId(rootDocumentId);
+  const draftDocument = applyArticlePatchToPlainDocument(
+    clonePublishedDocumentAsDraft(resolved.publishedDocument, draftDocumentId),
+    patch
+  );
+
+  return getSanityWriteClient().create<Record<string, unknown>>(draftDocument);
+}
+
 function isRevisionConflict(error: unknown) {
   if (!error || typeof error !== 'object') return false;
 
@@ -2168,19 +2394,34 @@ export async function updateEditableEditorialArticle({
   const draftDocumentId = getDraftDocumentId(fetchResult.ownership.sanityDocumentId);
 
   try {
-    let sanityPatch = getSanityWriteClient()
-      .patch(draftDocumentId)
-      .ifRevisionId(fetchResult.article._rev)
-      .set(patch.set);
+    let updated: Record<string, unknown>;
 
-    if (patch.unset.length > 0) {
-      sanityPatch = sanityPatch.unset(patch.unset);
+    if (fetchResult.documentSource === 'published') {
+      updated = await createDraftFromPublishedArticle({
+        rootDocumentId: fetchResult.ownership.sanityDocumentId,
+        revisionId: fetchResult.article._rev,
+        patch,
+      });
+    } else {
+      let sanityPatch = getSanityWriteClient()
+        .patch(draftDocumentId)
+        .ifRevisionId(fetchResult.article._rev)
+        .set(patch.set);
+
+      if (patch.unset.length > 0) {
+        sanityPatch = sanityPatch.unset(patch.unset);
+      }
+
+      updated = await sanityPatch.commit<Record<string, unknown>>({
+        autoGenerateArrayKeys: true,
+      });
     }
 
-    const updated = await sanityPatch.commit<Record<string, unknown>>({
-      autoGenerateArrayKeys: true,
+    const normalizedArticle = normalizeDraftArticle(updated, fetchResult.article.author, {
+      rootDocumentId: fetchResult.ownership.sanityDocumentId,
+      documentSource: 'draft',
+      documentLifecycle: fetchResult.documentSource === 'published' ? 'revision_draft' : fetchResult.documentLifecycle,
     });
-    const normalizedArticle = normalizeDraftArticle(updated, fetchResult.article.author);
 
     if (!normalizedArticle) {
       return { ok: false as const, status: 502, error: 'sanity_article_invalid' };
@@ -2396,11 +2637,22 @@ export async function updateEditorialArticleFeaturedImage({
 
   try {
     if (action === 'remove') {
-      await getSanityWriteClient()
-        .patch(draftDocumentId)
-        .ifRevisionId(revisionId)
-        .unset(['featuredImage'])
-        .commit<Record<string, unknown>>();
+      if (fetchResult.documentSource === 'published') {
+        await createDraftFromPublishedArticle({
+          rootDocumentId: fetchResult.ownership.sanityDocumentId,
+          revisionId,
+          patch: {
+            set: {},
+            unset: ['featuredImage'],
+          },
+        });
+      } else {
+        await getSanityWriteClient()
+          .patch(draftDocumentId)
+          .ifRevisionId(revisionId)
+          .unset(['featuredImage'])
+          .commit<Record<string, unknown>>();
+      }
       articleUpdated = true;
       const readBack = await getSanityRawClient().getDocument<Record<string, unknown>>(draftDocumentId);
       const resultRevision = typeof readBack?._rev === 'string' ? readBack._rev : null;
@@ -2425,7 +2677,11 @@ export async function updateEditorialArticleFeaturedImage({
         };
       }
 
-      const normalizedArticle = normalizeDraftArticle(readBack, fetchResult.article.author);
+      const normalizedArticle = normalizeDraftArticle(readBack, fetchResult.article.author, {
+        rootDocumentId: fetchResult.ownership.sanityDocumentId,
+        documentSource: 'draft',
+        documentLifecycle: fetchResult.documentSource === 'published' ? 'revision_draft' : fetchResult.documentLifecycle,
+      });
 
       if (!normalizedArticle) {
         logFeaturedImageResult({
@@ -2515,11 +2771,22 @@ export async function updateEditorialArticleFeaturedImage({
       imageValue.alt = alt;
     }
 
-    await getSanityWriteClient()
-      .patch(draftDocumentId)
-      .ifRevisionId(revisionId)
-      .set({ featuredImage: imageValue })
-      .commit<Record<string, unknown>>();
+    if (fetchResult.documentSource === 'published') {
+      await createDraftFromPublishedArticle({
+        rootDocumentId: fetchResult.ownership.sanityDocumentId,
+        revisionId,
+        patch: {
+          set: { featuredImage: imageValue },
+          unset: [],
+        },
+      });
+    } else {
+      await getSanityWriteClient()
+        .patch(draftDocumentId)
+        .ifRevisionId(revisionId)
+        .set({ featuredImage: imageValue })
+        .commit<Record<string, unknown>>();
+    }
     articleUpdated = true;
     const readBack = await getSanityRawClient().getDocument<Record<string, unknown>>(draftDocumentId);
     const resultRevision = typeof readBack?._rev === 'string' ? readBack._rev : null;
@@ -2545,7 +2812,11 @@ export async function updateEditorialArticleFeaturedImage({
       };
     }
 
-    const normalizedArticle = normalizeDraftArticle(readBack, fetchResult.article.author);
+    const normalizedArticle = normalizeDraftArticle(readBack, fetchResult.article.author, {
+      rootDocumentId: fetchResult.ownership.sanityDocumentId,
+      documentSource: 'draft',
+      documentLifecycle: fetchResult.documentSource === 'published' ? 'revision_draft' : fetchResult.documentLifecycle,
+    });
 
     if (!normalizedArticle) {
       logFeaturedImageResult({

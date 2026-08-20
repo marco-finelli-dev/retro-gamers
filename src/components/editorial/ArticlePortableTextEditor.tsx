@@ -167,6 +167,9 @@ type EditableArticleRating = Record<RatingField, number | null> & {
 type EditableArticle = {
   _id: string;
   _rev: string;
+  rootDocumentId: string;
+  documentSource: 'draft' | 'published';
+  documentLifecycle: 'draft' | 'revision_draft' | 'published' | 'missing';
   title: string;
   subtitle: string;
   cardExcerpt: string;
@@ -3803,6 +3806,9 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     setDraft((current) => ({
       ...current,
       _rev: articleUpdate._rev,
+      rootDocumentId: articleUpdate.rootDocumentId,
+      documentSource: articleUpdate.documentSource,
+      documentLifecycle: articleUpdate.documentLifecycle,
       featuredImage: articleUpdate.featuredImage,
     }));
   };
