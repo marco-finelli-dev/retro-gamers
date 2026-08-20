@@ -82,6 +82,23 @@ type BodyImageBlock = PortableTextObject & {
   isWide?: boolean;
 };
 
+type ImageRowLayout = 'standard' | 'uniformHeight';
+
+type ImageRowItem = Record<string, unknown> & {
+  _key?: string;
+  image?: BodyImageBlock | null;
+  alt?: string;
+  caption?: string;
+  displayMode?: string;
+};
+
+type ImageRowBlock = PortableTextObject & {
+  _type: 'imageRow';
+  images?: ImageRowItem[];
+  groupCaption?: string;
+  layout?: string;
+};
+
 type EditableArticleBodyImageAsset = {
   id: string;
   url: string;
@@ -302,6 +319,32 @@ type Labels = {
   taxonomyLink: string;
   pageLink: string;
   insertImage: string;
+  insertImageRow: string;
+  editImageRow: string;
+  updateImageRow: string;
+  removeImageRow: string;
+  imageRowMenu: string;
+  imageRowRemoveConfirm: string;
+  imageRowChooseFiles: string;
+  imageRowDropFiles: string;
+  imageRowFormats: string;
+  imageRowSelectedImages: string;
+  imageRowSelectImage: string;
+  imageRowImageSettings: string;
+  imageRowAddImages: string;
+  imageRowRemoveImage: string;
+  imageRowMoveLeft: string;
+  imageRowMoveRight: string;
+  imageRowMinCount: string;
+  imageRowMaxCount: string;
+  imageRowMissingImages: string;
+  imageRowUploading: string;
+  imageRowUploadFailed: string;
+  imageRowReady: string;
+  imageRowLayout: string;
+  imageRowLayoutStandard: string;
+  imageRowLayoutUniformHeight: string;
+  imageRowGroupCaption: string;
   editImage: string;
   updateImage: string;
   removeImage: string;
@@ -383,6 +426,9 @@ const releaseYearSelectValues = Array.from({ length: 91 }, (_, index) => 2050 - 
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const featuredImageMaxFileSize = 5 * 1024 * 1024;
 const imageDisplayModes: ImageDisplayMode[] = ['cover', 'contain', 'wide', 'natural'];
+const imageRowLayouts: ImageRowLayout[] = ['standard', 'uniformHeight'];
+const imageRowMinImages = 2;
+const imageRowMaxImages = 8;
 const referenceAnnotationControls: Array<{
   name: ReferenceAnnotationName;
   icon: string;
@@ -498,7 +544,36 @@ const schemaDefinition = defineSchema({
         { name: 'isWide', type: 'boolean' },
       ],
     },
-    { name: 'imageRow' },
+    {
+      name: 'imageRow',
+      fields: [
+        {
+          name: 'images',
+          type: 'array',
+          of: [
+            {
+              type: 'object',
+              fields: [
+                {
+                  name: 'image',
+                  type: 'object',
+                  fields: [
+                    { name: 'asset', type: 'object' },
+                    { name: 'crop', type: 'object' },
+                    { name: 'hotspot', type: 'object' },
+                  ],
+                },
+                { name: 'alt', type: 'string' },
+                { name: 'caption', type: 'string' },
+                { name: 'displayMode', type: 'string' },
+              ],
+            },
+          ],
+        },
+        { name: 'groupCaption', type: 'text' },
+        { name: 'layout', type: 'string' },
+      ],
+    },
     { name: 'video' },
     { name: 'asideBox' },
   ],
@@ -681,6 +756,100 @@ function getBodyImageMetadataLabel(image: BodyImageBlock | null | undefined, lab
   const assetRef = getBodyImageAssetRef(image);
 
   return assetRef ? assetRef : labels.featuredImageMetadataUnavailable;
+}
+
+function normalizeImageRowLayout(value: unknown): ImageRowLayout {
+  return imageRowLayouts.includes(value as ImageRowLayout) ? value as ImageRowLayout : 'standard';
+}
+
+function getImageRowLayoutLabel(layout: ImageRowLayout, labels: Labels) {
+  return layout === 'uniformHeight' ? labels.imageRowLayoutUniformHeight : labels.imageRowLayoutStandard;
+}
+
+function getImageRowItemImage(item: ImageRowItem | null | undefined): BodyImageBlock | null {
+  return item?.image && typeof item.image === 'object' ? item.image : null;
+}
+
+function getImageRowItemKey(item: ImageRowItem | null | undefined) {
+  return typeof item?._key === 'string' && item._key.trim() ? item._key : getKey();
+}
+
+function createImageRowImageValue({
+  source,
+  assetId,
+  alt,
+  caption,
+  displayMode,
+  resetCropHotspot = false,
+}: {
+  source?: ImageRowItem | null;
+  assetId: string;
+  alt: string;
+  caption: string;
+  displayMode: ImageDisplayMode;
+  resetCropHotspot?: boolean;
+}) {
+  const sourceImage = getImageRowItemImage(source);
+  const sourceImageObject = sourceImage && typeof sourceImage === 'object' ? sourceImage : {};
+  const image = {
+    ...(resetCropHotspot ? {} : sourceImageObject),
+    _type: 'image',
+    asset: {
+      _type: 'reference',
+      _ref: assetId,
+    },
+  };
+
+  if (resetCropHotspot) {
+    delete (image as Record<string, unknown>).crop;
+    delete (image as Record<string, unknown>).hotspot;
+  }
+
+  return {
+    ...(source || {}),
+    _key: getImageRowItemKey(source),
+    image,
+    alt: normalizeSingleLineValue(alt, 'space').slice(0, 120).trim(),
+    caption: normalizeSingleLineValue(caption, 'space').slice(0, 500).trim(),
+    displayMode,
+  };
+}
+
+function createImageRowBlockValue({
+  images,
+  groupCaption,
+  layout,
+}: {
+  images: ImageRowItem[];
+  groupCaption: string;
+  layout: ImageRowLayout;
+}) {
+  return {
+    images,
+    groupCaption: groupCaption.slice(0, 800).trim(),
+    layout,
+  };
+}
+
+function getImageRowRows(images: ImageRowItem[]) {
+  const total = images.length;
+
+  if (total <= 4) return [images];
+  if (total === 5 || total === 6) return [images.slice(0, 3), images.slice(3)];
+  if (total === 7 || total === 8) return [images.slice(0, 4), images.slice(4)];
+
+  const rows: ImageRowItem[][] = [];
+  let index = 0;
+  let remaining = total;
+
+  while (remaining > 0) {
+    const take = remaining === 5 || remaining === 6 ? 3 : 4;
+    rows.push(images.slice(index, index + take));
+    index += take;
+    remaining -= take;
+  }
+
+  return rows;
 }
 
 function ImageObjectBlock({
@@ -866,6 +1035,196 @@ function ImageObjectBlock({
   );
 }
 
+function ImageRowObjectBlock({
+  attributes,
+  children,
+  node,
+  path,
+  focused,
+  selected,
+  labels,
+  saveEndpoint,
+  assetPreviewUrls,
+  onAssetPreview,
+  readOnly,
+}: any) {
+  const editor = useEditor();
+  const imageRow = node as ImageRowBlock;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const images = Array.isArray(imageRow.images) ? imageRow.images : [];
+  const layout = normalizeImageRowLayout(imageRow.layout);
+  const rows = layout === 'uniformHeight' ? [images] : getImageRowRows(images);
+  const groupCaption = typeof imageRow.groupCaption === 'string' ? imageRow.groupCaption.trim() : '';
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isMenuOpen]);
+
+  const applyImageRowUpdate = (value: Record<string, unknown>) => {
+    editor.send({
+      type: 'block.set',
+      at: path,
+      props: value,
+    });
+    editor.send({ type: 'focus' });
+    setIsModalOpen(false);
+  };
+
+  const moveImageRowBlock = (direction: 'up' | 'down') => {
+    editor.send({
+      type: direction === 'up' ? 'move.block up' : 'move.block down',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  const selectImageRowBlock = () => {
+    editor.send({
+      type: 'select.block',
+      at: path,
+    });
+  };
+
+  const startImageRowDrag = (event: DragEvent<HTMLElement>) => {
+    selectImageRowBlock();
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const openImageRowModal = () => {
+    setIsMenuOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const removeImageRowBlock = () => {
+    if (!window.confirm(labels.imageRowRemoveConfirm)) return;
+
+    editor.send({
+      type: 'delete.block',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <div
+      {...attributes}
+      className="editorial-pte__object editorial-pte__image-object editorial-pte__image-row-object"
+      data-focused={focused ? 'true' : undefined}
+      data-selected={selected ? 'true' : undefined}
+      data-layout={layout}
+    >
+      {children}
+      <div className="editorial-pte__image-content editorial-pte__image-row-content" contentEditable={false}>
+        <div className="editorial-pte__image-menu" ref={menuRef}>
+          <button
+            type="button"
+            className="editorial-pte__image-menu-button"
+            aria-label={labels.imageRowMenu}
+            title={labels.imageRowMenu}
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            onClick={() => setIsMenuOpen((value) => !value)}
+          >
+            …
+          </button>
+          <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
+            <button type="button" role="menuitem" onClick={openImageRowModal}>
+              {labels.editImageRow}
+            </button>
+            <button type="button" role="menuitem" onClick={() => moveImageRowBlock('up')}>
+              {labels.moveUp}
+            </button>
+            <button type="button" role="menuitem" onClick={() => moveImageRowBlock('down')}>
+              {labels.moveDown}
+            </button>
+            <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeImageRowBlock}>
+              {labels.removeImageRow}
+            </button>
+          </div>
+        </div>
+
+        <div
+          className={`editorial-pte__image-row-gallery${layout === 'uniformHeight' ? ' editorial-pte__image-row-gallery--uniform-height' : ''}`}
+          draggable={!readOnly}
+          title={labels.bodyImageDragHandle}
+          onMouseDown={selectImageRowBlock}
+          onDragStart={startImageRowDrag}
+        >
+          {rows.map((row, rowIndex) => (
+            <div
+              className={`editorial-pte__image-row editorial-pte__image-row--${row.length}`}
+              style={{ '--editorial-image-row-count': row.length } as Record<string, number>}
+              key={`row-${rowIndex}`}
+            >
+              {row.map((item) => {
+                const image = getImageRowItemImage(item);
+                const previewUrl = getBodyImagePreviewUrl(image, 540, assetPreviewUrls);
+                const displayMode = normalizeImageDisplayMode(item.displayMode);
+
+                return (
+                  <figure className={`editorial-pte__image-row-item editorial-pte__image-row-item--${displayMode}`} key={getImageRowItemKey(item)}>
+                    <div className="editorial-pte__image-row-preview">
+                      {previewUrl ? (
+                        <img src={previewUrl} alt={item.alt || ''} loading="lazy" decoding="async" draggable={false} />
+                      ) : (
+                        <div className="editorial-current-media__placeholder">{labels.bodyImageNoPreview}</div>
+                      )}
+                    </div>
+                    {item.caption && <figcaption>{item.caption}</figcaption>}
+                  </figure>
+                );
+              })}
+            </div>
+          ))}
+          {groupCaption && <p className="editorial-pte__image-row-caption">{groupCaption}</p>}
+          {layout === 'uniformHeight' && (
+            <div className="editorial-pte__image-meta">
+              <span className="editorial-pte__image-mode">{getImageRowLayoutLabel(layout, labels)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isModalOpen && (
+        <ImageRowModal
+          mode="edit"
+          labels={labels}
+          saveEndpoint={saveEndpoint}
+          initialRow={imageRow}
+          assetPreviewUrls={assetPreviewUrls}
+          onAssetPreview={onAssetPreview}
+          onApply={applyImageRowUpdate}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 function ObjectBlock({
   attributes,
   children,
@@ -891,6 +1250,22 @@ function ObjectBlock({
       >
         {children}
       </ImageObjectBlock>
+    );
+  }
+
+  if (type === 'imageRow') {
+    return (
+      <ImageRowObjectBlock
+        attributes={attributes}
+        labels={labels}
+        node={node}
+        saveEndpoint={saveEndpoint}
+        assetPreviewUrls={assetPreviewUrls}
+        onAssetPreview={onAssetPreview}
+        {...props}
+      >
+        {children}
+      </ImageRowObjectBlock>
     );
   }
 
@@ -1499,6 +1874,527 @@ function BodyImageModal({
   );
 }
 
+type ImageRowDraftItem = {
+  key: string;
+  source: ImageRowItem | null;
+  image: BodyImageBlock | null;
+  alt: string;
+  caption: string;
+  displayMode: ImageDisplayMode;
+  selectedFile: SelectedBodyImageFile | null;
+};
+
+function createImageRowDraftItem(item: ImageRowItem): ImageRowDraftItem {
+  const image = getImageRowItemImage(item);
+
+  return {
+    key: getImageRowItemKey(item),
+    source: item,
+    image,
+    alt: typeof item.alt === 'string' ? item.alt : '',
+    caption: typeof item.caption === 'string' ? item.caption : '',
+    displayMode: normalizeImageDisplayMode(item.displayMode),
+    selectedFile: null,
+  };
+}
+
+function revokeImageRowDraftItemPreview(item: ImageRowDraftItem) {
+  if (item.selectedFile?.previewUrl) {
+    URL.revokeObjectURL(item.selectedFile.previewUrl);
+  }
+}
+
+function getImageRowDraftItemPreviewUrl(
+  item: ImageRowDraftItem,
+  assetPreviewUrls: Record<string, string>
+) {
+  if (item.selectedFile?.previewUrl) return item.selectedFile.previewUrl;
+
+  return getBodyImagePreviewUrl(item.image, 540, assetPreviewUrls);
+}
+
+function ImageRowModal({
+  mode,
+  labels,
+  saveEndpoint,
+  initialRow = null,
+  assetPreviewUrls = {},
+  onAssetPreview,
+  onApply,
+  onClose,
+}: {
+  mode: 'insert' | 'edit';
+  labels: Labels;
+  saveEndpoint: string;
+  initialRow?: ImageRowBlock | null;
+  assetPreviewUrls?: Record<string, string>;
+  onAssetPreview?: (assetId: string, url: string) => void;
+  onApply: (value: Record<string, unknown>) => void;
+  onClose: () => void;
+}) {
+  const fileInputId = useId();
+  const replaceInputId = useId();
+  const altId = useId();
+  const captionId = useId();
+  const displayModeId = useId();
+  const layoutId = useId();
+  const groupCaptionId = useId();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const replaceInputRef = useRef<HTMLInputElement | null>(null);
+  const [items, setItems] = useState<ImageRowDraftItem[]>(() =>
+    Array.isArray(initialRow?.images) ? initialRow.images.map(createImageRowDraftItem) : []
+  );
+  const itemsRef = useRef(items);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [layout, setLayout] = useState<ImageRowLayout>(normalizeImageRowLayout(initialRow?.layout));
+  const [groupCaption, setGroupCaption] = useState(typeof initialRow?.groupCaption === 'string' ? initialRow.groupCaption : '');
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [status, setStatus] = useState('');
+  const [statusTone, setStatusTone] = useState<'success' | 'error' | ''>('');
+  const title = mode === 'insert' ? labels.insertImageRow : labels.editImageRow;
+  const submitLabel = mode === 'insert' ? labels.insertImageRow : labels.updateImageRow;
+  const selectedItem = items[selectedIndex] || null;
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  useEffect(() => () => {
+    itemsRef.current.forEach(revokeImageRowDraftItemPreview);
+  }, []);
+
+  const resetFileInput = () => {
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (replaceInputRef.current) replaceInputRef.current.value = '';
+  };
+
+  const setItemAt = (index: number, patch: Partial<ImageRowDraftItem>) => {
+    setItems((current) => current.map((item, itemIndex) => {
+      if (itemIndex !== index) return item;
+      if (patch.selectedFile && item.selectedFile?.previewUrl) {
+        URL.revokeObjectURL(item.selectedFile.previewUrl);
+      }
+
+      return {
+        ...item,
+        ...patch,
+      };
+    }));
+  };
+
+  const createDraftItemFromFile = async (file: File) => {
+    const dimensions = await getImageDimensions(file);
+
+    return {
+      key: getKey(),
+      source: null,
+      image: null,
+      alt: '',
+      caption: '',
+      displayMode: 'cover' as ImageDisplayMode,
+      selectedFile: {
+        file,
+        previewUrl: URL.createObjectURL(file),
+        width: dimensions.width,
+        height: dimensions.height,
+      },
+    };
+  };
+
+  const addFiles = async (fileList: FileList | File[] | null | undefined) => {
+    const files = Array.from(fileList || []);
+
+    if (files.length === 0) return;
+    if (items.length + files.length > imageRowMaxImages) {
+      setStatus(labels.imageRowMaxCount);
+      setStatusTone('error');
+      resetFileInput();
+      return;
+    }
+
+    for (const file of files) {
+      const error = getBodyImageFileValidationError(file, labels);
+
+      if (error) {
+        setStatus(error);
+        setStatusTone('error');
+        resetFileInput();
+        return;
+      }
+    }
+
+    const nextItems = await Promise.all(files.map(createDraftItemFromFile));
+
+    setItems((current) => {
+      const next = [...current, ...nextItems];
+      setSelectedIndex(Math.max(0, next.length - nextItems.length));
+      return next;
+    });
+    setStatus(labels.imageRowReady);
+    setStatusTone('success');
+    resetFileInput();
+  };
+
+  const replaceSelectedFile = async (file: File | null | undefined) => {
+    if (!selectedItem || !file) return;
+
+    const error = getBodyImageFileValidationError(file, labels);
+
+    if (error) {
+      setStatus(error);
+      setStatusTone('error');
+      resetFileInput();
+      return;
+    }
+
+    const dimensions = await getImageDimensions(file);
+    setItemAt(selectedIndex, {
+      selectedFile: {
+        file,
+        previewUrl: URL.createObjectURL(file),
+        width: dimensions.width,
+        height: dimensions.height,
+      },
+    });
+    setStatus(labels.imageRowReady);
+    setStatusTone('success');
+    resetFileInput();
+  };
+
+  const removeItem = (index: number) => {
+    if (items.length <= imageRowMinImages) {
+      setStatus(labels.imageRowMinCount);
+      setStatusTone('error');
+      return;
+    }
+
+    setItems((current) => {
+      const item = current[index];
+      if (item) revokeImageRowDraftItemPreview(item);
+      const next = current.filter((_, itemIndex) => itemIndex !== index);
+      setSelectedIndex(Math.max(0, Math.min(index, next.length - 1)));
+      return next;
+    });
+    setStatus('');
+    setStatusTone('');
+  };
+
+  const moveItem = (index: number, direction: 'left' | 'right') => {
+    const targetIndex = direction === 'left' ? index - 1 : index + 1;
+
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+
+    setItems((current) => {
+      const next = [...current];
+      const [item] = next.splice(index, 1);
+      next.splice(targetIndex, 0, item);
+      return next;
+    });
+    setSelectedIndex(targetIndex);
+  };
+
+  const uploadItemFile = async (item: ImageRowDraftItem) => {
+    if (!item.selectedFile) return null;
+
+    const formData = new FormData();
+    formData.set('file', item.selectedFile.file);
+
+    const response = await fetch(getBodyImageUploadEndpoint(saveEndpoint), {
+      method: 'POST',
+      body: formData,
+    });
+    const result = await response.json();
+
+    if (!response.ok || !result?.ok || !result.asset?.id) {
+      throw new Error(result?.error || 'image_row_upload_failed');
+    }
+
+    return result.asset as EditableArticleBodyImageAsset;
+  };
+
+  const applyImageRow = async () => {
+    if (isUploading) return;
+
+    if (items.length < imageRowMinImages) {
+      setStatus(labels.imageRowMissingImages);
+      setStatusTone('error');
+      return;
+    }
+
+    if (items.length > imageRowMaxImages) {
+      setStatus(labels.imageRowMaxCount);
+      setStatusTone('error');
+      return;
+    }
+
+    setIsUploading(true);
+    setStatus(labels.imageRowUploading);
+    setStatusTone('');
+
+    try {
+      const nextImages: ImageRowItem[] = [];
+
+      for (const item of items) {
+        const uploadedAsset = await uploadItemFile(item);
+        const assetId = uploadedAsset?.id || getBodyImageAssetRef(item.image);
+
+        if (uploadedAsset?.id && uploadedAsset.url) {
+          onAssetPreview?.(uploadedAsset.id, uploadedAsset.url);
+        }
+
+        if (!assetId) {
+          setStatus(labels.imageRowMissingImages);
+          setStatusTone('error');
+          return;
+        }
+
+        nextImages.push(createImageRowImageValue({
+          source: item.source || { _key: item.key, image: item.image || undefined },
+          assetId,
+          alt: item.alt,
+          caption: item.caption,
+          displayMode: item.displayMode,
+          resetCropHotspot: Boolean(uploadedAsset),
+        }));
+      }
+
+      onApply(createImageRowBlockValue({
+        images: nextImages,
+        groupCaption,
+        layout,
+      }));
+    } catch {
+      setStatus(labels.imageRowUploadFailed);
+      setStatusTone('error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <AnnotationModal
+      title={`🖼️🖼️ ${title}`}
+      labels={labels}
+      onClose={onClose}
+      panelClassName="editorial-pte-modal__panel--image-row"
+    >
+      <div className="editorial-image-row-modal">
+        <section className="editorial-image-row-modal__section" aria-label={labels.imageRowSelectedImages}>
+          <div className="editorial-image-row-modal__section-header">
+            <span>{labels.imageRowSelectedImages}</span>
+            <small>{items.length} / {imageRowMaxImages}</small>
+          </div>
+
+          {items.length > 0 ? (
+            <div className="editorial-image-row-modal__items">
+              {items.map((item, index) => {
+                const previewUrl = getImageRowDraftItemPreviewUrl(item, assetPreviewUrls);
+                const isSelected = index === selectedIndex;
+
+                return (
+                  <article className="editorial-image-row-modal__item" data-selected={isSelected ? 'true' : undefined} key={item.key}>
+                    <button
+                      type="button"
+                      className="editorial-image-row-modal__item-preview"
+                      aria-label={`${labels.imageRowSelectImage} ${index + 1}`}
+                      aria-pressed={isSelected}
+                      onClick={() => setSelectedIndex(index)}
+                    >
+                      {previewUrl ? (
+                        <img src={previewUrl} alt={item.alt || ''} loading="lazy" decoding="async" />
+                      ) : (
+                        <span>{labels.bodyImageNoPreview}</span>
+                      )}
+                    </button>
+                    <div className="editorial-image-row-modal__item-actions">
+                      <button type="button" className="editorial-mini-button" onClick={() => moveItem(index, 'left')} disabled={isUploading || index === 0}>
+                        {labels.imageRowMoveLeft}
+                      </button>
+                      <button type="button" className="editorial-mini-button" onClick={() => moveItem(index, 'right')} disabled={isUploading || index === items.length - 1}>
+                        {labels.imageRowMoveRight}
+                      </button>
+                      <button type="button" className="editorial-mini-button editorial-mini-button--danger" onClick={() => removeItem(index)} disabled={isUploading}>
+                        {labels.imageRowRemoveImage}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="editorial-file-meta">{labels.imageRowMissingImages}</p>
+          )}
+        </section>
+
+        <label
+          className="editorial-dropzone editorial-dropzone--body-image"
+          data-drag-active={isDragActive ? 'true' : undefined}
+          htmlFor={fileInputId}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            setIsDragActive(true);
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setIsDragActive(true);
+          }}
+          onDragLeave={() => setIsDragActive(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragActive(false);
+            void addFiles(event.dataTransfer.files);
+          }}
+        >
+          <span>{items.length > 0 ? labels.imageRowAddImages : labels.imageRowChooseFiles}</span>
+          <small>{labels.imageRowDropFiles}</small>
+          <input
+            ref={fileInputRef}
+            id={fileInputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            onChange={(event) => void addFiles(event.currentTarget.files)}
+          />
+        </label>
+        <p className="editorial-file-meta">{labels.imageRowFormats}</p>
+
+        {selectedItem && (
+          <section className="editorial-image-row-modal__section">
+            <div className="editorial-image-row-modal__section-header">
+              <span>{labels.imageRowImageSettings}</span>
+              <small>{selectedIndex + 1} / {items.length}</small>
+            </div>
+
+            <div className="editorial-current-media editorial-current-media--body-image">
+              <div className="editorial-current-media__frame editorial-current-media__frame--body-image">
+                {getImageRowDraftItemPreviewUrl(selectedItem, assetPreviewUrls) ? (
+                  <img src={getImageRowDraftItemPreviewUrl(selectedItem, assetPreviewUrls)} alt={selectedItem.alt || ''} loading="lazy" decoding="async" />
+                ) : (
+                  <div className="editorial-current-media__placeholder">{labels.bodyImageNoPreview}</div>
+                )}
+              </div>
+              {selectedItem.selectedFile && (
+                <p className="editorial-file-meta">{getSelectedBodyImageMetadataLabel(selectedItem.selectedFile)}</p>
+              )}
+            </div>
+
+            <label className="editorial-dropzone editorial-dropzone--compact" htmlFor={replaceInputId}>
+              <span>{labels.replaceImage}</span>
+              <input
+                ref={replaceInputRef}
+                id={replaceInputId}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => void replaceSelectedFile(event.currentTarget.files?.[0])}
+              />
+            </label>
+
+            <label className="editorial-field" htmlFor={altId}>
+              <span>{labels.bodyImageAlt}</span>
+              <AutoGrowTextField
+                id={altId}
+                value={selectedItem.alt}
+                rows={2}
+                maxRows={4}
+                maxLength={120}
+                ariaLabel={labels.bodyImageAlt}
+                singleLine
+                onChange={(value) => setItemAt(selectedIndex, { alt: value })}
+              />
+            </label>
+            <CharacterCounter value={selectedItem.alt} max={120} warning={labels.cardExcerptWarning} />
+            {!selectedItem.alt.trim() && (
+              <p className="editorial-file-advice editorial-file-advice--subtle-warning">
+                {labels.bodyImageAltWarning}
+              </p>
+            )}
+
+            <label className="editorial-field" htmlFor={captionId}>
+              <span>{labels.bodyImageCaption}</span>
+              <AutoGrowTextField
+                id={captionId}
+                value={selectedItem.caption}
+                rows={2}
+                maxRows={4}
+                maxLength={500}
+                ariaLabel={labels.bodyImageCaption}
+                singleLine
+                onChange={(value) => setItemAt(selectedIndex, { caption: value })}
+              />
+            </label>
+
+            <label className="editorial-field" htmlFor={displayModeId}>
+              <span>{labels.bodyImageDisplayMode}</span>
+              <select
+                id={displayModeId}
+                value={selectedItem.displayMode}
+                onChange={(event) => setItemAt(selectedIndex, { displayMode: normalizeImageDisplayMode(event.target.value) })}
+              >
+                {imageDisplayModes.map((modeOption) => (
+                  <option key={modeOption} value={modeOption}>
+                    {getImageDisplayModeLabel(modeOption, labels)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </section>
+        )}
+
+        <label className="editorial-field" htmlFor={layoutId}>
+          <span>{labels.imageRowLayout}</span>
+          <select
+            id={layoutId}
+            value={layout}
+            onChange={(event) => setLayout(normalizeImageRowLayout(event.target.value))}
+          >
+            {imageRowLayouts.map((layoutOption) => (
+              <option key={layoutOption} value={layoutOption}>
+                {getImageRowLayoutLabel(layoutOption, labels)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="editorial-field" htmlFor={groupCaptionId}>
+          <span>{labels.imageRowGroupCaption}</span>
+          <AutoGrowTextField
+            id={groupCaptionId}
+            value={groupCaption}
+            rows={2}
+            maxRows={4}
+            maxLength={800}
+            ariaLabel={labels.imageRowGroupCaption}
+            onChange={setGroupCaption}
+          />
+        </label>
+
+        <p className="editorial-file-meta">{labels.bodyImageOrphanNotice}</p>
+
+        {status && (
+          <p className="editorial-file-advice" data-tone={statusTone || undefined} aria-live="polite">
+            {status}
+          </p>
+        )}
+
+        <div className="editorial-body-image-modal__actions">
+          <button type="button" className="editorial-mini-button" onClick={onClose} disabled={isUploading}>
+            {labels.annotationClose}
+          </button>
+          <button
+            type="button"
+            className="editorial-button editorial-body-image-modal__submit"
+            onClick={applyImageRow}
+            disabled={isUploading || items.length < imageRowMinImages || items.length > imageRowMaxImages}
+          >
+            {isUploading ? labels.imageRowUploading : submitLabel}
+          </button>
+        </div>
+      </div>
+    </AnnotationModal>
+  );
+}
+
 function Toolbar({
   labels,
   language,
@@ -1534,6 +2430,10 @@ function Toolbar({
     trigger: HTMLButtonElement | null;
   } | null>(null);
   const [imageModal, setImageModal] = useState<{
+    selection: EditorSelection;
+    trigger: HTMLButtonElement | null;
+  } | null>(null);
+  const [imageRowModal, setImageRowModal] = useState<{
     selection: EditorSelection;
     trigger: HTMLButtonElement | null;
   } | null>(null);
@@ -1642,6 +2542,20 @@ function Toolbar({
       trigger?.focus();
     }, 0);
   };
+  const openImageRowModal = (trigger: HTMLButtonElement) => {
+    setImageRowModal({
+      selection,
+      trigger,
+    });
+  };
+  const closeImageRowModal = () => {
+    const trigger = imageRowModal?.trigger;
+    setImageRowModal(null);
+
+    window.setTimeout(() => {
+      trigger?.focus();
+    }, 0);
+  };
   const insertImageBlock = (value: Record<string, unknown>) => {
     if (!imageModal) return;
 
@@ -1656,6 +2570,21 @@ function Toolbar({
     });
     editor.send({ type: 'focus' });
     setImageModal(null);
+  };
+  const insertImageRowBlock = (value: Record<string, unknown>) => {
+    if (!imageRowModal) return;
+
+    restoreSelection(imageRowModal.selection);
+    editor.send({
+      type: 'insert.block object',
+      placement: 'after',
+      blockObject: {
+        name: 'imageRow',
+        value,
+      },
+    });
+    editor.send({ type: 'focus' });
+    setImageRowModal(null);
   };
 
   const addExternalLink = () => {
@@ -1868,6 +2797,23 @@ function Toolbar({
         >
           <span className="editorial-pte-toolbar__emoji" aria-hidden="true">🖼️</span>
         </button>
+        <button
+          className="editorial-pte-toolbar__button"
+          type="button"
+          aria-label={labels.insertImageRow}
+          aria-expanded={Boolean(imageRowModal)}
+          title={labels.insertImageRow}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={(event) => {
+            if (imageRowModal) {
+              closeImageRowModal();
+            } else {
+              openImageRowModal(event.currentTarget);
+            }
+          }}
+        >
+          <span className="editorial-pte-toolbar__emoji" aria-hidden="true">🖼️🖼️</span>
+        </button>
       </div>
 
       {annotationModal && (
@@ -1908,6 +2854,17 @@ function Toolbar({
           onAssetPreview={onAssetPreview}
           onApply={insertImageBlock}
           onClose={closeImageModal}
+        />
+      )}
+      {imageRowModal && (
+        <ImageRowModal
+          mode="insert"
+          labels={labels}
+          saveEndpoint={saveEndpoint}
+          assetPreviewUrls={assetPreviewUrls}
+          onAssetPreview={onAssetPreview}
+          onApply={insertImageRowBlock}
+          onClose={closeImageRowModal}
         />
       )}
     </div>
@@ -3371,7 +4328,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   labels={labels}
                 />
                 {['review', 'hardware', 'guide'].includes(draft.type) && draft.platforms.length === 0 && (
-                  <p className="editorial-character-count" data-warning="true">
+                  <p className="editorial-file-advice editorial-file-advice--subtle-warning">
                     {labels.platformsRecommended}
                   </p>
                 )}
@@ -3389,7 +4346,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   labels={labels}
                 />
                 {draft.type === 'interview' && draft.creators.length === 0 && (
-                  <p className="editorial-character-count" data-warning="true">
+                  <p className="editorial-file-advice editorial-file-advice--subtle-warning">
                     {labels.creatorsRecommended}
                   </p>
                 )}
@@ -3422,7 +4379,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                     labels={labels}
                   />
                   {draft.type === 'hardware' && draft.manufacturer.length === 0 && (
-                    <p className="editorial-character-count" data-warning="true">
+                    <p className="editorial-file-advice editorial-file-advice--subtle-warning">
                       {labels.manufacturerRecommended}
                     </p>
                   )}
@@ -3458,7 +4415,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       labels={labels}
                     />
                     {draft.type === 'review' && draft.developers.length === 0 && (
-                      <p className="editorial-character-count" data-warning="true">
+                      <p className="editorial-file-advice editorial-file-advice--subtle-warning">
                         {labels.developersRecommended}
                       </p>
                     )}
@@ -3476,7 +4433,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       labels={labels}
                     />
                     {draft.type === 'review' && draft.publishers.length === 0 && (
-                      <p className="editorial-character-count" data-warning="true">
+                      <p className="editorial-file-advice editorial-file-advice--subtle-warning">
                         {labels.publishersRecommended}
                       </p>
                     )}
@@ -3700,7 +4657,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   ))}
                 </div>
                 {isReviewEditoriallyActive && draft.rating.overall === null && (
-                  <p className="editorial-character-count" data-warning="true">
+                  <p className="editorial-file-advice editorial-file-advice--subtle-warning">
                     {labels.overallWarning}
                   </p>
                 )}
