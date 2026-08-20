@@ -173,6 +173,7 @@ type EditableArticleFeaturedImage = {
 type EditableArticleGameInfo = {
   releaseYear: number | null;
   mediaFormat: MediaFormat[];
+  cover: EditableArticleFeaturedImage;
 };
 
 type EditableArticleRating = Record<RatingField, number | null> & {
@@ -264,6 +265,25 @@ type Labels = {
   featuredImageRemoveConfirm: string;
   featuredImageMetadataUnavailable: string;
   featuredImageAssetId: string;
+  inspectorGameCover: string;
+  gameCoverCurrent: string;
+  gameCoverEmpty: string;
+  gameCoverUploading: string;
+  gameCoverReplace: string;
+  gameCoverRemove: string;
+  gameCoverRemoving: string;
+  gameCoverUploaded: string;
+  gameCoverRemoved: string;
+  gameCoverAlt: string;
+  gameCoverAltWarning: string;
+  gameCoverFormats: string;
+  gameCoverChooseFile: string;
+  gameCoverDropFile: string;
+  gameCoverNewPreview: string;
+  gameCoverFileReady: string;
+  gameCoverCancelSelection: string;
+  gameCoverRemoveConfirm: string;
+  gameCoverGenericError: string;
   cardExcerpt: string;
   excerpt: string;
   seoTitle: string;
@@ -5026,6 +5046,12 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const [isFeaturedImageUploading, setIsFeaturedImageUploading] = useState(false);
   const [isFeaturedImageRemoving, setIsFeaturedImageRemoving] = useState(false);
   const [isFeaturedImageDragActive, setIsFeaturedImageDragActive] = useState(false);
+  const [selectedGameCoverFile, setSelectedGameCoverFile] = useState<SelectedFeaturedImageFile | null>(null);
+  const [gameCoverStatus, setGameCoverStatus] = useState('');
+  const [gameCoverStatusTone, setGameCoverStatusTone] = useState<'success' | 'error' | ''>('');
+  const [isGameCoverUploading, setIsGameCoverUploading] = useState(false);
+  const [isGameCoverRemoving, setIsGameCoverRemoving] = useState(false);
+  const [isGameCoverDragActive, setIsGameCoverDragActive] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
@@ -5113,6 +5139,20 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     }
   }, [selectedFeaturedFile]);
 
+  useEffect(() => () => {
+    if (selectedGameCoverFile?.previewUrl) {
+      URL.revokeObjectURL(selectedGameCoverFile.previewUrl);
+    }
+  }, [selectedGameCoverFile]);
+
+  useEffect(() => {
+    if (draft.type !== 'review' && selectedGameCoverFile) {
+      setSelectedGameCoverFile(null);
+      setGameCoverStatus('');
+      setGameCoverStatusTone('');
+    }
+  }, [draft.type, selectedGameCoverFile]);
+
   useEffect(() => {
     if (!isInspectorOpen) return;
 
@@ -5154,10 +5194,39 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     }));
   };
 
+  const updateGameCoverAlt = (value: string) => {
+    const alt = value.slice(0, 120);
+
+    setDraft((current) => ({
+      ...current,
+      gameInfo: {
+        ...current.gameInfo,
+        cover: current.gameInfo.cover
+          ? {
+              ...current.gameInfo.cover,
+              alt,
+            }
+          : {
+              _type: 'image',
+              alt,
+              crop: null,
+              hotspot: null,
+              asset: null,
+            },
+      },
+    }));
+  };
+
   const clearSelectedFeaturedFile = () => {
     setSelectedFeaturedFile(null);
     setFeaturedImageStatus('');
     setFeaturedImageStatusTone('');
+  };
+
+  const clearSelectedGameCoverFile = () => {
+    setSelectedGameCoverFile(null);
+    setGameCoverStatus('');
+    setGameCoverStatusTone('');
   };
 
   const selectFeaturedFile = async (file: File | null | undefined) => {
@@ -5181,6 +5250,27 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     setFeaturedImageStatusTone('success');
   };
 
+  const selectGameCoverFile = async (file: File | null | undefined) => {
+    const error = getFileValidationError(file, labels);
+
+    if (error || !file) {
+      setGameCoverStatus(error);
+      setGameCoverStatusTone('error');
+      return;
+    }
+
+    const dimensions = await getImageDimensions(file);
+
+    setSelectedGameCoverFile({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      width: dimensions.width,
+      height: dimensions.height,
+    });
+    setGameCoverStatus(labels.gameCoverFileReady);
+    setGameCoverStatusTone('success');
+  };
+
   const syncFeaturedImageArticle = (articleUpdate: EditableArticle) => {
     setDraft((current) => ({
       ...current,
@@ -5189,6 +5279,20 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
       documentSource: articleUpdate.documentSource,
       documentLifecycle: articleUpdate.documentLifecycle,
       featuredImage: articleUpdate.featuredImage,
+    }));
+  };
+
+  const syncGameCoverArticle = (articleUpdate: EditableArticle) => {
+    setDraft((current) => ({
+      ...current,
+      _rev: articleUpdate._rev,
+      rootDocumentId: articleUpdate.rootDocumentId,
+      documentSource: articleUpdate.documentSource,
+      documentLifecycle: articleUpdate.documentLifecycle,
+      gameInfo: {
+        ...current.gameInfo,
+        cover: articleUpdate.gameInfo.cover,
+      },
     }));
   };
 
@@ -5234,6 +5338,48 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     }
   };
 
+  const persistSelectedGameCover = async (revisionId: string) => {
+    if (!selectedGameCoverFile) return null;
+
+    setIsGameCoverUploading(true);
+    setGameCoverStatus(labels.gameCoverUploading);
+    setGameCoverStatusTone('');
+
+    try {
+      const formData = new FormData();
+      formData.set('action', 'replace');
+      formData.set('_rev', revisionId);
+      formData.set('alt', draft.gameInfo.cover?.alt || '');
+      formData.set('file', selectedGameCoverFile.file);
+      const response = await fetch(`${saveEndpoint.replace(/\/$/, '')}/game-cover`, {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result?.ok || !result.article) {
+        throw new Error(result?.error || 'game_cover_upload_failed');
+      }
+
+      syncGameCoverArticle(result.article);
+      setSelectedGameCoverFile(null);
+      setGameCoverStatus(labels.gameCoverUploaded);
+      setGameCoverStatusTone('success');
+
+      return result.article as EditableArticle;
+    } catch (error) {
+      const message = error instanceof Error && error.message === 'revision_conflict'
+        ? labels.featuredImageConflict
+        : labels.gameCoverGenericError;
+
+      setGameCoverStatus(message);
+      setGameCoverStatusTone('error');
+      throw error;
+    } finally {
+      setIsGameCoverUploading(false);
+    }
+  };
+
   const removeFeaturedImage = async () => {
     if (isFeaturedImageRemoving || !draft.featuredImage?.asset) return;
 
@@ -5270,6 +5416,45 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
       setFeaturedImageStatusTone('error');
     } finally {
       setIsFeaturedImageRemoving(false);
+    }
+  };
+
+  const removeGameCover = async () => {
+    if (isGameCoverRemoving || !draft.gameInfo.cover?.asset) return;
+
+    if (!window.confirm(labels.gameCoverRemoveConfirm)) return;
+
+    setIsGameCoverRemoving(true);
+    setGameCoverStatus('');
+    setGameCoverStatusTone('');
+
+    try {
+      const formData = new FormData();
+      formData.set('action', 'remove');
+      formData.set('_rev', draft._rev);
+      const response = await fetch(`${saveEndpoint.replace(/\/$/, '')}/game-cover`, {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result?.ok || !result.article) {
+        throw new Error(result?.error || 'game_cover_remove_failed');
+      }
+
+      syncGameCoverArticle(result.article);
+      setSelectedGameCoverFile(null);
+      setGameCoverStatus(labels.gameCoverRemoved);
+      setGameCoverStatusTone('success');
+    } catch (error) {
+      const message = error instanceof Error && error.message === 'revision_conflict'
+        ? labels.featuredImageConflict
+        : labels.gameCoverGenericError;
+
+      setGameCoverStatus(message);
+      setGameCoverStatusTone('error');
+    } finally {
+      setIsGameCoverRemoving(false);
     }
   };
 
@@ -5338,8 +5523,17 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const hasFeaturedImage = Boolean(featuredImageAsset?._id || featuredImageAsset?.url);
   const featuredImageAlt = featuredImage?.alt || '';
   const selectedFeaturedFileMetadata = getSelectedFileMetadataLabel(selectedFeaturedFile);
+  const gameCover = draft.gameInfo.cover;
+  const gameCoverAsset = gameCover?.asset || null;
+  const hasGameCover = Boolean(gameCoverAsset?._id || gameCoverAsset?.url);
+  const gameCoverAlt = gameCover?.alt || '';
+  const selectedGameCoverFileMetadata = getSelectedFileMetadataLabel(selectedGameCoverFile);
+  const hasPendingGameCoverFile = draft.type === 'review' && Boolean(selectedGameCoverFile);
   const currentSnapshot = useMemo(() => getEditableArticleSnapshot(draft, content), [draft, content]);
-  const hasUnsavedChanges = Boolean(selectedFeaturedFile) || currentSnapshot !== savedSnapshotRef.current;
+  const hasUnsavedChanges =
+    Boolean(selectedFeaturedFile) ||
+    hasPendingGameCoverFile ||
+    currentSnapshot !== savedSnapshotRef.current;
 
   const getArticleSavePayload = (articleDraft: EditableArticle) => ({
     _rev: articleDraft._rev,
@@ -5352,6 +5546,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     language: articleDraft.language,
     slug: articleDraft.slug,
     featuredImageAlt: articleDraft.featuredImage?.alt || '',
+    ...(articleDraft.type === 'review' ? { gameCoverAlt: articleDraft.gameInfo.cover?.alt || '' } : {}),
     categories: articleDraft.categories,
     editorialSeries: articleDraft.editorialSeries,
     platforms: articleDraft.platforms,
@@ -5383,13 +5578,28 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
       let articleForSave = draft;
 
       if (selectedFeaturedFile) {
-        const articleAfterImageSave = await persistSelectedFeaturedImage(draft._rev);
+        const articleAfterImageSave = await persistSelectedFeaturedImage(articleForSave._rev);
 
         if (articleAfterImageSave) {
           articleForSave = {
-            ...draft,
+            ...articleForSave,
             _rev: articleAfterImageSave._rev,
             featuredImage: articleAfterImageSave.featuredImage,
+          };
+        }
+      }
+
+      if (articleForSave.type === 'review' && selectedGameCoverFile) {
+        const articleAfterGameCoverSave = await persistSelectedGameCover(articleForSave._rev);
+
+        if (articleAfterGameCoverSave) {
+          articleForSave = {
+            ...articleForSave,
+            _rev: articleAfterGameCoverSave._rev,
+            gameInfo: {
+              ...articleForSave.gameInfo,
+              cover: articleAfterGameCoverSave.gameInfo.cover,
+            },
           };
         }
       }
@@ -6013,6 +6223,146 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
 
               <div className="editorial-inspector-subsection">
                 <h3>{labels.gameData}</h3>
+                {draft.type === 'review' && (
+                  <div className="editorial-field">
+                    <span>{labels.inspectorGameCover}</span>
+                    <div className="editorial-featured-image-control">
+                      {selectedGameCoverFile && (
+                        <div className="editorial-local-preview editorial-local-preview--featured">
+                          <span>{labels.gameCoverNewPreview}</span>
+                          <div className="editorial-local-preview__frame editorial-local-preview__frame--featured">
+                            <img src={selectedGameCoverFile.previewUrl} alt="" aria-hidden="true" />
+                          </div>
+                          {selectedGameCoverFileMetadata && (
+                            <p className="editorial-file-meta">{selectedGameCoverFileMetadata}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {(!selectedGameCoverFile && hasGameCover) && (
+                        <div className="editorial-current-media editorial-current-media--featured">
+                          <span>{labels.gameCoverCurrent}</span>
+                          <div className="editorial-current-media__frame editorial-current-media__frame--featured">
+                            <img
+                              src={gameCoverAsset?.url || ''}
+                              alt={gameCoverAlt || labels.inspectorGameCover}
+                            />
+                          </div>
+                          <p className="editorial-file-meta">
+                            {getAssetMetadataLabel(gameCoverAsset, labels)}
+                          </p>
+                        </div>
+                      )}
+
+                      {(!selectedGameCoverFile && !hasGameCover) && (
+                        <p className="editorial-file-meta">{labels.gameCoverEmpty}</p>
+                      )}
+
+                      {(hasGameCover || selectedGameCoverFile) && (
+                        <label className="editorial-field">
+                          <span>{labels.gameCoverAlt}</span>
+                          <AutoGrowTextField
+                            value={gameCoverAlt}
+                            maxLength={120}
+                            rows={2}
+                            maxRows={4}
+                            singleLine
+                            onChange={updateGameCoverAlt}
+                          />
+                          <CharacterCounter
+                            value={gameCoverAlt}
+                            max={120}
+                            warning={labels.cardExcerptWarning}
+                          />
+                          {hasGameCover && !gameCoverAlt.trim() && (
+                            <p className="editorial-file-advice editorial-file-advice--subtle-warning">
+                              {labels.gameCoverAltWarning}
+                            </p>
+                          )}
+                        </label>
+                      )}
+
+                      {selectedGameCoverFile && gameCoverStatus && (
+                        <p
+                          className="editorial-message"
+                          data-tone={gameCoverStatusTone || undefined}
+                          aria-live="polite"
+                        >
+                          {gameCoverStatus}
+                        </p>
+                      )}
+
+                      <div className="editorial-featured-image-control__actions">
+                        {!selectedGameCoverFile && (
+                          <>
+                            <label
+                              className="editorial-dropzone editorial-dropzone--compact"
+                              data-drag-active={isGameCoverDragActive ? 'true' : 'false'}
+                              onDragOver={(event) => {
+                                event.preventDefault();
+                                setIsGameCoverDragActive(true);
+                              }}
+                              onDragLeave={() => setIsGameCoverDragActive(false)}
+                              onDrop={(event) => {
+                                event.preventDefault();
+                                setIsGameCoverDragActive(false);
+                                selectGameCoverFile(event.dataTransfer.files?.[0]);
+                              }}
+                            >
+                              <span>
+                                {hasGameCover ? labels.gameCoverReplace : labels.gameCoverChooseFile}
+                              </span>
+                              <small>{labels.gameCoverDropFile}</small>
+                              <input
+                                key={selectedGameCoverFile?.previewUrl || 'game-cover-input'}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={(event) => selectGameCoverFile(event.target.files?.[0])}
+                              />
+                            </label>
+
+                            <p className="editorial-file-meta">{labels.gameCoverFormats}</p>
+                          </>
+                        )}
+
+                        <div className="editorial-featured-image-control__buttons">
+                          {selectedGameCoverFile && (
+                            <button
+                              type="button"
+                              className="editorial-mini-button"
+                              onClick={clearSelectedGameCoverFile}
+                              disabled={isGameCoverUploading || isGameCoverRemoving}
+                            >
+                              {labels.gameCoverCancelSelection}
+                            </button>
+                          )}
+
+                          {hasGameCover && !selectedGameCoverFile && (
+                            <button
+                              type="button"
+                              className="editorial-mini-button editorial-mini-button--danger"
+                              onClick={removeGameCover}
+                              disabled={isGameCoverUploading || isGameCoverRemoving}
+                            >
+                              {isGameCoverRemoving ? labels.gameCoverRemoving : labels.gameCoverRemove}
+                            </button>
+                          )}
+                        </div>
+
+                        {!selectedGameCoverFile && gameCoverStatus && (
+                          <p
+                            className="editorial-message"
+                            data-tone={gameCoverStatusTone || undefined}
+                            aria-live="polite"
+                          >
+                            {gameCoverStatus}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <label className="editorial-field">
                   <span>{labels.releaseYear}</span>
                   <select

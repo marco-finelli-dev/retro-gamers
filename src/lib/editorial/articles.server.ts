@@ -148,6 +148,7 @@ export type EditorialArticleReference = {
 export type EditorialArticleGameInfo = {
   releaseYear: number | null;
   mediaFormat: EditorialArticleMediaFormat[];
+  cover: EditorialArticleFeaturedImage | null;
 };
 
 export type EditorialArticleRating = Record<EditorialArticleRatingField, number | null> & {
@@ -1093,6 +1094,7 @@ function normalizeGameInfo(value: unknown): EditorialArticleGameInfo {
   return {
     releaseYear: normalizeOptionalNumber(gameInfo.releaseYear),
     mediaFormat,
+    cover: normalizeFeaturedImage(gameInfo.cover),
   };
 }
 
@@ -1165,10 +1167,14 @@ async function hydrateFeaturedImage(
   }
 }
 
-async function hydrateDraftArticleFeaturedImage(article: EditorialArticleDraft) {
+async function hydrateDraftArticleImages(article: EditorialArticleDraft) {
   return {
     ...article,
     featuredImage: await hydrateFeaturedImage(article.featuredImage),
+    gameInfo: {
+      ...article.gameInfo,
+      cover: await hydrateFeaturedImage(article.gameInfo.cover),
+    },
   };
 }
 
@@ -1244,7 +1250,7 @@ async function hydrateDraftArticleReferences(article: EditorialArticleDraft): Pr
 }
 
 async function hydrateDraftArticle(article: EditorialArticleDraft) {
-  return hydrateDraftArticleReferences(await hydrateDraftArticleFeaturedImage(article));
+  return hydrateDraftArticleReferences(await hydrateDraftArticleImages(article));
 }
 
 function normalizeDraftArticle(
@@ -2340,6 +2346,16 @@ async function getPatchFromPayload(
     }
   }
 
+  if (Object.prototype.hasOwnProperty.call(payload, 'gameCoverAlt') && currentArticle.gameInfo.cover?.asset) {
+    const gameCoverAlt = normalizeString(payload.gameCoverAlt, 120).trim();
+
+    if (gameCoverAlt) {
+      set['gameInfo.cover.alt'] = gameCoverAlt;
+    } else {
+      unset.push('gameInfo.cover.alt');
+    }
+  }
+
   if (nextSlug) {
     set.slug = {
       _type: 'slug',
@@ -2534,7 +2550,7 @@ export async function updateEditableEditorialArticle({
       nextWorkflowStatus: fetchResult.ownership.workflowStatus,
       metadata: {
         fields:
-          'title,subtitle,cardExcerpt,excerpt,seoTitle,type,language,slug,content,featuredImage.alt,categories,editorialSeries,platforms,creators,genres,developers,publishers,manufacturer,modes,series,translationOf,gameInfo.releaseYear,gameInfo.mediaFormat,rating,pros,cons,seriesOrder,seriesLabel',
+          'title,subtitle,cardExcerpt,excerpt,seoTitle,type,language,slug,content,featuredImage.alt,categories,editorialSeries,platforms,creators,genres,developers,publishers,manufacturer,modes,series,translationOf,gameInfo.releaseYear,gameInfo.mediaFormat,gameInfo.cover.alt,rating,pros,cons,seriesOrder,seriesLabel',
       },
     });
 
@@ -2572,6 +2588,16 @@ function getSafeFeaturedImageFilename(file: File) {
       : 'jpg';
 
   return `editorial-article-featured-${Date.now()}.${extension}`;
+}
+
+function getSafeGameCoverFilename(file: File) {
+  const extension = file.type === 'image/png'
+    ? 'png'
+    : file.type === 'image/webp'
+      ? 'webp'
+      : 'jpg';
+
+  return `editorial-article-game-cover-${Date.now()}.${extension}`;
 }
 
 function getSafeBodyImageFilename(file: File) {
@@ -2612,12 +2638,33 @@ function getFeaturedImageAltFromFormData(
   return currentArticle.featuredImage?.alt || '';
 }
 
+function getGameCoverAltFromFormData(
+  formData: FormData,
+  currentArticle: EditorialArticleDraft
+) {
+  if (formData.has('alt')) {
+    return normalizeString(formData.get('alt'), 120).trim();
+  }
+
+  return currentArticle.gameInfo.cover?.alt || '';
+}
+
 function getFeaturedImageAssetRef(document: Record<string, unknown> | null | undefined) {
   if (!isPlainObject(document?.featuredImage)) return '';
   const featuredImage = document.featuredImage;
   if (!isPlainObject(featuredImage.asset)) return '';
 
   return normalizeString(featuredImage.asset._ref, 220).trim();
+}
+
+function getGameCoverAssetRef(document: Record<string, unknown> | null | undefined) {
+  if (!isPlainObject(document?.gameInfo)) return '';
+  const gameInfo = document.gameInfo;
+  if (!isPlainObject(gameInfo.cover)) return '';
+  const cover = gameInfo.cover;
+  if (!isPlainObject(cover.asset)) return '';
+
+  return normalizeString(cover.asset._ref, 220).trim();
 }
 
 function logFeaturedImageResult({
@@ -2638,6 +2685,34 @@ function logFeaturedImageResult({
   failureCode?: string | null;
 }) {
   console.info('Editorial featured image mutation:', {
+    context,
+    rootDocumentId,
+    draftDocumentId,
+    assetUploadSucceeded,
+    articlePatchSucceeded,
+    resultRevision: resultRevision || null,
+    failureCode,
+  });
+}
+
+function logGameCoverResult({
+  context,
+  rootDocumentId,
+  draftDocumentId,
+  assetUploadSucceeded,
+  articlePatchSucceeded,
+  resultRevision,
+  failureCode = null,
+}: {
+  context: 'game_cover_replace' | 'game_cover_remove';
+  rootDocumentId: string;
+  draftDocumentId: string;
+  assetUploadSucceeded: boolean;
+  articlePatchSucceeded: boolean;
+  resultRevision?: string | null;
+  failureCode?: string | null;
+}) {
+  console.info('Editorial game cover mutation:', {
     context,
     rootDocumentId,
     draftDocumentId,
@@ -3003,6 +3078,317 @@ export async function updateEditorialArticleFeaturedImage({
       ok: false as const,
       status: 500,
       error: assetUploaded ? 'featured_image_update_failed' : 'featured_image_upload_failed',
+      assetUploaded,
+      articleUpdated,
+    };
+  }
+}
+
+export async function updateEditorialArticleGameCover({
+  context,
+  rootDocumentId,
+  formData,
+}: {
+  context: EditableEditorialContext;
+  rootDocumentId: unknown;
+  formData: FormData;
+}) {
+  const action = normalizeString(formData.get('action'), 40).trim() || 'replace';
+  const revisionId = normalizeString(formData.get('_rev'), 160).trim();
+
+  if (!revisionId) {
+    return { ok: false as const, status: 400, error: 'missing_revision' };
+  }
+
+  if (action !== 'replace' && action !== 'remove') {
+    return { ok: false as const, status: 400, error: 'invalid_game_cover_action' };
+  }
+
+  const fetchResult = await fetchEditableEditorialArticle({ context, rootDocumentId });
+
+  if (!fetchResult.ok) return fetchResult;
+
+  if (fetchResult.article.type !== 'review') {
+    return { ok: false as const, status: 400, error: 'game_cover_requires_review' };
+  }
+
+  if (fetchResult.article._rev !== revisionId) {
+    return { ok: false as const, status: 409, error: 'revision_conflict' };
+  }
+
+  const draftDocumentId = getDraftDocumentId(fetchResult.ownership.sanityDocumentId);
+  const safeRootDocumentId = fetchResult.ownership.sanityDocumentId;
+  let assetUploaded = false;
+  let articleUpdated = false;
+
+  try {
+    if (action === 'remove') {
+      if (fetchResult.documentSource === 'published') {
+        await createDraftFromPublishedArticle({
+          rootDocumentId: fetchResult.ownership.sanityDocumentId,
+          revisionId,
+          patch: {
+            set: {},
+            unset: ['gameInfo.cover'],
+          },
+        });
+      } else {
+        await getSanityWriteClient()
+          .patch(draftDocumentId)
+          .ifRevisionId(revisionId)
+          .unset(['gameInfo.cover'])
+          .commit<Record<string, unknown>>();
+      }
+      articleUpdated = true;
+      const readBack = await getSanityRawClient().getDocument<Record<string, unknown>>(draftDocumentId);
+      const resultRevision = typeof readBack?._rev === 'string' ? readBack._rev : null;
+
+      if (!readBack || getGameCoverAssetRef(readBack)) {
+        logGameCoverResult({
+          context: 'game_cover_remove',
+          rootDocumentId: safeRootDocumentId,
+          draftDocumentId,
+          assetUploadSucceeded: assetUploaded,
+          articlePatchSucceeded: articleUpdated,
+          resultRevision,
+          failureCode: 'game_cover_remove_not_persisted',
+        });
+
+        return {
+          ok: false as const,
+          status: 502,
+          error: 'game_cover_remove_not_persisted',
+          assetUploaded,
+          articleUpdated,
+        };
+      }
+
+      const normalizedArticle = normalizeDraftArticle(readBack, fetchResult.article.author, {
+        rootDocumentId: fetchResult.ownership.sanityDocumentId,
+        documentSource: 'draft',
+        documentLifecycle: fetchResult.documentSource === 'published' ? 'revision_draft' : fetchResult.documentLifecycle,
+      });
+
+      if (!normalizedArticle) {
+        logGameCoverResult({
+          context: 'game_cover_remove',
+          rootDocumentId: safeRootDocumentId,
+          draftDocumentId,
+          assetUploadSucceeded: assetUploaded,
+          articlePatchSucceeded: articleUpdated,
+          resultRevision,
+          failureCode: 'sanity_article_invalid',
+        });
+
+        return {
+          ok: false as const,
+          status: 502,
+          error: 'sanity_article_invalid',
+          assetUploaded,
+          articleUpdated,
+        };
+      }
+
+      const article = await hydrateDraftArticle(normalizedArticle);
+      logGameCoverResult({
+        context: 'game_cover_remove',
+        rootDocumentId: safeRootDocumentId,
+        draftDocumentId,
+        assetUploadSucceeded: assetUploaded,
+        articlePatchSucceeded: articleUpdated,
+        resultRevision: article._rev,
+      });
+      const auditLogged = await recordArticleAudit({
+        actorUserId: context.user.id,
+        action: 'article_saved',
+        sanityDocumentId: fetchResult.ownership.sanityDocumentId,
+        previousWorkflowStatus: fetchResult.ownership.workflowStatus,
+        nextWorkflowStatus: fetchResult.ownership.workflowStatus,
+        metadata: {
+          fields: 'gameInfo.cover',
+          imageAction: 'remove',
+        },
+      });
+
+      return {
+        ok: true as const,
+        article,
+        action,
+        assetUploaded,
+        articleUpdated,
+        auditLogged,
+      };
+    }
+
+    const file = formData.get('file');
+
+    if (!isUploadFile(file)) {
+      return { ok: false as const, status: 400, error: 'missing_file' };
+    }
+
+    if (!allowedFeaturedImageMimeTypes.has(file.type)) {
+      return { ok: false as const, status: 400, error: 'invalid_file_type' };
+    }
+
+    if (file.size <= 0 || file.size > featuredImageMaxFileSize) {
+      return { ok: false as const, status: 400, error: 'invalid_file_size' };
+    }
+
+    const alt = getGameCoverAltFromFormData(formData, fetchResult.article);
+    const arrayBuffer = await file.arrayBuffer();
+    const asset = await getSanityWriteClient().assets.upload(
+      'image',
+      Buffer.from(arrayBuffer),
+      {
+        filename: getSafeGameCoverFilename(file),
+        contentType: file.type,
+      }
+    );
+    assetUploaded = true;
+    const imageValue: Record<string, unknown> = {
+      _type: 'image',
+      asset: {
+        _type: 'reference',
+        _ref: asset._id,
+      },
+    };
+
+    if (alt) {
+      imageValue.alt = alt;
+    }
+
+    if (fetchResult.documentSource === 'published') {
+      await createDraftFromPublishedArticle({
+        rootDocumentId: fetchResult.ownership.sanityDocumentId,
+        revisionId,
+        patch: {
+          set: { 'gameInfo.cover': imageValue },
+          unset: [],
+        },
+      });
+    } else {
+      await getSanityWriteClient()
+        .patch(draftDocumentId)
+        .ifRevisionId(revisionId)
+        .set({ 'gameInfo.cover': imageValue })
+        .commit<Record<string, unknown>>();
+    }
+    articleUpdated = true;
+    const readBack = await getSanityRawClient().getDocument<Record<string, unknown>>(draftDocumentId);
+    const resultRevision = typeof readBack?._rev === 'string' ? readBack._rev : null;
+    const persistedAssetRef = getGameCoverAssetRef(readBack);
+
+    if (!readBack || persistedAssetRef !== asset._id) {
+      logGameCoverResult({
+        context: 'game_cover_replace',
+        rootDocumentId: safeRootDocumentId,
+        draftDocumentId,
+        assetUploadSucceeded: assetUploaded,
+        articlePatchSucceeded: articleUpdated,
+        resultRevision,
+        failureCode: 'game_cover_not_persisted',
+      });
+
+      return {
+        ok: false as const,
+        status: 502,
+        error: 'game_cover_not_persisted',
+        assetUploaded,
+        articleUpdated,
+      };
+    }
+
+    const normalizedArticle = normalizeDraftArticle(readBack, fetchResult.article.author, {
+      rootDocumentId: fetchResult.ownership.sanityDocumentId,
+      documentSource: 'draft',
+      documentLifecycle: fetchResult.documentSource === 'published' ? 'revision_draft' : fetchResult.documentLifecycle,
+    });
+
+    if (!normalizedArticle) {
+      logGameCoverResult({
+        context: 'game_cover_replace',
+        rootDocumentId: safeRootDocumentId,
+        draftDocumentId,
+        assetUploadSucceeded: assetUploaded,
+        articlePatchSucceeded: articleUpdated,
+        resultRevision,
+        failureCode: 'sanity_article_invalid',
+      });
+
+      return {
+        ok: false as const,
+        status: 502,
+        error: 'sanity_article_invalid',
+        assetUploaded,
+        articleUpdated,
+      };
+    }
+
+    const article = await hydrateDraftArticle(normalizedArticle);
+    logGameCoverResult({
+      context: 'game_cover_replace',
+      rootDocumentId: safeRootDocumentId,
+      draftDocumentId,
+      assetUploadSucceeded: assetUploaded,
+      articlePatchSucceeded: articleUpdated,
+      resultRevision: article._rev,
+    });
+    const auditLogged = await recordArticleAudit({
+      actorUserId: context.user.id,
+      action: 'article_saved',
+      sanityDocumentId: fetchResult.ownership.sanityDocumentId,
+      previousWorkflowStatus: fetchResult.ownership.workflowStatus,
+      nextWorkflowStatus: fetchResult.ownership.workflowStatus,
+      metadata: {
+        fields: 'gameInfo.cover',
+        imageAction: 'replace',
+      },
+    });
+
+    return {
+      ok: true as const,
+      article,
+      action,
+      assetUploaded,
+      articleUpdated,
+      auditLogged,
+    };
+  } catch (error) {
+    if (isRevisionConflict(error)) {
+      logGameCoverResult({
+        context: action === 'remove' ? 'game_cover_remove' : 'game_cover_replace',
+        rootDocumentId: safeRootDocumentId,
+        draftDocumentId,
+        assetUploadSucceeded: assetUploaded,
+        articlePatchSucceeded: articleUpdated,
+        resultRevision: null,
+        failureCode: 'revision_conflict',
+      });
+
+      return {
+        ok: false as const,
+        status: 409,
+        error: 'revision_conflict',
+        assetUploaded,
+        articleUpdated,
+      };
+    }
+
+    logApiError('editorial-article.game-cover.update', error);
+    logGameCoverResult({
+      context: action === 'remove' ? 'game_cover_remove' : 'game_cover_replace',
+      rootDocumentId: safeRootDocumentId,
+      draftDocumentId,
+      assetUploadSucceeded: assetUploaded,
+      articlePatchSucceeded: articleUpdated,
+      resultRevision: null,
+      failureCode: assetUploaded ? 'game_cover_update_failed' : 'game_cover_upload_failed',
+    });
+
+    return {
+      ok: false as const,
+      status: 500,
+      error: assetUploaded ? 'game_cover_update_failed' : 'game_cover_upload_failed',
       assetUploaded,
       articleUpdated,
     };
