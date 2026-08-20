@@ -228,6 +228,11 @@ type Labels = {
   closeSettings: string;
   mobileEditingNotice: string;
   backToArticles: string;
+  exitConfirmTitle: string;
+  exitConfirmText: string;
+  exitSaveAndClose: string;
+  exitWithoutSaving: string;
+  exitCancel: string;
   draftStatus: string;
   inspectorArticle: string;
   inspectorSeo: string;
@@ -3367,6 +3372,77 @@ function AsideBoxModal({
 
 type ToolbarMenu = 'structure' | 'text' | 'link' | 'insert';
 
+function getEditableArticleSnapshot(articleDraft: EditableArticle, contentValue: PortableTextBlock[]) {
+  return JSON.stringify({
+    title: articleDraft.title,
+    subtitle: articleDraft.subtitle,
+    cardExcerpt: articleDraft.cardExcerpt,
+    excerpt: articleDraft.excerpt,
+    seoTitle: articleDraft.seoTitle,
+    type: articleDraft.type,
+    language: articleDraft.language,
+    slug: articleDraft.slug,
+    featuredImageAlt: articleDraft.featuredImage?.alt || '',
+    categories: articleDraft.categories,
+    editorialSeries: articleDraft.editorialSeries,
+    platforms: articleDraft.platforms,
+    creators: articleDraft.creators,
+    genres: articleDraft.genres,
+    developers: articleDraft.developers,
+    publishers: articleDraft.publishers,
+    manufacturer: articleDraft.manufacturer,
+    modes: articleDraft.modes,
+    series: articleDraft.series,
+    translationOf: articleDraft.translationOf,
+    gameInfo: articleDraft.gameInfo,
+    rating: articleDraft.rating,
+    pros: articleDraft.pros,
+    cons: articleDraft.cons,
+    seriesOrder: articleDraft.seriesOrder,
+    seriesLabel: articleDraft.seriesLabel,
+    content: contentValue,
+  });
+}
+
+function ExitConfirmationModal({
+  labels,
+  isSaving,
+  onSaveAndClose,
+  onDiscard,
+  onCancel,
+}: {
+  labels: Labels;
+  isSaving: boolean;
+  onSaveAndClose: () => void;
+  onDiscard: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <AnnotationModal
+      title={labels.exitConfirmTitle}
+      labels={labels}
+      onClose={onCancel}
+      panelClassName="editorial-pte-modal__panel--exit"
+    >
+      <div className="editorial-exit-modal">
+        <p>{labels.exitConfirmText}</p>
+
+        <div className="editorial-exit-modal__actions">
+          <button type="button" className="editorial-button" onClick={onSaveAndClose} disabled={isSaving}>
+            {isSaving ? labels.saving : labels.exitSaveAndClose}
+          </button>
+          <button type="button" className="editorial-mini-button" onClick={onDiscard} disabled={isSaving}>
+            {labels.exitWithoutSaving}
+          </button>
+          <button type="button" className="editorial-mini-button" onClick={onCancel} disabled={isSaving}>
+            {labels.exitCancel}
+          </button>
+        </div>
+      </div>
+    </AnnotationModal>
+  );
+}
+
 function Toolbar({
   labels,
   language,
@@ -3381,8 +3457,10 @@ function Toolbar({
   inspectorId = '',
   isInspectorOpen = false,
   isSaving = false,
+  hasUnsavedChanges = false,
   onToggleInspector,
   onSave,
+  onRequestExit,
   variant = 'body',
 }: {
   labels: Labels;
@@ -3398,8 +3476,10 @@ function Toolbar({
   inspectorId?: string;
   isInspectorOpen?: boolean;
   isSaving?: boolean;
+  hasUnsavedChanges?: boolean;
   onToggleInspector?: () => void;
-  onSave?: () => void;
+  onSave?: () => void | Promise<boolean | void>;
+  onRequestExit?: () => void;
   variant?: 'body' | 'aside';
 }) {
   const editor = useEditor();
@@ -3478,6 +3558,16 @@ function Toolbar({
   const runToolbarAction = (action: () => void) => {
     setOpenMenu(null);
     action();
+  };
+  const handleExitClick = () => {
+    if (onRequestExit) {
+      onRequestExit();
+      return;
+    }
+
+    if (articlesHref) {
+      window.location.assign(articlesHref);
+    }
   };
   const getActiveAnnotation = (annotationName: AnnotationName | 'link') =>
     activeAnnotations.find((annotation) => annotation._type === annotationName) || null;
@@ -4044,14 +4134,16 @@ function Toolbar({
           <button className="editorial-button" type="button" onClick={onSave} disabled={isSaving}>
             {isSaving ? labels.saving : labels.save}
           </button>
-          <a
+          <button
             className="editorial-article-editor__exit"
-            href={articlesHref}
+            type="button"
             aria-label={labels.backToArticles}
             title={labels.backToArticles}
+            data-dirty={hasUnsavedChanges ? 'true' : undefined}
+            onClick={handleExitClick}
           >
             ✕
-          </a>
+          </button>
         </div>
       )}
 
@@ -4877,6 +4969,7 @@ function ReviewStringListEditor({
 export default function ArticlePortableTextEditor({ article, lang, articlesHref, previewHref, saveEndpoint, labels }: Props) {
   const [draft, setDraft] = useState<EditableArticle>(article);
   const [content, setContent] = useState<PortableTextBlock[]>(article.content || []);
+  const savedSnapshotRef = useRef(getEditableArticleSnapshot(article, article.content || []));
   const [status, setStatus] = useState('');
   const [statusTone, setStatusTone] = useState<'success' | 'error' | ''>('');
   const [isSaving, setIsSaving] = useState(false);
@@ -4887,6 +4980,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const [isFeaturedImageRemoving, setIsFeaturedImageRemoving] = useState(false);
   const [isFeaturedImageDragActive, setIsFeaturedImageDragActive] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
   const inspectorId = useId();
   const rememberBodyImagePreview = useCallback((assetId: string, url: string) => {
@@ -5197,6 +5291,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const hasFeaturedImage = Boolean(featuredImageAsset?._id || featuredImageAsset?.url);
   const featuredImageAlt = featuredImage?.alt || '';
   const selectedFeaturedFileMetadata = getSelectedFileMetadataLabel(selectedFeaturedFile);
+  const currentSnapshot = useMemo(() => getEditableArticleSnapshot(draft, content), [draft, content]);
+  const hasUnsavedChanges = Boolean(selectedFeaturedFile) || currentSnapshot !== savedSnapshotRef.current;
 
   const getArticleSavePayload = (articleDraft: EditableArticle) => ({
     _rev: articleDraft._rev,
@@ -5230,7 +5326,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   });
 
   const saveArticle = async () => {
-    if (isSaving) return;
+    if (isSaving) return false;
 
     setIsSaving(true);
     setStatus('');
@@ -5264,10 +5360,14 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
         throw new Error(result?.error || 'article_save_failed');
       }
 
+      const savedContent = result.article.content || [];
+
       setDraft(result.article);
-      setContent(result.article.content || []);
+      setContent(savedContent);
+      savedSnapshotRef.current = getEditableArticleSnapshot(result.article, savedContent);
       setStatus(labels.saved);
       setStatusTone('success');
+      return true;
     } catch (error) {
       const message = error instanceof Error && error.message === 'revision_conflict'
         ? labels.conflict
@@ -5275,9 +5375,31 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
 
       setStatus(message);
       setStatusTone('error');
+      return false;
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const requestExit = () => {
+    if (hasUnsavedChanges) {
+      setIsExitModalOpen(true);
+      return;
+    }
+
+    window.location.assign(articlesHref);
+  };
+
+  const saveAndExit = async () => {
+    const saved = await saveArticle();
+
+    if (saved) {
+      window.location.assign(articlesHref);
+    }
+  };
+
+  const discardAndExit = () => {
+    window.location.assign(articlesHref);
   };
 
   return (
@@ -5315,8 +5437,10 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
               inspectorId={inspectorId}
               isInspectorOpen={isInspectorOpen}
               isSaving={isSaving}
+              hasUnsavedChanges={hasUnsavedChanges}
               onToggleInspector={() => setIsInspectorOpen((value) => !value)}
               onSave={saveArticle}
+              onRequestExit={requestExit}
             />
 
             <label className="editorial-field editorial-field--title">
@@ -5898,6 +6022,16 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
             </details>
           )}
         </ArticleSettingsDrawer>
+      )}
+
+      {isExitModalOpen && (
+        <ExitConfirmationModal
+          labels={labels}
+          isSaving={isSaving}
+          onSaveAndClose={saveAndExit}
+          onDiscard={discardAndExit}
+          onCancel={() => setIsExitModalOpen(false)}
+        />
       )}
     </div>
   );
