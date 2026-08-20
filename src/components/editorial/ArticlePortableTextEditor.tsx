@@ -3374,6 +3374,15 @@ function Toolbar({
   saveEndpoint,
   assetPreviewUrls,
   onAssetPreview,
+  articlesHref = '',
+  previewHref = '',
+  status = '',
+  statusTone = '',
+  inspectorId = '',
+  isInspectorOpen = false,
+  isSaving = false,
+  onToggleInspector,
+  onSave,
   variant = 'body',
 }: {
   labels: Labels;
@@ -3382,6 +3391,15 @@ function Toolbar({
   saveEndpoint: string;
   assetPreviewUrls: Record<string, string>;
   onAssetPreview: (assetId: string, url: string) => void;
+  articlesHref?: string;
+  previewHref?: string;
+  status?: string;
+  statusTone?: 'success' | 'error' | '';
+  inspectorId?: string;
+  isInspectorOpen?: boolean;
+  isSaving?: boolean;
+  onToggleInspector?: () => void;
+  onSave?: () => void;
   variant?: 'body' | 'aside';
 }) {
   const editor = useEditor();
@@ -3695,7 +3713,8 @@ function Toolbar({
 
   return (
     <div className={`editorial-pte-toolbar editorial-pte-toolbar--${variant}`} role="toolbar" aria-label={labels.content} ref={toolbarRef}>
-      <div className="editorial-pte-toolbar__menu">
+      <div className="editorial-pte-toolbar__content-tools">
+        <div className="editorial-pte-toolbar__menu">
         <button
           className="editorial-pte-toolbar__menu-trigger"
           type="button"
@@ -3745,9 +3764,9 @@ function Toolbar({
             </button>
           )}
         </div>
-      </div>
+        </div>
 
-      <div className="editorial-pte-toolbar__menu">
+        <div className="editorial-pte-toolbar__menu">
         <button
           className="editorial-pte-toolbar__menu-trigger"
           type="button"
@@ -3771,7 +3790,6 @@ function Toolbar({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => runToolbarAction(() => send({ type: 'decorator.toggle', decorator: 'strong' }))}
           >
-            <span className="editorial-pte-toolbar__letter editorial-pte-toolbar__letter--bold" aria-hidden="true">B</span>
             {labels.bold}
           </button>
           <button
@@ -3784,7 +3802,6 @@ function Toolbar({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => runToolbarAction(() => send({ type: 'decorator.toggle', decorator: 'em' }))}
           >
-            <span className="editorial-pte-toolbar__letter editorial-pte-toolbar__letter--italic" aria-hidden="true">I</span>
             {labels.italic}
           </button>
           {isBodyToolbar && (
@@ -3797,8 +3814,7 @@ function Toolbar({
               title={labels.quote}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => runToolbarAction(() => send({ type: 'style.toggle', style: 'blockquote' }))}
-            >
-              <ToolbarIcon name="quote" />
+          >
               {labels.quote}
             </button>
           )}
@@ -3812,7 +3828,6 @@ function Toolbar({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => runToolbarAction(() => send({ type: 'list item.toggle', listItem: 'bullet' }))}
           >
-            <ToolbarIcon name="bullet" />
             {labels.bullet}
           </button>
           {isBodyToolbar && (
@@ -3826,14 +3841,13 @@ function Toolbar({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => runToolbarAction(() => send({ type: 'list item.toggle', listItem: 'number' }))}
             >
-              <ToolbarIcon name="number" />
               {labels.number}
             </button>
           )}
         </div>
-      </div>
+        </div>
 
-      <div className="editorial-pte-toolbar__menu">
+        <div className="editorial-pte-toolbar__menu">
         <button
           className="editorial-pte-toolbar__menu-trigger"
           type="button"
@@ -3857,7 +3871,6 @@ function Toolbar({
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => runToolbarAction(addExternalLink)}
           >
-            <ToolbarIcon name="link" />
             {labels.externalLink}
           </button>
 
@@ -3887,7 +3900,6 @@ function Toolbar({
                   }
                 })}
               >
-                <span className="editorial-pte-toolbar__emoji" aria-hidden="true">{control.icon}</span>
                 {label}
               </button>
             );
@@ -3919,15 +3931,14 @@ function Toolbar({
                   }
                 })}
               >
-                <span className="editorial-pte-toolbar__emoji" aria-hidden="true">📃</span>
                 {label}
               </button>
             );
           })()}
         </div>
-      </div>
+        </div>
 
-      <div className="editorial-pte-toolbar__menu editorial-pte-toolbar__menu--insert">
+        <div className="editorial-pte-toolbar__menu">
         <button
           className="editorial-pte-toolbar__menu-trigger"
           type="button"
@@ -3950,7 +3961,6 @@ function Toolbar({
             onMouseDown={(event) => event.preventDefault()}
             onClick={(event) => runToolbarAction(() => openImageModal(event.currentTarget))}
           >
-            <span className="editorial-pte-toolbar__emoji" aria-hidden="true">🖼️</span>
             {labels.insertImage}
           </button>
           <button
@@ -3962,7 +3972,6 @@ function Toolbar({
             onMouseDown={(event) => event.preventDefault()}
             onClick={(event) => runToolbarAction(() => openImageRowModal(event.currentTarget))}
           >
-            <span className="editorial-pte-toolbar__emoji" aria-hidden="true">🖼️🖼️</span>
             {labels.insertImageRow}
           </button>
           {isBodyToolbar && (
@@ -3976,7 +3985,6 @@ function Toolbar({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={(event) => runToolbarAction(() => openVideoModal(event.currentTarget))}
               >
-                <span className="editorial-pte-toolbar__emoji" aria-hidden="true">▶️</span>
                 {labels.insertVideo}
               </button>
               <button
@@ -3988,13 +3996,51 @@ function Toolbar({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={(event) => runToolbarAction(() => openAsideBoxModal(event.currentTarget))}
               >
-                <span className="editorial-pte-toolbar__emoji" aria-hidden="true">💬</span>
                 {labels.insertAsideBox}
               </button>
             </>
           )}
         </div>
+        </div>
       </div>
+
+      {isBodyToolbar && (
+        <div className="editorial-pte-toolbar__document-actions">
+          <p className="editorial-article-editor__state" data-tone={statusTone || undefined} aria-live="polite">
+            <span aria-hidden="true">●</span>
+            {status || labels.draftStatus}
+          </p>
+          <button
+            className="editorial-article-editor__settings-toggle"
+            type="button"
+            aria-expanded={isInspectorOpen}
+            aria-controls={inspectorId || undefined}
+            data-active={isInspectorOpen ? 'true' : undefined}
+            onClick={onToggleInspector}
+          >
+            {isInspectorOpen ? labels.settingsButtonActive : labels.settingsButton}
+          </button>
+          <a
+            className="editorial-article-editor__settings-toggle editorial-article-editor__preview-action"
+            href={previewHref}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {labels.preview}
+          </a>
+          <button className="editorial-button" type="button" onClick={onSave} disabled={isSaving}>
+            {isSaving ? labels.saving : labels.save}
+          </button>
+          <a
+            className="editorial-article-editor__exit"
+            href={articlesHref}
+            aria-label={labels.backToArticles}
+            title={labels.backToArticles}
+          >
+            ✕
+          </a>
+        </div>
+      )}
 
       {annotationModal && (
         <AnnotationModal
@@ -4078,38 +4124,6 @@ function BlockOptionsIcon() {
       <circle cx="7" cy="12" r="1.8" />
       <circle cx="12" cy="12" r="1.8" />
       <circle cx="17" cy="12" r="1.8" />
-    </svg>
-  );
-}
-
-function ToolbarIcon({ name }: { name: 'quote' | 'bullet' | 'number' | 'link' }) {
-  if (name === 'quote') {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-        <path d="M8.8 7.2c-1.9 1-3.1 2.6-3.1 4.4h3.6v5.2H4.2v-4.6c0-3.2 1.6-5.7 4.6-7.4v2.4Zm10 0c-1.9 1-3.1 2.6-3.1 4.4h3.6v5.2h-5.1v-4.6c0-3.2 1.6-5.7 4.6-7.4v2.4Z" />
-      </svg>
-    );
-  }
-
-  if (name === 'bullet') {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-        <path d="M6.2 8.1a1.4 1.4 0 1 1 0-2.8 1.4 1.4 0 0 1 0 2.8Zm3.4-2h10.2v1.4H9.6V6.1Zm-3.4 7.3a1.4 1.4 0 1 1 0-2.8 1.4 1.4 0 0 1 0 2.8Zm3.4-2h10.2v1.4H9.6v-1.4Zm-3.4 7.3a1.4 1.4 0 1 1 0-2.8 1.4 1.4 0 0 1 0 2.8Zm3.4-2h10.2v1.4H9.6v-1.4Z" />
-      </svg>
-    );
-  }
-
-  if (name === 'number') {
-    return (
-      <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-        <path d="M4.6 8V6.9h1V4.8h-.9v-1h2.3v3.1h.8V8H4.6Zm5-3.2h10.2v1.4H9.6V4.8Zm0 3h10.2v1.4H9.6V7.8ZM4.4 15v-.9l1.9-1.7c.2-.2.3-.4.3-.6 0-.3-.2-.5-.6-.5-.4 0-.7.2-1 .5l-.7-.8c.5-.6 1.1-.9 1.8-.9 1 0 1.7.6 1.7 1.5 0 .6-.3 1.1-.8 1.6l-.8.7h1.7V15H4.4Zm5.2-3.3h10.2v1.4H9.6v-1.4Zm0 3h10.2v1.4H9.6v-1.4Zm-5.2 5.4.6-.8c.3.3.7.5 1.1.5.5 0 .8-.2.8-.6 0-.4-.3-.6-.9-.6h-.6v-.9H6c.5 0 .8-.2.8-.6 0-.3-.3-.5-.7-.5-.4 0-.7.2-1 .5l-.6-.8c.4-.5 1-.8 1.7-.8 1 0 1.8.5 1.8 1.4 0 .5-.3.9-.8 1.1.6.2.9.6.9 1.2 0 1-.8 1.6-2 1.6-.7 0-1.3-.2-1.7-.7Zm5.2-2.4h10.2v1.4H9.6v-1.4Z" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-      <path d="M9.7 14.3a1 1 0 0 1 0-1.4l4.1-4.1a2.5 2.5 0 0 1 3.5 3.5l-1.4 1.4a1 1 0 1 1-1.4-1.4l1.4-1.4a.5.5 0 0 0-.7-.7l-4.1 4.1a1 1 0 0 1-1.4 0Zm-3 3a2.5 2.5 0 0 1 0-3.5l1.4-1.4a1 1 0 0 1 1.4 1.4l-1.4 1.4a.5.5 0 1 0 .7.7l4.1-4.1a1 1 0 0 1 1.4 1.4l-4.1 4.1a2.5 2.5 0 0 1-3.5 0Z" />
     </svg>
   );
 }
@@ -5255,93 +5269,68 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
 
   return (
     <div className="editorial-article-editor" data-editorial-article-editor>
-      <div className="editorial-article-editor__topbar">
-        <div className="editorial-article-editor__topbar-main">
-          <a className="editorial-article-editor__back" href={articlesHref}>
-            ← {labels.backToArticles}
-          </a>
-          <p className="editorial-article-editor__state" data-tone={statusTone || undefined} aria-live="polite">
-            <span aria-hidden="true">●</span>
-            {status || labels.draftStatus}
-          </p>
-        </div>
-        <div className="editorial-article-editor__actions">
-          <button
-            className="editorial-article-editor__settings-toggle"
-            type="button"
-            aria-expanded={isInspectorOpen}
-            aria-controls={inspectorId}
-            data-active={isInspectorOpen ? 'true' : undefined}
-            onClick={() => setIsInspectorOpen((value) => !value)}
-          >
-            ⚙ {isInspectorOpen ? labels.settingsButtonActive : labels.settingsButton}
-          </button>
-          <a
-            className="editorial-article-editor__settings-toggle editorial-article-editor__preview-action"
-            href={previewHref}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            👁 {labels.preview}
-          </a>
-          <button className="editorial-button" type="button" onClick={saveArticle} disabled={isSaving}>
-            {isSaving ? labels.saving : labels.save}
-          </button>
-        </div>
-      </div>
-
       <p className="editorial-mobile-editing-notice">{labels.mobileEditingNotice}</p>
 
       <div className="editorial-article-editor__shell">
         <main className="editorial-article-editor__canvas">
-          <label className="editorial-field editorial-field--title">
-            <span>{labels.title}</span>
-            <input
-              value={draft.title}
-              onChange={(event) => updateField('title', event.target.value)}
-            />
-          </label>
-
-          <label className="editorial-field">
-            <span>{labels.subtitle}</span>
-            <textarea
-              value={draft.subtitle}
-              rows={2}
-              onChange={(event) => updateField('subtitle', event.target.value)}
-            />
-          </label>
-
-          <section className="editorial-pte-card" aria-labelledby="editorial-pte-title">
-            <div className="editorial-pte-card__header">
-              <div>
-                <p className="editorial-kicker">{labels.content}</p>
-                <h2 id="editorial-pte-title">{labels.content}</h2>
-              </div>
-            </div>
-
-            <EditorProvider
-              initialConfig={{
-                schemaDefinition,
-                initialValue: content,
-                keyGenerator: getKey,
+          <EditorProvider
+            initialConfig={{
+              schemaDefinition,
+              initialValue: content,
+              keyGenerator: getKey,
+            }}
+          >
+            <EventListenerPlugin
+              on={(event) => {
+                if (event.type === 'mutation') {
+                  setContent(event.value || []);
+                }
               }}
-            >
-              <EventListenerPlugin
-                on={(event) => {
-                  if (event.type === 'mutation') {
-                    setContent(event.value || []);
-                  }
-                }}
+            />
+            <NodePlugin nodes={nodes} />
+            <Toolbar
+              labels={labels}
+              language={draft.language}
+              currentArticleId={getRootArticleId(draft._id)}
+              saveEndpoint={saveEndpoint}
+              assetPreviewUrls={bodyImagePreviewUrls}
+              onAssetPreview={rememberBodyImagePreview}
+              articlesHref={articlesHref}
+              previewHref={previewHref}
+              status={status}
+              statusTone={statusTone}
+              inspectorId={inspectorId}
+              isInspectorOpen={isInspectorOpen}
+              isSaving={isSaving}
+              onToggleInspector={() => setIsInspectorOpen((value) => !value)}
+              onSave={saveArticle}
+            />
+
+            <label className="editorial-field editorial-field--title">
+              <span>{labels.title}</span>
+              <input
+                value={draft.title}
+                onChange={(event) => updateField('title', event.target.value)}
               />
-              <NodePlugin nodes={nodes} />
-              <Toolbar
-                labels={labels}
-                language={draft.language}
-                currentArticleId={getRootArticleId(draft._id)}
-                saveEndpoint={saveEndpoint}
-                assetPreviewUrls={bodyImagePreviewUrls}
-                onAssetPreview={rememberBodyImagePreview}
+            </label>
+
+            <label className="editorial-field">
+              <span>{labels.subtitle}</span>
+              <textarea
+                value={draft.subtitle}
+                rows={2}
+                onChange={(event) => updateField('subtitle', event.target.value)}
               />
+            </label>
+
+            <section className="editorial-pte-card" aria-labelledby="editorial-pte-title">
+              <div className="editorial-pte-card__header">
+                <div>
+                  <p className="editorial-kicker">{labels.content}</p>
+                  <h2 id="editorial-pte-title">{labels.content}</h2>
+                </div>
+              </div>
+
               <PortableTextEditable
                 className="editorial-pte"
                 renderAnnotation={renderAnnotation}
@@ -5350,8 +5339,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 renderStyle={renderStyle}
                 spellCheck
               />
-            </EditorProvider>
-          </section>
+            </section>
+          </EditorProvider>
 
           {showReviewSection && (
             <section className="editorial-pte-card editorial-review-main-card" aria-labelledby="editorial-review-main-title">
