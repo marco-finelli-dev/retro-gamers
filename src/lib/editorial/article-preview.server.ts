@@ -143,8 +143,12 @@ const editorialArticlePreviewProjection = `{
     releaseYear,
     mediaFormat,
     cover {
+      ...,
       alt,
-      asset->{ url }
+      asset->{
+        _id,
+        url
+      }
     }
   },
 
