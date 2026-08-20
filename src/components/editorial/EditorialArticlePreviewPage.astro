@@ -6,6 +6,7 @@ import { getCreatorRefsFromPortableText, getCreatorsReferencingArticle, mergeCre
 import { fetchPreviewableEditorialArticle, requireEditorialArticleContext } from '../../lib/editorial/articles.server';
 import {
   fetchEditorialArticlePreviewPost,
+  fetchEditorialArticlePreviewRelatedPostCandidates,
   fetchEditorialArticlePreviewSeriesPosts
 } from '../../lib/editorial/article-preview.server';
 import { getPublicPostSummaries, getRelatedPosts } from '../../lib/posts';
@@ -143,18 +144,20 @@ const portableTextCreators = getCreatorRefsFromPortableText(post?.content || [])
 const seriesId = post?.editorialSeries?.[0]?._id || '';
 const [
   publicPostSummaries,
+  relatedPostCandidates,
   inverseCreators,
   previewSeriesPosts,
 ] = post
   ? await Promise.all([
       getPublicPostSummaries(),
+      fetchEditorialArticlePreviewRelatedPostCandidates(),
       getCreatorsReferencingArticle(rootPostId),
       fetchEditorialArticlePreviewSeriesPosts({
         seriesId,
         language: currentLang,
       }),
     ])
-  : [[], [], []];
+  : [[], [], [], []];
 
 const hydratedPost = post
   ? {
@@ -168,7 +171,7 @@ const hydratedPost = post
 const headerPosts = publicPostSummaries.filter((item) => (item.language || 'it') === currentLang);
 const headerReviews = headerPosts.filter((item) => item.type === 'review');
 const headerNews = headerPosts.filter((item) => item.type === 'news');
-const relatedCandidatePosts = publicPostSummaries.filter((item) =>
+const relatedCandidatePosts = relatedPostCandidates.filter((item) =>
   getNormalizedDocumentId(item?._id) !== rootPostId
 );
 const relatedPosts = hydratedPost ? getRelatedPosts(hydratedPost, relatedCandidatePosts, 3) : [];

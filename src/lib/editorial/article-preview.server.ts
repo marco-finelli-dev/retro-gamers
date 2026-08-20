@@ -1,6 +1,73 @@
 import { getSanityRawClient } from '../sanity-write.server';
 import { PUBLIC_POST_GROQ_FILTER, type Post } from '../posts';
 
+const editorialPreviewImageProjection = `{
+  ...,
+  alt,
+  asset->{
+    _id,
+    url
+  }
+}`;
+
+const editorialPreviewCreatorRefProjection = `{
+  _id,
+  name,
+  "slug": slug.current,
+  role,
+  roleEn,
+  portrait ${editorialPreviewImageProjection}
+}`;
+
+const editorialArticlePreviewCardProjection = `{
+  _id,
+  type,
+  isPublic,
+  "language": coalesce(language, "it"),
+  title,
+  subtitle,
+  excerpt,
+  cardExcerpt,
+  "slug": slug.current,
+  publishedAt,
+  seriesOrder,
+  seriesLabel,
+  featuredImage ${editorialPreviewImageProjection},
+  categories[]->{
+    "name": coalesce(name, title),
+    "nameEn": coalesce(nameEn, titleEn),
+    "slug": slug.current
+  },
+  platforms[]->{
+    name,
+    "slug": slug.current,
+    platformType,
+    badgeLabel,
+    manufacturer->{
+      name,
+      nameEn,
+      "slug": slug.current
+    }
+  },
+  genres[]->{
+    name,
+    nameEn,
+    "slug": slug.current
+  },
+  developers[]->{
+    name,
+    nameEn,
+    "slug": slug.current
+  },
+  rating {
+    overall
+  },
+  gameInfo {
+    releaseYear,
+    cover ${editorialPreviewImageProjection}
+  }
+}`;
+
 const editorialArticlePreviewProjection = `{
   _id,
   _type,
@@ -45,16 +112,10 @@ const editorialArticlePreviewProjection = `{
     displayName,
     role,
     "slug": slug.current,
-    image {
-      alt,
-      asset->{ url }
-    }
+    image ${editorialPreviewImageProjection}
   },
 
-  featuredImage {
-    alt,
-    asset->{ url }
-  },
+  featuredImage ${editorialPreviewImageProjection},
 
   categories[]->{
     "name": coalesce(name, title),
@@ -117,39 +178,16 @@ const editorialArticlePreviewProjection = `{
     description,
     descriptionEn,
     "slug": slug.current,
-    logo {
-      alt,
-      asset->{ url }
-    },
-    logoLight {
-      alt,
-      asset->{ url }
-    }
+    logo ${editorialPreviewImageProjection},
+    logoLight ${editorialPreviewImageProjection}
   },
 
-  creators[]->{
-    _id,
-    name,
-    "slug": slug.current,
-    role,
-    roleEn,
-    portrait {
-      alt,
-      asset->{ url }
-    }
-  },
+  creators[]->${editorialPreviewCreatorRefProjection},
 
   gameInfo {
     releaseYear,
     mediaFormat,
-    cover {
-      ...,
-      alt,
-      asset->{
-        _id,
-        url
-      }
-    }
+    cover ${editorialPreviewImageProjection}
   },
 
   rating,
@@ -216,10 +254,7 @@ const editorialArticlePreviewProjection = `{
           "slug": slug.current,
           role,
           roleEn,
-          portrait {
-            alt,
-            asset->{ url }
-          }
+          portrait ${editorialPreviewImageProjection}
         }
       },
 
@@ -309,10 +344,7 @@ const editorialArticlePreviewProjection = `{
               "slug": slug.current,
               role,
               roleEn,
-              portrait {
-                alt,
-                asset->{ url }
-              }
+              portrait ${editorialPreviewImageProjection}
             }
           },
 
@@ -361,6 +393,32 @@ const editorialArticlePreviewProjection = `{
   }
 }`;
 
+type PreviewPostCandidateRow = {
+  published?: Post | null;
+  draft?: Post | null;
+};
+
+function mergePreviewPostCandidate(row: PreviewPostCandidateRow): Post | null {
+  const published = row?.published || null;
+  const draft = row?.draft || null;
+
+  if (!published && !draft) return null;
+  if (!draft) return published;
+  if (!published) return draft;
+
+  return {
+    ...published,
+    ...draft,
+    isPublic: published.isPublic,
+  };
+}
+
+function mergePreviewPostCandidateRows(rows: PreviewPostCandidateRow[] = []): Post[] {
+  return rows
+    .map(mergePreviewPostCandidate)
+    .filter((post): post is Post => Boolean(post));
+}
+
 export async function fetchEditorialArticlePreviewPost(documentId: string): Promise<Post | null> {
   const id = String(documentId || '').trim();
 
@@ -384,7 +442,7 @@ export async function fetchEditorialArticlePreviewSeriesPosts({
 
   if (!normalizedSeriesId) return [];
 
-  return await getSanityRawClient().fetch<Post[]>(
+  const rows = await getSanityRawClient().fetch<PreviewPostCandidateRow[]>(
     `*[
       _type == "article" &&
       defined(slug.current) &&
@@ -393,29 +451,30 @@ export async function fetchEditorialArticlePreviewSeriesPosts({
       coalesce(language, "it") == $language &&
       references($seriesId)
     ] | order(coalesce(seriesOrder, 999) asc, coalesce(publishedAt, _createdAt) asc) {
-      _id,
-      type,
-      "language": coalesce(language, "it"),
-      title,
-      subtitle,
-      "slug": slug.current,
-      publishedAt,
-      seriesOrder,
-      seriesLabel,
-      featuredImage {
-        alt,
-        asset->{ url }
-      },
-      gameInfo {
-        cover {
-          alt,
-          asset->{ url }
-        }
-      }
+      "published": ${editorialArticlePreviewCardProjection},
+      "draft": *[_id == "drafts." + ^._id][0]${editorialArticlePreviewCardProjection}
     }`,
     {
       seriesId: normalizedSeriesId,
       language: normalizedLanguage,
     }
   ) || [];
+
+  return mergePreviewPostCandidateRows(rows);
+}
+
+export async function fetchEditorialArticlePreviewRelatedPostCandidates(): Promise<Post[]> {
+  const rows = await getSanityRawClient().fetch<PreviewPostCandidateRow[]>(
+    `*[
+      _type == "article" &&
+      defined(slug.current) &&
+      !(_id in path("drafts.**")) &&
+      ${PUBLIC_POST_GROQ_FILTER}
+    ] | order(coalesce(publishedAt, _createdAt) desc) {
+      "published": ${editorialArticlePreviewCardProjection},
+      "draft": *[_id == "drafts." + ^._id][0]${editorialArticlePreviewCardProjection}
+    }`
+  ) || [];
+
+  return mergePreviewPostCandidateRows(rows);
 }
