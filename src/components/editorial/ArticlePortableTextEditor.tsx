@@ -99,6 +99,21 @@ type ImageRowBlock = PortableTextObject & {
   layout?: string;
 };
 
+type VideoBlock = PortableTextObject & {
+  _type: 'video';
+  url?: string;
+  title?: string;
+};
+
+type AsideTone = 'neutral' | 'info' | 'highlight';
+
+type AsideBoxBlock = PortableTextObject & {
+  _type: 'asideBox';
+  title?: string;
+  content?: PortableTextBlock[];
+  tone?: string;
+};
+
 type EditableArticleBodyImageAsset = {
   id: string;
   url: string;
@@ -323,6 +338,32 @@ type Labels = {
   pageLink: string;
   insertImage: string;
   insertImageRow: string;
+  insertVideo: string;
+  editVideo: string;
+  updateVideo: string;
+  removeVideo: string;
+  videoMenu: string;
+  videoRemoveConfirm: string;
+  videoUrl: string;
+  videoTitle: string;
+  videoUrlRequired: string;
+  videoUrlInvalid: string;
+  videoUntitled: string;
+  videoPreview: string;
+  insertAsideBox: string;
+  editAsideBox: string;
+  updateAsideBox: string;
+  removeAsideBox: string;
+  asideBoxMenu: string;
+  asideBoxRemoveConfirm: string;
+  asideTitle: string;
+  asideTone: string;
+  asideToneNeutral: string;
+  asideToneInfo: string;
+  asideToneHighlight: string;
+  asideContent: string;
+  asideContentHelp: string;
+  asideEmptyContent: string;
   editImageRow: string;
   updateImageRow: string;
   removeImageRow: string;
@@ -429,6 +470,7 @@ const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image
 const featuredImageMaxFileSize = 5 * 1024 * 1024;
 const imageDisplayModes: ImageDisplayMode[] = ['cover', 'contain', 'wide', 'natural'];
 const imageRowLayouts: ImageRowLayout[] = ['standard', 'uniformHeight'];
+const asideTones: AsideTone[] = ['neutral', 'info', 'highlight'];
 const imageRowMinImages = 2;
 const imageRowMaxImages = 8;
 const referenceAnnotationControls: Array<{
@@ -493,6 +535,98 @@ const mediaFormatLabels: Record<ArticleLanguage, Record<MediaFormat, string>> = 
   },
 };
 
+const annotationSchema = [
+  {
+    name: 'link',
+    fields: [{ name: 'href', type: 'string' }],
+  },
+  {
+    name: 'internalLink',
+    fields: [{ name: 'reference', type: 'object' }],
+  },
+  {
+    name: 'platformLink',
+    fields: [{ name: 'reference', type: 'object' }],
+  },
+  {
+    name: 'pageLink',
+    fields: [{ name: 'path', type: 'string' }],
+  },
+  {
+    name: 'taxonomyLink',
+    fields: [{ name: 'reference', type: 'object' }],
+  },
+  {
+    name: 'creatorLink',
+    fields: [{ name: 'reference', type: 'object' }],
+  },
+  {
+    name: 'companyLink',
+    fields: [{ name: 'reference', type: 'object' }],
+  },
+];
+
+const imageBlockObjectSchema = {
+  name: 'image',
+  fields: [
+    { name: 'asset', type: 'object' },
+    { name: 'crop', type: 'object' },
+    { name: 'hotspot', type: 'object' },
+    { name: 'alt', type: 'string' },
+    { name: 'caption', type: 'string' },
+    { name: 'displayMode', type: 'string' },
+    { name: 'isWide', type: 'boolean' },
+  ],
+};
+
+const imageRowBlockObjectSchema = {
+  name: 'imageRow',
+  fields: [
+    {
+      name: 'images',
+      type: 'array',
+      of: [
+        {
+          type: 'object',
+          fields: [
+            {
+              name: 'image',
+              type: 'object',
+              fields: [
+                { name: 'asset', type: 'object' },
+                { name: 'crop', type: 'object' },
+                { name: 'hotspot', type: 'object' },
+              ],
+            },
+            { name: 'alt', type: 'string' },
+            { name: 'caption', type: 'string' },
+            { name: 'displayMode', type: 'string' },
+          ],
+        },
+      ],
+    },
+    { name: 'groupCaption', type: 'text' },
+    { name: 'layout', type: 'string' },
+  ],
+};
+
+const videoBlockObjectSchema = {
+  name: 'video',
+  fields: [
+    { name: 'url', type: 'string' },
+    { name: 'title', type: 'string' },
+  ],
+};
+
+const asideBoxBlockObjectSchema = {
+  name: 'asideBox',
+  fields: [
+    { name: 'title', type: 'string' },
+    { name: 'content', type: 'array' },
+    { name: 'tone', type: 'string' },
+  ],
+};
+
 const schemaDefinition = defineSchema({
   decorators: [{ name: 'strong' }, { name: 'em' }],
   styles: [
@@ -501,83 +635,29 @@ const schemaDefinition = defineSchema({
     { name: 'h3' },
     { name: 'blockquote' },
   ],
-  annotations: [
-    {
-      name: 'link',
-      fields: [{ name: 'href', type: 'string' }],
-    },
-    {
-      name: 'internalLink',
-      fields: [{ name: 'reference', type: 'object' }],
-    },
-    {
-      name: 'platformLink',
-      fields: [{ name: 'reference', type: 'object' }],
-    },
-    {
-      name: 'pageLink',
-      fields: [{ name: 'path', type: 'string' }],
-    },
-    {
-      name: 'taxonomyLink',
-      fields: [{ name: 'reference', type: 'object' }],
-    },
-    {
-      name: 'creatorLink',
-      fields: [{ name: 'reference', type: 'object' }],
-    },
-    {
-      name: 'companyLink',
-      fields: [{ name: 'reference', type: 'object' }],
-    },
-  ],
+  annotations: annotationSchema,
   lists: [{ name: 'bullet' }, { name: 'number' }],
   inlineObjects: [],
   blockObjects: [
-    {
-      name: 'image',
-      fields: [
-        { name: 'asset', type: 'object' },
-        { name: 'crop', type: 'object' },
-        { name: 'hotspot', type: 'object' },
-        { name: 'alt', type: 'string' },
-        { name: 'caption', type: 'string' },
-        { name: 'displayMode', type: 'string' },
-        { name: 'isWide', type: 'boolean' },
-      ],
-    },
-    {
-      name: 'imageRow',
-      fields: [
-        {
-          name: 'images',
-          type: 'array',
-          of: [
-            {
-              type: 'object',
-              fields: [
-                {
-                  name: 'image',
-                  type: 'object',
-                  fields: [
-                    { name: 'asset', type: 'object' },
-                    { name: 'crop', type: 'object' },
-                    { name: 'hotspot', type: 'object' },
-                  ],
-                },
-                { name: 'alt', type: 'string' },
-                { name: 'caption', type: 'string' },
-                { name: 'displayMode', type: 'string' },
-              ],
-            },
-          ],
-        },
-        { name: 'groupCaption', type: 'text' },
-        { name: 'layout', type: 'string' },
-      ],
-    },
-    { name: 'video' },
-    { name: 'asideBox' },
+    imageBlockObjectSchema,
+    imageRowBlockObjectSchema,
+    videoBlockObjectSchema,
+    asideBoxBlockObjectSchema,
+  ],
+});
+
+const asideSchemaDefinition = defineSchema({
+  decorators: [{ name: 'strong' }, { name: 'em' }],
+  styles: [
+    { name: 'normal' },
+    { name: 'h3' },
+  ],
+  annotations: annotationSchema,
+  lists: [{ name: 'bullet' }],
+  inlineObjects: [],
+  blockObjects: [
+    imageBlockObjectSchema,
+    imageRowBlockObjectSchema,
   ],
 });
 
@@ -613,6 +693,98 @@ function getObjectLabel(type: string, labels: Labels) {
   if (type === 'asideBox') return labels.asideBox;
 
   return labels.unsupportedObject;
+}
+
+function normalizeHttpUrl(value: string) {
+  const url = String(value || '').trim();
+
+  if (!url) return '';
+
+  try {
+    const parsedUrl = new URL(url);
+
+    return ['http:', 'https:'].includes(parsedUrl.protocol) ? url : '';
+  } catch {
+    return '';
+  }
+}
+
+function getVideoDomain(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+function createVideoBlockValue({ url, title }: { url: string; title: string }) {
+  const normalizedTitle = normalizeSingleLineValue(title, 'space').slice(0, 160).trim();
+
+  return {
+    url: normalizeHttpUrl(url),
+    ...(normalizedTitle ? { title: normalizedTitle } : {}),
+  };
+}
+
+function normalizeAsideTone(value: unknown): AsideTone {
+  return asideTones.includes(value as AsideTone) ? value as AsideTone : 'info';
+}
+
+function getAsideToneLabel(tone: AsideTone, labels: Labels) {
+  if (tone === 'neutral') return labels.asideToneNeutral;
+  if (tone === 'highlight') return labels.asideToneHighlight;
+
+  return labels.asideToneInfo;
+}
+
+function createEmptyPortableTextBlock(): PortableTextBlock {
+  return {
+    _type: 'block',
+    _key: getKey(),
+    style: 'normal',
+    markDefs: [],
+    children: [
+      {
+        _type: 'span',
+        _key: getKey(),
+        text: '',
+        marks: [],
+      },
+    ],
+  };
+}
+
+function normalizeAsideContentForEditor(content: unknown): PortableTextBlock[] {
+  return Array.isArray(content) && content.length > 0
+    ? content as PortableTextBlock[]
+    : [createEmptyPortableTextBlock()];
+}
+
+function createAsideBoxBlockValue({
+  title,
+  tone,
+  content,
+}: {
+  title: string;
+  tone: AsideTone;
+  content: PortableTextBlock[];
+}) {
+  const normalizedTitle = normalizeSingleLineValue(title, 'space').slice(0, 160).trim();
+
+  return {
+    ...(normalizedTitle ? { title: normalizedTitle } : {}),
+    tone,
+    content: normalizeAsideContentForEditor(content),
+  };
+}
+
+function getTextBlockPreview(block: PortableTextBlock) {
+  const children = Array.isArray(block.children) ? block.children : [];
+
+  return children
+    .map((child) => typeof child?.text === 'string' ? child.text : '')
+    .join('')
+    .trim();
 }
 
 function getBodyImageAssetRef(image: BodyImageBlock | null | undefined) {
@@ -1227,11 +1399,440 @@ function ImageRowObjectBlock({
   );
 }
 
+function VideoObjectBlock({
+  attributes,
+  children,
+  node,
+  path,
+  focused,
+  selected,
+  labels,
+  readOnly,
+}: any) {
+  const editor = useEditor();
+  const video = node as VideoBlock;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const url = typeof video.url === 'string' ? video.url.trim() : '';
+  const title = typeof video.title === 'string' && video.title.trim() ? video.title.trim() : labels.videoUntitled;
+  const domain = getVideoDomain(url);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isMenuOpen]);
+
+  const applyVideoUpdate = (value: Record<string, unknown>) => {
+    if (!('title' in value)) {
+      editor.send({
+        type: 'block.unset',
+        at: path,
+        props: ['title'],
+      });
+    }
+
+    editor.send({
+      type: 'block.set',
+      at: path,
+      props: value,
+    });
+    editor.send({ type: 'focus' });
+    setIsModalOpen(false);
+  };
+
+  const moveVideoBlock = (direction: 'up' | 'down') => {
+    editor.send({
+      type: direction === 'up' ? 'move.block up' : 'move.block down',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  const selectVideoBlock = () => {
+    editor.send({
+      type: 'select.block',
+      at: path,
+    });
+  };
+
+  const startVideoDrag = (event: DragEvent<HTMLElement>) => {
+    selectVideoBlock();
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const openVideoModal = () => {
+    setIsMenuOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const removeVideoBlock = () => {
+    if (!window.confirm(labels.videoRemoveConfirm)) return;
+
+    editor.send({
+      type: 'delete.block',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <div
+      {...attributes}
+      className="editorial-pte__object editorial-pte__image-object editorial-pte__custom-object editorial-pte__video-object"
+      data-focused={focused ? 'true' : undefined}
+      data-selected={selected ? 'true' : undefined}
+    >
+      {children}
+      <div className="editorial-pte__image-content editorial-pte__custom-content" contentEditable={false}>
+        <div className="editorial-pte__image-menu" ref={menuRef}>
+          <button
+            type="button"
+            className="editorial-pte__image-menu-button"
+            aria-label={labels.videoMenu}
+            title={labels.videoMenu}
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            onClick={() => setIsMenuOpen((value) => !value)}
+          >
+            <BlockOptionsIcon />
+          </button>
+          <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
+            <button type="button" role="menuitem" onClick={openVideoModal}>
+              {labels.editVideo}
+            </button>
+            <button type="button" role="menuitem" onClick={() => moveVideoBlock('up')}>
+              {labels.moveUp}
+            </button>
+            <button type="button" role="menuitem" onClick={() => moveVideoBlock('down')}>
+              {labels.moveDown}
+            </button>
+            <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeVideoBlock}>
+              {labels.removeVideo}
+            </button>
+          </div>
+        </div>
+
+        <article
+          className="editorial-pte__video-card"
+          draggable={!readOnly}
+          title={labels.bodyImageDragHandle}
+          onMouseDown={selectVideoBlock}
+          onDragStart={startVideoDrag}
+        >
+          <span className="editorial-pte__video-icon" aria-hidden="true">▶️</span>
+          <div className="editorial-pte__video-copy">
+            <span className="editorial-pte__video-kicker">{labels.videoPreview}</span>
+            <strong>{title}</strong>
+            {url && <span className="editorial-pte__video-url">{domain ? `${domain} · ${url}` : url}</span>}
+          </div>
+        </article>
+      </div>
+
+      {isModalOpen && (
+        <VideoModal
+          mode="edit"
+          labels={labels}
+          initialVideo={video}
+          onApply={applyVideoUpdate}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function AsideContentPreview({
+  content,
+  labels,
+  assetPreviewUrls,
+}: {
+  content: PortableTextBlock[];
+  labels: Labels;
+  assetPreviewUrls: Record<string, string>;
+}) {
+  const renderedItems: ReactNode[] = [];
+
+  for (const block of content) {
+    if (!block || typeof block !== 'object') continue;
+
+    if (block._type === 'block') {
+      const text = getTextBlockPreview(block);
+      if (!text) continue;
+
+      const key = typeof block._key === 'string' ? block._key : `${renderedItems.length}`;
+
+      if (block.style === 'h3') {
+        renderedItems.push(<h4 key={key}>{text}</h4>);
+      } else if (block.listItem === 'bullet') {
+        renderedItems.push(<p className="editorial-pte__aside-preview-bullet" key={key}>{text}</p>);
+      } else {
+        renderedItems.push(<p key={key}>{text}</p>);
+      }
+    }
+
+    if (block._type === 'image') {
+      const image = block as BodyImageBlock;
+      const previewUrl = getBodyImagePreviewUrl(image, 360, assetPreviewUrls);
+      const key = typeof image._key === 'string' ? image._key : `${renderedItems.length}`;
+
+      renderedItems.push(
+        <figure className="editorial-pte__aside-preview-image" key={key}>
+          {previewUrl ? (
+            <img src={previewUrl} alt={image.alt || ''} loading="lazy" decoding="async" draggable={false} />
+          ) : (
+            <div className="editorial-current-media__placeholder">{labels.bodyImageNoPreview}</div>
+          )}
+        </figure>
+      );
+    }
+
+    if (block._type === 'imageRow') {
+      const row = block as ImageRowBlock;
+      const images = Array.isArray(row.images) ? row.images.slice(0, 4) : [];
+      const key = typeof row._key === 'string' ? row._key : `${renderedItems.length}`;
+
+      if (images.length > 0) {
+        renderedItems.push(
+          <div
+            className="editorial-pte__aside-preview-row"
+            style={{ '--editorial-aside-preview-count': images.length } as Record<string, number>}
+            key={key}
+          >
+            {images.map((item) => {
+              const image = getImageRowItemImage(item);
+              const previewUrl = getBodyImagePreviewUrl(image, 260, assetPreviewUrls);
+
+              return (
+                <figure className="editorial-pte__aside-preview-row-item" key={getImageRowItemKey(item)}>
+                  {previewUrl ? (
+                    <img src={previewUrl} alt={item.alt || ''} loading="lazy" decoding="async" draggable={false} />
+                  ) : (
+                    <div className="editorial-current-media__placeholder">{labels.bodyImageNoPreview}</div>
+                  )}
+                </figure>
+              );
+            })}
+          </div>
+        );
+      }
+    }
+
+    if (renderedItems.length >= 5) break;
+  }
+
+  if (renderedItems.length === 0) {
+    return <p className="editorial-pte__aside-preview-empty">{labels.asideEmptyContent}</p>;
+  }
+
+  return <div className="editorial-pte__aside-preview-content">{renderedItems}</div>;
+}
+
+function AsideBoxObjectBlock({
+  attributes,
+  children,
+  node,
+  path,
+  focused,
+  selected,
+  labels,
+  language,
+  currentArticleId,
+  saveEndpoint,
+  assetPreviewUrls,
+  onAssetPreview,
+  readOnly,
+}: any) {
+  const editor = useEditor();
+  const asideBox = node as AsideBoxBlock;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const tone = normalizeAsideTone(asideBox.tone);
+  const title = typeof asideBox.title === 'string' ? asideBox.title.trim() : '';
+  const content = normalizeAsideContentForEditor(asideBox.content);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isMenuOpen]);
+
+  const applyAsideBoxUpdate = (value: Record<string, unknown>) => {
+    if (!('title' in value)) {
+      editor.send({
+        type: 'block.unset',
+        at: path,
+        props: ['title'],
+      });
+    }
+
+    editor.send({
+      type: 'block.set',
+      at: path,
+      props: value,
+    });
+    editor.send({ type: 'focus' });
+    setIsModalOpen(false);
+  };
+
+  const moveAsideBoxBlock = (direction: 'up' | 'down') => {
+    editor.send({
+      type: direction === 'up' ? 'move.block up' : 'move.block down',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  const selectAsideBoxBlock = () => {
+    editor.send({
+      type: 'select.block',
+      at: path,
+    });
+  };
+
+  const startAsideBoxDrag = (event: DragEvent<HTMLElement>) => {
+    selectAsideBoxBlock();
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const openAsideBoxModal = () => {
+    setIsMenuOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const removeAsideBoxBlock = () => {
+    if (!window.confirm(labels.asideBoxRemoveConfirm)) return;
+
+    editor.send({
+      type: 'delete.block',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <div
+      {...attributes}
+      className="editorial-pte__object editorial-pte__image-object editorial-pte__custom-object editorial-pte__aside-object"
+      data-focused={focused ? 'true' : undefined}
+      data-selected={selected ? 'true' : undefined}
+      data-tone={tone}
+    >
+      {children}
+      <div className="editorial-pte__image-content editorial-pte__custom-content" contentEditable={false}>
+        <div className="editorial-pte__image-menu" ref={menuRef}>
+          <button
+            type="button"
+            className="editorial-pte__image-menu-button"
+            aria-label={labels.asideBoxMenu}
+            title={labels.asideBoxMenu}
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            onClick={() => setIsMenuOpen((value) => !value)}
+          >
+            <BlockOptionsIcon />
+          </button>
+          <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
+            <button type="button" role="menuitem" onClick={openAsideBoxModal}>
+              {labels.editAsideBox}
+            </button>
+            <button type="button" role="menuitem" onClick={() => moveAsideBoxBlock('up')}>
+              {labels.moveUp}
+            </button>
+            <button type="button" role="menuitem" onClick={() => moveAsideBoxBlock('down')}>
+              {labels.moveDown}
+            </button>
+            <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeAsideBoxBlock}>
+              {labels.removeAsideBox}
+            </button>
+          </div>
+        </div>
+
+        <aside
+          className="editorial-pte__aside-card"
+          draggable={!readOnly}
+          title={labels.bodyImageDragHandle}
+          onMouseDown={selectAsideBoxBlock}
+          onDragStart={startAsideBoxDrag}
+        >
+          <div className="editorial-pte__aside-card-header">
+            <span className="editorial-pte__aside-icon" aria-hidden="true">💬</span>
+            <div>
+              <span className="editorial-pte__aside-kicker">{getAsideToneLabel(tone, labels)}</span>
+              <strong>{title || labels.asideBox}</strong>
+            </div>
+          </div>
+          <AsideContentPreview content={content} labels={labels} assetPreviewUrls={assetPreviewUrls} />
+        </aside>
+      </div>
+
+      {isModalOpen && (
+        <AsideBoxModal
+          mode="edit"
+          labels={labels}
+          language={language}
+          currentArticleId={currentArticleId}
+          saveEndpoint={saveEndpoint}
+          initialAside={asideBox}
+          assetPreviewUrls={assetPreviewUrls}
+          onAssetPreview={onAssetPreview}
+          onApply={applyAsideBoxUpdate}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 function ObjectBlock({
   attributes,
   children,
   node,
   labels,
+  language,
+  currentArticleId,
   saveEndpoint,
   assetPreviewUrls,
   onAssetPreview,
@@ -1268,6 +1869,37 @@ function ObjectBlock({
       >
         {children}
       </ImageRowObjectBlock>
+    );
+  }
+
+  if (type === 'video') {
+    return (
+      <VideoObjectBlock
+        attributes={attributes}
+        labels={labels}
+        node={node}
+        {...props}
+      >
+        {children}
+      </VideoObjectBlock>
+    );
+  }
+
+  if (type === 'asideBox') {
+    return (
+      <AsideBoxObjectBlock
+        attributes={attributes}
+        labels={labels}
+        node={node}
+        language={language}
+        currentArticleId={currentArticleId}
+        saveEndpoint={saveEndpoint}
+        assetPreviewUrls={assetPreviewUrls}
+        onAssetPreview={onAssetPreview}
+        {...props}
+      >
+        {children}
+      </AsideBoxObjectBlock>
     );
   }
 
@@ -2403,6 +3035,298 @@ function ImageRowModal({
   );
 }
 
+function VideoModal({
+  mode,
+  labels,
+  initialVideo = null,
+  onApply,
+  onClose,
+}: {
+  mode: 'insert' | 'edit';
+  labels: Labels;
+  initialVideo?: VideoBlock | null;
+  onApply: (value: Record<string, unknown>) => void;
+  onClose: () => void;
+}) {
+  const urlId = useId();
+  const titleId = useId();
+  const [url, setUrl] = useState(typeof initialVideo?.url === 'string' ? initialVideo.url : '');
+  const [title, setTitle] = useState(typeof initialVideo?.title === 'string' ? initialVideo.title : '');
+  const [status, setStatus] = useState('');
+  const modalTitle = mode === 'insert' ? labels.insertVideo : labels.editVideo;
+  const submitLabel = mode === 'insert' ? labels.insertVideo : labels.updateVideo;
+
+  const applyVideo = () => {
+    const normalizedUrl = normalizeHttpUrl(url);
+
+    if (!url.trim()) {
+      setStatus(labels.videoUrlRequired);
+      return;
+    }
+
+    if (!normalizedUrl) {
+      setStatus(labels.videoUrlInvalid);
+      return;
+    }
+
+    onApply(createVideoBlockValue({
+      url: normalizedUrl,
+      title,
+    }));
+  };
+
+  return (
+    <AnnotationModal
+      title={`▶️ ${modalTitle}`}
+      labels={labels}
+      onClose={onClose}
+      panelClassName="editorial-pte-modal__panel--video"
+    >
+      <div className="editorial-video-modal">
+        <label className="editorial-field" htmlFor={urlId}>
+          <span>{labels.videoUrl}</span>
+          <input
+            id={urlId}
+            value={url}
+            type="url"
+            inputMode="url"
+            placeholder="https://"
+            onChange={(event) => {
+              setUrl(event.target.value);
+              setStatus('');
+            }}
+          />
+        </label>
+
+        <label className="editorial-field" htmlFor={titleId}>
+          <span>{labels.videoTitle}</span>
+          <AutoGrowTextField
+            id={titleId}
+            value={title}
+            rows={2}
+            maxRows={3}
+            maxLength={160}
+            ariaLabel={labels.videoTitle}
+            singleLine
+            onChange={setTitle}
+          />
+        </label>
+
+        {status && (
+          <p className="editorial-file-advice" data-tone="error" aria-live="polite">
+            {status}
+          </p>
+        )}
+
+        <div className="editorial-body-image-modal__actions">
+          <button type="button" className="editorial-mini-button" onClick={onClose}>
+            {labels.annotationClose}
+          </button>
+          <button type="button" className="editorial-button editorial-body-image-modal__submit" onClick={applyVideo}>
+            {submitLabel}
+          </button>
+        </div>
+      </div>
+    </AnnotationModal>
+  );
+}
+
+function AsideContentEditor({
+  content,
+  labels,
+  language,
+  currentArticleId,
+  saveEndpoint,
+  assetPreviewUrls,
+  onAssetPreview,
+  onChange,
+}: {
+  content: PortableTextBlock[];
+  labels: Labels;
+  language: ArticleLanguage;
+  currentArticleId: string;
+  saveEndpoint: string;
+  assetPreviewUrls: Record<string, string>;
+  onAssetPreview: (assetId: string, url: string) => void;
+  onChange: (content: PortableTextBlock[]) => void;
+}) {
+  const nestedNodes = useMemo(
+    () => [
+      defineBlockObject({
+        type: 'image',
+        render: (props) => (
+          <ObjectBlock
+            {...props}
+            labels={labels}
+            language={language}
+            currentArticleId={currentArticleId}
+            saveEndpoint={saveEndpoint}
+            assetPreviewUrls={assetPreviewUrls}
+            onAssetPreview={onAssetPreview}
+          />
+        ),
+      }),
+      defineBlockObject({
+        type: 'imageRow',
+        render: (props) => (
+          <ObjectBlock
+            {...props}
+            labels={labels}
+            language={language}
+            currentArticleId={currentArticleId}
+            saveEndpoint={saveEndpoint}
+            assetPreviewUrls={assetPreviewUrls}
+            onAssetPreview={onAssetPreview}
+          />
+        ),
+      }),
+    ],
+    [assetPreviewUrls, currentArticleId, labels, language, onAssetPreview, saveEndpoint]
+  );
+
+  return (
+    <EditorProvider
+      initialConfig={{
+        schemaDefinition: asideSchemaDefinition,
+        initialValue: content,
+        keyGenerator: getKey,
+      }}
+    >
+      <EventListenerPlugin
+        on={(event) => {
+          if (event.type === 'mutation') {
+            onChange(event.value || []);
+          }
+        }}
+      />
+      <NodePlugin nodes={nestedNodes} />
+      <Toolbar
+        variant="aside"
+        labels={labels}
+        language={language}
+        currentArticleId={currentArticleId}
+        saveEndpoint={saveEndpoint}
+        assetPreviewUrls={assetPreviewUrls}
+        onAssetPreview={onAssetPreview}
+      />
+      <PortableTextEditable
+        className="editorial-pte editorial-pte--nested"
+        renderAnnotation={renderAnnotation}
+        renderDecorator={renderDecorator}
+        renderListItem={renderListItem}
+        renderStyle={renderStyle}
+        spellCheck
+      />
+    </EditorProvider>
+  );
+}
+
+function AsideBoxModal({
+  mode,
+  labels,
+  language,
+  currentArticleId,
+  saveEndpoint,
+  initialAside = null,
+  assetPreviewUrls = {},
+  onAssetPreview,
+  onApply,
+  onClose,
+}: {
+  mode: 'insert' | 'edit';
+  labels: Labels;
+  language: ArticleLanguage;
+  currentArticleId: string;
+  saveEndpoint: string;
+  initialAside?: AsideBoxBlock | null;
+  assetPreviewUrls?: Record<string, string>;
+  onAssetPreview: (assetId: string, url: string) => void;
+  onApply: (value: Record<string, unknown>) => void;
+  onClose: () => void;
+}) {
+  const titleId = useId();
+  const toneId = useId();
+  const [title, setTitle] = useState(typeof initialAside?.title === 'string' ? initialAside.title : '');
+  const [tone, setTone] = useState<AsideTone>(normalizeAsideTone(initialAside?.tone));
+  const [content, setContent] = useState<PortableTextBlock[]>(() => normalizeAsideContentForEditor(initialAside?.content));
+  const modalTitle = mode === 'insert' ? labels.insertAsideBox : labels.editAsideBox;
+  const submitLabel = mode === 'insert' ? labels.insertAsideBox : labels.updateAsideBox;
+
+  const applyAsideBox = () => {
+    onApply(createAsideBoxBlockValue({
+      title,
+      tone,
+      content,
+    }));
+  };
+
+  return (
+    <AnnotationModal
+      title={`💬 ${modalTitle}`}
+      labels={labels}
+      onClose={onClose}
+      panelClassName="editorial-pte-modal__panel--aside"
+    >
+      <div className="editorial-aside-modal">
+        <label className="editorial-field" htmlFor={titleId}>
+          <span>{labels.asideTitle}</span>
+          <AutoGrowTextField
+            id={titleId}
+            value={title}
+            rows={2}
+            maxRows={3}
+            maxLength={160}
+            ariaLabel={labels.asideTitle}
+            singleLine
+            onChange={setTitle}
+          />
+        </label>
+
+        <label className="editorial-field" htmlFor={toneId}>
+          <span>{labels.asideTone}</span>
+          <select
+            id={toneId}
+            value={tone}
+            onChange={(event) => setTone(normalizeAsideTone(event.target.value))}
+          >
+            {asideTones.map((toneOption) => (
+              <option key={toneOption} value={toneOption}>
+                {getAsideToneLabel(toneOption, labels)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <section className="editorial-aside-modal__content" aria-label={labels.asideContent}>
+          <div className="editorial-aside-modal__heading">
+            <span>{labels.asideContent}</span>
+            <small>{labels.asideContentHelp}</small>
+          </div>
+          <AsideContentEditor
+            content={content}
+            labels={labels}
+            language={language}
+            currentArticleId={currentArticleId}
+            saveEndpoint={saveEndpoint}
+            assetPreviewUrls={assetPreviewUrls}
+            onAssetPreview={onAssetPreview}
+            onChange={setContent}
+          />
+        </section>
+
+        <div className="editorial-body-image-modal__actions">
+          <button type="button" className="editorial-mini-button" onClick={onClose}>
+            {labels.annotationClose}
+          </button>
+          <button type="button" className="editorial-button editorial-body-image-modal__submit" onClick={applyAsideBox}>
+            {submitLabel}
+          </button>
+        </div>
+      </div>
+    </AnnotationModal>
+  );
+}
+
 function Toolbar({
   labels,
   language,
@@ -2410,6 +3334,7 @@ function Toolbar({
   saveEndpoint,
   assetPreviewUrls,
   onAssetPreview,
+  variant = 'body',
 }: {
   labels: Labels;
   language: ArticleLanguage;
@@ -2417,6 +3342,7 @@ function Toolbar({
   saveEndpoint: string;
   assetPreviewUrls: Record<string, string>;
   onAssetPreview: (assetId: string, url: string) => void;
+  variant?: 'body' | 'aside';
 }) {
   const editor = useEditor();
   const activeStyle = useEditorSelector(editor, selectors.getActiveStyle);
@@ -2428,7 +3354,8 @@ function Toolbar({
   const isBoldActive = useEditorSelector(editor, selectors.isActiveDecorator('strong'));
   const isItalicActive = useEditorSelector(editor, selectors.isActiveDecorator('em'));
   const isBlockquoteActive = useEditorSelector(editor, selectors.isActiveStyle('blockquote'));
-  const blockStyle = activeStyle === 'h2' || activeStyle === 'h3' ? activeStyle : 'normal';
+  const isBodyToolbar = variant === 'body';
+  const blockStyle = activeStyle === 'h3' || (isBodyToolbar && activeStyle === 'h2') ? activeStyle : 'normal';
   const [annotationModal, setAnnotationModal] = useState<{
     annotationName: AnnotationName;
     activeAnnotation: PortableTextObject | null;
@@ -2445,8 +3372,16 @@ function Toolbar({
     selection: EditorSelection;
     trigger: HTMLButtonElement | null;
   } | null>(null);
+  const [videoModal, setVideoModal] = useState<{
+    selection: EditorSelection;
+    trigger: HTMLButtonElement | null;
+  } | null>(null);
+  const [asideBoxModal, setAsideBoxModal] = useState<{
+    selection: EditorSelection;
+    trigger: HTMLButtonElement | null;
+  } | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
-  const hasTextSelection = selectedText.trim().length > 0;
+  const hasTextSelection = String(selectedText || '').trim().length > 0;
 
   const focus = () => editor.send({ type: 'focus' });
   const send = (event: Parameters<typeof editor.send>[0]) => {
@@ -2564,6 +3499,38 @@ function Toolbar({
       trigger?.focus();
     }, 0);
   };
+  const openVideoModal = (trigger: HTMLButtonElement) => {
+    if (!isBodyToolbar) return;
+
+    setVideoModal({
+      selection,
+      trigger,
+    });
+  };
+  const closeVideoModal = () => {
+    const trigger = videoModal?.trigger;
+    setVideoModal(null);
+
+    window.setTimeout(() => {
+      trigger?.focus();
+    }, 0);
+  };
+  const openAsideBoxModal = (trigger: HTMLButtonElement) => {
+    if (!isBodyToolbar) return;
+
+    setAsideBoxModal({
+      selection,
+      trigger,
+    });
+  };
+  const closeAsideBoxModal = () => {
+    const trigger = asideBoxModal?.trigger;
+    setAsideBoxModal(null);
+
+    window.setTimeout(() => {
+      trigger?.focus();
+    }, 0);
+  };
   const insertImageBlock = (value: Record<string, unknown>) => {
     if (!imageModal) return;
 
@@ -2593,6 +3560,36 @@ function Toolbar({
     });
     editor.send({ type: 'focus' });
     setImageRowModal(null);
+  };
+  const insertVideoBlock = (value: Record<string, unknown>) => {
+    if (!videoModal || !isBodyToolbar) return;
+
+    restoreSelection(videoModal.selection);
+    editor.send({
+      type: 'insert.block object',
+      placement: 'after',
+      blockObject: {
+        name: 'video',
+        value,
+      },
+    });
+    editor.send({ type: 'focus' });
+    setVideoModal(null);
+  };
+  const insertAsideBoxBlock = (value: Record<string, unknown>) => {
+    if (!asideBoxModal || !isBodyToolbar) return;
+
+    restoreSelection(asideBoxModal.selection);
+    editor.send({
+      type: 'insert.block object',
+      placement: 'after',
+      blockObject: {
+        name: 'asideBox',
+        value,
+      },
+    });
+    editor.send({ type: 'focus' });
+    setAsideBoxModal(null);
   };
 
   const addExternalLink = () => {
@@ -2635,7 +3632,7 @@ function Toolbar({
             onChange={(event) => send({ type: 'style.toggle', style: event.target.value })}
           >
             <option value="normal">{labels.normal}</option>
-            <option value="h2">{labels.h2}</option>
+            {isBodyToolbar && <option value="h2">{labels.h2}</option>}
             <option value="h3">{labels.h3}</option>
           </select>
         </label>
@@ -2671,18 +3668,20 @@ function Toolbar({
       <div
         className="editorial-pte-toolbar__group"
         role="group"
-        aria-label={`${labels.quote} / ${labels.bullet} / ${labels.number}`}
+        aria-label={isBodyToolbar ? `${labels.quote} / ${labels.bullet} / ${labels.number}` : labels.bullet}
       >
-        <button
-          className="editorial-pte-toolbar__button"
-          type="button"
-          aria-label={labels.quote}
-          aria-pressed={isBlockquoteActive}
-          title={labels.quote}
-          onClick={() => send({ type: 'style.toggle', style: 'blockquote' })}
-        >
-          <ToolbarIcon name="quote" />
-        </button>
+        {isBodyToolbar && (
+          <button
+            className="editorial-pte-toolbar__button"
+            type="button"
+            aria-label={labels.quote}
+            aria-pressed={isBlockquoteActive}
+            title={labels.quote}
+            onClick={() => send({ type: 'style.toggle', style: 'blockquote' })}
+          >
+            <ToolbarIcon name="quote" />
+          </button>
+        )}
         <button
           className="editorial-pte-toolbar__button"
           type="button"
@@ -2693,16 +3692,18 @@ function Toolbar({
         >
           <ToolbarIcon name="bullet" />
         </button>
-        <button
-          className="editorial-pte-toolbar__button"
-          type="button"
-          aria-label={labels.number}
-          aria-pressed={activeListItem === 'number'}
-          title={labels.number}
-          onClick={() => send({ type: 'list item.toggle', listItem: 'number' })}
-        >
-          <ToolbarIcon name="number" />
-        </button>
+        {isBodyToolbar && (
+          <button
+            className="editorial-pte-toolbar__button"
+            type="button"
+            aria-label={labels.number}
+            aria-pressed={activeListItem === 'number'}
+            title={labels.number}
+            onClick={() => send({ type: 'list item.toggle', listItem: 'number' })}
+          >
+            <ToolbarIcon name="number" />
+          </button>
+        )}
       </div>
 
       <div className="editorial-pte-toolbar__group" role="group" aria-label={labels.externalLink}>
@@ -2822,6 +3823,44 @@ function Toolbar({
         >
           <span className="editorial-pte-toolbar__emoji" aria-hidden="true">🖼️🖼️</span>
         </button>
+        {isBodyToolbar && (
+          <>
+            <button
+              className="editorial-pte-toolbar__button"
+              type="button"
+              aria-label={labels.insertVideo}
+              aria-expanded={Boolean(videoModal)}
+              title={labels.insertVideo}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                if (videoModal) {
+                  closeVideoModal();
+                } else {
+                  openVideoModal(event.currentTarget);
+                }
+              }}
+            >
+              <span className="editorial-pte-toolbar__emoji" aria-hidden="true">▶️</span>
+            </button>
+            <button
+              className="editorial-pte-toolbar__button"
+              type="button"
+              aria-label={labels.insertAsideBox}
+              aria-expanded={Boolean(asideBoxModal)}
+              title={labels.insertAsideBox}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                if (asideBoxModal) {
+                  closeAsideBoxModal();
+                } else {
+                  openAsideBoxModal(event.currentTarget);
+                }
+              }}
+            >
+              <span className="editorial-pte-toolbar__emoji" aria-hidden="true">💬</span>
+            </button>
+          </>
+        )}
       </div>
 
       {annotationModal && (
@@ -2873,6 +3912,27 @@ function Toolbar({
           onAssetPreview={onAssetPreview}
           onApply={insertImageRowBlock}
           onClose={closeImageRowModal}
+        />
+      )}
+      {videoModal && isBodyToolbar && (
+        <VideoModal
+          mode="insert"
+          labels={labels}
+          onApply={insertVideoBlock}
+          onClose={closeVideoModal}
+        />
+      )}
+      {asideBoxModal && isBodyToolbar && (
+        <AsideBoxModal
+          mode="insert"
+          labels={labels}
+          language={language}
+          currentArticleId={currentArticleId}
+          saveEndpoint={saveEndpoint}
+          assetPreviewUrls={assetPreviewUrls}
+          onAssetPreview={onAssetPreview}
+          onApply={insertAsideBoxBlock}
+          onClose={closeAsideBoxModal}
         />
       )}
     </div>
@@ -3685,6 +4745,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
           <ObjectBlock
             {...props}
             labels={labels}
+            language={draft.language}
+            currentArticleId={getRootArticleId(draft._id)}
             saveEndpoint={saveEndpoint}
             assetPreviewUrls={bodyImagePreviewUrls}
             onAssetPreview={rememberBodyImagePreview}
@@ -3697,6 +4759,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
           <ObjectBlock
             {...props}
             labels={labels}
+            language={draft.language}
+            currentArticleId={getRootArticleId(draft._id)}
             saveEndpoint={saveEndpoint}
             assetPreviewUrls={bodyImagePreviewUrls}
             onAssetPreview={rememberBodyImagePreview}
@@ -3709,6 +4773,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
           <ObjectBlock
             {...props}
             labels={labels}
+            language={draft.language}
+            currentArticleId={getRootArticleId(draft._id)}
             saveEndpoint={saveEndpoint}
             assetPreviewUrls={bodyImagePreviewUrls}
             onAssetPreview={rememberBodyImagePreview}
@@ -3721,6 +4787,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
           <ObjectBlock
             {...props}
             labels={labels}
+            language={draft.language}
+            currentArticleId={getRootArticleId(draft._id)}
             saveEndpoint={saveEndpoint}
             assetPreviewUrls={bodyImagePreviewUrls}
             onAssetPreview={rememberBodyImagePreview}
@@ -3728,7 +4796,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
         ),
       }),
     ],
-    [bodyImagePreviewUrls, labels, rememberBodyImagePreview, saveEndpoint]
+    [bodyImagePreviewUrls, draft._id, draft.language, labels, rememberBodyImagePreview, saveEndpoint]
   );
   const mediaFormatSelectOptions = useMemo<MultiSelectOption<MediaFormat>[]>(
     () => mediaFormatOptions.map((format) => ({
