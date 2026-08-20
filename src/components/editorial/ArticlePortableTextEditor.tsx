@@ -225,7 +225,6 @@ type Labels = {
   settingsButton: string;
   settingsButtonActive: string;
   preview: string;
-  previewUnavailable: string;
   closeSettings: string;
   mobileEditingNotice: string;
   backToArticles: string;
@@ -321,6 +320,10 @@ type Labels = {
   genericError: string;
   manualSave: string;
   counters: string;
+  toolbarStructure: string;
+  toolbarText: string;
+  toolbarLink: string;
+  toolbarInsert: string;
   blockStyle: string;
   normal: string;
   h2: string;
@@ -437,6 +440,7 @@ type Props = {
   article: EditableArticle;
   lang: ArticleLanguage;
   articlesHref: string;
+  previewHref: string;
   saveEndpoint: string;
   labels: Labels;
 };
@@ -3361,6 +3365,8 @@ function AsideBoxModal({
   );
 }
 
+type ToolbarMenu = 'structure' | 'text' | 'link' | 'insert';
+
 function Toolbar({
   labels,
   language,
@@ -3416,11 +3422,44 @@ function Toolbar({
   } | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const hasTextSelection = String(selectedText || '').trim().length > 0;
+  const [openMenu, setOpenMenu] = useState<ToolbarMenu | null>(null);
+
+  useEffect(() => {
+    if (!openMenu) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+
+      if (target instanceof Node && toolbarRef.current?.contains(target)) return;
+
+      setOpenMenu(null);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpenMenu(null);
+      }
+    };
+
+    window.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openMenu]);
 
   const focus = () => editor.send({ type: 'focus' });
   const send = (event: Parameters<typeof editor.send>[0]) => {
     editor.send(event);
     focus();
+  };
+  const toggleMenu = (menu: ToolbarMenu) => {
+    setOpenMenu((current) => current === menu ? null : menu);
+  };
+  const runToolbarAction = (action: () => void) => {
+    setOpenMenu(null);
+    action();
   };
   const getActiveAnnotation = (annotationName: AnnotationName | 'link') =>
     activeAnnotations.find((annotation) => annotation._type === annotationName) || null;
@@ -3655,246 +3694,306 @@ function Toolbar({
   };
 
   return (
-    <div className={`editorial-pte-toolbar editorial-pte-toolbar--${variant}`} aria-label={labels.content} ref={toolbarRef}>
-      <div className="editorial-pte-toolbar__group" role="group" aria-label={labels.blockStyle}>
-        <label className="editorial-pte-toolbar__style">
-          <span className="sr-only">{labels.blockStyle}</span>
-          <select
-            value={blockStyle}
-            aria-label={labels.blockStyle}
-            title={labels.blockStyle}
-            onChange={(event) => send({ type: 'style.toggle', style: event.target.value })}
-          >
-            <option value="normal">{labels.normal}</option>
-            {isBodyToolbar && <option value="h2">{labels.h2}</option>}
-            <option value="h3">{labels.h3}</option>
-          </select>
-        </label>
-      </div>
-
-      <div className="editorial-pte-toolbar__group" role="group" aria-label={`${labels.bold} / ${labels.italic}`}>
+    <div className={`editorial-pte-toolbar editorial-pte-toolbar--${variant}`} role="toolbar" aria-label={labels.content} ref={toolbarRef}>
+      <div className="editorial-pte-toolbar__menu">
         <button
-          className="editorial-pte-toolbar__button"
+          className="editorial-pte-toolbar__menu-trigger"
           type="button"
-          aria-label={labels.bold}
-          aria-pressed={isBoldActive}
-          title={labels.bold}
-          onClick={() => send({ type: 'decorator.toggle', decorator: 'strong' })}
+          aria-haspopup="menu"
+          aria-expanded={openMenu === 'structure'}
+          title={labels.toolbarStructure}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => toggleMenu('structure')}
         >
-          <span className="editorial-pte-toolbar__letter editorial-pte-toolbar__letter--bold" aria-hidden="true">
-            B
-          </span>
+          {labels.toolbarStructure}
+          <span aria-hidden="true">▾</span>
         </button>
-        <button
-          className="editorial-pte-toolbar__button"
-          type="button"
-          aria-label={labels.italic}
-          aria-pressed={isItalicActive}
-          title={labels.italic}
-          onClick={() => send({ type: 'decorator.toggle', decorator: 'em' })}
-        >
-          <span className="editorial-pte-toolbar__letter editorial-pte-toolbar__letter--italic" aria-hidden="true">
-            I
-          </span>
-        </button>
-      </div>
-
-      <div
-        className="editorial-pte-toolbar__group"
-        role="group"
-        aria-label={isBodyToolbar ? `${labels.quote} / ${labels.bullet} / ${labels.number}` : labels.bullet}
-      >
-        {isBodyToolbar && (
+        <div className="editorial-pte-toolbar__menu-panel" role="menu" hidden={openMenu !== 'structure'}>
           <button
-            className="editorial-pte-toolbar__button"
+            className="editorial-pte-toolbar__menu-item"
             type="button"
-            aria-label={labels.quote}
-            aria-pressed={isBlockquoteActive}
-            title={labels.quote}
-            onClick={() => send({ type: 'style.toggle', style: 'blockquote' })}
+            role="menuitem"
+            aria-pressed={blockStyle === 'normal'}
+            data-active={blockStyle === 'normal' ? 'true' : undefined}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runToolbarAction(() => send({ type: 'style.toggle', style: 'normal' }))}
           >
-            <ToolbarIcon name="quote" />
+            {labels.normal}
           </button>
-        )}
-        <button
-          className="editorial-pte-toolbar__button"
-          type="button"
-          aria-label={labels.bullet}
-          aria-pressed={activeListItem === 'bullet'}
-          title={labels.bullet}
-          onClick={() => send({ type: 'list item.toggle', listItem: 'bullet' })}
-        >
-          <ToolbarIcon name="bullet" />
-        </button>
-        {isBodyToolbar && (
           <button
-            className="editorial-pte-toolbar__button"
+            className="editorial-pte-toolbar__menu-item"
             type="button"
-            aria-label={labels.number}
-            aria-pressed={activeListItem === 'number'}
-            title={labels.number}
-            onClick={() => send({ type: 'list item.toggle', listItem: 'number' })}
+            role="menuitem"
+            aria-pressed={blockStyle === 'h3'}
+            data-active={blockStyle === 'h3' ? 'true' : undefined}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runToolbarAction(() => send({ type: 'style.toggle', style: 'h3' }))}
           >
-            <ToolbarIcon name="number" />
+            {labels.h3}
           </button>
-        )}
+          {isBodyToolbar && (
+            <button
+              className="editorial-pte-toolbar__menu-item"
+              type="button"
+              role="menuitem"
+              aria-pressed={blockStyle === 'h2'}
+              data-active={blockStyle === 'h2' ? 'true' : undefined}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runToolbarAction(() => send({ type: 'style.toggle', style: 'h2' }))}
+            >
+              {labels.h2}
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="editorial-pte-toolbar__group" role="group" aria-label={labels.externalLink}>
+      <div className="editorial-pte-toolbar__menu">
         <button
-          className="editorial-pte-toolbar__button"
+          className="editorial-pte-toolbar__menu-trigger"
           type="button"
-          aria-label={labels.externalLink}
-          aria-pressed={Boolean(getActiveAnnotation('link'))}
-          title={labels.externalLink}
-          onClick={addExternalLink}
+          aria-haspopup="menu"
+          aria-expanded={openMenu === 'text'}
+          title={labels.toolbarText}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => toggleMenu('text')}
         >
-          <ToolbarIcon name="link" />
+          {labels.toolbarText}
+          <span aria-hidden="true">▾</span>
         </button>
+        <div className="editorial-pte-toolbar__menu-panel" role="menu" hidden={openMenu !== 'text'}>
+          <button
+            className="editorial-pte-toolbar__menu-item"
+            type="button"
+            role="menuitem"
+            aria-pressed={isBoldActive}
+            data-active={isBoldActive ? 'true' : undefined}
+            title={labels.bold}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runToolbarAction(() => send({ type: 'decorator.toggle', decorator: 'strong' }))}
+          >
+            <span className="editorial-pte-toolbar__letter editorial-pte-toolbar__letter--bold" aria-hidden="true">B</span>
+            {labels.bold}
+          </button>
+          <button
+            className="editorial-pte-toolbar__menu-item"
+            type="button"
+            role="menuitem"
+            aria-pressed={isItalicActive}
+            data-active={isItalicActive ? 'true' : undefined}
+            title={labels.italic}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runToolbarAction(() => send({ type: 'decorator.toggle', decorator: 'em' }))}
+          >
+            <span className="editorial-pte-toolbar__letter editorial-pte-toolbar__letter--italic" aria-hidden="true">I</span>
+            {labels.italic}
+          </button>
+          {isBodyToolbar && (
+            <button
+              className="editorial-pte-toolbar__menu-item"
+              type="button"
+              role="menuitem"
+              aria-pressed={isBlockquoteActive}
+              data-active={isBlockquoteActive ? 'true' : undefined}
+              title={labels.quote}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runToolbarAction(() => send({ type: 'style.toggle', style: 'blockquote' }))}
+            >
+              <ToolbarIcon name="quote" />
+              {labels.quote}
+            </button>
+          )}
+          <button
+            className="editorial-pte-toolbar__menu-item"
+            type="button"
+            role="menuitem"
+            aria-pressed={activeListItem === 'bullet'}
+            data-active={activeListItem === 'bullet' ? 'true' : undefined}
+            title={labels.bullet}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runToolbarAction(() => send({ type: 'list item.toggle', listItem: 'bullet' }))}
+          >
+            <ToolbarIcon name="bullet" />
+            {labels.bullet}
+          </button>
+          {isBodyToolbar && (
+            <button
+              className="editorial-pte-toolbar__menu-item"
+              type="button"
+              role="menuitem"
+              aria-pressed={activeListItem === 'number'}
+              data-active={activeListItem === 'number' ? 'true' : undefined}
+              title={labels.number}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => runToolbarAction(() => send({ type: 'list item.toggle', listItem: 'number' }))}
+            >
+              <ToolbarIcon name="number" />
+              {labels.number}
+            </button>
+          )}
+        </div>
       </div>
 
-      <div
-        className="editorial-pte-toolbar__group"
-        role="group"
-        aria-label={`${labels.internalLink} / ${labels.platformLink} / ${labels.creatorLink}`}
-      >
-        {referenceAnnotationControls.map((control) => {
-          const label = getAnnotationLabel(control.name, labels);
-          const activeAnnotation = getActiveAnnotation(control.name);
-          const canOpen = hasTextSelection || Boolean(activeAnnotation);
-          const isOpen = annotationModal?.annotationName === control.name;
+      <div className="editorial-pte-toolbar__menu">
+        <button
+          className="editorial-pte-toolbar__menu-trigger"
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={openMenu === 'link'}
+          title={labels.toolbarLink}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => toggleMenu('link')}
+        >
+          {labels.toolbarLink}
+          <span aria-hidden="true">▾</span>
+        </button>
+        <div className="editorial-pte-toolbar__menu-panel" role="menu" hidden={openMenu !== 'link'}>
+          <button
+            className="editorial-pte-toolbar__menu-item"
+            type="button"
+            role="menuitem"
+            aria-pressed={Boolean(getActiveAnnotation('link'))}
+            data-active={getActiveAnnotation('link') ? 'true' : undefined}
+            title={labels.externalLink}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => runToolbarAction(addExternalLink)}
+          >
+            <ToolbarIcon name="link" />
+            {labels.externalLink}
+          </button>
 
-          return (
-            <div className="editorial-pte-toolbar__annotation" key={control.name}>
+          {referenceAnnotationControls.map((control) => {
+            const label = getAnnotationLabel(control.name, labels);
+            const activeAnnotation = getActiveAnnotation(control.name);
+            const canOpen = hasTextSelection || Boolean(activeAnnotation);
+            const isOpen = annotationModal?.annotationName === control.name;
+
+            return (
               <button
-                className="editorial-pte-toolbar__button"
+                className="editorial-pte-toolbar__menu-item"
                 type="button"
-                aria-label={label}
+                role="menuitem"
+                key={control.name}
                 aria-pressed={Boolean(activeAnnotation)}
                 aria-expanded={isOpen}
+                data-active={activeAnnotation ? 'true' : undefined}
                 title={canOpen ? label : labels.annotationNoSelection}
                 disabled={!canOpen}
                 onMouseDown={(event) => event.preventDefault()}
-                onClick={(event) => {
+                onClick={(event) => runToolbarAction(() => {
                   if (isOpen) {
                     closeAnnotationModal();
                   } else {
                     openAnnotationModal(control.name, event.currentTarget);
                   }
-                }}
+                })}
               >
                 <span className="editorial-pte-toolbar__emoji" aria-hidden="true">{control.icon}</span>
+                {label}
               </button>
-            </div>
-          );
-        })}
+            );
+          })}
 
-        {(() => {
-          const annotationName: AnnotationName = 'pageLink';
-          const label = getAnnotationLabel(annotationName, labels);
-          const activeAnnotation = getActiveAnnotation(annotationName);
-          const canOpen = hasTextSelection || Boolean(activeAnnotation);
-          const isOpen = annotationModal?.annotationName === annotationName;
+          {(() => {
+            const annotationName: AnnotationName = 'pageLink';
+            const label = getAnnotationLabel(annotationName, labels);
+            const activeAnnotation = getActiveAnnotation(annotationName);
+            const canOpen = hasTextSelection || Boolean(activeAnnotation);
+            const isOpen = annotationModal?.annotationName === annotationName;
 
-          return (
-            <div className="editorial-pte-toolbar__annotation">
+            return (
               <button
-                className="editorial-pte-toolbar__button"
+                className="editorial-pte-toolbar__menu-item"
                 type="button"
-                aria-label={label}
+                role="menuitem"
                 aria-pressed={Boolean(activeAnnotation)}
                 aria-expanded={isOpen}
+                data-active={activeAnnotation ? 'true' : undefined}
                 title={canOpen ? label : labels.annotationNoSelection}
                 disabled={!canOpen}
                 onMouseDown={(event) => event.preventDefault()}
-                onClick={(event) => {
+                onClick={(event) => runToolbarAction(() => {
                   if (isOpen) {
                     closeAnnotationModal();
                   } else {
                     openAnnotationModal(annotationName, event.currentTarget);
                   }
-                }}
+                })}
               >
                 <span className="editorial-pte-toolbar__emoji" aria-hidden="true">📃</span>
+                {label}
               </button>
-            </div>
-          );
-        })()}
+            );
+          })()}
+        </div>
       </div>
 
-      <div className="editorial-pte-toolbar__group" role="group" aria-label={labels.insertImage}>
+      <div className="editorial-pte-toolbar__menu editorial-pte-toolbar__menu--insert">
         <button
-          className="editorial-pte-toolbar__button"
+          className="editorial-pte-toolbar__menu-trigger"
           type="button"
-          aria-label={labels.insertImage}
-          aria-expanded={Boolean(imageModal)}
-          title={labels.insertImage}
+          aria-haspopup="menu"
+          aria-expanded={openMenu === 'insert'}
+          title={labels.toolbarInsert}
           onMouseDown={(event) => event.preventDefault()}
-          onClick={(event) => {
-            if (imageModal) {
-              closeImageModal();
-            } else {
-              openImageModal(event.currentTarget);
-            }
-          }}
+          onClick={() => toggleMenu('insert')}
         >
-          <span className="editorial-pte-toolbar__emoji" aria-hidden="true">🖼️</span>
+          {labels.toolbarInsert}
+          <span aria-hidden="true">▾</span>
         </button>
-        <button
-          className="editorial-pte-toolbar__button"
-          type="button"
-          aria-label={labels.insertImageRow}
-          aria-expanded={Boolean(imageRowModal)}
-          title={labels.insertImageRow}
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={(event) => {
-            if (imageRowModal) {
-              closeImageRowModal();
-            } else {
-              openImageRowModal(event.currentTarget);
-            }
-          }}
-        >
-          <span className="editorial-pte-toolbar__emoji" aria-hidden="true">🖼️🖼️</span>
-        </button>
-        {isBodyToolbar && (
-          <>
-            <button
-              className="editorial-pte-toolbar__button"
-              type="button"
-              aria-label={labels.insertVideo}
-              aria-expanded={Boolean(videoModal)}
-              title={labels.insertVideo}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={(event) => {
-                if (videoModal) {
-                  closeVideoModal();
-                } else {
-                  openVideoModal(event.currentTarget);
-                }
-              }}
-            >
-              <span className="editorial-pte-toolbar__emoji" aria-hidden="true">▶️</span>
-            </button>
-            <button
-              className="editorial-pte-toolbar__button"
-              type="button"
-              aria-label={labels.insertAsideBox}
-              aria-expanded={Boolean(asideBoxModal)}
-              title={labels.insertAsideBox}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={(event) => {
-                if (asideBoxModal) {
-                  closeAsideBoxModal();
-                } else {
-                  openAsideBoxModal(event.currentTarget);
-                }
-              }}
-            >
-              <span className="editorial-pte-toolbar__emoji" aria-hidden="true">💬</span>
-            </button>
-          </>
-        )}
+        <div className="editorial-pte-toolbar__menu-panel editorial-pte-toolbar__menu-panel--end" role="menu" hidden={openMenu !== 'insert'}>
+          <button
+            className="editorial-pte-toolbar__menu-item"
+            type="button"
+            role="menuitem"
+            aria-expanded={Boolean(imageModal)}
+            title={labels.insertImage}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={(event) => runToolbarAction(() => openImageModal(event.currentTarget))}
+          >
+            <span className="editorial-pte-toolbar__emoji" aria-hidden="true">🖼️</span>
+            {labels.insertImage}
+          </button>
+          <button
+            className="editorial-pte-toolbar__menu-item"
+            type="button"
+            role="menuitem"
+            aria-expanded={Boolean(imageRowModal)}
+            title={labels.insertImageRow}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={(event) => runToolbarAction(() => openImageRowModal(event.currentTarget))}
+          >
+            <span className="editorial-pte-toolbar__emoji" aria-hidden="true">🖼️🖼️</span>
+            {labels.insertImageRow}
+          </button>
+          {isBodyToolbar && (
+            <>
+              <button
+                className="editorial-pte-toolbar__menu-item"
+                type="button"
+                role="menuitem"
+                aria-expanded={Boolean(videoModal)}
+                title={labels.insertVideo}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => runToolbarAction(() => openVideoModal(event.currentTarget))}
+              >
+                <span className="editorial-pte-toolbar__emoji" aria-hidden="true">▶️</span>
+                {labels.insertVideo}
+              </button>
+              <button
+                className="editorial-pte-toolbar__menu-item"
+                type="button"
+                role="menuitem"
+                aria-expanded={Boolean(asideBoxModal)}
+                title={labels.insertAsideBox}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => runToolbarAction(() => openAsideBoxModal(event.currentTarget))}
+              >
+                <span className="editorial-pte-toolbar__emoji" aria-hidden="true">💬</span>
+                {labels.insertAsideBox}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {annotationModal && (
@@ -4748,7 +4847,7 @@ function ReviewStringListEditor({
   );
 }
 
-export default function ArticlePortableTextEditor({ article, lang, articlesHref, saveEndpoint, labels }: Props) {
+export default function ArticlePortableTextEditor({ article, lang, articlesHref, previewHref, saveEndpoint, labels }: Props) {
   const [draft, setDraft] = useState<EditableArticle>(article);
   const [content, setContent] = useState<PortableTextBlock[]>(article.content || []);
   const [status, setStatus] = useState('');
@@ -5177,14 +5276,14 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
           >
             ⚙ {isInspectorOpen ? labels.settingsButtonActive : labels.settingsButton}
           </button>
-          <button
+          <a
             className="editorial-article-editor__settings-toggle editorial-article-editor__preview-action"
-            type="button"
-            title={labels.previewUnavailable}
-            disabled
+            href={previewHref}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             👁 {labels.preview}
-          </button>
+          </a>
           <button className="editorial-button" type="button" onClick={saveArticle} disabled={isSaving}>
             {isSaving ? labels.saving : labels.save}
           </button>

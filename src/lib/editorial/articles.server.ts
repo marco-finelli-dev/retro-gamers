@@ -2,6 +2,7 @@ import { logApiError } from '../api-errors';
 import { getSanityRawClient, getSanityWriteClient } from '../sanity-write.server';
 import { supabaseAdmin } from '../supabase/server';
 import {
+  canPreviewOwnArticle,
   canCreateArticle,
   canEditOwnArticle,
   getOwnershipConflict,
@@ -2194,6 +2195,103 @@ export async function fetchEditableEditorialArticle({
     };
   } catch (error) {
     logApiError('editorial-article.fetch', error);
+    return { ok: false as const, status: 500, error: 'article_fetch_failed' };
+  }
+}
+
+export async function fetchPreviewableEditorialArticle({
+  context,
+  rootDocumentId,
+}: {
+  context: EditableEditorialContext;
+  rootDocumentId: unknown;
+}) {
+  const sanityDocumentId = normalizeEditableArticleRootDocumentId(rootDocumentId);
+
+  if (!sanityDocumentId) {
+    return { ok: false as const, status: 400, error: 'invalid_article_id' };
+  }
+
+  const ownershipResult = await fetchOwnership(sanityDocumentId);
+  if (!ownershipResult.ok) return ownershipResult;
+
+  const ownership = ownershipResult.ownership;
+
+  if (!ownership) {
+    return { ok: false as const, status: 404, error: 'article_not_found' };
+  }
+
+  if (!isDocumentOwnedByContext(context, ownership) || !canPreviewOwnArticle(context, ownership)) {
+    return { ok: false as const, status: 403, error: 'article_forbidden' };
+  }
+
+  if (ownership.sanityAuthorId !== context.sanityAuthorId) {
+    return { ok: false as const, status: 409, error: 'author_ownership_conflict' };
+  }
+
+  try {
+    const resolved = await fetchSanityArticleDocumentPair(sanityDocumentId);
+
+    if (!resolved.document || !resolved.documentSource) {
+      return {
+        ok: false as const,
+        status: 404,
+        error: 'sanity_document_missing',
+        documentLifecycle: resolved.lifecycle,
+      };
+    }
+
+    const normalizedDocuments = [resolved.draftDocument, resolved.publishedDocument]
+      .filter((document): document is Record<string, unknown> => Boolean(document))
+      .map((document) => normalizeDraftArticle(document, null, {
+        rootDocumentId: ownership.sanityDocumentId,
+        documentSource: getArticleDocumentSource(document._id),
+        documentLifecycle: resolved.lifecycle,
+      }));
+
+    if (normalizedDocuments.some((document) => !document)) {
+      return { ok: false as const, status: 422, error: 'malformed_article' };
+    }
+
+    for (const document of normalizedDocuments as EditorialArticleDraft[]) {
+      const conflict = getOwnershipConflict(ownership, document.authorId);
+
+      if (conflict.hasConflict || document.authorId !== context.sanityAuthorId) {
+        return {
+          ok: false as const,
+          status: 409,
+          error: 'author_ownership_conflict',
+          conflict,
+          documentLifecycle: resolved.lifecycle,
+        };
+      }
+    }
+
+    const selectedArticle = normalizeDraftArticle(resolved.document, null, {
+      rootDocumentId: ownership.sanityDocumentId,
+      documentSource: resolved.documentSource,
+      documentLifecycle: resolved.lifecycle,
+    });
+
+    if (!selectedArticle) {
+      return { ok: false as const, status: 422, error: 'malformed_article' };
+    }
+
+    const author = await fetchAuthorInfo(selectedArticle.authorId);
+    const article = await hydrateDraftArticle({ ...selectedArticle, author });
+
+    return {
+      ok: true as const,
+      ownership,
+      article,
+      documentLifecycle: resolved.lifecycle,
+      documentSource: resolved.documentSource,
+      sourceDocument: resolved.document,
+      draftDocument: resolved.draftDocument,
+      publishedDocument: resolved.publishedDocument,
+    };
+  } catch (error) {
+    logApiError('editorial-article.preview.fetch', error);
     return { ok: false as const, status: 500, error: 'article_fetch_failed' };
   }
 }

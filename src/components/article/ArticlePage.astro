@@ -24,11 +24,13 @@ const {
   comments = [],
   languageSwitch = null,
   isPreview = false,
-  hideNewsletterPromo = false
+  hideNewsletterPromo = false,
+  disableCommunity = false
 } = Astro.props;
 
 const isReview = post?.type === 'review';
 const currentLang = post?.language || 'it';
+const showCommunity = !disableCommunity;
 const heroCommentCount = Number(post?.commentCount || 0);
 const heroCommentsLabel = currentLang === 'en'
   ? heroCommentCount > 0
@@ -113,6 +115,7 @@ const commentsDiscovery = currentLang === 'en'
   data-rg-article-category-slug={articleAnalyticsCategorySlug}
   data-rg-article-slug={articleAnalyticsSlug}
   data-rg-article-author-slug={articleAnalyticsAuthorSlug || undefined}
+  data-rg-article-preview={isPreview ? 'true' : undefined}
 >
 
   <ArticleHero post={post} />
@@ -135,12 +138,14 @@ const commentsDiscovery = currentLang === 'en'
       )}
     </div>
 
-    <div class="article-post-hero-actions__community">
-      <a href="#comments" class="article-community-jump" aria-label={heroCommentsAriaLabel}>
-        <span class="article-community-jump__icon" aria-hidden="true"></span>
-        <span>{heroCommentsLabel}</span>
-      </a>
-    </div>
+    {showCommunity && (
+      <div class="article-post-hero-actions__community">
+        <a href="#comments" class="article-community-jump" aria-label={heroCommentsAriaLabel}>
+          <span class="article-community-jump__icon" aria-hidden="true"></span>
+          <span>{heroCommentsLabel}</span>
+        </a>
+      </div>
+    )}
   </div>
 
   <div class="article-page__body">
@@ -171,18 +176,20 @@ const commentsDiscovery = currentLang === 'en'
         contentType={articleAnalyticsContentType}
       />
 
-      <aside
-        class="article-comments-discovery article-comments-discovery--article-end"
-        aria-labelledby="article-comments-invite-title"
-      >
-        <div>
-          <span class="article-comments-discovery__label">{commentsDiscovery.label}</span>
-          <h2 id="article-comments-invite-title">{commentsDiscovery.title}</h2>
-          <p>{commentsDiscovery.text}</p>
-        </div>
+      {showCommunity && (
+        <aside
+          class="article-comments-discovery article-comments-discovery--article-end"
+          aria-labelledby="article-comments-invite-title"
+        >
+          <div>
+            <span class="article-comments-discovery__label">{commentsDiscovery.label}</span>
+            <h2 id="article-comments-invite-title">{commentsDiscovery.title}</h2>
+            <p>{commentsDiscovery.text}</p>
+          </div>
 
-        <a href="#comments">{commentsDiscovery.cta}</a>
-      </aside>
+          <a href="#comments">{commentsDiscovery.cta}</a>
+        </aside>
+      )}
 
        <ArticleSeriesBox post={post} seriesPosts={seriesPosts} />
 
@@ -220,13 +227,13 @@ const commentsDiscovery = currentLang === 'en'
 
   </div>
 
-  <ArticleComments post={post} comments={comments} />
+  {showCommunity && <ArticleComments post={post} comments={comments} />}
 
 </div>
 
 <ArticleLightbox lang={currentLang} />
 
-<ArticleCommunityPrompt lang={currentLang} />
+{showCommunity && <ArticleCommunityPrompt lang={currentLang} />}
 
 <script>
   import { trackRgEvent } from '../../lib/analytics/client';
@@ -260,8 +267,10 @@ const commentsDiscovery = currentLang === 'en'
     const categorySlug = articlePage.dataset.rgArticleCategorySlug || '';
     const articleSlug = articlePage.dataset.rgArticleSlug || '';
     const authorSlug = articlePage.dataset.rgArticleAuthorSlug || '';
+    const isPreviewArticle = articlePage.dataset.rgArticlePreview === 'true';
 
     if (
+      !isPreviewArticle &&
       articlePage.dataset.rgArticleViewTracked !== 'true' &&
       contentType &&
       categorySlug &&
@@ -277,6 +286,8 @@ const commentsDiscovery = currentLang === 'en'
         ...(authorSlug ? { author_slug: authorSlug } : {}),
       });
     }
+
+    if (isPreviewArticle) return;
 
     if (articlePage.dataset.rgAffiliateListenerAttached === 'true') return;
 

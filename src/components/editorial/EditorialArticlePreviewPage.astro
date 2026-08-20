@@ -1,0 +1,208 @@
+---
+import '../../styles/pages/editorial-area.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticlePage from '../article/ArticlePage.astro';
+import { getCreatorRefsFromPortableText, getCreatorsReferencingArticle, mergeCreatorRefs } from '../../lib/creators';
+import { fetchPreviewableEditorialArticle, requireEditorialArticleContext } from '../../lib/editorial/articles.server';
+import { fetchEditorialArticlePreviewPost } from '../../lib/editorial/article-preview.server';
+import { getPublicPostSummaries, getRelatedPosts } from '../../lib/posts';
+
+type EditorialLang = 'it' | 'en';
+
+const { lang = 'it', id = '' } = Astro.props as { lang?: EditorialLang; id?: string };
+const currentLang: EditorialLang = lang === 'en' ? 'en' : 'it';
+const isEnglish = currentLang === 'en';
+
+Astro.response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+Astro.response.headers.set('Vary', 'Cookie');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+
+const copy = isEnglish
+  ? {
+      pageTitle: 'Private article preview | Retro-Gamers.it',
+      pageDescription: 'Private editorial preview for a Retro-Gamers article draft.',
+      deniedTitle: 'Preview unavailable',
+      deniedDescription: 'This private preview could not be loaded.',
+      bannerLabel: 'Private preview',
+      bannerText: 'This content is not public.',
+      backToEditor: 'Back to editor',
+      fallbackDescription: 'Features, reviews and stories from the world of retro gaming.',
+    }
+  : {
+      pageTitle: 'Anteprima privata articolo | Retro-Gamers.it',
+      pageDescription: 'Anteprima editoriale privata per una bozza articolo Retro-Gamers.',
+      deniedTitle: 'Anteprima non disponibile',
+      deniedDescription: 'Non è stato possibile caricare questa anteprima privata.',
+      bannerLabel: 'Anteprima privata',
+      bannerText: 'Questo contenuto non è pubblico.',
+      backToEditor: 'Torna all’editor',
+      fallbackDescription: 'Recensioni, news, speciali e guide dal mondo retro-gaming.',
+    };
+
+const editHref = isEnglish
+  ? `/en/account/editor/articles/${encodeURIComponent(id)}/`
+  : `/account/editor/articles/${encodeURIComponent(id)}/`;
+
+function getPlainTextFromContent(content = []) {
+  return content
+    .flatMap((block) => {
+      if (block?._type === 'block') {
+        return block.children?.map((child) => child.text || '') || [];
+      }
+
+      if (block?._type === 'asideBox') {
+        return block.content
+          ?.filter((inner) => inner?._type === 'block')
+          .flatMap((inner) =>
+            inner.children?.map((child) => child.text || '') || []
+          ) || [];
+      }
+
+      return [];
+    })
+    .join(' ');
+}
+
+function getReadingTime(content = []) {
+  const text = getPlainTextFromContent(content);
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+
+  return Math.max(1, Math.ceil(words / 220));
+}
+
+function getEditorialPageTitle(post, fallback = '') {
+  const seoTitle = String(post?.seoTitle || '').trim();
+  const title = String(post?.title || '').trim();
+  const fallbackValue = String(fallback || '').trim();
+  const looksLikeSlug =
+    seoTitle &&
+    (seoTitle === fallbackValue ||
+      (/^[a-z0-9]+(?:-[a-z0-9]+)+$/i.test(seoTitle) &&
+        !/[\s:,.!?'"’“”]/.test(seoTitle)));
+
+  return looksLikeSlug
+    ? title || seoTitle
+    : seoTitle || title || copy.pageTitle;
+}
+
+let post = null;
+let error = '';
+let documentLifecycle = 'missing';
+let documentSource = '';
+
+const access = await requireEditorialArticleContext(Astro.cookies);
+
+if (access.ok) {
+  const editableResult = await fetchPreviewableEditorialArticle({
+    context: access.context,
+    rootDocumentId: id,
+  });
+
+  if (editableResult.ok) {
+    documentLifecycle = editableResult.documentLifecycle;
+    documentSource = editableResult.documentSource;
+
+    post = await fetchEditorialArticlePreviewPost(String(editableResult.sourceDocument?._id || ''));
+
+    if (!post) {
+      error = 'sanity_preview_document_missing';
+    }
+  } else {
+    Astro.response.status = editableResult.status || 500;
+    error = editableResult.error || 'preview_load_failed';
+  }
+} else {
+  Astro.response.status = access.status || 401;
+  error = access.error || 'unauthorized';
+}
+
+const publicPostSummaries = post ? await getPublicPostSummaries() : [];
+const rootPostId = String(post?._id || '').replace(/^drafts\./, '');
+const portableTextCreators = getCreatorRefsFromPortableText(post?.content || []);
+const inverseCreators = post ? await getCreatorsReferencingArticle(rootPostId) : [];
+
+const hydratedPost = post
+  ? {
+      ...post,
+      creators: mergeCreatorRefs(post.creators, inverseCreators, portableTextCreators),
+      language: post.language || currentLang,
+      readingTime: getReadingTime(post.content || []),
+    }
+  : null;
+
+const headerPosts = publicPostSummaries.filter((item) => (item.language || 'it') === currentLang);
+const headerReviews = headerPosts.filter((item) => item.type === 'review');
+const headerNews = headerPosts.filter((item) => item.type === 'news');
+const relatedPosts = hydratedPost ? getRelatedPosts(hydratedPost, publicPostSummaries, 3) : [];
+const pageTitle = getEditorialPageTitle(hydratedPost, hydratedPost?.slug);
+const pageDescription =
+  hydratedPost?.excerpt ||
+  hydratedPost?.subtitle ||
+  copy.fallbackDescription;
+const pageImage =
+  hydratedPost?.featuredImage?.asset?.url ||
+  hydratedPost?.gameInfo?.cover?.asset?.url ||
+  '/og-image.jpg';
+const articleAuthorName =
+  hydratedPost?.author?.displayName === 'nickname' && hydratedPost?.author?.nickname
+    ? hydratedPost.author.nickname
+    : hydratedPost?.author?.name || '';
+const articleAuthorSlug =
+  typeof hydratedPost?.author?.slug === 'string'
+    ? hydratedPost.author.slug
+    : hydratedPost?.author?.slug?.current || '';
+const articleAuthorUrl = articleAuthorSlug
+  ? currentLang === 'en'
+    ? `/en/authors/${articleAuthorSlug}/`
+    : `/autori/${articleAuthorSlug}/`
+  : '';
+---
+
+<BaseLayout
+  reviews={headerReviews}
+  news={headerNews}
+  lang={currentLang}
+  title={post ? pageTitle : copy.pageTitle}
+  description={post ? pageDescription : copy.pageDescription}
+  image={pageImage}
+  canonical={Astro.url.href}
+  type={post ? 'article' : 'website'}
+  publishedAt={hydratedPost?.publishedAt}
+  updatedAt={hydratedPost?.lastUpdated}
+  articleAuthorName={articleAuthorName}
+  articleAuthorUrl={articleAuthorUrl}
+  noindex={true}
+>
+  <div class="editorial-private-preview">
+    <aside class="editorial-private-preview__banner" role="status">
+      <div>
+        <strong>{copy.bannerLabel}</strong>
+        <span>{copy.bannerText}</span>
+        {documentLifecycle !== 'missing' && (
+          <small>{documentSource || documentLifecycle}</small>
+        )}
+      </div>
+      <a href={editHref}>{copy.backToEditor}</a>
+    </aside>
+
+    {hydratedPost ? (
+      <ArticlePage
+        post={hydratedPost}
+        relatedPosts={relatedPosts}
+        seriesPosts={[]}
+        comments={[]}
+        hideNewsletterPromo={true}
+        isPreview={true}
+        disableCommunity={true}
+      />
+    ) : (
+      <section class="editorial-card editorial-card--notice">
+        <p class="editorial-kicker">{copy.bannerLabel}</p>
+        <h1>{copy.deniedTitle}</h1>
+        <p class="editorial-message" data-tone="error">{copy.deniedDescription}</p>
+        <p class="editorial-message">{error}</p>
+        <a class="editorial-button" href={editHref}>{copy.backToEditor}</a>
+      </section>
+    )}
+  </div>
+</BaseLayout>

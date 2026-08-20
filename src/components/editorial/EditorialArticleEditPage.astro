@@ -23,7 +23,7 @@ const copy = isEnglish
       kicker: 'Article editor',
       title: 'Edit draft',
       description:
-        'Manual save only. Publishing, preview and review submission are not enabled in this step.',
+        'Manual save only. Preview opens in a private tab; publishing and review submission are not enabled in this step.',
       deniedTitle: 'Draft unavailable',
       deniedDescription: 'This draft could not be loaded.',
       dashboard: 'Editorial dashboard',
@@ -39,7 +39,6 @@ const copy = isEnglish
         settingsButton: 'Settings',
         settingsButtonActive: 'Close settings',
         preview: 'Preview',
-        previewUnavailable: 'Preview is not enabled in this step.',
         closeSettings: 'Close article settings',
         mobileEditingNotice:
           'For full article editing, desktop or tablet is recommended. The mobile version is intended mainly for small corrections.',
@@ -136,10 +135,14 @@ const copy = isEnglish
         genericError: 'The draft could not be saved.',
         manualSave: 'Manual save. No publishing action is available here.',
         counters: 'SEO and card copy',
+        toolbarStructure: 'Structure',
+        toolbarText: 'Text',
+        toolbarLink: 'Link',
+        toolbarInsert: 'Insert',
         blockStyle: 'Block style',
-        normal: 'Normal',
-        h2: 'Title H2',
-        h3: 'Title H3',
+        normal: 'Normal text',
+        h2: 'Large title (H2)',
+        h3: 'Section title (H3)',
         quote: 'Blockquote',
         bullet: 'Bulleted list',
         number: 'Numbered list',
@@ -254,7 +257,7 @@ const copy = isEnglish
       kicker: 'Editor articoli',
       title: 'Modifica bozza',
       description:
-        'Salvataggio manuale. Pubblicazione, anteprima e invio in revisione non sono abilitati in questo step.',
+        'Salvataggio manuale. L’anteprima si apre in una scheda privata; pubblicazione e invio in revisione non sono abilitati in questo step.',
       deniedTitle: 'Bozza non disponibile',
       deniedDescription: 'Non è stato possibile caricare questa bozza.',
       dashboard: 'Dashboard redazionale',
@@ -270,7 +273,6 @@ const copy = isEnglish
         settingsButton: 'Impostazioni',
         settingsButtonActive: 'Chiudi impostazioni',
         preview: 'Anteprima',
-        previewUnavailable: 'L’anteprima non è ancora abilitata in questo step.',
         closeSettings: 'Chiudi impostazioni articolo',
         mobileEditingNotice:
           'Per una modifica completa dell’articolo è consigliato utilizzare desktop o tablet. La versione mobile è pensata principalmente per piccole correzioni.',
@@ -367,10 +369,14 @@ const copy = isEnglish
         genericError: 'Non è stato possibile salvare la bozza.',
         manualSave: 'Salvataggio manuale. Nessuna azione di pubblicazione è disponibile qui.',
         counters: 'SEO e testi card',
+        toolbarStructure: 'Struttura',
+        toolbarText: 'Testo',
+        toolbarLink: 'Link',
+        toolbarInsert: 'Inserisci',
         blockStyle: 'Stile blocco',
-        normal: 'Normale',
-        h2: 'Titolo H2',
-        h3: 'Titolo H3',
+        normal: 'Testo normale',
+        h2: 'Titolo grande (H2)',
+        h3: 'Titolo sezione (H3)',
         quote: 'Citazione',
         bullet: 'Lista puntata',
         number: 'Lista numerata',
@@ -483,6 +489,9 @@ const copy = isEnglish
 const dashboardHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
 const articlesHref = isEnglish ? '/en/account/editor/articles/' : '/account/editor/articles/';
 const newArticleHref = isEnglish ? '/en/account/editor/articles/new/' : '/account/editor/articles/new/';
+const previewHref = isEnglish
+  ? `/en/account/editor/articles/${encodeURIComponent(id)}/preview/`
+  : `/account/editor/articles/${encodeURIComponent(id)}/preview/`;
 const languageSwitch = isEnglish
   ? `/account/editor/articles/${encodeURIComponent(id)}/`
   : `/en/account/editor/articles/${encodeURIComponent(id)}/`;
@@ -579,6 +588,7 @@ if (access.ok) {
         article={article}
         lang={currentLang}
         articlesHref={articlesHref}
+        previewHref={previewHref}
         saveEndpoint={`/api/editor/articles/${encodeURIComponent(id)}`}
         labels={copy.labels}
       >
