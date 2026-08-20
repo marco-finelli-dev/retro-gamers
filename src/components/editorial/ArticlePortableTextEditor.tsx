@@ -16,7 +16,7 @@ import {
 } from '@portabletext/editor';
 import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
 import * as selectors from '@portabletext/editor/selectors';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { urlFor } from '../../lib/image';
 
@@ -787,6 +787,19 @@ function getTextBlockPreview(block: PortableTextBlock) {
     .trim();
 }
 
+function getBodyImageHeaderTitle(image: BodyImageBlock | null | undefined, labels: Labels) {
+  const asset = image?.asset;
+
+  if (asset && typeof asset === 'object' && 'originalFilename' in asset && typeof asset.originalFilename === 'string') {
+    return asset.originalFilename.trim() || labels.image;
+  }
+
+  if (typeof image?.caption === 'string' && image.caption.trim()) return image.caption.trim();
+  if (typeof image?.alt === 'string' && image.alt.trim()) return image.alt.trim();
+
+  return labels.image;
+}
+
 function getBodyImageAssetRef(image: BodyImageBlock | null | undefined) {
   const asset = image?.asset;
 
@@ -1026,6 +1039,49 @@ function getImageRowRows(images: ImageRowItem[]) {
   return rows;
 }
 
+function MediaBlockHeader({
+  icon,
+  title,
+  menuLabel,
+  isMenuOpen,
+  menuRef,
+  onToggleMenu,
+  children,
+}: {
+  icon: string;
+  title: string;
+  menuLabel: string;
+  isMenuOpen: boolean;
+  menuRef: RefObject<HTMLDivElement | null>;
+  onToggleMenu: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="editorial-pte__media-header">
+      <span className="editorial-pte__media-header-icon" aria-hidden="true">{icon}</span>
+      <strong className="editorial-pte__media-header-title" title={title}>
+        {title}
+      </strong>
+      <div className="editorial-pte__image-menu" ref={menuRef}>
+        <button
+          type="button"
+          className="editorial-pte__image-menu-button"
+          aria-label={menuLabel}
+          title={menuLabel}
+          aria-haspopup="menu"
+          aria-expanded={isMenuOpen}
+          onClick={onToggleMenu}
+        >
+          <BlockOptionsIcon />
+        </button>
+        <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ImageObjectBlock({
   attributes,
   children,
@@ -1139,33 +1195,27 @@ function ImageObjectBlock({
     >
       {children}
       <div className="editorial-pte__image-content" contentEditable={false}>
-        <div className="editorial-pte__image-menu" ref={menuRef}>
-          <button
-            type="button"
-            className="editorial-pte__image-menu-button"
-            aria-label={labels.bodyImageMenu}
-            title={labels.bodyImageMenu}
-            aria-haspopup="menu"
-            aria-expanded={isMenuOpen}
-            onClick={() => setIsMenuOpen((value) => !value)}
-          >
-            <BlockOptionsIcon />
+        <MediaBlockHeader
+          icon="🖼"
+          title={getBodyImageHeaderTitle(image, labels)}
+          menuLabel={labels.bodyImageMenu}
+          isMenuOpen={isMenuOpen}
+          menuRef={menuRef}
+          onToggleMenu={() => setIsMenuOpen((value) => !value)}
+        >
+          <button type="button" role="menuitem" onClick={openImageModal}>
+            {labels.editImage}
           </button>
-          <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
-            <button type="button" role="menuitem" onClick={openImageModal}>
-              {labels.editImage}
-            </button>
-            <button type="button" role="menuitem" onClick={() => moveImageBlock('up')}>
-              {labels.moveUp}
-            </button>
-            <button type="button" role="menuitem" onClick={() => moveImageBlock('down')}>
-              {labels.moveDown}
-            </button>
-            <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeImageBlock}>
-              {labels.removeImage}
-            </button>
-          </div>
-        </div>
+          <button type="button" role="menuitem" onClick={() => moveImageBlock('up')}>
+            {labels.moveUp}
+          </button>
+          <button type="button" role="menuitem" onClick={() => moveImageBlock('down')}>
+            {labels.moveDown}
+          </button>
+          <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeImageBlock}>
+            {labels.removeImage}
+          </button>
+        </MediaBlockHeader>
 
         <figure
           className="editorial-pte__image-figure"
@@ -1313,33 +1363,27 @@ function ImageRowObjectBlock({
     >
       {children}
       <div className="editorial-pte__image-content editorial-pte__image-row-content" contentEditable={false}>
-        <div className="editorial-pte__image-menu" ref={menuRef}>
-          <button
-            type="button"
-            className="editorial-pte__image-menu-button"
-            aria-label={labels.imageRowMenu}
-            title={labels.imageRowMenu}
-            aria-haspopup="menu"
-            aria-expanded={isMenuOpen}
-            onClick={() => setIsMenuOpen((value) => !value)}
-          >
-            <BlockOptionsIcon />
+        <MediaBlockHeader
+          icon="🖼"
+          title={labels.imageRow}
+          menuLabel={labels.imageRowMenu}
+          isMenuOpen={isMenuOpen}
+          menuRef={menuRef}
+          onToggleMenu={() => setIsMenuOpen((value) => !value)}
+        >
+          <button type="button" role="menuitem" onClick={openImageRowModal}>
+            {labels.editImageRow}
           </button>
-          <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
-            <button type="button" role="menuitem" onClick={openImageRowModal}>
-              {labels.editImageRow}
-            </button>
-            <button type="button" role="menuitem" onClick={() => moveImageRowBlock('up')}>
-              {labels.moveUp}
-            </button>
-            <button type="button" role="menuitem" onClick={() => moveImageRowBlock('down')}>
-              {labels.moveDown}
-            </button>
-            <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeImageRowBlock}>
-              {labels.removeImageRow}
-            </button>
-          </div>
-        </div>
+          <button type="button" role="menuitem" onClick={() => moveImageRowBlock('up')}>
+            {labels.moveUp}
+          </button>
+          <button type="button" role="menuitem" onClick={() => moveImageRowBlock('down')}>
+            {labels.moveDown}
+          </button>
+          <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeImageRowBlock}>
+            {labels.removeImageRow}
+          </button>
+        </MediaBlockHeader>
 
         <div
           className={`editorial-pte__image-row-gallery${layout === 'uniformHeight' ? ' editorial-pte__image-row-gallery--uniform-height' : ''}`}
@@ -1415,7 +1459,7 @@ function VideoObjectBlock({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const url = typeof video.url === 'string' ? video.url.trim() : '';
-  const title = typeof video.title === 'string' && video.title.trim() ? video.title.trim() : labels.videoUntitled;
+  const title = typeof video.title === 'string' && video.title.trim() ? video.title.trim() : 'Video YouTube';
   const domain = getVideoDomain(url);
 
   useEffect(() => {
@@ -1506,33 +1550,27 @@ function VideoObjectBlock({
     >
       {children}
       <div className="editorial-pte__image-content editorial-pte__custom-content" contentEditable={false}>
-        <div className="editorial-pte__image-menu" ref={menuRef}>
-          <button
-            type="button"
-            className="editorial-pte__image-menu-button"
-            aria-label={labels.videoMenu}
-            title={labels.videoMenu}
-            aria-haspopup="menu"
-            aria-expanded={isMenuOpen}
-            onClick={() => setIsMenuOpen((value) => !value)}
-          >
-            <BlockOptionsIcon />
+        <MediaBlockHeader
+          icon="▶"
+          title={title}
+          menuLabel={labels.videoMenu}
+          isMenuOpen={isMenuOpen}
+          menuRef={menuRef}
+          onToggleMenu={() => setIsMenuOpen((value) => !value)}
+        >
+          <button type="button" role="menuitem" onClick={openVideoModal}>
+            {labels.editVideo}
           </button>
-          <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
-            <button type="button" role="menuitem" onClick={openVideoModal}>
-              {labels.editVideo}
-            </button>
-            <button type="button" role="menuitem" onClick={() => moveVideoBlock('up')}>
-              {labels.moveUp}
-            </button>
-            <button type="button" role="menuitem" onClick={() => moveVideoBlock('down')}>
-              {labels.moveDown}
-            </button>
-            <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeVideoBlock}>
-              {labels.removeVideo}
-            </button>
-          </div>
-        </div>
+          <button type="button" role="menuitem" onClick={() => moveVideoBlock('up')}>
+            {labels.moveUp}
+          </button>
+          <button type="button" role="menuitem" onClick={() => moveVideoBlock('down')}>
+            {labels.moveDown}
+          </button>
+          <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeVideoBlock}>
+            {labels.removeVideo}
+          </button>
+        </MediaBlockHeader>
 
         <article
           className="editorial-pte__video-card"
@@ -1544,7 +1582,7 @@ function VideoObjectBlock({
           <span className="editorial-pte__video-icon" aria-hidden="true">▶️</span>
           <div className="editorial-pte__video-copy">
             <span className="editorial-pte__video-kicker">{labels.videoPreview}</span>
-            <strong>{title}</strong>
+            <strong>{domain || labels.videoPreview}</strong>
             {url && <span className="editorial-pte__video-url">{domain ? `${domain} · ${url}` : url}</span>}
           </div>
         </article>
@@ -1762,33 +1800,27 @@ function AsideBoxObjectBlock({
     >
       {children}
       <div className="editorial-pte__image-content editorial-pte__custom-content" contentEditable={false}>
-        <div className="editorial-pte__image-menu" ref={menuRef}>
-          <button
-            type="button"
-            className="editorial-pte__image-menu-button"
-            aria-label={labels.asideBoxMenu}
-            title={labels.asideBoxMenu}
-            aria-haspopup="menu"
-            aria-expanded={isMenuOpen}
-            onClick={() => setIsMenuOpen((value) => !value)}
-          >
-            <BlockOptionsIcon />
+        <MediaBlockHeader
+          icon="💬"
+          title={title || 'Box'}
+          menuLabel={labels.asideBoxMenu}
+          isMenuOpen={isMenuOpen}
+          menuRef={menuRef}
+          onToggleMenu={() => setIsMenuOpen((value) => !value)}
+        >
+          <button type="button" role="menuitem" onClick={openAsideBoxModal}>
+            {labels.editAsideBox}
           </button>
-          <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
-            <button type="button" role="menuitem" onClick={openAsideBoxModal}>
-              {labels.editAsideBox}
-            </button>
-            <button type="button" role="menuitem" onClick={() => moveAsideBoxBlock('up')}>
-              {labels.moveUp}
-            </button>
-            <button type="button" role="menuitem" onClick={() => moveAsideBoxBlock('down')}>
-              {labels.moveDown}
-            </button>
-            <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeAsideBoxBlock}>
-              {labels.removeAsideBox}
-            </button>
-          </div>
-        </div>
+          <button type="button" role="menuitem" onClick={() => moveAsideBoxBlock('up')}>
+            {labels.moveUp}
+          </button>
+          <button type="button" role="menuitem" onClick={() => moveAsideBoxBlock('down')}>
+            {labels.moveDown}
+          </button>
+          <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeAsideBoxBlock}>
+            {labels.removeAsideBox}
+          </button>
+        </MediaBlockHeader>
 
         <aside
           className="editorial-pte__aside-card"
@@ -1798,11 +1830,7 @@ function AsideBoxObjectBlock({
           onDragStart={startAsideBoxDrag}
         >
           <div className="editorial-pte__aside-card-header">
-            <span className="editorial-pte__aside-icon" aria-hidden="true">💬</span>
-            <div>
-              <span className="editorial-pte__aside-kicker">{getAsideToneLabel(tone, labels)}</span>
-              <strong>{title || labels.asideBox}</strong>
-            </div>
+            <span className="editorial-pte__aside-kicker">{getAsideToneLabel(tone, labels)}</span>
           </div>
           <AsideContentPreview content={content} labels={labels} assetPreviewUrls={assetPreviewUrls} />
         </aside>
@@ -3621,7 +3649,7 @@ function Toolbar({
   };
 
   return (
-    <div className="editorial-pte-toolbar" aria-label={labels.content} ref={toolbarRef}>
+    <div className={`editorial-pte-toolbar editorial-pte-toolbar--${variant}`} aria-label={labels.content} ref={toolbarRef}>
       <div className="editorial-pte-toolbar__group" role="group" aria-label={labels.blockStyle}>
         <label className="editorial-pte-toolbar__style">
           <span className="sr-only">{labels.blockStyle}</span>

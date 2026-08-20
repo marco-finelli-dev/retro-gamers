@@ -1576,6 +1576,14 @@
   scrollbar-width: thin;
 }
 
+.editorial-pte-toolbar--aside {
+  top: 0;
+  z-index: 3;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--rg-panel-bg) 96%, transparent);
+  backdrop-filter: none;
+}
+
 .editorial-pte-toolbar__group {
   display: flex;
   flex: 0 0 auto;
@@ -2149,17 +2157,53 @@
 .editorial-pte__image-content {
   position: relative;
   display: grid;
-  gap: 8px;
+  gap: 10px;
   justify-items: center;
   min-width: 0;
   user-select: none;
 }
 
+.editorial-pte__media-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  justify-self: stretch;
+  min-width: 0;
+  padding: 8px 8px 8px 12px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--rg-badge-bg) 78%, transparent);
+  color: var(--rg-badge-color);
+}
+
+.editorial-pte__media-header-icon {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--rg-badge-border) 84%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--rg-panel-bg) 72%, transparent);
+  font-size: 0.98rem;
+  line-height: 1;
+}
+
+.editorial-pte__media-header-title {
+  overflow: hidden;
+  min-width: 0;
+  color: var(--rg-section-title-color);
+  font-size: 0.9rem;
+  font-weight: 950;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .editorial-pte__image-menu {
-  position: absolute;
-  z-index: 3;
-  top: 14px;
-  right: 14px;
+  position: relative;
+  z-index: 5;
+  justify-self: end;
   transform: none;
 }
 
@@ -2167,8 +2211,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   min-height: 0;
   padding: 0;
   border: 1px solid var(--rg-card-border);
@@ -2178,10 +2222,10 @@
   font: inherit;
   font-weight: 950;
   line-height: 1;
-  opacity: 0;
+  opacity: 1;
   cursor: pointer;
-  pointer-events: none;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+  pointer-events: auto;
+  box-shadow: none;
   transition:
     opacity var(--transition-fast),
     border-color var(--transition-fast),
@@ -2195,15 +2239,6 @@
   width: 18px;
   height: 18px;
   fill: currentColor;
-}
-
-.editorial-pte__image-object:hover .editorial-pte__image-menu-button,
-.editorial-pte__image-object:focus-within .editorial-pte__image-menu-button,
-.editorial-pte__image-object[data-focused="true"] .editorial-pte__image-menu-button,
-.editorial-pte__image-object[data-selected="true"] .editorial-pte__image-menu-button,
-.editorial-pte__image-menu-button[aria-expanded="true"] {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .editorial-pte__image-menu-button:hover,
@@ -2485,7 +2520,6 @@
   display: grid;
   gap: 4px;
   min-width: 0;
-  padding-right: 54px;
 }
 
 .editorial-pte__video-kicker,
@@ -2537,35 +2571,11 @@
 }
 
 .editorial-pte__aside-card-header {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
   min-width: 0;
-  padding-right: 54px;
-}
-
-.editorial-pte__aside-icon {
-  display: inline-grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  border: 1px solid var(--rg-badge-border);
-  border-radius: 14px;
-  background: var(--rg-badge-bg);
-  font-size: 1.1rem;
-}
-
-.editorial-pte__aside-card-header > div {
-  display: grid;
-  min-width: 0;
-  gap: 4px;
-}
-
-.editorial-pte__aside-card-header strong {
-  color: var(--rg-section-title-color);
-  font-size: clamp(1rem, 1.5vw, 1.18rem);
-  line-height: 1.25;
 }
 
 .editorial-pte__aside-preview-content {
@@ -2651,17 +2661,6 @@
 }
 
 @media (max-width: 720px) {
-  .editorial-pte__image-menu {
-    top: 10px;
-    right: 10px;
-    transform: none;
-  }
-
-  .editorial-pte__image-menu-button {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
   .editorial-pte__image-menu-panel {
     min-width: min(220px, calc(100vw - 56px));
     top: calc(100% + 8px);
@@ -2679,11 +2678,6 @@
 
   .editorial-pte__video-card {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .editorial-pte__video-copy,
-  .editorial-pte__aside-card-header {
-    padding-right: 44px;
   }
 
   .editorial-pte__aside-preview-row {
