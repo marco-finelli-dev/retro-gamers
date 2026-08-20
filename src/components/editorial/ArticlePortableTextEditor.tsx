@@ -3088,7 +3088,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
         </div>
         <div className="editorial-article-editor__actions">
           <button
-            className="editorial-mini-button editorial-article-editor__settings-toggle"
+            className="editorial-article-editor__settings-toggle"
             type="button"
             aria-expanded={isInspectorOpen}
             aria-controls={inspectorId}
@@ -3540,11 +3540,6 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   <p className="editorial-file-meta">
                     {getAssetMetadataLabel(featuredImageAsset, labels)}
                   </p>
-                  {featuredImageAsset?._id && (
-                    <p className="editorial-file-meta">
-                      {labels.featuredImageAssetId}: <code>{featuredImageAsset._id}</code>
-                    </p>
-                  )}
                 </div>
               )}
 
@@ -3565,7 +3560,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                     warning={labels.cardExcerptWarning}
                   />
                   {hasFeaturedImage && !featuredImageAlt.trim() && (
-                    <p className="editorial-character-count" data-warning="true">
+                    <p className="editorial-file-advice editorial-file-advice--subtle-warning">
                       {labels.featuredImageAltWarning}
                     </p>
                   )}
