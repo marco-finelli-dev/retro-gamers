@@ -19,7 +19,11 @@ import * as selectors from '@portabletext/editor/selectors';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { urlFor } from '../../lib/image';
-import type { EditorialArticleCapabilities } from '../../lib/editorial/types';
+import type {
+  EditorialArticleCapabilities,
+  EditorialArticleWorkflow,
+  EditorialWorkflowTransitionPermissions,
+} from '../../lib/editorial/types';
 
 type ArticleType =
   | 'review'
@@ -243,6 +247,28 @@ type Labels = {
   inspectorReview: string;
   inspectorWorkflow: string;
   workflowStatus: string;
+  workflowStatusDraft: string;
+  workflowStatusSubmitted: string;
+  workflowStatusChangesRequested: string;
+  workflowStatusApproved: string;
+  workflowStatusPublished: string;
+  workflowSubmittedAt: string;
+  workflowReviewedAt: string;
+  workflowReviewer: string;
+  workflowSubmit: string;
+  workflowRequestChanges: string;
+  workflowApprove: string;
+  workflowSubmitConfirm: string;
+  workflowRequestChangesConfirm: string;
+  workflowApproveConfirm: string;
+  workflowUpdating: string;
+  workflowSubmitSuccess: string;
+  workflowRequestChangesSuccess: string;
+  workflowApproveSuccess: string;
+  workflowConflict: string;
+  workflowForbidden: string;
+  workflowNotFound: string;
+  workflowGenericError: string;
   futureSlot: string;
   featuredImageCurrent: string;
   featuredImageEmpty: string;
@@ -481,6 +507,8 @@ type Props = {
   articlesHref: string;
   previewHref: string;
   saveEndpoint: string;
+  workflow: EditorialArticleWorkflow;
+  workflowPermissions: EditorialWorkflowTransitionPermissions;
   capabilities: EditorialArticleCapabilities;
   labels: Labels;
 };
@@ -3452,6 +3480,7 @@ function AsideBoxModal({
 
 type ToolbarMenu = 'structure' | 'text' | 'link' | 'insert';
 type SaveMode = 'manual' | 'autosave';
+type WorkflowAction = 'submit' | 'request_changes' | 'approve';
 type TypeChangeRequest = {
   nextType: ArticleType;
   cleanupItems: string[];
@@ -3508,6 +3537,73 @@ function getEditableArticleSnapshot(articleDraft: EditableArticle, contentValue:
     seriesLabel: articleDraft.seriesLabel,
     content: contentValue,
   });
+}
+
+function getWorkflowStatusLabel(
+  workflowStatus: EditorialArticleWorkflow['workflowStatus'],
+  labels: Labels
+) {
+  const statusLabels: Record<EditorialArticleWorkflow['workflowStatus'], string> = {
+    draft: labels.workflowStatusDraft,
+    submitted: labels.workflowStatusSubmitted,
+    changes_requested: labels.workflowStatusChangesRequested,
+    approved: labels.workflowStatusApproved,
+    published: labels.workflowStatusPublished,
+  };
+
+  return statusLabels[workflowStatus] || workflowStatus;
+}
+
+function formatWorkflowDate(value: string | null, language: ArticleLanguage) {
+  if (!value) return '';
+
+  const date = new Date(value);
+
+  if (!Number.isFinite(date.getTime())) return '';
+
+  return new Intl.DateTimeFormat(language === 'en' ? 'en' : 'it', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function getWorkflowActionLabel(action: WorkflowAction, labels: Labels) {
+  if (action === 'submit') return labels.workflowSubmit;
+  if (action === 'request_changes') return labels.workflowRequestChanges;
+
+  return labels.workflowApprove;
+}
+
+function getWorkflowActionConfirmMessage(action: WorkflowAction, labels: Labels) {
+  if (action === 'submit') return labels.workflowSubmitConfirm;
+  if (action === 'request_changes') return labels.workflowRequestChangesConfirm;
+
+  return labels.workflowApproveConfirm;
+}
+
+function getWorkflowActionSuccessMessage(action: WorkflowAction, labels: Labels) {
+  if (action === 'submit') return labels.workflowSubmitSuccess;
+  if (action === 'request_changes') return labels.workflowRequestChangesSuccess;
+
+  return labels.workflowApproveSuccess;
+}
+
+function getWorkflowErrorMessage(error: string, labels: Labels) {
+  if (error === 'workflow_conflict') return labels.workflowConflict;
+  if (error === 'article_not_found') return labels.workflowNotFound;
+
+  if (
+    error === 'article_submit_forbidden' ||
+    error === 'article_request_changes_forbidden' ||
+    error === 'article_approve_forbidden' ||
+    error === 'editorial_profile_required' ||
+    error === 'editorial_profile_suspended' ||
+    error === 'unauthorized'
+  ) {
+    return labels.workflowForbidden;
+  }
+
+  return labels.workflowGenericError;
 }
 
 function ExitConfirmationModal({
@@ -3606,10 +3702,13 @@ function Toolbar({
   isInspectorOpen = false,
   isSaving = false,
   isLocked = false,
+  isWorkflowUpdating = false,
+  workflowActions = [],
   hasUnsavedChanges = false,
   onToggleInspector,
   onSave,
   onRequestExit,
+  onWorkflowAction,
   variant = 'body',
   capabilities,
 }: {
@@ -3627,10 +3726,13 @@ function Toolbar({
   isInspectorOpen?: boolean;
   isSaving?: boolean;
   isLocked?: boolean;
+  isWorkflowUpdating?: boolean;
+  workflowActions?: WorkflowAction[];
   hasUnsavedChanges?: boolean;
   onToggleInspector?: () => void;
   onSave?: () => void | Promise<boolean | void>;
   onRequestExit?: () => void;
+  onWorkflowAction?: (action: WorkflowAction) => void | Promise<void>;
   variant?: 'body' | 'aside';
   capabilities?: EditorialArticleCapabilities;
 }) {
@@ -4303,6 +4405,17 @@ function Toolbar({
             <span aria-hidden="true">●</span>
             {status || labels.draftStatus}
           </p>
+          {workflowActions.map((action) => (
+            <button
+              className="editorial-article-editor__settings-toggle editorial-workflow-action"
+              type="button"
+              key={action}
+              disabled={isLocked || isWorkflowUpdating}
+              onClick={() => onWorkflowAction?.(action)}
+            >
+              {isWorkflowUpdating ? labels.workflowUpdating : getWorkflowActionLabel(action, labels)}
+            </button>
+          ))}
           <button
             className="editorial-article-editor__settings-toggle"
             type="button"
@@ -5271,14 +5384,28 @@ function ReviewStringListEditor({
   );
 }
 
-export default function ArticlePortableTextEditor({ article, lang, articlesHref, previewHref, saveEndpoint, capabilities, labels }: Props) {
+export default function ArticlePortableTextEditor({
+  article,
+  lang,
+  articlesHref,
+  previewHref,
+  saveEndpoint,
+  workflow,
+  workflowPermissions,
+  capabilities,
+  labels,
+}: Props) {
   const [draft, setDraft] = useState<EditableArticle>(article);
   const [content, setContent] = useState<PortableTextBlock[]>(article.content || []);
+  const [currentWorkflow, setCurrentWorkflow] = useState<EditorialArticleWorkflow>(workflow);
+  const [currentWorkflowPermissions, setCurrentWorkflowPermissions] =
+    useState<EditorialWorkflowTransitionPermissions>(workflowPermissions);
   const savedSnapshotRef = useRef(getEditableArticleSnapshot(article, article.content || []));
   const [status, setStatus] = useState('');
   const [statusTone, setStatusTone] = useState<'success' | 'error' | ''>('');
   const [isSaving, setIsSaving] = useState(false);
   const [isManualSaveLocked, setIsManualSaveLocked] = useState(false);
+  const [isWorkflowUpdating, setIsWorkflowUpdating] = useState(false);
   const isSavingRef = useRef(false);
   const lastAutosaveAttemptSignatureRef = useRef('');
   const [selectedFeaturedFile, setSelectedFeaturedFile] = useState<SelectedFeaturedImageFile | null>(null);
@@ -5968,6 +6095,67 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     }
   };
 
+  const workflowActions = useMemo<WorkflowAction[]>(() => {
+    const actions: WorkflowAction[] = [];
+
+    if (currentWorkflowPermissions.canSubmit) {
+      actions.push('submit');
+    }
+
+    if (currentWorkflowPermissions.canRequestChanges) {
+      actions.push('request_changes');
+    }
+
+    if (currentWorkflowPermissions.canApprove) {
+      actions.push('approve');
+    }
+
+    return actions;
+  }, [currentWorkflowPermissions]);
+
+  const runWorkflowAction = async (action: WorkflowAction) => {
+    if (isWorkflowUpdating) return;
+
+    if (!window.confirm(getWorkflowActionConfirmMessage(action, labels))) {
+      return;
+    }
+
+    setIsWorkflowUpdating(true);
+    setStatus(labels.workflowUpdating);
+    setStatusTone('');
+
+    try {
+      const response = await fetch(`${saveEndpoint}/workflow`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.ok || !result.workflow) {
+        throw new Error(result?.error || 'workflow_update_failed');
+      }
+
+      setCurrentWorkflow(result.workflow);
+
+      if (result.permissions) {
+        setCurrentWorkflowPermissions(result.permissions);
+      }
+
+      setStatus(getWorkflowActionSuccessMessage(action, labels));
+      setStatusTone('success');
+    } catch (error) {
+      const errorCode = error instanceof Error ? error.message : 'workflow_update_failed';
+
+      setStatus(getWorkflowErrorMessage(errorCode, labels));
+      setStatusTone('error');
+    } finally {
+      setIsWorkflowUpdating(false);
+    }
+  };
+
   useEffect(() => {
     if (!hasUnsavedChanges) {
       lastAutosaveAttemptSignatureRef.current = '';
@@ -6054,10 +6242,13 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
               isInspectorOpen={isInspectorOpen}
               isSaving={isSaving}
               isLocked={isManualSaveLocked}
+              isWorkflowUpdating={isWorkflowUpdating}
+              workflowActions={workflowActions}
               hasUnsavedChanges={hasUnsavedChanges}
               onToggleInspector={() => setIsInspectorOpen((value) => !value)}
               onSave={() => saveArticle('manual')}
               onRequestExit={requestExit}
+              onWorkflowAction={runWorkflowAction}
               capabilities={capabilities}
             />
 
@@ -6228,8 +6419,29 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
 
               <div className="editorial-readonly-field">
                 <span>{labels.workflowStatus}</span>
-                <p>{draft.reviewStatus || '—'}</p>
+                <p>{getWorkflowStatusLabel(currentWorkflow.workflowStatus, labels)}</p>
               </div>
+
+              {currentWorkflow.submittedAt && (
+                <div className="editorial-readonly-field">
+                  <span>{labels.workflowSubmittedAt}</span>
+                  <p>{formatWorkflowDate(currentWorkflow.submittedAt, lang)}</p>
+                </div>
+              )}
+
+              {currentWorkflow.reviewedAt && (
+                <div className="editorial-readonly-field">
+                  <span>{labels.workflowReviewedAt}</span>
+                  <p>{formatWorkflowDate(currentWorkflow.reviewedAt, lang)}</p>
+                </div>
+              )}
+
+              {currentWorkflow.reviewedBy && (
+                <div className="editorial-readonly-field">
+                  <span>{labels.workflowReviewer}</span>
+                  <p>{currentWorkflow.reviewedBy}</p>
+                </div>
+              )}
 
               <p className="editorial-file-meta">{labels.futureSlot}</p>
             </details>

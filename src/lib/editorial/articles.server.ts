@@ -165,6 +165,9 @@ type EditorialDocumentRow = {
   owner_user_id: string | null;
   sanity_author_id: string | null;
   workflow_status: string | null;
+  submitted_at?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -972,6 +975,9 @@ function normalizeOwnership(row: EditorialDocumentRow | null): EditorialDocument
     ownerUserId,
     sanityAuthorId,
     workflowStatus,
+    submittedAt: row.submitted_at || null,
+    reviewedBy: row.reviewed_by || null,
+    reviewedAt: row.reviewed_at || null,
   };
 }
 
@@ -1880,7 +1886,7 @@ function getReviewPatchFields(payload: Record<string, unknown>, {
 async function fetchOwnership(rootDocumentId: string) {
   const { data, error } = await supabaseAdmin
     .from('editorial_documents')
-    .select('sanity_document_id, owner_user_id, sanity_author_id, workflow_status, created_at, updated_at')
+    .select('sanity_document_id, owner_user_id, sanity_author_id, workflow_status, submitted_at, reviewed_by, reviewed_at, created_at, updated_at')
     .eq('sanity_document_id', rootDocumentId)
     .maybeSingle();
 
@@ -2073,7 +2079,7 @@ export async function createEditorialArticle({
 export async function fetchOwnEditorialArticles(context: EditableEditorialContext) {
   const { data, error } = await supabaseAdmin
     .from('editorial_documents')
-    .select('sanity_document_id, owner_user_id, sanity_author_id, workflow_status, created_at, updated_at')
+    .select('sanity_document_id, owner_user_id, sanity_author_id, workflow_status, submitted_at, reviewed_by, reviewed_at, created_at, updated_at')
     .eq('owner_user_id', context.user.id)
     .order('updated_at', { ascending: false });
 

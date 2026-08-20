@@ -11,6 +11,7 @@ import {
 import {
   getEditorialArticleCapabilities,
   getEmptyEditorialArticleCapabilities,
+  getWorkflowTransitionPermissions,
 } from '../../lib/editorial/permissions';
 
 type EditorialLang = 'it' | 'en';
@@ -63,6 +64,28 @@ const copy = isEnglish
         inspectorReview: 'Review',
         inspectorWorkflow: 'Workflow',
         workflowStatus: 'Current status',
+        workflowStatusDraft: 'Draft',
+        workflowStatusSubmitted: 'Submitted for review',
+        workflowStatusChangesRequested: 'Changes requested',
+        workflowStatusApproved: 'Approved',
+        workflowStatusPublished: 'Published',
+        workflowSubmittedAt: 'Submitted',
+        workflowReviewedAt: 'Reviewed',
+        workflowReviewer: 'Reviewer',
+        workflowSubmit: 'Submit for review',
+        workflowRequestChanges: 'Request changes',
+        workflowApprove: 'Approve',
+        workflowSubmitConfirm: 'Submit this article for review?',
+        workflowRequestChangesConfirm: 'Return this article to the author for changes?',
+        workflowApproveConfirm: 'Approve this article?',
+        workflowUpdating: 'Updating workflow…',
+        workflowSubmitSuccess: 'Article submitted for review.',
+        workflowRequestChangesSuccess: 'Article returned for changes.',
+        workflowApproveSuccess: 'Article approved.',
+        workflowConflict: 'The workflow status changed elsewhere. Reload the page before trying again.',
+        workflowForbidden: 'You do not have permission for this workflow action.',
+        workflowNotFound: 'This article is no longer available.',
+        workflowGenericError: 'The workflow action could not be completed.',
         futureSlot: 'Prepared for the next editor step. Existing Sanity data remains untouched.',
         featuredImageCurrent: 'Current image',
         featuredImageEmpty: 'No featured image yet.',
@@ -334,6 +357,28 @@ const copy = isEnglish
         inspectorReview: 'Recensione',
         inspectorWorkflow: 'Workflow',
         workflowStatus: 'Stato attuale',
+        workflowStatusDraft: 'Bozza',
+        workflowStatusSubmitted: 'In revisione',
+        workflowStatusChangesRequested: 'Modifiche richieste',
+        workflowStatusApproved: 'Approvato',
+        workflowStatusPublished: 'Pubblicato',
+        workflowSubmittedAt: 'Inviato',
+        workflowReviewedAt: 'Revisionato',
+        workflowReviewer: 'Revisore',
+        workflowSubmit: 'Invia in revisione',
+        workflowRequestChanges: 'Richiedi modifiche',
+        workflowApprove: 'Approva',
+        workflowSubmitConfirm: 'Inviare questo articolo in revisione?',
+        workflowRequestChangesConfirm: 'Restituire l’articolo all’autore per modifiche?',
+        workflowApproveConfirm: 'Approvare questo articolo?',
+        workflowUpdating: 'Aggiornamento workflow…',
+        workflowSubmitSuccess: 'Articolo inviato in revisione.',
+        workflowRequestChangesSuccess: 'Articolo restituito per modifiche.',
+        workflowApproveSuccess: 'Articolo approvato.',
+        workflowConflict: 'Lo stato workflow è cambiato altrove. Ricarica la pagina prima di riprovare.',
+        workflowForbidden: 'Non hai i permessi per questa azione workflow.',
+        workflowNotFound: 'Questo articolo non è più disponibile.',
+        workflowGenericError: 'Non è stato possibile completare l’azione workflow.',
         futureSlot: 'Preparato per il prossimo step editor. I dati Sanity esistenti restano invariati.',
         featuredImageCurrent: 'Immagine attuale',
         featuredImageEmpty: 'Nessuna immagine principale impostata.',
@@ -577,6 +622,8 @@ const languageSwitch = isEnglish
   ? `/account/editor/articles/${encodeURIComponent(id)}/`
   : `/en/account/editor/articles/${encodeURIComponent(id)}/`;
 let article = null;
+let workflow = null;
+let workflowPermissions = null;
 let error = '';
 
 const toClientArticle = (value) => JSON.parse(JSON.stringify(value));
@@ -614,6 +661,13 @@ if (access.ok) {
 
   if (result.ok && result.article) {
     article = toClientArticle(result.article);
+    workflow = toClientArticle({
+      workflowStatus: result.ownership.workflowStatus,
+      submittedAt: result.ownership.submittedAt,
+      reviewedBy: result.ownership.reviewedBy,
+      reviewedAt: result.ownership.reviewedAt,
+    });
+    workflowPermissions = toClientArticle(getWorkflowTransitionPermissions(access.context, result.ownership));
   } else {
     error = 'draft_load_failed';
     logEditPageFailure({
@@ -671,6 +725,8 @@ if (access.ok) {
         articlesHref={articlesHref}
         previewHref={previewHref}
         saveEndpoint={`/api/editor/articles/${encodeURIComponent(id)}`}
+        workflow={workflow}
+        workflowPermissions={workflowPermissions}
         capabilities={editorCapabilities}
         labels={copy.labels}
       >

@@ -5,6 +5,7 @@ import type {
   EditorialRole,
   EditorialSessionContext,
   EditorialStatus,
+  EditorialWorkflowTransitionPermissions,
   EditorialWorkflowStatus,
   OwnershipConflict,
 } from './types';
@@ -69,6 +70,10 @@ const editableOwnWorkflowStatuses = new Set<EditorialWorkflowStatus>([
 const submittableOwnWorkflowStatuses = new Set<EditorialWorkflowStatus>([
   'draft',
   'changes_requested',
+]);
+
+const reviewableWorkflowStatuses = new Set<EditorialWorkflowStatus>([
+  'submitted',
 ]);
 
 function clonePermissions(permissions: EditorialPermissionSet): EditorialPermissionSet {
@@ -206,11 +211,7 @@ export function canSubmitArticle(
   context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
   ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
 ) {
-  return (
-    context.permissions.canSubmitOwnArticle &&
-    isDocumentOwnedByContext(context, ownership) &&
-    Boolean(ownership?.workflowStatus && submittableOwnWorkflowStatuses.has(ownership.workflowStatus))
-  );
+  return canSubmitWorkflowArticle(context, ownership);
 }
 
 export function canReviewArticle(context: Pick<EditorialSessionContext, 'permissions'>) {
@@ -240,4 +241,46 @@ export function canManageEditorialMappings(
 
 export function canPublishArticle(context: Pick<EditorialSessionContext, 'permissions'>) {
   return context.permissions.canPublishArticle;
+}
+
+export function canSubmitWorkflowArticle(
+  context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
+  ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
+) {
+  return (
+    context.permissions.canSubmitOwnArticle &&
+    isDocumentOwnedByContext(context, ownership) &&
+    Boolean(ownership?.workflowStatus && submittableOwnWorkflowStatuses.has(ownership.workflowStatus))
+  );
+}
+
+export function canRequestWorkflowChanges(
+  context: Pick<EditorialSessionContext, 'permissions'>,
+  ownership: Pick<EditorialDocumentOwnership, 'workflowStatus'> | null | undefined
+) {
+  return (
+    context.permissions.canRequestChanges &&
+    Boolean(ownership?.workflowStatus && reviewableWorkflowStatuses.has(ownership.workflowStatus))
+  );
+}
+
+export function canApproveWorkflowArticle(
+  context: Pick<EditorialSessionContext, 'permissions'>,
+  ownership: Pick<EditorialDocumentOwnership, 'workflowStatus'> | null | undefined
+) {
+  return (
+    context.permissions.canApproveArticle &&
+    Boolean(ownership?.workflowStatus && reviewableWorkflowStatuses.has(ownership.workflowStatus))
+  );
+}
+
+export function getWorkflowTransitionPermissions(
+  context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
+  ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
+): EditorialWorkflowTransitionPermissions {
+  return {
+    canSubmit: canSubmitWorkflowArticle(context, ownership),
+    canRequestChanges: canRequestWorkflowChanges(context, ownership),
+    canApprove: canApproveWorkflowArticle(context, ownership),
+  };
 }

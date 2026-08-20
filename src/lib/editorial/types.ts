@@ -26,6 +26,20 @@ export type EditorialDocumentOwnership = {
   ownerUserId: string;
   sanityAuthorId: string;
   workflowStatus: EditorialWorkflowStatus;
+  submittedAt: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+};
+
+export type EditorialArticleWorkflow = Pick<
+  EditorialDocumentOwnership,
+  'workflowStatus' | 'submittedAt' | 'reviewedBy' | 'reviewedAt'
+>;
+
+export type EditorialWorkflowTransitionPermissions = {
+  canSubmit: boolean;
+  canRequestChanges: boolean;
+  canApprove: boolean;
 };
 
 export type EditorialPermissionSet = {
