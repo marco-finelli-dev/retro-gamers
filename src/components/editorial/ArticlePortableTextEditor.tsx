@@ -4175,8 +4175,6 @@ function Toolbar({
           <a
             className="editorial-article-editor__settings-toggle editorial-article-editor__preview-action"
             href={previewHref}
-            target="_blank"
-            rel="noopener noreferrer"
           >
             {labels.preview}
           </a>
