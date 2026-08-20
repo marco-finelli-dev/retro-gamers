@@ -977,7 +977,7 @@ function ImageObjectBlock({
             aria-expanded={isMenuOpen}
             onClick={() => setIsMenuOpen((value) => !value)}
           >
-            …
+            <BlockOptionsIcon />
           </button>
           <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
             <button type="button" role="menuitem" onClick={openImageModal}>
@@ -1151,7 +1151,7 @@ function ImageRowObjectBlock({
             aria-expanded={isMenuOpen}
             onClick={() => setIsMenuOpen((value) => !value)}
           >
-            …
+            <BlockOptionsIcon />
           </button>
           <div className="editorial-pte__image-menu-panel" role="menu" hidden={!isMenuOpen}>
             <button type="button" role="menuitem" onClick={openImageRowModal}>
@@ -2876,6 +2876,16 @@ function Toolbar({
         />
       )}
     </div>
+  );
+}
+
+function BlockOptionsIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+      <circle cx="7" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="17" cy="12" r="1.8" />
+    </svg>
   );
 }
 
