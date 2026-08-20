@@ -329,7 +329,6 @@ type Labels = {
   imageRowDropFiles: string;
   imageRowFormats: string;
   imageRowSelectedImages: string;
-  imageRowSelectImage: string;
   imageRowImageSettings: string;
   imageRowAddImages: string;
   imageRowRemoveImage: string;
@@ -1913,6 +1912,19 @@ function getImageRowDraftItemPreviewUrl(
   return getBodyImagePreviewUrl(item.image, 540, assetPreviewUrls);
 }
 
+function getImageRowDraftItemMetadataLabel(item: ImageRowDraftItem, labels: Labels) {
+  if (item.selectedFile) return getSelectedBodyImageMetadataLabel(item.selectedFile);
+
+  const image = item.image;
+  const asset = image?.asset;
+
+  if (asset && typeof asset === 'object' && ('dimensions' in asset || 'metadata' in asset)) {
+    return getBodyImageMetadataLabel(image, labels);
+  }
+
+  return labels.featuredImageMetadataUnavailable;
+}
+
 function ImageRowModal({
   mode,
   labels,
@@ -1933,19 +1945,14 @@ function ImageRowModal({
   onClose: () => void;
 }) {
   const fileInputId = useId();
-  const replaceInputId = useId();
-  const altId = useId();
-  const captionId = useId();
-  const displayModeId = useId();
+  const rowItemFieldId = useId();
   const layoutId = useId();
   const groupCaptionId = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const replaceInputRef = useRef<HTMLInputElement | null>(null);
   const [items, setItems] = useState<ImageRowDraftItem[]>(() =>
     Array.isArray(initialRow?.images) ? initialRow.images.map(createImageRowDraftItem) : []
   );
   const itemsRef = useRef(items);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [layout, setLayout] = useState<ImageRowLayout>(normalizeImageRowLayout(initialRow?.layout));
   const [groupCaption, setGroupCaption] = useState(typeof initialRow?.groupCaption === 'string' ? initialRow.groupCaption : '');
   const [isDragActive, setIsDragActive] = useState(false);
@@ -1954,7 +1961,6 @@ function ImageRowModal({
   const [statusTone, setStatusTone] = useState<'success' | 'error' | ''>('');
   const title = mode === 'insert' ? labels.insertImageRow : labels.editImageRow;
   const submitLabel = mode === 'insert' ? labels.insertImageRow : labels.updateImageRow;
-  const selectedItem = items[selectedIndex] || null;
 
   useEffect(() => {
     itemsRef.current = items;
@@ -1966,7 +1972,6 @@ function ImageRowModal({
 
   const resetFileInput = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
-    if (replaceInputRef.current) replaceInputRef.current.value = '';
   };
 
   const setItemAt = (index: number, patch: Partial<ImageRowDraftItem>) => {
@@ -2026,18 +2031,14 @@ function ImageRowModal({
 
     const nextItems = await Promise.all(files.map(createDraftItemFromFile));
 
-    setItems((current) => {
-      const next = [...current, ...nextItems];
-      setSelectedIndex(Math.max(0, next.length - nextItems.length));
-      return next;
-    });
+    setItems((current) => [...current, ...nextItems]);
     setStatus(labels.imageRowReady);
     setStatusTone('success');
     resetFileInput();
   };
 
-  const replaceSelectedFile = async (file: File | null | undefined) => {
-    if (!selectedItem || !file) return;
+  const replaceItemFile = async (index: number, file: File | null | undefined) => {
+    if (!items[index] || !file) return;
 
     const error = getBodyImageFileValidationError(file, labels);
 
@@ -2049,7 +2050,7 @@ function ImageRowModal({
     }
 
     const dimensions = await getImageDimensions(file);
-    setItemAt(selectedIndex, {
+    setItemAt(index, {
       selectedFile: {
         file,
         previewUrl: URL.createObjectURL(file),
@@ -2072,9 +2073,7 @@ function ImageRowModal({
     setItems((current) => {
       const item = current[index];
       if (item) revokeImageRowDraftItemPreview(item);
-      const next = current.filter((_, itemIndex) => itemIndex !== index);
-      setSelectedIndex(Math.max(0, Math.min(index, next.length - 1)));
-      return next;
+      return current.filter((_, itemIndex) => itemIndex !== index);
     });
     setStatus('');
     setStatusTone('');
@@ -2091,7 +2090,6 @@ function ImageRowModal({
       next.splice(targetIndex, 0, item);
       return next;
     });
-    setSelectedIndex(targetIndex);
   };
 
   const uploadItemFile = async (item: ImageRowDraftItem) => {
@@ -2180,53 +2178,6 @@ function ImageRowModal({
       panelClassName="editorial-pte-modal__panel--image-row"
     >
       <div className="editorial-image-row-modal">
-        <section className="editorial-image-row-modal__section" aria-label={labels.imageRowSelectedImages}>
-          <div className="editorial-image-row-modal__section-header">
-            <span>{labels.imageRowSelectedImages}</span>
-            <small>{items.length} / {imageRowMaxImages}</small>
-          </div>
-
-          {items.length > 0 ? (
-            <div className="editorial-image-row-modal__items">
-              {items.map((item, index) => {
-                const previewUrl = getImageRowDraftItemPreviewUrl(item, assetPreviewUrls);
-                const isSelected = index === selectedIndex;
-
-                return (
-                  <article className="editorial-image-row-modal__item" data-selected={isSelected ? 'true' : undefined} key={item.key}>
-                    <button
-                      type="button"
-                      className="editorial-image-row-modal__item-preview"
-                      aria-label={`${labels.imageRowSelectImage} ${index + 1}`}
-                      aria-pressed={isSelected}
-                      onClick={() => setSelectedIndex(index)}
-                    >
-                      {previewUrl ? (
-                        <img src={previewUrl} alt={item.alt || ''} loading="lazy" decoding="async" />
-                      ) : (
-                        <span>{labels.bodyImageNoPreview}</span>
-                      )}
-                    </button>
-                    <div className="editorial-image-row-modal__item-actions">
-                      <button type="button" className="editorial-mini-button" onClick={() => moveItem(index, 'left')} disabled={isUploading || index === 0}>
-                        {labels.imageRowMoveLeft}
-                      </button>
-                      <button type="button" className="editorial-mini-button" onClick={() => moveItem(index, 'right')} disabled={isUploading || index === items.length - 1}>
-                        {labels.imageRowMoveRight}
-                      </button>
-                      <button type="button" className="editorial-mini-button editorial-mini-button--danger" onClick={() => removeItem(index)} disabled={isUploading}>
-                        {labels.imageRowRemoveImage}
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="editorial-file-meta">{labels.imageRowMissingImages}</p>
-          )}
-        </section>
-
         <label
           className="editorial-dropzone editorial-dropzone--body-image"
           data-drag-active={isDragActive ? 'true' : undefined}
@@ -2259,87 +2210,141 @@ function ImageRowModal({
         </label>
         <p className="editorial-file-meta">{labels.imageRowFormats}</p>
 
-        {selectedItem && (
-          <section className="editorial-image-row-modal__section">
-            <div className="editorial-image-row-modal__section-header">
-              <span>{labels.imageRowImageSettings}</span>
-              <small>{selectedIndex + 1} / {items.length}</small>
+        <section className="editorial-image-row-modal__section" aria-label={labels.imageRowSelectedImages}>
+          <div className="editorial-image-row-modal__section-header">
+            <span>{labels.imageRowSelectedImages}</span>
+            <small>{items.length} / {imageRowMaxImages}</small>
+          </div>
+
+          {items.length > 0 ? (
+            <div className="editorial-image-row-modal__items">
+              {items.map((item, index) => {
+                const previewUrl = getImageRowDraftItemPreviewUrl(item, assetPreviewUrls);
+                const metadata = getImageRowDraftItemMetadataLabel(item, labels);
+                const altFieldId = `${rowItemFieldId}-${item.key}-alt`;
+                const captionFieldId = `${rowItemFieldId}-${item.key}-caption`;
+                const displayModeFieldId = `${rowItemFieldId}-${item.key}-display-mode`;
+                const replaceFieldId = `${rowItemFieldId}-${item.key}-replace`;
+
+                return (
+                  <article className="editorial-image-row-modal__item" key={item.key}>
+                    <div className="editorial-image-row-modal__item-heading">
+                      <span>{labels.imageRowImageSettings}</span>
+                      <small>{index + 1} / {items.length}</small>
+                    </div>
+
+                    <div className="editorial-image-row-modal__item-preview">
+                      {previewUrl ? (
+                        <img src={previewUrl} alt={item.alt || ''} loading="lazy" decoding="async" />
+                      ) : (
+                        <span>{labels.bodyImageNoPreview}</span>
+                      )}
+                    </div>
+
+                    {metadata && <p className="editorial-file-meta">{metadata}</p>}
+
+                    <label className="editorial-field" htmlFor={altFieldId}>
+                      <span>{labels.bodyImageAlt}</span>
+                      <AutoGrowTextField
+                        id={altFieldId}
+                        value={item.alt}
+                        rows={2}
+                        maxRows={4}
+                        maxLength={120}
+                        ariaLabel={labels.bodyImageAlt}
+                        singleLine
+                        onChange={(value) => setItemAt(index, { alt: value })}
+                      />
+                    </label>
+                    <p className="editorial-file-advice editorial-file-advice--subtle-warning">
+                      {labels.bodyImageAltWarning}
+                    </p>
+                    <CharacterCounter value={item.alt} max={120} warning={labels.cardExcerptWarning} />
+
+                    <label className="editorial-field" htmlFor={captionFieldId}>
+                      <span>{labels.bodyImageCaption}</span>
+                      <AutoGrowTextField
+                        id={captionFieldId}
+                        value={item.caption}
+                        rows={2}
+                        maxRows={4}
+                        maxLength={500}
+                        ariaLabel={labels.bodyImageCaption}
+                        singleLine
+                        onChange={(value) => setItemAt(index, { caption: value })}
+                      />
+                    </label>
+
+                    <label className="editorial-field" htmlFor={displayModeFieldId}>
+                      <span>{labels.bodyImageDisplayMode}</span>
+                      <select
+                        id={displayModeFieldId}
+                        value={item.displayMode}
+                        onChange={(event) => setItemAt(index, { displayMode: normalizeImageDisplayMode(event.target.value) })}
+                      >
+                        {imageDisplayModes.map((modeOption) => (
+                          <option key={modeOption} value={modeOption}>
+                            {getImageDisplayModeLabel(modeOption, labels)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <div className="editorial-image-row-modal__item-actions">
+                      <button
+                        type="button"
+                        className="editorial-image-row-modal__icon-button"
+                        aria-label={labels.imageRowMoveLeft}
+                        title={labels.imageRowMoveLeft}
+                        onClick={() => moveItem(index, 'left')}
+                        disabled={isUploading || index === 0}
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        className="editorial-image-row-modal__icon-button"
+                        aria-label={labels.imageRowMoveRight}
+                        title={labels.imageRowMoveRight}
+                        onClick={() => moveItem(index, 'right')}
+                        disabled={isUploading || index === items.length - 1}
+                      >
+                        →
+                      </button>
+                      <label
+                        className="editorial-mini-button editorial-image-row-modal__replace-control"
+                        htmlFor={replaceFieldId}
+                        data-disabled={isUploading ? 'true' : undefined}
+                      >
+                        <span>{labels.replaceImage}</span>
+                        <input
+                          id={replaceFieldId}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          disabled={isUploading}
+                          onChange={(event) => {
+                            void replaceItemFile(index, event.currentTarget.files?.[0]);
+                            event.currentTarget.value = '';
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="editorial-mini-button editorial-mini-button--danger"
+                        onClick={() => removeItem(index)}
+                        disabled={isUploading}
+                      >
+                        {labels.imageRowRemoveImage}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-
-            <div className="editorial-current-media editorial-current-media--body-image">
-              <div className="editorial-current-media__frame editorial-current-media__frame--body-image">
-                {getImageRowDraftItemPreviewUrl(selectedItem, assetPreviewUrls) ? (
-                  <img src={getImageRowDraftItemPreviewUrl(selectedItem, assetPreviewUrls)} alt={selectedItem.alt || ''} loading="lazy" decoding="async" />
-                ) : (
-                  <div className="editorial-current-media__placeholder">{labels.bodyImageNoPreview}</div>
-                )}
-              </div>
-              {selectedItem.selectedFile && (
-                <p className="editorial-file-meta">{getSelectedBodyImageMetadataLabel(selectedItem.selectedFile)}</p>
-              )}
-            </div>
-
-            <label className="editorial-dropzone editorial-dropzone--compact" htmlFor={replaceInputId}>
-              <span>{labels.replaceImage}</span>
-              <input
-                ref={replaceInputRef}
-                id={replaceInputId}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(event) => void replaceSelectedFile(event.currentTarget.files?.[0])}
-              />
-            </label>
-
-            <label className="editorial-field" htmlFor={altId}>
-              <span>{labels.bodyImageAlt}</span>
-              <AutoGrowTextField
-                id={altId}
-                value={selectedItem.alt}
-                rows={2}
-                maxRows={4}
-                maxLength={120}
-                ariaLabel={labels.bodyImageAlt}
-                singleLine
-                onChange={(value) => setItemAt(selectedIndex, { alt: value })}
-              />
-            </label>
-            <CharacterCounter value={selectedItem.alt} max={120} warning={labels.cardExcerptWarning} />
-            {!selectedItem.alt.trim() && (
-              <p className="editorial-file-advice editorial-file-advice--subtle-warning">
-                {labels.bodyImageAltWarning}
-              </p>
-            )}
-
-            <label className="editorial-field" htmlFor={captionId}>
-              <span>{labels.bodyImageCaption}</span>
-              <AutoGrowTextField
-                id={captionId}
-                value={selectedItem.caption}
-                rows={2}
-                maxRows={4}
-                maxLength={500}
-                ariaLabel={labels.bodyImageCaption}
-                singleLine
-                onChange={(value) => setItemAt(selectedIndex, { caption: value })}
-              />
-            </label>
-
-            <label className="editorial-field" htmlFor={displayModeId}>
-              <span>{labels.bodyImageDisplayMode}</span>
-              <select
-                id={displayModeId}
-                value={selectedItem.displayMode}
-                onChange={(event) => setItemAt(selectedIndex, { displayMode: normalizeImageDisplayMode(event.target.value) })}
-              >
-                {imageDisplayModes.map((modeOption) => (
-                  <option key={modeOption} value={modeOption}>
-                    {getImageDisplayModeLabel(modeOption, labels)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </section>
-        )}
+          ) : (
+            <p className="editorial-file-meta">{labels.imageRowMissingImages}</p>
+          )}
+        </section>
 
         <label className="editorial-field" htmlFor={layoutId}>
           <span>{labels.imageRowLayout}</span>
