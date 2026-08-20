@@ -241,6 +241,8 @@ type Labels = {
   inspectorRelations: string;
   inspectorFeaturedImage: string;
   inspectorReview: string;
+  inspectorWorkflow: string;
+  workflowStatus: string;
   futureSlot: string;
   featuredImageCurrent: string;
   featuredImageEmpty: string;
@@ -6209,6 +6211,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                     </div>
                   )}
                 </div>
+                <p className="editorial-file-meta">{labels.futureSlot}</p>
               </div>
             ) : (
               <div className="editorial-readonly-field">
@@ -6218,6 +6221,19 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
               </div>
             )}
           </details>
+
+          {capabilities.canEditWorkflow && (
+            <details className="editorial-inspector-section" open>
+              <summary>{labels.inspectorWorkflow}</summary>
+
+              <div className="editorial-readonly-field">
+                <span>{labels.workflowStatus}</span>
+                <p>{draft.reviewStatus || '—'}</p>
+              </div>
+
+              <p className="editorial-file-meta">{labels.futureSlot}</p>
+            </details>
+          )}
 
           <details className="editorial-inspector-section" open>
             <summary>{labels.inspectorSeo}</summary>
