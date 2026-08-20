@@ -8,6 +8,10 @@ import {
   fetchEditableEditorialArticle,
   requireEditorialArticleContext,
 } from '../../lib/editorial/articles.server';
+import {
+  getEditorialArticleCapabilities,
+  getEmptyEditorialArticleCapabilities,
+} from '../../lib/editorial/permissions';
 
 type EditorialLang = 'it' | 'en';
 
@@ -15,6 +19,9 @@ const { lang = 'it', id = '' } = Astro.props as { lang?: EditorialLang; id?: str
 const currentLang: EditorialLang = lang === 'en' ? 'en' : 'it';
 const isEnglish = currentLang === 'en';
 const access = await requireEditorialArticleContext(Astro.cookies);
+const editorCapabilities = access.ok
+  ? getEditorialArticleCapabilities(access.context)
+  : getEmptyEditorialArticleCapabilities();
 
 const copy = isEnglish
   ? {
@@ -660,6 +667,7 @@ if (access.ok) {
         articlesHref={articlesHref}
         previewHref={previewHref}
         saveEndpoint={`/api/editor/articles/${encodeURIComponent(id)}`}
+        capabilities={editorCapabilities}
         labels={copy.labels}
       >
         <section slot="fallback" class="editorial-card editorial-card--notice" aria-live="polite">

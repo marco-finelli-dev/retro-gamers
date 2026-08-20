@@ -19,6 +19,7 @@ import * as selectors from '@portabletext/editor/selectors';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { urlFor } from '../../lib/image';
+import type { EditorialArticleCapabilities } from '../../lib/editorial/types';
 
 type ArticleType =
   | 'review'
@@ -478,6 +479,7 @@ type Props = {
   articlesHref: string;
   previewHref: string;
   saveEndpoint: string;
+  capabilities: EditorialArticleCapabilities;
   labels: Labels;
 };
 
@@ -5170,7 +5172,7 @@ function ReviewStringListEditor({
   );
 }
 
-export default function ArticlePortableTextEditor({ article, lang, articlesHref, previewHref, saveEndpoint, labels }: Props) {
+export default function ArticlePortableTextEditor({ article, lang, articlesHref, previewHref, saveEndpoint, capabilities: _capabilities, labels }: Props) {
   const [draft, setDraft] = useState<EditableArticle>(article);
   const [content, setContent] = useState<PortableTextBlock[]>(article.content || []);
   const savedSnapshotRef = useRef(getEditableArticleSnapshot(article, article.content || []));

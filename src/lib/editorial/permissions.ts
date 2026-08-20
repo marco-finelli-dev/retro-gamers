@@ -1,4 +1,5 @@
 import type {
+  EditorialArticleCapabilities,
   EditorialDocumentOwnership,
   EditorialPermissionSet,
   EditorialRole,
@@ -47,6 +48,19 @@ const editorialAdminPermissions: EditorialPermissionSet = {
   canPublishArticle: true,
 };
 
+const emptyArticleCapabilities: EditorialArticleCapabilities = {
+  canEditContent: false,
+  canEditSeo: false,
+  canChangeType: false,
+  canEditWorkflow: false,
+  canPublish: false,
+  canUnpublish: false,
+  canChangeAuthor: false,
+  canEditMonetization: false,
+  canEditLegacy: false,
+  canEditEditorNotes: false,
+};
+
 const editableOwnWorkflowStatuses = new Set<EditorialWorkflowStatus>([
   'draft',
   'changes_requested',
@@ -59,6 +73,10 @@ const submittableOwnWorkflowStatuses = new Set<EditorialWorkflowStatus>([
 
 function clonePermissions(permissions: EditorialPermissionSet): EditorialPermissionSet {
   return { ...permissions };
+}
+
+function cloneArticleCapabilities(capabilities: EditorialArticleCapabilities): EditorialArticleCapabilities {
+  return { ...capabilities };
 }
 
 export function getEditorialPermissions(
@@ -82,6 +100,44 @@ export function getEditorialPermissions(
   }
 
   return clonePermissions(emptyPermissions);
+}
+
+export function getEmptyEditorialArticleCapabilities(): EditorialArticleCapabilities {
+  return cloneArticleCapabilities(emptyArticleCapabilities);
+}
+
+export function getEditorialArticleCapabilities(
+  context: Pick<EditorialSessionContext, 'permissions'>
+): EditorialArticleCapabilities {
+  const permissions = context.permissions;
+  const canEditDraftArticle = permissions.canEditOwnDraftArticle;
+  const canManageReviewWorkflow = (
+    permissions.canSubmitOwnArticle ||
+    permissions.canReviewArticle ||
+    permissions.canRequestChanges ||
+    permissions.canApproveArticle ||
+    permissions.canPublishArticle
+  );
+  const canPublish = permissions.canPublishArticle;
+  const canEditEditorialNotes = (
+    permissions.canReviewArticle ||
+    permissions.canRequestChanges ||
+    permissions.canApproveArticle ||
+    permissions.canPublishArticle
+  );
+
+  return {
+    canEditContent: canEditDraftArticle,
+    canEditSeo: canEditDraftArticle,
+    canChangeType: canEditDraftArticle,
+    canEditWorkflow: canManageReviewWorkflow,
+    canPublish,
+    canUnpublish: canPublish,
+    canChangeAuthor: canPublish,
+    canEditMonetization: canPublish,
+    canEditLegacy: canPublish,
+    canEditEditorNotes: canEditEditorialNotes,
+  };
 }
 
 export function hasEditorialAccess(context: Pick<EditorialSessionContext, 'isEditorialActive'>) {

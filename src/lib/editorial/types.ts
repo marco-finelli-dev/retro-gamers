@@ -43,6 +43,19 @@ export type EditorialPermissionSet = {
   canPublishArticle: boolean;
 };
 
+export type EditorialArticleCapabilities = {
+  canEditContent: boolean;
+  canEditSeo: boolean;
+  canChangeType: boolean;
+  canEditWorkflow: boolean;
+  canPublish: boolean;
+  canUnpublish: boolean;
+  canChangeAuthor: boolean;
+  canEditMonetization: boolean;
+  canEditLegacy: boolean;
+  canEditEditorNotes: boolean;
+};
+
 export type EditorialSessionContext = {
   user: {
     id: string;
