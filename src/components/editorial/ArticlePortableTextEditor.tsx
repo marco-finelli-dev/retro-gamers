@@ -3603,11 +3603,13 @@ function Toolbar({
   inspectorId = '',
   isInspectorOpen = false,
   isSaving = false,
+  isLocked = false,
   hasUnsavedChanges = false,
   onToggleInspector,
   onSave,
   onRequestExit,
   variant = 'body',
+  capabilities,
 }: {
   labels: Labels;
   language: ArticleLanguage;
@@ -3622,11 +3624,13 @@ function Toolbar({
   inspectorId?: string;
   isInspectorOpen?: boolean;
   isSaving?: boolean;
+  isLocked?: boolean;
   hasUnsavedChanges?: boolean;
   onToggleInspector?: () => void;
   onSave?: () => void | Promise<boolean | void>;
   onRequestExit?: () => void;
   variant?: 'body' | 'aside';
+  capabilities?: EditorialArticleCapabilities;
 }) {
   const editor = useEditor();
   const activeStyle = useEditorSelector(editor, selectors.getActiveStyle);
@@ -3693,19 +3697,31 @@ function Toolbar({
     };
   }, [openMenu]);
 
+  useEffect(() => {
+    if (isLocked) {
+      setOpenMenu(null);
+    }
+  }, [isLocked]);
+
   const focus = () => editor.send({ type: 'focus' });
   const send = (event: Parameters<typeof editor.send>[0]) => {
     editor.send(event);
     focus();
   };
   const toggleMenu = (menu: ToolbarMenu) => {
+    if (isLocked) return;
+
     setOpenMenu((current) => current === menu ? null : menu);
   };
   const runToolbarAction = (action: () => void) => {
+    if (isLocked) return;
+
     setOpenMenu(null);
     action();
   };
   const handleExitClick = () => {
+    if (isLocked) return;
+
     if (onRequestExit) {
       onRequestExit();
       return;
@@ -3961,7 +3977,16 @@ function Toolbar({
   };
 
   return (
-    <div className={`editorial-pte-toolbar editorial-pte-toolbar--${variant}`} role="toolbar" aria-label={labels.content} ref={toolbarRef}>
+    <div
+      className={`editorial-pte-toolbar editorial-pte-toolbar--${variant}`}
+      role="toolbar"
+      aria-label={labels.content}
+      data-can-edit-workflow={capabilities?.canEditWorkflow ? 'true' : undefined}
+      data-can-publish={capabilities?.canPublish ? 'true' : undefined}
+      data-can-unpublish={capabilities?.canUnpublish ? 'true' : undefined}
+      data-save-locked={isLocked ? 'true' : undefined}
+      ref={toolbarRef}
+    >
       <div className="editorial-pte-toolbar__content-tools">
         <div className="editorial-pte-toolbar__menu">
         <button
@@ -3970,6 +3995,7 @@ function Toolbar({
           aria-haspopup="menu"
           aria-expanded={openMenu === 'structure'}
           title={labels.toolbarStructure}
+          disabled={isLocked}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => toggleMenu('structure')}
         >
@@ -3983,6 +4009,7 @@ function Toolbar({
             role="menuitem"
             aria-pressed={blockStyle === 'normal'}
             data-active={blockStyle === 'normal' ? 'true' : undefined}
+            disabled={isLocked}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => runToolbarAction(() => send({ type: 'style.toggle', style: 'normal' }))}
           >
@@ -3994,6 +4021,7 @@ function Toolbar({
             role="menuitem"
             aria-pressed={blockStyle === 'h3'}
             data-active={blockStyle === 'h3' ? 'true' : undefined}
+            disabled={isLocked}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => runToolbarAction(() => send({ type: 'style.toggle', style: 'h3' }))}
           >
@@ -4006,6 +4034,7 @@ function Toolbar({
               role="menuitem"
               aria-pressed={blockStyle === 'h2'}
               data-active={blockStyle === 'h2' ? 'true' : undefined}
+              disabled={isLocked}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => runToolbarAction(() => send({ type: 'style.toggle', style: 'h2' }))}
             >
@@ -4022,6 +4051,7 @@ function Toolbar({
           aria-haspopup="menu"
           aria-expanded={openMenu === 'text'}
           title={labels.toolbarText}
+          disabled={isLocked}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => toggleMenu('text')}
         >
@@ -4036,6 +4066,7 @@ function Toolbar({
             aria-pressed={isBoldActive}
             data-active={isBoldActive ? 'true' : undefined}
             title={labels.bold}
+            disabled={isLocked}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => runToolbarAction(() => send({ type: 'decorator.toggle', decorator: 'strong' }))}
           >
@@ -4048,6 +4079,7 @@ function Toolbar({
             aria-pressed={isItalicActive}
             data-active={isItalicActive ? 'true' : undefined}
             title={labels.italic}
+            disabled={isLocked}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => runToolbarAction(() => send({ type: 'decorator.toggle', decorator: 'em' }))}
           >
@@ -4061,6 +4093,7 @@ function Toolbar({
               aria-pressed={isBlockquoteActive}
               data-active={isBlockquoteActive ? 'true' : undefined}
               title={labels.quote}
+              disabled={isLocked}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => runToolbarAction(() => send({ type: 'style.toggle', style: 'blockquote' }))}
           >
@@ -4074,6 +4107,7 @@ function Toolbar({
             aria-pressed={activeListItem === 'bullet'}
             data-active={activeListItem === 'bullet' ? 'true' : undefined}
             title={labels.bullet}
+            disabled={isLocked}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => runToolbarAction(() => send({ type: 'list item.toggle', listItem: 'bullet' }))}
           >
@@ -4087,6 +4121,7 @@ function Toolbar({
               aria-pressed={activeListItem === 'number'}
               data-active={activeListItem === 'number' ? 'true' : undefined}
               title={labels.number}
+              disabled={isLocked}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => runToolbarAction(() => send({ type: 'list item.toggle', listItem: 'number' }))}
             >
@@ -4103,6 +4138,7 @@ function Toolbar({
           aria-haspopup="menu"
           aria-expanded={openMenu === 'link'}
           title={labels.toolbarLink}
+          disabled={isLocked}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => toggleMenu('link')}
         >
@@ -4117,6 +4153,7 @@ function Toolbar({
             aria-pressed={Boolean(getActiveAnnotation('link'))}
             data-active={getActiveAnnotation('link') ? 'true' : undefined}
             title={labels.externalLink}
+            disabled={isLocked}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => runToolbarAction(addExternalLink)}
           >
@@ -4139,7 +4176,7 @@ function Toolbar({
                 aria-expanded={isOpen}
                 data-active={activeAnnotation ? 'true' : undefined}
                 title={canOpen ? label : labels.annotationNoSelection}
-                disabled={!canOpen}
+                disabled={isLocked || !canOpen}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={(event) => runToolbarAction(() => {
                   if (isOpen) {
@@ -4170,7 +4207,7 @@ function Toolbar({
                 aria-expanded={isOpen}
                 data-active={activeAnnotation ? 'true' : undefined}
                 title={canOpen ? label : labels.annotationNoSelection}
-                disabled={!canOpen}
+                disabled={isLocked || !canOpen}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={(event) => runToolbarAction(() => {
                   if (isOpen) {
@@ -4194,6 +4231,7 @@ function Toolbar({
           aria-haspopup="menu"
           aria-expanded={openMenu === 'insert'}
           title={labels.toolbarInsert}
+          disabled={isLocked}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => toggleMenu('insert')}
         >
@@ -4207,6 +4245,7 @@ function Toolbar({
             role="menuitem"
             aria-expanded={Boolean(imageModal)}
             title={insertMenuLabels.image}
+            disabled={isLocked}
             onMouseDown={(event) => event.preventDefault()}
             onClick={(event) => runToolbarAction(() => openImageModal(event.currentTarget))}
           >
@@ -4218,6 +4257,7 @@ function Toolbar({
             role="menuitem"
             aria-expanded={Boolean(imageRowModal)}
             title={insertMenuLabels.imageRow}
+            disabled={isLocked}
             onMouseDown={(event) => event.preventDefault()}
             onClick={(event) => runToolbarAction(() => openImageRowModal(event.currentTarget))}
           >
@@ -4231,6 +4271,7 @@ function Toolbar({
                 role="menuitem"
                 aria-expanded={Boolean(videoModal)}
                 title={insertMenuLabels.video}
+                disabled={isLocked}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={(event) => runToolbarAction(() => openVideoModal(event.currentTarget))}
               >
@@ -4242,6 +4283,7 @@ function Toolbar({
                 role="menuitem"
                 aria-expanded={Boolean(asideBoxModal)}
                 title={insertMenuLabels.asideBox}
+                disabled={isLocked}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={(event) => runToolbarAction(() => openAsideBoxModal(event.currentTarget))}
               >
@@ -4265,6 +4307,7 @@ function Toolbar({
             aria-expanded={isInspectorOpen}
             aria-controls={inspectorId || undefined}
             data-active={isInspectorOpen ? 'true' : undefined}
+            disabled={isLocked}
             onClick={onToggleInspector}
           >
             {isInspectorOpen ? labels.settingsButtonActive : labels.settingsButton}
@@ -4272,11 +4315,17 @@ function Toolbar({
           <a
             className="editorial-article-editor__settings-toggle editorial-article-editor__preview-action"
             href={previewHref}
+            aria-disabled={isLocked ? 'true' : undefined}
+            onClick={(event) => {
+              if (isLocked) {
+                event.preventDefault();
+              }
+            }}
           >
             {labels.preview}
           </a>
-          <button className="editorial-button" type="button" onClick={onSave} disabled={isSaving}>
-            {isSaving ? labels.saving : labels.save}
+          <button className="editorial-button" type="button" onClick={onSave} disabled={isSaving || isLocked}>
+            {isLocked ? labels.saving : labels.save}
           </button>
           <button
             className="editorial-article-editor__exit"
@@ -4284,6 +4333,7 @@ function Toolbar({
             aria-label={labels.backToArticles}
             title={labels.backToArticles}
             data-dirty={hasUnsavedChanges ? 'true' : undefined}
+            disabled={isLocked}
             onClick={handleExitClick}
           >
             ✕
@@ -4419,6 +4469,7 @@ function AutoGrowTextField({
   singleLine = false,
   newlineReplacement = 'space',
   className = '',
+  disabled = false,
 }: {
   id?: string;
   value: string;
@@ -4431,6 +4482,7 @@ function AutoGrowTextField({
   singleLine?: boolean;
   newlineReplacement?: 'space' | 'remove';
   className?: string;
+  disabled?: boolean;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -4460,6 +4512,7 @@ function AutoGrowTextField({
       maxLength={maxLength}
       aria-label={ariaLabel}
       placeholder={placeholder}
+      disabled={disabled}
       onKeyDown={(event) => {
         if (singleLine && event.key === 'Enter') {
           event.preventDefault();
@@ -4482,12 +4535,14 @@ function ArticleSettingsDrawer({
   closeLabel,
   children,
   onClose,
+  disabled = false,
 }: {
   id: string;
   title: string;
   closeLabel: string;
   children: ReactNode;
   onClose: () => void;
+  disabled?: boolean;
 }) {
   if (typeof document === 'undefined') return null;
 
@@ -4523,7 +4578,9 @@ function ArticleSettingsDrawer({
             ×
           </button>
         </div>
-        {children}
+        <fieldset className="editorial-article-editor__drawer-fieldset" disabled={disabled}>
+          {children}
+        </fieldset>
       </aside>
     </div>,
     document.body
@@ -4758,6 +4815,7 @@ function MultiSelect<Value extends string>({
   options,
   onChange,
   removeLabel,
+  disabled = false,
 }: {
   label: string;
   placeholder: string;
@@ -4765,6 +4823,7 @@ function MultiSelect<Value extends string>({
   options: MultiSelectOption<Value>[];
   onChange: (values: Value[]) => void;
   removeLabel: string;
+  disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
@@ -4795,7 +4854,15 @@ function MultiSelect<Value extends string>({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (disabled) {
+      setIsOpen(false);
+    }
+  }, [disabled]);
+
   const selectValue = (value: Value) => {
+    if (disabled) return;
+
     if (!values.includes(value)) {
       onChange([...values, value]);
     }
@@ -4803,6 +4870,8 @@ function MultiSelect<Value extends string>({
   };
 
   const removeValue = (value: Value) => {
+    if (disabled) return;
+
     onChange(values.filter((item) => item !== value));
   };
 
@@ -4814,6 +4883,7 @@ function MultiSelect<Value extends string>({
         aria-label={label}
         aria-expanded={isOpen}
         aria-controls={menuId}
+        disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
       >
         <span>{summary}</span>
@@ -4837,7 +4907,7 @@ function MultiSelect<Value extends string>({
                 className="editorial-multiselect__option"
                 key={option.value}
                 onClick={() => selectValue(option.value)}
-                disabled={isSelected}
+                disabled={disabled || isSelected}
                 aria-selected={isSelected}
                 role="option"
               >
@@ -4856,6 +4926,7 @@ function MultiSelect<Value extends string>({
               className="editorial-multiselect__chip"
               key={option.value}
               onClick={() => removeValue(option.value)}
+              disabled={disabled}
               aria-label={`${removeLabel}: ${option.label}`}
             >
               <span>{option.label}</span>
@@ -4881,6 +4952,7 @@ function RelationPicker({
   currentArticleId,
   multiple = true,
   labels,
+  disabled = false,
 }: {
   label: string;
   kind: RelationKind;
@@ -4890,6 +4962,7 @@ function RelationPicker({
   currentArticleId: string;
   multiple?: boolean;
   labels: Labels;
+  disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -4922,6 +4995,12 @@ function RelationPicker({
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (disabled) {
+      setIsOpen(false);
+    }
+  }, [disabled]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -4968,6 +5047,8 @@ function RelationPicker({
     : labels.relationSearchPlaceholder;
 
   const selectItem = (item: EditableArticleReference) => {
+    if (disabled) return;
+
     if (selectedIds.has(item.id)) {
       setIsOpen(false);
       return;
@@ -4979,6 +5060,8 @@ function RelationPicker({
   };
 
   const removeItem = (id: string) => {
+    if (disabled) return;
+
     onChange(values.filter((value) => value.id !== id));
   };
 
@@ -4990,6 +5073,7 @@ function RelationPicker({
         aria-label={label}
         aria-expanded={isOpen}
         aria-controls={listboxId}
+        disabled={disabled}
         onClick={() => setIsOpen((current) => !current)}
       >
         <span>{summary}</span>
@@ -5004,6 +5088,7 @@ function RelationPicker({
               className="editorial-relation-picker__chip"
               key={value.id}
               onClick={() => removeItem(value.id)}
+              disabled={disabled}
               aria-label={`${labels.relationRemoveValue}: ${value.label}`}
             >
               <span>{value.label}</span>
@@ -5052,7 +5137,7 @@ function RelationPicker({
                   className="editorial-relation-picker__option"
                   key={item.id}
                   onClick={() => selectItem(item)}
-                  disabled={isSelected}
+                  disabled={disabled || isSelected}
                   aria-selected={isSelected}
                   role="option"
                 >
@@ -5073,11 +5158,13 @@ function ReviewStringListEditor({
   values,
   labels,
   onChange,
+  disabled = false,
 }: {
   title: string;
   values: string[];
   labels: Labels;
   onChange: (values: string[]) => void;
+  disabled?: boolean;
 }) {
   const [itemKeys, setItemKeys] = useState(() => values.map(() => createUiKey()));
 
@@ -5086,22 +5173,30 @@ function ReviewStringListEditor({
   }, [values.length]);
 
   const updateItem = (index: number, value: string) => {
+    if (disabled) return;
+
     const nextValues = [...values];
     nextValues[index] = value;
     onChange(nextValues);
   };
 
   const addItem = () => {
+    if (disabled) return;
+
     onChange([...values, '']);
     setItemKeys((current) => [...current, createUiKey()]);
   };
 
   const removeItem = (index: number) => {
+    if (disabled) return;
+
     onChange(values.filter((_, itemIndex) => itemIndex !== index));
     setItemKeys((current) => current.filter((_, itemIndex) => itemIndex !== index));
   };
 
   const moveItem = (index: number, direction: -1 | 1) => {
+    if (disabled) return;
+
     const nextIndex = index + direction;
     if (nextIndex < 0 || nextIndex >= values.length) return;
 
@@ -5117,7 +5212,7 @@ function ReviewStringListEditor({
     <div className="editorial-review-list-editor">
       <div className="editorial-review-list-editor__header">
         <span>{title}</span>
-        <button type="button" className="editorial-mini-button" onClick={addItem}>
+        <button type="button" className="editorial-mini-button" onClick={addItem} disabled={disabled}>
           + {labels.addItem}
         </button>
       </div>
@@ -5132,6 +5227,7 @@ function ReviewStringListEditor({
               rows={2}
               maxRows={4}
               singleLine
+              disabled={disabled}
               onChange={(nextValue) => updateItem(index, nextValue)}
             />
             <div className="editorial-review-list-editor__actions">
@@ -5139,7 +5235,7 @@ function ReviewStringListEditor({
                 type="button"
                 className="editorial-mini-button"
                 onClick={() => moveItem(index, -1)}
-                disabled={index === 0}
+                disabled={disabled || index === 0}
                 aria-label={`${labels.moveUp}: ${title} ${index + 1}`}
                 title={labels.moveUp}
               >
@@ -5149,7 +5245,7 @@ function ReviewStringListEditor({
                 type="button"
                 className="editorial-mini-button"
                 onClick={() => moveItem(index, 1)}
-                disabled={index === values.length - 1}
+                disabled={disabled || index === values.length - 1}
                 aria-label={`${labels.moveDown}: ${title} ${index + 1}`}
                 title={labels.moveDown}
               >
@@ -5159,6 +5255,7 @@ function ReviewStringListEditor({
                 type="button"
                 className="editorial-mini-button editorial-mini-button--danger"
                 onClick={() => removeItem(index)}
+                disabled={disabled}
                 aria-label={`${labels.removeItem}: ${title} ${index + 1}`}
                 title={labels.removeItem}
               >
@@ -5172,13 +5269,14 @@ function ReviewStringListEditor({
   );
 }
 
-export default function ArticlePortableTextEditor({ article, lang, articlesHref, previewHref, saveEndpoint, capabilities: _capabilities, labels }: Props) {
+export default function ArticlePortableTextEditor({ article, lang, articlesHref, previewHref, saveEndpoint, capabilities, labels }: Props) {
   const [draft, setDraft] = useState<EditableArticle>(article);
   const [content, setContent] = useState<PortableTextBlock[]>(article.content || []);
   const savedSnapshotRef = useRef(getEditableArticleSnapshot(article, article.content || []));
   const [status, setStatus] = useState('');
   const [statusTone, setStatusTone] = useState<'success' | 'error' | ''>('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isManualSaveLocked, setIsManualSaveLocked] = useState(false);
   const isSavingRef = useRef(false);
   const lastAutosaveAttemptSignatureRef = useRef('');
   const [selectedFeaturedFile, setSelectedFeaturedFile] = useState<SelectedFeaturedImageFile | null>(null);
@@ -5310,6 +5408,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   }, [isInspectorOpen]);
 
   const updateField = <Field extends keyof EditableArticle>(field: Field, value: EditableArticle[Field]) => {
+    if (isManualSaveLocked) return;
+
     setDraft((current) => ({
       ...current,
       [field]: value,
@@ -5317,6 +5417,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   const applyTypeChange = (nextType: ArticleType) => {
+    if (isManualSaveLocked) return;
+
     setDraft((current) => applyTypeSpecificCleanup(current, nextType));
 
     if (nextType !== 'review') {
@@ -5327,6 +5429,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   const requestTypeChange = (nextType: ArticleType) => {
+    if (isManualSaveLocked) return;
+
     if (nextType === draft.type) return;
 
     const cleanupItems = getTypeChangeCleanupItems(draft, nextType, labels, Boolean(selectedGameCoverFile));
@@ -5350,6 +5454,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   const updateFeaturedImageAlt = (value: string) => {
+    if (isManualSaveLocked) return;
+
     const alt = value.slice(0, 120);
 
     setDraft((current) => ({
@@ -5370,6 +5476,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   const updateGameCoverAlt = (value: string) => {
+    if (isManualSaveLocked) return;
+
     const alt = value.slice(0, 120);
 
     setDraft((current) => ({
@@ -5393,18 +5501,24 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   const clearSelectedFeaturedFile = () => {
+    if (isManualSaveLocked) return;
+
     setSelectedFeaturedFile(null);
     setFeaturedImageStatus('');
     setFeaturedImageStatusTone('');
   };
 
   const clearSelectedGameCoverFile = () => {
+    if (isManualSaveLocked) return;
+
     setSelectedGameCoverFile(null);
     setGameCoverStatus('');
     setGameCoverStatusTone('');
   };
 
   const selectFeaturedFile = async (file: File | null | undefined) => {
+    if (isManualSaveLocked) return;
+
     const error = getFileValidationError(file, labels);
 
     if (error || !file) {
@@ -5426,6 +5540,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   const selectGameCoverFile = async (file: File | null | undefined) => {
+    if (isManualSaveLocked) return;
+
     const error = getFileValidationError(file, labels);
 
     if (error || !file) {
@@ -5556,6 +5672,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   const removeFeaturedImage = async () => {
+    if (isManualSaveLocked) return;
+
     if (isFeaturedImageRemoving || !draft.featuredImage?.asset) return;
 
     if (!window.confirm(labels.featuredImageRemoveConfirm)) return;
@@ -5595,6 +5713,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   const removeGameCover = async () => {
+    if (isManualSaveLocked) return;
+
     if (isGameCoverRemoving || !draft.gameInfo.cover?.asset) return;
 
     if (!window.confirm(labels.gameCoverRemoveConfirm)) return;
@@ -5637,6 +5757,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     field: Field,
     value: EditableArticleGameInfo[Field]
   ) => {
+    if (isManualSaveLocked) return;
+
     setDraft((current) => ({
       ...current,
       gameInfo: {
@@ -5650,6 +5772,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     field: Field,
     value: EditableArticleRating[Field]
   ) => {
+    if (isManualSaveLocked) return;
+
     setDraft((current) => ({
       ...current,
       rating: {
@@ -5663,6 +5787,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     field: Exclude<RelationKind, 'translationOf'>,
     value: EditableArticleReference[]
   ) => {
+    if (isManualSaveLocked) return;
+
     setDraft((current) => ({
       ...current,
       [field]: value,
@@ -5671,6 +5797,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   const updateTranslationOf = (value: EditableArticleReference[]) => {
+    if (isManualSaveLocked) return;
+
     setDraft((current) => ({
       ...current,
       translationOf: value[0] || null,
@@ -5763,10 +5891,12 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     if (isSavingRef.current) return false;
 
     const isAutosave = mode === 'autosave';
+    const isManualSave = mode === 'manual';
 
     isSavingRef.current = true;
     setIsSaving(true);
-    setStatus(isAutosave ? labels.autosaveSaving : '');
+    setIsManualSaveLocked(isManualSave);
+    setStatus(isAutosave ? labels.autosaveSaving : labels.saving);
     setStatusTone('');
 
     try {
@@ -5832,6 +5962,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
+      setIsManualSaveLocked(false);
     }
   };
 
@@ -5875,7 +6006,16 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   return (
-    <div className="editorial-article-editor" data-editorial-article-editor>
+    <div
+      className="editorial-article-editor"
+      data-editorial-article-editor
+      aria-busy={isManualSaveLocked ? 'true' : undefined}
+      data-save-locked={isManualSaveLocked ? 'true' : undefined}
+      data-can-change-author={capabilities.canChangeAuthor ? 'true' : undefined}
+      data-can-edit-monetization={capabilities.canEditMonetization ? 'true' : undefined}
+      data-can-edit-legacy={capabilities.canEditLegacy ? 'true' : undefined}
+      data-can-edit-editor-notes={capabilities.canEditEditorNotes ? 'true' : undefined}
+    >
       <p className="editorial-mobile-editing-notice">{labels.mobileEditingNotice}</p>
 
       <div className="editorial-article-editor__shell">
@@ -5890,6 +6030,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
             <EventListenerPlugin
               on={(event) => {
                 if (event.type === 'mutation') {
+                  if (isManualSaveLocked) return;
+
                   setContent(event.value || []);
                 }
               }}
@@ -5909,16 +6051,19 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
               inspectorId={inspectorId}
               isInspectorOpen={isInspectorOpen}
               isSaving={isSaving}
+              isLocked={isManualSaveLocked}
               hasUnsavedChanges={hasUnsavedChanges}
               onToggleInspector={() => setIsInspectorOpen((value) => !value)}
               onSave={() => saveArticle('manual')}
               onRequestExit={requestExit}
+              capabilities={capabilities}
             />
 
             <label className="editorial-field editorial-field--title">
               <span>{labels.title}</span>
               <input
                 value={draft.title}
+                disabled={isManualSaveLocked}
                 onChange={(event) => updateField('title', event.target.value)}
               />
             </label>
@@ -5928,6 +6073,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
               <textarea
                 value={draft.subtitle}
                 rows={2}
+                disabled={isManualSaveLocked}
                 onChange={(event) => updateField('subtitle', event.target.value)}
               />
             </label>
@@ -5946,6 +6092,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 renderDecorator={renderDecorator}
                 renderListItem={renderListItem}
                 renderStyle={renderStyle}
+                readOnly={isManualSaveLocked}
                 spellCheck
               />
             </section>
@@ -5965,6 +6112,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                 <textarea
                   value={draft.rating.summary}
                   rows={5}
+                  disabled={isManualSaveLocked}
                   onChange={(event) => updateRating('summary', event.target.value)}
                 />
               </label>
@@ -5974,12 +6122,14 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   title={labels.pros}
                   values={draft.pros}
                   labels={labels}
+                  disabled={isManualSaveLocked}
                   onChange={(values) => updateField('pros', values)}
                 />
                 <ReviewStringListEditor
                   title={labels.cons}
                   values={draft.cons}
                   labels={labels}
+                  disabled={isManualSaveLocked}
                   onChange={(values) => updateField('cons', values)}
                 />
               </div>
@@ -5994,6 +6144,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
           title={labels.sidebar}
           closeLabel={labels.closeSettings}
           onClose={() => setIsInspectorOpen(false)}
+          disabled={isManualSaveLocked}
         >
 
           <details className="editorial-inspector-section" open>
@@ -6035,11 +6186,37 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
               />
             </label>
 
-            <div className="editorial-readonly-field">
-              <span>{labels.author}</span>
-              <p>{draft.author?.label || labels.authorMissing}</p>
-              {draft.author?.slug && <code>{draft.author.slug}</code>}
-            </div>
+            {capabilities.canChangeAuthor ? (
+              <div
+                className="editorial-field editorial-field--author"
+                data-capability="change-author"
+              >
+                <span>{labels.author}</span>
+                <div className="editorial-relation-picker editorial-relation-picker--author">
+                  <div
+                    className="editorial-multiselect__trigger"
+                    role="group"
+                    aria-label={labels.author}
+                  >
+                    <span>{draft.author?.label || labels.authorMissing}</span>
+                    <span aria-hidden="true">▾</span>
+                  </div>
+                  {draft.author?.slug && (
+                    <div className="editorial-relation-picker__chips" aria-label={labels.author}>
+                      <span className="editorial-relation-picker__chip">
+                        <span>{draft.author.slug}</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="editorial-readonly-field">
+                <span>{labels.author}</span>
+                <p>{draft.author?.label || labels.authorMissing}</p>
+                {draft.author?.slug && <code>{draft.author.slug}</code>}
+              </div>
+            )}
           </details>
 
           <details className="editorial-inspector-section" open>
@@ -6102,6 +6279,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   language={draft.language}
                   currentArticleId={getRootArticleId(draft._id)}
                   labels={labels}
+                  disabled={isManualSaveLocked}
                 />
               </label>
 
@@ -6115,6 +6293,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   language={draft.language}
                   currentArticleId={getRootArticleId(draft._id)}
                   labels={labels}
+                  disabled={isManualSaveLocked}
                 />
               </label>
 
@@ -6154,6 +6333,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   language={draft.language}
                   currentArticleId={getRootArticleId(draft._id)}
                   labels={labels}
+                  disabled={isManualSaveLocked}
                 />
                 {['review', 'hardware', 'guide'].includes(draft.type) && draft.platforms.length === 0 && (
                   <p className="editorial-file-advice editorial-file-advice--subtle-warning">
@@ -6172,6 +6352,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   language={draft.language}
                   currentArticleId={getRootArticleId(draft._id)}
                   labels={labels}
+                  disabled={isManualSaveLocked}
                 />
                 {draft.type === 'interview' && draft.creators.length === 0 && (
                   <p className="editorial-file-advice editorial-file-advice--subtle-warning">
@@ -6191,6 +6372,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                   currentArticleId={getRootArticleId(draft._id)}
                   multiple={false}
                   labels={labels}
+                  disabled={isManualSaveLocked}
                 />
               </label>
 
@@ -6205,6 +6387,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                     language={draft.language}
                     currentArticleId={getRootArticleId(draft._id)}
                     labels={labels}
+                    disabled={isManualSaveLocked}
                   />
                   {draft.type === 'hardware' && draft.manufacturer.length === 0 && (
                     <p className="editorial-file-advice editorial-file-advice--subtle-warning">
@@ -6228,6 +6411,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       language={draft.language}
                       currentArticleId={getRootArticleId(draft._id)}
                       labels={labels}
+                      disabled={isManualSaveLocked}
                     />
                   </label>
 
@@ -6241,6 +6425,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       language={draft.language}
                       currentArticleId={getRootArticleId(draft._id)}
                       labels={labels}
+                      disabled={isManualSaveLocked}
                     />
                     {draft.type === 'review' && draft.developers.length === 0 && (
                       <p className="editorial-file-advice editorial-file-advice--subtle-warning">
@@ -6259,6 +6444,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       language={draft.language}
                       currentArticleId={getRootArticleId(draft._id)}
                       labels={labels}
+                      disabled={isManualSaveLocked}
                     />
                     {draft.type === 'review' && draft.publishers.length === 0 && (
                       <p className="editorial-file-advice editorial-file-advice--subtle-warning">
@@ -6277,6 +6463,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       language={draft.language}
                       currentArticleId={getRootArticleId(draft._id)}
                       labels={labels}
+                      disabled={isManualSaveLocked}
                     />
                   </label>
 
@@ -6290,6 +6477,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       language={draft.language}
                       currentArticleId={getRootArticleId(draft._id)}
                       labels={labels}
+                      disabled={isManualSaveLocked}
                     />
                   </label>
                 </div>
@@ -6370,12 +6558,14 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       data-drag-active={isFeaturedImageDragActive ? 'true' : 'false'}
                       onDragOver={(event) => {
                         event.preventDefault();
+                        if (isManualSaveLocked) return;
                         setIsFeaturedImageDragActive(true);
                       }}
                       onDragLeave={() => setIsFeaturedImageDragActive(false)}
                       onDrop={(event) => {
                         event.preventDefault();
                         setIsFeaturedImageDragActive(false);
+                        if (isManualSaveLocked) return;
                         selectFeaturedFile(event.dataTransfer.files?.[0]);
                       }}
                     >
@@ -6387,6 +6577,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                         key={selectedFeaturedFile?.previewUrl || 'featured-image-input'}
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
+                        disabled={isManualSaveLocked}
                         onChange={(event) => selectFeaturedFile(event.target.files?.[0])}
                       />
                     </label>
@@ -6401,7 +6592,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       type="button"
                       className="editorial-mini-button"
                       onClick={clearSelectedFeaturedFile}
-                      disabled={isFeaturedImageUploading || isFeaturedImageRemoving}
+                      disabled={isManualSaveLocked || isFeaturedImageUploading || isFeaturedImageRemoving}
                     >
                       {labels.featuredImageCancelSelection}
                     </button>
@@ -6412,7 +6603,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                       type="button"
                       className="editorial-mini-button editorial-mini-button--danger"
                       onClick={removeFeaturedImage}
-                      disabled={isFeaturedImageUploading || isFeaturedImageRemoving}
+                      disabled={isManualSaveLocked || isFeaturedImageUploading || isFeaturedImageRemoving}
                     >
                       {isFeaturedImageRemoving ? labels.featuredImageRemoving : labels.featuredImageRemove}
                     </button>
@@ -6515,12 +6706,14 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                               data-drag-active={isGameCoverDragActive ? 'true' : 'false'}
                               onDragOver={(event) => {
                                 event.preventDefault();
+                                if (isManualSaveLocked) return;
                                 setIsGameCoverDragActive(true);
                               }}
                               onDragLeave={() => setIsGameCoverDragActive(false)}
                               onDrop={(event) => {
                                 event.preventDefault();
                                 setIsGameCoverDragActive(false);
+                                if (isManualSaveLocked) return;
                                 selectGameCoverFile(event.dataTransfer.files?.[0]);
                               }}
                             >
@@ -6532,6 +6725,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                                 key={selectedGameCoverFile?.previewUrl || 'game-cover-input'}
                                 type="file"
                                 accept="image/jpeg,image/png,image/webp"
+                                disabled={isManualSaveLocked}
                                 onChange={(event) => selectGameCoverFile(event.target.files?.[0])}
                               />
                             </label>
@@ -6546,7 +6740,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                               type="button"
                               className="editorial-mini-button"
                               onClick={clearSelectedGameCoverFile}
-                              disabled={isGameCoverUploading || isGameCoverRemoving}
+                              disabled={isManualSaveLocked || isGameCoverUploading || isGameCoverRemoving}
                             >
                               {labels.gameCoverCancelSelection}
                             </button>
@@ -6557,7 +6751,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                               type="button"
                               className="editorial-mini-button editorial-mini-button--danger"
                               onClick={removeGameCover}
-                              disabled={isGameCoverUploading || isGameCoverRemoving}
+                              disabled={isManualSaveLocked || isGameCoverUploading || isGameCoverRemoving}
                             >
                               {isGameCoverRemoving ? labels.gameCoverRemoving : labels.gameCoverRemove}
                             </button>
@@ -6599,6 +6793,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
                     values={draft.gameInfo.mediaFormat}
                     options={mediaFormatSelectOptions}
                     removeLabel={labels.multiSelectRemoveValue}
+                    disabled={isManualSaveLocked}
                     onChange={(values) => updateGameInfo('mediaFormat', values)}
                   />
                 </div>
