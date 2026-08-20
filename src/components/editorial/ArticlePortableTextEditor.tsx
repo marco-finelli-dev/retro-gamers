@@ -341,6 +341,9 @@ type Labels = {
   save: string;
   saving: string;
   saved: string;
+  autosaveSaving: string;
+  autosaveSaved: string;
+  autosaveError: string;
   conflict: string;
   genericError: string;
   manualSave: string;
@@ -3440,6 +3443,9 @@ function AsideBoxModal({
 }
 
 type ToolbarMenu = 'structure' | 'text' | 'link' | 'insert';
+type SaveMode = 'manual' | 'autosave';
+
+const AUTOSAVE_IDLE_DELAY_MS = 12000;
 
 function getEditableArticleSnapshot(articleDraft: EditableArticle, contentValue: PortableTextBlock[]) {
   return JSON.stringify({
@@ -5040,6 +5046,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   const [status, setStatus] = useState('');
   const [statusTone, setStatusTone] = useState<'success' | 'error' | ''>('');
   const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
+  const lastAutosaveAttemptSignatureRef = useRef('');
   const [selectedFeaturedFile, setSelectedFeaturedFile] = useState<SelectedFeaturedImageFile | null>(null);
   const [featuredImageStatus, setFeaturedImageStatus] = useState('');
   const [featuredImageStatusTone, setFeaturedImageStatusTone] = useState<'success' | 'error' | ''>('');
@@ -5534,6 +5542,23 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     Boolean(selectedFeaturedFile) ||
     hasPendingGameCoverFile ||
     currentSnapshot !== savedSnapshotRef.current;
+  const autosaveSignature = useMemo(() => JSON.stringify({
+    currentSnapshot,
+    selectedFeaturedFile: selectedFeaturedFile
+      ? {
+          name: selectedFeaturedFile.file.name,
+          size: selectedFeaturedFile.file.size,
+          lastModified: selectedFeaturedFile.file.lastModified,
+        }
+      : null,
+    selectedGameCoverFile: hasPendingGameCoverFile && selectedGameCoverFile
+      ? {
+          name: selectedGameCoverFile.file.name,
+          size: selectedGameCoverFile.file.size,
+          lastModified: selectedGameCoverFile.file.lastModified,
+        }
+      : null,
+  }), [currentSnapshot, hasPendingGameCoverFile, selectedFeaturedFile, selectedGameCoverFile]);
 
   const getArticleSavePayload = (articleDraft: EditableArticle) => ({
     _rev: articleDraft._rev,
@@ -5567,11 +5592,14 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
     content,
   });
 
-  const saveArticle = async () => {
-    if (isSaving) return false;
+  const saveArticle = async (mode: SaveMode = 'manual') => {
+    if (isSavingRef.current) return false;
 
+    const isAutosave = mode === 'autosave';
+
+    isSavingRef.current = true;
     setIsSaving(true);
-    setStatus('');
+    setStatus(isAutosave ? labels.autosaveSaving : '');
     setStatusTone('');
 
     try {
@@ -5622,7 +5650,8 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
       setDraft(result.article);
       setContent(savedContent);
       savedSnapshotRef.current = getEditableArticleSnapshot(result.article, savedContent);
-      setStatus(labels.saved);
+      lastAutosaveAttemptSignatureRef.current = '';
+      setStatus(isAutosave ? labels.autosaveSaved : labels.saved);
       setStatusTone('success');
       return true;
     } catch (error) {
@@ -5630,13 +5659,32 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
         ? labels.conflict
         : labels.genericError;
 
-      setStatus(message);
+      setStatus(isAutosave ? labels.autosaveError : message);
       setStatusTone('error');
       return false;
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) {
+      lastAutosaveAttemptSignatureRef.current = '';
+      return undefined;
+    }
+
+    if (isSaving || lastAutosaveAttemptSignatureRef.current === autosaveSignature) {
+      return undefined;
+    }
+
+    const timerId = window.setTimeout(() => {
+      lastAutosaveAttemptSignatureRef.current = autosaveSignature;
+      void saveArticle('autosave');
+    }, AUTOSAVE_IDLE_DELAY_MS);
+
+    return () => window.clearTimeout(timerId);
+  }, [autosaveSignature, hasUnsavedChanges, isSaving]);
 
   const requestExit = () => {
     if (hasUnsavedChanges) {
@@ -5648,7 +5696,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
   };
 
   const saveAndExit = async () => {
-    const saved = await saveArticle();
+    const saved = await saveArticle('manual');
 
     if (saved) {
       window.location.assign(articlesHref);
@@ -5696,7 +5744,7 @@ export default function ArticlePortableTextEditor({ article, lang, articlesHref,
               isSaving={isSaving}
               hasUnsavedChanges={hasUnsavedChanges}
               onToggleInspector={() => setIsInspectorOpen((value) => !value)}
-              onSave={saveArticle}
+              onSave={() => saveArticle('manual')}
               onRequestExit={requestExit}
             />
 
