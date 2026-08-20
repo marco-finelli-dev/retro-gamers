@@ -421,6 +421,7 @@ type Labels = {
   bodyImageUploading: string;
   bodyImageUploadFailed: string;
   bodyImageMissingFile: string;
+  bodyImageInvalidType: string;
   bodyImageCancelSelection: string;
   bodyImageNoPreview: string;
   bodyImageRemoveConfirm: string;
@@ -481,6 +482,7 @@ const ratingFields: RatingField[] = ['grafica', 'sonoro', 'giocabilita', 'longev
 const ratingSelectValues = Array.from({ length: 19 }, (_, index) => 1 + index * 0.5);
 const releaseYearSelectValues = Array.from({ length: 91 }, (_, index) => 2050 - index);
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const allowedBodyImageMimeTypes = new Set([...allowedFeaturedImageMimeTypes, 'image/gif']);
 const featuredImageMaxFileSize = 5 * 1024 * 1024;
 const imageDisplayModes: ImageDisplayMode[] = ['cover', 'contain', 'wide', 'natural'];
 const imageRowLayouts: ImageRowLayout[] = ['standard', 'uniformHeight'];
@@ -729,6 +731,51 @@ function getVideoDomain(url: string) {
   } catch {
     return '';
   }
+}
+
+function normalizeYouTubeVideoId(value: string) {
+  const videoId = value.trim().split(/[/?#&]/)[0] || '';
+
+  return /^[a-zA-Z0-9_-]{6,}$/.test(videoId) ? videoId : '';
+}
+
+function getYouTubeVideoId(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname.replace(/^www\./, '').replace(/^m\./, '');
+    const segments = parsedUrl.pathname.split('/').filter(Boolean);
+
+    if (hostname === 'youtu.be') {
+      return normalizeYouTubeVideoId(segments[0] || '');
+    }
+
+    if (
+      hostname === 'youtube.com' ||
+      hostname.endsWith('.youtube.com') ||
+      hostname === 'youtube-nocookie.com' ||
+      hostname.endsWith('.youtube-nocookie.com')
+    ) {
+      const watchId = parsedUrl.searchParams.get('v');
+
+      if (watchId) {
+        return normalizeYouTubeVideoId(watchId);
+      }
+
+      if (['embed', 'shorts', 'live', 'v'].includes(segments[0] || '')) {
+        return normalizeYouTubeVideoId(segments[1] || '');
+      }
+    }
+  } catch {
+    return '';
+  }
+
+  return '';
+}
+
+function getYouTubeThumbnailUrl(url: string) {
+  const videoId = getYouTubeVideoId(url);
+
+  return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '';
 }
 
 function createVideoBlockValue({ url, title }: { url: string; title: string }) {
@@ -1469,6 +1516,9 @@ function VideoObjectBlock({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const url = typeof video.url === 'string' ? video.url.trim() : '';
   const domain = getVideoDomain(url);
+  const thumbnailUrl = getYouTubeThumbnailUrl(url);
+  const videoTitle = typeof video.title === 'string' ? video.title.trim() : '';
+  const previewTitle = videoTitle || domain || labels.videoPreview;
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -1581,16 +1631,23 @@ function VideoObjectBlock({
         </MediaBlockHeader>
 
         <article
-          className="editorial-pte__video-card"
+          className={`editorial-pte__video-card${thumbnailUrl ? ' editorial-pte__video-card--with-thumbnail' : ''}`}
           draggable={!readOnly}
           title={labels.bodyImageDragHandle}
           onMouseDown={selectVideoBlock}
           onDragStart={startVideoDrag}
         >
-          <span className="editorial-pte__video-icon" aria-hidden="true">▶️</span>
+          {thumbnailUrl ? (
+            <span className="editorial-pte__video-thumbnail" aria-hidden="true">
+              <img src={thumbnailUrl} alt="" loading="lazy" decoding="async" draggable={false} />
+              <span className="editorial-pte__video-play" aria-hidden="true">▶</span>
+            </span>
+          ) : (
+            <span className="editorial-pte__video-icon" aria-hidden="true">▶️</span>
+          )}
           <div className="editorial-pte__video-copy">
             <span className="editorial-pte__video-kicker">{labels.videoPreview}</span>
-            <strong>{domain || labels.videoPreview}</strong>
+            <strong>{previewTitle}</strong>
             {url && <span className="editorial-pte__video-url">{domain ? `${domain} · ${url}` : url}</span>}
           </div>
         </article>
@@ -2238,8 +2295,8 @@ type SelectedBodyImageFile = {
 function getBodyImageFileValidationError(file: File | null | undefined, labels: Labels) {
   if (!file) return labels.bodyImageMissingFile;
 
-  if (!allowedFeaturedImageMimeTypes.has(file.type)) {
-    return labels.featuredImageInvalidType;
+  if (!allowedBodyImageMimeTypes.has(file.type)) {
+    return labels.bodyImageInvalidType;
   }
 
   if (file.size <= 0 || file.size > featuredImageMaxFileSize) {
@@ -2447,7 +2504,7 @@ function BodyImageModal({
             ref={fileInputRef}
             id={fileInputId}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             onChange={(event) => void selectFile(event.currentTarget.files?.[0])}
           />
         </label>
@@ -2873,7 +2930,7 @@ function ImageRowModal({
             ref={fileInputRef}
             id={fileInputId}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             multiple
             onChange={(event) => void addFiles(event.currentTarget.files)}
           />
@@ -2990,7 +3047,7 @@ function ImageRowModal({
                         <input
                           id={replaceFieldId}
                           type="file"
-                          accept="image/jpeg,image/png,image/webp"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
                           disabled={isUploading}
                           onChange={(event) => {
                             void replaceItemFile(index, event.currentTarget.files?.[0]);

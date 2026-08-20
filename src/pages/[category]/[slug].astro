@@ -345,7 +345,7 @@ const post = await articleDetailClient.fetch(`
   caption,
   displayMode,
   isWide,
-  asset->{ url }
+  asset->{ url, mimeType, extension, originalFilename }
 },
 
 _type == "imageRow" => {
@@ -358,7 +358,7 @@ _type == "imageRow" => {
     caption,
     displayMode,
     image{
-      asset->{ url }
+      asset->{ url, mimeType, extension, originalFilename }
     }
   }
 },
@@ -438,7 +438,7 @@ _type == "imageRow" => {
   caption,
   displayMode,
   isWide,
-  asset->{ url }
+  asset->{ url, mimeType, extension, originalFilename }
 },
 
 _type == "imageRow" => {
@@ -451,7 +451,7 @@ _type == "imageRow" => {
     caption,
     displayMode,
     image{
-      asset->{ url }
+      asset->{ url, mimeType, extension, originalFilename }
     }
   }
 }

@@ -120,8 +120,25 @@ function getAffiliateAnalyticsAttributes(url = '') {
   return ` ${attributes.join(' ')}`;
 }
 
+function isGifImage(image) {
+  const asset = image?.asset || {};
+  const mimeType = String(asset.mimeType || '').toLowerCase();
+  const extension = String(asset.extension || '').toLowerCase();
+  const originalFilename = String(asset.originalFilename || '').toLowerCase();
+  const url = String(asset.url || '').toLowerCase();
+
+  return mimeType === 'image/gif'
+    || extension === 'gif'
+    || originalFilename.endsWith('.gif')
+    || /\.gif(?:$|\?)/.test(url);
+}
+
 function getImageUrl(image, width = 980, height = null, fit = null) {
   if (!image?.asset) return '';
+
+  if (isGifImage(image)) {
+    return image.asset.url || '';
+  }
 
   let builder = urlFor(image)
     .width(width)
@@ -180,6 +197,10 @@ function getSingleImageHeight(displayMode = 'cover') {
 
 function getGalleryImageUrl(image, displayMode = 'cover') {
   if (!image?.asset) return '';
+
+  if (isGifImage(image)) {
+    return image.asset.url || '';
+  }
 
   if (displayMode === 'contain' || displayMode === 'natural') {
     return urlFor(image)

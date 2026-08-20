@@ -285,7 +285,7 @@ const editorialArticleReferenceKindConfig: Record<
 };
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const featuredImageMaxFileSize = 5 * 1024 * 1024;
-const allowedBodyImageMimeTypes = allowedFeaturedImageMimeTypes;
+const allowedBodyImageMimeTypes = new Set([...allowedFeaturedImageMimeTypes, 'image/gif']);
 const bodyImageMaxFileSize = featuredImageMaxFileSize;
 const validPageLinkPaths = new Set([
   '/',
@@ -2579,7 +2579,9 @@ function getSafeBodyImageFilename(file: File) {
     ? 'png'
     : file.type === 'image/webp'
       ? 'webp'
-      : 'jpg';
+      : file.type === 'image/gif'
+        ? 'gif'
+        : 'jpg';
 
   return `editorial-article-body-${Date.now()}.${extension}`;
 }
