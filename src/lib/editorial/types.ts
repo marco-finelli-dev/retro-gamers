@@ -40,6 +40,7 @@ export type EditorialWorkflowTransitionPermissions = {
   canSubmit: boolean;
   canRequestChanges: boolean;
   canApprove: boolean;
+  canPublish: boolean;
 };
 
 export type EditorialPermissionSet = {

@@ -81,6 +81,10 @@ const previewableReviewWorkflowStatuses = new Set<EditorialWorkflowStatus>([
   'approved',
 ]);
 
+const publishableWorkflowStatuses = new Set<EditorialWorkflowStatus>([
+  'approved',
+]);
+
 function clonePermissions(permissions: EditorialPermissionSet): EditorialPermissionSet {
   return { ...permissions };
 }
@@ -306,6 +310,16 @@ export function canApproveWorkflowArticle(
   );
 }
 
+export function canPublishWorkflowArticle(
+  context: Pick<EditorialSessionContext, 'permissions'>,
+  ownership: Pick<EditorialDocumentOwnership, 'workflowStatus'> | null | undefined
+) {
+  return (
+    context.permissions.canPublishArticle &&
+    Boolean(ownership?.workflowStatus && publishableWorkflowStatuses.has(ownership.workflowStatus))
+  );
+}
+
 export function getWorkflowTransitionPermissions(
   context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
   ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
@@ -314,5 +328,6 @@ export function getWorkflowTransitionPermissions(
     canSubmit: canSubmitWorkflowArticle(context, ownership),
     canRequestChanges: canRequestWorkflowChanges(context, ownership),
     canApprove: canApproveWorkflowArticle(context, ownership),
+    canPublish: canPublishWorkflowArticle(context, ownership),
   };
 }
