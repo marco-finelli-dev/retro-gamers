@@ -3916,6 +3916,7 @@ function Toolbar({
   const [contextualToolbarPosition, setContextualToolbarPosition] = useState<{
     top: number;
     left: number;
+    placement: 'above' | 'below';
   } | null>(null);
   const canUseContextualToolbar = Boolean(
     selection &&
@@ -3984,22 +3985,43 @@ function Toolbar({
       return;
     }
 
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
     const toolbarWidth = contextualToolbarRef.current?.offsetWidth || 230;
     const toolbarHeight = contextualToolbarRef.current?.offsetHeight || 42;
     const viewportMargin = 12;
-    const placeAbove = targetRect.top >= toolbarHeight + viewportMargin + 8;
-    const rawTop = placeAbove ? targetRect.top - toolbarHeight - 8 : targetRect.bottom + 8;
-    const top = Math.min(
-      Math.max(viewportMargin, rawTop),
-      Math.max(viewportMargin, window.innerHeight - toolbarHeight - viewportMargin)
-    );
+    const selectionGap = 8;
+    const modalPanel = toolbarRef.current?.closest('.editorial-pte-modal__panel');
+    const modalRect = modalPanel instanceof HTMLElement ? modalPanel.getBoundingClientRect() : null;
+    const viewportBounds = {
+      top: viewportMargin,
+      right: window.innerWidth - viewportMargin,
+      bottom: window.innerHeight - viewportMargin,
+      left: viewportMargin,
+    };
+    const bounds = modalRect
+      ? {
+        top: Math.max(viewportBounds.top, modalRect.top + viewportMargin),
+        right: Math.min(viewportBounds.right, modalRect.right - viewportMargin),
+        bottom: Math.min(viewportBounds.bottom, modalRect.bottom - viewportMargin),
+        left: Math.max(viewportBounds.left, modalRect.left + viewportMargin),
+      }
+      : viewportBounds;
+    const availableWidth = Math.max(0, bounds.right - bounds.left);
+    const availableHeight = Math.max(0, bounds.bottom - bounds.top);
+    const horizontalInset = Math.min(toolbarWidth / 2, availableWidth / 2);
+    const minLeft = bounds.left + horizontalInset;
+    const maxLeft = Math.max(minLeft, bounds.right - horizontalInset);
+    const maxTop = Math.max(bounds.top, bounds.top + availableHeight - toolbarHeight);
+    const spaceAbove = targetRect.top - bounds.top;
+    const spaceBelow = bounds.bottom - targetRect.bottom;
+    const requiredVerticalSpace = toolbarHeight + selectionGap;
+    const placeAbove = spaceBelow < requiredVerticalSpace && spaceAbove >= spaceBelow;
+    const rawTop = placeAbove ? targetRect.top - toolbarHeight - selectionGap : targetRect.bottom + selectionGap;
+    const top = clamp(rawTop, bounds.top, maxTop);
     const selectionCenter = targetRect.left + targetRect.width / 2;
-    const left = Math.min(
-      Math.max(viewportMargin + toolbarWidth / 2, selectionCenter),
-      Math.max(viewportMargin + toolbarWidth / 2, window.innerWidth - toolbarWidth / 2 - viewportMargin)
-    );
+    const left = clamp(selectionCenter, minLeft, maxLeft);
 
-    setContextualToolbarPosition({ top, left });
+    setContextualToolbarPosition({ top, left, placement: placeAbove ? 'above' : 'below' });
   }, [canUseContextualToolbar]);
 
   useEffect(() => {
@@ -4716,6 +4738,7 @@ function Toolbar({
         <div
           ref={contextualToolbarRef}
           className="editorial-pte-context-toolbar"
+          data-placement={contextualToolbarPosition.placement}
           style={{
             top: `${contextualToolbarPosition.top}px`,
             left: `${contextualToolbarPosition.left}px`,
