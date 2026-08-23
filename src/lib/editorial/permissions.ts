@@ -290,6 +290,12 @@ export function canPublishArticle(context: Pick<EditorialSessionContext, 'permis
   return context.permissions.canPublishArticle;
 }
 
+export function canCreateRevisionDraft(
+  context: Pick<EditorialSessionContext, 'editorialRole' | 'permissions'>
+) {
+  return context.editorialRole === 'editorial_admin' && context.permissions.canPublishArticle;
+}
+
 export function canChangeArticleAuthor(context: Pick<EditorialSessionContext, 'permissions'>) {
   return context.permissions.canPublishArticle;
 }

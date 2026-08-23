@@ -3,6 +3,7 @@ import { getSanityRawClient, getSanityWriteClient } from '../sanity-write.server
 import { supabaseAdmin } from '../supabase/server';
 import {
   canChangeArticleAuthor,
+  canCreateRevisionDraft,
   canPreviewEditorialArticle,
   canCreateArticle,
   canEditOwnArticle,
@@ -2558,7 +2559,12 @@ export async function fetchEditableEditorialArticle({
     return { ok: false as const, status: 403, error: 'article_forbidden' };
   }
 
-  if (!canEditOwnArticle(context, ownership)) {
+  const canEditPublishedRevisionDraft = (
+    ownership.workflowStatus === 'published' &&
+    canCreateRevisionDraft(context)
+  );
+
+  if (!canEditOwnArticle(context, ownership) && !canEditPublishedRevisionDraft) {
     const workflowLockedError: Record<EditorialWorkflowStatus, string> = {
       draft: 'article_not_editable',
       submitted: 'article_submitted_locked',
@@ -2577,6 +2583,16 @@ export async function fetchEditableEditorialArticle({
 
   try {
     const resolved = await fetchSanityArticleDocumentPair(sanityDocumentId);
+
+    if (canEditPublishedRevisionDraft && resolved.lifecycle !== 'revision_draft') {
+      return {
+        ok: false as const,
+        status: 409,
+        error: 'article_published_locked',
+        workflowStatus: ownership.workflowStatus,
+        documentLifecycle: resolved.lifecycle,
+      };
+    }
 
     if (!resolved.document || !resolved.documentSource) {
       return {
@@ -2906,6 +2922,134 @@ async function createDraftFromPublishedArticle({
   );
 
   return getSanityWriteClient().create<Record<string, unknown>>(draftDocument);
+}
+
+export async function createRevisionDraftFromPublishedArticle({
+  context,
+  rootDocumentId,
+}: {
+  context: EditableEditorialContext;
+  rootDocumentId: unknown;
+}) {
+  if (!canCreateRevisionDraft(context)) {
+    return { ok: false as const, status: 403, error: 'revision_draft_forbidden' };
+  }
+
+  const sanityDocumentId = normalizeEditableArticleRootDocumentId(rootDocumentId);
+
+  if (!sanityDocumentId) {
+    return { ok: false as const, status: 400, error: 'invalid_article_id' };
+  }
+
+  const ownershipResult = await fetchOwnership(sanityDocumentId);
+  if (!ownershipResult.ok) return ownershipResult;
+
+  const ownership = ownershipResult.ownership;
+
+  if (!ownership) {
+    return { ok: false as const, status: 404, error: 'article_not_found' };
+  }
+
+  if (!isDocumentOwnedByContext(context, ownership)) {
+    return { ok: false as const, status: 403, error: 'article_forbidden' };
+  }
+
+  if (ownership.workflowStatus !== 'published') {
+    return {
+      ok: false as const,
+      status: 409,
+      error: 'revision_requires_published_article',
+      workflowStatus: ownership.workflowStatus,
+    };
+  }
+
+  try {
+    const resolved = await fetchSanityArticleDocumentPair(ownership.sanityDocumentId);
+
+    if (resolved.draftDocument) {
+      return {
+        ok: false as const,
+        status: 409,
+        error: 'revision_draft_exists',
+        documentLifecycle: resolved.lifecycle,
+      };
+    }
+
+    if (!resolved.publishedDocument) {
+      return {
+        ok: false as const,
+        status: 404,
+        error: 'sanity_document_missing',
+        documentLifecycle: resolved.lifecycle,
+      };
+    }
+
+    const publishedArticle = normalizeDraftArticle(resolved.publishedDocument, null, {
+      rootDocumentId: ownership.sanityDocumentId,
+      documentSource: 'published',
+      documentLifecycle: 'published',
+    });
+
+    if (!publishedArticle) {
+      return { ok: false as const, status: 422, error: 'malformed_article' };
+    }
+
+    const authorConflict = getAuthorConflictResult({
+      ownership,
+      article: publishedArticle,
+      documentLifecycle: 'published',
+    });
+
+    if (!authorConflict.ok) {
+      return authorConflict;
+    }
+
+    const draftDocument = await createDraftFromPublishedArticle({
+      rootDocumentId: ownership.sanityDocumentId,
+      revisionId: publishedArticle._rev,
+      patch: {
+        set: {},
+        unset: [],
+      },
+    });
+
+    const draftArticle = normalizeDraftArticle(draftDocument, null, {
+      rootDocumentId: ownership.sanityDocumentId,
+      documentSource: 'draft',
+      documentLifecycle: 'revision_draft',
+    });
+
+    if (!draftArticle || draftArticle.authorId !== ownership.sanityAuthorId) {
+      return { ok: false as const, status: 502, error: 'sanity_article_invalid' };
+    }
+
+    const auditLogged = await recordArticleAudit({
+      actorUserId: context.user.id,
+      action: 'article_saved',
+      sanityDocumentId: ownership.sanityDocumentId,
+      previousWorkflowStatus: ownership.workflowStatus,
+      nextWorkflowStatus: ownership.workflowStatus,
+      metadata: {
+        revisionDraftCreated: true,
+      },
+    });
+
+    return {
+      ok: true as const,
+      sanityDocumentId: ownership.sanityDocumentId,
+      draftDocumentId: getDraftDocumentId(ownership.sanityDocumentId),
+      documentLifecycle: 'revision_draft' as const,
+      language: draftArticle.language,
+      auditLogged,
+    };
+  } catch (error) {
+    if (isRevisionConflict(error)) {
+      return { ok: false as const, status: 409, error: 'revision_conflict' };
+    }
+
+    logApiError('editorial-article.revision-draft.create', error);
+    return { ok: false as const, status: 500, error: 'revision_draft_create_failed' };
+  }
 }
 
 function isRevisionConflict(error: unknown) {
