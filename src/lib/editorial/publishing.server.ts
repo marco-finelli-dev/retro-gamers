@@ -2,7 +2,12 @@ import { logApiError } from '../api-errors';
 import { getSanityDocumentActionsClient, getSanityRawClient, getSanityWriteClient } from '../sanity-write.server';
 import { supabaseAdmin } from '../supabase/server';
 import { validateArticleForWorkflow } from './article-workflow-validation.server';
-import { canPublishArticle, canPublishWorkflowArticle, getWorkflowTransitionPermissions } from './permissions';
+import {
+  canPublishArticle,
+  canPublishArticleRevision,
+  canPublishWorkflowArticle,
+  getWorkflowTransitionPermissions,
+} from './permissions';
 import {
   isEditorialWorkflowStatus,
   normalizeSanityRootDocumentId,
@@ -231,11 +236,13 @@ async function recordPublishAudit({
   sanityDocumentId,
   previousWorkflowStatus,
   nextWorkflowStatus,
+  metadata = {},
 }: {
   actorUserId: string;
   sanityDocumentId: string;
   previousWorkflowStatus: EditorialWorkflowStatus;
   nextWorkflowStatus: EditorialWorkflowStatus;
+  metadata?: Record<string, unknown>;
 }) {
   const { error } = await supabaseAdmin
     .from('editorial_audit_log')
@@ -245,7 +252,7 @@ async function recordPublishAudit({
       sanity_document_id: sanityDocumentId,
       previous_workflow_status: previousWorkflowStatus,
       next_workflow_status: nextWorkflowStatus,
-      metadata: {},
+      metadata,
     });
 
   if (error) {
@@ -359,6 +366,96 @@ export async function publishApprovedEditorialArticle({
         auditLogged: false,
         reconciled: false,
         alreadyPublished: true,
+      };
+    }
+
+    if (sanityAlreadyPublished && pair.draftDocument && pair.publishedDocument) {
+      if (!canPublishArticleRevision(context)) {
+        return publishFailure(403, 'article_publish_forbidden', 'permission');
+      }
+
+      const validation = validatePublishableDraft(pair.draftDocument, ownership);
+      if (!validation.ok) return validation;
+
+      if (getReferenceId(pair.publishedDocument.author) !== ownership.sanityAuthorId) {
+        return publishFailure(409, 'author_ownership_conflict', 'sanity_preflight');
+      }
+
+      if (!pair.publishedDocument._rev) {
+        return publishFailure(422, 'publish_revision_missing', 'sanity_preflight');
+      }
+
+      const timestamp = new Date().toISOString();
+      const publishFieldPatch = getPublishFieldPatch({
+        draftDocument: pair.draftDocument,
+        publishedDocument: pair.publishedDocument,
+        timestamp,
+      });
+
+      if (!publishFieldPatch.ok) return publishFieldPatch;
+
+      let preparedDraft: SanityArticleDocument;
+
+      try {
+        preparedDraft = await getSanityWriteClient()
+          .patch(pair.draftDocumentId)
+          .ifRevisionId(pair.draftDocument._rev || '')
+          .set(publishFieldPatch.set)
+          .commit<SanityArticleDocument>({ visibility: 'sync' });
+      } catch (error) {
+        logApiError('editorial-publish.prepare-revision-draft', error);
+        return publishFailure(409, 'publish_revision_conflict', 'sanity_prepare_draft');
+      }
+
+      try {
+        await getSanityDocumentActionsClient().action({
+          actionType: 'sanity.action.document.publish',
+          draftId: pair.draftDocumentId,
+          ifDraftRevisionId: preparedDraft._rev,
+          publishedId: ownership.sanityDocumentId,
+          ifPublishedRevisionId: pair.publishedDocument._rev,
+        });
+      } catch (error) {
+        logApiError('editorial-publish.sanity-revision-action', error);
+        console.error('editorial-publish.sanity-revision-action', error);
+        return publishFailure(502, 'sanity_publish_failed', 'sanity_publish');
+      }
+
+      const readBack = await fetchSanityArticlePair(ownership.sanityDocumentId);
+      const readBackPublished = isSanityDocumentPubliclyPublished({
+        publishedDocument: readBack.publishedDocument,
+        ownership,
+      });
+      const publishedRevisionChanged = Boolean(
+        readBack.publishedDocument?._rev &&
+          readBack.publishedDocument._rev !== pair.publishedDocument._rev
+      );
+
+      if (!readBackPublished || readBack.draftDocument || !publishedRevisionChanged) {
+        logApiError('editorial-publish.revision-readback', new Error('publish_readback_failed'));
+        return publishFailure(502, 'publish_readback_failed', 'sanity_readback');
+      }
+
+      const auditLogged = await recordPublishAudit({
+        actorUserId: context.user.id,
+        sanityDocumentId: ownership.sanityDocumentId,
+        previousWorkflowStatus: ownership.workflowStatus,
+        nextWorkflowStatus: ownership.workflowStatus,
+        metadata: { revisionPublished: true },
+      });
+
+      return {
+        ok: true as const,
+        workflow: {
+          workflowStatus: ownership.workflowStatus,
+          submittedAt: ownership.submittedAt,
+          reviewedBy: ownership.reviewedBy,
+          reviewedAt: ownership.reviewedAt,
+        },
+        permissions: getWorkflowTransitionPermissions(context, ownership),
+        auditLogged,
+        reconciled: false,
+        revisionPublished: true,
       };
     }
 

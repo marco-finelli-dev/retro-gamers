@@ -64,6 +64,7 @@ export type EditorialArticleCapabilities = {
   canChangeType: boolean;
   canEditWorkflow: boolean;
   canPublish: boolean;
+  canPublishArticleRevision: boolean;
   canUnpublish: boolean;
   canChangeAuthor: boolean;
   canEditMonetization: boolean;

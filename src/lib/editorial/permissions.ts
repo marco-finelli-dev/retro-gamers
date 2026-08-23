@@ -55,6 +55,7 @@ const emptyArticleCapabilities: EditorialArticleCapabilities = {
   canChangeType: false,
   canEditWorkflow: false,
   canPublish: false,
+  canPublishArticleRevision: false,
   canUnpublish: false,
   canChangeAuthor: false,
   canEditMonetization: false,
@@ -125,7 +126,7 @@ export function getEmptyEditorialArticleCapabilities(): EditorialArticleCapabili
 }
 
 export function getEditorialArticleCapabilities(
-  context: Pick<EditorialSessionContext, 'permissions'>
+  context: Pick<EditorialSessionContext, 'editorialProfile' | 'permissions'>
 ): EditorialArticleCapabilities {
   const permissions = context.permissions;
   const canEditDraftArticle = permissions.canEditOwnDraftArticle;
@@ -150,6 +151,7 @@ export function getEditorialArticleCapabilities(
     canChangeType: canEditDraftArticle,
     canEditWorkflow: canManageReviewWorkflow,
     canPublish,
+    canPublishArticleRevision: canPublishArticleRevision(context),
     canUnpublish: canPublish,
     canChangeAuthor: canPublish,
     canEditMonetization: canPublish,
@@ -294,6 +296,20 @@ export function canCreateRevisionDraft(
   context: Pick<EditorialSessionContext, 'editorialRole' | 'permissions'>
 ) {
   return context.editorialRole === 'editorial_admin' && context.permissions.canPublishArticle;
+}
+
+export function canPublishArticleRevision(
+  context: Pick<EditorialSessionContext, 'editorialProfile' | 'permissions'>
+) {
+  const editorialProfile = context.editorialProfile;
+
+  if (!editorialProfile) return false;
+
+  return (
+    editorialProfile.editorialRole === 'editorial_admin' &&
+    editorialProfile.status === 'active' &&
+    context.permissions.canPublishArticle
+  );
 }
 
 export function canChangeArticleAuthor(context: Pick<EditorialSessionContext, 'permissions'>) {

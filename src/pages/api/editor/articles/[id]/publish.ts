@@ -41,6 +41,7 @@ export const POST: APIRoute = async ({ params, cookies }) => {
       auditLogged: result.auditLogged,
       reconciled: result.reconciled,
       alreadyPublished: result.alreadyPublished === true,
+      revisionPublished: result.revisionPublished === true,
     });
   } catch (error) {
     logApiError('editorial-publish.api', error);

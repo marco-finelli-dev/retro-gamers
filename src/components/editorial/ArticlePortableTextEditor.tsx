@@ -266,6 +266,11 @@ type Labels = {
   workflowSubmitSuccess: string;
   workflowRequestChangesSuccess: string;
   workflowApproveSuccess: string;
+  publishRevision: string;
+  publishRevisionConfirm: string;
+  publishRevisionUpdating: string;
+  publishRevisionSuccess: string;
+  publishRevisionGenericError: string;
   workflowConflict: string;
   workflowForbidden: string;
   workflowNotFound: string;
@@ -3832,11 +3837,13 @@ function Toolbar({
   isLocked = false,
   isWorkflowUpdating = false,
   workflowActions = [],
+  canPublishRevision = false,
   hasUnsavedChanges = false,
   onToggleInspector,
   onSave,
   onRequestExit,
   onWorkflowAction,
+  onPublishRevision,
   variant = 'body',
   capabilities,
 }: {
@@ -3856,11 +3863,13 @@ function Toolbar({
   isLocked?: boolean;
   isWorkflowUpdating?: boolean;
   workflowActions?: WorkflowAction[];
+  canPublishRevision?: boolean;
   hasUnsavedChanges?: boolean;
   onToggleInspector?: () => void;
   onSave?: () => void | Promise<boolean | void>;
   onRequestExit?: () => void;
   onWorkflowAction?: (action: WorkflowAction) => void | Promise<void>;
+  onPublishRevision?: () => void | Promise<void>;
   variant?: 'body' | 'aside';
   capabilities?: EditorialArticleCapabilities;
 }) {
@@ -4043,6 +4052,12 @@ function Toolbar({
 
     setOpenMenu(null);
     onWorkflowAction?.(action);
+  };
+  const runPublishRevisionAction = () => {
+    if (isLocked || isWorkflowUpdating || hasUnsavedChanges) return;
+
+    setOpenMenu(null);
+    onPublishRevision?.();
   };
   const runContextualTextAction = (action: () => void) => {
     if (!canUseContextualToolbar || !selection) return;
@@ -4638,6 +4653,16 @@ function Toolbar({
           <button className="editorial-button" type="button" onClick={onSave} disabled={isSaving || isLocked}>
             {isLocked ? labels.saving : labels.save}
           </button>
+          {canPublishRevision && (
+            <button
+              className="editorial-button editorial-button--primary"
+              type="button"
+              onClick={runPublishRevisionAction}
+              disabled={isLocked || isWorkflowUpdating || hasUnsavedChanges}
+            >
+              {isWorkflowUpdating ? labels.publishRevisionUpdating : labels.publishRevision}
+            </button>
+          )}
           {workflowActions.length > 0 && (
             <div className="editorial-pte-toolbar__menu editorial-pte-toolbar__document-menu">
               <button
@@ -6616,6 +6641,65 @@ export default function ArticlePortableTextEditor({
     return actions;
   }, [currentWorkflowPermissions]);
 
+  const canPublishRevision = Boolean(
+    capabilities.canPublishArticleRevision &&
+      currentWorkflow.workflowStatus === 'published' &&
+      draft.documentLifecycle === 'revision_draft'
+  );
+
+  const publishArticleRevision = async () => {
+    if (isWorkflowUpdating || isManualSaveLocked) return;
+
+    if (!window.confirm(labels.publishRevisionConfirm)) {
+      return;
+    }
+
+    setIsWorkflowUpdating(true);
+    setStatus(labels.publishRevisionUpdating);
+    setStatusTone('');
+
+    try {
+      const response = await fetch(`${saveEndpoint}/publish`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.error || 'publish_revision_failed');
+      }
+
+      if (result.workflow) {
+        setCurrentWorkflow(result.workflow);
+      }
+
+      if (result.permissions) {
+        setCurrentWorkflowPermissions(result.permissions);
+      }
+
+      setDraft((current) => ({
+        ...current,
+        documentSource: 'published',
+        documentLifecycle: 'published',
+      }));
+      setStatus(labels.publishRevisionSuccess);
+      setStatusTone('success');
+
+      if (articlesHref) {
+        window.setTimeout(() => {
+          window.location.assign(articlesHref);
+        }, 350);
+      }
+    } catch (error) {
+      setStatus(labels.publishRevisionGenericError);
+      setStatusTone('error');
+    } finally {
+      setIsWorkflowUpdating(false);
+    }
+  };
+
   const runWorkflowAction = async (action: WorkflowAction) => {
     if (isWorkflowUpdating) return;
 
@@ -6812,11 +6896,13 @@ export default function ArticlePortableTextEditor({
               isLocked={isManualSaveLocked}
               isWorkflowUpdating={isWorkflowUpdating}
               workflowActions={workflowActions}
+              canPublishRevision={canPublishRevision}
               hasUnsavedChanges={hasUnsavedChanges}
               onToggleInspector={() => setIsInspectorOpen((value) => !value)}
               onSave={() => saveArticle('manual')}
               onRequestExit={requestExit}
               onWorkflowAction={runWorkflowAction}
+              onPublishRevision={publishArticleRevision}
               capabilities={capabilities}
             />
 
