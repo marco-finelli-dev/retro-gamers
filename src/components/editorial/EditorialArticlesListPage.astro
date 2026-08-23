@@ -32,8 +32,9 @@ const copy = isEnglish
       deniedDescription:
         'This workspace is available only to active editorial contributors.',
       newArticle: 'New article',
-      edit: 'Edit',
-      preview: 'Preview',
+      editArticle: 'Edit article',
+      openReview: 'Open review',
+      view: 'View',
       draft: 'Draft',
       ownArticles: 'Your articles',
       reviewQueue: 'Review queue',
@@ -88,8 +89,9 @@ const copy = isEnglish
       deniedDescription:
         'Questo workspace è disponibile solo per collaboratori redazionali attivi.',
       newArticle: 'Nuovo articolo',
-      edit: 'Modifica',
-      preview: 'Anteprima',
+      editArticle: 'Modifica articolo',
+      openReview: 'Apri revisione',
+      view: 'Visualizza',
       draft: 'Bozza',
       ownArticles: 'I tuoi articoli',
       reviewQueue: 'Da revisionare',
@@ -143,6 +145,7 @@ let listError = '';
 let reviewItems = [];
 let reviewError = '';
 const canSeeReviewQueue = Boolean(access.ok && access.context.permissions.canReadSubmittedArticles);
+const reviewQueueWorkflowStatuses = new Set(['submitted', 'approved']);
 
 function formatDateTime(value) {
   return value ? new Date(value).toLocaleString(isEnglish ? 'en' : 'it') : '—';
@@ -171,6 +174,10 @@ if (access.ok) {
     }
   }
 }
+
+const visibleOwnItems = canSeeReviewQueue
+  ? items.filter((item) => !reviewQueueWorkflowStatuses.has(item.workflowStatus))
+  : items;
 ---
 
 <BaseLayout
@@ -225,21 +232,22 @@ if (access.ok) {
           <p class="editorial-message" data-tone="error">{listError}</p>
         )}
 
-        {!listError && items.length === 0 && (
+        {!listError && visibleOwnItems.length === 0 && (
           <div class="editorial-empty-state">
             <h3>{copy.noArticlesTitle}</h3>
             <p>{copy.noArticlesText}</p>
           </div>
         )}
 
-        {!listError && items.length > 0 && (
+        {!listError && visibleOwnItems.length > 0 && (
           <div class="editorial-article-list__items">
-            {items.map((item) => {
+            {visibleOwnItems.map((item) => {
               const article = item.article || item.draft;
               const canEdit = item.workflowStatus === 'draft' || item.workflowStatus === 'changes_requested';
               const href = canEdit
                 ? getEditorialArticleEditPath(item.sanityDocumentId, currentLang)
                 : getEditorialArticlePreviewPath(item.sanityDocumentId, currentLang);
+              const actionLabel = canEdit ? copy.editArticle : copy.view;
               const lifecycle = item.sanityLifecycle || 'missing';
               const lifecycleLabel = copy.lifecycle[lifecycle] || copy.lifecycle.missing;
               const updatedAt = article?.updatedAt || item.updatedAt;
@@ -273,7 +281,7 @@ if (access.ok) {
                   </div>
 
                   {article && (
-                    <a class="editorial-button" href={href}>{canEdit ? copy.edit : copy.preview}</a>
+                    <a class="editorial-button" href={href}>{actionLabel}</a>
                   )}
                 </article>
               );
@@ -360,7 +368,7 @@ if (access.ok) {
 
                   {article && (
                     <div class="editorial-action-card__actions">
-                      <a class="editorial-button" href={previewHref}>{copy.preview}</a>
+                      <a class="editorial-button" href={previewHref}>{copy.openReview}</a>
                       {canRequestChanges && (
                         <button
                           class="editorial-mini-button"
