@@ -232,6 +232,7 @@ export type EditorialArticleListItem = {
   workflowPermissions: ReturnType<typeof getWorkflowTransitionPermissions>;
   article: EditorialArticleDraft | null;
   draft: EditorialArticleDraft | null;
+  hasEnglishTranslation: boolean;
 };
 
 type PortableTextBlock = Record<string, unknown>;
@@ -2057,6 +2058,125 @@ async function recordArticleAudit({
   return true;
 }
 
+const articleTranslationCopiedFields = [
+  'content',
+  'featuredImage',
+  'gameInfo',
+  'categories',
+  'editorialSeries',
+  'seriesOrder',
+  'seriesLabel',
+  'platforms',
+  'creators',
+  'genres',
+  'developers',
+  'publishers',
+  'manufacturer',
+  'modes',
+  'rating',
+  'pros',
+  'cons',
+] as const;
+
+function cloneSanityValue(value: unknown) {
+  if (value === undefined) return undefined;
+
+  return JSON.parse(JSON.stringify(value)) as unknown;
+}
+
+function getDocumentReferenceRootId(document: Record<string, unknown>, field: string) {
+  const value = document[field];
+
+  return isPlainObject(value) ? normalizeArticleReferenceRootId(value._ref) : '';
+}
+
+async function fetchExistingEnglishTranslationId(
+  sourceRootDocumentId: string,
+  sourceDocument: Record<string, unknown>
+) {
+  const directRootIds = new Set<string>();
+
+  for (const field of ['translationOf', 'translatedVersion']) {
+    const id = getDocumentReferenceRootId(sourceDocument, field);
+    if (id) directRootIds.add(id);
+  }
+
+  const directIds = Array.from(directRootIds).flatMap((id) => [id, getDraftDocumentId(id)]);
+  const sourceIds = [sourceRootDocumentId, getDraftDocumentId(sourceRootDocumentId)];
+  const translation = await getSanityRawClient().fetch<{ _id?: string } | null>(
+    `*[
+      _type == "article" &&
+      coalesce(language, "it") == "en" &&
+      (
+        _id in $directIds ||
+        translationOf._ref in $sourceIds ||
+        translatedVersion._ref in $sourceIds
+      )
+    ][0]{ _id }`,
+    {
+      directIds,
+      sourceIds,
+    }
+  );
+
+  return normalizeArticleReferenceRootId(translation?._id);
+}
+
+async function hasExistingEnglishTranslation(
+  sourceRootDocumentId: string,
+  sourceDocument: Record<string, unknown>
+) {
+  try {
+    return Boolean(await fetchExistingEnglishTranslationId(sourceRootDocumentId, sourceDocument));
+  } catch (error) {
+    logApiError('editorial-article.translation.lookup', error);
+
+    // Fail closed in list UIs: if the lookup is unavailable, do not expose a
+    // creation action that could create a duplicate translation.
+    return true;
+  }
+}
+
+function buildEnglishTranslationDraft({
+  sourceDocument,
+  sourceRootDocumentId,
+  draftDocumentId,
+  authorId,
+}: {
+  sourceDocument: Record<string, unknown>;
+  sourceRootDocumentId: string;
+  draftDocumentId: string;
+  authorId: string;
+}) {
+  const draft: Record<string, unknown> = {
+    _id: draftDocumentId,
+    _type: 'article',
+    type: normalizeArticleType(sourceDocument.type),
+    language: 'en',
+    isPublic: false,
+    reviewStatus: 'todo',
+    author: {
+      _type: 'reference',
+      _ref: authorId,
+    },
+    translationOf: {
+      _type: 'reference',
+      _ref: sourceRootDocumentId,
+    },
+  };
+
+  for (const field of articleTranslationCopiedFields) {
+    if (!Object.prototype.hasOwnProperty.call(sourceDocument, field)) continue;
+
+    const value = cloneSanityValue(sourceDocument[field]);
+    if (value !== undefined) {
+      draft[field] = value;
+    }
+  }
+
+  return draft;
+}
+
 export async function createEditorialArticle({
   context,
   language,
@@ -2168,6 +2288,133 @@ export async function createEditorialArticle({
   }
 }
 
+export async function createEditorialArticleTranslation({
+  context,
+  sourceRootDocumentId,
+}: {
+  context: EditableEditorialContext;
+  sourceRootDocumentId: unknown;
+}) {
+  if (!canCreateArticle(context)) {
+    return { ok: false as const, status: 403, error: 'article_create_forbidden' };
+  }
+
+  const sourceDocumentId = normalizeEditableArticleRootDocumentId(sourceRootDocumentId);
+
+  if (!sourceDocumentId) {
+    return { ok: false as const, status: 400, error: 'invalid_article_id' };
+  }
+
+  const writeClient = getSanityWriteClient();
+
+  try {
+    const sourceResult = await fetchPreviewableEditorialArticle({
+      context,
+      rootDocumentId: sourceDocumentId,
+    });
+
+    if (!sourceResult.ok) return sourceResult;
+
+    const sourceDocument = sourceResult.sourceDocument;
+
+    if (!sourceDocument || sourceDocument._type !== 'article') {
+      return { ok: false as const, status: 404, error: 'article_not_found' };
+    }
+
+    if (normalizeArticleLanguage(sourceDocument.language) !== 'it') {
+      return { ok: false as const, status: 400, error: 'article_translation_source_not_italian' };
+    }
+
+    let existingEnglishTranslationId = '';
+
+    try {
+      existingEnglishTranslationId = await fetchExistingEnglishTranslationId(sourceDocumentId, sourceDocument);
+    } catch (error) {
+      logApiError('editorial-article.translation.preflight', error);
+      return { ok: false as const, status: 503, error: 'article_translation_check_failed' };
+    }
+
+    if (existingEnglishTranslationId) {
+      return {
+        ok: false as const,
+        status: 409,
+        error: 'article_translation_exists',
+        existingTranslationId: existingEnglishTranslationId,
+      };
+    }
+
+    const rootDocumentId = crypto.randomUUID();
+    const draftDocumentId = getDraftDocumentId(rootDocumentId);
+    let sanityCreated = false;
+
+    try {
+      await writeClient.create(
+        buildEnglishTranslationDraft({
+          sourceDocument,
+          sourceRootDocumentId: sourceDocumentId,
+          draftDocumentId,
+          authorId: context.sanityAuthorId,
+        })
+      );
+      sanityCreated = true;
+
+      const { error } = await supabaseAdmin
+        .from('editorial_documents')
+        .insert({
+          sanity_document_id: rootDocumentId,
+          owner_user_id: context.user.id,
+          sanity_author_id: context.sanityAuthorId,
+          workflow_status: draftStatus,
+        });
+
+      if (error) {
+        logApiError('editorial-article.translation.ownership', error);
+
+        if (sanityCreated) {
+          try {
+            await writeClient.delete(draftDocumentId);
+          } catch (cleanupError) {
+            logApiError('editorial-article.translation.cleanup', cleanupError);
+          }
+        }
+
+        return { ok: false as const, status: 503, error: 'article_translation_create_failed' };
+      }
+
+      const auditLogged = await recordArticleAudit({
+        actorUserId: context.user.id,
+        action: 'article_created',
+        sanityDocumentId: rootDocumentId,
+        metadata: {
+          language: 'en',
+          type: normalizeArticleType(sourceDocument.type),
+          sourceDocumentId,
+          sourceLanguage: 'it',
+          translationOf: sourceDocumentId,
+        },
+      });
+
+      return {
+        ok: true as const,
+        sanityDocumentId: rootDocumentId,
+        draftDocumentId,
+        auditLogged,
+        sourceDocumentId,
+        language: 'en' as const,
+        type: normalizeArticleType(sourceDocument.type),
+      };
+    } catch (error) {
+      logApiError('editorial-article.translation.create', error);
+
+      return { ok: false as const, status: 500, error: 'article_translation_create_failed' };
+    }
+  } catch (error) {
+    logApiError('editorial-article.translation', error);
+
+    return { ok: false as const, status: 500, error: 'article_translation_create_failed' };
+  }
+}
+
 async function buildEditorialArticleListItem(
   row: EditorialDocumentRow,
   context: EditableEditorialContext,
@@ -2179,6 +2426,7 @@ async function buildEditorialArticleListItem(
   let article: EditorialArticleDraft | null = null;
   let sanityLifecycle: EditorialArticleSanityLifecycle = 'missing';
   let documentSource: EditorialArticleSanitySource | null = null;
+  let hasEnglishTranslationValue = true;
   const author = await fetchAuthorInfo(ownership.sanityAuthorId);
 
   try {
@@ -2203,6 +2451,9 @@ async function buildEditorialArticleListItem(
       });
 
       article = normalizedArticle ? await hydrateDraftArticle(normalizedArticle) : null;
+      hasEnglishTranslationValue = article?.language === 'it'
+        ? await hasExistingEnglishTranslation(ownership.sanityDocumentId, resolved.document || {})
+        : false;
     }
   } catch (error) {
     logApiError(logContext, error);
@@ -2224,6 +2475,7 @@ async function buildEditorialArticleListItem(
     workflowPermissions: getWorkflowTransitionPermissions(context, ownership),
     article,
     draft: article,
+    hasEnglishTranslation: hasEnglishTranslationValue,
   };
 }
 

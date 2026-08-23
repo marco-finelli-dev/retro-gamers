@@ -34,7 +34,12 @@ const copy = isEnglish
       newArticle: 'New article',
       editArticle: 'Edit article',
       openReview: 'Open review',
+      managePublishing: 'Manage publishing',
       view: 'View',
+      viewArticle: 'View article',
+      articleActions: 'Article actions',
+      createEnglishTranslation: 'Create English translation',
+      imageFallback: 'Editorial article',
       draft: 'Draft',
       ownArticles: 'Your articles',
       reviewQueue: 'Review queue',
@@ -77,6 +82,10 @@ const copy = isEnglish
       workflowUpdating: 'Updating workflow…',
       workflowUpdated: 'Workflow updated.',
       workflowGenericError: 'The workflow action could not be completed.',
+      translationCreating: 'Creating English translation…',
+      translationCreated: 'English translation created.',
+      translationAlreadyExists: 'An English translation already exists.',
+      translationGenericError: 'The English translation could not be created.',
     }
   : {
       pageTitle: 'Editor articoli | Retro-Gamers.it',
@@ -91,7 +100,12 @@ const copy = isEnglish
       newArticle: 'Nuovo articolo',
       editArticle: 'Modifica articolo',
       openReview: 'Apri revisione',
+      managePublishing: 'Gestisci pubblicazione',
       view: 'Visualizza',
+      viewArticle: 'Visualizza articolo',
+      articleActions: 'Azioni articolo',
+      createEnglishTranslation: 'Crea traduzione inglese',
+      imageFallback: 'Articolo redazionale',
       draft: 'Bozza',
       ownArticles: 'I tuoi articoli',
       reviewQueue: 'Da revisionare',
@@ -134,6 +148,10 @@ const copy = isEnglish
       workflowUpdating: 'Aggiornamento workflow…',
       workflowUpdated: 'Workflow aggiornato.',
       workflowGenericError: 'Non è stato possibile completare l’azione workflow.',
+      translationCreating: 'Creazione traduzione inglese…',
+      translationCreated: 'Traduzione inglese creata.',
+      translationAlreadyExists: 'Esiste già una traduzione inglese.',
+      translationGenericError: 'Non è stato possibile creare la traduzione inglese.',
     };
 
 const dashboardHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
@@ -153,6 +171,62 @@ function formatDateTime(value) {
 
 function getWorkflowLabel(status) {
   return copy.workflow[status] || status || '—';
+}
+
+function getArticleSummary(article) {
+  return article?.subtitle || article?.cardExcerpt || article?.excerpt || '';
+}
+
+function getArticleImage(article) {
+  const featuredImage = article?.featuredImage;
+  const gameCover = article?.gameInfo?.cover;
+  const image = featuredImage?.asset?.url ? featuredImage : gameCover?.asset?.url ? gameCover : null;
+
+  if (!image?.asset?.url) return null;
+
+  return {
+    src: image.asset.url,
+    alt: image.alt || article?.title || copy.imageFallback,
+  };
+}
+
+function getLanguageBadge(language) {
+  return String(language || '—').toUpperCase();
+}
+
+function getOwnArticleActionLabel(item) {
+  if (item.workflowStatus === 'draft' || item.workflowStatus === 'changes_requested') {
+    return copy.editArticle;
+  }
+
+  if (item.workflowStatus === 'published') {
+    return copy.viewArticle;
+  }
+
+  return copy.view;
+}
+
+function getReviewArticleActionLabel(item) {
+  if (item.workflowStatus === 'approved' && access.ok && access.context.permissions.canPublishArticle) {
+    return copy.managePublishing;
+  }
+
+  return copy.openReview;
+}
+
+function getArticleMenuId(scope, item) {
+  const safeId = String(item?.sanityDocumentId || 'article').replace(/[^A-Za-z0-9_-]/g, '-');
+
+  return `editorial-${scope}-${safeId}-actions`;
+}
+
+function canCreateEnglishTranslationForItem(item, article) {
+  return Boolean(
+    access.ok &&
+      access.context.permissions.canCreateArticle &&
+      article?.language === 'it' &&
+      item?.hasEnglishTranslation !== true
+  );
 }
 
 if (access.ok) {
@@ -210,6 +284,10 @@ const visibleOwnItems = canSeeReviewQueue
       description={copy.description}
     />
 
+    {access.ok && (
+      <p class="editorial-message" data-editorial-dashboard-status hidden aria-live="polite"></p>
+    )}
+
     {!access.ok && (
       <section class="editorial-card editorial-card--notice">
         <p class="editorial-kicker">{copy.kicker}</p>
@@ -247,28 +325,48 @@ const visibleOwnItems = canSeeReviewQueue
               const href = canEdit
                 ? getEditorialArticleEditPath(item.sanityDocumentId, currentLang)
                 : getEditorialArticlePreviewPath(item.sanityDocumentId, currentLang);
-              const actionLabel = canEdit ? copy.editArticle : copy.view;
+              const actionLabel = getOwnArticleActionLabel(item);
+              const cardImage = getArticleImage(article);
+              const summary = getArticleSummary(article);
+              const authorLabel = article?.author?.label || item.author?.label || item.sanityAuthorId;
               const lifecycle = item.sanityLifecycle || 'missing';
               const lifecycleLabel = copy.lifecycle[lifecycle] || copy.lifecycle.missing;
               const updatedAt = article?.updatedAt || item.updatedAt;
+              const menuId = getArticleMenuId('own', item);
+              const canCreateEnglishTranslation = canCreateEnglishTranslationForItem(item, article);
 
               return (
                 <article class="editorial-article-row">
-                  <div>
+                  <div class="editorial-article-row__media">
+                    {cardImage ? (
+                      <img
+                        class="editorial-article-row__image"
+                        src={cardImage.src}
+                        alt={cardImage.alt}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div class="editorial-article-row__placeholder" aria-hidden="true">
+                        <span>{copy.imageFallback}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div class="editorial-article-row__body">
                     <p class="editorial-kicker">{lifecycleLabel}</p>
                     <h3>{article?.title || copy.untitled}</h3>
+                    {summary && <p class="editorial-article-row__summary">{summary}</p>}
+                    <div class="editorial-article-row__badges" aria-label={copy.workflowStatus}>
+                      <span class="editorial-article-row__badge" data-status={item.workflowStatus}>
+                        {getWorkflowLabel(item.workflowStatus)}
+                      </span>
+                      <span class="editorial-article-row__badge">{getLanguageBadge(article?.language)}</span>
+                      <span class="editorial-article-row__badge">{article?.type || '—'}</span>
+                    </div>
                     <dl class="editorial-article-row__meta">
                       <div>
-                        <dt>{copy.language}</dt>
-                        <dd>{article?.language || '—'}</dd>
-                      </div>
-                      <div>
-                        <dt>{copy.type}</dt>
-                        <dd>{article?.type || '—'}</dd>
-                      </div>
-                      <div>
-                        <dt>{copy.workflowStatus}</dt>
-                        <dd>{getWorkflowLabel(item.workflowStatus)}</dd>
+                        <dt>{copy.author}</dt>
+                        <dd>{authorLabel}</dd>
                       </div>
                       <div>
                         <dt>{copy.updated}</dt>
@@ -281,7 +379,45 @@ const visibleOwnItems = canSeeReviewQueue
                   </div>
 
                   {article && (
-                    <a class="editorial-button" href={href}>{actionLabel}</a>
+                    <div class="editorial-article-row__actions">
+                      <div class="editorial-article-row__menu" data-editorial-article-menu>
+                        <button
+                          class="editorial-pte__image-menu-button editorial-article-row__menu-button"
+                          type="button"
+                          aria-label={copy.articleActions}
+                          title={copy.articleActions}
+                          aria-haspopup="menu"
+                          aria-expanded="false"
+                          aria-controls={menuId}
+                          data-editorial-article-menu-trigger
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                            <circle cx="7" cy="12" r="1.8" />
+                            <circle cx="12" cy="12" r="1.8" />
+                            <circle cx="17" cy="12" r="1.8" />
+                          </svg>
+                        </button>
+                        <div
+                          id={menuId}
+                          class="editorial-pte__image-menu-panel editorial-article-row__menu-panel"
+                          role="menu"
+                          data-editorial-article-menu-panel
+                          hidden
+                        >
+                          <a href={href} role="menuitem">{actionLabel}</a>
+                          {canCreateEnglishTranslation && (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              data-editorial-translation-action
+                              data-endpoint={`/api/editor/articles/${encodeURIComponent(item.sanityDocumentId)}/translation`}
+                            >
+                              {copy.createEnglishTranslation}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </article>
               );
@@ -319,6 +455,9 @@ const visibleOwnItems = canSeeReviewQueue
             {reviewItems.map((item) => {
               const article = item.article || item.draft;
               const previewHref = getEditorialArticlePreviewPath(item.sanityDocumentId, currentLang);
+              const actionLabel = getReviewArticleActionLabel(item);
+              const cardImage = getArticleImage(article);
+              const summary = getArticleSummary(article);
               const lifecycle = item.sanityLifecycle || 'missing';
               const lifecycleLabel = copy.lifecycle[lifecycle] || copy.lifecycle.missing;
               const authorLabel = article?.author?.label || item.author?.label || item.sanityAuthorId;
@@ -326,28 +465,41 @@ const visibleOwnItems = canSeeReviewQueue
               const canApprove = item.workflowPermissions?.canApprove;
               const showPublishPlaceholder =
                 item.workflowStatus === 'approved' && access.context.permissions.canPublishArticle;
+              const menuId = getArticleMenuId('review', item);
+              const canCreateEnglishTranslation = canCreateEnglishTranslationForItem(item, article);
 
               return (
                 <article class="editorial-article-row">
-                  <div>
+                  <div class="editorial-article-row__media">
+                    {cardImage ? (
+                      <img
+                        class="editorial-article-row__image"
+                        src={cardImage.src}
+                        alt={cardImage.alt}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div class="editorial-article-row__placeholder" aria-hidden="true">
+                        <span>{copy.imageFallback}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div class="editorial-article-row__body">
                     <p class="editorial-kicker">{lifecycleLabel}</p>
                     <h3>{article?.title || copy.untitled}</h3>
+                    {summary && <p class="editorial-article-row__summary">{summary}</p>}
+                    <div class="editorial-article-row__badges" aria-label={copy.workflowStatus}>
+                      <span class="editorial-article-row__badge" data-status={item.workflowStatus}>
+                        {getWorkflowLabel(item.workflowStatus)}
+                      </span>
+                      <span class="editorial-article-row__badge">{getLanguageBadge(article?.language)}</span>
+                      <span class="editorial-article-row__badge">{article?.type || '—'}</span>
+                    </div>
                     <dl class="editorial-article-row__meta">
                       <div>
                         <dt>{copy.author}</dt>
                         <dd>{authorLabel}</dd>
-                      </div>
-                      <div>
-                        <dt>{copy.language}</dt>
-                        <dd>{article?.language || '—'}</dd>
-                      </div>
-                      <div>
-                        <dt>{copy.type}</dt>
-                        <dd>{article?.type || '—'}</dd>
-                      </div>
-                      <div>
-                        <dt>{copy.workflowStatus}</dt>
-                        <dd>{getWorkflowLabel(item.workflowStatus)}</dd>
                       </div>
                       <div>
                         <dt>{copy.submitted}</dt>
@@ -367,30 +519,66 @@ const visibleOwnItems = canSeeReviewQueue
                   </div>
 
                   {article && (
-                    <div class="editorial-action-card__actions">
-                      <a class="editorial-button" href={previewHref}>{copy.openReview}</a>
-                      {canRequestChanges && (
+                    <div class="editorial-article-row__actions">
+                      <div class="editorial-article-row__menu" data-editorial-article-menu>
                         <button
-                          class="editorial-mini-button"
+                          class="editorial-pte__image-menu-button editorial-article-row__menu-button"
                           type="button"
-                          data-editorial-workflow-action="request_changes"
-                          data-endpoint={`/api/editor/articles/${encodeURIComponent(item.sanityDocumentId)}/workflow`}
-                          data-confirm={copy.requestChangesConfirm}
+                          aria-label={copy.articleActions}
+                          title={copy.articleActions}
+                          aria-haspopup="menu"
+                          aria-expanded="false"
+                          aria-controls={menuId}
+                          data-editorial-article-menu-trigger
                         >
-                          {copy.requestChanges}
+                          <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                            <circle cx="7" cy="12" r="1.8" />
+                            <circle cx="12" cy="12" r="1.8" />
+                            <circle cx="17" cy="12" r="1.8" />
+                          </svg>
                         </button>
-                      )}
-                      {canApprove && (
-                        <button
-                          class="editorial-mini-button"
-                          type="button"
-                          data-editorial-workflow-action="approve"
-                          data-endpoint={`/api/editor/articles/${encodeURIComponent(item.sanityDocumentId)}/workflow`}
-                          data-confirm={copy.approveConfirm}
+                        <div
+                          id={menuId}
+                          class="editorial-pte__image-menu-panel editorial-article-row__menu-panel"
+                          role="menu"
+                          data-editorial-article-menu-panel
+                          hidden
                         >
-                          {copy.approve}
-                        </button>
-                      )}
+                          <a href={previewHref} role="menuitem">{actionLabel}</a>
+                          {canCreateEnglishTranslation && (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              data-editorial-translation-action
+                              data-endpoint={`/api/editor/articles/${encodeURIComponent(item.sanityDocumentId)}/translation`}
+                            >
+                              {copy.createEnglishTranslation}
+                            </button>
+                          )}
+                          {canRequestChanges && (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              data-editorial-workflow-action="request_changes"
+                              data-endpoint={`/api/editor/articles/${encodeURIComponent(item.sanityDocumentId)}/workflow`}
+                              data-confirm={copy.requestChangesConfirm}
+                            >
+                              {copy.requestChanges}
+                            </button>
+                          )}
+                          {canApprove && (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              data-editorial-workflow-action="approve"
+                              data-endpoint={`/api/editor/articles/${encodeURIComponent(item.sanityDocumentId)}/workflow`}
+                              data-confirm={copy.approveConfirm}
+                            >
+                              {copy.approve}
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </article>
@@ -403,9 +591,64 @@ const visibleOwnItems = canSeeReviewQueue
   </CommunityLayout>
 </BaseLayout>
 
-<script define:vars={{ workflowUpdating: copy.workflowUpdating, workflowUpdated: copy.workflowUpdated, workflowGenericError: copy.workflowGenericError }}>
+<script define:vars={{
+  workflowUpdating: copy.workflowUpdating,
+  workflowUpdated: copy.workflowUpdated,
+  workflowGenericError: copy.workflowGenericError,
+  translationCreating: copy.translationCreating,
+  translationCreated: copy.translationCreated,
+  translationAlreadyExists: copy.translationAlreadyExists,
+  translationGenericError: copy.translationGenericError,
+}}>
+  const dashboardStatus = document.querySelector('[data-editorial-dashboard-status]');
   const workflowStatus = document.querySelector('[data-editorial-workflow-status]');
+  const articleMenus = document.querySelectorAll('[data-editorial-article-menu]');
+  const articleMenuTriggers = document.querySelectorAll('[data-editorial-article-menu-trigger]');
   const workflowButtons = document.querySelectorAll('[data-editorial-workflow-action]');
+  const translationButtons = document.querySelectorAll('[data-editorial-translation-action]');
+
+  const closeArticleMenus = (except = null) => {
+    articleMenus.forEach((menu) => {
+      if (except && menu === except) return;
+
+      const trigger = menu.querySelector('[data-editorial-article-menu-trigger]');
+      const panel = menu.querySelector('[data-editorial-article-menu-panel]');
+
+      trigger?.setAttribute('aria-expanded', 'false');
+      if (panel) panel.hidden = true;
+    });
+  };
+
+  articleMenuTriggers.forEach((trigger) => {
+    trigger.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const menu = trigger.closest('[data-editorial-article-menu]');
+      const panel = menu?.querySelector('[data-editorial-article-menu-panel]');
+      const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+
+      closeArticleMenus(menu);
+      trigger.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+      if (panel) panel.hidden = isOpen;
+    });
+  });
+
+  articleMenus.forEach((menu) => {
+    menu.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+  });
+
+  document.addEventListener('click', () => {
+    closeArticleMenus();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeArticleMenus();
+    }
+  });
 
   const setWorkflowStatus = (message, tone = '') => {
     if (!workflowStatus) return;
@@ -419,6 +662,18 @@ const visibleOwnItems = canSeeReviewQueue
     }
   };
 
+  const setDashboardStatus = (message, tone = '') => {
+    if (!dashboardStatus) return;
+
+    dashboardStatus.hidden = false;
+    dashboardStatus.textContent = message;
+    if (tone) {
+      dashboardStatus.setAttribute('data-tone', tone);
+    } else {
+      dashboardStatus.removeAttribute('data-tone');
+    }
+  };
+
   workflowButtons.forEach((button) => {
     button.addEventListener('click', async () => {
       const endpoint = button.getAttribute('data-endpoint') || '';
@@ -426,6 +681,7 @@ const visibleOwnItems = canSeeReviewQueue
       const confirmMessage = button.getAttribute('data-confirm') || '';
 
       if (!endpoint || !action) return;
+      closeArticleMenus();
       if (confirmMessage && !window.confirm(confirmMessage)) return;
 
       const originalText = button.textContent || '';
@@ -453,6 +709,46 @@ const visibleOwnItems = canSeeReviewQueue
         button.removeAttribute('disabled');
         button.textContent = originalText;
         setWorkflowStatus(workflowGenericError, 'error');
+      }
+    });
+  });
+
+  translationButtons.forEach((button) => {
+    button.addEventListener('click', async () => {
+      const endpoint = button.getAttribute('data-endpoint') || '';
+
+      if (!endpoint || !(button instanceof HTMLButtonElement) || button.disabled) return;
+      closeArticleMenus();
+
+      const originalText = button.textContent || '';
+      button.setAttribute('disabled', 'disabled');
+      button.textContent = translationCreating;
+      setDashboardStatus(translationCreating);
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || !result?.ok || !result?.editUrl) {
+          throw new Error(result?.error || 'translation_failed');
+        }
+
+        setDashboardStatus(translationCreated, 'success');
+        window.location.assign(result.editUrl);
+      } catch (error) {
+        button.removeAttribute('disabled');
+        button.textContent = originalText;
+        setDashboardStatus(
+          error instanceof Error && error.message === 'article_translation_exists'
+            ? translationAlreadyExists
+            : translationGenericError,
+          'error'
+        );
       }
     });
   });
