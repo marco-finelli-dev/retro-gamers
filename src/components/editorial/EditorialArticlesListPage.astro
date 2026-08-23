@@ -374,8 +374,6 @@ const visibleOwnItems = canSeeReviewQueue
               const cardImage = getArticleImage(article);
               const summary = getArticleSummary(article);
               const authorLabel = article?.author?.label || item.author?.label || item.sanityAuthorId;
-              const lifecycle = item.sanityLifecycle || 'missing';
-              const lifecycleLabel = copy.lifecycle[lifecycle] || copy.lifecycle.missing;
               const updatedAt = article?.updatedAt || item.updatedAt;
               const menuId = getArticleMenuId('own', item);
               const canCreateEnglishTranslation = canCreateEnglishTranslationForItem(item, article);
@@ -399,9 +397,6 @@ const visibleOwnItems = canSeeReviewQueue
                   </div>
 
                   <div class="editorial-article-row__body">
-                    <p class="editorial-kicker">{lifecycleLabel}</p>
-                    <h3>{article?.title || copy.untitled}</h3>
-                    {summary && <p class="editorial-article-row__summary">{summary}</p>}
                     <div class="editorial-article-row__badges" aria-label={copy.workflowStatus}>
                       <span class="editorial-article-row__badge" data-status={stateBadge.status}>
                         {stateBadge.label}
@@ -409,16 +404,11 @@ const visibleOwnItems = canSeeReviewQueue
                       <span class="editorial-article-row__badge">{getLanguageBadge(article?.language)}</span>
                       <span class="editorial-article-row__badge">{article?.type || '—'}</span>
                     </div>
-                    <dl class="editorial-article-row__meta">
-                      <div>
-                        <dt>{copy.author}</dt>
-                        <dd>{authorLabel}</dd>
-                      </div>
-                      <div>
-                        <dt>{copy.updated}</dt>
-                        <dd>{formatDateTime(updatedAt)}</dd>
-                      </div>
-                    </dl>
+                    <h3>{article?.title || copy.untitled}</h3>
+                    {summary && <p class="editorial-article-row__summary">{summary}</p>}
+                    <p class="editorial-article-row__meta-line">
+                      {authorLabel} <span aria-hidden="true">·</span> {copy.updated} {formatDateTime(updatedAt)}
+                    </p>
                     {!article && (
                       <p class="editorial-message" data-tone="error">{copy.missingDraft}</p>
                     )}
@@ -515,9 +505,8 @@ const visibleOwnItems = canSeeReviewQueue
               const actionLabel = getReviewArticleActionLabel(item);
               const cardImage = getArticleImage(article);
               const summary = getArticleSummary(article);
-              const lifecycle = item.sanityLifecycle || 'missing';
-              const lifecycleLabel = copy.lifecycle[lifecycle] || copy.lifecycle.missing;
               const authorLabel = article?.author?.label || item.author?.label || item.sanityAuthorId;
+              const updatedAt = article?.updatedAt || item.updatedAt;
               const canRequestChanges = item.workflowPermissions?.canRequestChanges;
               const canApprove = item.workflowPermissions?.canApprove;
               const showPublishPlaceholder =
@@ -544,9 +533,6 @@ const visibleOwnItems = canSeeReviewQueue
                   </div>
 
                   <div class="editorial-article-row__body">
-                    <p class="editorial-kicker">{lifecycleLabel}</p>
-                    <h3>{article?.title || copy.untitled}</h3>
-                    {summary && <p class="editorial-article-row__summary">{summary}</p>}
                     <div class="editorial-article-row__badges" aria-label={copy.workflowStatus}>
                       <span class="editorial-article-row__badge" data-status={stateBadge.status}>
                         {stateBadge.label}
@@ -554,20 +540,11 @@ const visibleOwnItems = canSeeReviewQueue
                       <span class="editorial-article-row__badge">{getLanguageBadge(article?.language)}</span>
                       <span class="editorial-article-row__badge">{article?.type || '—'}</span>
                     </div>
-                    <dl class="editorial-article-row__meta">
-                      <div>
-                        <dt>{copy.author}</dt>
-                        <dd>{authorLabel}</dd>
-                      </div>
-                      <div>
-                        <dt>{copy.submitted}</dt>
-                        <dd>{formatDateTime(item.submittedAt)}</dd>
-                      </div>
-                      <div>
-                        <dt>{copy.reviewed}</dt>
-                        <dd>{formatDateTime(item.reviewedAt)}</dd>
-                      </div>
-                    </dl>
+                    <h3>{article?.title || copy.untitled}</h3>
+                    {summary && <p class="editorial-article-row__summary">{summary}</p>}
+                    <p class="editorial-article-row__meta-line">
+                      {authorLabel} <span aria-hidden="true">·</span> {copy.updated} {formatDateTime(updatedAt)}
+                    </p>
                     {!article && (
                       <p class="editorial-message" data-tone="error">{copy.missingDraft}</p>
                     )}
