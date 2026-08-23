@@ -2458,12 +2458,13 @@
 }
 
 .editorial-pte-context-toolbar__menu-panel {
-  position: absolute;
-  z-index: 1;
-  top: calc(100% + 8px);
-  left: 50%;
+  position: fixed;
+  z-index: 1801;
   display: grid;
   width: min(240px, calc(100vw - 24px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   gap: 2px;
   padding: 6px;
   border: 1px solid color-mix(in srgb, var(--rg-badge-border) 82%, var(--color-primary));
@@ -2478,13 +2479,7 @@
   box-shadow:
     0 18px 46px rgba(0, 0, 0, 0.3),
     0 0 0 1px color-mix(in srgb, var(--color-primary) 8%, transparent);
-  transform: translateX(-50%);
   backdrop-filter: blur(10px) saturate(1.08);
-}
-
-.editorial-pte-context-toolbar[data-placement="above"] .editorial-pte-context-toolbar__menu-panel {
-  top: auto;
-  bottom: calc(100% + 8px);
 }
 
 .editorial-pte-context-toolbar__menu-panel[hidden] {

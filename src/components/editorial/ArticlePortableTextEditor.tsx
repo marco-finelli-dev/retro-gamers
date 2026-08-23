@@ -3911,11 +3911,20 @@ function Toolbar({
   } | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const contextualToolbarRef = useRef<HTMLDivElement | null>(null);
+  const contextualLinkTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const contextualLinkMenuPanelRef = useRef<HTMLDivElement | null>(null);
   const hasTextSelection = String(selectedText || '').trim().length > 0;
   const [openMenu, setOpenMenu] = useState<ToolbarMenu | null>(null);
   const [contextualToolbarPosition, setContextualToolbarPosition] = useState<{
     top: number;
     left: number;
+    placement: 'above' | 'below';
+  } | null>(null);
+  const [contextualLinkMenuPosition, setContextualLinkMenuPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    maxHeight: number;
     placement: 'above' | 'below';
   } | null>(null);
   const canUseContextualToolbar = Boolean(
@@ -3959,12 +3968,34 @@ function Toolbar({
     if (isLocked || isWorkflowUpdating) {
       setOpenMenu(null);
       setContextualToolbarPosition(null);
+      setContextualLinkMenuPosition(null);
     }
   }, [isLocked, isWorkflowUpdating]);
+
+  const getContextualBounds = useCallback((viewportMargin = 12) => {
+    const modalPanel = toolbarRef.current?.closest('.editorial-pte-modal__panel');
+    const modalRect = modalPanel instanceof HTMLElement ? modalPanel.getBoundingClientRect() : null;
+    const viewportBounds = {
+      top: viewportMargin,
+      right: window.innerWidth - viewportMargin,
+      bottom: window.innerHeight - viewportMargin,
+      left: viewportMargin,
+    };
+
+    return modalRect
+      ? {
+        top: Math.max(viewportBounds.top, modalRect.top + viewportMargin),
+        right: Math.min(viewportBounds.right, modalRect.right - viewportMargin),
+        bottom: Math.min(viewportBounds.bottom, modalRect.bottom - viewportMargin),
+        left: Math.max(viewportBounds.left, modalRect.left + viewportMargin),
+      }
+      : viewportBounds;
+  }, []);
 
   const updateContextualToolbarPosition = useCallback(() => {
     if (!canUseContextualToolbar || typeof window === 'undefined') {
       setContextualToolbarPosition(null);
+      setContextualLinkMenuPosition(null);
       return;
     }
 
@@ -3990,22 +4021,7 @@ function Toolbar({
     const toolbarHeight = contextualToolbarRef.current?.offsetHeight || 42;
     const viewportMargin = 12;
     const selectionGap = 8;
-    const modalPanel = toolbarRef.current?.closest('.editorial-pte-modal__panel');
-    const modalRect = modalPanel instanceof HTMLElement ? modalPanel.getBoundingClientRect() : null;
-    const viewportBounds = {
-      top: viewportMargin,
-      right: window.innerWidth - viewportMargin,
-      bottom: window.innerHeight - viewportMargin,
-      left: viewportMargin,
-    };
-    const bounds = modalRect
-      ? {
-        top: Math.max(viewportBounds.top, modalRect.top + viewportMargin),
-        right: Math.min(viewportBounds.right, modalRect.right - viewportMargin),
-        bottom: Math.min(viewportBounds.bottom, modalRect.bottom - viewportMargin),
-        left: Math.max(viewportBounds.left, modalRect.left + viewportMargin),
-      }
-      : viewportBounds;
+    const bounds = getContextualBounds(viewportMargin);
     const availableWidth = Math.max(0, bounds.right - bounds.left);
     const availableHeight = Math.max(0, bounds.bottom - bounds.top);
     const horizontalInset = Math.min(toolbarWidth / 2, availableWidth / 2);
@@ -4022,11 +4038,54 @@ function Toolbar({
     const left = clamp(selectionCenter, minLeft, maxLeft);
 
     setContextualToolbarPosition({ top, left, placement: placeAbove ? 'above' : 'below' });
-  }, [canUseContextualToolbar]);
+  }, [canUseContextualToolbar, getContextualBounds]);
+
+  const updateContextualLinkMenuPosition = useCallback(() => {
+    if (
+      openMenu !== 'contextLink' ||
+      !canUseContextualToolbar ||
+      typeof window === 'undefined' ||
+      !contextualLinkTriggerRef.current
+    ) {
+      setContextualLinkMenuPosition(null);
+      return;
+    }
+
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+    const triggerRect = contextualLinkTriggerRef.current.getBoundingClientRect();
+    const toolbarRect = contextualToolbarRef.current?.getBoundingClientRect();
+    const bounds = getContextualBounds(12);
+    const availableWidth = Math.max(0, bounds.right - bounds.left);
+    const availableHeight = Math.max(0, bounds.bottom - bounds.top);
+    const menuWidth = Math.min(240, availableWidth);
+    const menuHeight = contextualLinkMenuPanelRef.current?.offsetHeight || Math.min(260, availableHeight);
+    const menuGap = 8;
+    const anchorCenter = triggerRect.left + triggerRect.width / 2;
+    const minLeft = bounds.left;
+    const maxLeft = Math.max(minLeft, bounds.right - menuWidth);
+    const spaceBelow = bounds.bottom - triggerRect.bottom;
+    const aboveAnchorTop = toolbarRect?.top || triggerRect.top;
+    const spaceAbove = aboveAnchorTop - bounds.top;
+    const requiredVerticalSpace = menuHeight + menuGap;
+    const placeAbove = spaceBelow < requiredVerticalSpace && spaceAbove >= spaceBelow;
+    const rawTop = placeAbove ? aboveAnchorTop - menuHeight - menuGap : triggerRect.bottom + menuGap;
+    const maxTop = Math.max(bounds.top, bounds.bottom - menuHeight);
+    const top = clamp(rawTop, bounds.top, maxTop);
+    const left = clamp(anchorCenter - menuWidth / 2, minLeft, maxLeft);
+
+    setContextualLinkMenuPosition({
+      top,
+      left,
+      width: menuWidth,
+      maxHeight: Math.max(120, Math.min(260, availableHeight)),
+      placement: placeAbove ? 'above' : 'below',
+    });
+  }, [canUseContextualToolbar, getContextualBounds, openMenu]);
 
   useEffect(() => {
     if (!canUseContextualToolbar) {
       setContextualToolbarPosition(null);
+      setContextualLinkMenuPosition(null);
       if (openMenu === 'contextLink') {
         setOpenMenu(null);
       }
@@ -4051,6 +4110,29 @@ function Toolbar({
       window.removeEventListener('scroll', scheduleUpdate, true);
     };
   }, [canUseContextualToolbar, openMenu, selectedText, updateContextualToolbarPosition]);
+
+  useEffect(() => {
+    if (openMenu !== 'contextLink') {
+      setContextualLinkMenuPosition(null);
+      return undefined;
+    }
+
+    let frameId = 0;
+    const scheduleUpdate = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(updateContextualLinkMenuPosition);
+    };
+
+    scheduleUpdate();
+    window.addEventListener('resize', scheduleUpdate);
+    window.addEventListener('scroll', scheduleUpdate, true);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener('scroll', scheduleUpdate, true);
+    };
+  }, [openMenu, contextualToolbarPosition, updateContextualLinkMenuPosition]);
 
   const focus = () => editor.send({ type: 'focus' });
   const send = (event: Parameters<typeof editor.send>[0]) => {
@@ -4771,6 +4853,7 @@ function Toolbar({
           </button>
           <div className="editorial-pte-context-toolbar__menu">
             <button
+              ref={contextualLinkTriggerRef}
               className="editorial-pte-context-toolbar__button editorial-pte-context-toolbar__button--link"
               type="button"
               aria-haspopup="menu"
@@ -4784,7 +4867,15 @@ function Toolbar({
               <span aria-hidden="true">▾</span>
             </button>
             <div
+              ref={contextualLinkMenuPanelRef}
               className="editorial-pte-context-toolbar__menu-panel"
+              data-placement={contextualLinkMenuPosition?.placement || contextualToolbarPosition.placement}
+              style={contextualLinkMenuPosition ? {
+                top: `${contextualLinkMenuPosition.top}px`,
+                left: `${contextualLinkMenuPosition.left}px`,
+                width: `${contextualLinkMenuPosition.width}px`,
+                maxHeight: `${contextualLinkMenuPosition.maxHeight}px`,
+              } : undefined}
               role="menu"
               hidden={openMenu !== 'contextLink'}
             >
