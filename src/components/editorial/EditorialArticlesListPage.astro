@@ -6,7 +6,9 @@ import CommunityLayout from '../community/CommunityLayout.astro';
 import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
 import {
   fetchOwnEditorialArticles,
+  fetchReviewQueueEditorialArticles,
   getEditorialArticleEditPath,
+  getEditorialArticlePreviewPath,
   requireEditorialArticleContext,
 } from '../../lib/editorial/articles.server';
 import { getEditorialRoleLabel } from '../../lib/editorial/labels';
@@ -31,7 +33,12 @@ const copy = isEnglish
         'This workspace is available only to active editorial contributors.',
       newArticle: 'New article',
       edit: 'Edit',
+      preview: 'Preview',
       draft: 'Draft',
+      ownArticles: 'Your articles',
+      reviewQueue: 'Review queue',
+      reviewQueueKicker: 'Editorial review',
+      reviewQueueDescription: 'Submitted and approved articles waiting for editorial action.',
       missingDraft: 'Sanity document not found',
       lifecycle: {
         draft: 'DRAFT',
@@ -39,15 +46,36 @@ const copy = isEnglish
         published: 'PUBLISHED',
         missing: 'SANITY DOCUMENT NOT FOUND',
       },
+      workflow: {
+        draft: 'Draft',
+        submitted: 'Submitted for review',
+        changes_requested: 'Changes requested',
+        approved: 'Approved',
+        published: 'Published',
+      },
       noArticlesTitle: 'No editorial drafts yet',
       noArticlesText: 'Create your first draft to start writing inside the custom editor.',
+      noReviewItemsTitle: 'No articles waiting for review',
+      noReviewItemsText: 'Submitted articles will appear here when contributors send them to the editorial desk.',
       dashboard: 'Editorial dashboard',
       profile: 'Author profile',
       role: 'Editorial role',
       type: 'Type',
       language: 'Language',
+      author: 'Author',
+      workflowStatus: 'Workflow',
+      submitted: 'Submitted',
+      reviewed: 'Reviewed',
       updated: 'Updated',
       untitled: 'Untitled draft',
+      requestChanges: 'Request changes',
+      approve: 'Approve',
+      readyForPublish: 'Ready for publishing',
+      requestChangesConfirm: 'Return this article to the author for changes?',
+      approveConfirm: 'Approve this article?',
+      workflowUpdating: 'Updating workflow…',
+      workflowUpdated: 'Workflow updated.',
+      workflowGenericError: 'The workflow action could not be completed.',
     }
   : {
       pageTitle: 'Editor articoli | Retro-Gamers.it',
@@ -61,7 +89,12 @@ const copy = isEnglish
         'Questo workspace è disponibile solo per collaboratori redazionali attivi.',
       newArticle: 'Nuovo articolo',
       edit: 'Modifica',
+      preview: 'Anteprima',
       draft: 'Bozza',
+      ownArticles: 'I tuoi articoli',
+      reviewQueue: 'Da revisionare',
+      reviewQueueKicker: 'Revisione editoriale',
+      reviewQueueDescription: 'Articoli inviati e approvati in attesa di azione redazionale.',
       missingDraft: 'Documento Sanity non trovato',
       lifecycle: {
         draft: 'BOZZA',
@@ -69,15 +102,36 @@ const copy = isEnglish
         published: 'PUBBLICATO',
         missing: 'DOCUMENTO SANITY NON TROVATO',
       },
+      workflow: {
+        draft: 'Bozza',
+        submitted: 'In revisione',
+        changes_requested: 'Modifiche richieste',
+        approved: 'Approvato',
+        published: 'Pubblicato',
+      },
       noArticlesTitle: 'Nessuna bozza redazionale',
       noArticlesText: 'Crea la prima bozza per iniziare a scrivere nel custom editor.',
+      noReviewItemsTitle: 'Nessun articolo in coda',
+      noReviewItemsText: 'Gli articoli inviati dai contributor compariranno qui.',
       dashboard: 'Dashboard redazionale',
       profile: 'Profilo autore',
       role: 'Ruolo redazionale',
       type: 'Tipo',
       language: 'Lingua',
+      author: 'Autore',
+      workflowStatus: 'Workflow',
+      submitted: 'Inviato',
+      reviewed: 'Revisionato',
       updated: 'Aggiornato',
       untitled: 'Bozza senza titolo',
+      requestChanges: 'Richiedi modifiche',
+      approve: 'Approva',
+      readyForPublish: 'Pronto per pubblicazione',
+      requestChangesConfirm: 'Restituire l’articolo all’autore per modifiche?',
+      approveConfirm: 'Approvare questo articolo?',
+      workflowUpdating: 'Aggiornamento workflow…',
+      workflowUpdated: 'Workflow aggiornato.',
+      workflowGenericError: 'Non è stato possibile completare l’azione workflow.',
     };
 
 const dashboardHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
@@ -86,6 +140,17 @@ const newArticleHref = isEnglish ? '/en/account/editor/articles/new/' : '/accoun
 const languageSwitch = isEnglish ? '/account/editor/articles/' : '/en/account/editor/articles/';
 let items = [];
 let listError = '';
+let reviewItems = [];
+let reviewError = '';
+const canSeeReviewQueue = Boolean(access.ok && access.context.permissions.canReadSubmittedArticles);
+
+function formatDateTime(value) {
+  return value ? new Date(value).toLocaleString(isEnglish ? 'en' : 'it') : '—';
+}
+
+function getWorkflowLabel(status) {
+  return copy.workflow[status] || status || '—';
+}
 
 if (access.ok) {
   const result = await fetchOwnEditorialArticles(access.context);
@@ -94,6 +159,16 @@ if (access.ok) {
     items = result.items;
   } else {
     listError = result.error;
+  }
+
+  if (access.context.permissions.canReadSubmittedArticles) {
+    const reviewResult = await fetchReviewQueueEditorialArticles(access.context);
+
+    if (reviewResult.ok) {
+      reviewItems = reviewResult.items;
+    } else {
+      reviewError = reviewResult.error;
+    }
   }
 }
 ---
@@ -141,7 +216,7 @@ if (access.ok) {
         <div class="editorial-article-list__header">
           <div>
             <p class="editorial-kicker">{copy.draft}</p>
-            <h2>{copy.title}</h2>
+            <h2>{copy.ownArticles}</h2>
           </div>
           <a class="editorial-button" href={newArticleHref}>{copy.newArticle}</a>
         </div>
@@ -161,7 +236,10 @@ if (access.ok) {
           <div class="editorial-article-list__items">
             {items.map((item) => {
               const article = item.article || item.draft;
-              const href = getEditorialArticleEditPath(item.sanityDocumentId, currentLang);
+              const canEdit = item.workflowStatus === 'draft' || item.workflowStatus === 'changes_requested';
+              const href = canEdit
+                ? getEditorialArticleEditPath(item.sanityDocumentId, currentLang)
+                : getEditorialArticlePreviewPath(item.sanityDocumentId, currentLang);
               const lifecycle = item.sanityLifecycle || 'missing';
               const lifecycleLabel = copy.lifecycle[lifecycle] || copy.lifecycle.missing;
               const updatedAt = article?.updatedAt || item.updatedAt;
@@ -181,8 +259,12 @@ if (access.ok) {
                         <dd>{article?.type || '—'}</dd>
                       </div>
                       <div>
+                        <dt>{copy.workflowStatus}</dt>
+                        <dd>{getWorkflowLabel(item.workflowStatus)}</dd>
+                      </div>
+                      <div>
                         <dt>{copy.updated}</dt>
-                        <dd>{updatedAt ? new Date(updatedAt).toLocaleString(isEnglish ? 'en' : 'it') : '—'}</dd>
+                        <dd>{formatDateTime(updatedAt)}</dd>
                       </div>
                     </dl>
                     {!article && (
@@ -191,7 +273,117 @@ if (access.ok) {
                   </div>
 
                   {article && (
-                    <a class="editorial-button" href={href}>{copy.edit}</a>
+                    <a class="editorial-button" href={href}>{canEdit ? copy.edit : copy.preview}</a>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    )}
+
+    {access.ok && canSeeReviewQueue && (
+      <section class="editorial-card editorial-article-list">
+        <div class="editorial-article-list__header">
+          <div>
+            <p class="editorial-kicker">{copy.reviewQueueKicker}</p>
+            <h2>{copy.reviewQueue}</h2>
+            <p>{copy.reviewQueueDescription}</p>
+          </div>
+        </div>
+
+        <p class="editorial-message" data-editorial-workflow-status hidden aria-live="polite"></p>
+
+        {reviewError && (
+          <p class="editorial-message" data-tone="error">{reviewError}</p>
+        )}
+
+        {!reviewError && reviewItems.length === 0 && (
+          <div class="editorial-empty-state">
+            <h3>{copy.noReviewItemsTitle}</h3>
+            <p>{copy.noReviewItemsText}</p>
+          </div>
+        )}
+
+        {!reviewError && reviewItems.length > 0 && (
+          <div class="editorial-article-list__items">
+            {reviewItems.map((item) => {
+              const article = item.article || item.draft;
+              const previewHref = getEditorialArticlePreviewPath(item.sanityDocumentId, currentLang);
+              const lifecycle = item.sanityLifecycle || 'missing';
+              const lifecycleLabel = copy.lifecycle[lifecycle] || copy.lifecycle.missing;
+              const authorLabel = article?.author?.label || item.author?.label || item.sanityAuthorId;
+              const canRequestChanges = item.workflowPermissions?.canRequestChanges;
+              const canApprove = item.workflowPermissions?.canApprove;
+              const showPublishPlaceholder =
+                item.workflowStatus === 'approved' && access.context.permissions.canPublishArticle;
+
+              return (
+                <article class="editorial-article-row">
+                  <div>
+                    <p class="editorial-kicker">{lifecycleLabel}</p>
+                    <h3>{article?.title || copy.untitled}</h3>
+                    <dl class="editorial-article-row__meta">
+                      <div>
+                        <dt>{copy.author}</dt>
+                        <dd>{authorLabel}</dd>
+                      </div>
+                      <div>
+                        <dt>{copy.language}</dt>
+                        <dd>{article?.language || '—'}</dd>
+                      </div>
+                      <div>
+                        <dt>{copy.type}</dt>
+                        <dd>{article?.type || '—'}</dd>
+                      </div>
+                      <div>
+                        <dt>{copy.workflowStatus}</dt>
+                        <dd>{getWorkflowLabel(item.workflowStatus)}</dd>
+                      </div>
+                      <div>
+                        <dt>{copy.submitted}</dt>
+                        <dd>{formatDateTime(item.submittedAt)}</dd>
+                      </div>
+                      <div>
+                        <dt>{copy.reviewed}</dt>
+                        <dd>{formatDateTime(item.reviewedAt)}</dd>
+                      </div>
+                    </dl>
+                    {!article && (
+                      <p class="editorial-message" data-tone="error">{copy.missingDraft}</p>
+                    )}
+                    {showPublishPlaceholder && (
+                      <p class="editorial-message">{copy.readyForPublish}</p>
+                    )}
+                  </div>
+
+                  {article && (
+                    <div class="editorial-action-card__actions">
+                      <a class="editorial-button" href={previewHref}>{copy.preview}</a>
+                      {canRequestChanges && (
+                        <button
+                          class="editorial-mini-button"
+                          type="button"
+                          data-editorial-workflow-action="request_changes"
+                          data-endpoint={`/api/editor/articles/${encodeURIComponent(item.sanityDocumentId)}/workflow`}
+                          data-confirm={copy.requestChangesConfirm}
+                        >
+                          {copy.requestChanges}
+                        </button>
+                      )}
+                      {canApprove && (
+                        <button
+                          class="editorial-mini-button"
+                          type="button"
+                          data-editorial-workflow-action="approve"
+                          data-endpoint={`/api/editor/articles/${encodeURIComponent(item.sanityDocumentId)}/workflow`}
+                          data-confirm={copy.approveConfirm}
+                        >
+                          {copy.approve}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </article>
               );
@@ -202,3 +394,58 @@ if (access.ok) {
     )}
   </CommunityLayout>
 </BaseLayout>
+
+<script define:vars={{ workflowUpdating: copy.workflowUpdating, workflowUpdated: copy.workflowUpdated, workflowGenericError: copy.workflowGenericError }}>
+  const workflowStatus = document.querySelector('[data-editorial-workflow-status]');
+  const workflowButtons = document.querySelectorAll('[data-editorial-workflow-action]');
+
+  const setWorkflowStatus = (message, tone = '') => {
+    if (!workflowStatus) return;
+
+    workflowStatus.hidden = false;
+    workflowStatus.textContent = message;
+    if (tone) {
+      workflowStatus.setAttribute('data-tone', tone);
+    } else {
+      workflowStatus.removeAttribute('data-tone');
+    }
+  };
+
+  workflowButtons.forEach((button) => {
+    button.addEventListener('click', async () => {
+      const endpoint = button.getAttribute('data-endpoint') || '';
+      const action = button.getAttribute('data-editorial-workflow-action') || '';
+      const confirmMessage = button.getAttribute('data-confirm') || '';
+
+      if (!endpoint || !action) return;
+      if (confirmMessage && !window.confirm(confirmMessage)) return;
+
+      const originalText = button.textContent || '';
+      button.setAttribute('disabled', 'disabled');
+      button.textContent = workflowUpdating;
+      setWorkflowStatus(workflowUpdating);
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ action }),
+        });
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || !result?.ok) {
+          throw new Error(result?.error || 'workflow_failed');
+        }
+
+        setWorkflowStatus(workflowUpdated, 'success');
+        window.location.reload();
+      } catch {
+        button.removeAttribute('disabled');
+        button.textContent = originalText;
+        setWorkflowStatus(workflowGenericError, 'error');
+      }
+    });
+  });
+</script>

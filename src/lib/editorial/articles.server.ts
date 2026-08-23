@@ -2,9 +2,10 @@ import { logApiError } from '../api-errors';
 import { getSanityRawClient, getSanityWriteClient } from '../sanity-write.server';
 import { supabaseAdmin } from '../supabase/server';
 import {
-  canPreviewOwnArticle,
+  canPreviewEditorialArticle,
   canCreateArticle,
   canEditOwnArticle,
+  getWorkflowTransitionPermissions,
   getOwnershipConflict,
   isDocumentOwnedByContext,
 } from './permissions';
@@ -216,11 +217,18 @@ export type EditorialArticleDraft = {
 
 export type EditorialArticleListItem = {
   sanityDocumentId: string;
+  ownerUserId: string;
+  sanityAuthorId: string;
   workflowStatus: EditorialWorkflowStatus;
+  submittedAt: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
   sanityLifecycle: EditorialArticleSanityLifecycle;
   documentSource: EditorialArticleSanitySource | null;
   updatedAt: string | null;
   createdAt: string | null;
+  author: EditorialArticleAuthorInfo | null;
+  workflowPermissions: ReturnType<typeof getWorkflowTransitionPermissions>;
   article: EditorialArticleDraft | null;
   draft: EditorialArticleDraft | null;
 };
@@ -2076,6 +2084,72 @@ export async function createEditorialArticle({
   }
 }
 
+async function buildEditorialArticleListItem(
+  row: EditorialDocumentRow,
+  context: EditableEditorialContext,
+  logContext: string
+): Promise<EditorialArticleListItem | null> {
+  const ownership = normalizeOwnership(row);
+  if (!ownership) return null;
+
+  let article: EditorialArticleDraft | null = null;
+  let sanityLifecycle: EditorialArticleSanityLifecycle = 'missing';
+  let documentSource: EditorialArticleSanitySource | null = null;
+  const author = await fetchAuthorInfo(ownership.sanityAuthorId);
+
+  try {
+    const resolved = await fetchSanityArticleDocumentPair(ownership.sanityDocumentId);
+
+    sanityLifecycle = resolved.lifecycle;
+    documentSource = resolved.documentSource;
+
+    const normalizedDocuments = [resolved.draftDocument, resolved.publishedDocument]
+      .filter((document): document is Record<string, unknown> => Boolean(document))
+      .map((document) => normalizeDraftArticle(document, null, {
+        rootDocumentId: ownership.sanityDocumentId,
+        documentSource: getArticleDocumentSource(document._id),
+        documentLifecycle: resolved.lifecycle,
+      }));
+
+    if (
+      normalizedDocuments.some((document) => !document) ||
+      (normalizedDocuments as EditorialArticleDraft[]).some((document) =>
+        document.authorId !== ownership.sanityAuthorId
+      )
+    ) {
+      logApiError(logContext, new Error('author_ownership_conflict'));
+    } else {
+      const normalizedArticle = normalizeDraftArticle(resolved.document || null, author, {
+        rootDocumentId: ownership.sanityDocumentId,
+        documentSource: resolved.documentSource || undefined,
+        documentLifecycle: resolved.lifecycle,
+      });
+
+      article = normalizedArticle ? await hydrateDraftArticle(normalizedArticle) : null;
+    }
+  } catch (error) {
+    logApiError(logContext, error);
+  }
+
+  return {
+    sanityDocumentId: ownership.sanityDocumentId,
+    ownerUserId: ownership.ownerUserId,
+    sanityAuthorId: ownership.sanityAuthorId,
+    workflowStatus: ownership.workflowStatus,
+    submittedAt: ownership.submittedAt,
+    reviewedBy: ownership.reviewedBy,
+    reviewedAt: ownership.reviewedAt,
+    sanityLifecycle,
+    documentSource,
+    createdAt: row.created_at || null,
+    updatedAt: row.updated_at || null,
+    author,
+    workflowPermissions: getWorkflowTransitionPermissions(context, ownership),
+    article,
+    draft: article,
+  };
+}
+
 export async function fetchOwnEditorialArticles(context: EditableEditorialContext) {
   const { data, error } = await supabaseAdmin
     .from('editorial_documents')
@@ -2092,37 +2166,38 @@ export async function fetchOwnEditorialArticles(context: EditableEditorialContex
   const items: EditorialArticleListItem[] = [];
 
   for (const row of rows) {
-    const ownership = normalizeOwnership(row);
-    if (!ownership) continue;
+    const item = await buildEditorialArticleListItem(row, context, 'editorial-article.list.sanity');
 
-    let article: EditorialArticleDraft | null = null;
-    let sanityLifecycle: EditorialArticleSanityLifecycle = 'missing';
-    let documentSource: EditorialArticleSanitySource | null = null;
+    if (item) items.push(item);
+  }
 
-    try {
-      const resolved = await fetchSanityArticleDocumentPair(ownership.sanityDocumentId);
+  return { ok: true as const, items };
+}
 
-      sanityLifecycle = resolved.lifecycle;
-      documentSource = resolved.documentSource;
-      article = normalizeDraftArticle(resolved.document || null, null, {
-        rootDocumentId: ownership.sanityDocumentId,
-        documentSource: resolved.documentSource || undefined,
-        documentLifecycle: resolved.lifecycle,
-      });
-    } catch (error) {
-      logApiError('editorial-article.list.sanity', error);
-    }
+export async function fetchReviewQueueEditorialArticles(context: EditableEditorialContext) {
+  if (!context.permissions.canReadSubmittedArticles) {
+    return { ok: true as const, items: [] };
+  }
 
-    items.push({
-      sanityDocumentId: ownership.sanityDocumentId,
-      workflowStatus: ownership.workflowStatus,
-      sanityLifecycle,
-      documentSource,
-      createdAt: row.created_at || null,
-      updatedAt: row.updated_at || null,
-      article,
-      draft: article,
-    });
+  const { data, error } = await supabaseAdmin
+    .from('editorial_documents')
+    .select('sanity_document_id, owner_user_id, sanity_author_id, workflow_status, submitted_at, reviewed_by, reviewed_at, created_at, updated_at')
+    .in('workflow_status', ['submitted', 'approved'])
+    .order('submitted_at', { ascending: true, nullsFirst: false })
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    logApiError('editorial-article.review-queue', error);
+    return { ok: false as const, status: 503, error: 'editorial_database_unavailable' };
+  }
+
+  const rows = (data || []) as EditorialDocumentRow[];
+  const items: EditorialArticleListItem[] = [];
+
+  for (const row of rows) {
+    const item = await buildEditorialArticleListItem(row, context, 'editorial-article.review-queue.sanity');
+
+    if (item) items.push(item);
   }
 
   return { ok: true as const, items };
@@ -2247,12 +2322,8 @@ export async function fetchPreviewableEditorialArticle({
     return { ok: false as const, status: 404, error: 'article_not_found' };
   }
 
-  if (!isDocumentOwnedByContext(context, ownership) || !canPreviewOwnArticle(context, ownership)) {
+  if (!canPreviewEditorialArticle(context, ownership)) {
     return { ok: false as const, status: 403, error: 'article_forbidden' };
-  }
-
-  if (ownership.sanityAuthorId !== context.sanityAuthorId) {
-    return { ok: false as const, status: 409, error: 'author_ownership_conflict' };
   }
 
   try {
@@ -2282,7 +2353,7 @@ export async function fetchPreviewableEditorialArticle({
     for (const document of normalizedDocuments as EditorialArticleDraft[]) {
       const conflict = getOwnershipConflict(ownership, document.authorId);
 
-      if (conflict.hasConflict || document.authorId !== context.sanityAuthorId) {
+      if (conflict.hasConflict || document.authorId !== ownership.sanityAuthorId) {
         return {
           ok: false as const,
           status: 409,
@@ -3457,4 +3528,10 @@ export function getEditorialArticleEditPath(id: string, language: 'it' | 'en') {
   return language === 'en'
     ? `/en/account/editor/articles/${encodeURIComponent(id)}/`
     : `/account/editor/articles/${encodeURIComponent(id)}/`;
+}
+
+export function getEditorialArticlePreviewPath(id: string, language: 'it' | 'en') {
+  return language === 'en'
+    ? `/en/account/editor/articles/${encodeURIComponent(id)}/preview/`
+    : `/account/editor/articles/${encodeURIComponent(id)}/preview/`;
 }

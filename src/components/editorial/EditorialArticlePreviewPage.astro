@@ -9,6 +9,7 @@ import {
   fetchEditorialArticlePreviewRelatedPostCandidates,
   fetchEditorialArticlePreviewSeriesPosts
 } from '../../lib/editorial/article-preview.server';
+import { getWorkflowTransitionPermissions } from '../../lib/editorial/permissions';
 import { getPublicPostSummaries, getRelatedPosts } from '../../lib/posts';
 import {
   attachApprovedCommentCounts,
@@ -34,6 +35,14 @@ const copy = isEnglish
       bannerLabel: 'Private preview',
       bannerText: 'This content is not public.',
       backToEditor: 'Back to editor',
+      backToArticles: 'Back to articles',
+      requestChanges: 'Request changes',
+      approve: 'Approve',
+      requestChangesConfirm: 'Return this article to the author for changes?',
+      approveConfirm: 'Approve this article?',
+      workflowUpdating: 'Updating workflow…',
+      workflowUpdated: 'Workflow updated.',
+      workflowGenericError: 'The workflow action could not be completed.',
       fallbackDescription: 'Features, reviews and stories from the world of retro gaming.',
     }
   : {
@@ -44,12 +53,23 @@ const copy = isEnglish
       bannerLabel: 'Anteprima privata',
       bannerText: 'Questo contenuto non è pubblico.',
       backToEditor: 'Torna all’editor',
+      backToArticles: 'Torna agli articoli',
+      requestChanges: 'Richiedi modifiche',
+      approve: 'Approva',
+      requestChangesConfirm: 'Restituire l’articolo all’autore per modifiche?',
+      approveConfirm: 'Approvare questo articolo?',
+      workflowUpdating: 'Aggiornamento workflow…',
+      workflowUpdated: 'Workflow aggiornato.',
+      workflowGenericError: 'Non è stato possibile completare l’azione workflow.',
       fallbackDescription: 'Recensioni, news, speciali e guide dal mondo retro-gaming.',
     };
 
 const editHref = isEnglish
   ? `/en/account/editor/articles/${encodeURIComponent(id)}/`
   : `/account/editor/articles/${encodeURIComponent(id)}/`;
+const articlesHref = isEnglish
+  ? '/en/account/editor/articles/'
+  : '/account/editor/articles/';
 
 function getPlainTextFromContent(content = []) {
   return content
@@ -112,6 +132,8 @@ let post = null;
 let error = '';
 let documentLifecycle = 'missing';
 let documentSource = '';
+let workflowPermissions = null;
+let canReturnToEditor = false;
 
 const access = await requireEditorialArticleContext(Astro.cookies);
 
@@ -124,6 +146,10 @@ if (access.ok) {
   if (editableResult.ok) {
     documentLifecycle = editableResult.documentLifecycle;
     documentSource = editableResult.documentSource;
+    workflowPermissions = getWorkflowTransitionPermissions(access.context, editableResult.ownership);
+    canReturnToEditor =
+      editableResult.ownership.ownerUserId === access.context.user.id &&
+      ['draft', 'changes_requested'].includes(editableResult.ownership.workflowStatus);
 
     post = await fetchEditorialArticlePreviewPost(String(editableResult.sourceDocument?._id || ''));
 
@@ -211,6 +237,10 @@ const articleAuthorUrl = articleAuthorSlug
     ? `/en/authors/${articleAuthorSlug}/`
     : `/autori/${articleAuthorSlug}/`
   : '';
+const canRequestChanges = Boolean(workflowPermissions?.canRequestChanges);
+const canApprove = Boolean(workflowPermissions?.canApprove);
+const returnHref = canReturnToEditor ? editHref : articlesHref;
+const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
 ---
 
 <BaseLayout
@@ -237,7 +267,31 @@ const articleAuthorUrl = articleAuthorSlug
           <small>{documentSource || documentLifecycle}</small>
         )}
       </div>
-      <a href={editHref}>{copy.backToEditor}</a>
+      <div class="editorial-action-card__actions">
+        {canRequestChanges && (
+          <button
+            class="editorial-mini-button"
+            type="button"
+            data-editorial-preview-workflow-action="request_changes"
+            data-endpoint={`/api/editor/articles/${encodeURIComponent(id)}/workflow`}
+            data-confirm={copy.requestChangesConfirm}
+          >
+            {copy.requestChanges}
+          </button>
+        )}
+        {canApprove && (
+          <button
+            class="editorial-mini-button"
+            type="button"
+            data-editorial-preview-workflow-action="approve"
+            data-endpoint={`/api/editor/articles/${encodeURIComponent(id)}/workflow`}
+            data-confirm={copy.approveConfirm}
+          >
+            {copy.approve}
+          </button>
+        )}
+        <a href={returnHref}>{returnLabel}</a>
+      </div>
     </aside>
 
     {hydratedPostWithCommentCount ? (
@@ -256,8 +310,54 @@ const articleAuthorUrl = articleAuthorSlug
         <h1>{copy.deniedTitle}</h1>
         <p class="editorial-message" data-tone="error">{copy.deniedDescription}</p>
         <p class="editorial-message">{error}</p>
-        <a class="editorial-button" href={editHref}>{copy.backToEditor}</a>
+        <a class="editorial-button" href={returnHref}>{returnLabel}</a>
       </section>
     )}
   </div>
 </BaseLayout>
+
+<script define:vars={{
+  articlesHref,
+  workflowUpdating: copy.workflowUpdating,
+  workflowUpdated: copy.workflowUpdated,
+  workflowGenericError: copy.workflowGenericError,
+}}>
+  const workflowButtons = document.querySelectorAll('[data-editorial-preview-workflow-action]');
+
+  workflowButtons.forEach((button) => {
+    button.addEventListener('click', async () => {
+      const endpoint = button.getAttribute('data-endpoint') || '';
+      const action = button.getAttribute('data-editorial-preview-workflow-action') || '';
+      const confirmMessage = button.getAttribute('data-confirm') || '';
+
+      if (!endpoint || !action) return;
+      if (confirmMessage && !window.confirm(confirmMessage)) return;
+
+      const originalText = button.textContent || '';
+      button.setAttribute('disabled', 'disabled');
+      button.textContent = workflowUpdating;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ action }),
+        });
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || !result?.ok) {
+          throw new Error(result?.error || 'workflow_failed');
+        }
+
+        button.textContent = workflowUpdated;
+        window.location.assign(articlesHref);
+      } catch {
+        button.removeAttribute('disabled');
+        button.textContent = originalText || workflowGenericError;
+        window.alert(workflowGenericError);
+      }
+    });
+  });
+</script>

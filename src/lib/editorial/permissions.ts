@@ -76,6 +76,11 @@ const reviewableWorkflowStatuses = new Set<EditorialWorkflowStatus>([
   'submitted',
 ]);
 
+const previewableReviewWorkflowStatuses = new Set<EditorialWorkflowStatus>([
+  'submitted',
+  'approved',
+]);
+
 function clonePermissions(permissions: EditorialPermissionSet): EditorialPermissionSet {
   return { ...permissions };
 }
@@ -193,6 +198,29 @@ export function canPreviewOwnArticle(
   return (
     context.permissions.canPreviewOwnArticle &&
     isDocumentOwnedByContext(context, ownership)
+  );
+}
+
+export function canPreviewReviewQueueArticle(
+  context: Pick<EditorialSessionContext, 'permissions'>,
+  ownership: Pick<EditorialDocumentOwnership, 'workflowStatus'> | null | undefined
+) {
+  return (
+    context.permissions.canReadSubmittedArticles &&
+    Boolean(
+      ownership?.workflowStatus &&
+        previewableReviewWorkflowStatuses.has(ownership.workflowStatus)
+    )
+  );
+}
+
+export function canPreviewEditorialArticle(
+  context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
+  ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
+) {
+  return (
+    canPreviewOwnArticle(context, ownership) ||
+    canPreviewReviewQueueArticle(context, ownership)
   );
 }
 
