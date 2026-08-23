@@ -67,6 +67,52 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function getDiagnosticErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  return null;
+}
+
+function getDiagnosticErrorStatus(error: unknown) {
+  if (!isPlainObject(error)) return null;
+
+  const directStatus = error.statusCode ?? error.status;
+  if (typeof directStatus === 'number' || typeof directStatus === 'string') return directStatus;
+
+  const response = error.response;
+  if (!isPlainObject(response)) return null;
+
+  const responseStatus = response.statusCode ?? response.status;
+  return typeof responseStatus === 'number' || typeof responseStatus === 'string'
+    ? responseStatus
+    : null;
+}
+
+function getDiagnosticErrorResponse(error: unknown) {
+  if (!isPlainObject(error)) return null;
+
+  const response = error.response;
+  if (!response) return null;
+
+  if (!isPlainObject(response)) return response;
+
+  return {
+    status: response.status ?? response.statusCode ?? null,
+    statusText: response.statusText ?? response.statusMessage ?? null,
+    body: response.body ?? response.text ?? null,
+  };
+}
+
+function logPublishDiagnostic(context: string, error: unknown) {
+  console.error('editorial-publish.diagnostic', {
+    context,
+    message: getDiagnosticErrorMessage(error),
+    stack: error instanceof Error ? error.stack : null,
+    status: getDiagnosticErrorStatus(error),
+    response: getDiagnosticErrorResponse(error),
+  });
+}
+
 function normalizeWorkflowOwnership(
   row: EditorialPublishingDocumentRow | null
 ): EditorialDocumentOwnership | null {
@@ -404,6 +450,7 @@ export async function publishApprovedEditorialArticle({
           .commit<SanityArticleDocument>({ visibility: 'sync' });
       } catch (error) {
         logApiError('editorial-publish.prepare-revision-draft', error);
+        logPublishDiagnostic('editorial-publish.prepare-revision-draft', error);
         return publishFailure(409, 'publish_revision_conflict', 'sanity_prepare_draft');
       }
 
@@ -417,7 +464,7 @@ export async function publishApprovedEditorialArticle({
         });
       } catch (error) {
         logApiError('editorial-publish.sanity-revision-action', error);
-        console.error('editorial-publish.sanity-revision-action', error);
+        logPublishDiagnostic('editorial-publish.sanity-revision-action', error);
         return publishFailure(502, 'sanity_publish_failed', 'sanity_publish');
       }
 
@@ -500,6 +547,7 @@ export async function publishApprovedEditorialArticle({
       .commit<SanityArticleDocument>({ visibility: 'sync' });
   } catch (error) {
     logApiError('editorial-publish.prepare-draft', error);
+    logPublishDiagnostic('editorial-publish.prepare-draft', error);
     return publishFailure(409, 'publish_revision_conflict', 'sanity_prepare_draft');
   }
 
@@ -513,7 +561,7 @@ export async function publishApprovedEditorialArticle({
     });
   } catch (error) {
     logApiError('editorial-publish.sanity-action', error);
-    console.error('editorial-publish.sanity-action', error);
+    logPublishDiagnostic('editorial-publish.sanity-action', error);
     return publishFailure(502, 'sanity_publish_failed', 'sanity_publish');
   }
 
