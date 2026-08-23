@@ -355,6 +355,59 @@ function getBlockquoteGroup(contentBlocks = [], startIndex = 0) {
   return group;
 }
 
+function getListItemType(block) {
+  const listItem = String(block?.listItem || '').trim();
+  return listItem === 'bullet' || listItem === 'number' ? listItem : '';
+}
+
+function getListLevel(block) {
+  const level = Number(block?.level);
+  return Number.isInteger(level) && level >= 1 ? Math.min(level, 6) : 1;
+}
+
+function isListBlock(block) {
+  return block?._type === 'block' && Boolean(getListItemType(block));
+}
+
+function isPreviousListBlock(contentBlocks = [], index = 0) {
+  if (index <= 0) return false;
+
+  const currentBlock = contentBlocks[index];
+  const previousBlock = contentBlocks[index - 1];
+
+  return (
+    isListBlock(currentBlock)
+    && isListBlock(previousBlock)
+    && getListItemType(currentBlock) === getListItemType(previousBlock)
+  );
+}
+
+function getListGroup(contentBlocks = [], startIndex = 0) {
+  const startBlock = contentBlocks[startIndex];
+  const listItem = getListItemType(startBlock);
+  const group = [];
+
+  if (!listItem) return { listItem: '', items: [] };
+
+  for (let index = startIndex; index < contentBlocks.length; index += 1) {
+    const block = contentBlocks[index];
+
+    if (!isListBlock(block) || getListItemType(block) !== listItem) break;
+
+    const html = renderBlockChildren(block);
+
+    if (!isBlankBlockHtml(html)) {
+      group.push({
+        key: block._key || `${startIndex}-${index}`,
+        html,
+        level: getListLevel(block),
+      });
+    }
+  }
+
+  return { listItem, items: group };
+}
+
 /*
   Gallery principale:
   2 → 2
@@ -428,6 +481,44 @@ function chunkBalanced(images = []) {
 
       if (isBlankBlockHtml(html)) {
         return null;
+      }
+
+      if (isListBlock(block)) {
+        if (isPreviousListBlock(content, blockIndex)) {
+          return null;
+        }
+
+        const listGroup = getListGroup(content, blockIndex);
+
+        if (listGroup.items.length === 0) {
+          return null;
+        }
+
+        const listClass = `article-list article-list--${listGroup.listItem}`;
+
+        if (listGroup.listItem === 'number') {
+          return (
+            <ol class={listClass}>
+              {listGroup.items.map((listBlock) => (
+                <li
+                  class={`article-list__item article-list__item--level-${listBlock.level}`}
+                  set:html={listBlock.html}
+                />
+              ))}
+            </ol>
+          );
+        }
+
+        return (
+          <ul class={listClass}>
+            {listGroup.items.map((listBlock) => (
+              <li
+                class={`article-list__item article-list__item--level-${listBlock.level}`}
+                set:html={listBlock.html}
+              />
+            ))}
+          </ul>
+        );
       }
 
       if (block.style === 'h2') {

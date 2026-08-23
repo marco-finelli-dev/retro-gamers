@@ -2508,11 +2508,28 @@
 
 .editorial-pte ul,
 .editorial-pte ol {
-  padding-inline-start: 1.55rem;
+  display: grid;
+  gap: 0.35em;
+  padding-inline-start: 1.65rem;
+}
+
+.editorial-pte ul {
+  list-style: disc;
+}
+
+.editorial-pte ol {
+  list-style: decimal;
 }
 
 .editorial-pte li {
-  margin-block: 0.35em;
+  display: list-item;
+  margin-block: 0;
+  padding-inline-start: 0.2rem;
+}
+
+.editorial-pte li::marker {
+  color: var(--color-primary);
+  font-weight: 800;
 }
 
 .editorial-pte__list-item {
