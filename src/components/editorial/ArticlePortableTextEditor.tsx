@@ -326,6 +326,14 @@ type Labels = {
   slug: string;
   author: string;
   authorMissing: string;
+  authorChangeSaved: string;
+  authorChangeUpdating: string;
+  authorChangeSaveFirst: string;
+  authorChangeForbidden: string;
+  authorChangeConflict: string;
+  authorChangeDraftRequired: string;
+  authorChangePartialFailure: string;
+  authorChangeGenericError: string;
   classificationSection: string;
   relationsSection: string;
   categories: string;
@@ -3707,6 +3715,25 @@ function getWorkflowErrorMessage(error: string, labels: Labels) {
   return labels.workflowGenericError;
 }
 
+function getAuthorChangeErrorMessage(error: string, labels: Labels) {
+  if (error === 'revision_conflict') return labels.authorChangeConflict;
+  if (error === 'author_change_requires_draft') return labels.authorChangeDraftRequired;
+  if (error === 'author_change_partial_failure' || error === 'author_change_invariant_failed') {
+    return labels.authorChangePartialFailure;
+  }
+
+  if (
+    error === 'author_change_forbidden' ||
+    error === 'editorial_profile_required' ||
+    error === 'editorial_profile_suspended' ||
+    error === 'unauthorized'
+  ) {
+    return labels.authorChangeForbidden;
+  }
+
+  return labels.authorChangeGenericError;
+}
+
 function ExitConfirmationModal({
   labels,
   isSaving,
@@ -5565,6 +5592,182 @@ function RelationPicker({
   );
 }
 
+function AuthorPicker({
+  label,
+  value,
+  labels,
+  disabled = false,
+  onChange,
+}: {
+  label: string;
+  value: EditableArticleAuthor;
+  labels: Labels;
+  disabled?: boolean;
+  onChange: (author: NonNullable<EditableArticleAuthor>) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [items, setItems] = useState<NonNullable<EditableArticleAuthor>[]>([]);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const listboxId = useId();
+  const searchId = useId();
+  const selectedId = value?._id || '';
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (disabled) {
+      setIsOpen(false);
+    }
+  }, [disabled]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setStatus('loading');
+
+      try {
+        const params = new URLSearchParams({
+          q: query,
+          limit: '12',
+        });
+        const response = await fetch(`/api/editor/authors?${params.toString()}`, {
+          headers: { accept: 'application/json' },
+          signal: controller.signal,
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result?.ok || !Array.isArray(result.items)) {
+          throw new Error(result?.error || 'author_search_failed');
+        }
+
+        setItems(result.items);
+        setStatus('idle');
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setItems([]);
+        setStatus('error');
+      }
+    }, 220);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [isOpen, query]);
+
+  const selectItem = (item: NonNullable<EditableArticleAuthor>) => {
+    if (disabled) return;
+
+    setIsOpen(false);
+    setQuery('');
+
+    if (item._id === selectedId) return;
+
+    onChange(item);
+  };
+
+  return (
+    <div className="editorial-relation-picker editorial-relation-picker--author" ref={rootRef}>
+      <button
+        type="button"
+        className="editorial-multiselect__trigger"
+        aria-label={label}
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        disabled={disabled}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span>{value?.label || labels.authorMissing}</span>
+        <span aria-hidden="true">▾</span>
+      </button>
+
+      {value?.slug && (
+        <div className="editorial-relation-picker__chips" aria-label={label}>
+          <span className="editorial-relation-picker__chip">
+            <span>{value.slug}</span>
+          </span>
+        </div>
+      )}
+
+      {isOpen && (
+        <div className="editorial-relation-picker__panel">
+          <label className="editorial-relation-picker__search" htmlFor={searchId}>
+            <span className="sr-only">{label}</span>
+            <input
+              id={searchId}
+              value={query}
+              placeholder={labels.relationSearchPlaceholder}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+
+          <div
+            className="editorial-relation-picker__menu"
+            id={listboxId}
+            role="listbox"
+            aria-label={label}
+          >
+            {status === 'loading' && (
+              <p className="editorial-relation-picker__state">{labels.relationLoading}</p>
+            )}
+            {status === 'error' && (
+              <p className="editorial-relation-picker__state" data-tone="error">
+                {labels.relationSearchError}
+              </p>
+            )}
+            {status !== 'loading' && status !== 'error' && items.length === 0 && (
+              <p className="editorial-relation-picker__state">{labels.relationNoResults}</p>
+            )}
+            {status !== 'error' && items.map((item) => {
+              const isSelected = item._id === selectedId;
+
+              return (
+                <button
+                  type="button"
+                  className="editorial-relation-picker__option"
+                  key={item._id}
+                  onClick={() => selectItem(item)}
+                  disabled={disabled || isSelected}
+                  aria-selected={isSelected}
+                  role="option"
+                >
+                  <span>{item.label}</span>
+                  {(item.role || item.slug) && <small>{[item.role, item.slug].filter(Boolean).join(' · ')}</small>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReviewStringListEditor({
   title,
   values,
@@ -5717,6 +5920,9 @@ export default function ArticlePortableTextEditor({
   const [isGameCoverUploading, setIsGameCoverUploading] = useState(false);
   const [isGameCoverRemoving, setIsGameCoverRemoving] = useState(false);
   const [isGameCoverDragActive, setIsGameCoverDragActive] = useState(false);
+  const [isAuthorChanging, setIsAuthorChanging] = useState(false);
+  const [authorStatus, setAuthorStatus] = useState('');
+  const [authorStatusTone, setAuthorStatusTone] = useState<'success' | 'error' | ''>('');
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [typeChangeRequest, setTypeChangeRequest] = useState<TypeChangeRequest | null>(null);
@@ -6453,6 +6659,71 @@ export default function ArticlePortableTextEditor({
     }
   };
 
+  const changeArticleAuthor = async (nextAuthor: NonNullable<EditableArticleAuthor>) => {
+    if (isManualSaveLocked || isAuthorChanging) return;
+    if (!capabilities.canChangeAuthor) {
+      setAuthorStatus(labels.authorChangeForbidden);
+      setAuthorStatusTone('error');
+      return;
+    }
+    if (!nextAuthor?._id || nextAuthor._id === draft.author?._id) return;
+
+    if (hasUnsavedChanges) {
+      setAuthorStatus(labels.authorChangeSaveFirst);
+      setAuthorStatusTone('error');
+      setStatus(labels.authorChangeSaveFirst);
+      setStatusTone('error');
+      return;
+    }
+
+    setIsAuthorChanging(true);
+    setIsManualSaveLocked(true);
+    setAuthorStatus(labels.authorChangeUpdating);
+    setAuthorStatusTone('');
+    setStatus(labels.authorChangeUpdating);
+    setStatusTone('');
+
+    try {
+      const response = await fetch(`${saveEndpoint.replace(/\/$/, '')}/author`, {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          _rev: draft._rev,
+          authorId: nextAuthor._id,
+        }),
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.ok || !result.article) {
+        throw new Error(result?.error || 'author_change_failed');
+      }
+
+      const savedContent = result.article.content || [];
+
+      setDraft(result.article);
+      setContent(savedContent);
+      savedSnapshotRef.current = getEditableArticleSnapshot(result.article, savedContent);
+      lastAutosaveAttemptSignatureRef.current = '';
+      setAuthorStatus(labels.authorChangeSaved);
+      setAuthorStatusTone('success');
+      setStatus(labels.authorChangeSaved);
+      setStatusTone('success');
+    } catch (error) {
+      const errorCode = error instanceof Error ? error.message : 'author_change_failed';
+      const message = getAuthorChangeErrorMessage(errorCode, labels);
+
+      setAuthorStatus(message);
+      setAuthorStatusTone('error');
+      setStatus(message);
+      setStatusTone('error');
+    } finally {
+      setIsAuthorChanging(false);
+      setIsManualSaveLocked(false);
+    }
+  };
+
   useEffect(() => {
     if (!hasUnsavedChanges) {
       lastAutosaveAttemptSignatureRef.current = '';
@@ -6682,24 +6953,18 @@ export default function ArticlePortableTextEditor({
                 data-capability="change-author"
               >
                 <span>{labels.author}</span>
-                <div className="editorial-relation-picker editorial-relation-picker--author">
-                  <div
-                    className="editorial-multiselect__trigger"
-                    role="group"
-                    aria-label={labels.author}
-                  >
-                    <span>{draft.author?.label || labels.authorMissing}</span>
-                    <span aria-hidden="true">▾</span>
-                  </div>
-                  {draft.author?.slug && (
-                    <div className="editorial-relation-picker__chips" aria-label={labels.author}>
-                      <span className="editorial-relation-picker__chip">
-                        <span>{draft.author.slug}</span>
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <p className="editorial-file-meta">{labels.futureSlot}</p>
+                <AuthorPicker
+                  label={labels.author}
+                  value={draft.author}
+                  labels={labels}
+                  disabled={isManualSaveLocked || isAuthorChanging}
+                  onChange={changeArticleAuthor}
+                />
+                {authorStatus && (
+                  <p className="editorial-file-meta" data-tone={authorStatusTone || undefined}>
+                    {authorStatus}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="editorial-readonly-field">

@@ -2,6 +2,7 @@ import { logApiError } from '../api-errors';
 import { getSanityRawClient, getSanityWriteClient } from '../sanity-write.server';
 import { supabaseAdmin } from '../supabase/server';
 import {
+  canChangeArticleAuthor,
   canPreviewEditorialArticle,
   canCreateArticle,
   canEditOwnArticle,
@@ -1603,6 +1604,65 @@ export async function searchEditorialReferences({
   }
 }
 
+export async function searchEditorialAuthors({
+  context,
+  q,
+  limit,
+}: {
+  context: EditableEditorialContext;
+  q?: unknown;
+  limit?: unknown;
+}) {
+  if (!canChangeArticleAuthor(context)) {
+    return { ok: false as const, status: 403, error: 'author_change_forbidden' };
+  }
+
+  const searchTerm = normalizeSearchTerm(q);
+  const search = searchTerm ? `${searchTerm}*` : '';
+  const hasSearch = Boolean(search);
+  const safeLimit = normalizeSearchLimit(limit);
+
+  try {
+    const documents = await getSanityRawClient().fetch<Record<string, unknown>[]>(
+      `*[
+        _type == "author" &&
+        !(_id in path("drafts.**")) &&
+        (
+          !$hasSearch ||
+          name match $search ||
+          nickname match $search ||
+          role match $search ||
+          slug.current match $search
+        )
+      ] | order(coalesce(name, nickname, slug.current) asc)[0...$limit] {
+        _id,
+        _type,
+        name,
+        nickname,
+        displayName,
+        role,
+        slug
+      }`,
+      {
+        hasSearch,
+        search,
+        limit: safeLimit,
+      }
+    );
+
+    return {
+      ok: true as const,
+      items: (documents || [])
+        .map((document) => normalizeAuthorInfo(document, String(document?._id || '')))
+        .filter((author): author is EditorialArticleAuthorInfo => Boolean(author)),
+    };
+  } catch (error) {
+    logApiError('editorial-authors.search', error);
+
+    return { ok: false as const, status: 500, error: 'author_search_failed' };
+  }
+}
+
 function getPayloadReferenceId(value: unknown) {
   if (isPlainObject(value)) {
     return normalizeReferenceId(value);
@@ -1906,6 +1966,30 @@ async function fetchOwnership(rootDocumentId: string) {
   return { ok: true as const, ownership: normalizeOwnership(data as EditorialDocumentRow | null) };
 }
 
+function getAuthorConflictResult({
+  ownership,
+  article,
+  documentLifecycle,
+}: {
+  ownership: EditorialDocumentOwnership;
+  article: EditorialArticleDraft;
+  documentLifecycle?: EditorialArticleSanityLifecycle;
+}) {
+  const conflict = getOwnershipConflict(ownership, article.authorId);
+
+  if (conflict.hasConflict || article.authorId !== ownership.sanityAuthorId) {
+    return {
+      ok: false as const,
+      status: 409,
+      error: 'author_ownership_conflict',
+      conflict,
+      ...(documentLifecycle ? { documentLifecycle } : {}),
+    };
+  }
+
+  return { ok: true as const };
+}
+
 export async function requireEditorialArticleContext(
   cookies: Parameters<typeof getEditorialSessionFromCookies>[0]
 ): Promise<
@@ -1948,7 +2032,7 @@ async function recordArticleAudit({
   metadata = {},
 }: {
   actorUserId: string;
-  action: 'article_created' | 'article_saved';
+  action: 'article_created' | 'article_saved' | 'article_author_changed';
   sanityDocumentId: string;
   previousWorkflowStatus?: EditorialWorkflowStatus | null;
   nextWorkflowStatus?: EditorialWorkflowStatus | null;
@@ -2103,20 +2187,13 @@ async function buildEditorialArticleListItem(
     sanityLifecycle = resolved.lifecycle;
     documentSource = resolved.documentSource;
 
-    const normalizedDocuments = [resolved.draftDocument, resolved.publishedDocument]
-      .filter((document): document is Record<string, unknown> => Boolean(document))
-      .map((document) => normalizeDraftArticle(document, null, {
-        rootDocumentId: ownership.sanityDocumentId,
-        documentSource: getArticleDocumentSource(document._id),
-        documentLifecycle: resolved.lifecycle,
-      }));
+    const selectedForInvariant = normalizeDraftArticle(resolved.document || null, null, {
+      rootDocumentId: ownership.sanityDocumentId,
+      documentSource: resolved.documentSource || undefined,
+      documentLifecycle: resolved.lifecycle,
+    });
 
-    if (
-      normalizedDocuments.some((document) => !document) ||
-      (normalizedDocuments as EditorialArticleDraft[]).some((document) =>
-        document.authorId !== ownership.sanityAuthorId
-      )
-    ) {
+    if (!selectedForInvariant || selectedForInvariant.authorId !== ownership.sanityAuthorId) {
       logApiError(logContext, new Error('author_ownership_conflict'));
     } else {
       const normalizedArticle = normalizeDraftArticle(resolved.document || null, author, {
@@ -2229,10 +2306,6 @@ export async function fetchEditableEditorialArticle({
     return { ok: false as const, status: 403, error: 'article_forbidden' };
   }
 
-  if (ownership.sanityAuthorId !== context.sanityAuthorId) {
-    return { ok: false as const, status: 409, error: 'author_ownership_conflict' };
-  }
-
   try {
     const resolved = await fetchSanityArticleDocumentPair(sanityDocumentId);
 
@@ -2245,32 +2318,6 @@ export async function fetchEditableEditorialArticle({
       };
     }
 
-    const normalizedDocuments = [resolved.draftDocument, resolved.publishedDocument]
-      .filter((document): document is Record<string, unknown> => Boolean(document))
-      .map((document) => normalizeDraftArticle(document, null, {
-        rootDocumentId: ownership.sanityDocumentId,
-        documentSource: getArticleDocumentSource(document._id),
-        documentLifecycle: resolved.lifecycle,
-      }));
-
-    if (normalizedDocuments.some((document) => !document)) {
-      return { ok: false as const, status: 422, error: 'malformed_article' };
-    }
-
-    for (const document of normalizedDocuments as EditorialArticleDraft[]) {
-      const conflict = getOwnershipConflict(ownership, document.authorId);
-
-      if (conflict.hasConflict || document.authorId !== context.sanityAuthorId) {
-        return {
-          ok: false as const,
-          status: 409,
-          error: 'author_ownership_conflict',
-          conflict,
-          documentLifecycle: resolved.lifecycle,
-        };
-      }
-    }
-
     const selectedArticle = normalizeDraftArticle(resolved.document, null, {
       rootDocumentId: ownership.sanityDocumentId,
       documentSource: resolved.documentSource,
@@ -2279,6 +2326,16 @@ export async function fetchEditableEditorialArticle({
 
     if (!selectedArticle) {
       return { ok: false as const, status: 422, error: 'malformed_article' };
+    }
+
+    const authorConflict = getAuthorConflictResult({
+      ownership,
+      article: selectedArticle,
+      documentLifecycle: resolved.lifecycle,
+    });
+
+    if (!authorConflict.ok) {
+      return authorConflict;
     }
 
     const author = await fetchAuthorInfo(selectedArticle.authorId);
@@ -2338,32 +2395,6 @@ export async function fetchPreviewableEditorialArticle({
       };
     }
 
-    const normalizedDocuments = [resolved.draftDocument, resolved.publishedDocument]
-      .filter((document): document is Record<string, unknown> => Boolean(document))
-      .map((document) => normalizeDraftArticle(document, null, {
-        rootDocumentId: ownership.sanityDocumentId,
-        documentSource: getArticleDocumentSource(document._id),
-        documentLifecycle: resolved.lifecycle,
-      }));
-
-    if (normalizedDocuments.some((document) => !document)) {
-      return { ok: false as const, status: 422, error: 'malformed_article' };
-    }
-
-    for (const document of normalizedDocuments as EditorialArticleDraft[]) {
-      const conflict = getOwnershipConflict(ownership, document.authorId);
-
-      if (conflict.hasConflict || document.authorId !== ownership.sanityAuthorId) {
-        return {
-          ok: false as const,
-          status: 409,
-          error: 'author_ownership_conflict',
-          conflict,
-          documentLifecycle: resolved.lifecycle,
-        };
-      }
-    }
-
     const selectedArticle = normalizeDraftArticle(resolved.document, null, {
       rootDocumentId: ownership.sanityDocumentId,
       documentSource: resolved.documentSource,
@@ -2372,6 +2403,16 @@ export async function fetchPreviewableEditorialArticle({
 
     if (!selectedArticle) {
       return { ok: false as const, status: 422, error: 'malformed_article' };
+    }
+
+    const authorConflict = getAuthorConflictResult({
+      ownership,
+      article: selectedArticle,
+      documentLifecycle: resolved.lifecycle,
+    });
+
+    if (!authorConflict.ok) {
+      return authorConflict;
     }
 
     const author = await fetchAuthorInfo(selectedArticle.authorId);
@@ -2695,6 +2736,251 @@ export async function updateEditableEditorialArticle({
 
     logApiError('editorial-article.update', error);
     return { ok: false as const, status: 500, error: 'article_save_failed' };
+  }
+}
+
+const authorChangeWorkflowStatuses = new Set<EditorialWorkflowStatus>([
+  'draft',
+  'changes_requested',
+  'submitted',
+  'approved',
+]);
+
+async function finalizeEditorialArticleAuthorChange({
+  context,
+  ownership,
+  nextAuthorId,
+  nextAuthor,
+  documentLifecycle,
+}: {
+  context: EditableEditorialContext;
+  ownership: EditorialDocumentOwnership;
+  nextAuthorId: string;
+  nextAuthor: EditorialArticleAuthorInfo;
+  documentLifecycle: EditorialArticleSanityLifecycle;
+}) {
+  const previousAuthorId = ownership.sanityAuthorId;
+  const draftDocumentId = getDraftDocumentId(ownership.sanityDocumentId);
+
+  const { data, error } = await supabaseAdmin
+    .from('editorial_documents')
+    .update({ sanity_author_id: nextAuthorId })
+    .eq('sanity_document_id', ownership.sanityDocumentId)
+    .eq('sanity_author_id', previousAuthorId)
+    .select('sanity_document_id, owner_user_id, sanity_author_id, workflow_status, submitted_at, reviewed_by, reviewed_at, created_at, updated_at')
+    .maybeSingle();
+
+  if (error) {
+    logApiError('editorial-article.author.supabase-partial', error);
+    return { ok: false as const, status: 502, error: 'author_change_partial_failure' };
+  }
+
+  const updatedOwnership = normalizeOwnership(data as EditorialDocumentRow | null);
+
+  if (!updatedOwnership) {
+    const latestOwnershipResult = await fetchOwnership(ownership.sanityDocumentId);
+
+    if (
+      latestOwnershipResult.ok &&
+      latestOwnershipResult.ownership?.sanityAuthorId === nextAuthorId
+    ) {
+      const readBackDocument = await getSanityRawClient().getDocument<Record<string, unknown>>(draftDocumentId);
+      const readBackArticle = normalizeDraftArticle(readBackDocument || null, nextAuthor, {
+        rootDocumentId: latestOwnershipResult.ownership.sanityDocumentId,
+        documentSource: 'draft',
+        documentLifecycle,
+      });
+
+      if (readBackArticle?.authorId === latestOwnershipResult.ownership.sanityAuthorId) {
+        return {
+          ok: true as const,
+          article: await hydrateDraftArticle(readBackArticle),
+          ownership: latestOwnershipResult.ownership,
+          auditLogged: false,
+        };
+      }
+    }
+
+    logApiError('editorial-article.author.supabase-conflict', new Error('author_change_partial_failure'));
+    return { ok: false as const, status: 409, error: 'author_change_partial_failure' };
+  }
+
+  const readBackDocument = await getSanityRawClient().getDocument<Record<string, unknown>>(draftDocumentId);
+  const readBackArticle = normalizeDraftArticle(readBackDocument || null, nextAuthor, {
+    rootDocumentId: updatedOwnership.sanityDocumentId,
+    documentSource: 'draft',
+    documentLifecycle,
+  });
+
+  if (!readBackArticle || readBackArticle.authorId !== updatedOwnership.sanityAuthorId) {
+    logApiError('editorial-article.author.readback', new Error('author_invariant_failed'));
+    return { ok: false as const, status: 502, error: 'author_change_invariant_failed' };
+  }
+
+  const article = await hydrateDraftArticle(readBackArticle);
+  const auditLogged = await recordArticleAudit({
+    actorUserId: context.user.id,
+    action: 'article_author_changed',
+    sanityDocumentId: updatedOwnership.sanityDocumentId,
+    previousWorkflowStatus: ownership.workflowStatus,
+    nextWorkflowStatus: updatedOwnership.workflowStatus,
+    metadata: {
+      oldSanityAuthorId: previousAuthorId,
+      newSanityAuthorId: nextAuthorId,
+    },
+  });
+
+  return {
+    ok: true as const,
+    article,
+    ownership: updatedOwnership,
+    auditLogged,
+  };
+}
+
+export async function updateEditorialArticleAuthor({
+  context,
+  rootDocumentId,
+  payload,
+}: {
+  context: EditableEditorialContext;
+  rootDocumentId: unknown;
+  payload: Record<string, unknown>;
+}) {
+  if (!canChangeArticleAuthor(context)) {
+    return { ok: false as const, status: 403, error: 'author_change_forbidden' };
+  }
+
+  const sanityDocumentId = normalizeEditableArticleRootDocumentId(rootDocumentId);
+  const revisionId = normalizeString(payload._rev, 160).trim();
+  const nextAuthorId = normalizeSanityRootDocumentId(payload.authorId);
+
+  if (!sanityDocumentId) {
+    return { ok: false as const, status: 400, error: 'invalid_article_id' };
+  }
+
+  if (!revisionId) {
+    return { ok: false as const, status: 400, error: 'missing_revision' };
+  }
+
+  if (!nextAuthorId) {
+    return { ok: false as const, status: 400, error: 'invalid_author_id' };
+  }
+
+  const ownershipResult = await fetchOwnership(sanityDocumentId);
+  if (!ownershipResult.ok) return ownershipResult;
+
+  const ownership = ownershipResult.ownership;
+
+  if (!ownership) {
+    return { ok: false as const, status: 404, error: 'article_not_found' };
+  }
+
+  if (!authorChangeWorkflowStatuses.has(ownership.workflowStatus)) {
+    return { ok: false as const, status: 409, error: 'author_change_workflow_forbidden' };
+  }
+
+  const nextAuthor = await fetchAuthorInfo(nextAuthorId);
+
+  if (!nextAuthor) {
+    return { ok: false as const, status: 404, error: 'author_not_found' };
+  }
+
+  try {
+    const resolved = await fetchSanityArticleDocumentPair(sanityDocumentId);
+
+    if (!resolved.draftDocument) {
+      return {
+        ok: false as const,
+        status: 409,
+        error: 'author_change_requires_draft',
+        documentLifecycle: resolved.lifecycle,
+      };
+    }
+
+    const draftArticle = normalizeDraftArticle(resolved.draftDocument, null, {
+      rootDocumentId: ownership.sanityDocumentId,
+      documentSource: 'draft',
+      documentLifecycle: resolved.lifecycle,
+    });
+
+    if (!draftArticle) {
+      return { ok: false as const, status: 422, error: 'malformed_article' };
+    }
+
+    if (draftArticle.authorId !== ownership.sanityAuthorId) {
+      if (draftArticle.authorId === nextAuthorId) {
+        return finalizeEditorialArticleAuthorChange({
+          context,
+          ownership,
+          nextAuthorId,
+          nextAuthor,
+          documentLifecycle: resolved.lifecycle,
+        });
+      }
+
+      const authorConflict = getAuthorConflictResult({
+        ownership,
+        article: draftArticle,
+        documentLifecycle: resolved.lifecycle,
+      });
+
+      return authorConflict.ok
+        ? { ok: false as const, status: 409, error: 'author_ownership_conflict' }
+        : authorConflict;
+    }
+
+    if (draftArticle.authorId === nextAuthorId) {
+      const hydrated = await hydrateDraftArticle({ ...draftArticle, author: nextAuthor });
+
+      return {
+        ok: true as const,
+        article: hydrated,
+        ownership,
+        auditLogged: false,
+      };
+    }
+
+    if (draftArticle._rev !== revisionId) {
+      return { ok: false as const, status: 409, error: 'revision_conflict' };
+    }
+
+    const draftDocumentId = getDraftDocumentId(ownership.sanityDocumentId);
+    const updatedDocument = await getSanityWriteClient()
+      .patch(draftDocumentId)
+      .ifRevisionId(revisionId)
+      .set({
+        author: {
+          _type: 'reference',
+          _ref: nextAuthorId,
+        },
+      })
+      .commit<Record<string, unknown>>();
+
+    const updatedArticle = normalizeDraftArticle(updatedDocument, nextAuthor, {
+      rootDocumentId: ownership.sanityDocumentId,
+      documentSource: 'draft',
+      documentLifecycle: resolved.lifecycle,
+    });
+
+    if (!updatedArticle || updatedArticle.authorId !== nextAuthorId) {
+      return { ok: false as const, status: 502, error: 'sanity_article_invalid' };
+    }
+
+    return finalizeEditorialArticleAuthorChange({
+      context,
+      ownership,
+      nextAuthorId,
+      nextAuthor,
+      documentLifecycle: resolved.lifecycle,
+    });
+  } catch (error) {
+    if (isRevisionConflict(error)) {
+      return { ok: false as const, status: 409, error: 'revision_conflict' };
+    }
+
+    logApiError('editorial-article.author.update', error);
+    return { ok: false as const, status: 500, error: 'author_change_failed' };
   }
 }
 

@@ -220,10 +220,7 @@ export async function submitArticleForReview({
     config: {
       nextStatus: 'submitted',
       auditAction: 'article_submitted',
-      canTransition: (currentContext, ownership) => (
-        ownership.sanityAuthorId === currentContext.sanityAuthorId &&
-        canSubmitWorkflowArticle(currentContext, ownership)
-      ),
+      canTransition: canSubmitWorkflowArticle,
       getUpdatePayload: (_context, timestamp) => ({
         submitted_at: timestamp,
         reviewed_by: null,

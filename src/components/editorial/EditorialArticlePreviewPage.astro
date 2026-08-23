@@ -9,7 +9,7 @@ import {
   fetchEditorialArticlePreviewRelatedPostCandidates,
   fetchEditorialArticlePreviewSeriesPosts
 } from '../../lib/editorial/article-preview.server';
-import { getWorkflowTransitionPermissions } from '../../lib/editorial/permissions';
+import { canChangeArticleAuthor, getWorkflowTransitionPermissions } from '../../lib/editorial/permissions';
 import { getPublicPostSummaries, getRelatedPosts } from '../../lib/posts';
 import {
   attachApprovedCommentCounts,
@@ -38,6 +38,15 @@ const copy = isEnglish
       backToArticles: 'Back to articles',
       requestChanges: 'Request changes',
       approve: 'Approve',
+      author: 'Author',
+      changeAuthor: 'Change author',
+      authorSearchPlaceholder: 'Search author…',
+      authorLoading: 'Searching…',
+      authorNoResults: 'No authors found.',
+      authorSearchError: 'Author search unavailable.',
+      authorChanging: 'Updating author…',
+      authorUpdated: 'Author updated.',
+      authorChangeGenericError: 'The author could not be updated.',
       requestChangesConfirm: 'Return this article to the author for changes?',
       approveConfirm: 'Approve this article?',
       workflowUpdating: 'Updating workflow…',
@@ -56,6 +65,15 @@ const copy = isEnglish
       backToArticles: 'Torna agli articoli',
       requestChanges: 'Richiedi modifiche',
       approve: 'Approva',
+      author: 'Autore',
+      changeAuthor: 'Cambia autore',
+      authorSearchPlaceholder: 'Cerca autore…',
+      authorLoading: 'Ricerca in corso…',
+      authorNoResults: 'Nessun autore trovato.',
+      authorSearchError: 'Ricerca autore non disponibile.',
+      authorChanging: 'Aggiornamento autore…',
+      authorUpdated: 'Autore aggiornato.',
+      authorChangeGenericError: 'Non è stato possibile aggiornare l’autore.',
       requestChangesConfirm: 'Restituire l’articolo all’autore per modifiche?',
       approveConfirm: 'Approvare questo articolo?',
       workflowUpdating: 'Aggiornamento workflow…',
@@ -134,6 +152,9 @@ let documentLifecycle = 'missing';
 let documentSource = '';
 let workflowPermissions = null;
 let canReturnToEditor = false;
+let canChangeAuthor = false;
+let previewAuthor = null;
+let previewRevision = '';
 
 const access = await requireEditorialArticleContext(Astro.cookies);
 
@@ -147,6 +168,9 @@ if (access.ok) {
     documentLifecycle = editableResult.documentLifecycle;
     documentSource = editableResult.documentSource;
     workflowPermissions = getWorkflowTransitionPermissions(access.context, editableResult.ownership);
+    canChangeAuthor = canChangeArticleAuthor(access.context);
+    previewAuthor = editableResult.article?.author || null;
+    previewRevision = editableResult.article?._rev || '';
     canReturnToEditor =
       editableResult.ownership.ownerUserId === access.context.user.id &&
       ['draft', 'changes_requested'].includes(editableResult.ownership.workflowStatus);
@@ -268,6 +292,44 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
         )}
       </div>
       <div class="editorial-action-card__actions">
+        {canChangeAuthor && previewAuthor && previewRevision && (
+          <div
+            class="editorial-preview-author-picker"
+            data-editorial-preview-author-picker
+            data-endpoint={`/api/editor/articles/${encodeURIComponent(id)}/author`}
+            data-revision={previewRevision}
+            data-current-author-id={previewAuthor._id}
+          >
+            <span>{copy.author}</span>
+            <button
+              class="editorial-mini-button"
+              type="button"
+              data-editorial-preview-author-trigger
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            >
+              <span data-editorial-preview-author-label>{previewAuthor.label}</span>
+              <span aria-hidden="true">▾</span>
+            </button>
+            <div class="editorial-preview-author-picker__panel" data-editorial-preview-author-panel hidden>
+              <label>
+                <span class="sr-only">{copy.changeAuthor}</span>
+                <input
+                  type="search"
+                  placeholder={copy.authorSearchPlaceholder}
+                  data-editorial-preview-author-search
+                />
+              </label>
+              <div
+                class="editorial-preview-author-picker__results"
+                role="listbox"
+                aria-label={copy.changeAuthor}
+                data-editorial-preview-author-results
+              ></div>
+            </div>
+            <p class="editorial-preview-author-picker__status" data-editorial-preview-author-status hidden></p>
+          </div>
+        )}
         {canRequestChanges && (
           <button
             class="editorial-mini-button"
@@ -321,8 +383,15 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
   workflowUpdating: copy.workflowUpdating,
   workflowUpdated: copy.workflowUpdated,
   workflowGenericError: copy.workflowGenericError,
+  authorLoading: copy.authorLoading,
+  authorNoResults: copy.authorNoResults,
+  authorSearchError: copy.authorSearchError,
+  authorChanging: copy.authorChanging,
+  authorUpdated: copy.authorUpdated,
+  authorChangeGenericError: copy.authorChangeGenericError,
 }}>
   const workflowButtons = document.querySelectorAll('[data-editorial-preview-workflow-action]');
+  const authorPicker = document.querySelector('[data-editorial-preview-author-picker]');
 
   workflowButtons.forEach((button) => {
     button.addEventListener('click', async () => {
@@ -360,4 +429,174 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
       }
     });
   });
+
+  if (authorPicker) {
+    const trigger = authorPicker.querySelector('[data-editorial-preview-author-trigger]');
+    const panel = authorPicker.querySelector('[data-editorial-preview-author-panel]');
+    const searchInput = authorPicker.querySelector('[data-editorial-preview-author-search]');
+    const results = authorPicker.querySelector('[data-editorial-preview-author-results]');
+    const status = authorPicker.querySelector('[data-editorial-preview-author-status]');
+    const label = authorPicker.querySelector('[data-editorial-preview-author-label]');
+    let controller = null;
+    let searchTimer = 0;
+
+    const setAuthorStatus = (message, tone = '') => {
+      if (!status) return;
+      status.hidden = !message;
+      status.textContent = message;
+      if (tone) {
+        status.dataset.tone = tone;
+      } else {
+        delete status.dataset.tone;
+      }
+    };
+
+    const setPanelOpen = (open) => {
+      if (!panel || !trigger) return;
+      panel.hidden = !open;
+      trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        searchInput?.focus();
+      }
+    };
+
+    const renderAuthorResults = (items) => {
+      if (!results) return;
+      results.textContent = '';
+
+      if (!items.length) {
+        const empty = document.createElement('p');
+        empty.className = 'editorial-relation-picker__state';
+        empty.textContent = authorNoResults;
+        results.append(empty);
+        return;
+      }
+
+      const currentAuthorId = authorPicker.getAttribute('data-current-author-id') || '';
+
+      items.forEach((item) => {
+        const button = document.createElement('button');
+        const name = document.createElement('span');
+        button.type = 'button';
+        button.className = 'editorial-relation-picker__option';
+        button.setAttribute('role', 'option');
+        button.disabled = item?._id === currentAuthorId;
+        button.setAttribute('aria-selected', item?._id === currentAuthorId ? 'true' : 'false');
+        name.textContent = item?.label || item?._id || '';
+        button.append(name);
+
+        const meta = [item?.role, item?.slug].filter(Boolean).join(' · ');
+        if (meta) {
+          const small = document.createElement('small');
+          small.textContent = meta;
+          button.append(small);
+        }
+
+        button.addEventListener('click', async () => {
+          const endpoint = authorPicker.getAttribute('data-endpoint') || '';
+          const revision = authorPicker.getAttribute('data-revision') || '';
+          const authorId = item?._id || '';
+
+          if (!endpoint || !revision || !authorId || button.disabled) return;
+
+          setAuthorStatus(authorChanging);
+          setPanelOpen(false);
+          trigger?.setAttribute('disabled', 'disabled');
+
+          try {
+            const response = await fetch(endpoint, {
+              method: 'PATCH',
+              headers: {
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify({
+                _rev: revision,
+                authorId,
+              }),
+            });
+            const result = await response.json().catch(() => null);
+
+            if (!response.ok || !result?.ok || !result.article) {
+              throw new Error(result?.error || 'author_change_failed');
+            }
+
+            authorPicker.setAttribute('data-revision', result.article._rev || revision);
+            authorPicker.setAttribute('data-current-author-id', result.article.author?._id || authorId);
+            if (label) {
+              label.textContent = result.article.author?.label || item.label || authorId;
+            }
+            setAuthorStatus(authorUpdated, 'success');
+            window.setTimeout(() => window.location.reload(), 450);
+          } catch {
+            trigger?.removeAttribute('disabled');
+            setAuthorStatus(authorChangeGenericError, 'error');
+          }
+        });
+
+        results.append(button);
+      });
+    };
+
+    const searchAuthors = () => {
+      window.clearTimeout(searchTimer);
+      controller?.abort();
+      searchTimer = window.setTimeout(async () => {
+        controller = new AbortController();
+        if (results) {
+          results.textContent = '';
+          const loading = document.createElement('p');
+          loading.className = 'editorial-relation-picker__state';
+          loading.textContent = authorLoading;
+          results.append(loading);
+        }
+
+        try {
+          const params = new URLSearchParams({
+            q: searchInput?.value || '',
+            limit: '12',
+          });
+          const response = await fetch(`/api/editor/authors?${params.toString()}`, {
+            headers: { accept: 'application/json' },
+            signal: controller.signal,
+          });
+          const result = await response.json();
+
+          if (!response.ok || !result?.ok || !Array.isArray(result.items)) {
+            throw new Error(result?.error || 'author_search_failed');
+          }
+
+          renderAuthorResults(result.items);
+        } catch (error) {
+          if (controller?.signal.aborted) return;
+          if (results) {
+            results.textContent = '';
+            const message = document.createElement('p');
+            message.className = 'editorial-relation-picker__state';
+            message.dataset.tone = 'error';
+            message.textContent = authorSearchError;
+            results.append(message);
+          }
+        }
+      }, 180);
+    };
+
+    trigger?.addEventListener('click', () => {
+      const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+      setPanelOpen(!isOpen);
+      if (!isOpen) searchAuthors();
+    });
+
+    searchInput?.addEventListener('input', searchAuthors);
+
+    document.addEventListener('pointerdown', (event) => {
+      if (event.target instanceof Node && !authorPicker.contains(event.target)) {
+        setPanelOpen(false);
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        setPanelOpen(false);
+      }
+    });
+  }
 </script>

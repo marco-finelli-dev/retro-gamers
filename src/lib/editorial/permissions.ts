@@ -271,6 +271,10 @@ export function canPublishArticle(context: Pick<EditorialSessionContext, 'permis
   return context.permissions.canPublishArticle;
 }
 
+export function canChangeArticleAuthor(context: Pick<EditorialSessionContext, 'permissions'>) {
+  return context.permissions.canPublishArticle;
+}
+
 export function canSubmitWorkflowArticle(
   context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
   ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
