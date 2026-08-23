@@ -34,6 +34,12 @@ const copy = isEnglish
         'Manual save only. Preview opens in the same tab; publishing and review submission are not enabled in this step.',
       deniedTitle: 'Draft unavailable',
       deniedDescription: 'This draft could not be loaded.',
+      deniedDescriptions: {
+        article_submitted_locked: 'This article is under review and cannot be edited in this phase.',
+        article_approved_locked: 'This article is approved and can no longer be edited in this phase.',
+        article_published_locked: 'This article is published and direct editing is not supported in this phase.',
+        article_not_editable: 'This article does not have an editable draft available.',
+      },
       dashboard: 'Editorial dashboard',
       articles: 'Article workspace',
       newArticle: 'New article',
@@ -337,6 +343,12 @@ const copy = isEnglish
         'Salvataggio manuale. L’anteprima si apre nella stessa scheda; pubblicazione e invio in revisione non sono abilitati in questo step.',
       deniedTitle: 'Bozza non disponibile',
       deniedDescription: 'Non è stato possibile caricare questa bozza.',
+      deniedDescriptions: {
+        article_submitted_locked: 'Questo articolo è in revisione e non può essere modificato in questa fase.',
+        article_approved_locked: 'Questo articolo è approvato e non è più modificabile in questa fase.',
+        article_published_locked: 'Questo articolo è pubblicato e la modifica diretta non è supportata in questa fase.',
+        article_not_editable: 'Questo articolo non ha una bozza modificabile disponibile.',
+      },
       dashboard: 'Dashboard redazionale',
       articles: 'Editor articoli',
       newArticle: 'Nuovo articolo',
@@ -645,6 +657,7 @@ let article = null;
 let workflow = null;
 let workflowPermissions = null;
 let error = '';
+let deniedDescription = copy.deniedDescription;
 
 const toClientArticle = (value) => JSON.parse(JSON.stringify(value));
 const getLoggableRootDocumentId = (value) => {
@@ -689,7 +702,8 @@ if (access.ok) {
     });
     workflowPermissions = toClientArticle(getWorkflowTransitionPermissions(access.context, result.ownership));
   } else {
-    error = 'draft_load_failed';
+    error = result.error || 'draft_load_failed';
+    deniedDescription = copy.deniedDescriptions?.[error] || copy.deniedDescription;
     logEditPageFailure({
       rootDocumentId: id,
       failureCode: result.error || 'article_missing',
@@ -697,7 +711,8 @@ if (access.ok) {
     });
   }
 } else {
-  error = 'draft_load_failed';
+  error = access.error || 'draft_load_failed';
+  deniedDescription = copy.deniedDescriptions?.[error] || copy.deniedDescription;
   logEditPageFailure({
     rootDocumentId: id,
     failureCode: access.error,
@@ -733,7 +748,7 @@ if (access.ok) {
       <section class="editorial-card editorial-card--notice">
         <p class="editorial-kicker">{copy.kicker}</p>
         <h2>{copy.deniedTitle}</h2>
-        <p class="editorial-message" data-tone={error ? 'error' : undefined}>{copy.deniedDescription}</p>
+        <p class="editorial-message" data-tone={error ? 'error' : undefined}>{deniedDescription}</p>
       </section>
     )}
 

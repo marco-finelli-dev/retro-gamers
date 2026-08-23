@@ -9,7 +9,7 @@ import {
   fetchEditorialArticlePreviewRelatedPostCandidates,
   fetchEditorialArticlePreviewSeriesPosts
 } from '../../lib/editorial/article-preview.server';
-import { canPublishWorkflowArticle, getWorkflowTransitionPermissions } from '../../lib/editorial/permissions';
+import { canEditOwnArticle, canPublishWorkflowArticle, getWorkflowTransitionPermissions } from '../../lib/editorial/permissions';
 import { getPublicPostSummaries, getRelatedPosts } from '../../lib/posts';
 import {
   attachApprovedCommentCounts,
@@ -173,6 +173,7 @@ let error = '';
 let documentLifecycle = 'missing';
 let documentSource = '';
 let workflowPermissions = null;
+let canOpenEditor = false;
 let canPublish = false;
 let previewAuthor = null;
 
@@ -188,6 +189,7 @@ if (access.ok) {
     documentLifecycle = editableResult.documentLifecycle;
     documentSource = editableResult.documentSource;
     workflowPermissions = getWorkflowTransitionPermissions(access.context, editableResult.ownership);
+    canOpenEditor = canEditOwnArticle(access.context, editableResult.ownership);
     canPublish = canPublishWorkflowArticle(access.context, editableResult.ownership);
     previewAuthor = editableResult.article?.author || null;
 
@@ -346,7 +348,7 @@ const previewAuthorLabel = articleAuthorName || previewAuthor?.label || '—';
         )}
       </div>
       <div class="editorial-private-preview__navigation">
-        <a href={editHref}>{copy.editArticle}</a>
+        {canOpenEditor && <a href={editHref}>{copy.editArticle}</a>}
         <a href={articlesHref}>{copy.backToArticles}</a>
       </div>
     </aside>

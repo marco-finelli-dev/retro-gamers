@@ -2302,8 +2302,25 @@ export async function fetchEditableEditorialArticle({
     return { ok: false as const, status: 404, error: 'article_not_found' };
   }
 
-  if (!isDocumentOwnedByContext(context, ownership) || !canEditOwnArticle(context, ownership)) {
+  if (!isDocumentOwnedByContext(context, ownership)) {
     return { ok: false as const, status: 403, error: 'article_forbidden' };
+  }
+
+  if (!canEditOwnArticle(context, ownership)) {
+    const workflowLockedError: Record<EditorialWorkflowStatus, string> = {
+      draft: 'article_not_editable',
+      submitted: 'article_submitted_locked',
+      changes_requested: 'article_not_editable',
+      approved: 'article_approved_locked',
+      published: 'article_published_locked',
+    };
+
+    return {
+      ok: false as const,
+      status: 409,
+      error: workflowLockedError[ownership.workflowStatus] || 'article_not_editable',
+      workflowStatus: ownership.workflowStatus,
+    };
   }
 
   try {
