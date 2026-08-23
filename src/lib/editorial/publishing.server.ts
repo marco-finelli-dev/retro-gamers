@@ -506,6 +506,21 @@ export async function publishApprovedEditorialArticle({
       };
     }
 
+    console.error('editorial-publish.publish-state-inconsistent', {
+      sanityDocumentId: ownership.sanityDocumentId,
+      workflowStatus: ownership.workflowStatus,
+      sanityAuthorId: ownership.sanityAuthorId,
+      draftExists: Boolean(pair.draftDocument),
+      publishedExists: Boolean(pair.publishedDocument),
+      publishedId: pair.publishedDocument?._id,
+      publishedType: pair.publishedDocument?._type,
+      publishedIsPublic: pair.publishedDocument?.isPublic,
+      publishedAt: pair.publishedDocument?.publishedAt,
+      publishedAuthor: isPlainObject(pair.publishedDocument?.author)
+        ? pair.publishedDocument.author._ref
+        : undefined,
+      sanityAlreadyPublished,
+    });
     return publishFailure(409, 'publish_state_inconsistent', 'sanity_preflight');
   }
 
