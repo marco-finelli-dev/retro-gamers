@@ -26,7 +26,12 @@ export const POST: APIRoute = async ({ params, cookies }) => {
     });
 
     if (!result.ok) {
-      return json({ ok: false, error: result.error, phase: result.phase }, result.status);
+      return json({
+        ok: false,
+        error: result.error,
+        phase: result.phase,
+        missingFields: result.missingFields || [],
+      }, result.status);
     }
 
     return json({

@@ -9,7 +9,7 @@ import {
   fetchEditorialArticlePreviewRelatedPostCandidates,
   fetchEditorialArticlePreviewSeriesPosts
 } from '../../lib/editorial/article-preview.server';
-import { canChangeArticleAuthor, canPublishWorkflowArticle, getWorkflowTransitionPermissions } from '../../lib/editorial/permissions';
+import { canPublishWorkflowArticle, getWorkflowTransitionPermissions } from '../../lib/editorial/permissions';
 import { getPublicPostSummaries, getRelatedPosts } from '../../lib/posts';
 import {
   attachApprovedCommentCounts,
@@ -34,20 +34,12 @@ const copy = isEnglish
       deniedDescription: 'This private preview could not be loaded.',
       bannerLabel: 'Private preview',
       bannerText: 'This content is not public.',
-      backToEditor: 'Back to editor',
+      editArticle: 'Edit article',
       backToArticles: 'Back to articles',
       requestChanges: 'Request changes',
       approve: 'Approve',
       publish: 'Publish',
       author: 'Author',
-      changeAuthor: 'Change author',
-      authorSearchPlaceholder: 'Search author…',
-      authorLoading: 'Searching…',
-      authorNoResults: 'No authors found.',
-      authorSearchError: 'Author search unavailable.',
-      authorChanging: 'Updating author…',
-      authorUpdated: 'Author updated.',
-      authorChangeGenericError: 'The author could not be updated.',
       requestChangesConfirm: 'Return this article to the author for changes?',
       approveConfirm: 'Approve this article?',
       publishConfirm: 'Publish this article? It will become visible on the site.',
@@ -60,6 +52,15 @@ const copy = isEnglish
       publishRevisionConflict: 'Publishing failed: the draft changed. Reload the preview and try again.',
       publishRequiresDraft: 'Publishing failed: the draft is no longer available.',
       publishPreflightError: 'Publishing failed: the article is missing required publication data.',
+      publishMissingSinglePrefix: 'Publishing failed: missing ',
+      publishMissingMultiplePrefix: 'Publishing failed. Missing: ',
+      missingFieldLabels: {
+        title: 'title',
+        slug: 'slug',
+        type: 'content type',
+        language: 'language',
+        author: 'author',
+      },
       publishForbidden: 'You do not have permission to publish this article.',
       publishPartialFailure: 'The article was published in Sanity, but workflow completion failed. Try publishing again to complete reconciliation.',
       fallbackDescription: 'Features, reviews and stories from the world of retro gaming.',
@@ -71,20 +72,12 @@ const copy = isEnglish
       deniedDescription: 'Non è stato possibile caricare questa anteprima privata.',
       bannerLabel: 'Anteprima privata',
       bannerText: 'Questo contenuto non è pubblico.',
-      backToEditor: 'Torna all’editor',
+      editArticle: 'Modifica articolo',
       backToArticles: 'Torna agli articoli',
       requestChanges: 'Richiedi modifiche',
       approve: 'Approva',
       publish: 'Pubblica',
       author: 'Autore',
-      changeAuthor: 'Cambia autore',
-      authorSearchPlaceholder: 'Cerca autore…',
-      authorLoading: 'Ricerca in corso…',
-      authorNoResults: 'Nessun autore trovato.',
-      authorSearchError: 'Ricerca autore non disponibile.',
-      authorChanging: 'Aggiornamento autore…',
-      authorUpdated: 'Autore aggiornato.',
-      authorChangeGenericError: 'Non è stato possibile aggiornare l’autore.',
       requestChangesConfirm: 'Restituire l’articolo all’autore per modifiche?',
       approveConfirm: 'Approvare questo articolo?',
       publishConfirm: 'Pubblicare questo articolo? Diventerà visibile sul sito.',
@@ -97,6 +90,15 @@ const copy = isEnglish
       publishRevisionConflict: 'Pubblicazione non riuscita: la bozza è cambiata. Ricarica l’anteprima e riprova.',
       publishRequiresDraft: 'Pubblicazione non riuscita: la bozza non è più disponibile.',
       publishPreflightError: 'Pubblicazione non riuscita: mancano dati obbligatori per la pubblicazione.',
+      publishMissingSinglePrefix: 'Pubblicazione non riuscita: manca ',
+      publishMissingMultiplePrefix: 'Pubblicazione non riuscita. Mancano: ',
+      missingFieldLabels: {
+        title: 'titolo',
+        slug: 'slug',
+        type: 'tipo',
+        language: 'lingua',
+        author: 'autore',
+      },
       publishForbidden: 'Non hai i permessi per pubblicare questo articolo.',
       publishPartialFailure: 'L’articolo è stato pubblicato su Sanity, ma il workflow non è stato completato. Riprova a pubblicare per completare la riconciliazione.',
       fallbackDescription: 'Recensioni, news, speciali e guide dal mondo retro-gaming.',
@@ -171,11 +173,8 @@ let error = '';
 let documentLifecycle = 'missing';
 let documentSource = '';
 let workflowPermissions = null;
-let canReturnToEditor = false;
-let canChangeAuthor = false;
 let canPublish = false;
 let previewAuthor = null;
-let previewRevision = '';
 
 const access = await requireEditorialArticleContext(Astro.cookies);
 
@@ -189,13 +188,8 @@ if (access.ok) {
     documentLifecycle = editableResult.documentLifecycle;
     documentSource = editableResult.documentSource;
     workflowPermissions = getWorkflowTransitionPermissions(access.context, editableResult.ownership);
-    canChangeAuthor = canChangeArticleAuthor(access.context);
     canPublish = canPublishWorkflowArticle(access.context, editableResult.ownership);
     previewAuthor = editableResult.article?.author || null;
-    previewRevision = editableResult.article?._rev || '';
-    canReturnToEditor =
-      editableResult.ownership.ownerUserId === access.context.user.id &&
-      ['draft', 'changes_requested'].includes(editableResult.ownership.workflowStatus);
 
     post = await fetchEditorialArticlePreviewPost(String(editableResult.sourceDocument?._id || ''));
 
@@ -285,8 +279,7 @@ const articleAuthorUrl = articleAuthorSlug
   : '';
 const canRequestChanges = Boolean(workflowPermissions?.canRequestChanges);
 const canApprove = Boolean(workflowPermissions?.canApprove);
-const returnHref = canReturnToEditor ? editHref : articlesHref;
-const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
+const previewAuthorLabel = articleAuthorName || previewAuthor?.label || '—';
 ---
 
 <BaseLayout
@@ -306,52 +299,18 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
 >
   <div class="editorial-private-preview">
     <aside class="editorial-private-preview__banner" role="status">
-      <div>
+      <div class="editorial-private-preview__summary">
         <strong>{copy.bannerLabel}</strong>
         <span>{copy.bannerText}</span>
         {documentLifecycle !== 'missing' && (
           <small>{documentSource || documentLifecycle}</small>
         )}
       </div>
-      <div class="editorial-action-card__actions">
-        {canChangeAuthor && previewAuthor && previewRevision && (
-          <div
-            class="editorial-preview-author-picker"
-            data-editorial-preview-author-picker
-            data-endpoint={`/api/editor/articles/${encodeURIComponent(id)}/author`}
-            data-revision={previewRevision}
-            data-current-author-id={previewAuthor._id}
-          >
-            <span>{copy.author}</span>
-            <button
-              class="editorial-mini-button"
-              type="button"
-              data-editorial-preview-author-trigger
-              aria-haspopup="listbox"
-              aria-expanded="false"
-            >
-              <span data-editorial-preview-author-label>{previewAuthor.label}</span>
-              <span aria-hidden="true">▾</span>
-            </button>
-            <div class="editorial-preview-author-picker__panel" data-editorial-preview-author-panel hidden>
-              <label>
-                <span class="sr-only">{copy.changeAuthor}</span>
-                <input
-                  type="search"
-                  placeholder={copy.authorSearchPlaceholder}
-                  data-editorial-preview-author-search
-                />
-              </label>
-              <div
-                class="editorial-preview-author-picker__results"
-                role="listbox"
-                aria-label={copy.changeAuthor}
-                data-editorial-preview-author-results
-              ></div>
-            </div>
-            <p class="editorial-preview-author-picker__status" data-editorial-preview-author-status hidden></p>
-          </div>
-        )}
+      <div class="editorial-private-preview__meta">
+        <span>{copy.author}</span>
+        <strong>{previewAuthorLabel}</strong>
+      </div>
+      <div class="editorial-private-preview__actions">
         {canRequestChanges && (
           <button
             class="editorial-mini-button"
@@ -385,7 +344,10 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
             {copy.publish}
           </button>
         )}
-        <a href={returnHref}>{returnLabel}</a>
+      </div>
+      <div class="editorial-private-preview__navigation">
+        <a href={editHref}>{copy.editArticle}</a>
+        <a href={articlesHref}>{copy.backToArticles}</a>
       </div>
     </aside>
 
@@ -405,7 +367,7 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
         <h1>{copy.deniedTitle}</h1>
         <p class="editorial-message" data-tone="error">{copy.deniedDescription}</p>
         <p class="editorial-message">{error}</p>
-        <a class="editorial-button" href={returnHref}>{returnLabel}</a>
+        <a class="editorial-button" href={articlesHref}>{copy.backToArticles}</a>
       </section>
     )}
   </div>
@@ -422,24 +384,40 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
   publishRevisionConflict: copy.publishRevisionConflict,
   publishRequiresDraft: copy.publishRequiresDraft,
   publishPreflightError: copy.publishPreflightError,
+  publishMissingSinglePrefix: copy.publishMissingSinglePrefix,
+  publishMissingMultiplePrefix: copy.publishMissingMultiplePrefix,
+  missingFieldLabels: copy.missingFieldLabels,
   publishForbidden: copy.publishForbidden,
   publishPartialFailure: copy.publishPartialFailure,
-  authorLoading: copy.authorLoading,
-  authorNoResults: copy.authorNoResults,
-  authorSearchError: copy.authorSearchError,
-  authorChanging: copy.authorChanging,
-  authorUpdated: copy.authorUpdated,
-  authorChangeGenericError: copy.authorChangeGenericError,
 }}>
   const workflowButtons = document.querySelectorAll('[data-editorial-preview-workflow-action]');
   const publishButton = document.querySelector('[data-editorial-preview-publish]');
-  const authorPicker = document.querySelector('[data-editorial-preview-author-picker]');
 
-  const getPublishErrorMessage = (error, phase) => {
+  const formatMissingFields = (fields) => {
+    if (!Array.isArray(fields)) return '';
+
+    return fields
+      .map((field) => missingFieldLabels?.[field] || field)
+      .filter(Boolean)
+      .join(', ');
+  };
+
+  const getPublishErrorMessage = (error, phase, missingFields = []) => {
     if (error === 'article_publish_forbidden') return publishForbidden;
     if (error === 'publish_revision_conflict') return publishRevisionConflict;
     if (error === 'publish_requires_draft') return publishRequiresDraft;
     if (error === 'publish_partial_failure') return publishPartialFailure;
+    if (error === 'publish_missing_required_fields') {
+      const formattedFields = formatMissingFields(missingFields);
+
+      if (!formattedFields) {
+        return publishPreflightError;
+      }
+
+      return missingFields.length === 1
+        ? `${publishMissingSinglePrefix}${formattedFields}.`
+        : `${publishMissingMultiplePrefix}${formattedFields}.`;
+    }
     if (
       phase === 'sanity_preflight' ||
       error === 'publish_title_required' ||
@@ -456,7 +434,7 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
 
   const setPreviewActionsDisabled = (disabled) => {
     document
-      .querySelectorAll('[data-editorial-preview-workflow-action], [data-editorial-preview-publish], [data-editorial-preview-author-trigger]')
+      .querySelectorAll('[data-editorial-preview-workflow-action], [data-editorial-preview-publish]')
       .forEach((control) => {
         if (disabled) {
           control.setAttribute('disabled', 'disabled');
@@ -525,10 +503,12 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
         const result = await response.json().catch(() => null);
 
         if (!response.ok || !result?.ok) {
-          const message = getPublishErrorMessage(result?.error || 'publish_failed', result?.phase || '');
+          const missingFields = Array.isArray(result?.missingFields) ? result.missingFields : [];
+          const message = getPublishErrorMessage(result?.error || 'publish_failed', result?.phase || '', missingFields);
           console.warn('Editorial publish failed', {
             error: result?.error || 'publish_failed',
             phase: result?.phase || 'unknown',
+            missingFields,
             status: response.status,
           });
           throw new Error(message);
@@ -541,176 +521,6 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
         const message = error instanceof Error && error.message ? error.message : publishGenericError;
         publishButton.textContent = originalText || publishGenericError;
         window.alert(message);
-      }
-    });
-  }
-
-  if (authorPicker) {
-    const trigger = authorPicker.querySelector('[data-editorial-preview-author-trigger]');
-    const panel = authorPicker.querySelector('[data-editorial-preview-author-panel]');
-    const searchInput = authorPicker.querySelector('[data-editorial-preview-author-search]');
-    const results = authorPicker.querySelector('[data-editorial-preview-author-results]');
-    const status = authorPicker.querySelector('[data-editorial-preview-author-status]');
-    const label = authorPicker.querySelector('[data-editorial-preview-author-label]');
-    let controller = null;
-    let searchTimer = 0;
-
-    const setAuthorStatus = (message, tone = '') => {
-      if (!status) return;
-      status.hidden = !message;
-      status.textContent = message;
-      if (tone) {
-        status.dataset.tone = tone;
-      } else {
-        delete status.dataset.tone;
-      }
-    };
-
-    const setPanelOpen = (open) => {
-      if (!panel || !trigger) return;
-      panel.hidden = !open;
-      trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) {
-        searchInput?.focus();
-      }
-    };
-
-    const renderAuthorResults = (items) => {
-      if (!results) return;
-      results.textContent = '';
-
-      if (!items.length) {
-        const empty = document.createElement('p');
-        empty.className = 'editorial-relation-picker__state';
-        empty.textContent = authorNoResults;
-        results.append(empty);
-        return;
-      }
-
-      const currentAuthorId = authorPicker.getAttribute('data-current-author-id') || '';
-
-      items.forEach((item) => {
-        const button = document.createElement('button');
-        const name = document.createElement('span');
-        button.type = 'button';
-        button.className = 'editorial-relation-picker__option';
-        button.setAttribute('role', 'option');
-        button.disabled = item?._id === currentAuthorId;
-        button.setAttribute('aria-selected', item?._id === currentAuthorId ? 'true' : 'false');
-        name.textContent = item?.label || item?._id || '';
-        button.append(name);
-
-        const meta = [item?.role, item?.slug].filter(Boolean).join(' · ');
-        if (meta) {
-          const small = document.createElement('small');
-          small.textContent = meta;
-          button.append(small);
-        }
-
-        button.addEventListener('click', async () => {
-          const endpoint = authorPicker.getAttribute('data-endpoint') || '';
-          const revision = authorPicker.getAttribute('data-revision') || '';
-          const authorId = item?._id || '';
-
-          if (!endpoint || !revision || !authorId || button.disabled) return;
-
-          setAuthorStatus(authorChanging);
-          setPanelOpen(false);
-          trigger?.setAttribute('disabled', 'disabled');
-
-          try {
-            const response = await fetch(endpoint, {
-              method: 'PATCH',
-              headers: {
-                'content-type': 'application/json',
-              },
-              body: JSON.stringify({
-                _rev: revision,
-                authorId,
-              }),
-            });
-            const result = await response.json().catch(() => null);
-
-            if (!response.ok || !result?.ok || !result.article) {
-              throw new Error(result?.error || 'author_change_failed');
-            }
-
-            authorPicker.setAttribute('data-revision', result.article._rev || revision);
-            authorPicker.setAttribute('data-current-author-id', result.article.author?._id || authorId);
-            if (label) {
-              label.textContent = result.article.author?.label || item.label || authorId;
-            }
-            setAuthorStatus(authorUpdated, 'success');
-            window.setTimeout(() => window.location.reload(), 450);
-          } catch {
-            trigger?.removeAttribute('disabled');
-            setAuthorStatus(authorChangeGenericError, 'error');
-          }
-        });
-
-        results.append(button);
-      });
-    };
-
-    const searchAuthors = () => {
-      window.clearTimeout(searchTimer);
-      controller?.abort();
-      searchTimer = window.setTimeout(async () => {
-        controller = new AbortController();
-        if (results) {
-          results.textContent = '';
-          const loading = document.createElement('p');
-          loading.className = 'editorial-relation-picker__state';
-          loading.textContent = authorLoading;
-          results.append(loading);
-        }
-
-        try {
-          const params = new URLSearchParams({
-            q: searchInput?.value || '',
-            limit: '12',
-          });
-          const response = await fetch(`/api/editor/authors?${params.toString()}`, {
-            headers: { accept: 'application/json' },
-            signal: controller.signal,
-          });
-          const result = await response.json();
-
-          if (!response.ok || !result?.ok || !Array.isArray(result.items)) {
-            throw new Error(result?.error || 'author_search_failed');
-          }
-
-          renderAuthorResults(result.items);
-        } catch (error) {
-          if (controller?.signal.aborted) return;
-          if (results) {
-            results.textContent = '';
-            const message = document.createElement('p');
-            message.className = 'editorial-relation-picker__state';
-            message.dataset.tone = 'error';
-            message.textContent = authorSearchError;
-            results.append(message);
-          }
-        }
-      }, 180);
-    };
-
-    trigger?.addEventListener('click', () => {
-      const isOpen = trigger.getAttribute('aria-expanded') === 'true';
-      setPanelOpen(!isOpen);
-      if (!isOpen) searchAuthors();
-    });
-
-    searchInput?.addEventListener('input', searchAuthors);
-
-    document.addEventListener('pointerdown', (event) => {
-      if (event.target instanceof Node && !authorPicker.contains(event.target)) {
-        setPanelOpen(false);
-      }
-    });
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        setPanelOpen(false);
       }
     });
   }

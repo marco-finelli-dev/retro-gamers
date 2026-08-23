@@ -44,8 +44,13 @@ type PublishFailurePhase =
 const workflowDocumentSelect =
   'sanity_document_id, owner_user_id, sanity_author_id, workflow_status, submitted_at, reviewed_by, reviewed_at';
 
-function publishFailure(status: number, error: string, phase: PublishFailurePhase) {
-  return { ok: false as const, status, error, phase };
+function publishFailure(
+  status: number,
+  error: string,
+  phase: PublishFailurePhase,
+  details: { missingFields?: string[] } = {}
+) {
+  return { ok: false as const, status, error, phase, ...details };
 }
 
 function getDraftDocumentId(rootDocumentId: string) {
@@ -158,27 +163,39 @@ function validatePublishableDraft(
     return publishFailure(422, 'publish_revision_missing', 'sanity_preflight');
   }
 
+  const missingFields: string[] = [];
   const authorId = getReferenceId(draftDocument.author);
-  if (!authorId || authorId !== ownership.sanityAuthorId) {
-    return publishFailure(409, 'author_ownership_conflict', 'sanity_preflight');
-  }
 
   if (!normalizeString(draftDocument.title, 300).trim()) {
-    return publishFailure(422, 'publish_title_required', 'sanity_preflight');
+    missingFields.push('title');
   }
 
   if (!getSlugValue(draftDocument.slug)) {
-    return publishFailure(422, 'publish_slug_required', 'sanity_preflight');
+    missingFields.push('slug');
   }
 
   const type = normalizeString(draftDocument.type, 80).trim();
   if (!type) {
-    return publishFailure(422, 'publish_type_required', 'sanity_preflight');
+    missingFields.push('type');
   }
 
   const language = normalizeString(draftDocument.language, 8).trim();
   if (language !== 'it' && language !== 'en') {
-    return publishFailure(422, 'publish_language_required', 'sanity_preflight');
+    missingFields.push('language');
+  }
+
+  if (!authorId) {
+    missingFields.push('author');
+  }
+
+  if (missingFields.length > 0) {
+    return publishFailure(422, 'publish_missing_required_fields', 'sanity_preflight', {
+      missingFields,
+    });
+  }
+
+  if (authorId !== ownership.sanityAuthorId) {
+    return publishFailure(409, 'author_ownership_conflict', 'sanity_preflight');
   }
 
   return { ok: true as const };
