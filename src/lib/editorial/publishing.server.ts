@@ -416,6 +416,7 @@ export async function publishApprovedEditorialArticle({
     });
   } catch (error) {
     logApiError('editorial-publish.sanity-action', error);
+    console.error('editorial-publish.sanity-action', error);
     return publishFailure(502, 'sanity_publish_failed', 'sanity_publish');
   }
 
