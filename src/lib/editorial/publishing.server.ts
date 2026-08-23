@@ -1,6 +1,7 @@
 import { logApiError } from '../api-errors';
 import { getSanityRawClient, getSanityWriteClient } from '../sanity-write.server';
 import { supabaseAdmin } from '../supabase/server';
+import { validateArticleForWorkflow } from './article-workflow-validation.server';
 import { canPublishArticle, canPublishWorkflowArticle, getWorkflowTransitionPermissions } from './permissions';
 import {
   isEditorialWorkflowStatus,
@@ -59,12 +60,6 @@ function getDraftDocumentId(rootDocumentId: string) {
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function normalizeString(value: unknown, maxLength = 2000) {
-  if (typeof value !== 'string') return '';
-
-  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').slice(0, maxLength);
 }
 
 function normalizeWorkflowOwnership(
@@ -139,10 +134,6 @@ function getReferenceId(value: unknown) {
   return isPlainObject(value) ? normalizeSanityRootDocumentId(value._ref) : '';
 }
 
-function getSlugValue(value: unknown) {
-  return isPlainObject(value) ? normalizeString(value.current, 120).trim() : '';
-}
-
 function isValidDateString(value: unknown) {
   return typeof value === 'string' && value.trim() && !Number.isNaN(Date.parse(value));
 }
@@ -163,38 +154,21 @@ function validatePublishableDraft(
     return publishFailure(422, 'publish_revision_missing', 'sanity_preflight');
   }
 
-  const missingFields: string[] = [];
-  const authorId = getReferenceId(draftDocument.author);
+  const validation = validateArticleForWorkflow(draftDocument, 'publish', {
+    expectedSanityAuthorId: ownership.sanityAuthorId,
+  });
+  const contentIssues = validation.blockingIssues.filter((issue) => issue.code !== 'author_ownership_conflict');
+  const hasAuthorConflict = validation.blockingIssues.some((issue) => issue.code === 'author_ownership_conflict');
 
-  if (!normalizeString(draftDocument.title, 300).trim()) {
-    missingFields.push('title');
-  }
+  if (contentIssues.length > 0) {
+    const missingFields = Array.from(new Set(contentIssues.map((issue) => issue.field)));
 
-  if (!getSlugValue(draftDocument.slug)) {
-    missingFields.push('slug');
-  }
-
-  const type = normalizeString(draftDocument.type, 80).trim();
-  if (!type) {
-    missingFields.push('type');
-  }
-
-  const language = normalizeString(draftDocument.language, 8).trim();
-  if (language !== 'it' && language !== 'en') {
-    missingFields.push('language');
-  }
-
-  if (!authorId) {
-    missingFields.push('author');
-  }
-
-  if (missingFields.length > 0) {
     return publishFailure(422, 'publish_missing_required_fields', 'sanity_preflight', {
       missingFields,
     });
   }
 
-  if (authorId !== ownership.sanityAuthorId) {
+  if (hasAuthorConflict) {
     return publishFailure(409, 'author_ownership_conflict', 'sanity_preflight');
   }
 

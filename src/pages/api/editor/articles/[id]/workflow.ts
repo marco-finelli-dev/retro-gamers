@@ -49,7 +49,29 @@ export const POST: APIRoute = async ({ request, params, cookies }) => {
           : { ok: false as const, status: 400, error: 'invalid_workflow_action' };
 
     if (!result.ok) {
-      return json({ ok: false, error: result.error }, result.status);
+      const errorBody: Record<string, unknown> = {
+        ok: false,
+        error: result.error,
+      };
+      const structuredResult = result as typeof result & {
+        phase?: string;
+        blockingIssues?: unknown;
+        warnings?: unknown;
+      };
+
+      if (structuredResult.phase) {
+        errorBody.phase = structuredResult.phase;
+      }
+
+      if (Array.isArray(structuredResult.blockingIssues)) {
+        errorBody.blockingIssues = structuredResult.blockingIssues;
+      }
+
+      if (Array.isArray(structuredResult.warnings)) {
+        errorBody.warnings = structuredResult.warnings;
+      }
+
+      return json(errorBody, result.status);
     }
 
     return json({

@@ -714,7 +714,10 @@ const visibleOwnItems = canSeeReviewQueue
   });
 
   translationButtons.forEach((button) => {
-    button.addEventListener('click', async () => {
+    button.addEventListener('click', async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
       const endpoint = button.getAttribute('data-endpoint') || '';
 
       if (!endpoint || !(button instanceof HTMLButtonElement) || button.disabled) return;
@@ -734,12 +737,17 @@ const visibleOwnItems = canSeeReviewQueue
         });
         const result = await response.json().catch(() => null);
 
-        if (!response.ok || !result?.ok || !result?.editUrl) {
+        const createdArticleId = typeof result?.id === 'string' ? result.id.trim() : '';
+        const editUrl = createdArticleId
+          ? `/en/account/editor/articles/${encodeURIComponent(createdArticleId)}/`
+          : '';
+
+        if (!response.ok || !result?.ok || !editUrl) {
           throw new Error(result?.error || 'translation_failed');
         }
 
         setDashboardStatus(translationCreated, 'success');
-        window.location.assign(result.editUrl);
+        window.location.assign(editUrl);
       } catch (error) {
         button.removeAttribute('disabled');
         button.textContent = originalText;

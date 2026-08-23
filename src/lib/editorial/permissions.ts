@@ -67,6 +67,10 @@ const editableOwnWorkflowStatuses = new Set<EditorialWorkflowStatus>([
   'changes_requested',
 ]);
 
+const editableApprovedOwnWorkflowStatuses = new Set<EditorialWorkflowStatus>([
+  'approved',
+]);
+
 const submittableOwnWorkflowStatuses = new Set<EditorialWorkflowStatus>([
   'draft',
   'changes_requested',
@@ -232,10 +236,21 @@ export function canEditOwnArticle(
   context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
   ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
 ) {
+  const workflowStatus = ownership?.workflowStatus;
+
   return (
     context.permissions.canEditOwnDraftArticle &&
     isDocumentOwnedByContext(context, ownership) &&
-    Boolean(ownership?.workflowStatus && editableOwnWorkflowStatuses.has(ownership.workflowStatus))
+    Boolean(
+      workflowStatus &&
+        (
+          editableOwnWorkflowStatuses.has(workflowStatus) ||
+          (
+            context.permissions.canPublishArticle &&
+            editableApprovedOwnWorkflowStatuses.has(workflowStatus)
+          )
+        )
+    )
   );
 }
 

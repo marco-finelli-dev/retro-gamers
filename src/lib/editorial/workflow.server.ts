@@ -1,5 +1,11 @@
 import { logApiError } from '../api-errors';
+import { getSanityRawClient } from '../sanity-write.server';
 import { supabaseAdmin } from '../supabase/server';
+import {
+  validateArticleForWorkflow,
+  type ArticleWorkflowValidationAction,
+  type ArticleWorkflowValidationIssue,
+} from './article-workflow-validation.server';
 import {
   canApproveWorkflowArticle,
   canRequestWorkflowChanges,
@@ -37,6 +43,7 @@ type WorkflowAuditAction =
 type WorkflowTransitionConfig = {
   nextStatus: EditorialWorkflowStatus;
   auditAction: WorkflowAuditAction;
+  validationAction?: Extract<ArticleWorkflowValidationAction, 'submit' | 'approve'>;
   canTransition: (
     context: EditableEditorialContext,
     ownership: EditorialDocumentOwnership
@@ -47,6 +54,10 @@ type WorkflowTransitionConfig = {
 
 const workflowDocumentSelect =
   'sanity_document_id, owner_user_id, sanity_author_id, workflow_status, submitted_at, reviewed_by, reviewed_at';
+
+function getDraftDocumentId(rootDocumentId: string) {
+  return `drafts.${rootDocumentId}`;
+}
 
 function normalizeWorkflowOwnership(
   row: EditorialWorkflowDocumentRow | null
@@ -132,6 +143,65 @@ async function recordWorkflowAudit({
   return true;
 }
 
+async function fetchWorkflowSanityArticle(rootDocumentId: string) {
+  const draftDocumentId = getDraftDocumentId(rootDocumentId);
+  const [draftDocument, publishedDocument] = await Promise.all([
+    getSanityRawClient().getDocument<Record<string, unknown>>(draftDocumentId),
+    getSanityRawClient().getDocument<Record<string, unknown>>(rootDocumentId),
+  ]);
+
+  if (draftDocument?._type === 'article') {
+    return draftDocument;
+  }
+
+  if (publishedDocument?._type === 'article') {
+    return publishedDocument;
+  }
+
+  return null;
+}
+
+async function validateWorkflowArticleForTransition({
+  ownership,
+  action,
+}: {
+  ownership: EditorialDocumentOwnership;
+  action: Extract<ArticleWorkflowValidationAction, 'submit' | 'approve'>;
+}) {
+  try {
+    const article = await fetchWorkflowSanityArticle(ownership.sanityDocumentId);
+    const validation = validateArticleForWorkflow(article, action, {
+      expectedSanityAuthorId: ownership.sanityAuthorId,
+    });
+
+    if (!validation.ok) {
+      const hasMissingArticle = validation.blockingIssues.some((issue) => issue.code === 'missing_article');
+
+      return {
+        ok: false as const,
+        status: hasMissingArticle ? 409 : 422,
+        error: 'workflow_validation_failed',
+        phase: 'workflow_validation',
+        blockingIssues: validation.blockingIssues,
+        warnings: validation.warnings,
+      };
+    }
+
+    return { ok: true as const };
+  } catch (error) {
+    logApiError('editorial-workflow.validation', error);
+
+    return {
+      ok: false as const,
+      status: 503,
+      error: 'workflow_validation_unavailable',
+      phase: 'workflow_validation',
+      blockingIssues: [] as ArticleWorkflowValidationIssue[],
+      warnings: [] as ArticleWorkflowValidationIssue[],
+    };
+  }
+}
+
 async function applyWorkflowTransition({
   context,
   rootDocumentId,
@@ -149,6 +219,15 @@ async function applyWorkflowTransition({
 
   if (!config.canTransition(context, ownership)) {
     return { ok: false as const, status: 403, error: config.forbiddenError };
+  }
+
+  if (config.validationAction) {
+    const validation = await validateWorkflowArticleForTransition({
+      ownership,
+      action: config.validationAction,
+    });
+
+    if (!validation.ok) return validation;
   }
 
   const timestamp = new Date().toISOString();
@@ -220,6 +299,7 @@ export async function submitArticleForReview({
     config: {
       nextStatus: 'submitted',
       auditAction: 'article_submitted',
+      validationAction: 'submit',
       canTransition: canSubmitWorkflowArticle,
       getUpdatePayload: (_context, timestamp) => ({
         submitted_at: timestamp,
@@ -267,6 +347,7 @@ export async function approveArticle({
     config: {
       nextStatus: 'approved',
       auditAction: 'article_approved',
+      validationAction: 'approve',
       canTransition: canApproveWorkflowArticle,
       getUpdatePayload: (currentContext, timestamp) => ({
         reviewed_by: currentContext.user.id,
