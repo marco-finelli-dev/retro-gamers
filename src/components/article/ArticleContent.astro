@@ -326,6 +326,35 @@ function isBlankBlockHtml(html = '') {
     .trim().length === 0;
 }
 
+function isBlockquoteBlock(block) {
+  return block?._type === 'block' && block.style === 'blockquote';
+}
+
+function isPreviousBlockquote(contentBlocks = [], index = 0) {
+  return index > 0 && isBlockquoteBlock(contentBlocks[index - 1]);
+}
+
+function getBlockquoteGroup(contentBlocks = [], startIndex = 0) {
+  const group = [];
+
+  for (let index = startIndex; index < contentBlocks.length; index += 1) {
+    const block = contentBlocks[index];
+
+    if (!isBlockquoteBlock(block)) break;
+
+    const html = renderBlockChildren(block);
+
+    if (!isBlankBlockHtml(html)) {
+      group.push({
+        key: block._key || `${startIndex}-${index}`,
+        html,
+      });
+    }
+  }
+
+  return group;
+}
+
 /*
   Gallery principale:
   2 → 2
@@ -410,7 +439,23 @@ function chunkBalanced(images = []) {
       }
 
       if (block.style === 'blockquote') {
-        return <blockquote set:html={html} />;
+        if (isPreviousBlockquote(content, blockIndex)) {
+          return null;
+        }
+
+        const quoteGroup = getBlockquoteGroup(content, blockIndex);
+
+        if (quoteGroup.length === 0) {
+          return null;
+        }
+
+        return (
+          <blockquote class="article-blockquote-group">
+            {quoteGroup.map((quoteBlock) => (
+              <p set:html={quoteBlock.html} />
+            ))}
+          </blockquote>
+        );
       }
 
       return <p set:html={html} />;
