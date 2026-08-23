@@ -41,6 +41,33 @@ const copy = isEnglish
       articleActions: 'Article actions',
       createEnglishTranslation: 'Create English translation',
       imageFallback: 'Editorial article',
+      filtersLabel: 'Filter your articles',
+      searchPlaceholder: 'Search article...',
+      statusFilter: 'Status',
+      lifecycleFilter: 'Sanity status',
+      languageFilter: 'Language',
+      typeFilter: 'Type',
+      sortFilter: 'Sort by',
+      allStatuses: 'All statuses',
+      allLifecycles: 'All Sanity states',
+      allLanguages: 'All languages',
+      allTypes: 'All types',
+      sortUpdatedDesc: 'Last updated',
+      sortTitleAsc: 'Title A-Z',
+      sortTitleDesc: 'Title Z-A',
+      sortCreatedDesc: 'Newest created',
+      sortWorkflow: 'Workflow status',
+      quickFiltersLabel: 'Quick filters',
+      quickAll: 'All',
+      quickDrafts: 'Drafts',
+      quickReview: 'In review',
+      quickPublished: 'Published',
+      quickRevisions: 'Revisions',
+      quickOrphans: 'Orphans',
+      articleCountSingular: 'article',
+      articleCountPlural: 'articles',
+      visibleCountSingular: 'shown',
+      visibleCountPlural: 'shown',
       draft: 'Draft',
       ownArticles: 'Your articles',
       reviewQueue: 'Review queue',
@@ -62,6 +89,8 @@ const copy = isEnglish
       },
       noArticlesTitle: 'No editorial drafts yet',
       noArticlesText: 'Create your first draft to start writing inside the custom editor.',
+      noFilterResultsTitle: 'No articles match these filters',
+      noFilterResultsText: 'Try changing search text, status, language or content type.',
       noReviewItemsTitle: 'No articles waiting for review',
       noReviewItemsText: 'Submitted articles will appear here when contributors send them to the editorial desk.',
       dashboard: 'Editorial dashboard',
@@ -110,6 +139,33 @@ const copy = isEnglish
       articleActions: 'Azioni articolo',
       createEnglishTranslation: 'Crea traduzione inglese',
       imageFallback: 'Articolo redazionale',
+      filtersLabel: 'Filtra i tuoi articoli',
+      searchPlaceholder: 'Cerca articolo...',
+      statusFilter: 'Stato',
+      lifecycleFilter: 'Stato Sanity',
+      languageFilter: 'Lingua',
+      typeFilter: 'Tipo',
+      sortFilter: 'Ordina per',
+      allStatuses: 'Tutti gli stati',
+      allLifecycles: 'Tutti gli stati Sanity',
+      allLanguages: 'Tutte le lingue',
+      allTypes: 'Tutti i tipi',
+      sortUpdatedDesc: 'Ultimo aggiornamento',
+      sortTitleAsc: 'Titolo A-Z',
+      sortTitleDesc: 'Titolo Z-A',
+      sortCreatedDesc: 'Data creazione più recente',
+      sortWorkflow: 'Stato workflow',
+      quickFiltersLabel: 'Filtri rapidi',
+      quickAll: 'Tutti',
+      quickDrafts: 'Bozze',
+      quickReview: 'In revisione',
+      quickPublished: 'Pubblicati',
+      quickRevisions: 'Revisioni',
+      quickOrphans: 'Orfani',
+      articleCountSingular: 'articolo',
+      articleCountPlural: 'articoli',
+      visibleCountSingular: 'visualizzato',
+      visibleCountPlural: 'visualizzati',
       draft: 'Bozza',
       ownArticles: 'I tuoi articoli',
       reviewQueue: 'Da revisionare',
@@ -131,6 +187,8 @@ const copy = isEnglish
       },
       noArticlesTitle: 'Nessuna bozza redazionale',
       noArticlesText: 'Crea la prima bozza per iniziare a scrivere nel custom editor.',
+      noFilterResultsTitle: 'Nessun articolo corrisponde ai filtri',
+      noFilterResultsText: 'Prova a cambiare ricerca, stato, lingua o tipo contenuto.',
       noReviewItemsTitle: 'Nessun articolo in coda',
       noReviewItemsText: 'Gli articoli inviati dai contributor compariranno qui.',
       dashboard: 'Dashboard redazionale',
@@ -171,6 +229,8 @@ let reviewItems = [];
 let reviewError = '';
 const canSeeReviewQueue = Boolean(access.ok && access.context.permissions.canReadSubmittedArticles);
 const reviewQueueWorkflowStatuses = new Set(['submitted', 'approved']);
+const ownWorkflowFilterOptions = ['draft', 'submitted', 'changes_requested', 'approved', 'published'];
+const ownLifecycleFilterOptions = ['draft', 'revision_draft', 'published', 'missing'];
 
 function formatDateTime(value) {
   return value ? new Date(value).toLocaleString(isEnglish ? 'en' : 'it') : '—';
@@ -293,6 +353,14 @@ if (access.ok) {
 const visibleOwnItems = canSeeReviewQueue
   ? items.filter((item) => !reviewQueueWorkflowStatuses.has(item.workflowStatus))
   : items;
+const visibleOwnTypeOptions = Array.from(
+  new Set(
+    visibleOwnItems
+      .map((item) => item.article || item.draft)
+      .map((article) => article?.type)
+      .filter(Boolean)
+  )
+).sort((a, b) => String(a).localeCompare(String(b)));
 ---
 
 <BaseLayout
@@ -359,8 +427,103 @@ const visibleOwnItems = canSeeReviewQueue
         )}
 
         {!listError && visibleOwnItems.length > 0 && (
-          <div class="editorial-article-list__items">
-            {visibleOwnItems.map((item) => {
+          <div class="editorial-article-quick-filters" role="group" aria-label={copy.quickFiltersLabel}>
+            <button type="button" data-editorial-quick-filter="all" aria-pressed="true">
+              <span>{copy.quickAll}</span>
+              <span data-editorial-quick-filter-count>0</span>
+            </button>
+            <button type="button" data-editorial-quick-filter="drafts" aria-pressed="false">
+              <span>{copy.quickDrafts}</span>
+              <span data-editorial-quick-filter-count>0</span>
+            </button>
+            <button type="button" data-editorial-quick-filter="review" aria-pressed="false">
+              <span>{copy.quickReview}</span>
+              <span data-editorial-quick-filter-count>0</span>
+            </button>
+            <button type="button" data-editorial-quick-filter="published" aria-pressed="false">
+              <span>{copy.quickPublished}</span>
+              <span data-editorial-quick-filter-count>0</span>
+            </button>
+            <button type="button" data-editorial-quick-filter="revisions" aria-pressed="false">
+              <span>{copy.quickRevisions}</span>
+              <span data-editorial-quick-filter-count>0</span>
+            </button>
+            <button type="button" data-editorial-quick-filter="orphans" aria-pressed="false">
+              <span>{copy.quickOrphans}</span>
+              <span data-editorial-quick-filter-count>0</span>
+            </button>
+          </div>
+        )}
+
+        {!listError && visibleOwnItems.length > 0 && (
+          <form class="editorial-article-filters" data-editorial-article-filters aria-label={copy.filtersLabel}>
+            <label class="editorial-article-filter editorial-article-filter--search">
+              <span>{copy.filtersLabel}</span>
+              <input
+                type="search"
+                name="search"
+                placeholder={copy.searchPlaceholder}
+                autocomplete="off"
+                data-editorial-filter-search
+              />
+            </label>
+            <label class="editorial-article-filter">
+              <span>{copy.statusFilter}</span>
+              <select name="workflowStatus" data-editorial-filter-workflow>
+                <option value="">{copy.allStatuses}</option>
+                {ownWorkflowFilterOptions.map((status) => (
+                  <option value={status}>{getWorkflowLabel(status)}</option>
+                ))}
+              </select>
+            </label>
+            <label class="editorial-article-filter">
+              <span>{copy.lifecycleFilter}</span>
+              <select name="sanityLifecycle" data-editorial-filter-lifecycle>
+                <option value="">{copy.allLifecycles}</option>
+                {ownLifecycleFilterOptions.map((lifecycle) => (
+                  <option value={lifecycle}>{copy.lifecycle[lifecycle] || lifecycle}</option>
+                ))}
+              </select>
+            </label>
+            <label class="editorial-article-filter">
+              <span>{copy.languageFilter}</span>
+              <select name="language" data-editorial-filter-language>
+                <option value="">{copy.allLanguages}</option>
+                <option value="it">IT</option>
+                <option value="en">EN</option>
+              </select>
+            </label>
+            <label class="editorial-article-filter">
+              <span>{copy.typeFilter}</span>
+              <select name="type" data-editorial-filter-type>
+                <option value="">{copy.allTypes}</option>
+                {visibleOwnTypeOptions.map((type) => (
+                  <option value={type}>{type}</option>
+                ))}
+              </select>
+            </label>
+            <label class="editorial-article-filter">
+              <span>{copy.sortFilter}</span>
+              <select name="sort" data-editorial-sort>
+                <option value="updated_desc">{copy.sortUpdatedDesc}</option>
+                <option value="title_asc">{copy.sortTitleAsc}</option>
+                <option value="title_desc">{copy.sortTitleDesc}</option>
+                <option value="created_desc">{copy.sortCreatedDesc}</option>
+                <option value="workflow">{copy.sortWorkflow}</option>
+              </select>
+            </label>
+          </form>
+        )}
+
+        {!listError && visibleOwnItems.length > 0 && (
+          <p class="editorial-article-count" data-editorial-article-count aria-live="polite">
+            {visibleOwnItems.length} {visibleOwnItems.length === 1 ? copy.articleCountSingular : copy.articleCountPlural} · {visibleOwnItems.length} {visibleOwnItems.length === 1 ? copy.visibleCountSingular : copy.visibleCountPlural}
+          </p>
+        )}
+
+        {!listError && visibleOwnItems.length > 0 && (
+          <div class="editorial-article-list__items" data-editorial-own-items>
+            {visibleOwnItems.map((item, index) => {
               const article = item.article || item.draft;
               const canEdit = item.workflowStatus === 'draft' || item.workflowStatus === 'changes_requested';
               const canCreatePublishedRevision = canCreatePublishedRevisionForItem(item);
@@ -375,12 +538,31 @@ const visibleOwnItems = canSeeReviewQueue
               const summary = getArticleSummary(article);
               const authorLabel = article?.author?.label || item.author?.label || item.sanityAuthorId;
               const updatedAt = article?.updatedAt || item.updatedAt;
+              const createdAt = article?.createdAt || item.createdAt;
+              const articleTitle = article?.title || copy.untitled;
               const menuId = getArticleMenuId('own', item);
               const canCreateEnglishTranslation = canCreateEnglishTranslationForItem(item, article);
               const stateBadge = getArticleStateBadge(item);
+              const searchIndex = [
+                articleTitle,
+                summary,
+                article?.slug,
+              ].filter(Boolean).join(' ');
 
               return (
-                <article class="editorial-article-row">
+                <article
+                  class="editorial-article-row"
+                  data-editorial-own-article
+                  data-workflow-status={item.workflowStatus}
+                  data-sanity-lifecycle={item.sanityLifecycle}
+                  data-article-language={article?.language || ''}
+                  data-article-type={article?.type || ''}
+                  data-search-index={searchIndex}
+                  data-sort-title={articleTitle}
+                  data-updated-at={updatedAt || ''}
+                  data-created-at={createdAt || ''}
+                  data-original-index={index}
+                >
                   <div class="editorial-article-row__media">
                     {cardImage ? (
                       <img
@@ -404,7 +586,7 @@ const visibleOwnItems = canSeeReviewQueue
                       <span class="editorial-article-row__badge">{getLanguageBadge(article?.language)}</span>
                       <span class="editorial-article-row__badge">{article?.type || '—'}</span>
                     </div>
-                    <h3>{article?.title || copy.untitled}</h3>
+                    <h3>{articleTitle}</h3>
                     {summary && <p class="editorial-article-row__summary">{summary}</p>}
                     <p class="editorial-article-row__meta-line">
                       {authorLabel} <span aria-hidden="true">·</span> {copy.updated} {formatDateTime(updatedAt)}
@@ -469,6 +651,13 @@ const visibleOwnItems = canSeeReviewQueue
                 </article>
               );
             })}
+          </div>
+        )}
+
+        {!listError && visibleOwnItems.length > 0 && (
+          <div class="editorial-empty-state" data-editorial-filter-empty hidden aria-live="polite">
+            <h3>{copy.noFilterResultsTitle}</h3>
+            <p>{copy.noFilterResultsText}</p>
           </div>
         )}
       </section>
@@ -638,6 +827,10 @@ const visibleOwnItems = canSeeReviewQueue
   revisionCreated: copy.revisionCreated,
   revisionGenericError: copy.revisionGenericError,
   editorialUiLanguage: currentLang,
+  articleCountSingular: copy.articleCountSingular,
+  articleCountPlural: copy.articleCountPlural,
+  visibleCountSingular: copy.visibleCountSingular,
+  visibleCountPlural: copy.visibleCountPlural,
 }}>
   const dashboardStatus = document.querySelector('[data-editorial-dashboard-status]');
   const workflowStatus = document.querySelector('[data-editorial-workflow-status]');
@@ -646,6 +839,121 @@ const visibleOwnItems = canSeeReviewQueue
   const workflowButtons = document.querySelectorAll('[data-editorial-workflow-action]');
   const translationButtons = document.querySelectorAll('[data-editorial-translation-action]');
   const revisionButtons = document.querySelectorAll('[data-editorial-revision-action]');
+  const articleFilterForm = document.querySelector('[data-editorial-article-filters]');
+  const ownArticleItems = document.querySelector('[data-editorial-own-items]');
+  const ownArticleCards = Array.from(document.querySelectorAll('[data-editorial-own-article]'));
+  const filterEmptyState = document.querySelector('[data-editorial-filter-empty]');
+  const articleCount = document.querySelector('[data-editorial-article-count]');
+  const quickFilterButtons = Array.from(document.querySelectorAll('[data-editorial-quick-filter]'));
+  let activeQuickFilter = 'all';
+
+  const normalizeFilterText = (value) => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+  const getArticleCountLabel = (total, visible) => {
+    const articleLabel = total === 1 ? articleCountSingular : articleCountPlural;
+    const visibleLabel = visible === 1 ? visibleCountSingular : visibleCountPlural;
+
+    return `${total} ${articleLabel} · ${visible} ${visibleLabel}`;
+  };
+
+  const getTimestamp = (value) => {
+    const timestamp = Date.parse(String(value || ''));
+
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  };
+
+  const workflowSortOrder = {
+    draft: 10,
+    changes_requested: 20,
+    submitted: 30,
+    approved: 40,
+    published: 50,
+  };
+
+  const compareOriginalOrder = (first, second) => (
+    Number(first.dataset.originalIndex || 0) - Number(second.dataset.originalIndex || 0)
+  );
+
+  const compareArticleCards = (sortMode) => (first, second) => {
+    if (!(first instanceof HTMLElement) || !(second instanceof HTMLElement)) return 0;
+
+    if (sortMode === 'title_asc' || sortMode === 'title_desc') {
+      const result = normalizeFilterText(first.dataset.sortTitle)
+        .localeCompare(normalizeFilterText(second.dataset.sortTitle));
+
+      return sortMode === 'title_desc' ? -result || compareOriginalOrder(first, second) : result || compareOriginalOrder(first, second);
+    }
+
+    if (sortMode === 'created_desc') {
+      return (
+        getTimestamp(second.dataset.createdAt) -
+        getTimestamp(first.dataset.createdAt)
+      ) || compareOriginalOrder(first, second);
+    }
+
+    if (sortMode === 'workflow') {
+      const firstStatus = workflowSortOrder[first.dataset.workflowStatus] || 999;
+      const secondStatus = workflowSortOrder[second.dataset.workflowStatus] || 999;
+
+      return (firstStatus - secondStatus) || (
+        getTimestamp(second.dataset.updatedAt) -
+        getTimestamp(first.dataset.updatedAt)
+      ) || compareOriginalOrder(first, second);
+    }
+
+    return (
+      getTimestamp(second.dataset.updatedAt) -
+      getTimestamp(first.dataset.updatedAt)
+    ) || compareOriginalOrder(first, second);
+  };
+
+  const matchesQuickFilter = (card, quickFilter) => {
+    if (!(card instanceof HTMLElement)) return false;
+
+    if (quickFilter === 'drafts') {
+      return card.dataset.workflowStatus === 'draft';
+    }
+
+    if (quickFilter === 'review') {
+      return (
+        card.dataset.workflowStatus === 'submitted' ||
+        card.dataset.workflowStatus === 'changes_requested' ||
+        card.dataset.workflowStatus === 'approved'
+      );
+    }
+
+    if (quickFilter === 'published') {
+      return card.dataset.workflowStatus === 'published';
+    }
+
+    if (quickFilter === 'revisions') {
+      return card.dataset.sanityLifecycle === 'revision_draft';
+    }
+
+    if (quickFilter === 'orphans') {
+      return card.dataset.sanityLifecycle === 'missing';
+    }
+
+    return true;
+  };
+
+  const updateQuickFilterButtons = () => {
+    quickFilterButtons.forEach((button) => {
+      if (!(button instanceof HTMLButtonElement)) return;
+
+      const quickFilter = button.dataset.editorialQuickFilter || 'all';
+      const isActive = quickFilter === activeQuickFilter;
+      const count = ownArticleCards.filter((card) => matchesQuickFilter(card, quickFilter)).length;
+      const countNode = button.querySelector('[data-editorial-quick-filter-count]');
+
+      button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      if (countNode) countNode.textContent = String(count);
+    });
+  };
 
   const closeArticleMenus = (except = null) => {
     articleMenus.forEach((menu) => {
@@ -713,6 +1021,82 @@ const visibleOwnItems = canSeeReviewQueue
       dashboardStatus.removeAttribute('data-tone');
     }
   };
+
+  const updateArticleFilters = () => {
+    if (!articleFilterForm || ownArticleCards.length === 0) return;
+
+    const getFilterValue = (selector) => {
+      const control = articleFilterForm.querySelector(selector);
+
+      return control instanceof HTMLInputElement || control instanceof HTMLSelectElement
+        ? control.value
+        : '';
+    };
+    const search = normalizeFilterText(getFilterValue('[data-editorial-filter-search]'));
+    const workflowStatus = getFilterValue('[data-editorial-filter-workflow]');
+    const sanityLifecycle = getFilterValue('[data-editorial-filter-lifecycle]');
+    const language = getFilterValue('[data-editorial-filter-language]');
+    const type = getFilterValue('[data-editorial-filter-type]');
+    const sortMode = getFilterValue('[data-editorial-sort]') || 'updated_desc';
+    const sortedCards = [...ownArticleCards].sort(compareArticleCards(sortMode));
+    let visibleCount = 0;
+
+    sortedCards.forEach((card) => {
+      if (!(card instanceof HTMLElement)) return;
+
+      const matchesSearch = !search || normalizeFilterText(card.dataset.searchIndex).includes(search);
+      const matchesWorkflow = !workflowStatus || card.dataset.workflowStatus === workflowStatus;
+      const matchesLifecycle = !sanityLifecycle || card.dataset.sanityLifecycle === sanityLifecycle;
+      const matchesLanguage = !language || card.dataset.articleLanguage === language;
+      const matchesType = !type || card.dataset.articleType === type;
+      const matchesQuick = matchesQuickFilter(card, activeQuickFilter);
+      const isVisible = matchesQuick && matchesSearch && matchesWorkflow && matchesLifecycle && matchesLanguage && matchesType;
+
+      card.hidden = !isVisible;
+      if (isVisible) visibleCount += 1;
+      if (ownArticleItems) {
+        ownArticleItems.append(card);
+      }
+    });
+
+    if (ownArticleItems) {
+      ownArticleItems.hidden = visibleCount === 0;
+    }
+
+    if (filterEmptyState) {
+      filterEmptyState.hidden = visibleCount > 0;
+    }
+
+    if (articleCount) {
+      articleCount.textContent = getArticleCountLabel(ownArticleCards.length, visibleCount);
+    }
+    updateQuickFilterButtons();
+  };
+
+  quickFilterButtons.forEach((button) => {
+    if (!(button instanceof HTMLButtonElement)) return;
+
+    button.addEventListener('click', () => {
+      activeQuickFilter = button.dataset.editorialQuickFilter || 'all';
+      closeArticleMenus();
+      updateArticleFilters();
+    });
+  });
+
+  if (articleFilterForm) {
+    articleFilterForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+    });
+    articleFilterForm.addEventListener('input', () => {
+      closeArticleMenus();
+      updateArticleFilters();
+    });
+    articleFilterForm.addEventListener('change', () => {
+      closeArticleMenus();
+      updateArticleFilters();
+    });
+    updateArticleFilters();
+  }
 
   workflowButtons.forEach((button) => {
     button.addEventListener('click', async () => {
