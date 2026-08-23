@@ -201,6 +201,22 @@ function getLanguageBadge(language) {
   return String(language || '—').toUpperCase();
 }
 
+function getArticleStateBadge(item) {
+  const lifecycle = item?.sanityLifecycle || '';
+
+  if (lifecycle === 'missing' || lifecycle === 'revision_draft') {
+    return {
+      status: lifecycle,
+      label: copy.lifecycle[lifecycle] || lifecycle,
+    };
+  }
+
+  return {
+    status: item?.workflowStatus || 'draft',
+    label: getWorkflowLabel(item?.workflowStatus),
+  };
+}
+
 function getOwnArticleActionLabel(item) {
   if (item.workflowStatus === 'draft' || item.workflowStatus === 'changes_requested') {
     return copy.editArticle;
@@ -363,6 +379,7 @@ const visibleOwnItems = canSeeReviewQueue
               const updatedAt = article?.updatedAt || item.updatedAt;
               const menuId = getArticleMenuId('own', item);
               const canCreateEnglishTranslation = canCreateEnglishTranslationForItem(item, article);
+              const stateBadge = getArticleStateBadge(item);
 
               return (
                 <article class="editorial-article-row">
@@ -386,8 +403,8 @@ const visibleOwnItems = canSeeReviewQueue
                     <h3>{article?.title || copy.untitled}</h3>
                     {summary && <p class="editorial-article-row__summary">{summary}</p>}
                     <div class="editorial-article-row__badges" aria-label={copy.workflowStatus}>
-                      <span class="editorial-article-row__badge" data-status={item.workflowStatus}>
-                        {getWorkflowLabel(item.workflowStatus)}
+                      <span class="editorial-article-row__badge" data-status={stateBadge.status}>
+                        {stateBadge.label}
                       </span>
                       <span class="editorial-article-row__badge">{getLanguageBadge(article?.language)}</span>
                       <span class="editorial-article-row__badge">{article?.type || '—'}</span>
@@ -507,6 +524,7 @@ const visibleOwnItems = canSeeReviewQueue
                 item.workflowStatus === 'approved' && access.context.permissions.canPublishArticle;
               const menuId = getArticleMenuId('review', item);
               const canCreateEnglishTranslation = canCreateEnglishTranslationForItem(item, article);
+              const stateBadge = getArticleStateBadge(item);
 
               return (
                 <article class="editorial-article-row">
@@ -530,8 +548,8 @@ const visibleOwnItems = canSeeReviewQueue
                     <h3>{article?.title || copy.untitled}</h3>
                     {summary && <p class="editorial-article-row__summary">{summary}</p>}
                     <div class="editorial-article-row__badges" aria-label={copy.workflowStatus}>
-                      <span class="editorial-article-row__badge" data-status={item.workflowStatus}>
-                        {getWorkflowLabel(item.workflowStatus)}
+                      <span class="editorial-article-row__badge" data-status={stateBadge.status}>
+                        {stateBadge.label}
                       </span>
                       <span class="editorial-article-row__badge">{getLanguageBadge(article?.language)}</span>
                       <span class="editorial-article-row__badge">{article?.type || '—'}</span>
