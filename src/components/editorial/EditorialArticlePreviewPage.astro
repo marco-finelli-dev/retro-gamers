@@ -57,6 +57,11 @@ const copy = isEnglish
       publishUpdating: 'Publishing…',
       publishUpdated: 'Article published.',
       publishGenericError: 'The article could not be published.',
+      publishRevisionConflict: 'Publishing failed: the draft changed. Reload the preview and try again.',
+      publishRequiresDraft: 'Publishing failed: the draft is no longer available.',
+      publishPreflightError: 'Publishing failed: the article is missing required publication data.',
+      publishForbidden: 'You do not have permission to publish this article.',
+      publishPartialFailure: 'The article was published in Sanity, but workflow completion failed. Try publishing again to complete reconciliation.',
       fallbackDescription: 'Features, reviews and stories from the world of retro gaming.',
     }
   : {
@@ -89,6 +94,11 @@ const copy = isEnglish
       publishUpdating: 'Pubblicazione…',
       publishUpdated: 'Articolo pubblicato.',
       publishGenericError: 'Non è stato possibile pubblicare l’articolo.',
+      publishRevisionConflict: 'Pubblicazione non riuscita: la bozza è cambiata. Ricarica l’anteprima e riprova.',
+      publishRequiresDraft: 'Pubblicazione non riuscita: la bozza non è più disponibile.',
+      publishPreflightError: 'Pubblicazione non riuscita: mancano dati obbligatori per la pubblicazione.',
+      publishForbidden: 'Non hai i permessi per pubblicare questo articolo.',
+      publishPartialFailure: 'L’articolo è stato pubblicato su Sanity, ma il workflow non è stato completato. Riprova a pubblicare per completare la riconciliazione.',
       fallbackDescription: 'Recensioni, news, speciali e guide dal mondo retro-gaming.',
     };
 
@@ -409,6 +419,11 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
   publishUpdating: copy.publishUpdating,
   publishUpdated: copy.publishUpdated,
   publishGenericError: copy.publishGenericError,
+  publishRevisionConflict: copy.publishRevisionConflict,
+  publishRequiresDraft: copy.publishRequiresDraft,
+  publishPreflightError: copy.publishPreflightError,
+  publishForbidden: copy.publishForbidden,
+  publishPartialFailure: copy.publishPartialFailure,
   authorLoading: copy.authorLoading,
   authorNoResults: copy.authorNoResults,
   authorSearchError: copy.authorSearchError,
@@ -419,6 +434,25 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
   const workflowButtons = document.querySelectorAll('[data-editorial-preview-workflow-action]');
   const publishButton = document.querySelector('[data-editorial-preview-publish]');
   const authorPicker = document.querySelector('[data-editorial-preview-author-picker]');
+
+  const getPublishErrorMessage = (error, phase) => {
+    if (error === 'article_publish_forbidden') return publishForbidden;
+    if (error === 'publish_revision_conflict') return publishRevisionConflict;
+    if (error === 'publish_requires_draft') return publishRequiresDraft;
+    if (error === 'publish_partial_failure') return publishPartialFailure;
+    if (
+      phase === 'sanity_preflight' ||
+      error === 'publish_title_required' ||
+      error === 'publish_slug_required' ||
+      error === 'publish_type_required' ||
+      error === 'publish_language_required' ||
+      error === 'author_ownership_conflict'
+    ) {
+      return publishPreflightError;
+    }
+
+    return publishGenericError;
+  };
 
   const setPreviewActionsDisabled = (disabled) => {
     document
@@ -491,15 +525,22 @@ const returnLabel = canReturnToEditor ? copy.backToEditor : copy.backToArticles;
         const result = await response.json().catch(() => null);
 
         if (!response.ok || !result?.ok) {
-          throw new Error(result?.error || 'publish_failed');
+          const message = getPublishErrorMessage(result?.error || 'publish_failed', result?.phase || '');
+          console.warn('Editorial publish failed', {
+            error: result?.error || 'publish_failed',
+            phase: result?.phase || 'unknown',
+            status: response.status,
+          });
+          throw new Error(message);
         }
 
         publishButton.textContent = publishUpdated;
         window.location.assign(articlesHref);
-      } catch {
+      } catch (error) {
         setPreviewActionsDisabled(false);
+        const message = error instanceof Error && error.message ? error.message : publishGenericError;
         publishButton.textContent = originalText || publishGenericError;
-        window.alert(publishGenericError);
+        window.alert(message);
       }
     });
   }

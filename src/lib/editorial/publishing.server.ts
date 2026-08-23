@@ -31,8 +31,22 @@ type SanityArticleDocument = Record<string, unknown> & {
   _type: 'article';
 };
 
+type PublishFailurePhase =
+  | 'request'
+  | 'supabase_preflight'
+  | 'permission'
+  | 'sanity_preflight'
+  | 'sanity_prepare_draft'
+  | 'sanity_publish'
+  | 'sanity_readback'
+  | 'supabase_update';
+
 const workflowDocumentSelect =
   'sanity_document_id, owner_user_id, sanity_author_id, workflow_status, submitted_at, reviewed_by, reviewed_at';
+
+function publishFailure(status: number, error: string, phase: PublishFailurePhase) {
+  return { ok: false as const, status, error, phase };
+}
 
 function getDraftDocumentId(rootDocumentId: string) {
   return `drafts.${rootDocumentId}`;
@@ -77,7 +91,7 @@ async function fetchPublishOwnership(rootDocumentId: unknown) {
   const sanityDocumentId = normalizeSanityRootDocumentId(rootDocumentId);
 
   if (!sanityDocumentId) {
-    return { ok: false as const, status: 400, error: 'invalid_article_id' };
+    return publishFailure(400, 'invalid_article_id', 'request');
   }
 
   const { data, error } = await supabaseAdmin
@@ -88,13 +102,13 @@ async function fetchPublishOwnership(rootDocumentId: unknown) {
 
   if (error) {
     logApiError('editorial-publish.ownership', error);
-    return { ok: false as const, status: 503, error: 'editorial_database_unavailable' };
+    return publishFailure(503, 'editorial_database_unavailable', 'supabase_preflight');
   }
 
   const ownership = normalizeWorkflowOwnership(data as EditorialPublishingDocumentRow | null);
 
   if (!ownership) {
-    return { ok: false as const, status: 404, error: 'article_not_found' };
+    return publishFailure(404, 'article_not_found', 'supabase_preflight');
   }
 
   return { ok: true as const, ownership };
@@ -133,79 +147,75 @@ function validatePublishableDraft(
   ownership: EditorialDocumentOwnership
 ) {
   if (!draftDocument) {
-    return { ok: false as const, status: 409, error: 'publish_requires_draft' };
+    return publishFailure(409, 'publish_requires_draft', 'sanity_preflight');
   }
 
   if (draftDocument._id !== getDraftDocumentId(ownership.sanityDocumentId)) {
-    return { ok: false as const, status: 409, error: 'publish_document_mismatch' };
+    return publishFailure(409, 'publish_document_mismatch', 'sanity_preflight');
   }
 
   if (!draftDocument._rev) {
-    return { ok: false as const, status: 422, error: 'publish_revision_missing' };
+    return publishFailure(422, 'publish_revision_missing', 'sanity_preflight');
   }
 
   const authorId = getReferenceId(draftDocument.author);
   if (!authorId || authorId !== ownership.sanityAuthorId) {
-    return { ok: false as const, status: 409, error: 'author_ownership_conflict' };
+    return publishFailure(409, 'author_ownership_conflict', 'sanity_preflight');
   }
 
   if (!normalizeString(draftDocument.title, 300).trim()) {
-    return { ok: false as const, status: 422, error: 'publish_title_required' };
+    return publishFailure(422, 'publish_title_required', 'sanity_preflight');
   }
 
   if (!getSlugValue(draftDocument.slug)) {
-    return { ok: false as const, status: 422, error: 'publish_slug_required' };
+    return publishFailure(422, 'publish_slug_required', 'sanity_preflight');
   }
 
   const type = normalizeString(draftDocument.type, 80).trim();
   if (!type) {
-    return { ok: false as const, status: 422, error: 'publish_type_required' };
+    return publishFailure(422, 'publish_type_required', 'sanity_preflight');
   }
 
   const language = normalizeString(draftDocument.language, 8).trim();
   if (language !== 'it' && language !== 'en') {
-    return { ok: false as const, status: 422, error: 'publish_language_required' };
+    return publishFailure(422, 'publish_language_required', 'sanity_preflight');
   }
 
   return { ok: true as const };
 }
 
-function preparePublishedDocument({
+function getPublishFieldPatch({
   draftDocument,
   publishedDocument,
-  rootDocumentId,
   timestamp,
 }: {
   draftDocument: SanityArticleDocument;
   publishedDocument: SanityArticleDocument | null;
-  rootDocumentId: string;
   timestamp: string;
 }) {
-  const nextDocument = JSON.parse(JSON.stringify(draftDocument)) as Record<string, unknown>;
   const existingPublishedAt = publishedDocument?.publishedAt;
   const draftPublishedAt = draftDocument.publishedAt;
-
-  nextDocument._id = rootDocumentId;
-  delete nextDocument._rev;
-  delete nextDocument._createdAt;
-  delete nextDocument._updatedAt;
-  delete nextDocument._originalId;
-
-  nextDocument.isPublic = true;
+  let publishedAt: unknown;
 
   if (publishedDocument) {
     if (!isValidDateString(existingPublishedAt)) {
-      return { ok: false as const, status: 422, error: 'published_at_missing' };
+      return publishFailure(422, 'published_at_missing', 'sanity_preflight');
     }
 
-    nextDocument.publishedAt = existingPublishedAt;
+    publishedAt = existingPublishedAt;
   } else {
-    nextDocument.publishedAt = isValidDateString(draftPublishedAt)
+    publishedAt = isValidDateString(draftPublishedAt)
       ? draftPublishedAt
       : timestamp;
   }
 
-  return { ok: true as const, document: nextDocument as SanityArticleDocument };
+  return {
+    ok: true as const,
+    set: {
+      isPublic: true,
+      publishedAt,
+    },
+  };
 }
 
 function isSanityDocumentPubliclyPublished({
@@ -272,7 +282,7 @@ async function completeSupabasePublish({
 
   if (error) {
     logApiError('editorial-publish.workflow-partial', error);
-    return { ok: false as const, status: 502, error: 'publish_partial_failure' };
+    return publishFailure(502, 'publish_partial_failure', 'supabase_update');
   }
 
   const updatedOwnership = normalizeWorkflowOwnership(data as EditorialPublishingDocumentRow | null);
@@ -299,7 +309,7 @@ async function completeSupabasePublish({
     }
 
     logApiError('editorial-publish.workflow-conflict', new Error('publish_partial_failure'));
-    return { ok: false as const, status: 409, error: 'publish_partial_failure' };
+    return publishFailure(409, 'publish_partial_failure', 'supabase_update');
   }
 
   const auditLogged = await recordPublishAudit({
@@ -341,7 +351,7 @@ export async function publishApprovedEditorialArticle({
   });
 
   if (!canPublishArticle(context)) {
-    return { ok: false as const, status: 403, error: 'article_publish_forbidden' };
+    return publishFailure(403, 'article_publish_forbidden', 'permission');
   }
 
   if (ownership.workflowStatus === 'published') {
@@ -361,11 +371,11 @@ export async function publishApprovedEditorialArticle({
       };
     }
 
-    return { ok: false as const, status: 409, error: 'publish_state_inconsistent' };
+    return publishFailure(409, 'publish_state_inconsistent', 'sanity_preflight');
   }
 
   if (!canPublishWorkflowArticle(context, ownership)) {
-    return { ok: false as const, status: 403, error: 'article_publish_forbidden' };
+    return publishFailure(403, 'article_publish_forbidden', 'permission');
   }
 
   if (!pair.draftDocument) {
@@ -373,42 +383,49 @@ export async function publishApprovedEditorialArticle({
       return completeSupabasePublish({ context, ownership });
     }
 
-    return { ok: false as const, status: 409, error: 'publish_requires_draft' };
+    return publishFailure(409, 'publish_requires_draft', 'sanity_preflight');
   }
 
   const validation = validatePublishableDraft(pair.draftDocument, ownership);
   if (!validation.ok) return validation;
 
   if (pair.publishedDocument && getReferenceId(pair.publishedDocument.author) !== ownership.sanityAuthorId) {
-    return { ok: false as const, status: 409, error: 'author_ownership_conflict' };
+    return publishFailure(409, 'author_ownership_conflict', 'sanity_preflight');
   }
 
   const timestamp = new Date().toISOString();
-  const prepared = preparePublishedDocument({
+  const publishFieldPatch = getPublishFieldPatch({
     draftDocument: pair.draftDocument,
     publishedDocument: pair.publishedDocument,
-    rootDocumentId: ownership.sanityDocumentId,
     timestamp,
   });
 
-  if (!prepared.ok) return prepared;
+  if (!publishFieldPatch.ok) return publishFieldPatch;
+
+  let preparedDraft: SanityArticleDocument;
 
   try {
-    const draftTitle = pair.draftDocument.title;
-
-    await getSanityWriteClient()
-      .transaction()
-      .patch(pair.draftDocumentId, (patch) =>
-        patch
-          .ifRevisionId(String(pair.draftDocument?._rev || ''))
-          .set({ title: draftTitle })
-      )
-      .createOrReplace(prepared.document)
-      .delete(pair.draftDocumentId)
-      .commit({ visibility: 'sync', returnDocuments: false });
+    preparedDraft = await getSanityWriteClient()
+      .patch(pair.draftDocumentId)
+      .ifRevisionId(pair.draftDocument._rev || '')
+      .set(publishFieldPatch.set)
+      .commit<SanityArticleDocument>({ visibility: 'sync' });
   } catch (error) {
-    logApiError('editorial-publish.sanity-transaction', error);
-    return { ok: false as const, status: 502, error: 'sanity_publish_failed' };
+    logApiError('editorial-publish.prepare-draft', error);
+    return publishFailure(409, 'publish_revision_conflict', 'sanity_prepare_draft');
+  }
+
+  try {
+    await getSanityWriteClient().action({
+      actionType: 'sanity.action.document.publish',
+      draftId: pair.draftDocumentId,
+      ifDraftRevisionId: preparedDraft._rev,
+      publishedId: ownership.sanityDocumentId,
+      ...(pair.publishedDocument?._rev ? { ifPublishedRevisionId: pair.publishedDocument._rev } : {}),
+    });
+  } catch (error) {
+    logApiError('editorial-publish.sanity-action', error);
+    return publishFailure(502, 'sanity_publish_failed', 'sanity_publish');
   }
 
   const readBack = await fetchSanityArticlePair(ownership.sanityDocumentId);
@@ -419,7 +436,7 @@ export async function publishApprovedEditorialArticle({
 
   if (!readBackPublished || readBack.draftDocument) {
     logApiError('editorial-publish.readback', new Error('publish_readback_failed'));
-    return { ok: false as const, status: 502, error: 'publish_readback_failed' };
+    return publishFailure(502, 'publish_readback_failed', 'sanity_readback');
   }
 
   return completeSupabasePublish({ context, ownership });

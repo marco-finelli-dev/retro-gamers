@@ -26,7 +26,7 @@ export const POST: APIRoute = async ({ params, cookies }) => {
     });
 
     if (!result.ok) {
-      return json({ ok: false, error: result.error }, result.status);
+      return json({ ok: false, error: result.error, phase: result.phase }, result.status);
     }
 
     return json({
@@ -39,6 +39,6 @@ export const POST: APIRoute = async ({ params, cookies }) => {
     });
   } catch (error) {
     logApiError('editorial-publish.api', error);
-    return json({ ok: false, error: 'publish_failed' }, 500);
+    return json({ ok: false, error: 'publish_failed', phase: 'api' }, 500);
   }
 };
