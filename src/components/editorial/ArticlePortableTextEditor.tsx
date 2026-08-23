@@ -255,6 +255,7 @@ type Labels = {
   workflowSubmittedAt: string;
   workflowReviewedAt: string;
   workflowReviewer: string;
+  documentActions: string;
   workflowSubmit: string;
   workflowRequestChanges: string;
   workflowApprove: string;
@@ -3478,7 +3479,7 @@ function AsideBoxModal({
   );
 }
 
-type ToolbarMenu = 'structure' | 'text' | 'link' | 'insert';
+type ToolbarMenu = 'structure' | 'text' | 'link' | 'insert' | 'document';
 type SaveMode = 'manual' | 'autosave';
 type WorkflowAction = 'submit' | 'request_changes' | 'approve';
 type TypeChangeRequest = {
@@ -3802,10 +3803,10 @@ function Toolbar({
   }, [openMenu]);
 
   useEffect(() => {
-    if (isLocked) {
+    if (isLocked || isWorkflowUpdating) {
       setOpenMenu(null);
     }
-  }, [isLocked]);
+  }, [isLocked, isWorkflowUpdating]);
 
   const focus = () => editor.send({ type: 'focus' });
   const send = (event: Parameters<typeof editor.send>[0]) => {
@@ -3822,6 +3823,12 @@ function Toolbar({
 
     setOpenMenu(null);
     action();
+  };
+  const runDocumentAction = (action: WorkflowAction) => {
+    if (isLocked || isWorkflowUpdating) return;
+
+    setOpenMenu(null);
+    onWorkflowAction?.(action);
   };
   const handleExitClick = () => {
     if (isLocked) return;
@@ -4405,17 +4412,6 @@ function Toolbar({
             <span aria-hidden="true">●</span>
             {status || labels.draftStatus}
           </p>
-          {workflowActions.map((action) => (
-            <button
-              className="editorial-article-editor__settings-toggle editorial-workflow-action"
-              type="button"
-              key={action}
-              disabled={isLocked || isWorkflowUpdating}
-              onClick={() => onWorkflowAction?.(action)}
-            >
-              {isWorkflowUpdating ? labels.workflowUpdating : getWorkflowActionLabel(action, labels)}
-            </button>
-          ))}
           <button
             className="editorial-article-editor__settings-toggle"
             type="button"
@@ -4442,6 +4438,42 @@ function Toolbar({
           <button className="editorial-button" type="button" onClick={onSave} disabled={isSaving || isLocked}>
             {isLocked ? labels.saving : labels.save}
           </button>
+          {workflowActions.length > 0 && (
+            <div className="editorial-pte-toolbar__menu editorial-pte-toolbar__document-menu">
+              <button
+                className="editorial-pte-toolbar__menu-trigger editorial-pte-toolbar__menu-trigger--icon"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={openMenu === 'document'}
+                aria-label={labels.documentActions}
+                title={labels.documentActions}
+                disabled={isLocked || isWorkflowUpdating}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => toggleMenu('document')}
+              >
+                <span aria-hidden="true">…</span>
+              </button>
+              <div
+                className="editorial-pte-toolbar__menu-panel editorial-pte-toolbar__menu-panel--end"
+                role="menu"
+                hidden={openMenu !== 'document'}
+              >
+                {workflowActions.map((action) => (
+                  <button
+                    className="editorial-pte-toolbar__menu-item"
+                    type="button"
+                    role="menuitem"
+                    key={action}
+                    disabled={isLocked || isWorkflowUpdating}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => runDocumentAction(action)}
+                  >
+                    {isWorkflowUpdating ? labels.workflowUpdating : getWorkflowActionLabel(action, labels)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <button
             className="editorial-article-editor__exit"
             type="button"
