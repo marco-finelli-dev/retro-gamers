@@ -1,5 +1,5 @@
 import { logApiError } from '../api-errors';
-import { getSanityRawClient, getSanityWriteClient } from '../sanity-write.server';
+import { getSanityDocumentActionsClient, getSanityRawClient, getSanityWriteClient } from '../sanity-write.server';
 import { supabaseAdmin } from '../supabase/server';
 import { validateArticleForWorkflow } from './article-workflow-validation.server';
 import { canPublishArticle, canPublishWorkflowArticle, getWorkflowTransitionPermissions } from './permissions';
@@ -407,7 +407,7 @@ export async function publishApprovedEditorialArticle({
   }
 
   try {
-    await getSanityWriteClient().action({
+    await getSanityDocumentActionsClient().action({
       actionType: 'sanity.action.document.publish',
       draftId: pair.draftDocumentId,
       ifDraftRevisionId: preparedDraft._rev,

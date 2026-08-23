@@ -3,6 +3,7 @@ import { createClient, type SanityClient } from '@sanity/client';
 const projectId = 'y88ky0mu';
 const dataset = 'production';
 const apiVersion = '2024-01-01';
+const documentActionsApiVersion = '2024-05-23';
 
 const baseWriteClientConfig = {
   projectId,
@@ -12,6 +13,7 @@ const baseWriteClientConfig = {
 
 let sanityWriteClient: SanityClient | null = null;
 let sanityRawClient: SanityClient | null = null;
+let sanityDocumentActionsClient: SanityClient | null = null;
 
 function assertServerRuntime() {
   if (typeof window !== 'undefined') {
@@ -71,4 +73,24 @@ export function getSanityRawClient() {
   }
 
   return sanityRawClient;
+}
+
+export function getSanityDocumentActionsClient() {
+  const token = getSanityWriteToken();
+
+  if (!token) {
+    throw new Error('Sanity write token is not configured.');
+  }
+
+  if (!sanityDocumentActionsClient) {
+    sanityDocumentActionsClient = createClient({
+      ...baseWriteClientConfig,
+      apiVersion: documentActionsApiVersion,
+      token,
+      useCdn: false,
+      perspective: 'published',
+    });
+  }
+
+  return sanityDocumentActionsClient;
 }
