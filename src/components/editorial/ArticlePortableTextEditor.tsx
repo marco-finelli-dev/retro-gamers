@@ -68,7 +68,7 @@ type ReferenceAnnotationName =
   | 'creatorLink'
   | 'companyLink'
   | 'taxonomyLink';
-type AnnotationName = ReferenceAnnotationName | 'pageLink';
+type AnnotationName = ReferenceAnnotationName | 'link' | 'pageLink';
 type ImageDisplayMode = 'cover' | 'contain' | 'wide' | 'natural';
 
 type BodyImageAssetReference = {
@@ -485,6 +485,7 @@ type Labels = {
   bodyImageOrphanNotice: string;
   annotationCurrentTarget: string;
   annotationRemove: string;
+  annotationApply: string;
   annotationClose: string;
   annotationNoSelection: string;
   pageLinkSelectPlaceholder: string;
@@ -558,6 +559,15 @@ const referenceAnnotationControls: Array<{
   { name: 'creatorLink', icon: '👤' },
   { name: 'companyLink', icon: '🏢' },
   { name: 'taxonomyLink', icon: '🏷️' },
+];
+const contextualLinkAnnotationOrder: AnnotationName[] = [
+  'link',
+  'internalLink',
+  'platformLink',
+  'pageLink',
+  'taxonomyLink',
+  'creatorLink',
+  'companyLink',
 ];
 const pageLinkOptions: Array<{ label: string; path: string }> = [
   { label: 'Home IT', path: '/' },
@@ -2269,7 +2279,97 @@ function PageLinkPicker({
   );
 }
 
+function ExternalLinkPicker({
+  label,
+  activeAnnotation,
+  labels,
+  onApply,
+  onRemove,
+}: {
+  label: string;
+  activeAnnotation: PortableTextObject | null;
+  labels: Labels;
+  onApply: (value: Record<string, unknown>) => void;
+  onRemove: () => void;
+}) {
+  const currentTarget = getActiveAnnotationTarget(activeAnnotation);
+  const [href, setHref] = useState(currentTarget || 'https://');
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const applyExternalLink = () => {
+    const value = href.trim();
+
+    try {
+      const url = new URL(value);
+
+      if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) {
+        throw new Error('unsupported_protocol');
+      }
+    } catch {
+      inputRef.current?.setCustomValidity(labels.linkPrompt);
+      inputRef.current?.reportValidity();
+      return;
+    }
+
+    inputRef.current?.setCustomValidity('');
+    onApply({ href: value });
+  };
+
+  return (
+    <>
+      {currentTarget && (
+        <p className="editorial-pte-modal__current">
+          {labels.annotationCurrentTarget}: <code>{currentTarget}</code>
+        </p>
+      )}
+
+      <label className="editorial-field" htmlFor={inputId}>
+        <span>{label}</span>
+        <input
+          ref={inputRef}
+          id={inputId}
+          type="url"
+          value={href}
+          placeholder="https://"
+          onChange={(event) => {
+            event.currentTarget.setCustomValidity('');
+            setHref(event.currentTarget.value);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              applyExternalLink();
+            }
+          }}
+        />
+      </label>
+
+      <div className="editorial-exit-modal__actions">
+        {activeAnnotation && (
+          <button
+            type="button"
+            className="editorial-mini-button editorial-mini-button--danger"
+            onClick={onRemove}
+          >
+            {labels.annotationRemove}
+          </button>
+        )}
+        <button type="button" className="editorial-button" onClick={applyExternalLink}>
+          {labels.annotationApply}
+        </button>
+      </div>
+    </>
+  );
+}
+
 function getAnnotationIcon(annotationName: AnnotationName) {
+  if (annotationName === 'link') return '🔗';
   if (annotationName === 'pageLink') return '📃';
 
   return referenceAnnotationControls.find((control) => control.name === annotationName)?.icon || '';
@@ -3479,7 +3579,7 @@ function AsideBoxModal({
   );
 }
 
-type ToolbarMenu = 'structure' | 'text' | 'link' | 'insert' | 'document';
+type ToolbarMenu = 'structure' | 'text' | 'link' | 'insert' | 'document' | 'contextLink';
 type SaveMode = 'manual' | 'autosave';
 type WorkflowAction = 'submit' | 'request_changes' | 'approve';
 type TypeChangeRequest = {
@@ -3774,8 +3874,24 @@ function Toolbar({
     trigger: HTMLButtonElement | null;
   } | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const contextualToolbarRef = useRef<HTMLDivElement | null>(null);
   const hasTextSelection = String(selectedText || '').trim().length > 0;
   const [openMenu, setOpenMenu] = useState<ToolbarMenu | null>(null);
+  const [contextualToolbarPosition, setContextualToolbarPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const canUseContextualToolbar = Boolean(
+    isBodyToolbar &&
+    selection &&
+    hasTextSelection &&
+    !isLocked &&
+    !annotationModal &&
+    !imageModal &&
+    !imageRowModal &&
+    !videoModal &&
+    !asideBoxModal
+  );
 
   useEffect(() => {
     if (!openMenu) return;
@@ -3784,6 +3900,7 @@ function Toolbar({
       const target = event.target;
 
       if (target instanceof Node && toolbarRef.current?.contains(target)) return;
+      if (target instanceof Node && contextualToolbarRef.current?.contains(target)) return;
 
       setOpenMenu(null);
     };
@@ -3805,8 +3922,78 @@ function Toolbar({
   useEffect(() => {
     if (isLocked || isWorkflowUpdating) {
       setOpenMenu(null);
+      setContextualToolbarPosition(null);
     }
   }, [isLocked, isWorkflowUpdating]);
+
+  const updateContextualToolbarPosition = useCallback(() => {
+    if (!canUseContextualToolbar || typeof window === 'undefined') {
+      setContextualToolbarPosition(null);
+      return;
+    }
+
+    const domSelection = window.getSelection();
+
+    if (!domSelection || domSelection.rangeCount === 0 || domSelection.isCollapsed) {
+      setContextualToolbarPosition(null);
+      return;
+    }
+
+    const range = domSelection.getRangeAt(0);
+    const boundingRect = range.getBoundingClientRect();
+    const fallbackRect = Array.from(range.getClientRects()).find((rect) => rect.width > 0 || rect.height > 0);
+    const targetRect = boundingRect.width > 0 || boundingRect.height > 0 ? boundingRect : fallbackRect;
+
+    if (!targetRect) {
+      setContextualToolbarPosition(null);
+      return;
+    }
+
+    const toolbarWidth = contextualToolbarRef.current?.offsetWidth || 230;
+    const toolbarHeight = contextualToolbarRef.current?.offsetHeight || 42;
+    const viewportMargin = 12;
+    const placeAbove = targetRect.top >= toolbarHeight + viewportMargin + 8;
+    const rawTop = placeAbove ? targetRect.top - toolbarHeight - 8 : targetRect.bottom + 8;
+    const top = Math.min(
+      Math.max(viewportMargin, rawTop),
+      Math.max(viewportMargin, window.innerHeight - toolbarHeight - viewportMargin)
+    );
+    const selectionCenter = targetRect.left + targetRect.width / 2;
+    const left = Math.min(
+      Math.max(viewportMargin + toolbarWidth / 2, selectionCenter),
+      Math.max(viewportMargin + toolbarWidth / 2, window.innerWidth - toolbarWidth / 2 - viewportMargin)
+    );
+
+    setContextualToolbarPosition({ top, left });
+  }, [canUseContextualToolbar]);
+
+  useEffect(() => {
+    if (!canUseContextualToolbar) {
+      setContextualToolbarPosition(null);
+      if (openMenu === 'contextLink') {
+        setOpenMenu(null);
+      }
+      return undefined;
+    }
+
+    let frameId = 0;
+    const scheduleUpdate = () => {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(updateContextualToolbarPosition);
+    };
+
+    scheduleUpdate();
+    document.addEventListener('selectionchange', scheduleUpdate);
+    window.addEventListener('resize', scheduleUpdate);
+    window.addEventListener('scroll', scheduleUpdate, true);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      document.removeEventListener('selectionchange', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener('scroll', scheduleUpdate, true);
+    };
+  }, [canUseContextualToolbar, openMenu, selectedText, updateContextualToolbarPosition]);
 
   const focus = () => editor.send({ type: 'focus' });
   const send = (event: Parameters<typeof editor.send>[0]) => {
@@ -3829,6 +4016,20 @@ function Toolbar({
 
     setOpenMenu(null);
     onWorkflowAction?.(action);
+  };
+  const runContextualTextAction = (action: () => void) => {
+    if (!canUseContextualToolbar || !selection) return;
+
+    setOpenMenu(null);
+    restoreSelection(selection);
+    action();
+  };
+  const openContextualAnnotationModal = (annotationName: AnnotationName, trigger: HTMLButtonElement) => {
+    if (!canUseContextualToolbar || !selection) return;
+
+    setOpenMenu(null);
+    restoreSelection(selection);
+    openAnnotationModal(annotationName, trigger);
   };
   const handleExitClick = () => {
     if (isLocked) return;
@@ -4059,34 +4260,6 @@ function Toolbar({
       asideBox: 'Box informativo',
     };
 
-  const addExternalLink = () => {
-    const href = window.prompt(labels.linkPrompt, 'https://');
-
-    if (!href) {
-      focus();
-      return;
-    }
-
-    try {
-      const url = new URL(href);
-      if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) {
-        focus();
-        return;
-      }
-    } catch {
-      focus();
-      return;
-    }
-
-    send({
-      type: 'annotation.add',
-      annotation: {
-        name: 'link',
-        value: { href },
-      },
-    });
-  };
-
   return (
     <div
       className={`editorial-pte-toolbar editorial-pte-toolbar--${variant}`}
@@ -4264,9 +4437,9 @@ function Toolbar({
             aria-pressed={Boolean(getActiveAnnotation('link'))}
             data-active={getActiveAnnotation('link') ? 'true' : undefined}
             title={labels.externalLink}
-            disabled={isLocked}
+            disabled={isLocked || !(hasTextSelection || Boolean(getActiveAnnotation('link')))}
             onMouseDown={(event) => event.preventDefault()}
-            onClick={() => runToolbarAction(addExternalLink)}
+            onClick={(event) => runToolbarAction(() => openAnnotationModal('link', event.currentTarget))}
           >
             {labels.externalLink}
           </button>
@@ -4451,7 +4624,7 @@ function Toolbar({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => toggleMenu('document')}
               >
-                <span aria-hidden="true">…</span>
+                <BlockOptionsIcon />
               </button>
               <div
                 className="editorial-pte-toolbar__menu-panel editorial-pte-toolbar__menu-panel--end"
@@ -4488,13 +4661,100 @@ function Toolbar({
         </div>
       )}
 
+      {canUseContextualToolbar && contextualToolbarPosition && (
+        <div
+          ref={contextualToolbarRef}
+          className="editorial-pte-context-toolbar"
+          style={{
+            top: `${contextualToolbarPosition.top}px`,
+            left: `${contextualToolbarPosition.left}px`,
+          }}
+          role="toolbar"
+          aria-label={labels.toolbarText}
+          onMouseDown={(event) => event.preventDefault()}
+        >
+          <button
+            className="editorial-pte-context-toolbar__button"
+            type="button"
+            aria-label={labels.bold}
+            title={labels.bold}
+            aria-pressed={isBoldActive}
+            data-active={isBoldActive ? 'true' : undefined}
+            onClick={() => runContextualTextAction(() => send({ type: 'decorator.toggle', decorator: 'strong' }))}
+          >
+            <strong aria-hidden="true">B</strong>
+          </button>
+          <button
+            className="editorial-pte-context-toolbar__button"
+            type="button"
+            aria-label={labels.italic}
+            title={labels.italic}
+            aria-pressed={isItalicActive}
+            data-active={isItalicActive ? 'true' : undefined}
+            onClick={() => runContextualTextAction(() => send({ type: 'decorator.toggle', decorator: 'em' }))}
+          >
+            <em aria-hidden="true">I</em>
+          </button>
+          <div className="editorial-pte-context-toolbar__menu">
+            <button
+              className="editorial-pte-context-toolbar__button editorial-pte-context-toolbar__button--link"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={openMenu === 'contextLink'}
+              aria-label={labels.toolbarLink}
+              title={labels.toolbarLink}
+              data-active={contextualLinkAnnotationOrder.some((annotationName) => getActiveAnnotation(annotationName)) ? 'true' : undefined}
+              onClick={() => toggleMenu('contextLink')}
+            >
+              {labels.toolbarLink}
+              <span aria-hidden="true">▾</span>
+            </button>
+            <div
+              className="editorial-pte-context-toolbar__menu-panel"
+              role="menu"
+              hidden={openMenu !== 'contextLink'}
+            >
+              {contextualLinkAnnotationOrder.map((annotationName) => {
+                const label = getAnnotationLabel(annotationName, labels);
+                const activeAnnotation = getActiveAnnotation(annotationName);
+                const isOpen = annotationModal?.annotationName === annotationName;
+
+                return (
+                  <button
+                    className="editorial-pte-toolbar__menu-item"
+                    type="button"
+                    role="menuitem"
+                    key={annotationName}
+                    aria-pressed={Boolean(activeAnnotation)}
+                    aria-expanded={isOpen}
+                    data-active={activeAnnotation ? 'true' : undefined}
+                    title={label}
+                    onClick={(event) => openContextualAnnotationModal(annotationName, event.currentTarget)}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {annotationModal && (
         <AnnotationModal
           title={`${getAnnotationIcon(annotationModal.annotationName)} ${getAnnotationLabel(annotationModal.annotationName, labels)}`}
           labels={labels}
           onClose={closeAnnotationModal}
         >
-          {annotationModal.annotationName === 'pageLink' ? (
+          {annotationModal.annotationName === 'link' ? (
+            <ExternalLinkPicker
+              label={getAnnotationLabel(annotationModal.annotationName, labels)}
+              activeAnnotation={annotationModal.activeAnnotation}
+              labels={labels}
+              onApply={applyAnnotation}
+              onRemove={removeAnnotation}
+            />
+          ) : annotationModal.annotationName === 'pageLink' ? (
             <PageLinkPicker
               label={getAnnotationLabel(annotationModal.annotationName, labels)}
               activeAnnotation={annotationModal.activeAnnotation}
@@ -4911,6 +5171,7 @@ function getRatingLabel(field: RatingField, labels: Labels) {
 }
 
 function getAnnotationLabel(annotationName: AnnotationName, labels: Labels) {
+  if (annotationName === 'link') return labels.externalLink;
   if (annotationName === 'internalLink') return labels.internalLink;
   if (annotationName === 'platformLink') return labels.platformLink;
   if (annotationName === 'creatorLink') return labels.creatorLink;
@@ -4922,6 +5183,10 @@ function getAnnotationLabel(annotationName: AnnotationName, labels: Labels) {
 
 function getActiveAnnotationTarget(annotation: PortableTextObject | null | undefined) {
   if (!annotation) return '';
+
+  if (annotation._type === 'link') {
+    return typeof annotation.href === 'string' ? annotation.href : '';
+  }
 
   if (annotation._type === 'pageLink') {
     return typeof annotation.path === 'string' ? annotation.path : '';
