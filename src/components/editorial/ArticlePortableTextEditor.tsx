@@ -3946,6 +3946,7 @@ function Toolbar({
 
       if (target instanceof Node && toolbarRef.current?.contains(target)) return;
       if (target instanceof Node && contextualToolbarRef.current?.contains(target)) return;
+      if (target instanceof Node && contextualLinkMenuPanelRef.current?.contains(target)) return;
 
       setOpenMenu(null);
     };
@@ -4404,6 +4405,55 @@ function Toolbar({
       video: 'Video',
       asideBox: 'Box informativo',
     };
+  const contextualLinkMenuPanel = (
+    openMenu === 'contextLink' &&
+    canUseContextualToolbar &&
+    contextualToolbarPosition &&
+    typeof document !== 'undefined'
+  )
+    ? createPortal(
+      <div
+        ref={contextualLinkMenuPanelRef}
+        className="editorial-pte-context-toolbar__menu-panel"
+        data-placement={contextualLinkMenuPosition?.placement || contextualToolbarPosition.placement}
+        style={contextualLinkMenuPosition ? {
+          top: `${contextualLinkMenuPosition.top}px`,
+          left: `${contextualLinkMenuPosition.left}px`,
+          width: `${contextualLinkMenuPosition.width}px`,
+          maxHeight: `${contextualLinkMenuPosition.maxHeight}px`,
+        } : {
+          top: '0px',
+          left: '0px',
+          visibility: 'hidden',
+        }}
+        role="menu"
+        onMouseDown={(event) => event.preventDefault()}
+      >
+        {contextualLinkAnnotationOrder.map((annotationName) => {
+          const label = getAnnotationLabel(annotationName, labels);
+          const activeAnnotation = getActiveAnnotation(annotationName);
+          const isOpen = annotationModal?.annotationName === annotationName;
+
+          return (
+            <button
+              className="editorial-pte-toolbar__menu-item"
+              type="button"
+              role="menuitem"
+              key={annotationName}
+              aria-pressed={Boolean(activeAnnotation)}
+              aria-expanded={isOpen}
+              data-active={activeAnnotation ? 'true' : undefined}
+              title={label}
+              onClick={(event) => openContextualAnnotationModal(annotationName, event.currentTarget)}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>,
+      document.body
+    )
+    : null;
 
   return (
     <div
@@ -4866,44 +4916,10 @@ function Toolbar({
               {labels.toolbarLink}
               <span aria-hidden="true">▾</span>
             </button>
-            <div
-              ref={contextualLinkMenuPanelRef}
-              className="editorial-pte-context-toolbar__menu-panel"
-              data-placement={contextualLinkMenuPosition?.placement || contextualToolbarPosition.placement}
-              style={contextualLinkMenuPosition ? {
-                top: `${contextualLinkMenuPosition.top}px`,
-                left: `${contextualLinkMenuPosition.left}px`,
-                width: `${contextualLinkMenuPosition.width}px`,
-                maxHeight: `${contextualLinkMenuPosition.maxHeight}px`,
-              } : undefined}
-              role="menu"
-              hidden={openMenu !== 'contextLink'}
-            >
-              {contextualLinkAnnotationOrder.map((annotationName) => {
-                const label = getAnnotationLabel(annotationName, labels);
-                const activeAnnotation = getActiveAnnotation(annotationName);
-                const isOpen = annotationModal?.annotationName === annotationName;
-
-                return (
-                  <button
-                    className="editorial-pte-toolbar__menu-item"
-                    type="button"
-                    role="menuitem"
-                    key={annotationName}
-                    aria-pressed={Boolean(activeAnnotation)}
-                    aria-expanded={isOpen}
-                    data-active={activeAnnotation ? 'true' : undefined}
-                    title={label}
-                    onClick={(event) => openContextualAnnotationModal(annotationName, event.currentTarget)}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
       )}
+      {contextualLinkMenuPanel}
 
       {annotationModal && (
         <AnnotationModal
