@@ -4454,6 +4454,66 @@ function Toolbar({
       document.body
     )
     : null;
+  const contextualToolbarPanel = (
+    canUseContextualToolbar &&
+    contextualToolbarPosition &&
+    typeof document !== 'undefined'
+  )
+    ? createPortal(
+      <div
+        ref={contextualToolbarRef}
+        className="editorial-pte-context-toolbar"
+        data-placement={contextualToolbarPosition.placement}
+        style={{
+          top: `${contextualToolbarPosition.top}px`,
+          left: `${contextualToolbarPosition.left}px`,
+        }}
+        role="toolbar"
+        aria-label={labels.toolbarText}
+        onMouseDown={(event) => event.preventDefault()}
+      >
+        <button
+          className="editorial-pte-context-toolbar__button"
+          type="button"
+          aria-label={labels.bold}
+          title={labels.bold}
+          aria-pressed={isBoldActive}
+          data-active={isBoldActive ? 'true' : undefined}
+          onClick={() => runContextualTextAction(() => send({ type: 'decorator.toggle', decorator: 'strong' }))}
+        >
+          <strong aria-hidden="true">B</strong>
+        </button>
+        <button
+          className="editorial-pte-context-toolbar__button"
+          type="button"
+          aria-label={labels.italic}
+          title={labels.italic}
+          aria-pressed={isItalicActive}
+          data-active={isItalicActive ? 'true' : undefined}
+          onClick={() => runContextualTextAction(() => send({ type: 'decorator.toggle', decorator: 'em' }))}
+        >
+          <em aria-hidden="true">I</em>
+        </button>
+        <div className="editorial-pte-context-toolbar__menu">
+          <button
+            ref={contextualLinkTriggerRef}
+            className="editorial-pte-context-toolbar__button editorial-pte-context-toolbar__button--link"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={openMenu === 'contextLink'}
+            aria-label={labels.toolbarLink}
+            title={labels.toolbarLink}
+            data-active={contextualLinkAnnotationOrder.some((annotationName) => getActiveAnnotation(annotationName)) ? 'true' : undefined}
+            onClick={() => toggleMenu('contextLink')}
+          >
+            {labels.toolbarLink}
+            <span aria-hidden="true">▾</span>
+          </button>
+        </div>
+      </div>,
+      document.body
+    )
+    : null;
 
   return (
     <div
@@ -4866,59 +4926,7 @@ function Toolbar({
         </div>
       )}
 
-      {canUseContextualToolbar && contextualToolbarPosition && (
-        <div
-          ref={contextualToolbarRef}
-          className="editorial-pte-context-toolbar"
-          data-placement={contextualToolbarPosition.placement}
-          style={{
-            top: `${contextualToolbarPosition.top}px`,
-            left: `${contextualToolbarPosition.left}px`,
-          }}
-          role="toolbar"
-          aria-label={labels.toolbarText}
-          onMouseDown={(event) => event.preventDefault()}
-        >
-          <button
-            className="editorial-pte-context-toolbar__button"
-            type="button"
-            aria-label={labels.bold}
-            title={labels.bold}
-            aria-pressed={isBoldActive}
-            data-active={isBoldActive ? 'true' : undefined}
-            onClick={() => runContextualTextAction(() => send({ type: 'decorator.toggle', decorator: 'strong' }))}
-          >
-            <strong aria-hidden="true">B</strong>
-          </button>
-          <button
-            className="editorial-pte-context-toolbar__button"
-            type="button"
-            aria-label={labels.italic}
-            title={labels.italic}
-            aria-pressed={isItalicActive}
-            data-active={isItalicActive ? 'true' : undefined}
-            onClick={() => runContextualTextAction(() => send({ type: 'decorator.toggle', decorator: 'em' }))}
-          >
-            <em aria-hidden="true">I</em>
-          </button>
-          <div className="editorial-pte-context-toolbar__menu">
-            <button
-              ref={contextualLinkTriggerRef}
-              className="editorial-pte-context-toolbar__button editorial-pte-context-toolbar__button--link"
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={openMenu === 'contextLink'}
-              aria-label={labels.toolbarLink}
-              title={labels.toolbarLink}
-              data-active={contextualLinkAnnotationOrder.some((annotationName) => getActiveAnnotation(annotationName)) ? 'true' : undefined}
-              onClick={() => toggleMenu('contextLink')}
-            >
-              {labels.toolbarLink}
-              <span aria-hidden="true">▾</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {contextualToolbarPanel}
       {contextualLinkMenuPanel}
 
       {annotationModal && (
