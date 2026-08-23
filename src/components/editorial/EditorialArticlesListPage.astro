@@ -427,98 +427,96 @@ const visibleOwnTypeOptions = Array.from(
         )}
 
         {!listError && visibleOwnItems.length > 0 && (
-          <div class="editorial-article-quick-filters" role="group" aria-label={copy.quickFiltersLabel}>
-            <button type="button" data-editorial-quick-filter="all" aria-pressed="true">
-              <span>{copy.quickAll}</span>
-              <span data-editorial-quick-filter-count>0</span>
-            </button>
-            <button type="button" data-editorial-quick-filter="drafts" aria-pressed="false">
-              <span>{copy.quickDrafts}</span>
-              <span data-editorial-quick-filter-count>0</span>
-            </button>
-            <button type="button" data-editorial-quick-filter="review" aria-pressed="false">
-              <span>{copy.quickReview}</span>
-              <span data-editorial-quick-filter-count>0</span>
-            </button>
-            <button type="button" data-editorial-quick-filter="published" aria-pressed="false">
-              <span>{copy.quickPublished}</span>
-              <span data-editorial-quick-filter-count>0</span>
-            </button>
-            <button type="button" data-editorial-quick-filter="revisions" aria-pressed="false">
-              <span>{copy.quickRevisions}</span>
-              <span data-editorial-quick-filter-count>0</span>
-            </button>
-            <button type="button" data-editorial-quick-filter="orphans" aria-pressed="false">
-              <span>{copy.quickOrphans}</span>
-              <span data-editorial-quick-filter-count>0</span>
-            </button>
+          <div class="editorial-article-controls">
+            <div class="editorial-article-quick-filters" role="group" aria-label={copy.quickFiltersLabel}>
+              <button type="button" data-editorial-quick-filter="all" aria-pressed="true">
+                <span>{copy.quickAll}</span>
+                <span data-editorial-quick-filter-count>0</span>
+              </button>
+              <button type="button" data-editorial-quick-filter="drafts" aria-pressed="false">
+                <span>{copy.quickDrafts}</span>
+                <span data-editorial-quick-filter-count>0</span>
+              </button>
+              <button type="button" data-editorial-quick-filter="review" aria-pressed="false">
+                <span>{copy.quickReview}</span>
+                <span data-editorial-quick-filter-count>0</span>
+              </button>
+              <button type="button" data-editorial-quick-filter="published" aria-pressed="false">
+                <span>{copy.quickPublished}</span>
+                <span data-editorial-quick-filter-count>0</span>
+              </button>
+              <button type="button" data-editorial-quick-filter="revisions" aria-pressed="false">
+                <span>{copy.quickRevisions}</span>
+                <span data-editorial-quick-filter-count>0</span>
+              </button>
+              <button type="button" data-editorial-quick-filter="orphans" aria-pressed="false">
+                <span>{copy.quickOrphans}</span>
+                <span data-editorial-quick-filter-count>0</span>
+              </button>
+            </div>
+
+            <form class="editorial-article-filters" data-editorial-article-filters aria-label={copy.filtersLabel}>
+              <label class="editorial-article-filter editorial-article-filter--search">
+                <span>{copy.filtersLabel}</span>
+                <input
+                  type="search"
+                  name="search"
+                  placeholder={copy.searchPlaceholder}
+                  autocomplete="off"
+                  data-editorial-filter-search
+                />
+              </label>
+              <label class="editorial-article-filter">
+                <span>{copy.statusFilter}</span>
+                <select name="workflowStatus" data-editorial-filter-workflow>
+                  <option value="">{copy.allStatuses}</option>
+                  {ownWorkflowFilterOptions.map((status) => (
+                    <option value={status}>{getWorkflowLabel(status)}</option>
+                  ))}
+                </select>
+              </label>
+              <label class="editorial-article-filter">
+                <span>{copy.lifecycleFilter}</span>
+                <select name="sanityLifecycle" data-editorial-filter-lifecycle>
+                  <option value="">{copy.allLifecycles}</option>
+                  {ownLifecycleFilterOptions.map((lifecycle) => (
+                    <option value={lifecycle}>{copy.lifecycle[lifecycle] || lifecycle}</option>
+                  ))}
+                </select>
+              </label>
+              <label class="editorial-article-filter">
+                <span>{copy.languageFilter}</span>
+                <select name="language" data-editorial-filter-language>
+                  <option value="">{copy.allLanguages}</option>
+                  <option value="it">IT</option>
+                  <option value="en">EN</option>
+                </select>
+              </label>
+              <label class="editorial-article-filter">
+                <span>{copy.typeFilter}</span>
+                <select name="type" data-editorial-filter-type>
+                  <option value="">{copy.allTypes}</option>
+                  {visibleOwnTypeOptions.map((type) => (
+                    <option value={type}>{type}</option>
+                  ))}
+                </select>
+              </label>
+              <label class="editorial-article-filter">
+                <span>{copy.sortFilter}</span>
+                <select name="sort" data-editorial-sort>
+                  <option value="updated_desc">{copy.sortUpdatedDesc}</option>
+                  <option value="title_asc">{copy.sortTitleAsc}</option>
+                  <option value="title_desc">{copy.sortTitleDesc}</option>
+                  <option value="created_desc">{copy.sortCreatedDesc}</option>
+                  <option value="workflow">{copy.sortWorkflow}</option>
+                </select>
+              </label>
+            </form>
+
+            <p class="editorial-article-count" data-editorial-article-count aria-live="polite">
+              {visibleOwnItems.length} {visibleOwnItems.length === 1 ? copy.articleCountSingular : copy.articleCountPlural} · {visibleOwnItems.length} {visibleOwnItems.length === 1 ? copy.visibleCountSingular : copy.visibleCountPlural}
+            </p>
           </div>
-        )}
-
-        {!listError && visibleOwnItems.length > 0 && (
-          <form class="editorial-article-filters" data-editorial-article-filters aria-label={copy.filtersLabel}>
-            <label class="editorial-article-filter editorial-article-filter--search">
-              <span>{copy.filtersLabel}</span>
-              <input
-                type="search"
-                name="search"
-                placeholder={copy.searchPlaceholder}
-                autocomplete="off"
-                data-editorial-filter-search
-              />
-            </label>
-            <label class="editorial-article-filter">
-              <span>{copy.statusFilter}</span>
-              <select name="workflowStatus" data-editorial-filter-workflow>
-                <option value="">{copy.allStatuses}</option>
-                {ownWorkflowFilterOptions.map((status) => (
-                  <option value={status}>{getWorkflowLabel(status)}</option>
-                ))}
-              </select>
-            </label>
-            <label class="editorial-article-filter">
-              <span>{copy.lifecycleFilter}</span>
-              <select name="sanityLifecycle" data-editorial-filter-lifecycle>
-                <option value="">{copy.allLifecycles}</option>
-                {ownLifecycleFilterOptions.map((lifecycle) => (
-                  <option value={lifecycle}>{copy.lifecycle[lifecycle] || lifecycle}</option>
-                ))}
-              </select>
-            </label>
-            <label class="editorial-article-filter">
-              <span>{copy.languageFilter}</span>
-              <select name="language" data-editorial-filter-language>
-                <option value="">{copy.allLanguages}</option>
-                <option value="it">IT</option>
-                <option value="en">EN</option>
-              </select>
-            </label>
-            <label class="editorial-article-filter">
-              <span>{copy.typeFilter}</span>
-              <select name="type" data-editorial-filter-type>
-                <option value="">{copy.allTypes}</option>
-                {visibleOwnTypeOptions.map((type) => (
-                  <option value={type}>{type}</option>
-                ))}
-              </select>
-            </label>
-            <label class="editorial-article-filter">
-              <span>{copy.sortFilter}</span>
-              <select name="sort" data-editorial-sort>
-                <option value="updated_desc">{copy.sortUpdatedDesc}</option>
-                <option value="title_asc">{copy.sortTitleAsc}</option>
-                <option value="title_desc">{copy.sortTitleDesc}</option>
-                <option value="created_desc">{copy.sortCreatedDesc}</option>
-                <option value="workflow">{copy.sortWorkflow}</option>
-              </select>
-            </label>
-          </form>
-        )}
-
-        {!listError && visibleOwnItems.length > 0 && (
-          <p class="editorial-article-count" data-editorial-article-count aria-live="polite">
-            {visibleOwnItems.length} {visibleOwnItems.length === 1 ? copy.articleCountSingular : copy.articleCountPlural} · {visibleOwnItems.length} {visibleOwnItems.length === 1 ? copy.visibleCountSingular : copy.visibleCountPlural}
-          </p>
         )}
 
         {!listError && visibleOwnItems.length > 0 && (
@@ -655,7 +653,7 @@ const visibleOwnTypeOptions = Array.from(
         )}
 
         {!listError && visibleOwnItems.length > 0 && (
-          <div class="editorial-empty-state" data-editorial-filter-empty hidden aria-live="polite">
+          <div class="editorial-empty-state editorial-empty-state--compact" data-editorial-filter-empty hidden aria-live="polite">
             <h3>{copy.noFilterResultsTitle}</h3>
             <p>{copy.noFilterResultsText}</p>
           </div>
@@ -680,7 +678,7 @@ const visibleOwnTypeOptions = Array.from(
         )}
 
         {!reviewError && reviewItems.length === 0 && (
-          <div class="editorial-empty-state">
+          <div class="editorial-empty-state editorial-empty-state--queue">
             <h3>{copy.noReviewItemsTitle}</h3>
             <p>{copy.noReviewItemsText}</p>
           </div>

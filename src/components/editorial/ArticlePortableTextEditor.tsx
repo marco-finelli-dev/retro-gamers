@@ -3527,7 +3527,7 @@ function AsideBoxModal({
 
   return (
     <AnnotationModal
-      title={`💬 ${modalTitle}`}
+      title={modalTitle}
       labels={labels}
       onClose={onClose}
       panelClassName="editorial-pte-modal__panel--aside"
@@ -3918,7 +3918,6 @@ function Toolbar({
     left: number;
   } | null>(null);
   const canUseContextualToolbar = Boolean(
-    isBodyToolbar &&
     selection &&
     hasTextSelection &&
     !isLocked &&
