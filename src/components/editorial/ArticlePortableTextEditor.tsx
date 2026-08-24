@@ -283,6 +283,7 @@ type Labels = {
   workflowSubmitSuccess: string;
   workflowRequestChangesSuccess: string;
   workflowApproveSuccess: string;
+  workflowDirtyBlocked: string;
   publishRevision: string;
   publishRevisionConfirm: string;
   publishRevisionUpdating: string;
@@ -4684,7 +4685,7 @@ function Toolbar({
     onWorkflowAction?.(action);
   };
   const runPublishRevisionAction = () => {
-    if (isLocked || isWorkflowUpdating || hasUnsavedChanges) return;
+    if (isLocked || isWorkflowUpdating) return;
 
     setOpenMenu(null);
     onPublishRevision?.();
@@ -5442,7 +5443,7 @@ function Toolbar({
               className="editorial-button editorial-button--primary"
               type="button"
               onClick={runPublishRevisionAction}
-              disabled={isLocked || isWorkflowUpdating || hasUnsavedChanges}
+              disabled={isLocked || isWorkflowUpdating}
             >
               {isWorkflowUpdating ? labels.publishRevisionUpdating : labels.publishRevision}
             </button>
@@ -7380,6 +7381,12 @@ export default function ArticlePortableTextEditor({
   const publishArticleRevision = async () => {
     if (isWorkflowUpdating || isManualSaveLocked) return;
 
+    if (hasUnsavedChanges) {
+      setStatus(labels.workflowDirtyBlocked);
+      setStatusTone('error');
+      return;
+    }
+
     if (!window.confirm(labels.publishRevisionConfirm)) {
       return;
     }
@@ -7432,6 +7439,12 @@ export default function ArticlePortableTextEditor({
 
   const runWorkflowAction = async (action: WorkflowAction) => {
     if (isWorkflowUpdating) return;
+
+    if (hasUnsavedChanges) {
+      setStatus(labels.workflowDirtyBlocked);
+      setStatusTone('error');
+      return;
+    }
 
     if (!window.confirm(getWorkflowActionConfirmMessage(action, labels))) {
       return;
