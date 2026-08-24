@@ -4250,6 +4250,26 @@ function getEditorialCommentStatusLabel(status: EditorialComment['status'], labe
     : labels.editorialCommentsOpen;
 }
 
+function getEditorialCommentElementId(commentId: string) {
+  return `editorial-comment-${commentId}`;
+}
+
+function getEditorialCommentIdFromHash(hash: string) {
+  let decodedHash = '';
+
+  try {
+    decodedHash = decodeURIComponent(hash || '').trim();
+  } catch {
+    decodedHash = String(hash || '').trim();
+  }
+
+  const match = decodedHash.match(
+    /^#editorial-comment-([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i
+  );
+
+  return match?.[1].toLowerCase() || '';
+}
+
 function getEditorialCommentGroups(comments: EditorialComment[]) {
   const commentsById = new Map(comments.map((comment) => [comment.id, comment]));
   const repliesByParentId = new Map<string, EditorialComment[]>();
@@ -4308,6 +4328,7 @@ function EditorialCommentCard({
   isReply = false,
   isReplyDisabled = false,
   isResolving = false,
+  isHighlighted = false,
   resolveError = '',
   onReply,
   onResolve,
@@ -4318,6 +4339,7 @@ function EditorialCommentCard({
   isReply?: boolean;
   isReplyDisabled?: boolean;
   isResolving?: boolean;
+  isHighlighted?: boolean;
   resolveError?: string;
   onReply?: () => void;
   onResolve?: () => void;
@@ -4329,7 +4351,11 @@ function EditorialCommentCard({
 
   return (
     <article
+      id={getEditorialCommentElementId(comment.id)}
       className="editorial-comments__item"
+      tabIndex={-1}
+      data-comment-id={comment.id}
+      data-highlighted={isHighlighted ? 'true' : undefined}
       data-reply={isReply ? 'true' : undefined}
       data-status={comment.status}
     >
@@ -4388,6 +4414,7 @@ function EditorialCommentsReadOnly({
   isReplySaving,
   replyError,
   resolvingCommentId,
+  highlightedCommentId,
   resolveError,
   onReplyOpen,
   onReplyCancel,
@@ -4405,6 +4432,7 @@ function EditorialCommentsReadOnly({
   isReplySaving: boolean;
   replyError: string;
   resolvingCommentId: string | null;
+  highlightedCommentId: string | null;
   resolveError: { commentId: string; message: string } | null;
   onReplyOpen: (commentId: string) => void;
   onReplyCancel: () => void;
@@ -4434,6 +4462,7 @@ function EditorialCommentsReadOnly({
             lang={lang}
             isReplyDisabled={isReplySaving || Boolean(resolvingCommentId)}
             isResolving={resolvingCommentId === comment.id}
+            isHighlighted={highlightedCommentId === comment.id}
             resolveError={resolveError?.commentId === comment.id ? resolveError.message : ''}
             onReply={() => onReplyOpen(comment.id)}
             onResolve={() => onResolve(comment.id)}
@@ -4465,6 +4494,7 @@ function EditorialCommentsReadOnly({
                   isReply
                   isReplyDisabled={isReplySaving || Boolean(resolvingCommentId)}
                   isResolving={resolvingCommentId === reply.id}
+                  isHighlighted={highlightedCommentId === reply.id}
                   resolveError={resolveError?.commentId === reply.id ? resolveError.message : ''}
                   onResolve={() => onResolve(reply.id)}
                 />
@@ -7036,10 +7066,16 @@ export default function ArticlePortableTextEditor({
   const [resolvingEditorialCommentId, setResolvingEditorialCommentId] = useState<string | null>(null);
   const [editorialCommentResolveError, setEditorialCommentResolveError] =
     useState<{ commentId: string; message: string } | null>(null);
+  const [targetEditorialCommentId, setTargetEditorialCommentId] = useState<string | null>(null);
+  const [highlightedEditorialCommentId, setHighlightedEditorialCommentId] = useState<string | null>(null);
+  const [editorialCommentNavigationToken, setEditorialCommentNavigationToken] = useState(0);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [typeChangeRequest, setTypeChangeRequest] = useState<TypeChangeRequest | null>(null);
   const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
   const allowEditorNavigationRef = useRef(false);
+  const editorialCommentsSectionRef = useRef<HTMLDetailsElement | null>(null);
+  const editorialCommentHighlightTimeoutRef = useRef<number | null>(null);
+  const editorialCommentNavigationTokenRef = useRef(0);
   const inspectorId = useId();
   const rememberBodyImagePreview = useCallback((assetId: string, url: string) => {
     if (!assetId || !url) return;
@@ -7177,6 +7213,36 @@ export default function ArticlePortableTextEditor({
     }
   }, [editorialCommentsEndpoint]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const openEditorialCommentFromHash = () => {
+      const commentId = getEditorialCommentIdFromHash(window.location.hash);
+
+      if (!commentId) {
+        setTargetEditorialCommentId(null);
+        setHighlightedEditorialCommentId(null);
+        return;
+      }
+
+      editorialCommentNavigationTokenRef.current += 1;
+      setTargetEditorialCommentId(commentId);
+      setEditorialCommentNavigationToken(editorialCommentNavigationTokenRef.current);
+      setIsInspectorOpen(true);
+    };
+
+    openEditorialCommentFromHash();
+    window.addEventListener('hashchange', openEditorialCommentFromHash);
+
+    return () => window.removeEventListener('hashchange', openEditorialCommentFromHash);
+  }, []);
+
+  useEffect(() => () => {
+    if (editorialCommentHighlightTimeoutRef.current !== null) {
+      window.clearTimeout(editorialCommentHighlightTimeoutRef.current);
+    }
+  }, []);
+
   useEffect(() => () => {
     if (selectedFeaturedFile?.previewUrl) {
       URL.revokeObjectURL(selectedFeaturedFile.previewUrl);
@@ -7222,6 +7288,56 @@ export default function ArticlePortableTextEditor({
       controller.abort();
     };
   }, [isInspectorOpen, loadEditorialComments]);
+
+  useEffect(() => {
+    if (
+      !isInspectorOpen ||
+      !targetEditorialCommentId ||
+      isEditorialCommentsLoading ||
+      editorialCommentsError ||
+      !editorialComments.some((comment) => comment.id === targetEditorialCommentId)
+    ) {
+      return undefined;
+    }
+
+    if (editorialCommentsSectionRef.current) {
+      editorialCommentsSectionRef.current.open = true;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const target = document.getElementById(getEditorialCommentElementId(targetEditorialCommentId));
+
+      if (!(target instanceof HTMLElement)) return;
+
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest',
+      });
+      target.focus({ preventScroll: true });
+      setHighlightedEditorialCommentId(targetEditorialCommentId);
+
+      if (editorialCommentHighlightTimeoutRef.current !== null) {
+        window.clearTimeout(editorialCommentHighlightTimeoutRef.current);
+      }
+
+      editorialCommentHighlightTimeoutRef.current = window.setTimeout(() => {
+        setHighlightedEditorialCommentId((current) =>
+          current === targetEditorialCommentId ? null : current
+        );
+        editorialCommentHighlightTimeoutRef.current = null;
+      }, 2800);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [
+    editorialCommentNavigationToken,
+    editorialComments,
+    editorialCommentsError,
+    isEditorialCommentsLoading,
+    isInspectorOpen,
+    targetEditorialCommentId,
+  ]);
 
   const openEditorialCommentComposer = () => {
     setIsEditorialCommentComposerOpen(true);
@@ -8462,7 +8578,7 @@ export default function ArticlePortableTextEditor({
             </details>
           )}
 
-          <details className="editorial-inspector-section" open>
+          <details className="editorial-inspector-section" open ref={editorialCommentsSectionRef}>
             <summary>{labels.inspectorEditorialComments}</summary>
 
             <EditorialCommentsReadOnly
@@ -8476,6 +8592,7 @@ export default function ArticlePortableTextEditor({
               isReplySaving={isEditorialCommentReplySaving}
               replyError={editorialCommentReplyError}
               resolvingCommentId={resolvingEditorialCommentId}
+              highlightedCommentId={highlightedEditorialCommentId}
               resolveError={editorialCommentResolveError}
               onReplyOpen={openEditorialCommentReplyComposer}
               onReplyCancel={cancelEditorialCommentReplyComposer}
