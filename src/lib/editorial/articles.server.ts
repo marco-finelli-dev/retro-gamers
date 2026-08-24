@@ -237,6 +237,13 @@ export type EditorialArticleListItem = {
   hasEnglishTranslation: boolean;
 };
 
+export type EditorialPublishedArticleQuickEditAction = {
+  articleId: string;
+  editUrl: string;
+  revisionEndpoint: string | null;
+  mode: 'edit' | 'create_revision';
+};
+
 type PortableTextBlock = Record<string, unknown>;
 
 const draftStatus: EditorialWorkflowStatus = 'draft';
@@ -2603,14 +2610,14 @@ export async function fetchEditableEditorialArticle({
     return { ok: false as const, status: 404, error: 'article_not_found' };
   }
 
-  if (!isDocumentOwnedByContext(context, ownership)) {
-    return { ok: false as const, status: 403, error: 'article_forbidden' };
-  }
-
   const canEditPublishedRevisionDraft = (
     ownership.workflowStatus === 'published' &&
     canCreateRevisionDraft(context)
   );
+
+  if (!isDocumentOwnedByContext(context, ownership) && !canEditPublishedRevisionDraft) {
+    return { ok: false as const, status: 403, error: 'article_forbidden' };
+  }
 
   if (!canEditOwnArticle(context, ownership) && !canEditPublishedRevisionDraft) {
     const workflowLockedError: Record<EditorialWorkflowStatus, string> = {
@@ -2998,7 +3005,7 @@ export async function createRevisionDraftFromPublishedArticle({
     return { ok: false as const, status: 404, error: 'article_not_found' };
   }
 
-  if (!isDocumentOwnedByContext(context, ownership)) {
+  if (!isDocumentOwnedByContext(context, ownership) && !canCreateRevisionDraft(context)) {
     return { ok: false as const, status: 403, error: 'article_forbidden' };
   }
 
@@ -4269,6 +4276,70 @@ export async function updateEditorialArticleGameCover({
       articleUpdated,
     };
   }
+}
+
+export async function getPublishedArticleQuickEditAction({
+  context,
+  rootDocumentId,
+  language,
+}: {
+  context: EditorialSessionContext;
+  rootDocumentId: unknown;
+  language: 'it' | 'en';
+}): Promise<EditorialPublishedArticleQuickEditAction | null> {
+  if (!context.user || !context.isEditorialActive) return null;
+
+  const sanityDocumentId = normalizeEditableArticleRootDocumentId(rootDocumentId);
+
+  if (!sanityDocumentId) return null;
+
+  const ownershipResult = await fetchOwnership(sanityDocumentId);
+  if (!ownershipResult.ok) return null;
+
+  const ownership = ownershipResult.ownership;
+
+  if (!ownership) return null;
+
+  const editUrl = getEditorialArticleEditPath(ownership.sanityDocumentId, language);
+
+  try {
+    const resolved = await fetchSanityArticleDocumentPair(ownership.sanityDocumentId);
+
+    if (canEditOwnArticle(context, ownership)) {
+      return {
+        articleId: ownership.sanityDocumentId,
+        editUrl,
+        revisionEndpoint: null,
+        mode: 'edit',
+      };
+    }
+
+    if (ownership.workflowStatus !== 'published' || !canCreateRevisionDraft(context)) {
+      return null;
+    }
+
+    if (resolved.lifecycle === 'revision_draft') {
+      return {
+        articleId: ownership.sanityDocumentId,
+        editUrl,
+        revisionEndpoint: null,
+        mode: 'edit',
+      };
+    }
+
+    if (resolved.lifecycle === 'published') {
+      return {
+        articleId: ownership.sanityDocumentId,
+        editUrl,
+        revisionEndpoint: `/api/editor/articles/${encodeURIComponent(ownership.sanityDocumentId)}/revision`,
+        mode: 'create_revision',
+      };
+    }
+  } catch (error) {
+    logApiError('editorial-article.quick-edit', error);
+  }
+
+  return null;
 }
 
 export function getEditorialArticleEditPath(id: string, language: 'it' | 'en') {

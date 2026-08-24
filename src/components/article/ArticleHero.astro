@@ -3,7 +3,7 @@ import { getArchiveUrl, getPostUrl } from '../../lib/routes';
 import ArticleShare from './ArticleShare.astro';
 import ArticleSaveButton from './ArticleSaveButton.astro';
 
-const { post } = Astro.props;
+const { post, editorialQuickEdit = null } = Astro.props;
 
 const lang = post?.language || 'it';
 
@@ -157,6 +157,14 @@ const articleUrl = getPostUrl({
 const articleId =
   String(post._id || post.id || `${lang}:${post.type || 'article'}:${articleSlug}`)
     .replace(/^drafts\./, '');
+
+const quickEditLabels = {
+  edit: lang === 'en' ? 'Edit article' : 'Modifica articolo',
+  loading: lang === 'en' ? 'Opening editor…' : 'Apertura editor…',
+  error: lang === 'en'
+    ? 'The article editor could not be opened.'
+    : 'Non è stato possibile aprire l’editor articolo.',
+};
 ---
 
 <section class="article-hero">
@@ -281,6 +289,41 @@ const articleId =
           />
         </div>
 
+        {editorialQuickEdit?.mode === 'edit' && editorialQuickEdit.editUrl && (
+          <div class="article-hero__editor-action">
+            <a
+              class="article-editorial-edit"
+              href={editorialQuickEdit.editUrl}
+              rel="nofollow"
+              aria-label={quickEditLabels.edit}
+              title={quickEditLabels.edit}
+            >
+              {quickEditLabels.edit}
+            </a>
+          </div>
+        )}
+
+        {editorialQuickEdit?.mode === 'create_revision' && editorialQuickEdit.revisionEndpoint && (
+          <div class="article-hero__editor-action" data-article-editorial-quick-edit>
+            <button
+              class="article-editorial-edit"
+              type="button"
+              data-article-editorial-quick-edit-button
+              data-endpoint={editorialQuickEdit.revisionEndpoint}
+              data-ui-language={lang}
+              data-fallback-edit-url={editorialQuickEdit.editUrl}
+              data-label-default={quickEditLabels.edit}
+              data-label-loading={quickEditLabels.loading}
+              data-label-error={quickEditLabels.error}
+              aria-label={quickEditLabels.edit}
+              title={quickEditLabels.edit}
+            >
+              {quickEditLabels.edit}
+            </button>
+            <p class="article-editorial-edit__message" data-article-editorial-quick-edit-message hidden></p>
+          </div>
+        )}
+
         <ArticleShare post={post} compact />
       </div>
 
@@ -289,3 +332,82 @@ const articleId =
   </div>
 
 </section>
+
+<script>
+  const initArticleEditorialQuickEdit = () => {
+    document
+      .querySelectorAll('[data-article-editorial-quick-edit]:not([data-article-editorial-quick-edit-ready])')
+      .forEach((root) => {
+        if (!(root instanceof HTMLElement)) return;
+
+        root.dataset.articleEditorialQuickEditReady = 'true';
+
+        const button = root.querySelector('[data-article-editorial-quick-edit-button]');
+        const message = root.querySelector('[data-article-editorial-quick-edit-message]');
+
+        if (!(button instanceof HTMLButtonElement)) return;
+
+        const defaultLabel = button.dataset.labelDefault || button.textContent || '';
+        const loadingLabel = button.dataset.labelLoading || defaultLabel;
+        const errorLabel = button.dataset.labelError || '';
+
+        const showMessage = (text) => {
+          if (!(message instanceof HTMLElement)) return;
+
+          message.textContent = text;
+          message.hidden = !text;
+        };
+
+        button.addEventListener('click', async () => {
+          const endpoint = button.dataset.endpoint || '';
+
+          if (!endpoint || button.disabled) return;
+
+          button.disabled = true;
+          button.textContent = loadingLabel;
+          showMessage('');
+
+          try {
+            const response = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify({
+                uiLanguage: button.dataset.uiLanguage === 'en' ? 'en' : 'it',
+              }),
+            });
+            const result = await response.json().catch(() => null);
+            const editUrl = typeof result?.editUrl === 'string' && result.editUrl.trim()
+              ? result.editUrl.trim()
+              : button.dataset.fallbackEditUrl || '';
+
+            if (
+              !response.ok &&
+              result?.error === 'revision_draft_exists' &&
+              button.dataset.fallbackEditUrl
+            ) {
+              window.location.assign(button.dataset.fallbackEditUrl);
+              return;
+            }
+
+            if (!response.ok || !result?.ok || !editUrl) {
+              throw new Error(result?.error || 'quick_edit_failed');
+            }
+
+            window.location.assign(editUrl);
+          } catch {
+            button.disabled = false;
+            button.textContent = defaultLabel;
+            showMessage(errorLabel);
+          }
+        });
+      });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initArticleEditorialQuickEdit, { once: true });
+  } else {
+    initArticleEditorialQuickEdit();
+  }
+</script>

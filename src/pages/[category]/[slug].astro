@@ -22,6 +22,8 @@ import {
 } from '../../lib/supabase/comment-counts';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { getNewsletterSubscriptionForUser } from '../../lib/supabase/newsletter';
+import { getPublishedArticleQuickEditAction } from '../../lib/editorial/articles.server';
+import { getEditorialSessionForUserSession } from '../../lib/editorial/session.server';
 import {
   getCreatorRefsFromPortableText,
   getCreatorsReferencingArticle,
@@ -669,6 +671,13 @@ if (!viewerSession.error && viewerSession.user) {
   hideNewsletterPromo = newsletter.status === 'active' || newsletter.status === 'pending';
 }
 
+const editorialSession = await getEditorialSessionForUserSession(viewerSession);
+const editorialQuickEdit = await getPublishedArticleQuickEditAction({
+  context: editorialSession,
+  rootDocumentId: publishedPostId,
+  language: 'it',
+});
+
 const siteUrl = 'https://www.retro-gamers.it';
 
 const pageTitle = getEditorialPageTitle(post, slug);
@@ -757,6 +766,7 @@ const articleAuthorUrl = articleAuthorSlug
     comments={comments}
     hideNewsletterPromo={hideNewsletterPromo}
     isPreview={isPreview}
+    editorialQuickEdit={editorialQuickEdit}
     languageSwitch={
       englishPath
         ? { url: englishPath, language: englishTranslation.language }

@@ -23,13 +23,81 @@
   max-width: min(100%, 260px);
 }
 
+.article-hero__editor-action {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  flex: 0 1 auto;
+  max-width: min(100%, 260px);
+}
+
 .article-hero__save-action .article-save__login,
-.article-hero__save-action .article-save__button {
+.article-hero__save-action .article-save__button,
+.article-editorial-edit {
   min-height: 42px;
   padding: 0 14px;
   font-size: 0.78rem;
   font-weight: 880;
   opacity: 0.9;
+}
+
+.article-editorial-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 42%, var(--rg-card-border));
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary) 13%, var(--rg-card-bg)),
+      var(--rg-card-bg)
+    );
+  color: var(--rg-action-color);
+  box-shadow: var(--rg-card-shadow);
+  font: inherit;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.article-editorial-edit:hover,
+.article-editorial-edit:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--rg-badge-border);
+  background: var(--rg-cta-hover-bg);
+  color: var(--rg-action-hover-color);
+  box-shadow: var(--rg-card-hover-shadow);
+  outline: none;
+}
+
+.article-editorial-edit:disabled {
+  opacity: 0.66;
+  cursor: wait;
+  transform: none;
+}
+
+.article-editorial-edit__message {
+  max-width: 260px;
+  margin: 0;
+  color: #fecaca;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: right;
+}
+
+html[data-theme="light"] .article-editorial-edit__message {
+  color: #991b1b;
 }
 
 .article-hero__save-action .article-save__button[aria-pressed="true"] {
@@ -132,6 +200,12 @@ html[data-theme="light"] .article-save__message {
     max-width: none;
   }
 
+  .article-hero__editor-action {
+    justify-items: start;
+    width: auto;
+    max-width: none;
+  }
+
   .article-save {
     justify-items: start;
   }
@@ -155,6 +229,10 @@ html[data-theme="light"] .article-save__message {
 
   .article-save__message {
     flex-basis: 100%;
+    text-align: left;
+  }
+
+  .article-editorial-edit__message {
     text-align: left;
   }
 
