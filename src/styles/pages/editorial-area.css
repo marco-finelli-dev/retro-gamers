@@ -1453,6 +1453,111 @@
   font-weight: 800;
 }
 
+.editorial-comments {
+  display: grid;
+  gap: 12px;
+}
+
+.editorial-comments__thread {
+  display: grid;
+  gap: 8px;
+}
+
+.editorial-comments__item {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.editorial-comments__item[data-reply="true"] {
+  margin-left: 18px;
+  border-left-color: var(--color-primary);
+}
+
+.editorial-comments__item-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.editorial-comments__item-header p,
+.editorial-comments__item-header span,
+.editorial-comments__body {
+  margin: 0;
+}
+
+.editorial-comments__item-header p {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.editorial-comments__item-header span {
+  color: var(--color-text-soft);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.editorial-comments__avatar {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 999px;
+  background: var(--rg-panel-bg);
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.editorial-comments__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.editorial-comments__status {
+  justify-self: end;
+  padding: 4px 8px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 999px;
+  background: var(--rg-panel-bg);
+  color: var(--color-text-soft);
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.editorial-comments__item[data-status="open"] .editorial-comments__status {
+  color: var(--color-primary);
+}
+
+.editorial-comments__item[data-status="resolved"] .editorial-comments__status {
+  border-color: color-mix(in srgb, var(--color-success, #27d59a) 42%, var(--rg-card-border));
+  background: color-mix(in srgb, var(--color-success, #27d59a) 16%, var(--rg-panel-bg));
+  color: var(--color-success, #27d59a);
+}
+
+.editorial-comments__body {
+  color: var(--color-text-soft);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  font-weight: 750;
+  white-space: pre-wrap;
+}
+
+.editorial-comments__replies {
+  display: grid;
+  gap: 8px;
+}
+
 .editorial-inspector-subsection {
   display: grid;
   gap: 12px;

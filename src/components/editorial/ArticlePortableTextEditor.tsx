@@ -240,6 +240,24 @@ type EditableArticle = {
   seriesLabel: string;
 };
 
+type EditorialCommentAuthor = {
+  displayName: string;
+  username: string | null;
+  avatarUrl: string | null;
+};
+
+type EditorialComment = {
+  id: string;
+  parentId: string | null;
+  body: string;
+  status: 'open' | 'resolved';
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  author: EditorialCommentAuthor | null;
+  resolvedBy: EditorialCommentAuthor | null;
+};
+
 type Labels = {
   title: string;
   subtitle: string;
@@ -263,6 +281,14 @@ type Labels = {
   inspectorFeaturedImage: string;
   inspectorReview: string;
   inspectorWorkflow: string;
+  inspectorEditorialComments: string;
+  editorialCommentsLoading: string;
+  editorialCommentsError: string;
+  editorialCommentsEmpty: string;
+  editorialCommentsOpen: string;
+  editorialCommentsResolved: string;
+  editorialCommentsReplies: string;
+  editorialCommentsFallbackAuthor: string;
   workflowStatus: string;
   workflowStatusDraft: string;
   workflowStatusSubmitted: string;
@@ -4203,6 +4229,145 @@ function formatWorkflowDate(value: string | null, language: ArticleLanguage) {
   }).format(date);
 }
 
+function getEditorialCommentStatusLabel(status: EditorialComment['status'], labels: Labels) {
+  return status === 'resolved'
+    ? labels.editorialCommentsResolved
+    : labels.editorialCommentsOpen;
+}
+
+function getEditorialCommentGroups(comments: EditorialComment[]) {
+  const commentsById = new Map(comments.map((comment) => [comment.id, comment]));
+  const repliesByParentId = new Map<string, EditorialComment[]>();
+  const roots: EditorialComment[] = [];
+
+  for (const comment of comments) {
+    if (comment.parentId && commentsById.has(comment.parentId)) {
+      const replies = repliesByParentId.get(comment.parentId) || [];
+      replies.push(comment);
+      repliesByParentId.set(comment.parentId, replies);
+    } else {
+      roots.push(comment);
+    }
+  }
+
+  return roots.map((comment) => ({
+    comment,
+    replies: repliesByParentId.get(comment.id) || [],
+  }));
+}
+
+function isEditorialComment(value: unknown): value is EditorialComment {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+
+  const comment = value as Partial<EditorialComment>;
+
+  return (
+    typeof comment.id === 'string' &&
+    (typeof comment.parentId === 'string' || comment.parentId === null) &&
+    typeof comment.body === 'string' &&
+    (comment.status === 'open' || comment.status === 'resolved') &&
+    typeof comment.createdAt === 'string' &&
+    typeof comment.updatedAt === 'string'
+  );
+}
+
+function EditorialCommentAvatar({ author }: { author: EditorialCommentAuthor | null }) {
+  const initial = author?.displayName?.trim().charAt(0).toUpperCase() || 'R';
+
+  return (
+    <span className="editorial-comments__avatar" aria-hidden="true">
+      {author?.avatarUrl ? (
+        <img src={author.avatarUrl} alt="" loading="lazy" decoding="async" />
+      ) : (
+        initial
+      )}
+    </span>
+  );
+}
+
+function EditorialCommentCard({
+  comment,
+  labels,
+  lang,
+  isReply = false,
+}: {
+  comment: EditorialComment;
+  labels: Labels;
+  lang: ArticleLanguage;
+  isReply?: boolean;
+}) {
+  const authorLabel = comment.author?.displayName || labels.editorialCommentsFallbackAuthor;
+
+  return (
+    <article
+      className="editorial-comments__item"
+      data-reply={isReply ? 'true' : undefined}
+      data-status={comment.status}
+    >
+      <div className="editorial-comments__item-header">
+        <EditorialCommentAvatar author={comment.author} />
+        <div>
+          <p>{authorLabel}</p>
+          <span>{formatWorkflowDate(comment.createdAt, lang)}</span>
+        </div>
+        <span className="editorial-comments__status">
+          {getEditorialCommentStatusLabel(comment.status, labels)}
+        </span>
+      </div>
+      <p className="editorial-comments__body">{comment.body}</p>
+    </article>
+  );
+}
+
+function EditorialCommentsReadOnly({
+  comments,
+  isLoading,
+  error,
+  labels,
+  lang,
+}: {
+  comments: EditorialComment[];
+  isLoading: boolean;
+  error: string;
+  labels: Labels;
+  lang: ArticleLanguage;
+}) {
+  if (isLoading) {
+    return <p className="editorial-file-meta">{labels.editorialCommentsLoading}</p>;
+  }
+
+  if (error) {
+    return <p className="editorial-message" data-tone="error">{labels.editorialCommentsError}</p>;
+  }
+
+  if (comments.length === 0) {
+    return <p className="editorial-file-meta">{labels.editorialCommentsEmpty}</p>;
+  }
+
+  return (
+    <div className="editorial-comments">
+      {getEditorialCommentGroups(comments).map(({ comment, replies }) => (
+        <div className="editorial-comments__thread" key={comment.id}>
+          <EditorialCommentCard comment={comment} labels={labels} lang={lang} />
+          {replies.length > 0 && (
+            <div className="editorial-comments__replies" aria-label={labels.editorialCommentsReplies}>
+              {replies.map((reply) => (
+                <EditorialCommentCard
+                  key={reply.id}
+                  comment={reply}
+                  labels={labels}
+                  lang={lang}
+                  isReply
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function getWorkflowActionLabel(action: WorkflowAction, labels: Labels) {
   if (action === 'submit') return labels.workflowSubmit;
   if (action === 'request_changes') return labels.workflowRequestChanges;
@@ -6666,6 +6831,9 @@ export default function ArticlePortableTextEditor({
   const [authorStatus, setAuthorStatus] = useState('');
   const [authorStatusTone, setAuthorStatusTone] = useState<'success' | 'error' | ''>('');
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [editorialComments, setEditorialComments] = useState<EditorialComment[]>([]);
+  const [isEditorialCommentsLoading, setIsEditorialCommentsLoading] = useState(false);
+  const [editorialCommentsError, setEditorialCommentsError] = useState('');
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [typeChangeRequest, setTypeChangeRequest] = useState<TypeChangeRequest | null>(null);
   const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
@@ -6794,6 +6962,58 @@ export default function ArticlePortableTextEditor({
 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isInspectorOpen]);
+
+  useEffect(() => {
+    if (!isInspectorOpen) return;
+
+    const controller = new AbortController();
+    let isActive = true;
+
+    setIsEditorialCommentsLoading(true);
+    setEditorialCommentsError('');
+
+    const loadEditorialComments = async () => {
+      try {
+        const response = await fetch(`${saveEndpoint.replace(/\/$/, '')}/comments`, {
+          method: 'GET',
+          credentials: 'same-origin',
+          headers: {
+            accept: 'application/json',
+          },
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => null) as {
+          ok?: boolean;
+          comments?: unknown;
+          error?: string;
+        } | null;
+
+        if (!response.ok || !payload?.ok || !Array.isArray(payload.comments)) {
+          throw new Error(payload?.error || 'comments_fetch_failed');
+        }
+
+        if (!isActive) return;
+
+        setEditorialComments(payload.comments.filter(isEditorialComment));
+        setEditorialCommentsError('');
+      } catch (error) {
+        if (!isActive || controller.signal.aborted) return;
+
+        setEditorialCommentsError(error instanceof Error ? error.message : 'comments_fetch_failed');
+      } finally {
+        if (isActive) {
+          setIsEditorialCommentsLoading(false);
+        }
+      }
+    };
+
+    void loadEditorialComments();
+
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [isInspectorOpen, saveEndpoint]);
 
   const updateField = <Field extends keyof EditableArticle>(field: Field, value: EditableArticle[Field]) => {
     if (isManualSaveLocked) return;
@@ -7846,6 +8066,18 @@ export default function ArticlePortableTextEditor({
               <p className="editorial-file-meta">{labels.futureSlot}</p>
             </details>
           )}
+
+          <details className="editorial-inspector-section" open>
+            <summary>{labels.inspectorEditorialComments}</summary>
+
+            <EditorialCommentsReadOnly
+              comments={editorialComments}
+              isLoading={isEditorialCommentsLoading}
+              error={editorialCommentsError}
+              labels={labels}
+              lang={lang}
+            />
+          </details>
 
           <details className="editorial-inspector-section" open>
             <summary>{labels.inspectorSeo}</summary>
