@@ -36,6 +36,15 @@ const copy = isEnglish
       bannerText: 'This content is not public.',
       editArticle: 'Edit article',
       backToArticles: 'Back to articles',
+      editorialComments: 'Editorial comments',
+      closeEditorialComments: 'Close editorial comments',
+      editorialCommentsLoading: 'Loading editorial comments…',
+      editorialCommentsError: 'Editorial comments could not be loaded.',
+      editorialCommentsEmpty: 'No editorial comments yet.',
+      editorialCommentsOpen: 'Open',
+      editorialCommentsResolved: 'Resolved',
+      editorialCommentsFallbackAuthor: 'Editorial team',
+      editorialCommentsReplies: 'Replies',
       requestChanges: 'Request changes',
       approve: 'Approve',
       publish: 'Publish',
@@ -74,6 +83,15 @@ const copy = isEnglish
       bannerText: 'Questo contenuto non è pubblico.',
       editArticle: 'Modifica articolo',
       backToArticles: 'Torna agli articoli',
+      editorialComments: 'Commenti redazione',
+      closeEditorialComments: 'Chiudi commenti redazione',
+      editorialCommentsLoading: 'Caricamento commenti redazione…',
+      editorialCommentsError: 'Non è stato possibile caricare i commenti redazione.',
+      editorialCommentsEmpty: 'Nessun commento redazionale per ora.',
+      editorialCommentsOpen: 'Aperto',
+      editorialCommentsResolved: 'Risolto',
+      editorialCommentsFallbackAuthor: 'Redazione',
+      editorialCommentsReplies: 'Risposte',
       requestChanges: 'Richiedi modifiche',
       approve: 'Approva',
       publish: 'Pubblica',
@@ -110,6 +128,7 @@ const editHref = isEnglish
 const articlesHref = isEnglish
   ? '/en/account/editor/articles/'
   : '/account/editor/articles/';
+const commentsEndpoint = `/api/editor/articles/${encodeURIComponent(id)}/comments`;
 
 function getPlainTextFromContent(content = []) {
   return content
@@ -313,6 +332,17 @@ const previewAuthorLabel = articleAuthorName || previewAuthor?.label || '—';
         <strong>{previewAuthorLabel}</strong>
       </div>
       <div class="editorial-private-preview__actions">
+        {hydratedPostWithCommentCount && (
+          <button
+            class="editorial-mini-button"
+            type="button"
+            aria-controls="editorial-preview-comments-panel"
+            aria-expanded="false"
+            data-editorial-preview-comments-open
+          >
+            {copy.editorialComments}
+          </button>
+        )}
         {canRequestChanges && (
           <button
             class="editorial-mini-button"
@@ -353,6 +383,44 @@ const previewAuthorLabel = articleAuthorName || previewAuthor?.label || '—';
       </div>
     </aside>
 
+    {hydratedPostWithCommentCount && (
+      <div class="editorial-preview-comments-drawer" data-editorial-preview-comments-drawer hidden>
+        <button
+          class="editorial-preview-comments-drawer__backdrop"
+          type="button"
+          aria-label={copy.closeEditorialComments}
+          data-editorial-preview-comments-close
+        ></button>
+        <aside
+          class="editorial-preview-comments-drawer__panel"
+          id="editorial-preview-comments-panel"
+          tabindex="-1"
+          aria-labelledby="editorial-preview-comments-title"
+          data-editorial-preview-comments-panel
+        >
+          <header class="editorial-preview-comments-drawer__header">
+            <div>
+              <p class="editorial-kicker">{copy.bannerLabel}</p>
+              <h2 id="editorial-preview-comments-title">{copy.editorialComments}</h2>
+            </div>
+            <button
+              class="editorial-article-editor__drawer-close editorial-mini-button"
+              type="button"
+              aria-label={copy.closeEditorialComments}
+              data-editorial-preview-comments-close
+            >
+              ×
+            </button>
+          </header>
+
+          <p class="editorial-file-meta" data-editorial-preview-comments-state>
+            {copy.editorialCommentsLoading}
+          </p>
+          <div class="editorial-comments" data-editorial-preview-comments-list></div>
+        </aside>
+      </div>
+    )}
+
     {hydratedPostWithCommentCount ? (
       <ArticlePage
         post={hydratedPostWithCommentCount}
@@ -377,6 +445,17 @@ const previewAuthorLabel = articleAuthorName || previewAuthor?.label || '—';
 
 <script define:vars={{
   articlesHref,
+  commentsEndpoint,
+  currentLang,
+  editorialCommentsLabels: {
+    loading: copy.editorialCommentsLoading,
+    error: copy.editorialCommentsError,
+    empty: copy.editorialCommentsEmpty,
+    open: copy.editorialCommentsOpen,
+    resolved: copy.editorialCommentsResolved,
+    fallbackAuthor: copy.editorialCommentsFallbackAuthor,
+    replies: copy.editorialCommentsReplies,
+  },
   workflowUpdating: copy.workflowUpdating,
   workflowUpdated: copy.workflowUpdated,
   workflowGenericError: copy.workflowGenericError,
@@ -394,6 +473,258 @@ const previewAuthorLabel = articleAuthorName || previewAuthor?.label || '—';
 }}>
   const workflowButtons = document.querySelectorAll('[data-editorial-preview-workflow-action]');
   const publishButton = document.querySelector('[data-editorial-preview-publish]');
+  const commentsOpenButton = document.querySelector('[data-editorial-preview-comments-open]');
+  const commentsDrawer = document.querySelector('[data-editorial-preview-comments-drawer]');
+  const commentsPanel = document.querySelector('[data-editorial-preview-comments-panel]');
+  const commentsState = document.querySelector('[data-editorial-preview-comments-state]');
+  const commentsList = document.querySelector('[data-editorial-preview-comments-list]');
+  const commentsCloseControls = document.querySelectorAll('[data-editorial-preview-comments-close]');
+  let editorialComments = [];
+  let commentsLoaded = false;
+  let commentsLoading = false;
+  let targetEditorialCommentId = '';
+  let highlightTimeout = 0;
+
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const getEditorialCommentElementId = (commentId) => `editorial-comment-${commentId}`;
+  const getEditorialCommentIdFromHash = (hash) => {
+    let decodedHash = '';
+
+    try {
+      decodedHash = decodeURIComponent(hash || '').trim();
+    } catch {
+      decodedHash = String(hash || '').trim();
+    }
+
+    const match = decodedHash.match(
+      /^#editorial-comment-([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i
+    );
+
+    return match?.[1]?.toLowerCase() || '';
+  };
+  const isEditorialComment = (value) => (
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    typeof value.id === 'string' &&
+    uuidPattern.test(value.id) &&
+    (typeof value.parentId === 'string' || value.parentId === null) &&
+    typeof value.body === 'string' &&
+    (value.status === 'open' || value.status === 'resolved') &&
+    typeof value.createdAt === 'string'
+  );
+  const formatCommentDate = (value) => {
+    const date = new Date(value);
+
+    if (!Number.isFinite(date.getTime())) return '';
+
+    return new Intl.DateTimeFormat(currentLang === 'en' ? 'en' : 'it', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  };
+  const getCommentAuthorName = (comment) => (
+    String(comment?.author?.displayName || '').trim() ||
+    editorialCommentsLabels.fallbackAuthor
+  );
+  const getCommentStatusLabel = (status) => (
+    status === 'resolved'
+      ? editorialCommentsLabels.resolved
+      : editorialCommentsLabels.open
+  );
+  const getEditorialCommentGroups = (comments) => {
+    const commentsById = new Map(comments.map((comment) => [comment.id, comment]));
+    const repliesByParentId = new Map();
+    const roots = [];
+
+    comments.forEach((comment) => {
+      if (comment.parentId && commentsById.has(comment.parentId)) {
+        const replies = repliesByParentId.get(comment.parentId) || [];
+        replies.push(comment);
+        repliesByParentId.set(comment.parentId, replies);
+      } else {
+        roots.push(comment);
+      }
+    });
+
+    return roots.map((comment) => ({
+      comment,
+      replies: repliesByParentId.get(comment.id) || [],
+    }));
+  };
+  const setCommentsState = (message, tone = '') => {
+    if (!commentsState) return;
+
+    commentsState.textContent = message || '';
+    commentsState.hidden = !message;
+
+    if (tone) {
+      commentsState.setAttribute('data-tone', tone);
+    } else {
+      commentsState.removeAttribute('data-tone');
+    }
+  };
+  const createTextElement = (tagName, text, className = '') => {
+    const element = document.createElement(tagName);
+
+    if (className) element.className = className;
+    element.textContent = text;
+
+    return element;
+  };
+  const createCommentCard = (comment, isReply = false) => {
+    const card = document.createElement('article');
+    card.className = 'editorial-comments__item';
+    card.id = getEditorialCommentElementId(comment.id);
+    card.tabIndex = -1;
+    card.dataset.commentId = comment.id;
+    card.dataset.status = comment.status;
+
+    if (isReply) {
+      card.dataset.reply = 'true';
+    }
+
+    const header = document.createElement('div');
+    header.className = 'editorial-comments__item-header';
+
+    const avatar = document.createElement('span');
+    avatar.className = 'editorial-comments__avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.textContent = getCommentAuthorName(comment).charAt(0).toUpperCase() || 'R';
+
+    const authorMeta = document.createElement('div');
+    authorMeta.append(
+      createTextElement('p', getCommentAuthorName(comment)),
+      createTextElement('span', formatCommentDate(comment.createdAt))
+    );
+
+    const status = createTextElement('span', getCommentStatusLabel(comment.status), 'editorial-comments__status');
+
+    header.append(avatar, authorMeta, status);
+    card.append(header, createTextElement('p', comment.body, 'editorial-comments__body'));
+
+    return card;
+  };
+  const renderEditorialComments = () => {
+    if (!commentsList) return;
+
+    commentsList.replaceChildren();
+
+    if (editorialComments.length === 0) {
+      setCommentsState(editorialCommentsLabels.empty);
+      return;
+    }
+
+    setCommentsState('');
+
+    getEditorialCommentGroups(editorialComments).forEach(({ comment, replies }) => {
+      const thread = document.createElement('div');
+      thread.className = 'editorial-comments__thread';
+      thread.append(createCommentCard(comment));
+
+      if (replies.length > 0) {
+        const repliesWrapper = document.createElement('div');
+        repliesWrapper.className = 'editorial-comments__replies';
+        repliesWrapper.setAttribute('aria-label', editorialCommentsLabels.replies);
+
+        replies.forEach((reply) => {
+          repliesWrapper.append(createCommentCard(reply, true));
+        });
+
+        thread.append(repliesWrapper);
+      }
+
+      commentsList.append(thread);
+    });
+  };
+  const revealTargetEditorialComment = () => {
+    if (!targetEditorialCommentId) return;
+
+    const target = document.getElementById(getEditorialCommentElementId(targetEditorialCommentId));
+
+    if (!(target instanceof HTMLElement)) return;
+
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+      inline: 'nearest',
+    });
+    target.focus({ preventScroll: true });
+    target.dataset.highlighted = 'true';
+
+    if (highlightTimeout) {
+      window.clearTimeout(highlightTimeout);
+    }
+
+    highlightTimeout = window.setTimeout(() => {
+      target.removeAttribute('data-highlighted');
+      highlightTimeout = 0;
+    }, 2800);
+  };
+  const loadEditorialComments = async () => {
+    if (!commentsEndpoint || commentsLoading) return;
+
+    commentsLoading = true;
+    setCommentsState(editorialCommentsLabels.loading);
+
+    try {
+      const response = await fetch(commentsEndpoint, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+          accept: 'application/json',
+        },
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.ok || !Array.isArray(payload.comments)) {
+        throw new Error(payload?.error || 'comments_fetch_failed');
+      }
+
+      editorialComments = payload.comments.filter(isEditorialComment);
+      commentsLoaded = true;
+      renderEditorialComments();
+      window.requestAnimationFrame(revealTargetEditorialComment);
+    } catch {
+      editorialComments = [];
+      commentsLoaded = false;
+      if (commentsList) commentsList.replaceChildren();
+      setCommentsState(editorialCommentsLabels.error, 'error');
+    } finally {
+      commentsLoading = false;
+    }
+  };
+  const openEditorialComments = async (commentId = '') => {
+    if (!commentsDrawer) return;
+
+    targetEditorialCommentId = commentId || '';
+    commentsDrawer.hidden = false;
+    commentsOpenButton?.setAttribute('aria-expanded', 'true');
+
+    if (!commentsLoaded) {
+      await loadEditorialComments();
+    } else {
+      renderEditorialComments();
+      window.requestAnimationFrame(revealTargetEditorialComment);
+    }
+
+    if (!targetEditorialCommentId && commentsPanel instanceof HTMLElement) {
+      commentsPanel.focus?.();
+    }
+  };
+  const closeEditorialComments = () => {
+    if (!commentsDrawer) return;
+
+    commentsDrawer.hidden = true;
+    commentsOpenButton?.setAttribute('aria-expanded', 'false');
+  };
+  const handleEditorialCommentHash = () => {
+    const commentId = getEditorialCommentIdFromHash(window.location.hash);
+
+    if (!commentId) return;
+
+    void openEditorialComments(commentId);
+  };
 
   const formatMissingFields = (fields) => {
     if (!Array.isArray(fields)) return '';
@@ -445,6 +776,23 @@ const previewAuthorLabel = articleAuthorName || previewAuthor?.label || '—';
         }
       });
   };
+
+  commentsOpenButton?.addEventListener('click', () => {
+    void openEditorialComments();
+  });
+
+  commentsCloseControls.forEach((control) => {
+    control.addEventListener('click', closeEditorialComments);
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && commentsDrawer && !commentsDrawer.hidden) {
+      closeEditorialComments();
+    }
+  });
+
+  window.addEventListener('hashchange', handleEditorialCommentHash);
+  handleEditorialCommentHash();
 
   workflowButtons.forEach((button) => {
     button.addEventListener('click', async () => {
