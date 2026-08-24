@@ -7,10 +7,12 @@ export const editorialWorkflowStatuses = [
   'approved',
   'published',
 ] as const;
+export const editorialCommentStatuses = ['open', 'resolved'] as const;
 
 export type EditorialRole = (typeof editorialRoles)[number];
 export type EditorialStatus = (typeof editorialStatuses)[number];
 export type EditorialWorkflowStatus = (typeof editorialWorkflowStatuses)[number];
+export type EditorialCommentStatus = (typeof editorialCommentStatuses)[number];
 
 export type EditorialProfile = {
   userId: string;
@@ -35,6 +37,20 @@ export type EditorialArticleWorkflow = Pick<
   EditorialDocumentOwnership,
   'workflowStatus' | 'submittedAt' | 'reviewedBy' | 'reviewedAt'
 >;
+
+export type EditorialArticleComment = {
+  id: string;
+  sanityDocumentId: string;
+  parentId: string | null;
+  authorUserId: string;
+  body: string;
+  status: EditorialCommentStatus;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  metadata?: Record<string, unknown> | null;
+};
 
 export type EditorialWorkflowTransitionPermissions = {
   canSubmit: boolean;
@@ -113,6 +129,13 @@ export function isEditorialWorkflowStatus(value: unknown): value is EditorialWor
   return (
     typeof value === 'string' &&
     editorialWorkflowStatuses.includes(value as EditorialWorkflowStatus)
+  );
+}
+
+export function isEditorialCommentStatus(value: unknown): value is EditorialCommentStatus {
+  return (
+    typeof value === 'string' &&
+    editorialCommentStatuses.includes(value as EditorialCommentStatus)
   );
 }
 

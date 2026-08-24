@@ -234,6 +234,40 @@ export function canPreviewEditorialArticle(
   );
 }
 
+export function canReadEditorialComments(
+  context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
+  ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
+) {
+  if (!ownership) return false;
+
+  return (
+    context.permissions.canPublishArticle ||
+    canPreviewEditorialArticle(context, ownership)
+  );
+}
+
+export function canCreateEditorialComment(
+  context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
+  ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
+) {
+  return canReadEditorialComments(context, ownership);
+}
+
+export function canResolveEditorialComment(
+  context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
+  ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
+) {
+  if (!ownership) return false;
+
+  return (
+    context.permissions.canPublishArticle ||
+    (
+      context.permissions.canReviewArticle &&
+      canReadEditorialComments(context, ownership)
+    )
+  );
+}
+
 export function canEditOwnArticle(
   context: Pick<EditorialSessionContext, 'permissions' | 'user'>,
   ownership: Pick<EditorialDocumentOwnership, 'ownerUserId' | 'workflowStatus'> | null | undefined
