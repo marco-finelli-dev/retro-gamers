@@ -16,7 +16,7 @@ import {
 } from '@portabletext/editor';
 import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
 import * as selectors from '@portabletext/editor/selectors';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { urlFor } from '../../lib/image';
 import {
@@ -4600,6 +4600,7 @@ function Toolbar({
   hasUnsavedChanges = false,
   onToggleInspector,
   onSave,
+  onRequestPreview,
   onRequestExit,
   onWorkflowAction,
   onPublishRevision,
@@ -4626,6 +4627,7 @@ function Toolbar({
   hasUnsavedChanges?: boolean;
   onToggleInspector?: () => void;
   onSave?: () => void | Promise<boolean | void>;
+  onRequestPreview?: () => void | Promise<void>;
   onRequestExit?: () => void;
   onWorkflowAction?: (action: WorkflowAction) => void | Promise<void>;
   onPublishRevision?: () => void | Promise<void>;
@@ -4926,6 +4928,17 @@ function Toolbar({
 
     setOpenMenu(null);
     onPublishRevision?.();
+  };
+  const handlePreviewClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (isLocked) {
+      event.preventDefault();
+      return;
+    }
+
+    if (hasUnsavedChanges && onRequestPreview) {
+      event.preventDefault();
+      void onRequestPreview();
+    }
   };
   const runContextualTextAction = (action: () => void) => {
     if (!canUseContextualToolbar || !selection) return;
@@ -5664,11 +5677,7 @@ function Toolbar({
             className="editorial-article-editor__settings-toggle editorial-article-editor__preview-action"
             href={previewHref}
             aria-disabled={isLocked ? 'true' : undefined}
-            onClick={(event) => {
-              if (isLocked) {
-                event.preventDefault();
-              }
-            }}
+            onClick={handlePreviewClick}
           >
             {labels.preview}
           </a>
@@ -6913,6 +6922,7 @@ export default function ArticlePortableTextEditor({
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [typeChangeRequest, setTypeChangeRequest] = useState<TypeChangeRequest | null>(null);
   const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
+  const allowEditorNavigationRef = useRef(false);
   const inspectorId = useId();
   const rememberBodyImagePreview = useCallback((assetId: string, url: string) => {
     if (!assetId || !url) return;
@@ -7929,25 +7939,64 @@ export default function ArticlePortableTextEditor({
     return () => window.clearTimeout(timerId);
   }, [autosaveSignature, hasUnsavedChanges, isSaving]);
 
+  useEffect(() => {
+    if (!hasUnsavedChanges) return undefined;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (allowEditorNavigationRef.current) return;
+
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
+  const navigateFromEditor = (href: string) => {
+    if (!href) return;
+
+    allowEditorNavigationRef.current = true;
+    window.location.assign(href);
+  };
+
+  const requestPreview = async () => {
+    if (!previewHref) return;
+
+    if (!hasUnsavedChanges) {
+      navigateFromEditor(previewHref);
+      return;
+    }
+
+    const saved = await saveArticle('manual');
+
+    if (saved) {
+      navigateFromEditor(previewHref);
+    }
+  };
+
   const requestExit = () => {
     if (hasUnsavedChanges) {
       setIsExitModalOpen(true);
       return;
     }
 
-    window.location.assign(articlesHref);
+    navigateFromEditor(articlesHref);
   };
 
   const saveAndExit = async () => {
     const saved = await saveArticle('manual');
 
     if (saved) {
-      window.location.assign(articlesHref);
+      navigateFromEditor(articlesHref);
     }
   };
 
   const discardAndExit = () => {
-    window.location.assign(articlesHref);
+    navigateFromEditor(articlesHref);
   };
 
   return (
@@ -8003,6 +8052,7 @@ export default function ArticlePortableTextEditor({
               hasUnsavedChanges={hasUnsavedChanges}
               onToggleInspector={() => setIsInspectorOpen((value) => !value)}
               onSave={() => saveArticle('manual')}
+              onRequestPreview={requestPreview}
               onRequestExit={requestExit}
               onWorkflowAction={runWorkflowAction}
               onPublishRevision={publishArticleRevision}
