@@ -4954,14 +4954,14 @@ function Toolbar({
       image: 'Image',
       imageRow: 'Image series',
       video: 'Video',
-      videoRow: 'Video row',
+      videoRow: 'Video series',
       asideBox: 'Info box',
     }
     : {
       image: 'Immagine',
       imageRow: 'Serie immagini',
       video: 'Video',
-      videoRow: 'Riga video',
+      videoRow: 'Serie video',
       asideBox: 'Box informativo',
     };
   const contextualLinkMenuPanel = (
