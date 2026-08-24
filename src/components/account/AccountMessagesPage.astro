@@ -327,8 +327,57 @@ const clientCopy = {
     const countNode = document.querySelector('[data-account-messages-count]');
     const markAllButton = document.querySelector('[data-mark-all-read]');
     const systemTabBadge = document.querySelector('[data-system-tab-unread]');
+    let markAllReadInFlight = false;
     const requestGlobalUnreadRefresh = () => {
       window.dispatchEvent(new Event('retro-gamers:refresh-unread'));
+    };
+
+    const updateUnreadCardsAsRead = () => {
+      document.querySelectorAll('.account-message-card.is-unread').forEach((card) => {
+        card.classList.remove('is-unread');
+        card.classList.add('is-read');
+        const status = card.querySelector('.account-message-status');
+        if (status) {
+          status.textContent = clientCopy.readBadge;
+          status.classList.remove('is-unread');
+          status.classList.add('is-read');
+        }
+        card.querySelector('[data-mark-message-read]')?.remove();
+      });
+    };
+
+    const markAllMessagesRead = async () => {
+      if (markAllReadInFlight) return;
+
+      markAllReadInFlight = true;
+
+      if (markAllButton) {
+        markAllButton.disabled = true;
+      }
+
+      try {
+        const response = await fetch('/api/account/messages/mark-all-read', {
+          method: 'POST',
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          if (markAllButton) {
+            markAllButton.disabled = false;
+          }
+          return;
+        }
+
+        updateUnreadCardsAsRead();
+        refreshUnreadCount();
+        requestGlobalUnreadRefresh();
+      } catch {
+        if (markAllButton) {
+          markAllButton.disabled = false;
+        }
+      } finally {
+        markAllReadInFlight = false;
+      }
     };
 
     const refreshUnreadCount = async () => {
@@ -404,37 +453,10 @@ const clientCopy = {
       }
     });
 
-    markAllButton?.addEventListener('click', async () => {
-      markAllButton.disabled = true;
+    markAllButton?.addEventListener('click', markAllMessagesRead);
 
-      try {
-        const response = await fetch('/api/account/messages/mark-all-read', {
-          method: 'POST',
-        });
-        const result = await response.json();
-
-        if (!response.ok || !result.ok) {
-          markAllButton.disabled = false;
-          return;
-        }
-
-        document.querySelectorAll('.account-message-card.is-unread').forEach((card) => {
-          card.classList.remove('is-unread');
-          card.classList.add('is-read');
-          const status = card.querySelector('.account-message-status');
-          if (status) {
-            status.textContent = clientCopy.readBadge;
-            status.classList.remove('is-unread');
-            status.classList.add('is-read');
-          }
-          card.querySelector('[data-mark-message-read]')?.remove();
-        });
-
-        refreshUnreadCount();
-        requestGlobalUnreadRefresh();
-      } catch {
-        markAllButton.disabled = false;
-      }
-    });
+    if (document.querySelector('.account-message-card.is-unread')) {
+      markAllMessagesRead();
+    }
   </script>
 </BaseLayout>
