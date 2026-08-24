@@ -650,6 +650,45 @@ function chunkBalanced(images = []) {
       );
     }
 
+    if (block._type === 'videoRow') {
+      const videos = Array.isArray(block.videos) ? block.videos.slice(0, 2) : [];
+      const groupCaption = typeof block.groupCaption === 'string'
+        ? block.groupCaption.trim()
+        : '';
+
+      if (videos.length === 0) return null;
+
+      return (
+        <div class="article-video-gallery">
+          <div
+            class={`article-video-row article-video-row--${videos.length}`}
+            style={`--video-count: ${videos.length};`}
+          >
+            {videos.map((video) => {
+              if (!video?.url) return null;
+
+              return (
+                <figure class="article-video-row__item">
+                  <ConsentYouTube
+                    url={video.url}
+                    title={video.title || 'Video YouTube'}
+                  />
+
+                  {video.caption && (
+                    <figcaption>{video.caption}</figcaption>
+                  )}
+                </figure>
+              );
+            })}
+          </div>
+
+          {groupCaption && (
+            <p class="article-video-gallery__caption">{groupCaption}</p>
+          )}
+        </div>
+      );
+    }
+
     if (block._type === 'asideBox') {
       const asideContent = block.content || [];
 

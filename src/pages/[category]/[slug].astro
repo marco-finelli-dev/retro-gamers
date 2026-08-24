@@ -363,6 +363,17 @@ _type == "imageRow" => {
   }
 },
 
+_type == "videoRow" => {
+  ...,
+  groupCaption,
+  videos[]{
+    ...,
+    url,
+    title,
+    caption
+  }
+},
+
     _type == "asideBox" => {
       ...,
       content[]{
@@ -459,7 +470,8 @@ _type == "imageRow" => {
     },
 
     _type == "video" => {
-      url
+      url,
+      title
     }
   }
 }

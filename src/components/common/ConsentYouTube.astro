@@ -1,4 +1,6 @@
 ---
+import { getYouTubeVideoId } from '../../lib/youtube-video';
+
 const {
   url = '',
   title = 'YouTube video'
@@ -29,27 +31,7 @@ const labels = {
 
 const t = labels[lang] || labels.it;
 
-const getYouTubeId = (value = '') => {
-  if (!value) return '';
-
-  try {
-    const parsed = new URL(value);
-
-    if (parsed.hostname.includes('youtu.be')) {
-      return parsed.pathname.replace('/', '');
-    }
-
-    if (parsed.hostname.includes('youtube.com')) {
-      return parsed.searchParams.get('v') || '';
-    }
-  } catch {
-    return '';
-  }
-
-  return '';
-};
-
-const videoId = getYouTubeId(url);
+const videoId = getYouTubeVideoId(url);
 const videoTitle = title || t.defaultTitle;
 ---
 

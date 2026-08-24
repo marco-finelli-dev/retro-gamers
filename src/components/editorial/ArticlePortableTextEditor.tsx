@@ -19,6 +19,10 @@ import * as selectors from '@portabletext/editor/selectors';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { urlFor } from '../../lib/image';
+import {
+  getYouTubeThumbnailUrl,
+  normalizeYouTubeVideoUrl,
+} from '../../lib/youtube-video';
 import type {
   EditorialArticleCapabilities,
   EditorialArticleWorkflow,
@@ -108,6 +112,19 @@ type VideoBlock = PortableTextObject & {
   _type: 'video';
   url?: string;
   title?: string;
+};
+
+type VideoRowItem = Record<string, unknown> & {
+  _key?: string;
+  url?: string;
+  title?: string;
+  caption?: string;
+};
+
+type VideoRowBlock = PortableTextObject & {
+  _type: 'videoRow';
+  videos?: VideoRowItem[];
+  groupCaption?: string;
 };
 
 type AsideTone = 'neutral' | 'info' | 'highlight';
@@ -419,6 +436,7 @@ type Labels = {
   insertImage: string;
   insertImageRow: string;
   insertVideo: string;
+  insertVideoRow: string;
   editVideo: string;
   updateVideo: string;
   removeVideo: string;
@@ -430,6 +448,21 @@ type Labels = {
   videoUrlInvalid: string;
   videoUntitled: string;
   videoPreview: string;
+  videoCaption: string;
+  editVideoRow: string;
+  updateVideoRow: string;
+  removeVideoRow: string;
+  videoRowMenu: string;
+  videoRowRemoveConfirm: string;
+  videoRowItems: string;
+  videoRowItemSettings: string;
+  videoRowAddVideo: string;
+  videoRowRemoveVideo: string;
+  videoRowMoveLeft: string;
+  videoRowMoveRight: string;
+  videoRowMissingVideos: string;
+  videoRowMaxCount: string;
+  videoRowGroupCaption: string;
   insertAsideBox: string;
   editAsideBox: string;
   updateAsideBox: string;
@@ -506,9 +539,11 @@ type Labels = {
   image: string;
   imageRow: string;
   video: string;
+  videoRow: string;
   asideBox: string;
   imageBlockHeader: string;
   videoBlockHeader: string;
+  videoRowBlockHeader: string;
   asideBoxHeader: string;
   unsupportedObject: string;
   cardExcerptWarning: string;
@@ -563,6 +598,8 @@ const imageRowLayouts: ImageRowLayout[] = ['standard', 'uniformHeight'];
 const asideTones: AsideTone[] = ['neutral', 'info', 'highlight'];
 const imageRowMinImages = 2;
 const imageRowMaxImages = 8;
+const videoRowMinVideos = 1;
+const videoRowMaxVideos = 2;
 const referenceAnnotationControls: Array<{
   name: ReferenceAnnotationName;
   icon: string;
@@ -717,6 +754,27 @@ const videoBlockObjectSchema = {
   ],
 };
 
+const videoRowBlockObjectSchema = {
+  name: 'videoRow',
+  fields: [
+    {
+      name: 'videos',
+      type: 'array',
+      of: [
+        {
+          type: 'object',
+          fields: [
+            { name: 'url', type: 'string' },
+            { name: 'title', type: 'string' },
+            { name: 'caption', type: 'string' },
+          ],
+        },
+      ],
+    },
+    { name: 'groupCaption', type: 'text' },
+  ],
+};
+
 const asideBoxBlockObjectSchema = {
   name: 'asideBox',
   fields: [
@@ -741,6 +799,7 @@ const schemaDefinition = defineSchema({
     imageBlockObjectSchema,
     imageRowBlockObjectSchema,
     videoBlockObjectSchema,
+    videoRowBlockObjectSchema,
     asideBoxBlockObjectSchema,
   ],
 });
@@ -789,6 +848,7 @@ function getObjectLabel(type: string, labels: Labels) {
   if (type === 'image') return labels.image;
   if (type === 'imageRow') return labels.imageRow;
   if (type === 'video') return labels.video;
+  if (type === 'videoRow') return labels.videoRow;
   if (type === 'asideBox') return labels.asideBox;
 
   return labels.unsupportedObject;
@@ -816,57 +876,50 @@ function getVideoDomain(url: string) {
   }
 }
 
-function normalizeYouTubeVideoId(value: string) {
-  const videoId = value.trim().split(/[/?#&]/)[0] || '';
-
-  return /^[a-zA-Z0-9_-]{6,}$/.test(videoId) ? videoId : '';
-}
-
-function getYouTubeVideoId(url: string) {
-  try {
-    const parsedUrl = new URL(url);
-    const hostname = parsedUrl.hostname.replace(/^www\./, '').replace(/^m\./, '');
-    const segments = parsedUrl.pathname.split('/').filter(Boolean);
-
-    if (hostname === 'youtu.be') {
-      return normalizeYouTubeVideoId(segments[0] || '');
-    }
-
-    if (
-      hostname === 'youtube.com' ||
-      hostname.endsWith('.youtube.com') ||
-      hostname === 'youtube-nocookie.com' ||
-      hostname.endsWith('.youtube-nocookie.com')
-    ) {
-      const watchId = parsedUrl.searchParams.get('v');
-
-      if (watchId) {
-        return normalizeYouTubeVideoId(watchId);
-      }
-
-      if (['embed', 'shorts', 'live', 'v'].includes(segments[0] || '')) {
-        return normalizeYouTubeVideoId(segments[1] || '');
-      }
-    }
-  } catch {
-    return '';
-  }
-
-  return '';
-}
-
-function getYouTubeThumbnailUrl(url: string) {
-  const videoId = getYouTubeVideoId(url);
-
-  return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : '';
-}
-
 function createVideoBlockValue({ url, title }: { url: string; title: string }) {
   const normalizedTitle = normalizeSingleLineValue(title, 'space').slice(0, 160).trim();
 
   return {
-    url: normalizeHttpUrl(url),
+    url: normalizeYouTubeVideoUrl(url),
     ...(normalizedTitle ? { title: normalizedTitle } : {}),
+  };
+}
+
+function getVideoRowItemKey(item: VideoRowItem | null | undefined) {
+  if (typeof item?._key === 'string' && item._key.trim()) return item._key;
+
+  const draftKey = (item as { key?: unknown } | null | undefined)?.key;
+
+  return typeof draftKey === 'string' && draftKey.trim() ? draftKey : getKey();
+}
+
+function getVideoRowHeaderTitle(labels: Labels, videoCount: number) {
+  return videoCount > 0 ? `${labels.videoRowBlockHeader} (${videoCount})` : labels.videoRowBlockHeader;
+}
+
+function createVideoRowItemValue(item: VideoRowItem) {
+  const url = normalizeYouTubeVideoUrl(item.url);
+  const title = normalizeSingleLineValue(item.title, 'space').slice(0, 160).trim();
+  const caption = normalizeSingleLineValue(item.caption, 'space').slice(0, 500).trim();
+
+  return {
+    _key: getVideoRowItemKey(item),
+    url,
+    ...(title ? { title } : {}),
+    ...(caption ? { caption } : {}),
+  };
+}
+
+function createVideoRowBlockValue({
+  videos,
+  groupCaption,
+}: {
+  videos: VideoRowItem[];
+  groupCaption: string;
+}) {
+  return {
+    videos: videos.map(createVideoRowItemValue),
+    groupCaption: groupCaption.slice(0, 800).trim(),
   };
 }
 
@@ -1749,6 +1802,186 @@ function VideoObjectBlock({
   );
 }
 
+function VideoRowObjectBlock({
+  attributes,
+  children,
+  node,
+  path,
+  focused,
+  selected,
+  labels,
+  readOnly,
+}: any) {
+  const editor = useEditor();
+  const videoRow = node as VideoRowBlock;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const videos = Array.isArray(videoRow.videos) ? videoRow.videos.slice(0, videoRowMaxVideos) : [];
+  const groupCaption = typeof videoRow.groupCaption === 'string' ? videoRow.groupCaption.trim() : '';
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isMenuOpen]);
+
+  const applyVideoRowUpdate = (value: Record<string, unknown>) => {
+    if (!('groupCaption' in value)) {
+      editor.send({
+        type: 'block.unset',
+        at: path,
+        props: ['groupCaption'],
+      });
+    }
+
+    editor.send({
+      type: 'block.set',
+      at: path,
+      props: value,
+    });
+    editor.send({ type: 'focus' });
+    setIsModalOpen(false);
+  };
+
+  const moveVideoRowBlock = (direction: 'up' | 'down') => {
+    editor.send({
+      type: direction === 'up' ? 'move.block up' : 'move.block down',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  const selectVideoRowBlock = () => {
+    editor.send({
+      type: 'select.block',
+      at: path,
+    });
+  };
+
+  const startVideoRowDrag = (event: DragEvent<HTMLElement>) => {
+    selectVideoRowBlock();
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const openVideoRowModal = () => {
+    setIsMenuOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const removeVideoRowBlock = () => {
+    if (!window.confirm(labels.videoRowRemoveConfirm)) return;
+
+    editor.send({
+      type: 'delete.block',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <div
+      {...attributes}
+      className="editorial-pte__object editorial-pte__image-object editorial-pte__custom-object editorial-pte__video-row-object"
+      data-focused={focused ? 'true' : undefined}
+      data-selected={selected ? 'true' : undefined}
+    >
+      {children}
+      <div className="editorial-pte__image-content editorial-pte__custom-content" contentEditable={false}>
+        <MediaBlockHeader
+          icon="▶"
+          title={getVideoRowHeaderTitle(labels, videos.length)}
+          menuLabel={labels.videoRowMenu}
+          isMenuOpen={isMenuOpen}
+          menuRef={menuRef}
+          onToggleMenu={() => setIsMenuOpen((value) => !value)}
+        >
+          <button type="button" role="menuitem" onClick={openVideoRowModal}>
+            {labels.editVideoRow}
+          </button>
+          <button type="button" role="menuitem" onClick={() => moveVideoRowBlock('up')}>
+            {labels.moveUp}
+          </button>
+          <button type="button" role="menuitem" onClick={() => moveVideoRowBlock('down')}>
+            {labels.moveDown}
+          </button>
+          <button type="button" role="menuitem" className="editorial-pte__image-menu-danger" onClick={removeVideoRowBlock}>
+            {labels.removeVideoRow}
+          </button>
+        </MediaBlockHeader>
+
+        <div
+          className={`editorial-pte__video-row editorial-pte__video-row--${videos.length || 1}`}
+          draggable={!readOnly}
+          title={labels.bodyImageDragHandle}
+          onMouseDown={selectVideoRowBlock}
+          onDragStart={startVideoRowDrag}
+          style={{ '--editorial-video-row-count': Math.max(1, videos.length) } as Record<string, number>}
+        >
+          {videos.map((video) => {
+            const url = typeof video.url === 'string' ? video.url.trim() : '';
+            const domain = getVideoDomain(url);
+            const thumbnailUrl = getYouTubeThumbnailUrl(url);
+            const title = typeof video.title === 'string' ? video.title.trim() : '';
+            const caption = typeof video.caption === 'string' ? video.caption.trim() : '';
+            const previewTitle = title || domain || labels.videoPreview;
+
+            return (
+              <figure className="editorial-pte__video-row-item" key={getVideoRowItemKey(video)}>
+                <div className={`editorial-pte__video-row-preview${thumbnailUrl ? ' editorial-pte__video-row-preview--with-thumbnail' : ''}`}>
+                  {thumbnailUrl ? (
+                    <>
+                      <img src={thumbnailUrl} alt="" loading="lazy" decoding="async" draggable={false} />
+                      <span className="editorial-pte__video-play" aria-hidden="true">▶</span>
+                    </>
+                  ) : (
+                    <span className="editorial-pte__video-icon" aria-hidden="true">▶️</span>
+                  )}
+                </div>
+                <figcaption>
+                  <strong>{previewTitle}</strong>
+                  {caption && <span>{caption}</span>}
+                </figcaption>
+              </figure>
+            );
+          })}
+          {groupCaption && <p className="editorial-pte__image-row-caption">{groupCaption}</p>}
+        </div>
+      </div>
+
+      {isModalOpen && (
+        <VideoRowModal
+          mode="edit"
+          labels={labels}
+          initialRow={videoRow}
+          onApply={applyVideoRowUpdate}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 function AsideContentPreview({
   content,
   labels,
@@ -2057,6 +2290,19 @@ function ObjectBlock({
       >
         {children}
       </VideoObjectBlock>
+    );
+  }
+
+  if (type === 'videoRow') {
+    return (
+      <VideoRowObjectBlock
+        attributes={attributes}
+        labels={labels}
+        node={node}
+        {...props}
+      >
+        {children}
+      </VideoRowObjectBlock>
     );
   }
 
@@ -3322,7 +3568,7 @@ function VideoModal({
   const submitLabel = mode === 'insert' ? labels.insertVideo : labels.updateVideo;
 
   const applyVideo = () => {
-    const normalizedUrl = normalizeHttpUrl(url);
+    const normalizedUrl = normalizeYouTubeVideoUrl(url);
 
     if (!url.trim()) {
       setStatus(labels.videoUrlRequired);
@@ -3388,6 +3634,282 @@ function VideoModal({
             {labels.annotationClose}
           </button>
           <button type="button" className="editorial-button editorial-body-image-modal__submit" onClick={applyVideo}>
+            {submitLabel}
+          </button>
+        </div>
+      </div>
+    </AnnotationModal>
+  );
+}
+
+type VideoRowDraftItem = {
+  key: string;
+  source: VideoRowItem | null;
+  url: string;
+  title: string;
+  caption: string;
+};
+
+function createEmptyVideoRowDraftItem(): VideoRowDraftItem {
+  return {
+    key: getKey(),
+    source: null,
+    url: '',
+    title: '',
+    caption: '',
+  };
+}
+
+function createVideoRowDraftItem(item: VideoRowItem): VideoRowDraftItem {
+  return {
+    key: getVideoRowItemKey(item),
+    source: item,
+    url: typeof item.url === 'string' ? item.url : '',
+    title: typeof item.title === 'string' ? item.title : '',
+    caption: typeof item.caption === 'string' ? item.caption : '',
+  };
+}
+
+function VideoRowModal({
+  mode,
+  labels,
+  initialRow = null,
+  onApply,
+  onClose,
+}: {
+  mode: 'insert' | 'edit';
+  labels: Labels;
+  initialRow?: VideoRowBlock | null;
+  onApply: (value: Record<string, unknown>) => void;
+  onClose: () => void;
+}) {
+  const rowItemFieldId = useId();
+  const groupCaptionId = useId();
+  const [items, setItems] = useState<VideoRowDraftItem[]>(() => {
+    const initialItems = Array.isArray(initialRow?.videos)
+      ? initialRow.videos.slice(0, videoRowMaxVideos).map(createVideoRowDraftItem)
+      : [];
+
+    return initialItems.length > 0 ? initialItems : [createEmptyVideoRowDraftItem()];
+  });
+  const [groupCaption, setGroupCaption] = useState(typeof initialRow?.groupCaption === 'string' ? initialRow.groupCaption : '');
+  const [status, setStatus] = useState('');
+  const title = mode === 'insert' ? labels.insertVideoRow : labels.editVideoRow;
+  const submitLabel = mode === 'insert' ? labels.insertVideoRow : labels.updateVideoRow;
+
+  const setItemAt = (index: number, patch: Partial<VideoRowDraftItem>) => {
+    setItems((current) => current.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, ...patch } : item
+    )));
+    setStatus('');
+  };
+
+  const addItem = () => {
+    if (items.length >= videoRowMaxVideos) {
+      setStatus(labels.videoRowMaxCount);
+      return;
+    }
+
+    setItems((current) => [...current, createEmptyVideoRowDraftItem()]);
+    setStatus('');
+  };
+
+  const removeItem = (index: number) => {
+    setItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setStatus('');
+  };
+
+  const moveItem = (index: number, direction: 'left' | 'right') => {
+    const targetIndex = direction === 'left' ? index - 1 : index + 1;
+
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+
+    setItems((current) => {
+      const next = [...current];
+      const [item] = next.splice(index, 1);
+      next.splice(targetIndex, 0, item);
+      return next;
+    });
+  };
+
+  const applyVideoRow = () => {
+    const completeItems = items
+      .map((item) => ({
+        ...item,
+        url: normalizeYouTubeVideoUrl(item.url),
+      }))
+      .filter((item) => item.url);
+
+    if (completeItems.length < videoRowMinVideos) {
+      setStatus(labels.videoRowMissingVideos);
+      return;
+    }
+
+    if (completeItems.length > videoRowMaxVideos) {
+      setStatus(labels.videoRowMaxCount);
+      return;
+    }
+
+    if (completeItems.length !== items.length) {
+      setStatus(labels.videoUrlInvalid);
+      return;
+    }
+
+    onApply(createVideoRowBlockValue({
+      videos: completeItems,
+      groupCaption,
+    }));
+  };
+
+  return (
+    <AnnotationModal
+      title={`▶️▶️ ${title}`}
+      labels={labels}
+      onClose={onClose}
+      panelClassName="editorial-pte-modal__panel--video-row"
+    >
+      <div className="editorial-video-row-modal">
+        <section className="editorial-image-row-modal__section" aria-label={labels.videoRowItems}>
+          <div className="editorial-image-row-modal__section-header">
+            <span>{labels.videoRowItems}</span>
+            <small>{items.length} / {videoRowMaxVideos}</small>
+          </div>
+
+          <div className="editorial-image-row-modal__items">
+            {items.map((item, index) => {
+              const urlFieldId = `${rowItemFieldId}-${item.key}-url`;
+              const titleFieldId = `${rowItemFieldId}-${item.key}-title`;
+              const captionFieldId = `${rowItemFieldId}-${item.key}-caption`;
+              const thumbnailUrl = getYouTubeThumbnailUrl(item.url);
+
+              return (
+                <article className="editorial-image-row-modal__item editorial-video-row-modal__item" key={item.key}>
+                  <div className="editorial-image-row-modal__item-heading">
+                    <span>{labels.videoRowItemSettings}</span>
+                    <small>{index + 1} / {items.length}</small>
+                  </div>
+
+                  <div className="editorial-image-row-modal__item-preview editorial-video-row-modal__item-preview">
+                    {thumbnailUrl ? (
+                      <img src={thumbnailUrl} alt="" loading="lazy" decoding="async" />
+                    ) : (
+                      <span>{labels.videoPreview}</span>
+                    )}
+                  </div>
+
+                  <label className="editorial-field" htmlFor={urlFieldId}>
+                    <span>{labels.videoUrl}</span>
+                    <input
+                      id={urlFieldId}
+                      value={item.url}
+                      type="url"
+                      inputMode="url"
+                      placeholder="https://"
+                      onChange={(event) => setItemAt(index, { url: event.target.value })}
+                    />
+                  </label>
+
+                  <label className="editorial-field" htmlFor={titleFieldId}>
+                    <span>{labels.videoTitle}</span>
+                    <AutoGrowTextField
+                      id={titleFieldId}
+                      value={item.title}
+                      rows={2}
+                      maxRows={3}
+                      maxLength={160}
+                      ariaLabel={labels.videoTitle}
+                      singleLine
+                      onChange={(value) => setItemAt(index, { title: value })}
+                    />
+                  </label>
+
+                  <label className="editorial-field" htmlFor={captionFieldId}>
+                    <span>{labels.videoCaption}</span>
+                    <AutoGrowTextField
+                      id={captionFieldId}
+                      value={item.caption}
+                      rows={2}
+                      maxRows={4}
+                      maxLength={500}
+                      ariaLabel={labels.videoCaption}
+                      onChange={(value) => setItemAt(index, { caption: value })}
+                    />
+                  </label>
+
+                  <div className="editorial-image-row-modal__item-actions">
+                    <button
+                      type="button"
+                      className="editorial-image-row-modal__icon-button"
+                      aria-label={labels.videoRowMoveLeft}
+                      title={labels.videoRowMoveLeft}
+                      onClick={() => moveItem(index, 'left')}
+                      disabled={index === 0}
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      className="editorial-image-row-modal__icon-button"
+                      aria-label={labels.videoRowMoveRight}
+                      title={labels.videoRowMoveRight}
+                      onClick={() => moveItem(index, 'right')}
+                      disabled={index === items.length - 1}
+                    >
+                      →
+                    </button>
+                    <button
+                      type="button"
+                      className="editorial-mini-button editorial-mini-button--danger"
+                      onClick={() => removeItem(index)}
+                      disabled={items.length <= videoRowMinVideos}
+                    >
+                      {labels.videoRowRemoveVideo}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            className="editorial-mini-button"
+            onClick={addItem}
+            disabled={items.length >= videoRowMaxVideos}
+          >
+            {labels.videoRowAddVideo}
+          </button>
+        </section>
+
+        <label className="editorial-field" htmlFor={groupCaptionId}>
+          <span>{labels.videoRowGroupCaption}</span>
+          <AutoGrowTextField
+            id={groupCaptionId}
+            value={groupCaption}
+            rows={2}
+            maxRows={4}
+            maxLength={800}
+            ariaLabel={labels.videoRowGroupCaption}
+            onChange={setGroupCaption}
+          />
+        </label>
+
+        {status && (
+          <p className="editorial-file-advice" data-tone="error" aria-live="polite">
+            {status}
+          </p>
+        )}
+
+        <div className="editorial-body-image-modal__actions">
+          <button type="button" className="editorial-mini-button" onClick={onClose}>
+            {labels.annotationClose}
+          </button>
+          <button
+            type="button"
+            className="editorial-button editorial-body-image-modal__submit"
+            onClick={applyVideoRow}
+            disabled={items.length < videoRowMinVideos || items.length > videoRowMaxVideos}
+          >
             {submitLabel}
           </button>
         </div>
@@ -3905,6 +4427,10 @@ function Toolbar({
     selection: EditorSelection;
     trigger: HTMLButtonElement | null;
   } | null>(null);
+  const [videoRowModal, setVideoRowModal] = useState<{
+    selection: EditorSelection;
+    trigger: HTMLButtonElement | null;
+  } | null>(null);
   const [asideBoxModal, setAsideBoxModal] = useState<{
     selection: EditorSelection;
     trigger: HTMLButtonElement | null;
@@ -3935,6 +4461,7 @@ function Toolbar({
     !imageModal &&
     !imageRowModal &&
     !videoModal &&
+    !videoRowModal &&
     !asideBoxModal
   );
 
@@ -4316,6 +4843,22 @@ function Toolbar({
       trigger?.focus();
     }, 0);
   };
+  const openVideoRowModal = (trigger: HTMLButtonElement) => {
+    if (!isBodyToolbar) return;
+
+    setVideoRowModal({
+      selection,
+      trigger,
+    });
+  };
+  const closeVideoRowModal = () => {
+    const trigger = videoRowModal?.trigger;
+    setVideoRowModal(null);
+
+    window.setTimeout(() => {
+      trigger?.focus();
+    }, 0);
+  };
   const openAsideBoxModal = (trigger: HTMLButtonElement) => {
     if (!isBodyToolbar) return;
 
@@ -4377,6 +4920,21 @@ function Toolbar({
     editor.send({ type: 'focus' });
     setVideoModal(null);
   };
+  const insertVideoRowBlock = (value: Record<string, unknown>) => {
+    if (!videoRowModal || !isBodyToolbar) return;
+
+    restoreSelection(videoRowModal.selection);
+    editor.send({
+      type: 'insert.block object',
+      placement: 'after',
+      blockObject: {
+        name: 'videoRow',
+        value,
+      },
+    });
+    editor.send({ type: 'focus' });
+    setVideoRowModal(null);
+  };
   const insertAsideBoxBlock = (value: Record<string, unknown>) => {
     if (!asideBoxModal || !isBodyToolbar) return;
 
@@ -4397,12 +4955,14 @@ function Toolbar({
       image: 'Image',
       imageRow: 'Image series',
       video: 'Video',
+      videoRow: 'Video row',
       asideBox: 'Info box',
     }
     : {
       image: 'Immagine',
       imageRow: 'Serie immagini',
       video: 'Video',
+      videoRow: 'Riga video',
       asideBox: 'Box informativo',
     };
   const contextualLinkMenuPanel = (
@@ -4820,6 +5380,18 @@ function Toolbar({
                 className="editorial-pte-toolbar__menu-item"
                 type="button"
                 role="menuitem"
+                aria-expanded={Boolean(videoRowModal)}
+                title={insertMenuLabels.videoRow}
+                disabled={isLocked}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => runToolbarAction(() => openVideoRowModal(event.currentTarget))}
+              >
+                {insertMenuLabels.videoRow}
+              </button>
+              <button
+                className="editorial-pte-toolbar__menu-item"
+                type="button"
+                role="menuitem"
                 aria-expanded={Boolean(asideBoxModal)}
                 title={insertMenuLabels.asideBox}
                 disabled={isLocked}
@@ -4994,6 +5566,14 @@ function Toolbar({
           labels={labels}
           onApply={insertVideoBlock}
           onClose={closeVideoModal}
+        />
+      )}
+      {videoRowModal && isBodyToolbar && (
+        <VideoRowModal
+          mode="insert"
+          labels={labels}
+          onApply={insertVideoRowBlock}
+          onClose={closeVideoRowModal}
         />
       )}
       {asideBoxModal && isBodyToolbar && (
@@ -6130,6 +6710,20 @@ export default function ArticlePortableTextEditor({
       }),
       defineBlockObject({
         type: 'video',
+        render: (props) => (
+          <ObjectBlock
+            {...props}
+            labels={labels}
+            language={draft.language}
+            currentArticleId={getRootArticleId(draft._id)}
+            saveEndpoint={saveEndpoint}
+            assetPreviewUrls={bodyImagePreviewUrls}
+            onAssetPreview={rememberBodyImagePreview}
+          />
+        ),
+      }),
+      defineBlockObject({
+        type: 'videoRow',
         render: (props) => (
           <ObjectBlock
             {...props}

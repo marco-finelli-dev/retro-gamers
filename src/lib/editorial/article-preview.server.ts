@@ -293,6 +293,17 @@ const editorialArticlePreviewProjection = `{
       }
     },
 
+    _type == "videoRow" => {
+      ...,
+      groupCaption,
+      videos[]{
+        ...,
+        url,
+        title,
+        caption
+      }
+    },
+
     _type == "asideBox" => {
       ...,
       content[]{

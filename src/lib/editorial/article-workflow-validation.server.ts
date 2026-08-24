@@ -94,6 +94,13 @@ function customBlockHasContent(block: Record<string, unknown>): boolean {
     return normalizeString(block.url, 500).trim().length > 0;
   }
 
+  if (block._type === 'videoRow') {
+    return Array.isArray(block.videos) &&
+      block.videos.some((item) =>
+        isPlainObject(item) && normalizeString(item.url, 500).trim().length > 0
+      );
+  }
+
   if (block._type === 'asideBox') {
     return normalizeString(block.title, 160).trim().length > 0 ||
       hasPortableTextContent(block.content);

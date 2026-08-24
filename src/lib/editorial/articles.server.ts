@@ -1,6 +1,7 @@
 import { logApiError } from '../api-errors';
 import { getSanityRawClient, getSanityWriteClient } from '../sanity-write.server';
 import { supabaseAdmin } from '../supabase/server';
+import { normalizeYouTubeVideoUrl } from '../youtube-video';
 import {
   canChangeArticleAuthor,
   canCreateRevisionDraft,
@@ -732,7 +733,7 @@ function normalizeImageRow(block: Record<string, unknown>) {
 }
 
 function normalizeVideo(block: Record<string, unknown>) {
-  const url = normalizeUrl(block.url);
+  const url = normalizeYouTubeVideoUrl(block.url);
 
   if (!url) {
     throw new Error('invalid_video_url');
@@ -746,6 +747,49 @@ function normalizeVideo(block: Record<string, unknown>) {
     url,
     ...(title ? { title } : {}),
   };
+}
+
+function normalizeVideoRowItem(value: unknown) {
+  if (!isPlainObject(value)) {
+    throw new Error('invalid_video_row_item');
+  }
+
+  const url = normalizeYouTubeVideoUrl(value.url);
+
+  if (!url) {
+    throw new Error('invalid_video_row_url');
+  }
+
+  const title = normalizeOptionalString(value.title, 160);
+  const caption = normalizeOptionalString(value.caption, 500);
+
+  return {
+    _key: normalizeKey(value._key),
+    url,
+    ...(title ? { title } : {}),
+    ...(caption ? { caption } : {}),
+  };
+}
+
+function normalizeVideoRow(block: Record<string, unknown>) {
+  const videos = Array.isArray(block.videos)
+    ? block.videos.map((item) => normalizeVideoRowItem(item))
+    : [];
+
+  if (videos.length < 1 || videos.length > 2) {
+    throw new Error('invalid_video_row_count');
+  }
+
+  const normalized: Record<string, unknown> = {
+    _key: normalizeKey(block._key),
+    _type: 'videoRow',
+    videos,
+  };
+  const groupCaption = normalizeOptionalString(block.groupCaption, 800);
+
+  if (groupCaption) normalized.groupCaption = groupCaption;
+
+  return normalized;
 }
 
 function normalizeMarkDef(value: unknown) {
@@ -888,6 +932,10 @@ function normalizePortableTextBlock(value: unknown, isAsideContent = false): Rec
 
   if (!isAsideContent && value._type === 'video') {
     return normalizeVideo(value);
+  }
+
+  if (!isAsideContent && value._type === 'videoRow') {
+    return normalizeVideoRow(value);
   }
 
   if (!isAsideContent && value._type === 'asideBox') {
