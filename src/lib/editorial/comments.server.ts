@@ -2,6 +2,11 @@ import { logApiError } from '../api-errors';
 import { getAvatarPublicUrl } from '../supabase/avatars';
 import { supabaseAdmin } from '../supabase/server';
 import {
+  notifyEditorialCommentCreated,
+  notifyEditorialCommentReply,
+  notifyEditorialCommentResolved,
+} from './notifications.server';
+import {
   canCreateEditorialComment,
   canReadEditorialComments,
   canResolveEditorialComment,
@@ -201,6 +206,15 @@ function normalizeAuthorProfile(
     username: username || null,
     avatarUrl: getAvatarPublicUrl(profile.avatar_path || null) || null,
   };
+}
+
+function logEditorialCommentNotificationFailure(
+  context: string,
+  result: { ok?: boolean; skipped?: boolean; error?: unknown } | null | undefined
+) {
+  if (!result || result.ok || result.skipped) return;
+
+  logApiError(context, result.error || 'editorial_comment_notification_failed');
 }
 
 function ensureCommentContext(
@@ -492,6 +506,8 @@ export async function createEditorialArticleComment({
     return { ok: false, status: 400, error: 'invalid_parent_comment_id' };
   }
 
+  let parentComment: NormalizedEditorialArticleComment | null = null;
+
   if (normalizedParentId) {
     const parentResult = await fetchCommentRow({
       sanityDocumentId: ownership.sanityDocumentId,
@@ -507,6 +523,8 @@ export async function createEditorialArticleComment({
     if (parentResult.comment.parentId) {
       return { ok: false, status: 422, error: 'nested_replies_not_supported' };
     }
+
+    parentComment = parentResult.comment;
   }
 
   const { data, error } = await supabaseAdmin
@@ -530,6 +548,31 @@ export async function createEditorialArticleComment({
 
   if (!comment) {
     return { ok: false, status: 500, error: 'comment_create_readback_failed' };
+  }
+
+  try {
+    if (parentComment) {
+      const notificationResult = await notifyEditorialCommentReply({
+        actorUserId: contextResult.context.user.id,
+        parentCommentAuthorUserId: parentComment.authorUserId,
+        sanityDocumentId: ownership.sanityDocumentId,
+        editorialCommentId: comment.id,
+        parentCommentId: parentComment.id,
+      });
+
+      logEditorialCommentNotificationFailure('editorial-comments.notification.reply', notificationResult);
+    } else {
+      const notificationResult = await notifyEditorialCommentCreated({
+        actorUserId: contextResult.context.user.id,
+        ownerUserId: ownership.ownerUserId,
+        sanityDocumentId: ownership.sanityDocumentId,
+        editorialCommentId: comment.id,
+      });
+
+      logEditorialCommentNotificationFailure('editorial-comments.notification.created', notificationResult);
+    }
+  } catch (notificationError) {
+    logApiError('editorial-comments.notification.create', notificationError);
   }
 
   const comments = await hydrateCommentDtos({
@@ -617,6 +660,20 @@ export async function resolveEditorialArticleComment({
 
   if (!comment) {
     return { ok: false, status: 409, error: 'comment_resolve_conflict' };
+  }
+
+  try {
+    const notificationResult = await notifyEditorialCommentResolved({
+      actorUserId: contextResult.context.user.id,
+      commentAuthorUserId: existingResult.comment.authorUserId,
+      sanityDocumentId: ownership.sanityDocumentId,
+      editorialCommentId: comment.id,
+      parentCommentId: comment.parentId,
+    });
+
+    logEditorialCommentNotificationFailure('editorial-comments.notification.resolved', notificationResult);
+  } catch (notificationError) {
+    logApiError('editorial-comments.notification.resolve', notificationError);
   }
 
   const comments = await hydrateCommentDtos({
