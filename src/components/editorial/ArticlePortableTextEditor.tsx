@@ -289,6 +289,13 @@ type Labels = {
   editorialCommentsResolved: string;
   editorialCommentsReplies: string;
   editorialCommentsFallbackAuthor: string;
+  editorialCommentsAdd: string;
+  editorialCommentsPlaceholder: string;
+  editorialCommentsCancel: string;
+  editorialCommentsSave: string;
+  editorialCommentsSaving: string;
+  editorialCommentsBodyRequired: string;
+  editorialCommentsCreateError: string;
   workflowStatus: string;
   workflowStatusDraft: string;
   workflowStatusSubmitted: string;
@@ -4368,6 +4375,71 @@ function EditorialCommentsReadOnly({
   );
 }
 
+function EditorialCommentComposer({
+  isOpen,
+  value,
+  isSaving,
+  error,
+  labels,
+  onOpen,
+  onCancel,
+  onChange,
+  onSubmit,
+}: {
+  isOpen: boolean;
+  value: string;
+  isSaving: boolean;
+  error: string;
+  labels: Labels;
+  onOpen: () => void;
+  onCancel: () => void;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+}) {
+  if (!isOpen) {
+    return (
+      <div className="editorial-comments__composer-actions">
+        <button type="button" className="editorial-mini-button editorial-mini-button--primary" onClick={onOpen}>
+          {labels.editorialCommentsAdd}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      className="editorial-comments__composer"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit();
+      }}
+    >
+      <textarea
+        value={value}
+        rows={4}
+        placeholder={labels.editorialCommentsPlaceholder}
+        disabled={isSaving}
+        onChange={(event) => onChange(event.target.value)}
+      />
+
+      {error && (
+        <p className="editorial-message" data-tone="error">
+          {error}
+        </p>
+      )}
+
+      <div className="editorial-comments__composer-actions">
+        <button type="button" className="editorial-mini-button" onClick={onCancel} disabled={isSaving}>
+          {labels.editorialCommentsCancel}
+        </button>
+        <button type="submit" className="editorial-mini-button editorial-mini-button--primary" disabled={isSaving}>
+          {isSaving ? labels.editorialCommentsSaving : labels.editorialCommentsSave}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function getWorkflowActionLabel(action: WorkflowAction, labels: Labels) {
   if (action === 'submit') return labels.workflowSubmit;
   if (action === 'request_changes') return labels.workflowRequestChanges;
@@ -6834,6 +6906,10 @@ export default function ArticlePortableTextEditor({
   const [editorialComments, setEditorialComments] = useState<EditorialComment[]>([]);
   const [isEditorialCommentsLoading, setIsEditorialCommentsLoading] = useState(false);
   const [editorialCommentsError, setEditorialCommentsError] = useState('');
+  const [isEditorialCommentComposerOpen, setIsEditorialCommentComposerOpen] = useState(false);
+  const [editorialCommentDraft, setEditorialCommentDraft] = useState('');
+  const [isEditorialCommentSaving, setIsEditorialCommentSaving] = useState(false);
+  const [editorialCommentComposerError, setEditorialCommentComposerError] = useState('');
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [typeChangeRequest, setTypeChangeRequest] = useState<TypeChangeRequest | null>(null);
   const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
@@ -6928,6 +7004,51 @@ export default function ArticlePortableTextEditor({
     })),
     [lang]
   );
+  const editorialCommentsEndpoint = useMemo(
+    () => `${saveEndpoint.replace(/\/$/, '')}/comments`,
+    [saveEndpoint]
+  );
+  const loadEditorialComments = useCallback(async (signal?: AbortSignal) => {
+    setIsEditorialCommentsLoading(true);
+    setEditorialCommentsError('');
+
+    try {
+      const response = await fetch(editorialCommentsEndpoint, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+          accept: 'application/json',
+        },
+        signal,
+      });
+      const payload = await response.json().catch(() => null) as {
+        ok?: boolean;
+        comments?: unknown;
+        error?: string;
+      } | null;
+
+      if (!response.ok || !payload?.ok || !Array.isArray(payload.comments)) {
+        throw new Error(payload?.error || 'comments_fetch_failed');
+      }
+
+      if (signal?.aborted) return false;
+
+      setEditorialComments(payload.comments.filter(isEditorialComment));
+      setEditorialCommentsError('');
+
+      return true;
+    } catch (error) {
+      if (signal?.aborted) return false;
+
+      setEditorialCommentsError(error instanceof Error ? error.message : 'comments_fetch_failed');
+
+      return false;
+    } finally {
+      if (!signal?.aborted) {
+        setIsEditorialCommentsLoading(false);
+      }
+    }
+  }, [editorialCommentsEndpoint]);
 
   useEffect(() => () => {
     if (selectedFeaturedFile?.previewUrl) {
@@ -6967,53 +7088,72 @@ export default function ArticlePortableTextEditor({
     if (!isInspectorOpen) return;
 
     const controller = new AbortController();
-    let isActive = true;
 
-    setIsEditorialCommentsLoading(true);
-    setEditorialCommentsError('');
-
-    const loadEditorialComments = async () => {
-      try {
-        const response = await fetch(`${saveEndpoint.replace(/\/$/, '')}/comments`, {
-          method: 'GET',
-          credentials: 'same-origin',
-          headers: {
-            accept: 'application/json',
-          },
-          signal: controller.signal,
-        });
-        const payload = await response.json().catch(() => null) as {
-          ok?: boolean;
-          comments?: unknown;
-          error?: string;
-        } | null;
-
-        if (!response.ok || !payload?.ok || !Array.isArray(payload.comments)) {
-          throw new Error(payload?.error || 'comments_fetch_failed');
-        }
-
-        if (!isActive) return;
-
-        setEditorialComments(payload.comments.filter(isEditorialComment));
-        setEditorialCommentsError('');
-      } catch (error) {
-        if (!isActive || controller.signal.aborted) return;
-
-        setEditorialCommentsError(error instanceof Error ? error.message : 'comments_fetch_failed');
-      } finally {
-        if (isActive) {
-          setIsEditorialCommentsLoading(false);
-        }
-      }
-    };
-
-    void loadEditorialComments();
+    void loadEditorialComments(controller.signal);
 
     return () => {
-      isActive = false;
       controller.abort();
     };
-  }, [isInspectorOpen, saveEndpoint]);
+  }, [isInspectorOpen, loadEditorialComments]);
+
+  const openEditorialCommentComposer = () => {
+    setIsEditorialCommentComposerOpen(true);
+    setEditorialCommentComposerError('');
+  };
+
+  const cancelEditorialCommentComposer = () => {
+    if (isEditorialCommentSaving) return;
+
+    setIsEditorialCommentComposerOpen(false);
+    setEditorialCommentDraft('');
+    setEditorialCommentComposerError('');
+  };
+
+  const submitEditorialComment = async () => {
+    if (isEditorialCommentSaving) return;
+
+    const body = editorialCommentDraft.trim();
+
+    if (!body) {
+      setEditorialCommentComposerError(labels.editorialCommentsBodyRequired);
+      return;
+    }
+
+    setIsEditorialCommentSaving(true);
+    setEditorialCommentComposerError('');
+
+    try {
+      const response = await fetch(editorialCommentsEndpoint, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          body,
+          parentId: null,
+        }),
+      });
+      const payload = await response.json().catch(() => null) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'comment_create_failed');
+      }
+
+      setEditorialCommentDraft('');
+      setIsEditorialCommentComposerOpen(false);
+      setEditorialCommentComposerError('');
+      await loadEditorialComments();
+    } catch {
+      setEditorialCommentComposerError(labels.editorialCommentsCreateError);
+    } finally {
+      setIsEditorialCommentSaving(false);
+    }
+  };
 
   const updateField = <Field extends keyof EditableArticle>(field: Field, value: EditableArticle[Field]) => {
     if (isManualSaveLocked) return;
@@ -8076,6 +8216,21 @@ export default function ArticlePortableTextEditor({
               error={editorialCommentsError}
               labels={labels}
               lang={lang}
+            />
+
+            <EditorialCommentComposer
+              isOpen={isEditorialCommentComposerOpen}
+              value={editorialCommentDraft}
+              isSaving={isEditorialCommentSaving}
+              error={editorialCommentComposerError}
+              labels={labels}
+              onOpen={openEditorialCommentComposer}
+              onCancel={cancelEditorialCommentComposer}
+              onChange={(value) => {
+                setEditorialCommentDraft(value);
+                setEditorialCommentComposerError('');
+              }}
+              onSubmit={submitEditorialComment}
             />
           </details>
 
