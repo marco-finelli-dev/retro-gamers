@@ -503,6 +503,10 @@ export async function createEditorialArticleComment({
         ? { ok: false, status: 404, error: 'parent_comment_not_found' }
         : parentResult;
     }
+
+    if (parentResult.comment.parentId) {
+      return { ok: false, status: 422, error: 'nested_replies_not_supported' };
+    }
   }
 
   const { data, error } = await supabaseAdmin
