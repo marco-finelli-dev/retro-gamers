@@ -398,8 +398,10 @@
 
 .article-image-gallery--uniform-height .article-image-row figure,
 .article-image-gallery--uniform-height .article-image-row__item {
+  --image-aspect-ratio: 1.3333;
+
   display: flex;
-  width: fit-content;
+  width: min(100%, calc(var(--article-gallery-image-height) * var(--image-aspect-ratio)));
   max-width: 100%;
   flex: 0 1 auto;
   flex-direction: column;
@@ -407,11 +409,11 @@
 }
 
 .article-image-gallery--uniform-height .article-image-row img {
-  width: auto;
+  width: 100%;
   max-width: 100%;
   height: var(--article-gallery-image-height);
 
-  aspect-ratio: auto;
+  aspect-ratio: var(--image-aspect-ratio);
   object-fit: contain;
 }
 
@@ -801,8 +803,10 @@
 
 .article-aside-gallery--uniform-height .article-aside-row figure,
 .article-aside-gallery--uniform-height .article-aside-row__item {
+  --image-aspect-ratio: 1.3333;
+
   display: flex;
-  width: fit-content;
+  width: min(100%, calc(var(--article-aside-gallery-image-height) * var(--image-aspect-ratio)));
   max-width: 100%;
   flex: 0 1 auto;
   flex-direction: column;
@@ -810,11 +814,11 @@
 }
 
 .article-aside-gallery--uniform-height .article-aside-row img {
-  width: auto;
+  width: 100%;
   max-width: 100%;
   height: var(--article-aside-gallery-image-height);
 
-  aspect-ratio: auto;
+  aspect-ratio: var(--image-aspect-ratio);
   object-fit: contain;
 }
 
@@ -1593,6 +1597,8 @@ a.article-series-box__item:focus-visible strong {
     width: 100%;
     height: auto;
     max-height: none;
+    aspect-ratio: auto;
+    object-fit: contain;
   }
 
   .article-aside-gallery.is-single {

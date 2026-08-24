@@ -288,7 +288,7 @@ const editorialArticlePreviewProjection = `{
         caption,
         displayMode,
         image{
-          asset->{ url, mimeType, extension, originalFilename }
+          asset->{ url, mimeType, extension, originalFilename, metadata{ dimensions{ width, height } } }
         }
       }
     },
@@ -389,7 +389,7 @@ const editorialArticlePreviewProjection = `{
             caption,
             displayMode,
             image{
-              asset->{ url, mimeType, extension, originalFilename }
+              asset->{ url, mimeType, extension, originalFilename, metadata{ dimensions{ width, height } } }
             }
           }
         }

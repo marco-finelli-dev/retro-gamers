@@ -161,6 +161,18 @@ function getOriginalImageUrl(image) {
   return image?.asset?.url || '';
 }
 
+function getImageAspectRatio(image) {
+  const dimensions = image?.asset?.metadata?.dimensions || image?.asset?.dimensions || null;
+  const width = Number(dimensions?.width);
+  const height = Number(dimensions?.height);
+
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return null;
+  }
+
+  return Number((width / height).toFixed(4));
+}
+
 function getDisplayMode(item = {}, fallback = 'cover') {
   const mode = item.displayMode;
 
@@ -196,14 +208,14 @@ function getSingleImageHeight(displayMode = 'cover') {
   return null;
 }
 
-function getGalleryImageUrl(image, displayMode = 'cover') {
+function getGalleryImageUrl(image, displayMode = 'cover', { noCrop = false } = {}) {
   if (!image?.asset) return '';
 
   if (isGifImage(image)) {
     return image.asset.url || '';
   }
 
-  if (displayMode === 'contain' || displayMode === 'natural') {
+  if (noCrop || displayMode === 'contain' || displayMode === 'natural') {
     return urlFor(image)
       .width(900)
       .quality(78)
@@ -604,14 +616,18 @@ function chunkBalanced(images = []) {
             >
               {row.map((img, imageIndex) => {
                 const displayMode = getDisplayMode(img);
-                const imageUrl = getGalleryImageUrl(img.image, displayMode);
+                const imageUrl = getGalleryImageUrl(img.image, displayMode, { noCrop: isUniformHeight });
                 const fullImageUrl = getOriginalImageUrl(img.image);
                 const lightboxIndex = getRowStartIndex(rows, rowIndex) + imageIndex;
+                const aspectRatio = isUniformHeight ? getImageAspectRatio(img.image) : null;
 
                 if (!imageUrl) return null;
 
                 return (
-                  <figure class={`article-image-row__item article-image-row__item--${displayMode}`}>
+                  <figure
+                    class={`article-image-row__item article-image-row__item--${displayMode}`}
+                    style={aspectRatio ? `--image-aspect-ratio: ${aspectRatio};` : undefined}
+                  >
                     <img
                       src={imageUrl}
                       data-fullsrc={fullImageUrl || imageUrl}
@@ -620,8 +636,8 @@ function chunkBalanced(images = []) {
                       data-lightbox-index={lightboxIndex}
                       class="js-article-lightbox-image"
                       alt={img.alt || ''}
-                      width={displayMode === 'contain' || displayMode === 'natural' ? '900' : '720'}
-                      height={displayMode === 'contain' || displayMode === 'natural' ? undefined : '450'}
+                      width={isUniformHeight || displayMode === 'contain' || displayMode === 'natural' ? '900' : '720'}
+                      height={isUniformHeight || displayMode === 'contain' || displayMode === 'natural' ? undefined : '450'}
                       loading="lazy"
                       decoding="async"
                     />
@@ -761,14 +777,18 @@ function chunkBalanced(images = []) {
                     >
                       {row.map((img, imageIndex) => {
                         const displayMode = getDisplayMode(img);
-                        const imageUrl = getGalleryImageUrl(img.image, displayMode);
+                        const imageUrl = getGalleryImageUrl(img.image, displayMode, { noCrop: isUniformHeight });
                         const fullImageUrl = getOriginalImageUrl(img.image);
                         const lightboxIndex = getRowStartIndex(rows, rowIndex) + imageIndex;
+                        const aspectRatio = isUniformHeight ? getImageAspectRatio(img.image) : null;
 
                         if (!imageUrl) return null;
 
                         return (
-                          <figure class={`article-aside-row__item article-aside-row__item--${displayMode}`}>
+                          <figure
+                            class={`article-aside-row__item article-aside-row__item--${displayMode}`}
+                            style={aspectRatio ? `--image-aspect-ratio: ${aspectRatio};` : undefined}
+                          >
                             <img
                               src={imageUrl}
                               data-fullsrc={fullImageUrl || imageUrl}
@@ -777,8 +797,8 @@ function chunkBalanced(images = []) {
                               data-lightbox-index={lightboxIndex}
                               class="js-article-lightbox-image"
                               alt={img.alt || ''}
-                              width={displayMode === 'contain' || displayMode === 'natural' ? '900' : '720'}
-                              height={displayMode === 'contain' || displayMode === 'natural' ? undefined : '450'}
+                              width={isUniformHeight || displayMode === 'contain' || displayMode === 'natural' ? '900' : '720'}
+                              height={isUniformHeight || displayMode === 'contain' || displayMode === 'natural' ? undefined : '450'}
                               loading="lazy"
                               decoding="async"
                             />
