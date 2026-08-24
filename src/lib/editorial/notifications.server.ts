@@ -3,6 +3,7 @@ import {
   type AccountMessageType,
 } from '../supabase/account-messages';
 import { normalizeUuid } from '../uuid';
+import { buildEditorialNotificationAction } from './notification-links.server';
 import { normalizeSanityRootDocumentId } from './types';
 
 type EditorialNotificationLanguage = 'it' | 'en';
@@ -56,22 +57,6 @@ function getArticleFallbackTitle(language: EditorialNotificationLanguage) {
   return language === 'en' ? 'this article' : 'questo articolo';
 }
 
-function getEditorialArticleEditorUrl({
-  sanityDocumentId,
-  editorialCommentId,
-  articleLanguage,
-}: {
-  sanityDocumentId: string;
-  editorialCommentId: string;
-  articleLanguage: EditorialNotificationLanguage;
-}) {
-  const baseUrl = articleLanguage === 'en'
-    ? `/en/account/editor/articles/${encodeURIComponent(sanityDocumentId)}/`
-    : `/account/editor/articles/${encodeURIComponent(sanityDocumentId)}/`;
-
-  return `${baseUrl}#editorial-comment-${encodeURIComponent(editorialCommentId)}`;
-}
-
 async function createEditorialCommentNotification({
   type,
   recipientUserId,
@@ -105,18 +90,21 @@ async function createEditorialCommentNotification({
   const language = normalizeLanguage(articleLanguage);
   const normalizedArticleTitle = normalizeOptionalText(articleTitle) || getArticleFallbackTitle(language);
   const copy = getCopy(language, normalizedArticleTitle);
+  const action = await buildEditorialNotificationAction({
+    sanityDocumentId: rootDocumentId,
+    commentId,
+    recipientUserId: recipient,
+    articleLanguage: language,
+    actionType: type,
+  });
 
   return createAccountMessage({
     userId: recipient,
     type,
     title: copy.title,
     body: copy.body,
-    actionLabel: copy.actionLabel,
-    actionUrl: getEditorialArticleEditorUrl({
-      sanityDocumentId: rootDocumentId,
-      editorialCommentId: commentId,
-      articleLanguage: language,
-    }),
+    actionLabel: action.actionLabel || copy.actionLabel,
+    actionUrl: action.actionUrl,
     dedupe: false,
     metadata: {
       domain: 'editorial',
