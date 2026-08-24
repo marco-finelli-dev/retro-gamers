@@ -7,6 +7,7 @@ import {
 } from '../../lib/routes';
 import { getRgAffiliateProviderFromUrl } from '../../lib/analytics/client';
 import { urlFor } from '../../lib/image';
+import { getYouTubeVideoId } from '../../lib/youtube-video';
 import ConsentYouTube from '../common/ConsentYouTube.astro';
 
 const {
@@ -651,7 +652,9 @@ function chunkBalanced(images = []) {
     }
 
     if (block._type === 'videoRow') {
-      const videos = Array.isArray(block.videos) ? block.videos.slice(0, 2) : [];
+      const videos = Array.isArray(block.videos)
+        ? block.videos.filter((video) => getYouTubeVideoId(video?.url)).slice(0, 2)
+        : [];
       const groupCaption = typeof block.groupCaption === 'string'
         ? block.groupCaption.trim()
         : '';

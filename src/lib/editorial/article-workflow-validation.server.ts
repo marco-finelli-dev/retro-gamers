@@ -1,4 +1,5 @@
 import { normalizeSanityRootDocumentId } from './types';
+import { getYouTubeVideoId } from '../youtube-video';
 
 export type ArticleWorkflowValidationAction = 'submit' | 'approve' | 'publish';
 
@@ -68,6 +69,10 @@ function getImageAssetId(value: unknown) {
   return normalizeString(asset._ref || asset._id || asset.url, 300).trim();
 }
 
+function hasRenderableYouTubeVideoUrl(value: unknown) {
+  return Boolean(getYouTubeVideoId(normalizeString(value, 500).trim()));
+}
+
 function textBlockHasContent(block: Record<string, unknown>) {
   if (!Array.isArray(block.children)) return false;
 
@@ -91,13 +96,13 @@ function customBlockHasContent(block: Record<string, unknown>): boolean {
   }
 
   if (block._type === 'video') {
-    return normalizeString(block.url, 500).trim().length > 0;
+    return hasRenderableYouTubeVideoUrl(block.url);
   }
 
   if (block._type === 'videoRow') {
     return Array.isArray(block.videos) &&
       block.videos.some((item) =>
-        isPlainObject(item) && normalizeString(item.url, 500).trim().length > 0
+        isPlainObject(item) && hasRenderableYouTubeVideoUrl(item.url)
       );
   }
 
@@ -133,6 +138,57 @@ function addIssue(
     code,
     label: fieldLabels[field] || field,
   });
+}
+
+function addPortableTextVideoIssues(
+  content: unknown,
+  blockingIssues: ArticleWorkflowValidationIssue[],
+  warnings: ArticleWorkflowValidationIssue[]
+) {
+  if (!Array.isArray(content)) return;
+
+  for (const block of content) {
+    if (!isPlainObject(block)) continue;
+
+    if (block._type === 'video') {
+      const url = normalizeString(block.url, 500).trim();
+
+      if (!url) {
+        addIssue(blockingIssues, 'content', 'missing_video_url');
+      } else if (!hasRenderableYouTubeVideoUrl(url)) {
+        addIssue(blockingIssues, 'content', 'invalid_video_url');
+      }
+    }
+
+    if (block._type === 'videoRow') {
+      const videos = Array.isArray(block.videos)
+        ? block.videos.filter(isPlainObject)
+        : [];
+
+      if (videos.length === 0) {
+        addIssue(blockingIssues, 'content', 'missing_video_row_videos');
+        continue;
+      }
+
+      const renderableVideos = videos.filter((video) => hasRenderableYouTubeVideoUrl(video.url));
+
+      if (renderableVideos.length === 0) {
+        addIssue(blockingIssues, 'content', 'invalid_video_row_url');
+      }
+
+      if (renderableVideos.length < videos.length) {
+        addIssue(warnings, 'content', 'invalid_video_row_item_url');
+      }
+
+      if (videos.length > 2) {
+        addIssue(warnings, 'content', 'too_many_video_row_items');
+      }
+    }
+
+    if (block._type === 'asideBox') {
+      addPortableTextVideoIssues(block.content, blockingIssues, warnings);
+    }
+  }
 }
 
 export function validateArticleForWorkflow(
@@ -182,6 +238,8 @@ export function validateArticleForWorkflow(
   if ((action === 'submit' || action === 'approve') && !hasPortableTextContent(article.content)) {
     addIssue(blockingIssues, 'content', 'missing_content');
   }
+
+  addPortableTextVideoIssues(article.content, blockingIssues, warnings);
 
   const expectedSanityAuthorId = normalizeSanityRootDocumentId(context.expectedSanityAuthorId);
   if (
