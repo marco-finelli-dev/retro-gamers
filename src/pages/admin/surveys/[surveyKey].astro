@@ -9,7 +9,7 @@ import {
   type CommunitySurveyQuestionResult,
   type CommunitySurveyStatus,
 } from '../../../lib/community-surveys';
-import { getUserSessionFromCookies, isStaffProfile } from '../../../lib/supabase/auth';
+import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import '../../../styles/pages/admin-surveys.css';
 
 const { surveyKey: rawSurveyKey } = Astro.params;
@@ -17,7 +17,7 @@ const surveyKey = normalizeTechnicalId(rawSurveyKey);
 const title = 'Risultati sondaggio | Retro-Gamers.it';
 const description = 'Risultati raccolti dai sondaggi community Retro-Gamers.it.';
 const session = await getUserSessionFromCookies(Astro.cookies);
-const isStaff = isStaffProfile(session.profile);
+const isAdmin = session.profile?.role === 'admin';
 const numberFormatter = new Intl.NumberFormat('it-IT');
 const percentageFormatter = new Intl.NumberFormat('it-IT', {
   maximumFractionDigits: 1,
@@ -47,7 +47,7 @@ let results:
     : never
   | null = null;
 
-if (isStaff && surveyKey) {
+if (isAdmin && surveyKey) {
   const result = await getCommunitySurveyAdminResults(surveyKey);
 
   if (result.ok) {
@@ -61,7 +61,7 @@ if (isStaff && surveyKey) {
       result.details ||
       'Risultati non disponibili. Verifica che community-surveys-v1.sql sia stato eseguito in Supabase.';
   }
-} else if (isStaff) {
+} else if (isAdmin) {
   resultsError = 'Survey key non valido.';
 }
 
@@ -82,9 +82,9 @@ const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
 ---
 
 <BaseLayout title={title} description={description}>
-  <CommunityLayout class="admin-surveys-page" sidebar={isStaff}>
+  <CommunityLayout class="admin-surveys-page" sidebar={isAdmin}>
     <Fragment slot="sidebar">
-      {isStaff && (
+      {isAdmin && (
         <CommunitySidebarSection title="Strumenti amministrazione">
           <div class="community-staff-links">
             <a class="community-action-link" href="/admin/">Dashboard amministrazione</a>
@@ -99,7 +99,7 @@ const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
       )}
     </Fragment>
 
-    {isStaff ? (
+    {isAdmin ? (
       <>
         <CommunityHero
           kicker="Sondaggi community"
@@ -198,6 +198,14 @@ const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
                               </div>
                             </div>
                           ))}
+                          {question.type === 'multiple' && (
+                            <p class="admin-surveys-note">
+                              Le percentuali delle domande a risposta multipla indicano la percentuale di partecipanti che ha selezionato ciascuna opzione. Il totale può superare il 100%.
+                              <span>
+                                For multiple-choice questions, percentages show the share of participants who selected each option. The total may exceed 100%.
+                              </span>
+                            </p>
+                          )}
                         </div>
                       )}
                     </article>
@@ -219,7 +227,7 @@ const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
         <CommunityHero
           kicker="Retro-Gamers.it"
           title="Accesso amministrativo"
-          description="Questa pagina è riservata allo staff Retro-Gamers.it."
+          description="Questa pagina è riservata agli amministratori Retro-Gamers.it."
         />
 
         <section class="community-card">

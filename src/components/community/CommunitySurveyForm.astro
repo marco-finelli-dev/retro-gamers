@@ -23,6 +23,8 @@ const copy = isEn
       singleHint: 'Choose one option.',
       multipleHint: 'Choose one or more options.',
       textHint: 'Write your answer.',
+      openAnswerPrivacy:
+        'To protect your privacy, do not include personal data in open answers.',
       textPlaceholder: 'Write your thoughts here...',
       submit: 'Send answers',
       submitting: 'Sending...',
@@ -49,6 +51,8 @@ const copy = isEn
       singleHint: 'Scegli una sola opzione.',
       multipleHint: 'Scegli una o più opzioni.',
       textHint: 'Scrivi la tua risposta.',
+      openAnswerPrivacy:
+        'Per proteggere la tua privacy, non inserire dati personali nelle risposte aperte.',
       textPlaceholder: 'Scrivi qui il tuo pensiero...',
       submit: 'Invia risposte',
       submitting: 'Invio in corso...',
@@ -133,13 +137,16 @@ const questionCountLabel = copy.questionCount(survey.questions.length);
           <p>{hint}</p>
 
           {question.type === 'text' ? (
-            <textarea
-              name={questionName}
-              rows="5"
-              maxlength="2000"
-              placeholder={copy.textPlaceholder}
-              required
-            ></textarea>
+            <>
+              <p class="community-survey-privacy-note">{copy.openAnswerPrivacy}</p>
+              <textarea
+                name={questionName}
+                rows="5"
+                maxlength="2000"
+                placeholder={copy.textPlaceholder}
+                required
+              ></textarea>
+            </>
           ) : (
             <div class="community-survey-options">
               {question.options.map((option) => {
