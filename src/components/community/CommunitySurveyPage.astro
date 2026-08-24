@@ -1,0 +1,116 @@
+---
+import '../../styles/pages/community-surveys.css';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommunityHero from './CommunityHero.astro';
+import CommunityLayout from './CommunityLayout.astro';
+import CommunitySurveyForm from './CommunitySurveyForm.astro';
+import {
+  getCommunitySurveyResponseState,
+  getCommunitySurveyUrl,
+  getOpenCommunitySurveyBySlug,
+  type CommunitySurveyLanguage,
+} from '../../lib/community-surveys';
+import { getAllPosts, groupPosts } from '../../lib/posts';
+
+interface Props {
+  slug?: string;
+  lang?: CommunitySurveyLanguage;
+}
+
+const { slug = '', lang = 'it' } = Astro.props as Props;
+const currentLang: CommunitySurveyLanguage = lang === 'en' ? 'en' : 'it';
+const isEn = currentLang === 'en';
+const survey = await getOpenCommunitySurveyBySlug(slug, currentLang);
+
+if (!survey) {
+  return Astro.rewrite('/404');
+}
+
+const allPosts = await getAllPosts();
+const groupedPosts = groupPosts(allPosts);
+const headerReviews = isEn
+  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
+  : groupedPosts.allReviews;
+const headerNews = isEn
+  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
+  : groupedPosts.allNews;
+const responseState = await getCommunitySurveyResponseState(
+  Astro.cookies,
+  survey.surveyKey
+);
+const copy = isEn
+  ? {
+      canonicalBase: 'https://www.retro-gamers.it/en/community/surveys',
+      languageFallback: '/community/',
+      eyebrow: 'Community survey',
+      defaultDescription:
+        'A short anonymous survey for the Retro-Gamers.it community.',
+      privateBadge: 'Anonymous answers',
+      noLoginBadge: 'No login required',
+    }
+  : {
+      canonicalBase: 'https://www.retro-gamers.it/community/surveys',
+      languageFallback: '/en/community/',
+      eyebrow: 'Sondaggio community',
+      defaultDescription:
+        'Un breve sondaggio anonimo per la community di Retro-Gamers.it.',
+      privateBadge: 'Risposte anonime',
+      noLoginBadge: 'Nessun login richiesto',
+    };
+const translatedVersion =
+  survey.translatedVersion?.slug
+    ? survey.translatedVersion
+    : (survey.translatedVersions || []).find((version) =>
+        version?.slug && version.language !== currentLang
+      ) || null;
+const translatedLanguage: CommunitySurveyLanguage =
+  translatedVersion?.language === 'en' ? 'en' : 'it';
+const translatedPath = translatedVersion
+  ? getCommunitySurveyUrl(translatedVersion, translatedLanguage)
+  : '';
+const translatedUrl = translatedPath ? `https://www.retro-gamers.it${translatedPath}` : '';
+const canonicalUrl = `${copy.canonicalBase}/${survey.slug}/`;
+const alternateLanguages = [
+  { lang: currentLang, url: canonicalUrl },
+  ...(translatedUrl
+    ? [
+        { lang: translatedLanguage, url: translatedUrl },
+        { lang: 'x-default', url: currentLang === 'it' ? canonicalUrl : translatedUrl },
+      ]
+    : []),
+];
+const pageDescription = survey.description || copy.defaultDescription;
+---
+
+<BaseLayout
+  reviews={headerReviews}
+  news={headerNews}
+  title={survey.title}
+  description={pageDescription}
+  image="/og-image.jpg"
+  canonical={canonicalUrl}
+  lang={currentLang}
+  languageSwitch={translatedPath || copy.languageFallback}
+  alternateLanguages={alternateLanguages}
+>
+  <CommunityLayout class="community-survey-page">
+    <CommunityHero
+      kicker={copy.eyebrow}
+      title={survey.title}
+      description={pageDescription}
+      class="community-survey-hero"
+    >
+      <div class="community-survey-hero__badges" aria-label={copy.eyebrow}>
+        <span>{copy.privateBadge}</span>
+        <span>{copy.noLoginBadge}</span>
+      </div>
+    </CommunityHero>
+
+    <CommunitySurveyForm
+      survey={survey}
+      lang={currentLang}
+      responseState={responseState}
+    />
+  </CommunityLayout>
+</BaseLayout>

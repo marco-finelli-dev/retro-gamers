@@ -1,0 +1,290 @@
+---
+import type {
+  CommunitySurveyLanguage,
+  CommunitySurveyPublic,
+  CommunitySurveyResponseState,
+} from '../../lib/community-surveys';
+
+interface Props {
+  survey: CommunitySurveyPublic;
+  lang: CommunitySurveyLanguage;
+  responseState: CommunitySurveyResponseState;
+}
+
+const { survey, lang, responseState } = Astro.props as Props;
+const isEn = lang === 'en';
+const copy = isEn
+  ? {
+      title: 'Take part',
+      intro:
+        'Your answers are anonymous and are not linked to your account or email address.',
+      singleHint: 'Choose one option.',
+      multipleHint: 'Choose one or more options.',
+      textHint: 'Write your answer.',
+      submit: 'Send answers',
+      submitting: 'Sending...',
+      missing: 'Answer all questions before sending.',
+      success:
+        'Thanks for taking part. Your anonymous response has been recorded.',
+      already:
+        'You have already taken part in this survey from this browser.',
+      error:
+        'We could not save your answers. Please try again in a moment.',
+    }
+  : {
+      title: 'Partecipa',
+      intro:
+        'Le risposte sono anonime e non vengono collegate al tuo account o alla tua email.',
+      singleHint: 'Scegli una sola opzione.',
+      multipleHint: 'Scegli una o più opzioni.',
+      textHint: 'Scrivi la tua risposta.',
+      submit: 'Invia risposte',
+      submitting: 'Invio in corso...',
+      missing: 'Rispondi a tutte le domande prima di inviare.',
+      success:
+        'Grazie per aver partecipato. La tua risposta anonima è stata registrata.',
+      already:
+        'Hai già partecipato a questo sondaggio da questo browser.',
+      error:
+        'Non è stato possibile salvare le risposte. Riprova tra poco.',
+    };
+const formId = `community-survey-${survey.surveyKey}`;
+---
+
+<section class="community-card community-survey-card" aria-labelledby={`${formId}-title`}>
+  <header class="community-survey-card__header">
+    <p class="community-kicker">Community Survey</p>
+    <h2 id={`${formId}-title`}>{copy.title}</h2>
+    <p>{copy.intro}</p>
+  </header>
+
+  <div
+    class="community-survey-status community-survey-status--success"
+    data-community-survey-success
+    hidden={!responseState.hasResponded}
+  >
+    <strong>{responseState.hasResponded ? copy.already : copy.success}</strong>
+  </div>
+
+  <form
+    class="community-survey-form"
+    data-community-survey-form
+    data-survey-key={survey.surveyKey}
+    data-survey-document-id={survey._id}
+    data-survey-language={survey.language}
+    data-endpoint={`/api/community/surveys/${encodeURIComponent(survey.surveyKey)}/responses`}
+    data-message-missing={copy.missing}
+    data-message-error={copy.error}
+    data-message-success={copy.success}
+    data-message-already={copy.already}
+    data-label-submit={copy.submit}
+    data-label-submitting={copy.submitting}
+    hidden={responseState.hasResponded}
+  >
+    {survey.questions.map((question, index) => {
+      const questionName = `${formId}-${question.questionId}`;
+      const hint =
+        question.type === 'single'
+          ? copy.singleHint
+          : question.type === 'multiple'
+            ? copy.multipleHint
+            : copy.textHint;
+
+      return (
+        <fieldset
+          class="community-survey-question"
+          data-survey-question
+          data-question-id={question.questionId}
+          data-question-type={question.type}
+        >
+          <legend>
+            <span>{index + 1}</span>
+            {question.text}
+          </legend>
+
+          <p>{hint}</p>
+
+          {question.type === 'text' ? (
+            <textarea
+              name={questionName}
+              rows="5"
+              maxlength="2000"
+              required
+            ></textarea>
+          ) : (
+            <div class="community-survey-options">
+              {question.options.map((option) => {
+                const inputId = `${questionName}-${option.optionId}`;
+                const inputType = question.type === 'multiple' ? 'checkbox' : 'radio';
+
+                return (
+                  <label for={inputId}>
+                    <input
+                      id={inputId}
+                      type={inputType}
+                      name={questionName}
+                      value={option.optionId}
+                      required={question.type === 'single'}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </fieldset>
+      );
+    })}
+
+    <div class="community-survey-form__footer">
+      <p class="community-survey-form__message" data-survey-form-status aria-live="polite"></p>
+      <button class="community-action-button community-survey-submit" type="submit">
+        {copy.submit}
+      </button>
+    </div>
+  </form>
+</section>
+
+<script>
+  const setQuestionInvalid = (question, invalid) => {
+    if (!(question instanceof HTMLElement)) return;
+    question.toggleAttribute('data-invalid', invalid);
+  };
+
+  const setMessage = (node, message, tone = 'error') => {
+    if (!(node instanceof HTMLElement)) return;
+
+    node.textContent = message || '';
+    node.dataset.tone = tone;
+  };
+
+  document.querySelectorAll('[data-community-survey-form]').forEach((form) => {
+    if (!(form instanceof HTMLFormElement)) return;
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    const statusNode = form.querySelector('[data-survey-form-status]');
+    const successNode = form
+      .closest('.community-survey-card')
+      ?.querySelector('[data-community-survey-success]');
+    const submitLabel = form.dataset.labelSubmit || 'Invia';
+    const submittingLabel = form.dataset.labelSubmitting || submitLabel;
+    const missingMessage = form.dataset.messageMissing || '';
+    const errorMessage = form.dataset.messageError || '';
+    const successMessage = form.dataset.messageSuccess || '';
+    const alreadyMessage = form.dataset.messageAlready || successMessage;
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const questions = Array.from(form.querySelectorAll('[data-survey-question]'));
+      const answers = [];
+      let hasMissingAnswer = false;
+
+      questions.forEach((question) => {
+        if (!(question instanceof HTMLElement)) return;
+
+        const questionId = question.dataset.questionId || '';
+        const type = question.dataset.questionType || '';
+
+        setQuestionInvalid(question, false);
+
+        if (type === 'single') {
+          const checked = question.querySelector('input[type="radio"]:checked');
+          const optionId = checked instanceof HTMLInputElement ? checked.value : '';
+
+          if (!optionId) {
+            setQuestionInvalid(question, true);
+            hasMissingAnswer = true;
+          }
+
+          answers.push({ questionId, optionId });
+          return;
+        }
+
+        if (type === 'multiple') {
+          const optionIds = Array.from(
+            question.querySelectorAll('input[type="checkbox"]:checked')
+          )
+            .filter((input) => input instanceof HTMLInputElement)
+            .map((input) => input.value);
+
+          if (optionIds.length < 1) {
+            setQuestionInvalid(question, true);
+            hasMissingAnswer = true;
+          }
+
+          answers.push({ questionId, optionIds });
+          return;
+        }
+
+        const textarea = question.querySelector('textarea');
+        const textAnswer = textarea instanceof HTMLTextAreaElement
+          ? textarea.value.trim()
+          : '';
+
+        if (!textAnswer) {
+          setQuestionInvalid(question, true);
+          hasMissingAnswer = true;
+        }
+
+        answers.push({ questionId, textAnswer });
+      });
+
+      if (hasMissingAnswer) {
+        setMessage(statusNode, missingMessage, 'error');
+        return;
+      }
+
+      setMessage(statusNode, '', 'info');
+
+      if (submitButton instanceof HTMLButtonElement) {
+        submitButton.disabled = true;
+        submitButton.textContent = submittingLabel;
+      }
+
+      try {
+        const response = await fetch(form.dataset.endpoint || '', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            surveyDocumentId: form.dataset.surveyDocumentId || '',
+            language: form.dataset.surveyLanguage || 'it',
+            answers,
+          }),
+        });
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || !result?.ok) {
+          if (response.status === 409 && result?.error === 'already_submitted') {
+            if (successNode instanceof HTMLElement) {
+              successNode.hidden = false;
+              successNode.querySelector('strong')?.replaceChildren(alreadyMessage);
+            }
+
+            form.hidden = true;
+            return;
+          }
+
+          setMessage(statusNode, errorMessage, 'error');
+          return;
+        }
+
+        if (successNode instanceof HTMLElement) {
+          successNode.hidden = false;
+          successNode.querySelector('strong')?.replaceChildren(successMessage);
+        }
+
+        form.hidden = true;
+      } catch {
+        setMessage(statusNode, errorMessage, 'error');
+      } finally {
+        if (submitButton instanceof HTMLButtonElement) {
+          submitButton.disabled = false;
+          submitButton.textContent = submitLabel;
+        }
+      }
+    });
+  });
+</script>
