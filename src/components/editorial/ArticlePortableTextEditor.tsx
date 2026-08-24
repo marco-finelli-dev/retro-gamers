@@ -290,12 +290,16 @@ type Labels = {
   editorialCommentsReplies: string;
   editorialCommentsFallbackAuthor: string;
   editorialCommentsAdd: string;
+  editorialCommentsReply: string;
   editorialCommentsPlaceholder: string;
+  editorialCommentsReplyPlaceholder: string;
   editorialCommentsCancel: string;
   editorialCommentsSave: string;
+  editorialCommentsSaveReply: string;
   editorialCommentsSaving: string;
   editorialCommentsBodyRequired: string;
   editorialCommentsCreateError: string;
+  editorialCommentsReplyError: string;
   workflowStatus: string;
   workflowStatusDraft: string;
   workflowStatusSubmitted: string;
@@ -4297,13 +4301,18 @@ function EditorialCommentCard({
   labels,
   lang,
   isReply = false,
+  isReplyDisabled = false,
+  onReply,
 }: {
   comment: EditorialComment;
   labels: Labels;
   lang: ArticleLanguage;
   isReply?: boolean;
+  isReplyDisabled?: boolean;
+  onReply?: () => void;
 }) {
   const authorLabel = comment.author?.displayName || labels.editorialCommentsFallbackAuthor;
+  const canReply = Boolean(onReply && !isReply && comment.status === 'open');
 
   return (
     <article
@@ -4322,6 +4331,18 @@ function EditorialCommentCard({
         </span>
       </div>
       <p className="editorial-comments__body">{comment.body}</p>
+      {canReply && (
+        <div className="editorial-comments__item-actions">
+          <button
+            type="button"
+            className="editorial-mini-button"
+            onClick={onReply}
+            disabled={isReplyDisabled}
+          >
+            {labels.editorialCommentsReply}
+          </button>
+        </div>
+      )}
     </article>
   );
 }
@@ -4332,12 +4353,28 @@ function EditorialCommentsReadOnly({
   error,
   labels,
   lang,
+  replyParentId,
+  replyValue,
+  isReplySaving,
+  replyError,
+  onReplyOpen,
+  onReplyCancel,
+  onReplyChange,
+  onReplySubmit,
 }: {
   comments: EditorialComment[];
   isLoading: boolean;
   error: string;
   labels: Labels;
   lang: ArticleLanguage;
+  replyParentId: string | null;
+  replyValue: string;
+  isReplySaving: boolean;
+  replyError: string;
+  onReplyOpen: (commentId: string) => void;
+  onReplyCancel: () => void;
+  onReplyChange: (value: string) => void;
+  onReplySubmit: () => void;
 }) {
   if (isLoading) {
     return <p className="editorial-file-meta">{labels.editorialCommentsLoading}</p>;
@@ -4355,7 +4392,29 @@ function EditorialCommentsReadOnly({
     <div className="editorial-comments">
       {getEditorialCommentGroups(comments).map(({ comment, replies }) => (
         <div className="editorial-comments__thread" key={comment.id}>
-          <EditorialCommentCard comment={comment} labels={labels} lang={lang} />
+          <EditorialCommentCard
+            comment={comment}
+            labels={labels}
+            lang={lang}
+            isReplyDisabled={isReplySaving}
+            onReply={() => onReplyOpen(comment.id)}
+          />
+          {replyParentId === comment.id && (
+            <EditorialCommentComposer
+              isOpen
+              value={replyValue}
+              isSaving={isReplySaving}
+              error={replyError}
+              labels={labels}
+              placeholder={labels.editorialCommentsReplyPlaceholder}
+              saveLabel={labels.editorialCommentsSaveReply}
+              className="editorial-comments__composer--reply"
+              onOpen={() => onReplyOpen(comment.id)}
+              onCancel={onReplyCancel}
+              onChange={onReplyChange}
+              onSubmit={onReplySubmit}
+            />
+          )}
           {replies.length > 0 && (
             <div className="editorial-comments__replies" aria-label={labels.editorialCommentsReplies}>
               {replies.map((reply) => (
@@ -4381,6 +4440,10 @@ function EditorialCommentComposer({
   isSaving,
   error,
   labels,
+  placeholder = labels.editorialCommentsPlaceholder,
+  openLabel = labels.editorialCommentsAdd,
+  saveLabel = labels.editorialCommentsSave,
+  className = '',
   onOpen,
   onCancel,
   onChange,
@@ -4391,6 +4454,10 @@ function EditorialCommentComposer({
   isSaving: boolean;
   error: string;
   labels: Labels;
+  placeholder?: string;
+  openLabel?: string;
+  saveLabel?: string;
+  className?: string;
   onOpen: () => void;
   onCancel: () => void;
   onChange: (value: string) => void;
@@ -4400,7 +4467,7 @@ function EditorialCommentComposer({
     return (
       <div className="editorial-comments__composer-actions">
         <button type="button" className="editorial-mini-button editorial-mini-button--primary" onClick={onOpen}>
-          {labels.editorialCommentsAdd}
+          {openLabel}
         </button>
       </div>
     );
@@ -4408,7 +4475,7 @@ function EditorialCommentComposer({
 
   return (
     <form
-      className="editorial-comments__composer"
+      className={`editorial-comments__composer${className ? ` ${className}` : ''}`}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();
@@ -4417,7 +4484,7 @@ function EditorialCommentComposer({
       <textarea
         value={value}
         rows={4}
-        placeholder={labels.editorialCommentsPlaceholder}
+        placeholder={placeholder}
         disabled={isSaving}
         onChange={(event) => onChange(event.target.value)}
       />
@@ -4433,7 +4500,7 @@ function EditorialCommentComposer({
           {labels.editorialCommentsCancel}
         </button>
         <button type="submit" className="editorial-mini-button editorial-mini-button--primary" disabled={isSaving}>
-          {isSaving ? labels.editorialCommentsSaving : labels.editorialCommentsSave}
+          {isSaving ? labels.editorialCommentsSaving : saveLabel}
         </button>
       </div>
     </form>
@@ -6919,6 +6986,10 @@ export default function ArticlePortableTextEditor({
   const [editorialCommentDraft, setEditorialCommentDraft] = useState('');
   const [isEditorialCommentSaving, setIsEditorialCommentSaving] = useState(false);
   const [editorialCommentComposerError, setEditorialCommentComposerError] = useState('');
+  const [editorialCommentReplyParentId, setEditorialCommentReplyParentId] = useState<string | null>(null);
+  const [editorialCommentReplyDraft, setEditorialCommentReplyDraft] = useState('');
+  const [isEditorialCommentReplySaving, setIsEditorialCommentReplySaving] = useState(false);
+  const [editorialCommentReplyError, setEditorialCommentReplyError] = useState('');
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [typeChangeRequest, setTypeChangeRequest] = useState<TypeChangeRequest | null>(null);
   const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
@@ -7109,6 +7180,9 @@ export default function ArticlePortableTextEditor({
   const openEditorialCommentComposer = () => {
     setIsEditorialCommentComposerOpen(true);
     setEditorialCommentComposerError('');
+    setEditorialCommentReplyParentId(null);
+    setEditorialCommentReplyDraft('');
+    setEditorialCommentReplyError('');
   };
 
   const cancelEditorialCommentComposer = () => {
@@ -7117,6 +7191,29 @@ export default function ArticlePortableTextEditor({
     setIsEditorialCommentComposerOpen(false);
     setEditorialCommentDraft('');
     setEditorialCommentComposerError('');
+  };
+
+  const postEditorialComment = async (body: string, parentId: string | null) => {
+    const response = await fetch(editorialCommentsEndpoint, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        body,
+        parentId,
+      }),
+    });
+    const payload = await response.json().catch(() => null) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
+
+    if (!response.ok || !payload?.ok) {
+      throw new Error(payload?.error || 'comment_create_failed');
+    }
   };
 
   const submitEditorialComment = async () => {
@@ -7133,27 +7230,7 @@ export default function ArticlePortableTextEditor({
     setEditorialCommentComposerError('');
 
     try {
-      const response = await fetch(editorialCommentsEndpoint, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          accept: 'application/json',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          body,
-          parentId: null,
-        }),
-      });
-      const payload = await response.json().catch(() => null) as {
-        ok?: boolean;
-        error?: string;
-      } | null;
-
-      if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || 'comment_create_failed');
-      }
-
+      await postEditorialComment(body, null);
       setEditorialCommentDraft('');
       setIsEditorialCommentComposerOpen(false);
       setEditorialCommentComposerError('');
@@ -7162,6 +7239,51 @@ export default function ArticlePortableTextEditor({
       setEditorialCommentComposerError(labels.editorialCommentsCreateError);
     } finally {
       setIsEditorialCommentSaving(false);
+    }
+  };
+
+  const openEditorialCommentReplyComposer = (commentId: string) => {
+    if (isEditorialCommentReplySaving) return;
+
+    setEditorialCommentReplyParentId(commentId);
+    setEditorialCommentReplyDraft('');
+    setEditorialCommentReplyError('');
+    setIsEditorialCommentComposerOpen(false);
+    setEditorialCommentDraft('');
+    setEditorialCommentComposerError('');
+  };
+
+  const cancelEditorialCommentReplyComposer = () => {
+    if (isEditorialCommentReplySaving) return;
+
+    setEditorialCommentReplyParentId(null);
+    setEditorialCommentReplyDraft('');
+    setEditorialCommentReplyError('');
+  };
+
+  const submitEditorialCommentReply = async () => {
+    if (isEditorialCommentReplySaving || !editorialCommentReplyParentId) return;
+
+    const body = editorialCommentReplyDraft.trim();
+
+    if (!body) {
+      setEditorialCommentReplyError(labels.editorialCommentsBodyRequired);
+      return;
+    }
+
+    setIsEditorialCommentReplySaving(true);
+    setEditorialCommentReplyError('');
+
+    try {
+      await postEditorialComment(body, editorialCommentReplyParentId);
+      setEditorialCommentReplyParentId(null);
+      setEditorialCommentReplyDraft('');
+      setEditorialCommentReplyError('');
+      await loadEditorialComments();
+    } catch {
+      setEditorialCommentReplyError(labels.editorialCommentsReplyError);
+    } finally {
+      setIsEditorialCommentReplySaving(false);
     }
   };
 
@@ -8266,6 +8388,17 @@ export default function ArticlePortableTextEditor({
               error={editorialCommentsError}
               labels={labels}
               lang={lang}
+              replyParentId={editorialCommentReplyParentId}
+              replyValue={editorialCommentReplyDraft}
+              isReplySaving={isEditorialCommentReplySaving}
+              replyError={editorialCommentReplyError}
+              onReplyOpen={openEditorialCommentReplyComposer}
+              onReplyCancel={cancelEditorialCommentReplyComposer}
+              onReplyChange={(value) => {
+                setEditorialCommentReplyDraft(value);
+                setEditorialCommentReplyError('');
+              }}
+              onReplySubmit={submitEditorialCommentReply}
             />
 
             <EditorialCommentComposer
