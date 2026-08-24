@@ -7637,35 +7637,38 @@ export default function ArticlePortableTextEditor({
               capabilities={capabilities}
             />
 
-            <div className="editorial-document-header">
+            <section className="editorial-document-header">
               <label className="editorial-field editorial-field--title">
                 <span>{labels.title}</span>
-                <input
+                <AutoGrowTextField
                   value={draft.title}
+                  rows={1}
+                  maxRows={4}
+                  singleLine
+                  ariaLabel={labels.title}
+                  placeholder={labels.title}
+                  className="editorial-document-header__title-input"
                   disabled={isManualSaveLocked}
-                  onChange={(event) => updateField('title', event.target.value)}
+                  onChange={(value) => updateField('title', value)}
                 />
               </label>
 
               <label className="editorial-field editorial-field--subtitle">
                 <span>{labels.subtitle}</span>
-                <textarea
+                <AutoGrowTextField
                   value={draft.subtitle}
                   rows={2}
+                  maxRows={8}
+                  ariaLabel={labels.subtitle}
+                  placeholder={labels.subtitle}
+                  className="editorial-document-header__subtitle-input"
                   disabled={isManualSaveLocked}
-                  onChange={(event) => updateField('subtitle', event.target.value)}
+                  onChange={(value) => updateField('subtitle', value)}
                 />
               </label>
-            </div>
+            </section>
 
-            <section className="editorial-pte-card" aria-labelledby="editorial-pte-title">
-              <div className="editorial-pte-card__header">
-                <div>
-                  <p className="editorial-kicker">{labels.content}</p>
-                  <h2 id="editorial-pte-title">{labels.content}</h2>
-                </div>
-              </div>
-
+            <section className="editorial-pte-card" aria-label={labels.content}>
               <PortableTextEditable
                 className="editorial-pte"
                 renderAnnotation={renderAnnotation}

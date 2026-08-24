@@ -2067,52 +2067,59 @@
 
 .editorial-document-header {
   display: grid;
-  gap: clamp(14px, 2.2vw, 22px);
-  padding-block: clamp(8px, 1.4vw, 14px) clamp(20px, 3vw, 30px);
+  gap: clamp(12px, 2vw, 20px);
+  padding-block: clamp(10px, 1.6vw, 16px) clamp(24px, 3vw, 34px);
   border-block-end: 1px solid var(--rg-card-border);
 }
 
 .editorial-document-header .editorial-field--title,
 .editorial-document-header .editorial-field--subtitle {
-  gap: 6px;
+  gap: 0;
 }
 
 .editorial-document-header .editorial-field--title > span,
 .editorial-document-header .editorial-field--subtitle > span {
-  color: var(--color-text-soft);
-  font-size: 0.78rem;
-  font-weight: 850;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.editorial-document-header .editorial-field--title input,
-.editorial-document-header .editorial-field--subtitle textarea {
+.editorial-document-header .editorial-autogrow-field {
   border: 0;
   border-block-end: 1px solid var(--rg-card-border);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  resize: none;
 }
 
-.editorial-document-header .editorial-field--title input {
+.editorial-document-header__title-input {
   min-height: auto;
-  padding: 8px 0 10px;
-  font-size: clamp(1.8rem, 1.35rem + 2.1vw, 2.65rem);
-  font-weight: 850;
-  line-height: 1.12;
-  letter-spacing: -0.035em;
+  padding: 4px 0 10px;
+  font-size: clamp(1.65rem, 1.28rem + 1.35vw, 2.35rem);
+  font-weight: 820;
+  line-height: 1.14;
+  letter-spacing: -0.028em;
 }
 
-.editorial-document-header .editorial-field--subtitle textarea {
-  min-height: 82px;
-  padding: 6px 0 12px;
-  font-size: clamp(1.125rem, 1rem + 0.45vw, 1.35rem);
-  line-height: 1.48;
+.editorial-document-header__subtitle-input {
+  min-height: 74px;
+  padding: 4px 0 12px;
+  font-size: clamp(1.05rem, 0.96rem + 0.34vw, 1.22rem);
+  line-height: 1.52;
 }
 
-.editorial-document-header .editorial-field--title input:focus,
-.editorial-document-header .editorial-field--subtitle textarea:focus {
+.editorial-document-header__title-input::placeholder,
+.editorial-document-header__subtitle-input::placeholder {
+  color: color-mix(in srgb, var(--color-text-soft) 72%, transparent);
+  opacity: 1;
+}
+
+.editorial-document-header .editorial-autogrow-field:focus {
   border-color: transparent;
   border-block-end-color: var(--color-primary);
   box-shadow:
@@ -3753,10 +3760,10 @@
 }
 
 @media (min-width: 841px) {
-  .editorial-document-header .editorial-field--title input {
-    padding-block: 10px 12px;
-    font-size: clamp(2.25rem, 1.6rem + 2vw, 2.85rem);
-    line-height: 1.08;
+  .editorial-document-header__title-input {
+    padding-block: 6px 12px;
+    font-size: clamp(2rem, 1.55rem + 1.35vw, 2.48rem);
+    line-height: 1.1;
   }
 
   .editorial-upload-card[data-asset-type="avatar"] {
@@ -3787,9 +3794,9 @@
 }
 
 @media (min-width: 1180px) {
-  .editorial-document-header .editorial-field--title input {
-    font-size: 3rem;
-    line-height: 1.06;
+  .editorial-document-header__title-input {
+    font-size: 2.65rem;
+    line-height: 1.08;
   }
 }
 
