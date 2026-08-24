@@ -291,8 +291,12 @@
 .article-image-gallery {
   display: grid;
   gap: 14px;
+  width: 100%;
+  max-width: 100%;
 
   margin: 2.2rem 0;
+
+  box-sizing: border-box;
 }
 
 .article-image-gallery:has(figcaption) {
@@ -303,10 +307,16 @@
   display: grid;
   grid-template-columns: repeat(var(--image-count), minmax(0, 1fr));
   gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  justify-content: stretch;
+  justify-items: stretch;
 }
 
 .article-image-row figure {
   margin: 0;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
