@@ -1,4 +1,5 @@
 import { logApiError } from '../api-errors';
+import { getSanityRawClient } from '../sanity-write.server';
 import { getAvatarPublicUrl } from '../supabase/avatars';
 import { supabaseAdmin } from '../supabase/server';
 import {
@@ -47,6 +48,11 @@ type EditorialArticleCommentRow = {
   created_at: string | null;
   updated_at: string | null;
   metadata: Record<string, unknown> | null;
+};
+
+type EditorialCommentArticleContext = {
+  articleTitle: string | null;
+  articleLanguage: 'it' | 'en' | null;
 };
 
 type EditorialCommentAuthorProfileRow = {
@@ -119,6 +125,14 @@ function normalizeCommentMetadata(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
 
   return value as Record<string, unknown>;
+}
+
+function normalizeArticleTitle(value: unknown) {
+  return String(value || '').trim() || null;
+}
+
+function normalizeArticleLanguage(value: unknown): EditorialCommentArticleContext['articleLanguage'] {
+  return value === 'en' || value === 'it' ? value : null;
 }
 
 function normalizeOwnership(row: EditorialDocumentRow | null): EditorialDocumentOwnership | null {
@@ -299,6 +313,45 @@ async function fetchCommentRow({
   }
 
   return { ok: true as const, comment };
+}
+
+async function fetchCommentArticleContext(rootDocumentId: string): Promise<EditorialCommentArticleContext> {
+  try {
+    const draftId = `drafts.${rootDocumentId}`;
+    const publishedId = rootDocumentId;
+    const articleContext = await getSanityRawClient().fetch<{
+      draft?: { title?: string | null; language?: string | null } | null;
+      published?: { title?: string | null; language?: string | null } | null;
+    }>(
+      `{
+        "draft": *[_id == $draftId && _type == "article"][0]{
+          title,
+          language
+        },
+        "published": *[_id == $publishedId && _type == "article"][0]{
+          title,
+          language
+        }
+      }`,
+      { draftId, publishedId }
+    );
+
+    return {
+      articleTitle:
+        normalizeArticleTitle(articleContext?.draft?.title) ||
+        normalizeArticleTitle(articleContext?.published?.title),
+      articleLanguage:
+        normalizeArticleLanguage(articleContext?.draft?.language) ||
+        normalizeArticleLanguage(articleContext?.published?.language),
+    };
+  } catch (error) {
+    logApiError('editorial-comments.article-context', error);
+
+    return {
+      articleTitle: null,
+      articleLanguage: null,
+    };
+  }
 }
 
 async function fetchCommentAuthorProfiles(comments: NormalizedEditorialArticleComment[]) {
@@ -551,6 +604,8 @@ export async function createEditorialArticleComment({
   }
 
   try {
+    const articleContext = await fetchCommentArticleContext(ownership.sanityDocumentId);
+
     if (parentComment) {
       const notificationResult = await notifyEditorialCommentReply({
         actorUserId: contextResult.context.user.id,
@@ -558,6 +613,8 @@ export async function createEditorialArticleComment({
         sanityDocumentId: ownership.sanityDocumentId,
         editorialCommentId: comment.id,
         parentCommentId: parentComment.id,
+        articleTitle: articleContext.articleTitle,
+        articleLanguage: articleContext.articleLanguage,
       });
 
       logEditorialCommentNotificationFailure('editorial-comments.notification.reply', notificationResult);
@@ -567,6 +624,8 @@ export async function createEditorialArticleComment({
         ownerUserId: ownership.ownerUserId,
         sanityDocumentId: ownership.sanityDocumentId,
         editorialCommentId: comment.id,
+        articleTitle: articleContext.articleTitle,
+        articleLanguage: articleContext.articleLanguage,
       });
 
       logEditorialCommentNotificationFailure('editorial-comments.notification.created', notificationResult);
@@ -663,12 +722,15 @@ export async function resolveEditorialArticleComment({
   }
 
   try {
+    const articleContext = await fetchCommentArticleContext(ownership.sanityDocumentId);
     const notificationResult = await notifyEditorialCommentResolved({
       actorUserId: contextResult.context.user.id,
       commentAuthorUserId: existingResult.comment.authorUserId,
       sanityDocumentId: ownership.sanityDocumentId,
       editorialCommentId: comment.id,
       parentCommentId: comment.parentId,
+      articleTitle: articleContext.articleTitle,
+      articleLanguage: articleContext.articleLanguage,
     });
 
     logEditorialCommentNotificationFailure('editorial-comments.notification.resolved', notificationResult);
