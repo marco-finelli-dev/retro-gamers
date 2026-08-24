@@ -1,0 +1,233 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CommunityHero from '../../../components/community/CommunityHero.astro';
+import CommunityLayout from '../../../components/community/CommunityLayout.astro';
+import CommunitySidebarSection from '../../../components/community/CommunitySidebarSection.astro';
+import {
+  getCommunitySurveyAdminResults,
+  normalizeTechnicalId,
+  type CommunitySurveyQuestionResult,
+  type CommunitySurveyStatus,
+} from '../../../lib/community-surveys';
+import { getUserSessionFromCookies, isStaffProfile } from '../../../lib/supabase/auth';
+import '../../../styles/pages/admin-surveys.css';
+
+const { surveyKey: rawSurveyKey } = Astro.params;
+const surveyKey = normalizeTechnicalId(rawSurveyKey);
+const title = 'Risultati sondaggio | Retro-Gamers.it';
+const description = 'Risultati raccolti dai sondaggi community Retro-Gamers.it.';
+const session = await getUserSessionFromCookies(Astro.cookies);
+const isStaff = isStaffProfile(session.profile);
+const numberFormatter = new Intl.NumberFormat('it-IT');
+const percentageFormatter = new Intl.NumberFormat('it-IT', {
+  maximumFractionDigits: 1,
+});
+const dateFormatter = new Intl.DateTimeFormat('it-IT', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const statusLabels: Record<CommunitySurveyStatus, string> = {
+  draft: 'Bozza',
+  open: 'Aperto',
+  closed: 'Chiuso',
+};
+const typeLabels: Record<CommunitySurveyQuestionResult['type'], string> = {
+  single: 'Scelta singola',
+  multiple: 'Scelta multipla',
+  text: 'Risposta testuale',
+};
+
+let resultsError = '';
+let results:
+  | Awaited<ReturnType<typeof getCommunitySurveyAdminResults>> extends { ok: true; results: infer T }
+    ? T
+    : never
+  | null = null;
+
+if (isStaff && surveyKey) {
+  const result = await getCommunitySurveyAdminResults(surveyKey);
+
+  if (result.ok) {
+    results = result.results;
+  } else if (result.error === 'survey_not_found') {
+    resultsError = 'Sondaggio non trovato in Sanity per questo survey key.';
+  } else if (result.error === 'invalid_survey_key') {
+    resultsError = 'Survey key non valido.';
+  } else {
+    resultsError =
+      result.details ||
+      'Risultati non disponibili. Verifica che community-surveys-v1.sql sia stato eseguito in Supabase.';
+  }
+} else if (isStaff) {
+  resultsError = 'Survey key non valido.';
+}
+
+const formatCount = (count: number) => numberFormatter.format(count);
+const formatPercentage = (percentage: number) =>
+  `${percentageFormatter.format(percentage)}%`;
+const formatDate = (date: string | null | undefined) => {
+  if (!date) return '—';
+
+  const parsed = new Date(date);
+
+  return Number.isFinite(parsed.getTime()) ? dateFormatter.format(parsed) : '—';
+};
+const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
+  status && status in statusLabels
+    ? statusLabels[status as CommunitySurveyStatus]
+    : '—';
+---
+
+<BaseLayout title={title} description={description}>
+  <CommunityLayout class="admin-surveys-page" sidebar={isStaff}>
+    <Fragment slot="sidebar">
+      {isStaff && (
+        <CommunitySidebarSection title="Strumenti amministrazione">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/admin/">Dashboard amministrazione</a>
+            <a class="community-action-link" href="/admin/comments/">Moderazione commenti</a>
+            <a class="community-action-link" href="/admin/comment-reports/">Segnalazioni commenti</a>
+            <a class="community-action-link" href="/admin/users/">Gestione utenti</a>
+            <a class="community-action-link" href="/admin/private-message-reports/">Segnalazioni messaggi</a>
+            <a class="community-action-link" href="/admin/ratings/">Voti lettori</a>
+            <a class="community-action-link" href="/admin/newsletter/">Newsletter</a>
+          </div>
+        </CommunitySidebarSection>
+      )}
+    </Fragment>
+
+    {isStaff ? (
+      <>
+        <CommunityHero
+          kicker="Sondaggi community"
+          title={results?.survey.title || 'Risultati sondaggio'}
+          description={results?.survey.description || description}
+        >
+          {results && (
+            <div slot="aside" class="admin-surveys-hero__stats" aria-label="Riepilogo sondaggio">
+              <span class:list={['admin-surveys-status', `admin-surveys-status--${results.survey.status}`]}>
+                {getStatusLabel(results.survey.status)}
+              </span>
+              <strong>{formatCount(results.totalResponses)}</strong>
+              <small>{results.totalResponses === 1 ? 'risposta' : 'risposte'}</small>
+            </div>
+          )}
+        </CommunityHero>
+
+        {results ? (
+          <>
+            <section class="admin-surveys-summary" aria-label="Informazioni sondaggio">
+              <article class="community-card admin-surveys-summary-card">
+                <span>Survey key</span>
+                <strong>{results.survey.surveyKey}</strong>
+              </article>
+
+              <article class="community-card admin-surveys-summary-card">
+                <span>Stato</span>
+                <strong>{getStatusLabel(results.survey.status)}</strong>
+              </article>
+
+              <article class="community-card admin-surveys-summary-card">
+                <span>Risposte totali</span>
+                <strong>{formatCount(results.totalResponses)}</strong>
+              </article>
+
+              <article class="community-card admin-surveys-summary-card">
+                <span>Ultima risposta</span>
+                <strong>{formatDate(results.latestResponseAt)}</strong>
+              </article>
+            </section>
+
+            <section class="community-card admin-surveys-panel" aria-labelledby="admin-surveys-results">
+              <div class="admin-surveys-section-heading">
+                <div>
+                  <p>Risultati</p>
+                  <h2 id="admin-surveys-results">Domande</h2>
+                </div>
+                <span>
+                  IT {formatCount(results.languageCounts.it)} · EN {formatCount(results.languageCounts.en)}
+                </span>
+              </div>
+
+              {results.questions.length > 0 ? (
+                <div class="admin-surveys-question-list">
+                  {results.questions.map((question, index) => (
+                    <article class="admin-surveys-question-card">
+                      <header>
+                        <div>
+                          <span>Domanda {index + 1} · {typeLabels[question.type]}</span>
+                          <h3>{question.text}</h3>
+                        </div>
+                        <small>{formatCount(question.answerCount)} risposte</small>
+                      </header>
+
+                      {question.type === 'text' ? (
+                        question.textAnswers.length > 0 ? (
+                          <div class="admin-surveys-text-answers">
+                            {question.textAnswers.map((answer) => (
+                              <blockquote>
+                                <p>{answer.text}</p>
+                                <footer>
+                                  <time datetime={answer.submittedAt || answer.createdAt || undefined}>
+                                    {formatDate(answer.submittedAt || answer.createdAt)}
+                                  </time>
+                                </footer>
+                              </blockquote>
+                            ))}
+                          </div>
+                        ) : (
+                          <p class="admin-surveys-empty admin-surveys-empty--compact">
+                            Nessuna risposta testuale raccolta.
+                          </p>
+                        )
+                      ) : (
+                        <div class="admin-surveys-options">
+                          {question.options.map((option) => (
+                            <div class="admin-surveys-option">
+                              <div class="admin-surveys-option__meta">
+                                <strong>{option.label}</strong>
+                                <span>
+                                  {formatCount(option.count)} · {formatPercentage(option.percentage)}
+                                </span>
+                              </div>
+                              <div class="admin-surveys-option__bar" aria-hidden="true">
+                                <span style={`--admin-survey-result-width: ${option.percentage}%`}></span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p class="admin-surveys-empty">Nessuna domanda trovata nel sondaggio.</p>
+              )}
+            </section>
+          </>
+        ) : (
+          <section class="community-card">
+            <p class="admin-surveys-empty">{resultsError}</p>
+          </section>
+        )}
+      </>
+    ) : (
+      <>
+        <CommunityHero
+          kicker="Retro-Gamers.it"
+          title="Accesso amministrativo"
+          description="Questa pagina è riservata allo staff Retro-Gamers.it."
+        />
+
+        <section class="community-card">
+          <div class="community-staff-links">
+            <a class="community-action-link" href="/account/login/">Accedi</a>
+          </div>
+        </section>
+      </>
+    )}
+  </CommunityLayout>
+</BaseLayout>

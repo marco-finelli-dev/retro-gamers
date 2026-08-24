@@ -44,6 +44,38 @@ export type CommunitySurveyResponseState = {
   submittedAt: string | null;
 };
 
+export type CommunitySurveyChoiceResult = CommunitySurveyOption & {
+  count: number;
+  percentage: number;
+};
+
+export type CommunitySurveyTextAnswerResult = {
+  id: string;
+  responseId: string;
+  text: string;
+  submittedAt: string | null;
+  createdAt: string | null;
+};
+
+export type CommunitySurveyQuestionResult = {
+  questionId: string;
+  text: string;
+  type: CommunitySurveyQuestionType;
+  responseCount: number;
+  answerCount: number;
+  options: CommunitySurveyChoiceResult[];
+  textAnswers: CommunitySurveyTextAnswerResult[];
+};
+
+export type CommunitySurveyAdminResults = {
+  survey: CommunitySurveyPublic;
+  surveys: CommunitySurveyPublic[];
+  totalResponses: number;
+  languageCounts: Record<CommunitySurveyLanguage, number>;
+  latestResponseAt: string | null;
+  questions: CommunitySurveyQuestionResult[];
+};
+
 type SurveyCookies = {
   get: (name: string) => { value?: string } | undefined;
   set?: (name: string, value: string, options: Record<string, unknown>) => void;
@@ -66,6 +98,19 @@ type SurveyAnswerInsert = {
 type SurveyResponseRow = {
   id: string;
   submitted_at: string | null;
+};
+
+type SurveyAdminResponseRow = SurveyResponseRow & {
+  survey_language?: string | null;
+};
+
+type SurveyAdminAnswerRow = {
+  id: string;
+  response_id: string;
+  question_id: string;
+  option_id: string | null;
+  text_answer: string | null;
+  created_at: string | null;
 };
 
 export const COMMUNITY_SURVEY_GUEST_COOKIE_NAME = 'rg_survey_guest';
@@ -114,6 +159,13 @@ const communitySurveyFields = `
 const openCommunitySurveyFilter = `
   _type == "communitySurvey" &&
   status == "open" &&
+  defined(slug.current) &&
+  !(_id in path("drafts.**"))
+`;
+
+const communitySurveyAdminFilter = `
+  _type == "communitySurvey" &&
+  surveyKey == $surveyKey &&
   defined(slug.current) &&
   !(_id in path("drafts.**"))
 `;
@@ -259,7 +311,8 @@ const normalizeSurveyTranslation = (
 };
 
 const normalizeCommunitySurvey = (
-  survey: unknown
+  survey: unknown,
+  { requireOpen = true } = {}
 ): CommunitySurveyPublic | null => {
   const value = survey as Partial<CommunitySurveyPublic> | null;
   const _id = String(value?._id || '').trim();
@@ -275,7 +328,8 @@ const normalizeCommunitySurvey = (
     !slug ||
     !language ||
     !surveyKey ||
-    status !== 'open'
+    (status !== 'draft' && status !== 'open' && status !== 'closed') ||
+    (requireOpen && status !== 'open')
   ) {
     return null;
   }
@@ -353,6 +407,29 @@ export async function getOpenCommunitySurveyBySlug(
   );
 
   return normalizeCommunitySurvey(data);
+}
+
+export async function getCommunitySurveyAdminDocumentsByKey(
+  surveyKey: string
+): Promise<CommunitySurveyPublic[]> {
+  const normalizedSurveyKey = normalizeTechnicalId(surveyKey);
+
+  if (!normalizedSurveyKey) return [];
+
+  const data = await publicFreshClient.fetch(
+    `
+      *[
+        ${communitySurveyAdminFilter}
+      ] | order(language desc, _createdAt desc) {
+        ${communitySurveyFields}
+      }
+    `,
+    { surveyKey: normalizedSurveyKey }
+  );
+
+  return (Array.isArray(data) ? data : [])
+    .map((survey) => normalizeCommunitySurvey(survey, { requireOpen: false }))
+    .filter(Boolean) as CommunitySurveyPublic[];
 }
 
 export async function getOpenCommunitySurveyByKey(
@@ -718,5 +795,169 @@ export async function submitCommunitySurveyResponse({
     ok: true,
     responseId: insertedResponse.id,
     submittedAt: insertedResponse.submitted_at || null,
+  };
+}
+
+const roundPercentage = (value: number) => {
+  if (!Number.isFinite(value)) return 0;
+
+  return Math.round(value * 10) / 10;
+};
+
+const getPrimarySurveyDocument = (surveys: CommunitySurveyPublic[]) =>
+  surveys.find((survey) => survey.language === 'it') || surveys[0] || null;
+
+export async function getCommunitySurveyAdminResults(
+  surveyKey: string
+): Promise<
+  | { ok: true; results: CommunitySurveyAdminResults }
+  | { ok: false; error: 'invalid_survey_key' | 'survey_not_found' | 'results_unavailable'; details?: string }
+> {
+  const normalizedSurveyKey = normalizeTechnicalId(surveyKey);
+
+  if (!normalizedSurveyKey) {
+    return { ok: false, error: 'invalid_survey_key' };
+  }
+
+  const surveys = await getCommunitySurveyAdminDocumentsByKey(normalizedSurveyKey);
+  const survey = getPrimarySurveyDocument(surveys);
+
+  if (!survey) {
+    return { ok: false, error: 'survey_not_found' };
+  }
+
+  const { data: responseData, error: responsesError } = await supabaseAdmin
+    .from('community_survey_responses')
+    .select('id, survey_language, submitted_at')
+    .eq('survey_key', normalizedSurveyKey)
+    .order('submitted_at', { ascending: false });
+
+  if (responsesError) {
+    logApiError('community-surveys.admin-responses', responsesError);
+
+    return {
+      ok: false,
+      error: 'results_unavailable',
+      details: responsesError.message,
+    };
+  }
+
+  const responses = (responseData || []) as SurveyAdminResponseRow[];
+  const responseIds = responses
+    .map((response) => String(response.id || '').trim())
+    .filter(Boolean);
+  const responseMap = new Map(responses.map((response) => [response.id, response]));
+  const languageCounts: Record<CommunitySurveyLanguage, number> = {
+    it: 0,
+    en: 0,
+  };
+
+  responses.forEach((response) => {
+    const language = normalizeCommunitySurveyLanguage(response.survey_language);
+
+    if (language) {
+      languageCounts[language] += 1;
+    }
+  });
+
+  let answers: SurveyAdminAnswerRow[] = [];
+
+  if (responseIds.length > 0) {
+    const { data: answerData, error: answersError } = await supabaseAdmin
+      .from('community_survey_answers')
+      .select('id, response_id, question_id, option_id, text_answer, created_at')
+      .in('response_id', responseIds)
+      .order('created_at', { ascending: false });
+
+    if (answersError) {
+      logApiError('community-surveys.admin-answers', answersError);
+
+      return {
+        ok: false,
+        error: 'results_unavailable',
+        details: answersError.message,
+      };
+    }
+
+    answers = (answerData || []) as SurveyAdminAnswerRow[];
+  }
+
+  const totalResponses = responses.length;
+  const questions = survey.questions.map((question): CommunitySurveyQuestionResult => {
+    const questionAnswers = answers.filter(
+      (answer) => answer.question_id === question.questionId
+    );
+
+    if (question.type === 'text') {
+      const textAnswers = questionAnswers
+        .map((answer) => {
+          const text = String(answer.text_answer || '').trim();
+
+          if (!text) return null;
+
+          return {
+            id: answer.id,
+            responseId: answer.response_id,
+            text,
+            submittedAt: responseMap.get(answer.response_id)?.submitted_at || null,
+            createdAt: answer.created_at || null,
+          };
+        })
+        .filter(Boolean) as CommunitySurveyTextAnswerResult[];
+
+      return {
+        questionId: question.questionId,
+        text: question.text,
+        type: question.type,
+        responseCount: textAnswers.length,
+        answerCount: textAnswers.length,
+        options: [],
+        textAnswers,
+      };
+    }
+
+    const counts = new Map<string, number>();
+
+    questionAnswers.forEach((answer) => {
+      const optionId = normalizeTechnicalId(answer.option_id);
+
+      if (!optionId) return;
+
+      counts.set(optionId, (counts.get(optionId) || 0) + 1);
+    });
+
+    const options = question.options.map((option) => {
+      const count = counts.get(option.optionId) || 0;
+
+      return {
+        ...option,
+        count,
+        percentage: totalResponses > 0
+          ? roundPercentage((count / totalResponses) * 100)
+          : 0,
+      };
+    });
+
+    return {
+      questionId: question.questionId,
+      text: question.text,
+      type: question.type,
+      responseCount: questionAnswers.length,
+      answerCount: questionAnswers.length,
+      options,
+      textAnswers: [],
+    };
+  });
+
+  return {
+    ok: true,
+    results: {
+      survey,
+      surveys,
+      totalResponses,
+      languageCounts,
+      latestResponseAt: responses[0]?.submitted_at || null,
+      questions,
+    },
   };
 }
