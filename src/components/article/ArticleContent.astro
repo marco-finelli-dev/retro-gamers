@@ -173,6 +173,14 @@ function getImageAspectRatio(image) {
   return Number((width / height).toFixed(4));
 }
 
+function getImageRowTemplate(items = []) {
+  const columns = items
+    .map((item) => getImageAspectRatio(item?.image) || 1.3333)
+    .map((ratio) => `${ratio}fr`);
+
+  return columns.length > 0 ? columns.join(' ') : '';
+}
+
 function getDisplayMode(item = {}, fallback = 'cover') {
   const mode = item.displayMode;
 
@@ -612,7 +620,7 @@ function chunkBalanced(images = []) {
           {rows.map((row, rowIndex) => (
             <div
               class={`article-image-row article-image-row--${row.length}`}
-              style={`--image-count: ${row.length};`}
+              style={`--image-count: ${row.length};${isUniformHeight ? ` --image-row-template: ${getImageRowTemplate(row)};` : ''}`}
             >
               {row.map((img, imageIndex) => {
                 const displayMode = getDisplayMode(img);
@@ -773,7 +781,7 @@ function chunkBalanced(images = []) {
                   {rows.map((row, rowIndex) => (
                     <div
                       class={`article-aside-row article-aside-row--${row.length}`}
-                      style={`--aside-image-count: ${row.length};`}
+                      style={`--aside-image-count: ${row.length};${isUniformHeight ? ` --aside-row-template: ${getImageRowTemplate(row)};` : ''}`}
                     >
                       {row.map((img, imageIndex) => {
                         const displayMode = getDisplayMode(img);
