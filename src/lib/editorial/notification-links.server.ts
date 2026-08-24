@@ -57,12 +57,12 @@ export type EditorialNotificationAction = {
 const actionLabels = {
   it: {
     editor: 'Apri editor',
-    preview: 'Apri revisione',
+    preview: 'Apri anteprima',
     dashboard: 'Apri dashboard',
   },
   en: {
     editor: 'Open editor',
-    preview: 'Open review',
+    preview: 'Open preview',
     dashboard: 'Open dashboard',
   },
 } as const;
@@ -269,7 +269,10 @@ export async function buildEditorialNotificationAction({
 
   if (canPreviewEditorialArticle(context, ownership)) {
     return {
-      actionUrl: getEditorialArticlePreviewPath(ownership.sanityDocumentId, language),
+      actionUrl: appendCommentHash(
+        getEditorialArticlePreviewPath(ownership.sanityDocumentId, language),
+        normalizedCommentId
+      ),
       actionLabel: labels.preview,
     };
   }
