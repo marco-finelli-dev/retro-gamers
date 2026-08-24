@@ -2,8 +2,7 @@ import type { APIRoute } from 'astro';
 import { logApiError } from '../../../../../../../lib/api-errors';
 import { requireEditorialArticleContext } from '../../../../../../../lib/editorial/articles.server';
 import { resolveEditorialArticleComment } from '../../../../../../../lib/editorial/comments.server';
-
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+import { normalizeUuid } from '../../../../../../../lib/uuid';
 
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -21,9 +20,9 @@ export const POST: APIRoute = async ({ params, cookies }) => {
     return json({ ok: false, error: access.error }, access.status);
   }
 
-  const commentId = String(params.commentId || '').trim();
+  const commentId = normalizeUuid(params.commentId);
 
-  if (!uuidPattern.test(commentId)) {
+  if (!commentId) {
     return json({ ok: false, error: 'invalid_comment_id' }, 400);
   }
 

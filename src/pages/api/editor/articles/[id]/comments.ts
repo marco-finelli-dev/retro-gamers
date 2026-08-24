@@ -5,8 +5,7 @@ import {
   createEditorialArticleComment,
   listEditorialArticleComments,
 } from '../../../../../lib/editorial/comments.server';
-
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+import { normalizeUuid } from '../../../../../lib/uuid';
 
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -28,7 +27,7 @@ function normalizeParentId(value: unknown) {
 
   if (!parentId) return null;
 
-  return uuidPattern.test(parentId) ? parentId : '';
+  return normalizeUuid(parentId);
 }
 
 export const GET: APIRoute = async ({ params, cookies }) => {

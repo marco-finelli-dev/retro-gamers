@@ -256,6 +256,7 @@ type EditorialComment = {
   updatedAt: string;
   author: EditorialCommentAuthor | null;
   resolvedBy: EditorialCommentAuthor | null;
+  canResolve: boolean;
 };
 
 type Labels = {
@@ -291,15 +292,18 @@ type Labels = {
   editorialCommentsFallbackAuthor: string;
   editorialCommentsAdd: string;
   editorialCommentsReply: string;
+  editorialCommentsResolve: string;
   editorialCommentsPlaceholder: string;
   editorialCommentsReplyPlaceholder: string;
   editorialCommentsCancel: string;
   editorialCommentsSave: string;
   editorialCommentsSaveReply: string;
   editorialCommentsSaving: string;
+  editorialCommentsResolving: string;
   editorialCommentsBodyRequired: string;
   editorialCommentsCreateError: string;
   editorialCommentsReplyError: string;
+  editorialCommentsResolveError: string;
   workflowStatus: string;
   workflowStatusDraft: string;
   workflowStatusSubmitted: string;
@@ -4278,7 +4282,8 @@ function isEditorialComment(value: unknown): value is EditorialComment {
     typeof comment.body === 'string' &&
     (comment.status === 'open' || comment.status === 'resolved') &&
     typeof comment.createdAt === 'string' &&
-    typeof comment.updatedAt === 'string'
+    typeof comment.updatedAt === 'string' &&
+    typeof comment.canResolve === 'boolean'
   );
 }
 
@@ -4302,17 +4307,25 @@ function EditorialCommentCard({
   lang,
   isReply = false,
   isReplyDisabled = false,
+  isResolving = false,
+  resolveError = '',
   onReply,
+  onResolve,
 }: {
   comment: EditorialComment;
   labels: Labels;
   lang: ArticleLanguage;
   isReply?: boolean;
   isReplyDisabled?: boolean;
+  isResolving?: boolean;
+  resolveError?: string;
   onReply?: () => void;
+  onResolve?: () => void;
 }) {
   const authorLabel = comment.author?.displayName || labels.editorialCommentsFallbackAuthor;
   const canReply = Boolean(onReply && !isReply && comment.status === 'open');
+  const canResolve = Boolean(onResolve && comment.status === 'open' && comment.canResolve);
+  const showActions = canReply || canResolve || Boolean(resolveError);
 
   return (
     <article
@@ -4331,16 +4344,33 @@ function EditorialCommentCard({
         </span>
       </div>
       <p className="editorial-comments__body">{comment.body}</p>
-      {canReply && (
+      {showActions && (
         <div className="editorial-comments__item-actions">
-          <button
-            type="button"
-            className="editorial-mini-button"
-            onClick={onReply}
-            disabled={isReplyDisabled}
-          >
-            {labels.editorialCommentsReply}
-          </button>
+          {canReply && (
+            <button
+              type="button"
+              className="editorial-mini-button"
+              onClick={onReply}
+              disabled={isReplyDisabled || isResolving}
+            >
+              {labels.editorialCommentsReply}
+            </button>
+          )}
+          {canResolve && (
+            <button
+              type="button"
+              className="editorial-mini-button editorial-mini-button--primary"
+              onClick={onResolve}
+              disabled={isReplyDisabled || isResolving}
+            >
+              {isResolving ? labels.editorialCommentsResolving : labels.editorialCommentsResolve}
+            </button>
+          )}
+          {resolveError && (
+            <p className="editorial-message" data-tone="error">
+              {resolveError}
+            </p>
+          )}
         </div>
       )}
     </article>
@@ -4357,10 +4387,13 @@ function EditorialCommentsReadOnly({
   replyValue,
   isReplySaving,
   replyError,
+  resolvingCommentId,
+  resolveError,
   onReplyOpen,
   onReplyCancel,
   onReplyChange,
   onReplySubmit,
+  onResolve,
 }: {
   comments: EditorialComment[];
   isLoading: boolean;
@@ -4371,10 +4404,13 @@ function EditorialCommentsReadOnly({
   replyValue: string;
   isReplySaving: boolean;
   replyError: string;
+  resolvingCommentId: string | null;
+  resolveError: { commentId: string; message: string } | null;
   onReplyOpen: (commentId: string) => void;
   onReplyCancel: () => void;
   onReplyChange: (value: string) => void;
   onReplySubmit: () => void;
+  onResolve: (commentId: string) => void;
 }) {
   if (isLoading) {
     return <p className="editorial-file-meta">{labels.editorialCommentsLoading}</p>;
@@ -4396,8 +4432,11 @@ function EditorialCommentsReadOnly({
             comment={comment}
             labels={labels}
             lang={lang}
-            isReplyDisabled={isReplySaving}
+            isReplyDisabled={isReplySaving || Boolean(resolvingCommentId)}
+            isResolving={resolvingCommentId === comment.id}
+            resolveError={resolveError?.commentId === comment.id ? resolveError.message : ''}
             onReply={() => onReplyOpen(comment.id)}
+            onResolve={() => onResolve(comment.id)}
           />
           {replyParentId === comment.id && (
             <EditorialCommentComposer
@@ -4424,6 +4463,10 @@ function EditorialCommentsReadOnly({
                   labels={labels}
                   lang={lang}
                   isReply
+                  isReplyDisabled={isReplySaving || Boolean(resolvingCommentId)}
+                  isResolving={resolvingCommentId === reply.id}
+                  resolveError={resolveError?.commentId === reply.id ? resolveError.message : ''}
+                  onResolve={() => onResolve(reply.id)}
                 />
               ))}
             </div>
@@ -6990,6 +7033,9 @@ export default function ArticlePortableTextEditor({
   const [editorialCommentReplyDraft, setEditorialCommentReplyDraft] = useState('');
   const [isEditorialCommentReplySaving, setIsEditorialCommentReplySaving] = useState(false);
   const [editorialCommentReplyError, setEditorialCommentReplyError] = useState('');
+  const [resolvingEditorialCommentId, setResolvingEditorialCommentId] = useState<string | null>(null);
+  const [editorialCommentResolveError, setEditorialCommentResolveError] =
+    useState<{ commentId: string; message: string } | null>(null);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [typeChangeRequest, setTypeChangeRequest] = useState<TypeChangeRequest | null>(null);
   const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
@@ -7183,6 +7229,7 @@ export default function ArticlePortableTextEditor({
     setEditorialCommentReplyParentId(null);
     setEditorialCommentReplyDraft('');
     setEditorialCommentReplyError('');
+    setEditorialCommentResolveError(null);
   };
 
   const cancelEditorialCommentComposer = () => {
@@ -7248,6 +7295,7 @@ export default function ArticlePortableTextEditor({
     setEditorialCommentReplyParentId(commentId);
     setEditorialCommentReplyDraft('');
     setEditorialCommentReplyError('');
+    setEditorialCommentResolveError(null);
     setIsEditorialCommentComposerOpen(false);
     setEditorialCommentDraft('');
     setEditorialCommentComposerError('');
@@ -7284,6 +7332,41 @@ export default function ArticlePortableTextEditor({
       setEditorialCommentReplyError(labels.editorialCommentsReplyError);
     } finally {
       setIsEditorialCommentReplySaving(false);
+    }
+  };
+
+  const resolveEditorialComment = async (commentId: string) => {
+    if (resolvingEditorialCommentId || !commentId) return;
+
+    setResolvingEditorialCommentId(commentId);
+    setEditorialCommentResolveError(null);
+
+    try {
+      const response = await fetch(`${editorialCommentsEndpoint}/${encodeURIComponent(commentId)}/resolve`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          accept: 'application/json',
+        },
+      });
+      const payload = await response.json().catch(() => null) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'comment_resolve_failed');
+      }
+
+      setEditorialCommentResolveError(null);
+      await loadEditorialComments();
+    } catch {
+      setEditorialCommentResolveError({
+        commentId,
+        message: labels.editorialCommentsResolveError,
+      });
+    } finally {
+      setResolvingEditorialCommentId(null);
     }
   };
 
@@ -8392,6 +8475,8 @@ export default function ArticlePortableTextEditor({
               replyValue={editorialCommentReplyDraft}
               isReplySaving={isEditorialCommentReplySaving}
               replyError={editorialCommentReplyError}
+              resolvingCommentId={resolvingEditorialCommentId}
+              resolveError={editorialCommentResolveError}
               onReplyOpen={openEditorialCommentReplyComposer}
               onReplyCancel={cancelEditorialCommentReplyComposer}
               onReplyChange={(value) => {
@@ -8399,6 +8484,7 @@ export default function ArticlePortableTextEditor({
                 setEditorialCommentReplyError('');
               }}
               onReplySubmit={submitEditorialCommentReply}
+              onResolve={resolveEditorialComment}
             />
 
             <EditorialCommentComposer
