@@ -16,45 +16,69 @@ const isEn = lang === 'en';
 const copy = isEn
   ? {
       title: 'Take part',
+      kicker: 'Your voice',
       intro:
-        'Your answers are anonymous and are not linked to your account or email address.',
+        'A few questions to help shape the next steps of the Retro-Gamers.it community. Your answers are anonymous and are not linked to your account or email address.',
+      questionCount: (count: number) => `${count} ${count === 1 ? 'question' : 'questions'}`,
       singleHint: 'Choose one option.',
       multipleHint: 'Choose one or more options.',
       textHint: 'Write your answer.',
+      textPlaceholder: 'Write your thoughts here...',
       submit: 'Send answers',
       submitting: 'Sending...',
       missing: 'Answer all questions before sending.',
+      sending:
+        'Saving your anonymous response...',
       success:
         'Thanks for taking part. Your anonymous response has been recorded.',
+      successDetail:
+        'Your answers will help us understand what the Retro-Gamers.it community wants to see next.',
       already:
         'You have already taken part in this survey from this browser.',
+      alreadyDetail:
+        'To keep the survey fair, each browser can submit one anonymous response.',
       error:
         'We could not save your answers. Please try again in a moment.',
     }
   : {
       title: 'Partecipa',
+      kicker: 'La tua voce',
       intro:
-        'Le risposte sono anonime e non vengono collegate al tuo account o alla tua email.',
+        'Poche domande per orientare i prossimi passi della community Retro-Gamers.it. Le risposte sono anonime e non vengono collegate al tuo account o alla tua email.',
+      questionCount: (count: number) => `${count} ${count === 1 ? 'domanda' : 'domande'}`,
       singleHint: 'Scegli una sola opzione.',
       multipleHint: 'Scegli una o più opzioni.',
       textHint: 'Scrivi la tua risposta.',
+      textPlaceholder: 'Scrivi qui il tuo pensiero...',
       submit: 'Invia risposte',
       submitting: 'Invio in corso...',
       missing: 'Rispondi a tutte le domande prima di inviare.',
+      sending:
+        'Stiamo salvando la tua risposta anonima...',
       success:
         'Grazie per aver partecipato. La tua risposta anonima è stata registrata.',
+      successDetail:
+        'Le tue risposte ci aiuteranno a capire cosa vorrebbe vedere la community di Retro-Gamers.it nei prossimi mesi.',
       already:
         'Hai già partecipato a questo sondaggio da questo browser.',
+      alreadyDetail:
+        'Per mantenere il sondaggio corretto, ogni browser può inviare una sola risposta anonima.',
       error:
         'Non è stato possibile salvare le risposte. Riprova tra poco.',
     };
 const formId = `community-survey-${survey.surveyKey}`;
+const questionCountLabel = copy.questionCount(survey.questions.length);
 ---
 
 <section class="community-card community-survey-card" aria-labelledby={`${formId}-title`}>
   <header class="community-survey-card__header">
-    <p class="community-kicker">Community Survey</p>
-    <h2 id={`${formId}-title`}>{copy.title}</h2>
+    <div class="community-survey-card__title-row">
+      <div>
+        <p class="community-kicker">{copy.kicker}</p>
+        <h2 id={`${formId}-title`}>{copy.title}</h2>
+      </div>
+      <span>{questionCountLabel}</span>
+    </div>
     <p>{copy.intro}</p>
   </header>
 
@@ -64,6 +88,7 @@ const formId = `community-survey-${survey.surveyKey}`;
     hidden={!responseState.hasResponded}
   >
     <strong>{responseState.hasResponded ? copy.already : copy.success}</strong>
+    <p>{responseState.hasResponded ? copy.alreadyDetail : copy.successDetail}</p>
   </div>
 
   <form
@@ -76,7 +101,10 @@ const formId = `community-survey-${survey.surveyKey}`;
     data-message-missing={copy.missing}
     data-message-error={copy.error}
     data-message-success={copy.success}
+    data-message-success-detail={copy.successDetail}
     data-message-already={copy.already}
+    data-message-already-detail={copy.alreadyDetail}
+    data-message-sending={copy.sending}
     data-label-submit={copy.submit}
     data-label-submitting={copy.submitting}
     hidden={responseState.hasResponded}
@@ -109,6 +137,7 @@ const formId = `community-survey-${survey.surveyKey}`;
               name={questionName}
               rows="5"
               maxlength="2000"
+              placeholder={copy.textPlaceholder}
               required
             ></textarea>
           ) : (
@@ -139,7 +168,8 @@ const formId = `community-survey-${survey.surveyKey}`;
     <div class="community-survey-form__footer">
       <p class="community-survey-form__message" data-survey-form-status aria-live="polite"></p>
       <button class="community-action-button community-survey-submit" type="submit">
-        {copy.submit}
+        <span class="community-survey-submit__spinner" aria-hidden="true"></span>
+        <span data-survey-submit-label>{copy.submit}</span>
       </button>
     </div>
   </form>
@@ -162,6 +192,7 @@ const formId = `community-survey-${survey.surveyKey}`;
     if (!(form instanceof HTMLFormElement)) return;
 
     const submitButton = form.querySelector('button[type="submit"]');
+    const submitLabelNode = submitButton?.querySelector('[data-survey-submit-label]');
     const statusNode = form.querySelector('[data-survey-form-status]');
     const successNode = form
       .closest('.community-survey-card')
@@ -171,7 +202,18 @@ const formId = `community-survey-${survey.surveyKey}`;
     const missingMessage = form.dataset.messageMissing || '';
     const errorMessage = form.dataset.messageError || '';
     const successMessage = form.dataset.messageSuccess || '';
+    const successDetail = form.dataset.messageSuccessDetail || '';
     const alreadyMessage = form.dataset.messageAlready || successMessage;
+    const alreadyDetail = form.dataset.messageAlreadyDetail || '';
+    const sendingMessage = form.dataset.messageSending || '';
+
+    const setSuccess = (message, detail) => {
+      if (!(successNode instanceof HTMLElement)) return;
+
+      successNode.hidden = false;
+      successNode.querySelector('strong')?.replaceChildren(message);
+      successNode.querySelector('p')?.replaceChildren(detail || '');
+    };
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -236,10 +278,15 @@ const formId = `community-survey-${survey.surveyKey}`;
       }
 
       setMessage(statusNode, '', 'info');
+      form.toggleAttribute('data-submitting', true);
+      setMessage(statusNode, sendingMessage, 'info');
 
       if (submitButton instanceof HTMLButtonElement) {
         submitButton.disabled = true;
-        submitButton.textContent = submittingLabel;
+      }
+
+      if (submitLabelNode instanceof HTMLElement) {
+        submitLabelNode.textContent = submittingLabel;
       }
 
       try {
@@ -258,10 +305,7 @@ const formId = `community-survey-${survey.surveyKey}`;
 
         if (!response.ok || !result?.ok) {
           if (response.status === 409 && result?.error === 'already_submitted') {
-            if (successNode instanceof HTMLElement) {
-              successNode.hidden = false;
-              successNode.querySelector('strong')?.replaceChildren(alreadyMessage);
-            }
+            setSuccess(alreadyMessage, alreadyDetail);
 
             form.hidden = true;
             return;
@@ -271,18 +315,20 @@ const formId = `community-survey-${survey.surveyKey}`;
           return;
         }
 
-        if (successNode instanceof HTMLElement) {
-          successNode.hidden = false;
-          successNode.querySelector('strong')?.replaceChildren(successMessage);
-        }
+        setSuccess(successMessage, successDetail);
 
         form.hidden = true;
       } catch {
         setMessage(statusNode, errorMessage, 'error');
       } finally {
+        form.removeAttribute('data-submitting');
+
         if (submitButton instanceof HTMLButtonElement) {
           submitButton.disabled = false;
-          submitButton.textContent = submitLabel;
+        }
+
+        if (submitLabelNode instanceof HTMLElement) {
+          submitLabelNode.textContent = submitLabel;
         }
       }
     });
