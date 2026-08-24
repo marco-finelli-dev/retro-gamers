@@ -2878,7 +2878,7 @@ function BodyImageModal({
 
   return (
     <AnnotationModal
-      title={`🖼️ ${title}`}
+      title={title}
       labels={labels}
       onClose={onClose}
       panelClassName="editorial-pte-modal__panel--image"
@@ -3318,7 +3318,7 @@ function ImageRowModal({
 
   return (
     <AnnotationModal
-      title={`🖼️🖼️ ${title}`}
+      title={title}
       labels={labels}
       onClose={onClose}
       panelClassName="editorial-pte-modal__panel--image-row"
@@ -3588,7 +3588,7 @@ function VideoModal({
 
   return (
     <AnnotationModal
-      title={`▶️ ${modalTitle}`}
+      title={modalTitle}
       labels={labels}
       onClose={onClose}
       panelClassName="editorial-pte-modal__panel--video"
@@ -3763,7 +3763,7 @@ function VideoRowModal({
 
   return (
     <AnnotationModal
-      title={`▶️▶️ ${title}`}
+      title={title}
       labels={labels}
       onClose={onClose}
       panelClassName="editorial-pte-modal__panel--video-row"
