@@ -278,21 +278,10 @@ const quickEditLabels = {
       )}
 
       <div class="article-hero__actions">
-        <div class="article-hero__save-action">
-          <ArticleSaveButton
-            articleId={articleId}
-            articleSlug={articleSlug}
-            articleTitle={post.title}
-            articleLanguage={lang}
-            articleCategory={typeLabel}
-            articleUrl={articleUrl}
-          />
-        </div>
-
         {editorialQuickEdit?.mode === 'edit' && editorialQuickEdit.editUrl && (
-          <div class="article-hero__editor-action">
+          <div class="article-save article-hero__editor-action">
             <a
-              class="article-editorial-edit"
+              class="article-save__button article-editorial-edit"
               href={editorialQuickEdit.editUrl}
               rel="nofollow"
               aria-label={quickEditLabels.edit}
@@ -304,9 +293,9 @@ const quickEditLabels = {
         )}
 
         {editorialQuickEdit?.mode === 'create_revision' && editorialQuickEdit.revisionEndpoint && (
-          <div class="article-hero__editor-action" data-article-editorial-quick-edit>
+          <div class="article-save article-hero__editor-action" data-article-editorial-quick-edit>
             <button
-              class="article-editorial-edit"
+              class="article-save__button article-editorial-edit"
               type="button"
               data-article-editorial-quick-edit-button
               data-endpoint={editorialQuickEdit.revisionEndpoint}
@@ -320,9 +309,20 @@ const quickEditLabels = {
             >
               {quickEditLabels.edit}
             </button>
-            <p class="article-editorial-edit__message" data-article-editorial-quick-edit-message hidden></p>
+            <p class="article-save__message article-editorial-edit__message" data-article-editorial-quick-edit-message hidden></p>
           </div>
         )}
+
+        <div class="article-hero__save-action">
+          <ArticleSaveButton
+            articleId={articleId}
+            articleSlug={articleSlug}
+            articleTitle={post.title}
+            articleLanguage={lang}
+            articleCategory={typeLabel}
+            articleUrl={articleUrl}
+          />
+        </div>
 
         <ArticleShare post={post} compact />
       </div>
