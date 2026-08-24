@@ -7637,7 +7637,7 @@ export default function ArticlePortableTextEditor({
               capabilities={capabilities}
             />
 
-            <section className="editorial-document-header">
+            <section className="editorial-document-header editorial-pte-card">
               <label className="editorial-field editorial-field--title">
                 <span>{labels.title}</span>
                 <AutoGrowTextField
@@ -7668,7 +7668,11 @@ export default function ArticlePortableTextEditor({
               </label>
             </section>
 
-            <section className="editorial-pte-card" aria-label={labels.content}>
+            <section className="editorial-pte-card" aria-labelledby="editorial-pte-title">
+              <div className="editorial-pte-card__header">
+                <h2 id="editorial-pte-title">{labels.content}</h2>
+              </div>
+
               <PortableTextEditable
                 className="editorial-pte"
                 renderAnnotation={renderAnnotation}
