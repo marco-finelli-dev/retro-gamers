@@ -1654,7 +1654,7 @@ function VideoObjectBlock({
   const domain = getVideoDomain(url);
   const thumbnailUrl = getYouTubeThumbnailUrl(url);
   const videoTitle = typeof video.title === 'string' ? video.title.trim() : '';
-  const previewTitle = videoTitle || domain || labels.videoPreview;
+  const previewTitle = videoTitle || labels.videoPreview;
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -1782,9 +1782,8 @@ function VideoObjectBlock({
             <span className="editorial-pte__video-icon" aria-hidden="true">▶️</span>
           )}
           <div className="editorial-pte__video-copy">
-            <span className="editorial-pte__video-kicker">{labels.videoPreview}</span>
             <strong>{previewTitle}</strong>
-            {url && <span className="editorial-pte__video-url">{domain ? `${domain} · ${url}` : url}</span>}
+            {domain && <span className="editorial-pte__video-meta">{domain}</span>}
           </div>
         </article>
       </div>
