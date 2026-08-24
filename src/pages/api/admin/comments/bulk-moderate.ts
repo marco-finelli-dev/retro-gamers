@@ -5,6 +5,7 @@ import { getUserSessionFromCookies, isStaffProfile } from '../../../../lib/supab
 import { notifyApprovedComment } from '../../../../lib/supabase/comment-admin-notifications';
 import { isMissingCommentModerationColumnError } from '../../../../lib/supabase/comment-moderation';
 import { supabaseAdmin } from '../../../../lib/supabase/server';
+import { normalizeUuid } from '../../../../lib/uuid';
 
 type BulkModeratePayload = {
   ids?: unknown;
@@ -22,9 +23,6 @@ const json = (payload: unknown, status = 200) =>
       'Content-Type': 'application/json',
     },
   });
-
-const isUuid = (value: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(value);
 
 const getModerationReason = (action: string) => {
   if (action === 'reject') return 'Rifiutato da moderazione.';
@@ -71,7 +69,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: `Puoi moderare al massimo ${MAX_BULK_IDS} commenti alla volta.` }, 400);
   }
 
-  const validIds = [...new Set(rawIds.filter(isUuid))];
+  const validIds = [...new Set(rawIds.map(normalizeUuid).filter(Boolean))];
 
   if (validIds.length === 0) {
     return json({

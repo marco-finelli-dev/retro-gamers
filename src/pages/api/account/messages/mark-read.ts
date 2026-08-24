@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { normalizeUuid } from '../../../../lib/uuid';
 import { markAccountMessageRead } from '../../../../lib/supabase/account-messages';
 import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
 
@@ -13,9 +14,6 @@ const json = (payload: unknown, status = 200) =>
       'Content-Type': 'application/json',
     },
   });
-
-const isUuid = (value: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(value);
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const session = await getUserSessionFromCookies(cookies);
@@ -32,9 +30,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'Richiesta non valida.' }, 400);
   }
 
-  const messageId = payload.messageId?.trim() ?? '';
+  const messageId = normalizeUuid(payload.messageId);
 
-  if (!messageId || !isUuid(messageId)) {
+  if (!messageId) {
     return json({ ok: false, error: 'Messaggio non valido.' }, 400);
   }
 
