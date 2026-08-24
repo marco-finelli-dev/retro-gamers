@@ -7637,24 +7637,26 @@ export default function ArticlePortableTextEditor({
               capabilities={capabilities}
             />
 
-            <label className="editorial-field editorial-field--title">
-              <span>{labels.title}</span>
-              <input
-                value={draft.title}
-                disabled={isManualSaveLocked}
-                onChange={(event) => updateField('title', event.target.value)}
-              />
-            </label>
+            <div className="editorial-document-header">
+              <label className="editorial-field editorial-field--title">
+                <span>{labels.title}</span>
+                <input
+                  value={draft.title}
+                  disabled={isManualSaveLocked}
+                  onChange={(event) => updateField('title', event.target.value)}
+                />
+              </label>
 
-            <label className="editorial-field">
-              <span>{labels.subtitle}</span>
-              <textarea
-                value={draft.subtitle}
-                rows={2}
-                disabled={isManualSaveLocked}
-                onChange={(event) => updateField('subtitle', event.target.value)}
-              />
-            </label>
+              <label className="editorial-field editorial-field--subtitle">
+                <span>{labels.subtitle}</span>
+                <textarea
+                  value={draft.subtitle}
+                  rows={2}
+                  disabled={isManualSaveLocked}
+                  onChange={(event) => updateField('subtitle', event.target.value)}
+                />
+              </label>
+            </div>
 
             <section className="editorial-pte-card" aria-labelledby="editorial-pte-title">
               <div className="editorial-pte-card__header">
