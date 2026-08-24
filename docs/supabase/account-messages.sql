@@ -5,7 +5,7 @@
 create table if not exists public.account_messages (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  type text not null check (type in ('comment_approved', 'comment_reply', 'comment_like', 'comment_pending', 'badge_unlocked', 'system')),
+  type text not null check (type in ('comment_approved', 'comment_reply', 'comment_like', 'comment_pending', 'badge_unlocked', 'system', 'editorial_comment_created', 'editorial_comment_reply', 'editorial_comment_resolved')),
   title text not null,
   body text not null,
   action_label text null,
@@ -24,7 +24,7 @@ alter table public.account_messages
 
 alter table public.account_messages
   add constraint account_messages_type_check
-  check (type in ('comment_approved', 'comment_reply', 'comment_like', 'comment_pending', 'badge_unlocked', 'system'));
+  check (type in ('comment_approved', 'comment_reply', 'comment_like', 'comment_pending', 'badge_unlocked', 'system', 'editorial_comment_created', 'editorial_comment_reply', 'editorial_comment_resolved'));
 
 create index if not exists account_messages_user_created_idx
   on public.account_messages (user_id, created_at desc);

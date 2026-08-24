@@ -6,6 +6,9 @@ export type AccountMessageType =
   | 'comment_like'
   | 'comment_pending'
   | 'badge_unlocked'
+  | 'editorial_comment_created'
+  | 'editorial_comment_reply'
+  | 'editorial_comment_resolved'
   | 'system';
 
 export type AccountMessage = {
