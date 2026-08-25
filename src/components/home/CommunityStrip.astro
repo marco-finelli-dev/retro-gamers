@@ -1,6 +1,10 @@
 ---
 import UserAvatar from '../account/UserAvatar.astro';
 import { urlFor } from '../../lib/image';
+import {
+  getCommunitySurveyUrl,
+  getOpenCommunitySurveyForLanguage,
+} from '../../lib/community-surveys';
 import { getQuizUrl, type QuizSummary } from '../../lib/quiz';
 import type { CommunityHubComment } from '../../lib/supabase/community-hub';
 
@@ -23,19 +27,27 @@ const {
 const isEn = lang === 'en';
 const comments = latestComments.slice(0, 10);
 const publishedQuizzes = quizzes;
-const hasSingleQuiz = publishedQuizzes.length === 1;
 const sectionId = `home-community-strip-title-${lang}`;
-const quizTitleId = `home-community-quiz-title-${lang}`;
+const participationTitleId = `home-community-participation-title-${lang}`;
 const voicesTitleId = `home-community-voices-title-${lang}`;
+const activeSurvey = await getOpenCommunitySurveyForLanguage(isEn ? 'en' : 'it');
+const hasActiveSurvey = Boolean(activeSurvey);
+const hasSingleQuiz = publishedQuizzes.length === 1 && !hasActiveSurvey;
+const hasParticipationItems = publishedQuizzes.length > 0 || hasActiveSurvey;
 
 const copy = isEn
   ? {
       eyebrow: 'Community',
       title: 'Retro-Gamers Community',
       text: 'Play, comment and take part in the life of Retro-Gamers.',
+      participationTitle: 'Play and take part',
       quizTitle: 'Retro-Gamers Quiz',
       quizAll: 'All quizzes',
       quizCta: 'Play',
+      surveyBadge: 'Survey open',
+      surveyCta: 'Take the survey',
+      surveyAnonymous: 'Anonymous',
+      surveyFewMinutes: 'Takes a few minutes',
       voicesTitle: 'Community voices',
       voicesText: 'Comments, memories and conversations from readers who are bringing Retro-Gamers.it to life beyond the articles.',
       primary: 'Visit the community',
@@ -46,6 +58,7 @@ const copy = isEn
       profileLabel: 'Profile',
       railLabel: 'Latest reader memories',
       quizRailLabel: 'Published Retro-Gamers quizzes',
+      participationRailLabel: 'Retro-Gamers quizzes and community survey',
       questions: 'questions',
       seconds: 's',
       difficultyLabels: {
@@ -59,9 +72,14 @@ const copy = isEn
       eyebrow: 'Community',
       title: 'Community Retro-Gamers',
       text: 'Gioca, commenta e partecipa alla vita del sito.',
+      participationTitle: 'Gioca e partecipa',
       quizTitle: 'Quiz Retro-Gamers',
       quizAll: 'Tutti i quiz',
       quizCta: 'Gioca',
+      surveyBadge: 'Sondaggio attivo',
+      surveyCta: 'Partecipa al sondaggio',
+      surveyAnonymous: 'Anonimo',
+      surveyFewMinutes: 'Pochi minuti',
       voicesTitle: 'Le voci della community',
       voicesText: 'Commenti, ricordi e discussioni dai lettori che stanno dando vita a Retro-Gamers.it oltre gli articoli.',
       primary: 'Vai alla community',
@@ -72,6 +90,7 @@ const copy = isEn
       profileLabel: 'Profilo',
       railLabel: 'Ultime memorie dai lettori',
       quizRailLabel: 'Quiz Retro-Gamers pubblicati',
+      participationRailLabel: 'Quiz Retro-Gamers e sondaggio community',
       questions: 'domande',
       seconds: 's',
       difficultyLabels: {
@@ -84,9 +103,18 @@ const copy = isEn
 
 const communityHref = isEn ? '/en/community/' : '/community/';
 const quizHref = isEn ? '/en/quiz/' : '/quiz/';
+const surveyHref = activeSurvey ? getCommunitySurveyUrl(activeSurvey, isEn ? 'en' : 'it') : '';
 const profileHref = isEn
   ? (isLoggedIn ? '/en/account/' : '/en/account/register/')
   : (isLoggedIn ? '/account/' : '/account/register/');
+
+const getSurveySummary = (description?: string) => {
+  const summary = String(description || '').replace(/\s+/g, ' ').trim();
+
+  if (summary.length <= 170) return summary;
+
+  return `${summary.slice(0, 167).trim()}…`;
+};
 
 const getQuizCoverUrl = (quiz: QuizSummary) => {
   if (!quiz.coverImage?.asset) return '';
@@ -115,19 +143,45 @@ const getQuizDifficultyLabel = (difficulty?: string) =>
     </div>
   </div>
 
-  {publishedQuizzes.length > 0 && (
-    <section class="home-community-strip__block home-community-strip__block--quiz" aria-labelledby={quizTitleId}>
+  {hasParticipationItems && (
+    <section class="home-community-strip__block home-community-strip__block--quiz" aria-labelledby={participationTitleId}>
       <header class="home-community-strip__block-header">
-        <h3 id={quizTitleId}>{copy.quizTitle}</h3>
-        <a class="home-community-strip__link home-community-strip__link--primary" href={quizHref}>
-          {copy.quizAll}
-        </a>
+        <h3 id={participationTitleId}>{hasActiveSurvey ? copy.participationTitle : copy.quizTitle}</h3>
+        {publishedQuizzes.length > 0 && (
+          <a class="home-community-strip__link home-community-strip__link--primary" href={quizHref}>
+            {copy.quizAll}
+          </a>
+        )}
       </header>
 
       <div
         class={`home-community-strip__quiz-grid${hasSingleQuiz ? ' home-community-strip__quiz-grid--featured' : ''}`}
-        aria-label={copy.quizRailLabel}
+        aria-label={hasActiveSurvey ? copy.participationRailLabel : copy.quizRailLabel}
       >
+        {activeSurvey && (
+          <a
+            class="home-community-strip__quiz-card home-community-strip__survey-card"
+            href={surveyHref}
+          >
+            <span class="home-community-strip__quiz-body home-community-strip__survey-body">
+              <span class="home-community-strip__quiz-meta">
+                <span>{copy.surveyBadge}</span>
+                <span>{activeSurvey.questions.length} {copy.questions}</span>
+                <span>{copy.surveyAnonymous}</span>
+                <span>{copy.surveyFewMinutes}</span>
+              </span>
+
+              <strong>{activeSurvey.title}</strong>
+              {getSurveySummary(activeSurvey.description) && (
+                <span class="home-community-strip__quiz-excerpt home-community-strip__survey-excerpt">
+                  {getSurveySummary(activeSurvey.description)}
+                </span>
+              )}
+              <span class="home-community-strip__quiz-cta">{copy.surveyCta}</span>
+            </span>
+          </a>
+        )}
+
         {publishedQuizzes.map((quiz) => {
           const coverUrl = getQuizCoverUrl(quiz);
           const difficulty = getQuizDifficultyLabel(quiz.difficulty);

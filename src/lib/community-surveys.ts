@@ -409,6 +409,26 @@ export async function getOpenCommunitySurveyBySlug(
   return normalizeCommunitySurvey(data);
 }
 
+export async function getOpenCommunitySurveyForLanguage(
+  language: CommunitySurveyLanguage = 'it'
+): Promise<CommunitySurveyPublic | null> {
+  const normalizedLanguage = normalizeCommunitySurveyLanguage(language) || 'it';
+
+  const data = await getPublishedReadClient().fetch(
+    `
+      *[
+        ${openCommunitySurveyFilter} &&
+        language == $language
+      ] | order(_createdAt desc)[0] {
+        ${communitySurveyFields}
+      }
+    `,
+    { language: normalizedLanguage }
+  );
+
+  return normalizeCommunitySurvey(data);
+}
+
 export async function getCommunitySurveyAdminDocumentsByKey(
   surveyKey: string
 ): Promise<CommunitySurveyPublic[]> {
