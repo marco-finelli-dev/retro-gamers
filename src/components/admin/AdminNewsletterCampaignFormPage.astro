@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminDashboardBackLink from './AdminDashboardBackLink.astro';
+import AdminToolsSidebar from './AdminToolsSidebar.astro';
 import CommunityHero from '../community/CommunityHero.astro';
 import CommunityLayout from '../community/CommunityLayout.astro';
-import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
 import { getUserSessionFromCookies, isStaffProfile } from '../../lib/supabase/auth';
 import {
   getActiveSubscribersForCampaign,
@@ -253,15 +254,6 @@ const copy = isEnglish
 
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isStaff = isStaffProfile(session.profile);
-const staffLinks = [
-  { href: `${adminBase}/`, label: copy.nav.dashboard },
-  { href: `${adminBase}/comments/`, label: copy.nav.comments },
-  { href: `${adminBase}/comment-reports/`, label: copy.nav.commentReports },
-  { href: `${adminBase}/users/`, label: copy.nav.users },
-  { href: `${adminBase}/private-message-reports/`, label: copy.nav.privateMessageReports },
-  { href: `${adminBase}/ratings/`, label: copy.nav.ratings },
-  { href: `${adminBase}/newsletter/`, label: copy.nav.newsletter },
-];
 
 let campaign: NewsletterCampaign | null = null;
 let campaignError = '';
@@ -343,20 +335,12 @@ const heroDescription = isNew || canEdit ? copy.heroDescription : copy.detailsDe
 
 <BaseLayout title={`${pageTitle} | Retro-Gamers.it`} description={copy.description} lang={lang}>
   <CommunityLayout class="admin-newsletter-page" sidebar={isStaff}>
-    <Fragment slot="sidebar">
-      {isStaff && (
-        <CommunitySidebarSection title={copy.sidebarTitle}>
-          <div class="community-staff-links">
-            {staffLinks.map((link) => (
-              <a class="community-action-link" href={link.href}>{link.label}</a>
-            ))}
-          </div>
-        </CommunitySidebarSection>
-      )}
-    </Fragment>
+    <AdminToolsSidebar slot="sidebar" lang={lang} />
 
     {isStaff ? (
       <>
+        <AdminDashboardBackLink lang={lang} />
+
         <CommunityHero
           kicker="Retro-Gamers.it"
           title={heroTitle}

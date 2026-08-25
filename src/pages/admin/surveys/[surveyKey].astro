@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminDashboardBackLink from '../../../components/admin/AdminDashboardBackLink.astro';
+import AdminToolsSidebar from '../../../components/admin/AdminToolsSidebar.astro';
 import CommunityHero from '../../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../../components/community/CommunityLayout.astro';
-import CommunitySidebarSection from '../../../components/community/CommunitySidebarSection.astro';
 import {
   getCommunitySurveyAdminResults,
   normalizeTechnicalId,
@@ -83,24 +84,12 @@ const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
 
 <BaseLayout title={title} description={description}>
   <CommunityLayout class="admin-surveys-page" sidebar={isAdmin}>
-    <Fragment slot="sidebar">
-      {isAdmin && (
-        <CommunitySidebarSection title="Strumenti amministrazione">
-          <div class="community-staff-links">
-            <a class="community-action-link" href="/admin/">Dashboard amministrazione</a>
-            <a class="community-action-link" href="/admin/comments/">Moderazione commenti</a>
-            <a class="community-action-link" href="/admin/comment-reports/">Segnalazioni commenti</a>
-            <a class="community-action-link" href="/admin/users/">Gestione utenti</a>
-            <a class="community-action-link" href="/admin/private-message-reports/">Segnalazioni messaggi</a>
-            <a class="community-action-link" href="/admin/ratings/">Voti lettori</a>
-            <a class="community-action-link" href="/admin/newsletter/">Newsletter</a>
-          </div>
-        </CommunitySidebarSection>
-      )}
-    </Fragment>
+    <AdminToolsSidebar slot="sidebar" lang="it" surveyKey={surveyKey} />
 
     {isAdmin ? (
       <>
+        <AdminDashboardBackLink lang="it" />
+
         <CommunityHero
           kicker="Sondaggi community"
           title={results?.survey.title || 'Risultati sondaggio'}

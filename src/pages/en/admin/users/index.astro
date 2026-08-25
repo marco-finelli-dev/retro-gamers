@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import AdminDashboardBackLink from '../../../../components/admin/AdminDashboardBackLink.astro';
+import AdminToolsSidebar from '../../../../components/admin/AdminToolsSidebar.astro';
 import CommunityHero from '../../../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../../../components/community/CommunityLayout.astro';
-import CommunitySidebarSection from '../../../../components/community/CommunitySidebarSection.astro';
 import { getUserSessionFromCookies } from '../../../../lib/supabase/auth';
 import '../../../../styles/pages/admin-users.css';
 
@@ -14,21 +15,9 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
 
 <BaseLayout title={title} description={description} lang="en">
   <CommunityLayout class="admin-users-page" sidebar={isStaff}>
-    <Fragment slot="sidebar">
-      {isStaff && (
-        <CommunitySidebarSection title="Administration tools">
-          <div class="community-staff-links">
-            <a class="community-action-link" href="/en/admin/">Administration dashboard</a>
-            <a class="community-action-link" href="/en/admin/comments/">Comment moderation</a>
-            <a class="community-action-link" href="/en/admin/comment-reports/">Comment reports</a>
-            <a class="community-action-link" href="/en/admin/users/">Users</a>
-            <a class="community-action-link" href="/en/admin/private-message-reports/">Message reports</a>
-            <a class="community-action-link" href="/en/admin/ratings/">Reader ratings</a>
-            <a class="community-action-link" href="/en/admin/newsletter/">Newsletter</a>
-          </div>
-        </CommunitySidebarSection>
-      )}
-    </Fragment>
+    <AdminToolsSidebar slot="sidebar" lang="en" />
+
+    {isStaff && <AdminDashboardBackLink lang="en" />}
 
     <CommunityHero
       kicker="Retro-Gamers.it"

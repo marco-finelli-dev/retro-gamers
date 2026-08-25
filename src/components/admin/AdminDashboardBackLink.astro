@@ -1,0 +1,48 @@
+---
+type Lang = 'it' | 'en';
+
+interface Props {
+  lang?: Lang;
+}
+
+const { lang: propLang } = Astro.props;
+const isEnglish = propLang === 'en' || (!propLang && Astro.url.pathname.startsWith('/en/'));
+const href = isEnglish ? '/en/admin/' : '/admin/';
+const label = isEnglish ? '← Back to dashboard' : '← Torna alla dashboard';
+---
+
+<nav class="admin-dashboard-back" aria-label={label}>
+  <a href={href}>{label}</a>
+</nav>
+
+<style>
+  .admin-dashboard-back {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .admin-dashboard-back a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    border: 1px solid var(--rg-cta-border);
+    border-radius: 999px;
+    padding: 0 13px;
+    background: color-mix(in srgb, var(--rg-card-bg) 82%, transparent);
+    color: var(--rg-cta-color);
+    font-size: 0.86rem;
+    font-weight: 900;
+    line-height: 1.2;
+    text-decoration: none;
+  }
+
+  .admin-dashboard-back a:hover,
+  .admin-dashboard-back a:focus-visible {
+    border-color: var(--rg-cta-border);
+    background: var(--rg-cta-hover-bg);
+    color: var(--color-primary);
+    outline: none;
+  }
+</style>

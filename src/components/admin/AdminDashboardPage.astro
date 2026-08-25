@@ -1,8 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminToolsSidebar from './AdminToolsSidebar.astro';
 import CommunityHero from '../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../components/community/CommunityLayout.astro';
-import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
+import { getPublishedReadClient } from '../../lib/sanity';
+import { getEditorialSessionForUserSession } from '../../lib/editorial/session.server';
 import { getUserSessionFromCookies, isStaffProfile } from '../../lib/supabase/auth';
 import { isMissingGuestCommentSchemaError } from '../../lib/supabase/guest-comments';
 import { supabaseAdmin } from '../../lib/supabase/server';
@@ -22,7 +24,6 @@ type CountResult = {
 type RecentComment = {
   id: string;
   article_title?: string | null;
-  article_url?: string | null;
   body?: string | null;
   status?: string | null;
   created_at?: string | null;
@@ -34,101 +35,243 @@ type RecentComment = {
   } | null;
 };
 
+type SimpleActivityRow = {
+  id?: string | null;
+  status?: string | null;
+  reason?: string | null;
+  language?: string | null;
+  survey_key?: string | null;
+  survey_language?: string | null;
+  workflow_status?: string | null;
+  sanity_document_id?: string | null;
+  created_at?: string | null;
+  submitted_at?: string | null;
+  updated_at?: string | null;
+};
+
+type SurveySummary = {
+  _id?: string | null;
+  title?: string | null;
+  language?: string | null;
+  surveyKey?: string | null;
+  slug?: string | null;
+};
+
+type RecentActivity = {
+  label: string;
+  title: string;
+  description: string;
+  href: string;
+  createdAt: string | null;
+  tone?: 'attention' | 'calm';
+};
+
+type ActivityCategoryKey = 'comments' | 'editorial' | 'newsletter' | 'surveys' | 'reports';
+
+type ActivityCategory = {
+  key: ActivityCategoryKey;
+  label: string;
+  activities: RecentActivity[];
+};
+
 const { lang = 'it' } = Astro.props;
 const isEnglish = lang === 'en';
 const adminBase = isEnglish ? '/en/admin' : '/admin';
+const editorialBase = isEnglish ? '/en/account/editor/articles/' : '/account/editor/articles/';
 
 const copy = isEnglish
   ? {
-      title: 'Administration area | Retro-Gamers.it',
-      description: 'Administration control room for comments, reports, users and community activity.',
-      sidebarTitle: 'Administration tools',
-      dashboardLabel: 'Dashboard',
-      heroTitle: 'Administration area',
-      heroDescription: 'A quick overview of comments, reports, users and community activity.',
-      summaryLabel: 'Administration tools summary',
+      title: 'Administration dashboard | Retro-Gamers.it',
+      description: 'Daily cockpit for moderation, reports, community health and administration tools.',
+      compactKicker: 'Retro-Gamers.it',
+      greeting: (name: string) => `Good morning ${name}`,
+      greetingFallback: 'Good morning',
+      headerDescription: 'A quick overview of what needs your attention.',
+      todoKicker: 'Daily cockpit',
+      todoTitle: 'To do',
+      todoDescription: 'Operational items that may require staff action.',
+      recentKicker: 'Latest signals',
+      recentTitle: 'Recent activity',
+      recentDescription: 'A compact feed from systems that already expose reliable timestamps.',
+      overviewKicker: 'Community health',
+      overviewTitle: 'Overview',
+      overviewDescription: 'Informational metrics only: useful context, not urgent work.',
+      toolsKicker: 'Navigation',
+      toolsTitle: 'Administration tools',
+      toolsDescription: 'Secondary access to the existing administration areas.',
       optionalDataError: 'Data unavailable',
       countError: 'Count unavailable',
-      recentCommentsUnavailable: 'Recent comments unavailable.',
-      recentCommentsLoadError: 'Could not load recent comments.',
-      recentKicker: 'Community',
-      recentTitle: 'Recent comments',
-      openTools: 'Open tools',
+      noActionItems: 'Nothing urgent right now.',
+      noRecentActivity: 'No recent activity to show.',
+      noRecentActivityForCategory: 'No recent activity in this category.',
+      open: 'Open',
+      unavailable: 'Unavailable',
       defaultArticle: 'Retro-Gamers.it article',
-      goToComment: 'Go to comment',
-      moderation: 'Moderation',
-      noRecentComments: 'No recent comments to show.',
+      readerFallback: 'Reader',
+      guestFallback: 'Guest',
       accessTitle: 'Administration access',
       accessDescription: 'This page is reserved for Retro-Gamers.it staff.',
       login: 'Sign in',
-      readerFallback: 'Reader',
-      statusPending: 'Pending',
-      statusApproved: 'Approved',
-      cards: {
-        pendingComments: 'Pending comments',
-        openCommentReports: 'Open comment reports',
-        openPrivateReports: 'Open message reports',
-        registeredUsers: 'Registered users',
-        readerRatings: 'Reader ratings',
-        moderateCta: 'Go to moderation',
-        reportsCta: 'View reports',
-        usersCta: 'Manage users',
-        ratingsCta: 'View ratings',
+      todo: {
+        pendingComments: {
+          title: 'Pending comments',
+          description: 'Public comments waiting for moderation.',
+          cta: 'Moderate',
+        },
+        commentReports: {
+          title: 'Open comment reports',
+          description: 'Reader reports on public comments.',
+          cta: 'Review reports',
+        },
+        privateReports: {
+          title: 'Open message reports',
+          description: 'Reports from private conversations.',
+          cta: 'Review reports',
+        },
+        editorialQueue: {
+          title: 'Articles to review',
+          description: 'Submitted or approved editorial documents waiting for action.',
+          cta: 'Open review queue',
+        },
       },
-      nav: {
-        dashboard: 'Administration dashboard',
+      overview: {
+        users: 'Registered users',
+        ratings: 'Reader ratings',
+        newsletter: 'Active newsletter subscribers',
+        activeSurveys: 'Active surveys',
+        surveyResponses: 'Survey responses',
+        quizzes: 'Published quizzes',
+      },
+      activity: {
+        comment: 'Comment',
+        commentReport: 'Comment report',
+        privateReport: 'Message report',
+        newsletter: 'Newsletter',
+        surveyResponse: 'Survey',
+        editorial: 'Editorial',
+        reportOpen: 'Open report',
+        subscriber: 'New subscription',
+        surveyAnswer: 'Anonymous survey response',
+        articleSubmitted: 'Article submitted',
+        articleApproved: 'Article approved',
+      },
+      activityTabs: {
+        comments: 'Comments',
+        editorial: 'Editorial',
+        newsletter: 'Newsletter',
+        surveys: 'Surveys',
+        reports: 'Reports',
+      },
+      tools: {
+        community: 'Community',
+        participation: 'Participation',
+        communication: 'Communication',
+        editorial: 'Editorial',
         comments: 'Comment moderation',
         commentReports: 'Comment reports',
-        users: 'Users',
-        privateMessageReports: 'Message reports',
+        privateReports: 'Message reports',
+        users: 'User management',
         ratings: 'Reader ratings',
+        surveys: 'Survey results',
         newsletter: 'Newsletter',
+        editorialArticles: 'Editorial articles',
       },
     }
   : {
-      title: 'Area amministrazione | Retro-Gamers.it',
-      description: 'Cabina di controllo amministrativa per commenti, segnalazioni, utenti e attività community.',
-      sidebarTitle: 'Strumenti amministrazione',
-      dashboardLabel: 'Dashboard',
-      heroTitle: 'Area amministrazione',
-      heroDescription: 'Una panoramica rapida su commenti, segnalazioni, utenti e attività della community.',
-      summaryLabel: 'Riepilogo strumenti amministrazione',
+      title: 'Dashboard amministrazione | Retro-Gamers.it',
+      description: 'Cockpit quotidiano per moderazione, segnalazioni, salute community e strumenti amministrativi.',
+      compactKicker: 'Retro-Gamers.it',
+      greeting: (name: string) => `Buongiorno ${name}`,
+      greetingFallback: 'Buongiorno',
+      headerDescription: 'Panoramica rapida di ciò che richiede la tua attenzione.',
+      todoKicker: 'Cockpit quotidiano',
+      todoTitle: 'Da fare',
+      todoDescription: 'Elementi operativi che possono richiedere un intervento dello staff.',
+      recentKicker: 'Ultimi segnali',
+      recentTitle: 'Attività recenti',
+      recentDescription: 'Un feed compatto dai sistemi che espongono già timestamp affidabili.',
+      overviewKicker: 'Stato community',
+      overviewTitle: 'Panoramica',
+      overviewDescription: 'Metriche informative: contesto utile, non attività urgente.',
+      toolsKicker: 'Navigazione',
+      toolsTitle: 'Strumenti amministrazione',
+      toolsDescription: 'Accesso secondario alle aree amministrative esistenti.',
       optionalDataError: 'Dato non disponibile',
       countError: 'Conteggio non disponibile',
-      recentCommentsUnavailable: 'Commenti recenti non disponibili.',
-      recentCommentsLoadError: 'Impossibile caricare i commenti recenti.',
-      recentKicker: 'Community',
-      recentTitle: 'Commenti recenti',
-      openTools: 'Apri strumenti',
+      noActionItems: 'Niente di urgente al momento.',
+      noRecentActivity: 'Nessuna attività recente da mostrare.',
+      noRecentActivityForCategory: 'Nessuna attività recente in questa categoria.',
+      open: 'Apri',
+      unavailable: 'Non disponibile',
       defaultArticle: 'Articolo Retro-Gamers.it',
-      goToComment: 'Vai al commento',
-      moderation: 'Moderazione',
-      noRecentComments: 'Nessun commento recente da mostrare.',
+      readerFallback: 'Lettore',
+      guestFallback: 'Ospite',
       accessTitle: 'Accesso amministrativo',
       accessDescription: 'Questa pagina è riservata allo staff Retro-Gamers.it.',
       login: 'Accedi',
-      readerFallback: 'Lettore',
-      statusPending: 'Da revisionare',
-      statusApproved: 'Approvato',
-      cards: {
-        pendingComments: 'Commenti da revisionare',
-        openCommentReports: 'Segnalazioni commenti aperte',
-        openPrivateReports: 'Segnalazioni messaggi aperte',
-        registeredUsers: 'Utenti registrati',
-        readerRatings: 'Voti lettori',
-        moderateCta: 'Vai alla moderazione',
-        reportsCta: 'Vedi segnalazioni',
-        usersCta: 'Gestisci utenti',
-        ratingsCta: 'Vedi voti',
+      todo: {
+        pendingComments: {
+          title: 'Commenti da moderare',
+          description: 'Commenti pubblici in attesa di revisione.',
+          cta: 'Modera',
+        },
+        commentReports: {
+          title: 'Segnalazioni commenti aperte',
+          description: 'Segnalazioni dei lettori sui commenti pubblici.',
+          cta: 'Controlla',
+        },
+        privateReports: {
+          title: 'Segnalazioni messaggi aperte',
+          description: 'Segnalazioni dalle conversazioni private.',
+          cta: 'Controlla',
+        },
+        editorialQueue: {
+          title: 'Articoli da revisionare',
+          description: 'Documenti submitted o approved in attesa di azione editoriale.',
+          cta: 'Apri coda revisione',
+        },
       },
-      nav: {
-        dashboard: 'Dashboard amministrazione',
+      overview: {
+        users: 'Utenti registrati',
+        ratings: 'Voti lettori',
+        newsletter: 'Iscritti newsletter attivi',
+        activeSurveys: 'Survey attive',
+        surveyResponses: 'Risposte survey',
+        quizzes: 'Quiz pubblicati',
+      },
+      activity: {
+        comment: 'Commento',
+        commentReport: 'Segnalazione commento',
+        privateReport: 'Segnalazione messaggio',
+        newsletter: 'Newsletter',
+        surveyResponse: 'Survey',
+        editorial: 'Redazione',
+        reportOpen: 'Segnalazione aperta',
+        subscriber: 'Nuova iscrizione',
+        surveyAnswer: 'Risposta anonima al sondaggio',
+        articleSubmitted: 'Articolo inviato',
+        articleApproved: 'Articolo approvato',
+      },
+      activityTabs: {
+        comments: 'Commenti',
+        editorial: 'Redazione',
+        newsletter: 'Newsletter',
+        surveys: 'Survey',
+        reports: 'Segnalazioni',
+      },
+      tools: {
+        community: 'Community',
+        participation: 'Partecipazione',
+        communication: 'Comunicazione',
+        editorial: 'Editoriale',
         comments: 'Moderazione commenti',
         commentReports: 'Segnalazioni commenti',
+        privateReports: 'Segnalazioni messaggi',
         users: 'Gestione utenti',
-        privateMessageReports: 'Segnalazioni messaggi',
         ratings: 'Voti lettori',
+        surveys: 'Risultati survey',
         newsletter: 'Newsletter',
+        editorialArticles: 'Articoli redazionali',
       },
     };
 
@@ -136,7 +279,17 @@ const title = copy.title;
 const description = copy.description;
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isStaff = isStaffProfile(session.profile);
+const editorialContext = isStaff
+  ? await getEditorialSessionForUserSession(session)
+  : null;
+const canSeeEditorialQueue = Boolean(
+  editorialContext?.isEditorialActive &&
+    editorialContext.permissions.canReadSubmittedArticles
+);
+const displayName =
+  String(session.profile?.display_name || session.profile?.username || '').trim();
 
+const numberFormatter = new Intl.NumberFormat(isEnglish ? 'en-US' : 'it-IT');
 const dateFormatter = new Intl.DateTimeFormat(isEnglish ? 'en-US' : 'it-IT', {
   day: 'numeric',
   month: 'short',
@@ -175,16 +328,61 @@ const safeCount = async (callback: () => PromiseLike<{ count: number | null; err
   }
 };
 
+const safeSanityCount = async (callback: () => PromiseLike<number | null | undefined>): Promise<CountResult> => {
+  try {
+    const count = await callback();
+
+    return { value: count ?? 0, error: '' };
+  } catch {
+    return { value: null, error: copy.countError };
+  }
+};
+
 const formatCount = (count: CountResult) =>
-  count.value === null ? '—' : new Intl.NumberFormat(isEnglish ? 'en-US' : 'it-IT').format(count.value);
+  count.value === null ? '—' : numberFormatter.format(count.value);
+
+const getActivityTime = (activity: RecentActivity) => {
+  if (!activity.createdAt) return 0;
+
+  const time = new Date(activity.createdAt).getTime();
+
+  return Number.isFinite(time) ? time : 0;
+};
+
+const formatActivityDate = (value: string | null) =>
+  value ? dateFormatter.format(new Date(value)) : copy.unavailable;
+
+const truncate = (value = '', maxLength = 120) => {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+
+  return normalized.length > maxLength
+    ? `${normalized.slice(0, maxLength - 1).trim()}…`
+    : normalized;
+};
+
+const getCommentAuthor = (comment: RecentComment) =>
+  comment.author_type === 'guest'
+    ? comment.guest_display_name || copy.guestFallback
+    : comment.profiles?.display_name || comment.profiles?.username || copy.readerFallback;
 
 let pendingComments: CountResult = { value: null, error: '' };
 let openCommentReports: CountResult = { value: null, error: '' };
 let openPrivateReports: CountResult = { value: null, error: '' };
 let registeredUsers: CountResult = { value: null, error: '' };
 let readerRatings: CountResult = { value: null, error: '' };
-let recentComments: RecentComment[] = [];
-let recentCommentsError = '';
+let activeNewsletterSubscribers: CountResult = { value: null, error: '' };
+let surveyResponses: CountResult = { value: null, error: '' };
+let editorialReviewQueue: CountResult = { value: null, error: '' };
+let activeSurveys: CountResult = { value: null, error: '' };
+let publishedQuizzes: CountResult = { value: null, error: '' };
+let activeSurveyDocuments: SurveySummary[] = [];
+const recentActivitiesByCategory: Record<ActivityCategoryKey, RecentActivity[]> = {
+  comments: [],
+  editorial: [],
+  newsletter: [],
+  surveys: [],
+  reports: [],
+};
 
 if (isStaff) {
   [
@@ -193,6 +391,11 @@ if (isStaff) {
     openPrivateReports,
     registeredUsers,
     readerRatings,
+    activeNewsletterSubscribers,
+    surveyResponses,
+    editorialReviewQueue,
+    activeSurveys,
+    publishedQuizzes,
   ] = await Promise.all([
     safeCount(() =>
       supabaseAdmin
@@ -223,6 +426,64 @@ if (isStaff) {
         .from('review_ratings')
         .select('id', { count: 'exact', head: true })
     ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('newsletter_subscribers')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active')
+    ),
+    safeCount(() =>
+      supabaseAdmin
+        .from('community_survey_responses')
+        .select('id', { count: 'exact', head: true })
+    ),
+    canSeeEditorialQueue
+      ? safeCount(() =>
+          supabaseAdmin
+            .from('editorial_documents')
+            .select('sanity_document_id', { count: 'exact', head: true })
+            .in('workflow_status', ['submitted', 'approved'])
+        )
+      : Promise.resolve({ value: null, error: '' }),
+    safeSanityCount(async () => {
+      const data = await getPublishedReadClient().fetch<SurveySummary[]>(
+        `
+          *[
+            _type == "communitySurvey" &&
+            status == "open" &&
+            defined(slug.current) &&
+            !(_id in path("drafts.**"))
+          ]{
+            _id,
+            title,
+            language,
+            surveyKey,
+            "slug": slug.current
+          }
+        `
+      );
+      const uniqueKeys = new Set(
+        (data || [])
+          .map((survey) => String(survey.surveyKey || '').trim())
+          .filter(Boolean)
+      );
+
+      activeSurveyDocuments = data || [];
+
+      return uniqueKeys.size;
+    }),
+    safeSanityCount(() =>
+      getPublishedReadClient().fetch<number>(
+        `
+          count(*[
+            _type == "quiz" &&
+            defined(slug.current) &&
+            !(_id in path("drafts.**")) &&
+            coalesce(isPublished, false) == true
+          ])
+        `
+      )
+    ),
   ]);
 
   const fetchRecentComments = (includeGuestFields: boolean) =>
@@ -231,7 +492,6 @@ if (isStaff) {
       .select(`
         id,
         article_title,
-        article_url,
         body,
         status,
         created_at,
@@ -244,171 +504,348 @@ if (isStaff) {
       .in('status', ['approved', 'pending'])
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(4);
 
-  let { data, error } = await fetchRecentComments(true);
+  let recentCommentRows: RecentComment[] = [];
+  let recentCommentResult = await fetchRecentComments(true);
 
-  if (isMissingGuestCommentSchemaError(error)) {
-    const fallbackResult = await fetchRecentComments(false);
-    data = fallbackResult.data;
-    error = fallbackResult.error;
+  if (isMissingGuestCommentSchemaError(recentCommentResult.error)) {
+    recentCommentResult = await fetchRecentComments(false);
   }
 
-  if (error) {
-    recentCommentsError = isOptionalDataError(error)
-      ? copy.recentCommentsUnavailable
-      : copy.recentCommentsLoadError;
-  } else {
-    recentComments = (data ?? []) as RecentComment[];
+  if (!recentCommentResult.error) {
+    recentCommentRows = (recentCommentResult.data || []) as RecentComment[];
   }
+
+  recentActivitiesByCategory.comments.push(...recentCommentRows.map((comment) => ({
+    label: copy.activity.comment,
+    title: comment.article_title || copy.defaultArticle,
+    description: `${getCommentAuthor(comment)} · ${truncate(comment.body || '')}`,
+    href: `${adminBase}/comments/?status=${comment.status === 'pending' ? 'pending' : 'approved'}`,
+    createdAt: comment.created_at || null,
+    tone: comment.status === 'pending' ? 'attention' : 'calm',
+  } satisfies RecentActivity)));
+
+  const recentLookups = await Promise.all([
+    supabaseAdmin
+      .from('comment_reports')
+      .select('id, status, reason, created_at')
+      .eq('status', 'open')
+      .order('created_at', { ascending: false })
+      .limit(3),
+    supabaseAdmin
+      .from('private_message_reports')
+      .select('id, status, reason, created_at')
+      .eq('status', 'open')
+      .order('created_at', { ascending: false })
+      .limit(3),
+    supabaseAdmin
+      .from('newsletter_subscribers')
+      .select('id, status, language, created_at')
+      .order('created_at', { ascending: false })
+      .limit(3),
+    supabaseAdmin
+      .from('community_survey_responses')
+      .select('id, survey_key, survey_language, submitted_at')
+      .order('submitted_at', { ascending: false })
+      .limit(3),
+    canSeeEditorialQueue
+      ? supabaseAdmin
+          .from('editorial_documents')
+          .select('sanity_document_id, workflow_status, submitted_at, updated_at')
+          .in('workflow_status', ['submitted', 'approved'])
+          .order('submitted_at', { ascending: false, nullsFirst: false })
+          .order('updated_at', { ascending: false })
+          .limit(3)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const [
+    commentReportsResult,
+    privateReportsResult,
+    newsletterResult,
+    surveyResponsesResult,
+    editorialResult,
+  ] = recentLookups;
+
+  if (!commentReportsResult.error) {
+    recentActivitiesByCategory.reports.push(...((commentReportsResult.data || []) as SimpleActivityRow[]).map((report) => ({
+      label: copy.activity.commentReport,
+      title: copy.activity.reportOpen,
+      description: truncate(report.reason || copy.todo.commentReports.description),
+      href: `${adminBase}/comment-reports/?status=open`,
+      createdAt: report.created_at || null,
+      tone: report.status === 'open' ? 'attention' : 'calm',
+    } satisfies RecentActivity)));
+  }
+
+  if (!privateReportsResult.error) {
+    recentActivitiesByCategory.reports.push(...((privateReportsResult.data || []) as SimpleActivityRow[]).map((report) => ({
+      label: copy.activity.privateReport,
+      title: copy.activity.reportOpen,
+      description: truncate(report.reason || copy.todo.privateReports.description),
+      href: `${adminBase}/private-message-reports/?status=open`,
+      createdAt: report.created_at || null,
+      tone: report.status === 'open' ? 'attention' : 'calm',
+    } satisfies RecentActivity)));
+  }
+
+  if (!newsletterResult.error) {
+    recentActivitiesByCategory.newsletter.push(...((newsletterResult.data || []) as SimpleActivityRow[]).map((subscriber) => ({
+      label: copy.activity.newsletter,
+      title: copy.activity.subscriber,
+      description: [String(subscriber.status || '').trim(), String(subscriber.language || '').trim().toUpperCase()]
+        .filter(Boolean)
+        .join(' · '),
+      href: `${adminBase}/newsletter/`,
+      createdAt: subscriber.created_at || null,
+      tone: 'calm',
+    } satisfies RecentActivity)));
+  }
+
+  if (!surveyResponsesResult.error) {
+    recentActivitiesByCategory.surveys.push(...((surveyResponsesResult.data || []) as SimpleActivityRow[]).map((response) => ({
+      label: copy.activity.surveyResponse,
+      title: copy.activity.surveyAnswer,
+      description: [response.survey_key, String(response.survey_language || '').toUpperCase()]
+        .filter(Boolean)
+        .join(' · '),
+      href: response.survey_key
+        ? `/admin/surveys/${encodeURIComponent(response.survey_key)}/`
+        : `${adminBase}/`,
+      createdAt: response.submitted_at || null,
+      tone: 'calm',
+    } satisfies RecentActivity)));
+  }
+
+  if (!editorialResult.error) {
+    recentActivitiesByCategory.editorial.push(...((editorialResult.data || []) as SimpleActivityRow[]).map((article) => ({
+      label: copy.activity.editorial,
+      title: article.workflow_status === 'approved'
+        ? copy.activity.articleApproved
+        : copy.activity.articleSubmitted,
+      description: article.sanity_document_id || copy.tools.editorialArticles,
+      href: editorialBase,
+      createdAt: article.submitted_at || article.updated_at || null,
+      tone: 'attention',
+    } satisfies RecentActivity)));
+  }
+
+  Object.values(recentActivitiesByCategory).forEach((activities) => {
+    activities.sort((a, b) => getActivityTime(b) - getActivityTime(a));
+    activities.splice(7);
+  });
 }
 
-const dashboardCards = [
+const toDoItems = [
   {
-    label: copy.cards.pendingComments,
+    title: copy.todo.pendingComments.title,
+    description: copy.todo.pendingComments.description,
     value: pendingComments,
     href: `${adminBase}/comments/?status=pending`,
-    cta: copy.cards.moderateCta,
+    cta: copy.todo.pendingComments.cta,
   },
   {
-    label: copy.cards.openCommentReports,
+    title: copy.todo.commentReports.title,
+    description: copy.todo.commentReports.description,
     value: openCommentReports,
     href: `${adminBase}/comment-reports/?status=open`,
-    cta: copy.cards.reportsCta,
+    cta: copy.todo.commentReports.cta,
   },
   {
-    label: copy.cards.openPrivateReports,
+    title: copy.todo.privateReports.title,
+    description: copy.todo.privateReports.description,
     value: openPrivateReports,
     href: `${adminBase}/private-message-reports/?status=open`,
-    cta: copy.cards.reportsCta,
+    cta: copy.todo.privateReports.cta,
   },
-  {
-    label: copy.cards.registeredUsers,
-    value: registeredUsers,
-    href: `${adminBase}/users/`,
-    cta: copy.cards.usersCta,
-  },
-  {
-    label: copy.cards.readerRatings,
-    value: readerRatings,
-    href: `${adminBase}/ratings/`,
-    cta: copy.cards.ratingsCta,
-  },
+  ...(canSeeEditorialQueue
+    ? [
+        {
+          title: copy.todo.editorialQueue.title,
+          description: copy.todo.editorialQueue.description,
+          value: editorialReviewQueue,
+          href: editorialBase,
+          cta: copy.todo.editorialQueue.cta,
+        },
+      ]
+    : []),
 ];
 
-const staffLinks = [
-  { href: `${adminBase}/`, label: copy.nav.dashboard },
-  { href: `${adminBase}/comments/`, label: copy.nav.comments },
-  { href: `${adminBase}/comment-reports/`, label: copy.nav.commentReports },
-  { href: `${adminBase}/users/`, label: copy.nav.users },
-  { href: `${adminBase}/private-message-reports/`, label: copy.nav.privateMessageReports },
-  { href: `${adminBase}/ratings/`, label: copy.nav.ratings },
-  { href: `${adminBase}/newsletter/`, label: copy.nav.newsletter },
+const overviewItems = [
+  { label: copy.overview.users, value: registeredUsers },
+  { label: copy.overview.ratings, value: readerRatings },
+  { label: copy.overview.newsletter, value: activeNewsletterSubscribers },
+  { label: copy.overview.activeSurveys, value: activeSurveys },
+  { label: copy.overview.surveyResponses, value: surveyResponses },
+  { label: copy.overview.quizzes, value: publishedQuizzes },
 ];
 
-const getCommentAuthor = (comment: RecentComment) =>
-  comment.author_type === 'guest'
-    ? comment.guest_display_name || (isEnglish ? 'Guest' : 'Ospite')
-    : comment.profiles?.display_name || comment.profiles?.username || copy.readerFallback;
+const primarySurveyKey = activeSurveyDocuments
+  .map((survey) => String(survey.surveyKey || '').trim())
+  .find(Boolean);
 
-const getCommentStatusLabel = (status?: string | null) =>
-  status === 'pending' ? copy.statusPending : copy.statusApproved;
-
-const truncate = (value = '', maxLength = 170) => {
-  const normalized = value.replace(/\s+/g, ' ').trim();
-
-  return normalized.length > maxLength
-    ? `${normalized.slice(0, maxLength - 1).trim()}…`
-    : normalized;
-};
+const activityCategories: ActivityCategory[] = [
+  {
+    key: 'comments',
+    label: copy.activityTabs.comments,
+    activities: recentActivitiesByCategory.comments,
+  },
+  ...(canSeeEditorialQueue
+    ? [
+        {
+          key: 'editorial' as const,
+          label: copy.activityTabs.editorial,
+          activities: recentActivitiesByCategory.editorial,
+        },
+      ]
+    : []),
+  {
+    key: 'newsletter',
+    label: copy.activityTabs.newsletter,
+    activities: recentActivitiesByCategory.newsletter,
+  },
+  {
+    key: 'surveys',
+    label: copy.activityTabs.surveys,
+    activities: recentActivitiesByCategory.surveys,
+  },
+  {
+    key: 'reports',
+    label: copy.activityTabs.reports,
+    activities: recentActivitiesByCategory.reports,
+  },
+];
 ---
 
 <BaseLayout title={title} description={description} lang={lang}>
-  <CommunityLayout class="admin-dashboard-page" sidebar={isStaff}>
-    <Fragment slot="sidebar">
-      {isStaff && (
-        <CommunitySidebarSection title={copy.sidebarTitle}>
-          <div class="community-staff-links">
-            {staffLinks.map((link) => (
-              <a class="community-action-link" href={link.href}>{link.label}</a>
-            ))}
-          </div>
-        </CommunitySidebarSection>
-      )}
-    </Fragment>
+  {isStaff ? (
+    <CommunityLayout class="admin-dashboard-page">
+      <AdminToolsSidebar slot="sidebar" lang={lang} surveyKey={primarySurveyKey} />
 
-    {isStaff ? (
-      <>
-        <CommunityHero
-          kicker="Retro-Gamers.it"
-          title={copy.heroTitle}
-          description={copy.heroDescription}
-        >
-          <span slot="aside" class="community-soft-badge">{copy.dashboardLabel}</span>
-        </CommunityHero>
-
-        <section class="admin-dashboard-grid" aria-label={copy.summaryLabel}>
-          {dashboardCards.map((card) => (
-            <article class="community-card admin-dashboard-card">
-              <span>{card.label}</span>
-              <strong>{formatCount(card.value)}</strong>
-              {card.value.error && <small>{card.value.error}</small>}
-              <a href={card.href}>{card.cta}</a>
-            </article>
-          ))}
+        <section class="community-card admin-dashboard-header" aria-labelledby="admin-dashboard-title">
+          <p class="community-kicker">{copy.compactKicker}</p>
+          <h1 id="admin-dashboard-title">
+            {displayName ? copy.greeting(displayName) : copy.greetingFallback}
+          </h1>
+          <p>{copy.headerDescription}</p>
         </section>
 
-        <section class="community-card admin-dashboard-recent">
+        <section class="community-card admin-dashboard-section admin-dashboard-section--todo" aria-labelledby="admin-dashboard-todo">
+          <div class="admin-dashboard-section-heading">
+            <div>
+              <p>{copy.todoKicker}</p>
+              <h2 id="admin-dashboard-todo">{copy.todoTitle}</h2>
+              <span>{copy.todoDescription}</span>
+            </div>
+          </div>
+
+          <div class="admin-dashboard-todo-grid">
+            {toDoItems.map((item) => {
+              const hasAttention = (item.value.value ?? 0) > 0;
+
+              return (
+                <article class="admin-dashboard-todo-card" data-attention={hasAttention ? 'true' : 'false'}>
+                  <div>
+                    <span>{item.title}</span>
+                    <strong>{formatCount(item.value)}</strong>
+                    <p>{item.value.error || item.description}</p>
+                  </div>
+                  <a href={item.href}>{item.cta}</a>
+                </article>
+              );
+            })}
+          </div>
+
+          {toDoItems.every((item) => (item.value.value ?? 0) === 0) && (
+            <p class="admin-dashboard-empty">{copy.noActionItems}</p>
+          )}
+        </section>
+
+        <section class="community-card admin-dashboard-section admin-dashboard-section--recent" aria-labelledby="admin-dashboard-recent" data-admin-activity-section>
           <div class="admin-dashboard-section-heading">
             <div>
               <p>{copy.recentKicker}</p>
-              <h2>{copy.recentTitle}</h2>
+              <h2 id="admin-dashboard-recent">{copy.recentTitle}</h2>
+              <span>{copy.recentDescription}</span>
             </div>
-
-            <a href={`${adminBase}/comments/`}>{copy.openTools}</a>
           </div>
 
-          {recentCommentsError ? (
-            <p class="admin-dashboard-empty">{recentCommentsError}</p>
-          ) : recentComments.length > 0 ? (
-            <div class="admin-dashboard-comment-list">
-              {recentComments.map((comment) => (
-                <article class="admin-dashboard-comment">
-                  <header>
-                    <span data-status={comment.status || 'approved'}>
-                      {getCommentStatusLabel(comment.status)}
-                    </span>
-                    {comment.created_at && (
-                      <time datetime={comment.created_at}>
-                        {dateFormatter.format(new Date(comment.created_at))}
-                      </time>
-                    )}
-                  </header>
+          <div class="admin-dashboard-activity-tabs" role="tablist" aria-label={copy.recentTitle} data-admin-activity-tabs>
+            {activityCategories.map((category, index) => (
+              <button
+                type="button"
+                class="admin-dashboard-activity-tab"
+                role="tab"
+                id={`admin-dashboard-activity-tab-${category.key}`}
+                aria-controls={`admin-dashboard-activity-panel-${category.key}`}
+                aria-selected={index === 0 ? 'true' : 'false'}
+                data-admin-activity-tab={category.key}
+                data-active={index === 0 ? 'true' : 'false'}
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
 
-                  <h3>{comment.article_title || copy.defaultArticle}</h3>
-                  <p>{truncate(comment.body || '')}</p>
-
-                  <footer>
-                    <span>{getCommentAuthor(comment)}</span>
-                    <div>
-                      {comment.article_url && (
-                        <a href={`${comment.article_url}#comment-${comment.id}`}>{copy.goToComment}</a>
-                      )}
-                      <a href={`${adminBase}/comments/?status=${comment.status === 'pending' ? 'pending' : 'approved'}`}>
-                        {copy.moderation}
-                      </a>
-                    </div>
-                  </footer>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p class="admin-dashboard-empty">{copy.noRecentComments}</p>
-          )}
+          <div class="admin-dashboard-activity-panels">
+            {activityCategories.map((category, index) => (
+              <div
+                class="admin-dashboard-activity-panel"
+                id={`admin-dashboard-activity-panel-${category.key}`}
+                role="tabpanel"
+                aria-labelledby={`admin-dashboard-activity-tab-${category.key}`}
+                data-admin-activity-panel={category.key}
+                hidden={index !== 0}
+              >
+                {category.activities.length > 0 ? (
+                  <div class="admin-dashboard-activity-list">
+                    {category.activities.map((activity) => (
+                      <article class="admin-dashboard-activity" data-tone={activity.tone || 'calm'}>
+                        <div>
+                          <span>{activity.label}</span>
+                          <h3>{activity.title}</h3>
+                          <p>{activity.description}</p>
+                        </div>
+                        <footer>
+                          <time datetime={activity.createdAt || undefined}>
+                            {formatActivityDate(activity.createdAt)}
+                          </time>
+                          <a href={activity.href}>{copy.open}</a>
+                        </footer>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p class="admin-dashboard-empty">{copy.noRecentActivityForCategory}</p>
+                )}
+              </div>
+            ))}
+          </div>
         </section>
-      </>
-    ) : (
-      <>
+
+        <section class="community-card admin-dashboard-section admin-dashboard-section--overview" aria-labelledby="admin-dashboard-overview">
+          <div class="admin-dashboard-section-heading">
+            <div>
+              <p>{copy.overviewKicker}</p>
+              <h2 id="admin-dashboard-overview">{copy.overviewTitle}</h2>
+              <span>{copy.overviewDescription}</span>
+            </div>
+          </div>
+
+          <div class="admin-dashboard-overview-strip">
+            {overviewItems.map((item) => (
+              <article class="admin-dashboard-overview-item">
+                <span>{item.label}</span>
+                <strong>{formatCount(item.value)}</strong>
+                {item.value.error && <small>{item.value.error}</small>}
+              </article>
+            ))}
+          </div>
+        </section>
+    </CommunityLayout>
+  ) : (
+    <CommunityLayout class="admin-dashboard-page">
         <CommunityHero
           kicker="Retro-Gamers.it"
           title={copy.accessTitle}
@@ -420,7 +857,50 @@ const truncate = (value = '', maxLength = 170) => {
             <a class="community-action-link" href={isEnglish ? '/en/account/login/' : '/account/login/'}>{copy.login}</a>
           </div>
         </section>
-      </>
-    )}
-  </CommunityLayout>
+    </CommunityLayout>
+  )}
+
+  <script>
+    document.querySelectorAll('[data-admin-activity-section]').forEach((section) => {
+      const tabs = Array.from(section.querySelectorAll('[data-admin-activity-tab]'));
+      const panels = Array.from(section.querySelectorAll('[data-admin-activity-panel]'));
+
+      const activateTab = (targetKey, shouldFocus = false) => {
+        tabs.forEach((tab) => {
+          const isActive = tab.getAttribute('data-admin-activity-tab') === targetKey;
+
+          tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          tab.setAttribute('data-active', isActive ? 'true' : 'false');
+
+          if (shouldFocus && isActive) {
+            tab.focus();
+          }
+        });
+
+        panels.forEach((panel) => {
+          panel.hidden = panel.getAttribute('data-admin-activity-panel') !== targetKey;
+        });
+      };
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => {
+          activateTab(tab.getAttribute('data-admin-activity-tab'));
+        });
+
+        tab.addEventListener('keydown', (event) => {
+          if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+
+          event.preventDefault();
+
+          const direction = event.key === 'ArrowRight' ? 1 : -1;
+          const nextIndex = (index + direction + tabs.length) % tabs.length;
+          const nextKey = tabs[nextIndex]?.getAttribute('data-admin-activity-tab');
+
+          if (nextKey) {
+            activateTab(nextKey, true);
+          }
+        });
+      });
+    });
+  </script>
 </BaseLayout>
