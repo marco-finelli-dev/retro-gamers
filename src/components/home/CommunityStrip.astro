@@ -46,6 +46,8 @@ const copy = isEn
       quizCta: 'Play',
       surveyBadge: 'Survey open',
       surveyCta: 'Take the survey',
+      surveyText:
+        "Tell us what you enjoy about the site, what you'd like to see next and how we can improve.",
       surveyAnonymous: 'Anonymous',
       surveyFewMinutes: 'Takes a few minutes',
       voicesTitle: 'Community voices',
@@ -78,6 +80,8 @@ const copy = isEn
       quizCta: 'Gioca',
       surveyBadge: 'Sondaggio attivo',
       surveyCta: 'Partecipa al sondaggio',
+      surveyText:
+        'Dicci cosa apprezzi del sito, cosa vorresti vedere in futuro e come possiamo migliorare.',
       surveyAnonymous: 'Anonimo',
       surveyFewMinutes: 'Pochi minuti',
       voicesTitle: 'Le voci della community',
@@ -108,14 +112,6 @@ const profileHref = isEn
   ? (isLoggedIn ? '/en/account/' : '/en/account/register/')
   : (isLoggedIn ? '/account/' : '/account/register/');
 
-const getSurveySummary = (description?: string) => {
-  const summary = String(description || '').replace(/\s+/g, ' ').trim();
-
-  if (summary.length <= 170) return summary;
-
-  return `${summary.slice(0, 167).trim()}…`;
-};
-
 const getQuizCoverUrl = (quiz: QuizSummary) => {
   if (!quiz.coverImage?.asset) return '';
 
@@ -127,6 +123,20 @@ const getQuizCoverUrl = (quiz: QuizSummary) => {
     .auto('format')
     .url();
 };
+
+const getSurveyCoverUrl = () => {
+  if (!activeSurvey?.cardImage?.asset) return '';
+
+  return urlFor(activeSurvey.cardImage)
+    .width(480)
+    .height(360)
+    .fit('crop')
+    .quality(74)
+    .auto('format')
+    .url();
+};
+
+const surveyCoverUrl = getSurveyCoverUrl();
 
 const getQuizDifficultyLabel = (difficulty?: string) =>
   difficulty && (copy.difficultyLabels as Record<string, string>)[difficulty]
@@ -160,9 +170,26 @@ const getQuizDifficultyLabel = (difficulty?: string) =>
       >
         {activeSurvey && (
           <a
-            class="home-community-strip__quiz-card home-community-strip__survey-card"
+            class:list={[
+              'home-community-strip__quiz-card',
+              'home-community-strip__survey-card',
+              !surveyCoverUrl && 'home-community-strip__survey-card--text-only',
+            ]}
             href={surveyHref}
           >
+            {surveyCoverUrl && (
+              <span class="home-community-strip__quiz-media home-community-strip__survey-media">
+                <img
+                  src={surveyCoverUrl}
+                  alt={activeSurvey.cardImage?.alt || activeSurvey.title}
+                  width="480"
+                  height="360"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </span>
+            )}
+
             <span class="home-community-strip__quiz-body home-community-strip__survey-body">
               <span class="home-community-strip__quiz-meta">
                 <span>{copy.surveyBadge}</span>
@@ -172,11 +199,9 @@ const getQuizDifficultyLabel = (difficulty?: string) =>
               </span>
 
               <strong>{activeSurvey.title}</strong>
-              {getSurveySummary(activeSurvey.description) && (
-                <span class="home-community-strip__quiz-excerpt home-community-strip__survey-excerpt">
-                  {getSurveySummary(activeSurvey.description)}
-                </span>
-              )}
+              <span class="home-community-strip__quiz-excerpt home-community-strip__survey-excerpt">
+                {copy.surveyText}
+              </span>
               <span class="home-community-strip__quiz-cta">{copy.surveyCta}</span>
             </span>
           </a>

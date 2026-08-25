@@ -26,6 +26,16 @@ export type CommunitySurveyTranslation = {
   language: CommunitySurveyLanguage;
 };
 
+export type CommunitySurveyImage = {
+  alt?: string;
+  crop?: Record<string, unknown>;
+  hotspot?: Record<string, unknown>;
+  asset?: {
+    _id?: string;
+    url?: string;
+  };
+};
+
 export type CommunitySurveyPublic = {
   _id: string;
   title: string;
@@ -33,6 +43,7 @@ export type CommunitySurveyPublic = {
   language: CommunitySurveyLanguage;
   surveyKey: string;
   description?: string;
+  cardImage?: CommunitySurveyImage;
   status: CommunitySurveyStatus;
   questions: CommunitySurveyQuestion[];
   translatedVersion?: CommunitySurveyTranslation | null;
@@ -126,6 +137,12 @@ const communitySurveyFields = `
   language,
   surveyKey,
   description,
+  cardImage {
+    asset->{ _id, url },
+    crop,
+    hotspot,
+    alt
+  },
   status,
   questions[]{
     questionId,
@@ -310,6 +327,20 @@ const normalizeSurveyTranslation = (
   };
 };
 
+const normalizeSurveyImage = (image: unknown): CommunitySurveyImage | undefined => {
+  const value = image as CommunitySurveyImage | null;
+
+  if (!value || typeof value !== 'object' || !value.asset) return undefined;
+  if (!value.asset._id && !value.asset.url) return undefined;
+
+  return {
+    asset: value.asset,
+    crop: value.crop,
+    hotspot: value.hotspot,
+    alt: String(value.alt || '').trim(),
+  };
+};
+
 const normalizeCommunitySurvey = (
   survey: unknown,
   { requireOpen = true } = {}
@@ -321,6 +352,7 @@ const normalizeCommunitySurvey = (
   const language = normalizeCommunitySurveyLanguage(value?.language);
   const surveyKey = normalizeTechnicalId(value?.surveyKey);
   const status = value?.status;
+  const cardImage = normalizeSurveyImage(value?.cardImage);
 
   if (
     !_id ||
@@ -357,6 +389,7 @@ const normalizeCommunitySurvey = (
     language,
     surveyKey,
     description: String(value?.description || '').trim(),
+    cardImage,
     status,
     questions,
     translatedVersion,
