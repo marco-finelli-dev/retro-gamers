@@ -201,11 +201,10 @@ const loginHref = isEnglish ? '/en/account/login/' : '/account/login/';
 <BaseLayout title={title} description={description} lang={lang}>
   <CommunityLayout class="admin-comment-reports-page" sidebar={isStaff}>
     <AdminToolsSidebar slot="sidebar" lang={lang} />
+    {isStaff && <AdminDashboardBackLink slot="before" lang={lang} />}
 
     {isStaff ? (
       <>
-        <AdminDashboardBackLink lang={lang} />
-
         <CommunityHero
           kicker={copy.kicker}
           title={copy.heroTitle}

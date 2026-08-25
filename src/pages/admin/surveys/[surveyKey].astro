@@ -85,11 +85,10 @@ const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
 <BaseLayout title={title} description={description}>
   <CommunityLayout class="admin-surveys-page" sidebar={isAdmin}>
     <AdminToolsSidebar slot="sidebar" lang="it" surveyKey={surveyKey} />
+    {isAdmin && <AdminDashboardBackLink slot="before" lang="it" />}
 
     {isAdmin ? (
       <>
-        <AdminDashboardBackLink lang="it" />
-
         <CommunityHero
           kicker="Sondaggi community"
           title={results?.survey.title || 'Risultati sondaggio'}

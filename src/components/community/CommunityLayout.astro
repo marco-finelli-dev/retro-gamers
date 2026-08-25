@@ -8,10 +8,17 @@ interface Props {
 
 const { class: className = '', sidebar } = Astro.props;
 const hasSidebar = sidebar ?? Astro.slots.has('sidebar');
+const hasBefore = Astro.slots.has('before');
 const classes = ['community-page', className].filter(Boolean).join(' ');
 ---
 
 <div class={classes}>
+  {hasBefore && (
+    <div class="community-layout-before">
+      <slot name="before" />
+    </div>
+  )}
+
   <div class:list={['community-shell', hasSidebar && 'community-shell--with-sidebar']}>
     <div class="community-main">
       <slot />

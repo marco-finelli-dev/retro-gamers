@@ -17,7 +17,7 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
   <CommunityLayout class="admin-users-page" sidebar={isStaff}>
     <AdminToolsSidebar slot="sidebar" lang="en" />
 
-    {isStaff && <AdminDashboardBackLink lang="en" />}
+    {isStaff && <AdminDashboardBackLink slot="before" lang="en" />}
 
     <CommunityHero
       kicker="Retro-Gamers.it"

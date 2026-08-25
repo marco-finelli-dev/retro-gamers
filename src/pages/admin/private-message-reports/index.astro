@@ -17,7 +17,7 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
   <CommunityLayout class="admin-private-reports-page" sidebar={isStaff}>
     <AdminToolsSidebar slot="sidebar" lang="it" />
 
-    {isStaff && <AdminDashboardBackLink lang="it" />}
+    {isStaff && <AdminDashboardBackLink slot="before" lang="it" />}
 
     <CommunityHero
       kicker="Community"

@@ -382,11 +382,10 @@ const statCards = [
 <BaseLayout title={copy.title} description={copy.description} lang={lang}>
   <CommunityLayout class="admin-newsletter-page" sidebar={isStaff}>
     <AdminToolsSidebar slot="sidebar" lang={lang} />
+    {isStaff && <AdminDashboardBackLink slot="before" lang={lang} />}
 
     {isStaff ? (
       <>
-        <AdminDashboardBackLink lang={lang} />
-
         <CommunityHero
           kicker="Retro-Gamers.it"
           title={copy.heroTitle}

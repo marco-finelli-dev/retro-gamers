@@ -136,11 +136,10 @@ const formatDifference = (difference: number | null) => {
 <BaseLayout title={title} description={description} lang="en">
   <CommunityLayout class="admin-ratings-page" sidebar={isStaff}>
     <AdminToolsSidebar slot="sidebar" lang="en" />
+    {isStaff && <AdminDashboardBackLink slot="before" lang="en" />}
 
     {isStaff ? (
       <>
-        <AdminDashboardBackLink lang="en" />
-
         <CommunityHero
           kicker="Retro-Gamers.it"
           title="Reader ratings"
