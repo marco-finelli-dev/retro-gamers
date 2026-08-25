@@ -23,6 +23,27 @@ export const publicFreshClient = createClient({
   perspective: 'published'
 });
 
+let publishedReadClient;
+
+export function getPublishedReadClient() {
+  const readToken = process.env.SANITY_API_READ_TOKEN;
+
+  if (!readToken) {
+    return publicFreshClient;
+  }
+
+  if (!publishedReadClient) {
+    publishedReadClient = createClient({
+      ...baseClientConfig,
+      useCdn: false,
+      perspective: 'published',
+      token: readToken
+    });
+  }
+
+  return publishedReadClient;
+}
+
 // Alias mantenuto per compatibilità con gli import esistenti.
 export const client = publicClient;
 

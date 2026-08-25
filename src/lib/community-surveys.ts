@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { logApiError } from './api-errors';
-import { publicFreshClient } from './sanity';
+import { getPublishedReadClient } from './sanity';
 import { supabaseAdmin } from './supabase/server';
 
 export type CommunitySurveyLanguage = 'it' | 'en';
@@ -393,7 +393,7 @@ export async function getOpenCommunitySurveyBySlug(
 
   if (!normalizedSlug) return null;
 
-  const data = await publicFreshClient.fetch(
+  const data = await getPublishedReadClient().fetch(
     `
       *[
         ${openCommunitySurveyFilter} &&
@@ -416,7 +416,7 @@ export async function getCommunitySurveyAdminDocumentsByKey(
 
   if (!normalizedSurveyKey) return [];
 
-  const data = await publicFreshClient.fetch(
+  const data = await getPublishedReadClient().fetch(
     `
       *[
         ${communitySurveyAdminFilter}
@@ -447,7 +447,7 @@ export async function getOpenCommunitySurveyByKey(
 
   if (!normalizedSurveyKey) return null;
 
-  const data = await publicFreshClient.fetch(
+  const data = await getPublishedReadClient().fetch(
     `
       *[
         ${openCommunitySurveyFilter} &&
