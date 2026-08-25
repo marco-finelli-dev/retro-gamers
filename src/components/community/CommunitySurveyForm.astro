@@ -26,9 +26,13 @@ const copy = isEn
       openAnswerPrivacy:
         'To protect your privacy, do not include personal data in open answers.',
       textPlaceholder: 'Write your thoughts here...',
+      questionLabel: 'Question',
+      ofLabel: 'of',
+      continue: 'Continue',
+      back: 'Back',
       submit: 'Send answers',
       submitting: 'Sending...',
-      missing: 'Answer all questions before sending.',
+      missing: 'Answer this question before continuing.',
       sending:
         'Saving your anonymous response...',
       success:
@@ -54,9 +58,13 @@ const copy = isEn
       openAnswerPrivacy:
         'Per proteggere la tua privacy, non inserire dati personali nelle risposte aperte.',
       textPlaceholder: 'Scrivi qui il tuo pensiero...',
+      questionLabel: 'Domanda',
+      ofLabel: 'di',
+      continue: 'Continua',
+      back: 'Indietro',
       submit: 'Invia risposte',
       submitting: 'Invio in corso...',
-      missing: 'Rispondi a tutte le domande prima di inviare.',
+      missing: 'Rispondi a questa domanda prima di continuare.',
       sending:
         'Stiamo salvando la tua risposta anonima...',
       success:
@@ -72,6 +80,8 @@ const copy = isEn
     };
 const formId = `community-survey-${survey.surveyKey}`;
 const questionCountLabel = copy.questionCount(survey.questions.length);
+const totalQuestions = survey.questions.length;
+const hasExistingResponse = responseState.hasResponded;
 ---
 
 <section class="community-card community-survey-card" aria-labelledby={`${formId}-title`}>
@@ -89,15 +99,16 @@ const questionCountLabel = copy.questionCount(survey.questions.length);
   <div
     class="community-survey-status community-survey-status--success"
     data-community-survey-success
-    hidden={!responseState.hasResponded}
+    hidden={!hasExistingResponse}
   >
-    <strong>{responseState.hasResponded ? copy.already : copy.success}</strong>
-    <p>{responseState.hasResponded ? copy.alreadyDetail : copy.successDetail}</p>
+    <strong>{hasExistingResponse ? copy.already : ''}</strong>
+    <p>{hasExistingResponse ? copy.alreadyDetail : ''}</p>
   </div>
 
   <form
     class="community-survey-form"
     data-community-survey-form
+    novalidate
     data-survey-key={survey.surveyKey}
     data-survey-document-id={survey._id}
     data-survey-language={survey.language}
@@ -109,10 +120,32 @@ const questionCountLabel = copy.questionCount(survey.questions.length);
     data-message-already={copy.already}
     data-message-already-detail={copy.alreadyDetail}
     data-message-sending={copy.sending}
+    data-label-question={copy.questionLabel}
+    data-label-of={copy.ofLabel}
+    data-label-continue={copy.continue}
     data-label-submit={copy.submit}
     data-label-submitting={copy.submitting}
-    hidden={responseState.hasResponded}
+    hidden={hasExistingResponse}
   >
+    <div class="community-survey-stepper" aria-live="polite">
+      <div class="community-survey-stepper__meta">
+        <span data-survey-progress-label>
+          {copy.questionLabel} 1 {copy.ofLabel} {totalQuestions}
+        </span>
+      </div>
+      <div
+        class="community-survey-progress"
+        role="progressbar"
+        aria-valuemin="1"
+        aria-valuemax={totalQuestions}
+        aria-valuenow="1"
+        aria-label={`${copy.questionLabel} 1 ${copy.ofLabel} ${totalQuestions}`}
+        data-survey-progress
+      >
+        <span style={`--community-survey-progress: ${(1 / totalQuestions) * 100}%`}></span>
+      </div>
+    </div>
+
     {survey.questions.map((question, index) => {
       const questionName = `${formId}-${question.questionId}`;
       const hint =
@@ -126,8 +159,12 @@ const questionCountLabel = copy.questionCount(survey.questions.length);
         <fieldset
           class="community-survey-question"
           data-survey-question
+          data-survey-step={index}
           data-question-id={question.questionId}
           data-question-type={question.type}
+          tabindex="-1"
+          hidden={index !== 0}
+          aria-hidden={index === 0 ? 'false' : 'true'}
         >
           <legend>
             <span>{index + 1}</span>
@@ -174,18 +211,43 @@ const questionCountLabel = copy.questionCount(survey.questions.length);
 
     <div class="community-survey-form__footer">
       <p class="community-survey-form__message" data-survey-form-status aria-live="polite"></p>
-      <button class="community-action-button community-survey-submit" type="submit">
-        <span class="community-survey-submit__spinner" aria-hidden="true"></span>
-        <span data-survey-submit-label>{copy.submit}</span>
-      </button>
+      <div class="community-survey-form__actions">
+        <button
+          class="community-action-button community-survey-back"
+          type="button"
+          data-survey-back
+          hidden
+        >
+          {copy.back}
+        </button>
+        <button
+          class="community-action-button community-survey-next"
+          type="button"
+          data-survey-next
+          hidden={totalQuestions <= 1}
+        >
+          {copy.continue}
+        </button>
+        <button
+          class="community-action-button community-survey-submit"
+          type="submit"
+          hidden={totalQuestions > 1}
+        >
+          <span class="community-survey-submit__spinner" aria-hidden="true"></span>
+          <span data-survey-submit-label>{copy.submit}</span>
+        </button>
+      </div>
     </div>
   </form>
 </section>
 
 <script>
+  const prefersReducedSurveyMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const setQuestionInvalid = (question, invalid) => {
     if (!(question instanceof HTMLElement)) return;
     question.toggleAttribute('data-invalid', invalid);
+    question.setAttribute('aria-invalid', invalid ? 'true' : 'false');
   };
 
   const setMessage = (node, message, tone = 'error') => {
@@ -198,12 +260,20 @@ const questionCountLabel = copy.questionCount(survey.questions.length);
   document.querySelectorAll('[data-community-survey-form]').forEach((form) => {
     if (!(form instanceof HTMLFormElement)) return;
 
+    const questions = Array.from(form.querySelectorAll('[data-survey-question]'))
+      .filter((question) => question instanceof HTMLElement);
+    const backButton = form.querySelector('[data-survey-back]');
+    const nextButton = form.querySelector('[data-survey-next]');
     const submitButton = form.querySelector('button[type="submit"]');
     const submitLabelNode = submitButton?.querySelector('[data-survey-submit-label]');
     const statusNode = form.querySelector('[data-survey-form-status]');
+    const progressNode = form.querySelector('[data-survey-progress]');
+    const progressBarNode = progressNode?.querySelector('span');
+    const progressLabelNode = form.querySelector('[data-survey-progress-label]');
     const successNode = form
       .closest('.community-survey-card')
       ?.querySelector('[data-community-survey-success]');
+    const surveyCard = form.closest('.community-survey-card');
     const submitLabel = form.dataset.labelSubmit || 'Invia';
     const submittingLabel = form.dataset.labelSubmitting || submitLabel;
     const missingMessage = form.dataset.messageMissing || '';
@@ -213,6 +283,9 @@ const questionCountLabel = copy.questionCount(survey.questions.length);
     const alreadyMessage = form.dataset.messageAlready || successMessage;
     const alreadyDetail = form.dataset.messageAlreadyDetail || '';
     const sendingMessage = form.dataset.messageSending || '';
+    const questionLabel = form.dataset.labelQuestion || 'Domanda';
+    const ofLabel = form.dataset.labelOf || 'di';
+    let currentStep = 0;
 
     const setSuccess = (message, detail) => {
       if (!(successNode instanceof HTMLElement)) return;
@@ -222,64 +295,188 @@ const questionCountLabel = copy.questionCount(survey.questions.length);
       successNode.querySelector('p')?.replaceChildren(detail || '');
     };
 
+    const setControlsDisabled = (disabled) => {
+      [backButton, nextButton, submitButton].forEach((button) => {
+        if (button instanceof HTMLButtonElement) {
+          button.disabled = disabled;
+        }
+      });
+    };
+
+    const getQuestionAnswer = (question, { markInvalid = false } = {}) => {
+      const questionId = question.dataset.questionId || '';
+      const type = question.dataset.questionType || '';
+
+      if (markInvalid) {
+        setQuestionInvalid(question, false);
+      }
+
+      if (type === 'single') {
+        const checked = question.querySelector('input[type="radio"]:checked');
+        const optionId = checked instanceof HTMLInputElement ? checked.value : '';
+
+        if (!optionId && markInvalid) {
+          setQuestionInvalid(question, true);
+        }
+
+        return {
+          answer: { questionId, optionId },
+          valid: Boolean(optionId),
+        };
+      }
+
+      if (type === 'multiple') {
+        const optionIds = Array.from(
+          question.querySelectorAll('input[type="checkbox"]:checked')
+        )
+          .filter((input) => input instanceof HTMLInputElement)
+          .map((input) => input.value);
+
+        if (optionIds.length < 1 && markInvalid) {
+          setQuestionInvalid(question, true);
+        }
+
+        return {
+          answer: { questionId, optionIds },
+          valid: optionIds.length > 0,
+        };
+      }
+
+      const textarea = question.querySelector('textarea');
+      const textAnswer = textarea instanceof HTMLTextAreaElement
+        ? textarea.value.trim()
+        : '';
+
+      if (!textAnswer && markInvalid) {
+        setQuestionInvalid(question, true);
+      }
+
+      return {
+        answer: { questionId, textAnswer },
+        valid: Boolean(textAnswer),
+      };
+    };
+
+    const focusCurrentQuestion = () => {
+      const activeQuestion = questions[currentStep];
+
+      if (!(activeQuestion instanceof HTMLElement)) return;
+
+      if (surveyCard instanceof HTMLElement) {
+        surveyCard.scrollIntoView({
+          block: 'start',
+          behavior: prefersReducedSurveyMotion ? 'auto' : 'smooth',
+        });
+      }
+
+      window.requestAnimationFrame(() => {
+        activeQuestion.focus({ preventScroll: true });
+      });
+    };
+
+    const updateStep = ({ shouldFocus = false } = {}) => {
+      const totalSteps = questions.length || 1;
+      const progressPercent = ((currentStep + 1) / totalSteps) * 100;
+
+      questions.forEach((question, index) => {
+        if (!(question instanceof HTMLElement)) return;
+
+        const isActive = index === currentStep;
+
+        question.hidden = !isActive;
+        question.toggleAttribute('data-active', isActive);
+        question.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      });
+
+      if (progressLabelNode instanceof HTMLElement) {
+        progressLabelNode.textContent = `${questionLabel} ${currentStep + 1} ${ofLabel} ${totalSteps}`;
+      }
+
+      if (progressNode instanceof HTMLElement) {
+        progressNode.setAttribute('aria-valuenow', String(currentStep + 1));
+        progressNode.setAttribute('aria-label', `${questionLabel} ${currentStep + 1} ${ofLabel} ${totalSteps}`);
+      }
+
+      if (progressBarNode instanceof HTMLElement) {
+        progressBarNode.style.setProperty('--community-survey-progress', `${progressPercent}%`);
+      }
+
+      if (backButton instanceof HTMLElement) {
+        backButton.hidden = currentStep === 0;
+      }
+
+      if (nextButton instanceof HTMLElement) {
+        nextButton.hidden = currentStep >= totalSteps - 1;
+      }
+
+      if (submitButton instanceof HTMLElement) {
+        submitButton.hidden = currentStep < totalSteps - 1;
+      }
+
+      if (shouldFocus) {
+        focusCurrentQuestion();
+      }
+    };
+
+    if (backButton instanceof HTMLButtonElement) {
+      backButton.addEventListener('click', () => {
+        if (form.hasAttribute('data-submitting')) return;
+        currentStep = Math.max(0, currentStep - 1);
+        setMessage(statusNode, '', 'info');
+        updateStep({ shouldFocus: true });
+      });
+    }
+
+    if (nextButton instanceof HTMLButtonElement) {
+      nextButton.addEventListener('click', () => {
+        if (form.hasAttribute('data-submitting')) return;
+
+        const activeQuestion = questions[currentStep];
+
+        if (
+          !(activeQuestion instanceof HTMLElement) ||
+          !getQuestionAnswer(activeQuestion, { markInvalid: true }).valid
+        ) {
+          setMessage(statusNode, missingMessage, 'error');
+          return;
+        }
+
+        setMessage(statusNode, '', 'info');
+        currentStep = Math.min(questions.length - 1, currentStep + 1);
+        updateStep({ shouldFocus: true });
+      });
+    }
+
+    updateStep();
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
 
-      const questions = Array.from(form.querySelectorAll('[data-survey-question]'));
+      if (form.hasAttribute('data-submitting')) return;
+
       const answers = [];
       let hasMissingAnswer = false;
+      let firstInvalidStep = -1;
 
-      questions.forEach((question) => {
+      questions.forEach((question, index) => {
         if (!(question instanceof HTMLElement)) return;
 
-        const questionId = question.dataset.questionId || '';
-        const type = question.dataset.questionType || '';
+        const result = getQuestionAnswer(question, { markInvalid: true });
 
-        setQuestionInvalid(question, false);
-
-        if (type === 'single') {
-          const checked = question.querySelector('input[type="radio"]:checked');
-          const optionId = checked instanceof HTMLInputElement ? checked.value : '';
-
-          if (!optionId) {
-            setQuestionInvalid(question, true);
-            hasMissingAnswer = true;
-          }
-
-          answers.push({ questionId, optionId });
-          return;
-        }
-
-        if (type === 'multiple') {
-          const optionIds = Array.from(
-            question.querySelectorAll('input[type="checkbox"]:checked')
-          )
-            .filter((input) => input instanceof HTMLInputElement)
-            .map((input) => input.value);
-
-          if (optionIds.length < 1) {
-            setQuestionInvalid(question, true);
-            hasMissingAnswer = true;
-          }
-
-          answers.push({ questionId, optionIds });
-          return;
-        }
-
-        const textarea = question.querySelector('textarea');
-        const textAnswer = textarea instanceof HTMLTextAreaElement
-          ? textarea.value.trim()
-          : '';
-
-        if (!textAnswer) {
-          setQuestionInvalid(question, true);
+        if (!result.valid) {
           hasMissingAnswer = true;
+
+          if (firstInvalidStep === -1) {
+            firstInvalidStep = index;
+          }
         }
 
-        answers.push({ questionId, textAnswer });
+        answers.push(result.answer);
       });
 
       if (hasMissingAnswer) {
+        currentStep = firstInvalidStep === -1 ? currentStep : firstInvalidStep;
+        updateStep({ shouldFocus: true });
         setMessage(statusNode, missingMessage, 'error');
         return;
       }
@@ -288,9 +485,7 @@ const questionCountLabel = copy.questionCount(survey.questions.length);
       form.toggleAttribute('data-submitting', true);
       setMessage(statusNode, sendingMessage, 'info');
 
-      if (submitButton instanceof HTMLButtonElement) {
-        submitButton.disabled = true;
-      }
+      setControlsDisabled(true);
 
       if (submitLabelNode instanceof HTMLElement) {
         submitLabelNode.textContent = submittingLabel;
@@ -329,10 +524,7 @@ const questionCountLabel = copy.questionCount(survey.questions.length);
         setMessage(statusNode, errorMessage, 'error');
       } finally {
         form.removeAttribute('data-submitting');
-
-        if (submitButton instanceof HTMLButtonElement) {
-          submitButton.disabled = false;
-        }
+        setControlsDisabled(false);
 
         if (submitLabelNode instanceof HTMLElement) {
           submitLabelNode.textContent = submitLabel;
