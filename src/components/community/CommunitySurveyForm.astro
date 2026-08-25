@@ -1,5 +1,6 @@
 ---
 import type {
+  CommunitySurveyAvailabilityState,
   CommunitySurveyLanguage,
   CommunitySurveyPublic,
   CommunitySurveyResponseState,
@@ -9,9 +10,10 @@ interface Props {
   survey: CommunitySurveyPublic;
   lang: CommunitySurveyLanguage;
   responseState: CommunitySurveyResponseState;
+  availabilityState?: CommunitySurveyAvailabilityState;
 }
 
-const { survey, lang, responseState } = Astro.props as Props;
+const { survey, lang, responseState, availabilityState = 'open' } = Astro.props as Props;
 const isEn = lang === 'en';
 const copy = isEn
   ? {
@@ -43,6 +45,10 @@ const copy = isEn
         'You have already taken part in this survey from this browser.',
       alreadyDetail:
         'To keep the survey fair, each browser can submit one anonymous response.',
+      notOpen:
+        'This survey is not open yet.',
+      closed:
+        'This survey is closed. Thank you to everyone who took part.',
       error:
         'We could not save your answers. Please try again in a moment.',
     }
@@ -75,13 +81,23 @@ const copy = isEn
         'Hai già partecipato a questo sondaggio da questo browser.',
       alreadyDetail:
         'Per mantenere il sondaggio corretto, ogni browser può inviare una sola risposta anonima.',
+      notOpen:
+        'Il sondaggio non è ancora aperto.',
+      closed:
+        'Il sondaggio è chiuso. Grazie a tutti per aver partecipato.',
       error:
         'Non è stato possibile salvare le risposte. Riprova tra poco.',
     };
 const formId = `community-survey-${survey.surveyKey}`;
 const questionCountLabel = copy.questionCount(survey.questions.length);
 const totalQuestions = survey.questions.length;
-const hasExistingResponse = responseState.hasResponded;
+const isSurveyOpen = availabilityState === 'open';
+const hasExistingResponse = isSurveyOpen && responseState.hasResponded;
+const availabilityMessage = availabilityState === 'scheduled'
+  ? copy.notOpen
+  : availabilityState === 'closed'
+    ? copy.closed
+    : '';
 ---
 
 <section class="community-card community-survey-card" aria-labelledby={`${formId}-title`}>
@@ -105,6 +121,13 @@ const hasExistingResponse = responseState.hasResponded;
     <p>{hasExistingResponse ? copy.alreadyDetail : ''}</p>
   </div>
 
+  <div
+    class="community-survey-status"
+    hidden={isSurveyOpen}
+  >
+    <strong>{availabilityMessage}</strong>
+  </div>
+
   <form
     class="community-survey-form"
     data-community-survey-form
@@ -119,13 +142,15 @@ const hasExistingResponse = responseState.hasResponded;
     data-message-success-detail={copy.successDetail}
     data-message-already={copy.already}
     data-message-already-detail={copy.alreadyDetail}
+    data-message-not-open={copy.notOpen}
+    data-message-closed={copy.closed}
     data-message-sending={copy.sending}
     data-label-question={copy.questionLabel}
     data-label-of={copy.ofLabel}
     data-label-continue={copy.continue}
     data-label-submit={copy.submit}
     data-label-submitting={copy.submitting}
-    hidden={hasExistingResponse}
+    hidden={hasExistingResponse || !isSurveyOpen}
   >
     <div class="community-survey-stepper" aria-live="polite">
       <div class="community-survey-stepper__meta">
@@ -282,6 +307,8 @@ const hasExistingResponse = responseState.hasResponded;
     const successDetail = form.dataset.messageSuccessDetail || '';
     const alreadyMessage = form.dataset.messageAlready || successMessage;
     const alreadyDetail = form.dataset.messageAlreadyDetail || '';
+    const notOpenMessage = form.dataset.messageNotOpen || errorMessage;
+    const closedMessage = form.dataset.messageClosed || errorMessage;
     const sendingMessage = form.dataset.messageSending || '';
     const questionLabel = form.dataset.labelQuestion || 'Domanda';
     const ofLabel = form.dataset.labelOf || 'di';
@@ -510,6 +537,16 @@ const hasExistingResponse = responseState.hasResponded;
             setSuccess(alreadyMessage, alreadyDetail);
 
             form.hidden = true;
+            return;
+          }
+
+          if (result?.error === 'survey_not_open') {
+            setMessage(statusNode, notOpenMessage, 'error');
+            return;
+          }
+
+          if (result?.error === 'survey_closed') {
+            setMessage(statusNode, closedMessage, 'error');
             return;
           }
 

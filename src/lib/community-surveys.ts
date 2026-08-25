@@ -6,6 +6,7 @@ import { supabaseAdmin } from './supabase/server';
 export type CommunitySurveyLanguage = 'it' | 'en';
 export type CommunitySurveyStatus = 'draft' | 'open' | 'closed';
 export type CommunitySurveyQuestionType = 'single' | 'multiple' | 'text';
+export type CommunitySurveyAvailabilityState = 'draft' | 'scheduled' | 'open' | 'closed';
 
 export type CommunitySurveyOption = {
   optionId: string;
@@ -46,9 +47,16 @@ export type CommunitySurveyPublic = {
   excerpt?: string;
   cardImage?: CommunitySurveyImage;
   status: CommunitySurveyStatus;
+  opensAt?: string;
+  closesAt?: string;
   questions: CommunitySurveyQuestion[];
   translatedVersion?: CommunitySurveyTranslation | null;
   translatedVersions?: CommunitySurveyTranslation[];
+};
+
+export type CommunitySurveyAvailability = {
+  state: CommunitySurveyAvailabilityState;
+  isOpen: boolean;
 };
 
 export type CommunitySurveyResponseState = {
@@ -146,6 +154,8 @@ const communitySurveyFields = `
     alt
   },
   status,
+  opensAt,
+  closesAt,
   questions[]{
     questionId,
     text,
@@ -164,7 +174,7 @@ const communitySurveyFields = `
   "translatedVersions": *[
     _type == "communitySurvey" &&
     translatedVersion._ref == ^._id &&
-    status == "open" &&
+    status in ["open", "closed"] &&
     defined(slug.current) &&
     !(_id in path("drafts.**"))
   ]{
@@ -178,6 +188,13 @@ const communitySurveyFields = `
 const openCommunitySurveyFilter = `
   _type == "communitySurvey" &&
   status == "open" &&
+  defined(slug.current) &&
+  !(_id in path("drafts.**"))
+`;
+
+const publicCommunitySurveyFilter = `
+  _type == "communitySurvey" &&
+  status in ["open", "closed"] &&
   defined(slug.current) &&
   !(_id in path("drafts.**"))
 `;
@@ -343,6 +360,16 @@ const normalizeSurveyImage = (image: unknown): CommunitySurveyImage | undefined 
   };
 };
 
+const normalizeSurveyDateTime = (value: unknown) => {
+  const dateTime = String(value || '').trim();
+
+  if (!dateTime || !Number.isFinite(new Date(dateTime).getTime())) {
+    return undefined;
+  }
+
+  return dateTime;
+};
+
 const normalizeCommunitySurvey = (
   survey: unknown,
   { requireOpen = true } = {}
@@ -355,6 +382,8 @@ const normalizeCommunitySurvey = (
   const surveyKey = normalizeTechnicalId(value?.surveyKey);
   const status = value?.status;
   const cardImage = normalizeSurveyImage(value?.cardImage);
+  const opensAt = normalizeSurveyDateTime(value?.opensAt);
+  const closesAt = normalizeSurveyDateTime(value?.closesAt);
 
   if (
     !_id ||
@@ -394,11 +423,41 @@ const normalizeCommunitySurvey = (
     excerpt: String(value?.excerpt || '').trim(),
     cardImage,
     status,
+    opensAt,
+    closesAt,
     questions,
     translatedVersion,
     translatedVersions,
   };
 };
+
+export function getCommunitySurveyAvailability(
+  survey: Pick<CommunitySurveyPublic, 'status' | 'opensAt' | 'closesAt'> | null | undefined,
+  now: Date | string | number = new Date()
+): CommunitySurveyAvailability {
+  if (!survey || survey.status === 'draft') {
+    return { state: 'draft', isOpen: false };
+  }
+
+  if (survey.status === 'closed') {
+    return { state: 'closed', isOpen: false };
+  }
+
+  const nowTime = new Date(now).getTime();
+  const currentTime = Number.isFinite(nowTime) ? nowTime : Date.now();
+  const opensTime = survey.opensAt ? new Date(survey.opensAt).getTime() : null;
+  const closesTime = survey.closesAt ? new Date(survey.closesAt).getTime() : null;
+
+  if (Number.isFinite(opensTime) && currentTime < Number(opensTime)) {
+    return { state: 'scheduled', isOpen: false };
+  }
+
+  if (Number.isFinite(closesTime) && currentTime >= Number(closesTime)) {
+    return { state: 'closed', isOpen: false };
+  }
+
+  return { state: 'open', isOpen: true };
+}
 
 export function getCommunitySurveyUrl(
   survey:
@@ -425,6 +484,15 @@ export async function getOpenCommunitySurveyBySlug(
   slug: string,
   language: CommunitySurveyLanguage = 'it'
 ): Promise<CommunitySurveyPublic | null> {
+  const survey = await getPublishedCommunitySurveyBySlug(slug, language);
+
+  return getCommunitySurveyAvailability(survey).isOpen ? survey : null;
+}
+
+export async function getPublishedCommunitySurveyBySlug(
+  slug: string,
+  language: CommunitySurveyLanguage = 'it'
+): Promise<CommunitySurveyPublic | null> {
   const normalizedSlug = normalizeCommunitySurveySlug(slug);
 
   if (!normalizedSlug) return null;
@@ -432,7 +500,7 @@ export async function getOpenCommunitySurveyBySlug(
   const data = await getPublishedReadClient().fetch(
     `
       *[
-        ${openCommunitySurveyFilter} &&
+        ${publicCommunitySurveyFilter} &&
         slug.current == $slug &&
         language == $language
       ][0] {
@@ -442,7 +510,7 @@ export async function getOpenCommunitySurveyBySlug(
     { slug: normalizedSlug, language }
   );
 
-  return normalizeCommunitySurvey(data);
+  return normalizeCommunitySurvey(data, { requireOpen: false });
 }
 
 export async function getOpenCommunitySurveyForLanguage(
@@ -455,14 +523,18 @@ export async function getOpenCommunitySurveyForLanguage(
       *[
         ${openCommunitySurveyFilter} &&
         language == $language
-      ] | order(_createdAt desc)[0] {
+      ] | order(_createdAt desc) {
         ${communitySurveyFields}
       }
     `,
     { language: normalizedLanguage }
   );
 
-  return normalizeCommunitySurvey(data);
+  const surveys = (Array.isArray(data) ? data : [])
+    .map((survey) => normalizeCommunitySurvey(survey, { requireOpen: false }))
+    .filter(Boolean) as CommunitySurveyPublic[];
+
+  return surveys.find((survey) => getCommunitySurveyAvailability(survey).isOpen) || null;
 }
 
 export async function getCommunitySurveyAdminDocumentsByKey(
@@ -498,6 +570,24 @@ export async function getOpenCommunitySurveyByKey(
     surveyDocumentId?: string | null;
   } = {}
 ): Promise<CommunitySurveyPublic | null> {
+  const survey = await getPublishedCommunitySurveyByKey(surveyKey, {
+    language,
+    surveyDocumentId,
+  });
+
+  return getCommunitySurveyAvailability(survey).isOpen ? survey : null;
+}
+
+export async function getPublishedCommunitySurveyByKey(
+  surveyKey: string,
+  {
+    language = null,
+    surveyDocumentId = '',
+  }: {
+    language?: CommunitySurveyLanguage | null;
+    surveyDocumentId?: string | null;
+  } = {}
+): Promise<CommunitySurveyPublic | null> {
   const normalizedSurveyKey = normalizeTechnicalId(surveyKey);
   const normalizedDocumentId = String(surveyDocumentId || '').trim();
 
@@ -506,7 +596,7 @@ export async function getOpenCommunitySurveyByKey(
   const data = await getPublishedReadClient().fetch(
     `
       *[
-        ${openCommunitySurveyFilter} &&
+        ${publicCommunitySurveyFilter} &&
         surveyKey == $surveyKey &&
         (!defined($language) || language == $language) &&
         ($surveyDocumentId == "" || _id == $surveyDocumentId)
@@ -521,7 +611,7 @@ export async function getOpenCommunitySurveyByKey(
     }
   );
 
-  return normalizeCommunitySurvey(data);
+  return normalizeCommunitySurvey(data, { requireOpen: false });
 }
 
 export async function getCommunitySurveyResponseState(
@@ -748,13 +838,23 @@ export async function submitCommunitySurveyResponse({
   | { ok: true; responseId: string; submittedAt: string | null }
   | { ok: false; error: string; status: number; field?: string }
 > {
-  const survey = await getOpenCommunitySurveyByKey(surveyKey, {
+  const survey = await getPublishedCommunitySurveyByKey(surveyKey, {
     language,
     surveyDocumentId,
   });
 
   if (!survey) {
     return { ok: false, error: 'survey_not_found', status: 404 };
+  }
+
+  const availability = getCommunitySurveyAvailability(survey);
+
+  if (!availability.isOpen) {
+    return {
+      ok: false,
+      error: availability.state === 'scheduled' ? 'survey_not_open' : 'survey_closed',
+      status: 409,
+    };
   }
 
   const identity = getCommunitySurveyGuestIdentity(cookies);

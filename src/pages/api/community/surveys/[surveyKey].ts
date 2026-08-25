@@ -1,8 +1,9 @@
 import type { APIRoute } from 'astro';
 import { logApiError } from '../../../../lib/api-errors';
 import {
+  getCommunitySurveyAvailability,
   getCommunitySurveyResponseState,
-  getOpenCommunitySurveyByKey,
+  getPublishedCommunitySurveyByKey,
   normalizeCommunitySurveyLanguage,
   normalizeTechnicalId,
   surveyJson,
@@ -18,7 +19,7 @@ export const GET: APIRoute = async ({ params, url, cookies }) => {
   }
 
   try {
-    const survey = await getOpenCommunitySurveyByKey(surveyKey, {
+    const survey = await getPublishedCommunitySurveyByKey(surveyKey, {
       language,
       surveyDocumentId,
     });
@@ -27,14 +28,15 @@ export const GET: APIRoute = async ({ params, url, cookies }) => {
       return surveyJson({ ok: false, error: 'survey_not_found' }, 404);
     }
 
-    const responseState = await getCommunitySurveyResponseState(
-      cookies,
-      survey.surveyKey
-    );
+    const availability = getCommunitySurveyAvailability(survey);
+    const responseState = availability.isOpen
+      ? await getCommunitySurveyResponseState(cookies, survey.surveyKey)
+      : { hasResponded: false, submittedAt: null };
 
     return surveyJson({
       ok: true,
       survey,
+      availability,
       responseState,
     });
   } catch (error) {

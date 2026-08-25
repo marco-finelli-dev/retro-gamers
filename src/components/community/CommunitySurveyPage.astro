@@ -6,9 +6,10 @@ import CommunityHero from './CommunityHero.astro';
 import CommunityLayout from './CommunityLayout.astro';
 import CommunitySurveyForm from './CommunitySurveyForm.astro';
 import {
+  getCommunitySurveyAvailability,
   getCommunitySurveyResponseState,
   getCommunitySurveyUrl,
-  getOpenCommunitySurveyBySlug,
+  getPublishedCommunitySurveyBySlug,
   type CommunitySurveyLanguage,
 } from '../../lib/community-surveys';
 import { getAllPosts, groupPosts } from '../../lib/posts';
@@ -21,9 +22,15 @@ interface Props {
 const { slug = '', lang = 'it' } = Astro.props as Props;
 const currentLang: CommunitySurveyLanguage = lang === 'en' ? 'en' : 'it';
 const isEn = currentLang === 'en';
-const survey = await getOpenCommunitySurveyBySlug(slug, currentLang);
+const survey = await getPublishedCommunitySurveyBySlug(slug, currentLang);
 
 if (!survey) {
+  return Astro.rewrite('/404');
+}
+
+const availability = getCommunitySurveyAvailability(survey);
+
+if (availability.state === 'draft') {
   return Astro.rewrite('/404');
 }
 
@@ -35,10 +42,9 @@ const headerReviews = isEn
 const headerNews = isEn
   ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
   : groupedPosts.allNews;
-const responseState = await getCommunitySurveyResponseState(
-  Astro.cookies,
-  survey.surveyKey
-);
+const responseState = availability.isOpen
+  ? await getCommunitySurveyResponseState(Astro.cookies, survey.surveyKey)
+  : { hasResponded: false, submittedAt: null };
 const copy = isEn
   ? {
       canonicalBase: 'https://www.retro-gamers.it/en/community/surveys',
@@ -114,6 +120,7 @@ const pageDescription = survey.description || copy.defaultDescription;
       survey={survey}
       lang={currentLang}
       responseState={responseState}
+      availabilityState={availability.state}
     />
   </CommunityLayout>
 </BaseLayout>
