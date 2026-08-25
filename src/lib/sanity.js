@@ -24,11 +24,29 @@ export const publicFreshClient = createClient({
 });
 
 let publishedReadClient;
+let hasWarnedMissingReadToken = false;
+
+function getSanityReadToken() {
+  return String(process.env.SANITY_API_READ_TOKEN || '').trim();
+}
+
+function warnMissingReadToken() {
+  if (!import.meta.env.DEV || hasWarnedMissingReadToken) {
+    return;
+  }
+
+  hasWarnedMissingReadToken = true;
+  console.warn(
+    '[Sanity] SANITY_API_READ_TOKEN missing: authenticated published content may be unavailable locally.'
+  );
+}
 
 export function getPublishedReadClient() {
-  const readToken = process.env.SANITY_API_READ_TOKEN;
+  const readToken = getSanityReadToken();
 
   if (!readToken) {
+    warnMissingReadToken();
+
     return publicFreshClient;
   }
 
@@ -50,7 +68,7 @@ export const client = publicClient;
 let previewClient;
 
 export function getPreviewClient() {
-  const readToken = process.env.SANITY_API_READ_TOKEN;
+  const readToken = getSanityReadToken();
 
   if (!readToken) {
     throw new Error('Sanity preview read token is not configured.');
