@@ -34,6 +34,7 @@ const activeSurvey = await getOpenCommunitySurveyForLanguage(isEn ? 'en' : 'it')
 const hasActiveSurvey = Boolean(activeSurvey);
 const hasSingleQuiz = publishedQuizzes.length === 1 && !hasActiveSurvey;
 const hasParticipationItems = publishedQuizzes.length > 0 || hasActiveSurvey;
+const compactExcerptMaxLength = 160;
 
 const copy = isEn
   ? {
@@ -44,12 +45,9 @@ const copy = isEn
       quizTitle: 'Retro-Gamers Quiz',
       quizAll: 'All quizzes',
       quizCta: 'Play',
-      surveyBadge: 'Survey open',
+      surveyBadge: 'Survey',
       surveyCta: 'Take the survey',
-      surveyText:
-        "Tell us what you enjoy about the site, what you'd like to see next and how we can improve.",
       surveyAnonymous: 'Anonymous',
-      surveyFewMinutes: 'Takes a few minutes',
       voicesTitle: 'Community voices',
       voicesText: 'Comments, memories and conversations from readers who are bringing Retro-Gamers.it to life beyond the articles.',
       primary: 'Visit the community',
@@ -78,12 +76,9 @@ const copy = isEn
       quizTitle: 'Quiz Retro-Gamers',
       quizAll: 'Tutti i quiz',
       quizCta: 'Gioca',
-      surveyBadge: 'Sondaggio attivo',
+      surveyBadge: 'Sondaggio',
       surveyCta: 'Partecipa al sondaggio',
-      surveyText:
-        'Dicci cosa apprezzi del sito, cosa vorresti vedere in futuro e come possiamo migliorare.',
       surveyAnonymous: 'Anonimo',
-      surveyFewMinutes: 'Pochi minuti',
       voicesTitle: 'Le voci della community',
       voicesText: 'Commenti, ricordi e discussioni dai lettori che stanno dando vita a Retro-Gamers.it oltre gli articoli.',
       primary: 'Vai alla community',
@@ -112,6 +107,14 @@ const profileHref = isEn
   ? (isLoggedIn ? '/en/account/' : '/en/account/register/')
   : (isLoggedIn ? '/account/' : '/account/register/');
 
+const getCompactExcerpt = (preferred?: string, fallback?: string) => {
+  const text = String(preferred || fallback || '').replace(/\s+/g, ' ').trim();
+
+  if (text.length <= compactExcerptMaxLength) return text;
+
+  return `${text.slice(0, compactExcerptMaxLength - 1).trim()}…`;
+};
+
 const getQuizCoverUrl = (quiz: QuizSummary) => {
   if (!quiz.coverImage?.asset) return '';
 
@@ -137,6 +140,9 @@ const getSurveyCoverUrl = () => {
 };
 
 const surveyCoverUrl = getSurveyCoverUrl();
+const surveyExcerpt = activeSurvey
+  ? getCompactExcerpt(activeSurvey.excerpt, activeSurvey.description)
+  : '';
 
 const getQuizDifficultyLabel = (difficulty?: string) =>
   difficulty && (copy.difficultyLabels as Record<string, string>)[difficulty]
@@ -165,7 +171,11 @@ const getQuizDifficultyLabel = (difficulty?: string) =>
       </header>
 
       <div
-        class={`home-community-strip__quiz-grid${hasSingleQuiz ? ' home-community-strip__quiz-grid--featured' : ''}`}
+        class:list={[
+          'home-community-strip__quiz-grid',
+          hasSingleQuiz && 'home-community-strip__quiz-grid--featured',
+          hasActiveSurvey && 'home-community-strip__quiz-grid--participation',
+        ]}
         aria-label={hasActiveSurvey ? copy.participationRailLabel : copy.quizRailLabel}
       >
         {activeSurvey && (
@@ -195,12 +205,11 @@ const getQuizDifficultyLabel = (difficulty?: string) =>
                 <span>{copy.surveyBadge}</span>
                 <span>{activeSurvey.questions.length} {copy.questions}</span>
                 <span>{copy.surveyAnonymous}</span>
-                <span>{copy.surveyFewMinutes}</span>
               </span>
 
               <strong>{activeSurvey.title}</strong>
               <span class="home-community-strip__quiz-excerpt home-community-strip__survey-excerpt">
-                {copy.surveyText}
+                {surveyExcerpt}
               </span>
               <span class="home-community-strip__quiz-cta">{copy.surveyCta}</span>
             </span>
@@ -211,7 +220,7 @@ const getQuizDifficultyLabel = (difficulty?: string) =>
           const coverUrl = getQuizCoverUrl(quiz);
           const difficulty = getQuizDifficultyLabel(quiz.difficulty);
           const href = getQuizUrl(quiz, isEn ? 'en' : 'it');
-          const quizExcerpt = quiz.excerpt || quiz.subtitle || '';
+          const quizExcerpt = getCompactExcerpt(quiz.excerpt, quiz.subtitle);
 
           return (
             <a
@@ -247,9 +256,7 @@ const getQuizDifficultyLabel = (difficulty?: string) =>
                 </span>
 
                 <strong>{quiz.title}</strong>
-                {hasSingleQuiz && quizExcerpt && (
-                  <span class="home-community-strip__quiz-excerpt">{quizExcerpt}</span>
-                )}
+                <span class="home-community-strip__quiz-excerpt">{quizExcerpt}</span>
                 <span class="home-community-strip__quiz-cta">{copy.quizCta}</span>
               </span>
             </a>

@@ -43,6 +43,7 @@ export type CommunitySurveyPublic = {
   language: CommunitySurveyLanguage;
   surveyKey: string;
   description?: string;
+  excerpt?: string;
   cardImage?: CommunitySurveyImage;
   status: CommunitySurveyStatus;
   questions: CommunitySurveyQuestion[];
@@ -137,6 +138,7 @@ const communitySurveyFields = `
   language,
   surveyKey,
   description,
+  excerpt,
   cardImage {
     asset->{ _id, url },
     crop,
@@ -389,6 +391,7 @@ const normalizeCommunitySurvey = (
     language,
     surveyKey,
     description: String(value?.description || '').trim(),
+    excerpt: String(value?.excerpt || '').trim(),
     cardImage,
     status,
     questions,
