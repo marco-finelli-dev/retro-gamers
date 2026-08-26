@@ -323,7 +323,19 @@ const availabilityMessage = availabilityState === 'scheduled'
     const sendingMessage = form.dataset.messageSending || '';
     const questionLabel = form.dataset.labelQuestion || 'Domanda';
     const ofLabel = form.dataset.labelOf || 'di';
+    const surveyKey = form.dataset.surveyKey || '';
+    const completedStorageKey = surveyKey ? `communitySurveyCompleted:${surveyKey}` : '';
     let currentStep = 0;
+
+    const markSurveyCompleted = () => {
+      try {
+        if (completedStorageKey) {
+          window.localStorage.setItem(completedStorageKey, String(Date.now()));
+        }
+      } catch {
+        // The server-side submission remains the source of truth.
+      }
+    };
 
     const getQuestionMaxSelections = (question) => {
       if (!(question instanceof HTMLElement)) return null;
@@ -630,6 +642,7 @@ const availabilityMessage = availabilityState === 'scheduled'
           return;
         }
 
+        markSurveyCompleted();
         setSuccess(successMessage, successDetail);
 
         form.hidden = true;

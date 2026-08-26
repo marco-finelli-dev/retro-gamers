@@ -30,11 +30,14 @@ const publishedQuizzes = quizzes;
 const sectionId = `home-community-strip-title-${lang}`;
 const participationTitleId = `home-community-participation-title-${lang}`;
 const voicesTitleId = `home-community-voices-title-${lang}`;
+const surveyPromptTitleId = `home-community-survey-prompt-title-${lang}`;
+const surveyPromptDescriptionId = `home-community-survey-prompt-description-${lang}`;
 const activeSurvey = await getOpenCommunitySurveyForLanguage(isEn ? 'en' : 'it');
 const hasActiveSurvey = Boolean(activeSurvey);
 const hasSingleQuiz = publishedQuizzes.length === 1 && !hasActiveSurvey;
 const hasParticipationItems = publishedQuizzes.length > 0 || hasActiveSurvey;
 const compactExcerptMaxLength = 160;
+const surveyPromptCooldownMs = 7 * 24 * 60 * 60 * 1000;
 
 const copy = isEn
   ? {
@@ -47,6 +50,13 @@ const copy = isEn
       quizCta: 'Play',
       surveyCta: 'Take the survey',
       surveyAnonymous: 'Anonymous',
+      surveyPromptEyebrow: 'Community survey',
+      surveyPromptTitle: 'Help us shape the future of Retro-Gamers.it',
+      surveyPromptText: (count: number) =>
+        `We’ve prepared ${count} anonymous ${count === 1 ? 'question' : 'questions'} about the site’s content, your interests and what we could improve.`,
+      surveyPromptNote: 'It only takes a few minutes.',
+      surveyPromptDismiss: 'Not now',
+      surveyPromptClose: 'Close survey invitation',
       voicesTitle: 'Community voices',
       voicesText: 'Comments, memories and conversations from readers who are bringing Retro-Gamers.it to life beyond the articles.',
       primary: 'Visit the community',
@@ -77,6 +87,13 @@ const copy = isEn
       quizCta: 'Gioca',
       surveyCta: 'Partecipa al sondaggio',
       surveyAnonymous: 'Anonimo',
+      surveyPromptEyebrow: 'Sondaggio community',
+      surveyPromptTitle: 'Aiutaci a costruire il futuro di Retro-Gamers.it',
+      surveyPromptText: (count: number) =>
+        `Abbiamo preparato ${count} ${count === 1 ? 'domanda anonima' : 'domande anonime'} sui contenuti del sito, i tuoi interessi e su cosa possiamo migliorare.`,
+      surveyPromptNote: 'Richiede solo pochi minuti.',
+      surveyPromptDismiss: 'Non ora',
+      surveyPromptClose: 'Chiudi invito sondaggio',
       voicesTitle: 'Le voci della community',
       voicesText: 'Commenti, ricordi e discussioni dai lettori che stanno dando vita a Retro-Gamers.it oltre gli articoli.',
       primary: 'Vai alla community',
@@ -329,3 +346,184 @@ const getQuizDifficultyLabel = (difficulty?: string) =>
     </div>
   </section>
 </section>
+
+{activeSurvey && (
+  <>
+    <div
+      class="home-survey-prompt"
+      data-home-survey-prompt
+      data-survey-key={activeSurvey.surveyKey}
+      data-dismissed-key={`communitySurveyPromptDismissed:${activeSurvey.surveyKey}`}
+      data-completed-key={`communitySurveyCompleted:${activeSurvey.surveyKey}`}
+      data-cooldown-ms={String(surveyPromptCooldownMs)}
+      hidden
+    >
+      <section
+        class="home-survey-prompt__dialog"
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby={surveyPromptTitleId}
+        aria-describedby={surveyPromptDescriptionId}
+        tabindex="-1"
+      >
+        <button
+          class="home-survey-prompt__close"
+          type="button"
+          aria-label={copy.surveyPromptClose}
+          data-home-survey-prompt-dismiss
+        >
+          ×
+        </button>
+
+        <p class="home-survey-prompt__eyebrow">{copy.surveyPromptEyebrow}</p>
+        <h2 id={surveyPromptTitleId}>{copy.surveyPromptTitle}</h2>
+        <p id={surveyPromptDescriptionId}>
+          {copy.surveyPromptText(activeSurvey.questions.length)}
+        </p>
+        <p class="home-survey-prompt__note">{copy.surveyPromptNote}</p>
+
+        <div class="home-survey-prompt__actions">
+          <a
+            class="home-survey-prompt__primary"
+            href={surveyHref}
+            data-home-survey-prompt-cta
+          >
+            {copy.surveyCta}
+          </a>
+          <button
+            class="home-survey-prompt__secondary"
+            type="button"
+            data-home-survey-prompt-dismiss
+          >
+            {copy.surveyPromptDismiss}
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (() => {
+        const prompt = document.querySelector('[data-home-survey-prompt]');
+
+        if (!(prompt instanceof HTMLElement)) return;
+
+        const dismissControls = Array.from(prompt.querySelectorAll('[data-home-survey-prompt-dismiss]'));
+        const cta = prompt.querySelector('[data-home-survey-prompt-cta]');
+        const dismissedKey = prompt.dataset.dismissedKey || '';
+        const completedKey = prompt.dataset.completedKey || '';
+        const cooldownMs = Number(prompt.dataset.cooldownMs || 0) || 604800000;
+        const openDelayMs = 2500;
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let openTimer = 0;
+        let isOpen = false;
+
+        const storage = {
+          get(key) {
+            try {
+              return key ? window.localStorage.getItem(key) : null;
+            } catch {
+              return null;
+            }
+          },
+          set(key, value) {
+            try {
+              if (key) window.localStorage.setItem(key, value);
+            } catch {
+              // Ignore storage failures: the prompt should still be dismissible.
+            }
+          },
+        };
+
+        const hasCompletedSurvey = () => Boolean(storage.get(completedKey));
+
+        const hasRecentDismissal = () => {
+          const value = Number(storage.get(dismissedKey) || 0);
+
+          return Number.isFinite(value) && value > 0 && Date.now() - value < cooldownMs;
+        };
+
+        const shouldSkipPrompt = () => hasCompletedSurvey() || hasRecentDismissal();
+
+        const rememberDismissal = () => {
+          storage.set(dismissedKey, String(Date.now()));
+        };
+
+        const handleKeydown = (event) => {
+          if (event.key === 'Escape' && isOpen) {
+            event.preventDefault();
+            closePrompt();
+          }
+        };
+
+        const openPrompt = () => {
+          if (shouldSkipPrompt()) return;
+
+          if (prompt.parentElement !== document.body) {
+            document.body.append(prompt);
+          }
+
+          prompt.hidden = false;
+          isOpen = true;
+          document.addEventListener('keydown', handleKeydown);
+
+          window.requestAnimationFrame(() => {
+            prompt.dataset.open = 'true';
+          });
+        };
+
+        const closePrompt = ({ remember = true } = {}) => {
+          if (!isOpen && prompt.hidden) return;
+
+          if (remember) {
+            rememberDismissal();
+          }
+
+          isOpen = false;
+          prompt.dataset.open = 'false';
+          document.removeEventListener('keydown', handleKeydown);
+
+          window.setTimeout(
+            () => {
+              prompt.hidden = true;
+            },
+            prefersReducedMotion ? 0 : 180
+          );
+        };
+
+        dismissControls.forEach((control) => {
+          control.addEventListener('click', () => {
+            closePrompt();
+          });
+        });
+
+        if (cta instanceof HTMLAnchorElement) {
+          cta.addEventListener('click', () => {
+            rememberDismissal();
+          });
+        }
+
+        const scheduleOpen = () => {
+          if (shouldSkipPrompt()) return;
+
+          window.clearTimeout(openTimer);
+          openTimer = window.setTimeout(() => {
+            if (!shouldSkipPrompt()) {
+              openPrompt();
+            }
+          }, openDelayMs);
+        };
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', scheduleOpen, { once: true });
+        } else {
+          scheduleOpen();
+        }
+
+        window.addEventListener('pagehide', () => {
+          window.clearTimeout(openTimer);
+          document.removeEventListener('keydown', handleKeydown);
+        });
+      })();
+    </script>
+  </>
+)}
