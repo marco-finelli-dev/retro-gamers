@@ -33,6 +33,20 @@ function getSanityWriteToken() {
   ).trim();
 }
 
+function getSanityRawReadToken() {
+  assertServerRuntime();
+
+  // Raw/draft reads do not need mutation credentials. Prefer the authenticated
+  // read token so local editorial previews/lists can hydrate drafts without a
+  // write token.
+  return String(
+    process.env.SANITY_API_READ_TOKEN ||
+      process.env.SANITY_WRITE_TOKEN ||
+      process.env.SANITY_API_WRITE_TOKEN ||
+      ''
+  ).trim();
+}
+
 export function hasSanityWriteToken() {
   return getSanityWriteToken().length > 0;
 }
@@ -57,10 +71,10 @@ export function getSanityWriteClient() {
 }
 
 export function getSanityRawClient() {
-  const token = getSanityWriteToken();
+  const token = getSanityRawReadToken();
 
   if (!token) {
-    throw new Error('Sanity write token is not configured.');
+    throw new Error('Sanity raw read token is not configured.');
   }
 
   if (!sanityRawClient) {
