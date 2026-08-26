@@ -73,6 +73,7 @@ export type CommunitySurveyChoiceResult = CommunitySurveyOption & {
 export type CommunitySurveyTextAnswerResult = {
   id: string;
   responseId: string;
+  language: CommunitySurveyLanguage;
   text: string;
   submittedAt: string | null;
   createdAt: string | null;
@@ -1072,6 +1073,7 @@ export async function getCommunitySurveyAdminResults(
           return {
             id: answer.id,
             responseId: answer.response_id,
+            language: normalizeCommunitySurveyLanguage(responseMap.get(answer.response_id)?.survey_language) || 'it',
             text,
             submittedAt: responseMap.get(answer.response_id)?.submitted_at || null,
             createdAt: answer.created_at || null,

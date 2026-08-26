@@ -25,15 +25,107 @@ const numberFormatter = new Intl.NumberFormat('it-IT');
 const percentageFormatter = new Intl.NumberFormat('it-IT', {
   maximumFractionDigits: 1,
 });
-const statusLabels: Record<CommunitySurveyStatus, string> = {
-  draft: 'Bozza',
-  open: 'Aperto',
-  closed: 'Chiuso',
+const statusLabels: Record<CommunitySurveyLanguage, Record<CommunitySurveyStatus, string>> = {
+  it: {
+    draft: 'Bozza',
+    open: 'Aperto',
+    closed: 'Chiuso',
+  },
+  en: {
+    draft: 'Draft',
+    open: 'Open',
+    closed: 'Closed',
+  },
 };
-const typeLabels: Record<CommunitySurveyQuestionResult['type'], string> = {
-  single: 'Scelta singola',
-  multiple: 'Scelta multipla',
-  text: 'Risposta testuale',
+const typeLabels: Record<CommunitySurveyLanguage, Record<CommunitySurveyQuestionResult['type'], string>> = {
+  it: {
+    single: 'Scelta singola',
+    multiple: 'Scelta multipla',
+    text: 'Risposta testuale',
+  },
+  en: {
+    single: 'Single choice',
+    multiple: 'Multiple choice',
+    text: 'Open response',
+  },
+};
+const uiCopy = {
+  it: {
+    adminKicker: 'Sondaggi community',
+    resultsTitle: 'Risultati sondaggio',
+    totalParticipants: 'Partecipanti totali',
+    italianParticipants: 'Partecipanti IT',
+    englishParticipants: 'Partecipanti EN',
+    latestResponse: 'Ultima risposta',
+    summary: 'Sintesi',
+    questions: 'Domande',
+    openResponses: 'Risposte aperte',
+    quantitativeSummary: 'Domande quantitative',
+    quantitativeDescription: 'Distribuzione compatta delle risposte a scelta singola e multipla.',
+    allQuestions: 'Tutte le domande',
+    allQuestionsDescription: 'Dettaglio completo del sondaggio nell’ordine definito in Sanity.',
+    responseArchive: 'Archivio risposte aperte',
+    responseArchiveDescription: 'Risposte testuali raccolte, filtrabili per lingua e contenuto.',
+    questionLabel: 'Domanda',
+    answeredBy: 'Partecipanti',
+    textResponses: 'risposte testuali',
+    textResponse: 'risposta testuale',
+    goToOpenResponses: 'Vai alle risposte aperte',
+    noTextAnswers: 'Nessuna risposta testuale raccolta.',
+    noQuestions: 'Nessuna domanda trovata nel sondaggio.',
+    noQuantitativeQuestions: 'Nessuna domanda quantitativa trovata nel sondaggio.',
+    noOpenResponses: 'Nessuna risposta aperta raccolta.',
+    all: 'Tutte',
+    it: 'IT',
+    en: 'EN',
+    newest: 'Più recenti',
+    oldest: 'Meno recenti',
+    searchResponses: 'Cerca nelle risposte...',
+    noFilteredResponses: 'Nessuna risposta corrisponde ai filtri.',
+    sortLabel: 'Ordina',
+    statusLabel: 'Stato',
+    responseSingular: 'risposta',
+    responsePlural: 'risposte',
+    resultsKicker: 'Risultati',
+  },
+  en: {
+    adminKicker: 'Community surveys',
+    resultsTitle: 'Survey results',
+    totalParticipants: 'Total participants',
+    italianParticipants: 'IT participants',
+    englishParticipants: 'EN participants',
+    latestResponse: 'Latest response',
+    summary: 'Summary',
+    questions: 'Questions',
+    openResponses: 'Open responses',
+    quantitativeSummary: 'Quantitative questions',
+    quantitativeDescription: 'Compact distribution of single-choice and multiple-choice answers.',
+    allQuestions: 'All questions',
+    allQuestionsDescription: 'Full survey detail in the order defined in Sanity.',
+    responseArchive: 'Open response archive',
+    responseArchiveDescription: 'Collected text answers, filterable by language and content.',
+    questionLabel: 'Question',
+    answeredBy: 'Participants',
+    textResponses: 'text responses',
+    textResponse: 'text response',
+    goToOpenResponses: 'Go to open responses',
+    noTextAnswers: 'No text responses collected.',
+    noQuestions: 'No survey questions found.',
+    noQuantitativeQuestions: 'No quantitative questions found.',
+    noOpenResponses: 'No open responses collected.',
+    all: 'All',
+    it: 'IT',
+    en: 'EN',
+    newest: 'Newest',
+    oldest: 'Oldest',
+    searchResponses: 'Search responses...',
+    noFilteredResponses: 'No responses match the current filters.',
+    sortLabel: 'Sort',
+    statusLabel: 'Status',
+    responseSingular: 'response',
+    responsePlural: 'responses',
+    resultsKicker: 'Results',
+  },
 };
 
 let resultsError = '';
@@ -64,10 +156,17 @@ if (isAdmin && surveyKey) {
 const formatCount = (count: number) => numberFormatter.format(count);
 const formatPercentage = (percentage: number) =>
   `${percentageFormatter.format(percentage)}%`;
-const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
-  status && status in statusLabels
-    ? statusLabels[status as CommunitySurveyStatus]
+const getStatusLabel = (
+  status: CommunitySurveyStatus | string | undefined,
+  language: CommunitySurveyLanguage
+) =>
+  status && status in statusLabels[language]
+    ? statusLabels[language][status as CommunitySurveyStatus]
     : '—';
+const getTypeLabel = (
+  type: CommunitySurveyQuestionResult['type'],
+  language: CommunitySurveyLanguage
+) => typeLabels[language][type] || type;
 const getQuestionAnswerSummary = (
   question: CommunitySurveyQuestionResult,
   language: CommunitySurveyLanguage
@@ -111,6 +210,35 @@ const getMultipleQuestionNote = (language: CommunitySurveyLanguage) =>
     ? 'For multiple-choice questions, percentages show the share of participants who selected each option. The total may exceed 100%.'
     : 'Le percentuali delle domande a risposta multipla indicano la percentuale di partecipanti che ha selezionato ciascuna opzione. Il totale può superare il 100%.';
 const dateLocale = results?.survey.language === 'en' ? 'en-GB' : 'it-IT';
+const uiLanguage: CommunitySurveyLanguage = results?.survey.language === 'en' ? 'en' : 'it';
+const t = uiCopy[uiLanguage];
+const quantitativeQuestions = results?.questions.filter((question) => question.type !== 'text') || [];
+const textQuestions = results?.questions.filter((question) => question.type === 'text') || [];
+const openResponses = results
+  ? textQuestions
+      .flatMap((question) =>
+        question.textAnswers.map((answer) => ({
+          ...answer,
+          questionId: question.questionId,
+          questionIndex: results.questions.findIndex((item) => item.questionId === question.questionId) + 1,
+          questionText: question.text,
+          timestamp: answer.submittedAt || answer.createdAt || '',
+        }))
+      )
+      .sort((a, b) => {
+        const bTime = Date.parse(b.timestamp || '');
+        const aTime = Date.parse(a.timestamp || '');
+
+        return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+      })
+  : [];
+const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) => {
+  if (language === 'en') {
+    return `${formatCount(count)} ${count === 1 ? uiCopy.en.textResponse : uiCopy.en.textResponses}`;
+  }
+
+  return `${formatCount(count)} ${count === 1 ? uiCopy.it.textResponse : uiCopy.it.textResponses}`;
+};
 ---
 
 <BaseLayout title={title} description={description}>
@@ -120,120 +248,445 @@ const dateLocale = results?.survey.language === 'en' ? 'en-GB' : 'it-IT';
 
     {isAdmin ? (
       <>
-        <CommunityHero
-          kicker="Sondaggi community"
-          title={results?.survey.title || 'Risultati sondaggio'}
-          description={results?.survey.description || description}
-        >
-          {results && (
-            <div slot="aside" class="admin-surveys-hero__stats" aria-label="Riepilogo sondaggio">
-              <span class:list={['admin-surveys-status', `admin-surveys-status--${results.survey.status}`]}>
-                {getStatusLabel(results.survey.status)}
-              </span>
-              <strong>{formatCount(results.totalResponses)}</strong>
-              <small>{results.totalResponses === 1 ? 'risposta' : 'risposte'}</small>
-            </div>
-          )}
-        </CommunityHero>
-
         {results ? (
           <>
-            <section class="admin-surveys-summary" aria-label="Informazioni sondaggio">
-              <article class="community-card admin-surveys-summary-card">
-                <span>Survey key</span>
-                <strong>{results.survey.surveyKey}</strong>
-              </article>
+            <section class="community-card admin-surveys-header" aria-labelledby="admin-surveys-title">
+              <div class="admin-surveys-header__copy">
+                <p>{t.adminKicker}</p>
+                <h1 id="admin-surveys-title">{results.survey.title || t.resultsTitle}</h1>
+                {results.survey.description && <p>{results.survey.description}</p>}
+              </div>
 
-              <article class="community-card admin-surveys-summary-card">
-                <span>Stato</span>
-                <strong>{getStatusLabel(results.survey.status)}</strong>
-              </article>
-
-              <article class="community-card admin-surveys-summary-card">
-                <span>Risposte totali</span>
-                <strong>{formatCount(results.totalResponses)}</strong>
-              </article>
-
-              <article class="community-card admin-surveys-summary-card">
-                <span>Ultima risposta</span>
-                <strong>
-                  <LocalDateTime value={results.latestResponseAt} locale={dateLocale} />
-                </strong>
-              </article>
+              <div class="admin-surveys-kpis" aria-label="Riepilogo sondaggio">
+                <article class="admin-surveys-kpi admin-surveys-kpi--status">
+                  <span>{t.statusLabel}</span>
+                  <strong class:list={['admin-surveys-status', `admin-surveys-status--${results.survey.status}`]}>
+                    {getStatusLabel(results.survey.status, uiLanguage)}
+                  </strong>
+                </article>
+                <article class="admin-surveys-kpi">
+                  <span>{t.totalParticipants}</span>
+                  <strong>{formatCount(results.totalResponses)}</strong>
+                </article>
+                <article class="admin-surveys-kpi">
+                  <span>{t.italianParticipants}</span>
+                  <strong>{formatCount(results.languageCounts.it)}</strong>
+                </article>
+                <article class="admin-surveys-kpi">
+                  <span>{t.englishParticipants}</span>
+                  <strong>{formatCount(results.languageCounts.en)}</strong>
+                </article>
+                <article class="admin-surveys-kpi admin-surveys-kpi--wide">
+                  <span>{t.latestResponse}</span>
+                  <strong>
+                    <LocalDateTime value={results.latestResponseAt} locale={dateLocale} />
+                  </strong>
+                </article>
+              </div>
             </section>
 
-            <section class="community-card admin-surveys-panel" aria-labelledby="admin-surveys-results">
+            <section
+              class="community-card admin-surveys-panel"
+              aria-labelledby="admin-surveys-results"
+              data-admin-surveys-tabs
+              data-response-singular={t.responseSingular}
+              data-response-plural={t.responsePlural}
+              data-no-filtered-responses={t.noFilteredResponses}
+            >
               <div class="admin-surveys-section-heading">
                 <div>
-                  <p>Risultati</p>
-                  <h2 id="admin-surveys-results">Domande</h2>
+                  <p>{t.resultsKicker}</p>
+                  <h2 id="admin-surveys-results">{t.resultsTitle}</h2>
                 </div>
                 <span>
                   IT {formatCount(results.languageCounts.it)} · EN {formatCount(results.languageCounts.en)}
                 </span>
               </div>
 
-              {results.questions.length > 0 ? (
-                <div class="admin-surveys-question-list">
-                  {results.questions.map((question, index) => (
-                    <article class="admin-surveys-question-card">
-                      <header>
-                        <div>
-                          <span>Domanda {index + 1} · {typeLabels[question.type]}</span>
-                          <h3>{question.text}</h3>
-                        </div>
-                        <small>{getQuestionAnswerSummary(question, results.survey.language)}</small>
-                      </header>
+              <div class="admin-surveys-tabs" role="tablist" aria-label={t.resultsTitle}>
+                <button
+                  id="admin-surveys-tab-summary"
+                  class="admin-surveys-tab"
+                  type="button"
+                  role="tab"
+                  aria-selected="true"
+                  aria-controls="admin-surveys-panel-summary"
+                  data-admin-surveys-tab="summary"
+                >
+                  {t.summary}
+                </button>
+                <button
+                  id="admin-surveys-tab-questions"
+                  class="admin-surveys-tab"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="admin-surveys-panel-questions"
+                  tabindex="-1"
+                  data-admin-surveys-tab="questions"
+                >
+                  {t.questions}
+                </button>
+                <button
+                  id="admin-surveys-tab-open-responses"
+                  class="admin-surveys-tab"
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="admin-surveys-panel-open-responses"
+                  tabindex="-1"
+                  data-admin-surveys-tab="open-responses"
+                >
+                  {t.openResponses}
+                </button>
+              </div>
 
-                      {question.type === 'text' ? (
-                        question.textAnswers.length > 0 ? (
-                          <div class="admin-surveys-text-answers">
-                            {question.textAnswers.map((answer) => (
-                              <blockquote>
-                                <p>{answer.text}</p>
-                                <footer>
-                                  <LocalDateTime
-                                    value={answer.submittedAt || answer.createdAt}
-                                    locale={dateLocale}
-                                  />
-                                </footer>
-                              </blockquote>
+              <div
+                id="admin-surveys-panel-summary"
+                class="admin-surveys-view"
+                role="tabpanel"
+                tabindex="0"
+                aria-labelledby="admin-surveys-tab-summary"
+                data-admin-surveys-panel="summary"
+              >
+                <div class="admin-surveys-view-heading">
+                  <div>
+                    <p>{t.summary}</p>
+                    <h3>{t.quantitativeSummary}</h3>
+                  </div>
+                  <span>{t.quantitativeDescription}</span>
+                </div>
+
+                {quantitativeQuestions.length > 0 ? (
+                  <div class="admin-surveys-question-list admin-surveys-question-list--compact">
+                    {quantitativeQuestions.map((question) => {
+                      const originalIndex = results.questions.findIndex((item) => item.questionId === question.questionId) + 1;
+
+                      return (
+                        <article class="admin-surveys-question-card admin-surveys-question-card--compact">
+                          <header>
+                            <div>
+                              <span>{t.questionLabel} {originalIndex} · {getTypeLabel(question.type, uiLanguage)}</span>
+                              <h3>{question.text}</h3>
+                            </div>
+                            <small>{getQuestionAnswerSummary(question, results.survey.language)}</small>
+                          </header>
+
+                          <div class="admin-surveys-options admin-surveys-options--compact">
+                            {question.options.map((option) => (
+                              <div class="admin-surveys-option">
+                                <div class="admin-surveys-option__meta">
+                                  <strong>{option.label}</strong>
+                                  <span>
+                                    {formatCount(option.count)} · {formatPercentage(option.percentage)}
+                                  </span>
+                                </div>
+                                <div class="admin-surveys-option__bar" aria-hidden="true">
+                                  <span style={`--admin-survey-result-width: ${option.percentage}%`}></span>
+                                </div>
+                              </div>
                             ))}
+                            {question.type === 'multiple' && (
+                              <p class="admin-surveys-note admin-surveys-note--compact">
+                                {getMultipleQuestionNote(results.survey.language)}
+                              </p>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p class="admin-surveys-empty">{t.noQuantitativeQuestions}</p>
+                )}
+              </div>
+
+              <div
+                id="admin-surveys-panel-questions"
+                class="admin-surveys-view"
+                role="tabpanel"
+                tabindex="0"
+                aria-labelledby="admin-surveys-tab-questions"
+                data-admin-surveys-panel="questions"
+                hidden
+              >
+                <div class="admin-surveys-view-heading">
+                  <div>
+                    <p>{t.questions}</p>
+                    <h3>{t.allQuestions}</h3>
+                  </div>
+                  <span>{t.allQuestionsDescription}</span>
+                </div>
+
+                {results.questions.length > 0 ? (
+                  <div class="admin-surveys-question-list">
+                    {results.questions.map((question, index) => (
+                      <article class="admin-surveys-question-card">
+                        <header>
+                          <div>
+                            <span>{t.questionLabel} {index + 1} · {getTypeLabel(question.type, uiLanguage)}</span>
+                            <h3>{question.text}</h3>
+                          </div>
+                          <small>{getQuestionAnswerSummary(question, results.survey.language)}</small>
+                        </header>
+
+                        {question.type === 'text' ? (
+                          <div class="admin-surveys-text-summary">
+                            <strong>{getTextAnswerSummary(question.textAnswers.length, uiLanguage)}</strong>
+                            <button
+                              class="admin-surveys-inline-action"
+                              type="button"
+                              data-admin-surveys-open-responses
+                            >
+                              {t.goToOpenResponses}
+                            </button>
                           </div>
                         ) : (
-                          <p class="admin-surveys-empty admin-surveys-empty--compact">
-                            Nessuna risposta testuale raccolta.
-                          </p>
-                        )
-                      ) : (
-                        <div class="admin-surveys-options">
-                          {question.options.map((option) => (
-                            <div class="admin-surveys-option">
-                              <div class="admin-surveys-option__meta">
-                                <strong>{option.label}</strong>
-                                <span>
-                                  {formatCount(option.count)} · {formatPercentage(option.percentage)}
-                                </span>
+                          <div class="admin-surveys-options">
+                            {question.options.map((option) => (
+                              <div class="admin-surveys-option">
+                                <div class="admin-surveys-option__meta">
+                                  <strong>{option.label}</strong>
+                                  <span>
+                                    {formatCount(option.count)} · {formatPercentage(option.percentage)}
+                                  </span>
+                                </div>
+                                <div class="admin-surveys-option__bar" aria-hidden="true">
+                                  <span style={`--admin-survey-result-width: ${option.percentage}%`}></span>
+                                </div>
                               </div>
-                              <div class="admin-surveys-option__bar" aria-hidden="true">
-                                <span style={`--admin-survey-result-width: ${option.percentage}%`}></span>
-                              </div>
-                            </div>
-                          ))}
-                          {question.type === 'multiple' && (
-                            <p class="admin-surveys-note">
-                              {getMultipleQuestionNote(results.survey.language)}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </article>
-                  ))}
+                            ))}
+                            {question.type === 'multiple' && (
+                              <p class="admin-surveys-note">
+                                {getMultipleQuestionNote(results.survey.language)}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p class="admin-surveys-empty">{t.noQuestions}</p>
+                )}
+              </div>
+
+              <div
+                id="admin-surveys-panel-open-responses"
+                class="admin-surveys-view"
+                role="tabpanel"
+                tabindex="0"
+                aria-labelledby="admin-surveys-tab-open-responses"
+                data-admin-surveys-panel="open-responses"
+                hidden
+              >
+                <div class="admin-surveys-view-heading">
+                  <div>
+                    <p>{t.openResponses}</p>
+                    <h3>{t.responseArchive}</h3>
+                  </div>
+                  <span>{t.responseArchiveDescription}</span>
                 </div>
-              ) : (
-                <p class="admin-surveys-empty">Nessuna domanda trovata nel sondaggio.</p>
-              )}
+
+                {openResponses.length > 0 ? (
+                  <>
+                    <div class="admin-surveys-open-controls">
+                      <div class="admin-surveys-language-filters" role="group" aria-label={t.openResponses}>
+                        <button type="button" aria-pressed="true" data-admin-surveys-language-filter="all">
+                          {t.all}
+                        </button>
+                        <button type="button" aria-pressed="false" data-admin-surveys-language-filter="it">
+                          {t.it}
+                        </button>
+                        <button type="button" aria-pressed="false" data-admin-surveys-language-filter="en">
+                          {t.en}
+                        </button>
+                      </div>
+
+                      <label class="admin-surveys-search">
+                        <span class="sr-only">{t.searchResponses}</span>
+                        <input
+                          type="search"
+                          placeholder={t.searchResponses}
+                          autocomplete="off"
+                          data-admin-surveys-response-search
+                        />
+                      </label>
+
+                      <label class="admin-surveys-sort">
+                        <span>{t.sortLabel}</span>
+                        <select data-admin-surveys-response-sort>
+                          <option value="newest">{t.newest}</option>
+                          <option value="oldest">{t.oldest}</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <p class="admin-surveys-open-count" data-admin-surveys-open-count>
+                      {formatCount(openResponses.length)} {openResponses.length === 1 ? t.responseSingular : t.responsePlural}
+                    </p>
+
+                    <div class="admin-surveys-open-response-list" data-admin-surveys-open-list>
+                      {openResponses.map((answer) => (
+                        <article
+                          class="admin-surveys-open-response"
+                          data-admin-surveys-open-response
+                          data-language={answer.language}
+                          data-submitted-at={answer.timestamp}
+                          data-search={`${answer.text} ${answer.questionText}`.toLocaleLowerCase()}
+                        >
+                          <header>
+                            <div>
+                              <span>{t.questionLabel} {answer.questionIndex}</span>
+                              <h4>{answer.questionText}</h4>
+                            </div>
+                            <span class:list={['admin-surveys-language-badge', `admin-surveys-language-badge--${answer.language}`]}>
+                              {answer.language.toUpperCase()}
+                            </span>
+                          </header>
+                          <p>{answer.text}</p>
+                          <footer>
+                            <LocalDateTime value={answer.timestamp} locale={dateLocale} />
+                          </footer>
+                        </article>
+                      ))}
+                    </div>
+
+                    <p class="admin-surveys-empty admin-surveys-empty--compact" data-admin-surveys-open-empty hidden>
+                      {t.noFilteredResponses}
+                    </p>
+                  </>
+                ) : (
+                  <p class="admin-surveys-empty">{t.noOpenResponses}</p>
+                )}
+              </div>
             </section>
+
+            <script is:inline>
+              (() => {
+                const root = document.querySelector('[data-admin-surveys-tabs]');
+                if (!root) return;
+
+                const tabs = Array.from(root.querySelectorAll('[data-admin-surveys-tab]'));
+                const panels = Array.from(root.querySelectorAll('[data-admin-surveys-panel]'));
+
+                const activateTab = (view, options = {}) => {
+                  tabs.forEach((tab) => {
+                    const isActive = tab.getAttribute('data-admin-surveys-tab') === view;
+                    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                    tab.tabIndex = isActive ? 0 : -1;
+
+                    if (isActive && options.focusTab) {
+                      tab.focus({ preventScroll: true });
+                    }
+                  });
+
+                  panels.forEach((panel) => {
+                    panel.hidden = panel.getAttribute('data-admin-surveys-panel') !== view;
+                  });
+
+                  const activePanel = panels.find((panel) => panel.getAttribute('data-admin-surveys-panel') === view);
+
+                  if (activePanel && options.scrollPanel) {
+                    activePanel.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                  }
+                };
+
+                tabs.forEach((tab, index) => {
+                  tab.addEventListener('click', () => {
+                    activateTab(tab.getAttribute('data-admin-surveys-tab'), { focusTab: false });
+                  });
+
+                  tab.addEventListener('keydown', (event) => {
+                    const key = event.key;
+                    const lastIndex = tabs.length - 1;
+                    let nextIndex = index;
+
+                    if (key === 'ArrowRight') nextIndex = index === lastIndex ? 0 : index + 1;
+                    else if (key === 'ArrowLeft') nextIndex = index === 0 ? lastIndex : index - 1;
+                    else if (key === 'Home') nextIndex = 0;
+                    else if (key === 'End') nextIndex = lastIndex;
+                    else return;
+
+                    event.preventDefault();
+                    activateTab(tabs[nextIndex].getAttribute('data-admin-surveys-tab'), { focusTab: true });
+                  });
+                });
+
+                root.querySelectorAll('[data-admin-surveys-open-responses]').forEach((button) => {
+                  button.addEventListener('click', () => {
+                    activateTab('open-responses', { focusTab: true, scrollPanel: true });
+                  });
+                });
+
+                const languageButtons = Array.from(root.querySelectorAll('[data-admin-surveys-language-filter]'));
+                const searchInput = root.querySelector('[data-admin-surveys-response-search]');
+                const sortSelect = root.querySelector('[data-admin-surveys-response-sort]');
+                const list = root.querySelector('[data-admin-surveys-open-list]');
+                const emptyState = root.querySelector('[data-admin-surveys-open-empty]');
+                const countNode = root.querySelector('[data-admin-surveys-open-count]');
+                const responses = list
+                  ? Array.from(list.querySelectorAll('[data-admin-surveys-open-response]'))
+                  : [];
+                let activeLanguage = 'all';
+
+                const getResponseTime = (node) => {
+                  const time = Date.parse(node.getAttribute('data-submitted-at') || '');
+                  return Number.isFinite(time) ? time : 0;
+                };
+
+                const updateOpenResponses = () => {
+                  if (!list) return;
+
+                  const query = String(searchInput?.value || '').trim().toLocaleLowerCase();
+                  const sortOrder = String(sortSelect?.value || 'newest');
+                  const visibleResponses = responses.filter((node) => {
+                    const language = node.getAttribute('data-language') || '';
+                    const searchable = node.getAttribute('data-search') || '';
+                    const matchesLanguage = activeLanguage === 'all' || language === activeLanguage;
+                    const matchesSearch = !query || searchable.includes(query);
+
+                    return matchesLanguage && matchesSearch;
+                  });
+
+                  visibleResponses.sort((a, b) => {
+                    const delta = getResponseTime(a) - getResponseTime(b);
+                    return sortOrder === 'oldest' ? delta : -delta;
+                  });
+
+                  responses.forEach((node) => {
+                    node.hidden = !visibleResponses.includes(node);
+                  });
+
+                  visibleResponses.forEach((node) => list.append(node));
+
+                  if (emptyState) {
+                    emptyState.hidden = visibleResponses.length > 0;
+                  }
+
+                  if (countNode) {
+                    const singular = root.getAttribute('data-response-singular') || 'risposta';
+                    const plural = root.getAttribute('data-response-plural') || 'risposte';
+                    countNode.textContent = `${visibleResponses.length} ${
+                      visibleResponses.length === 1 ? singular : plural
+                    }`;
+                  }
+                };
+
+                languageButtons.forEach((button) => {
+                  button.addEventListener('click', () => {
+                    activeLanguage = button.getAttribute('data-admin-surveys-language-filter') || 'all';
+                    languageButtons.forEach((item) => {
+                      item.setAttribute('aria-pressed', item === button ? 'true' : 'false');
+                    });
+                    updateOpenResponses();
+                  });
+                });
+
+                searchInput?.addEventListener('input', updateOpenResponses);
+                sortSelect?.addEventListener('change', updateOpenResponses);
+              })();
+            </script>
           </>
         ) : (
           <section class="community-card">
