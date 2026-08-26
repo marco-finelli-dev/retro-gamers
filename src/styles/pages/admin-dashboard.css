@@ -237,9 +237,45 @@
 }
 
 .admin-dashboard-activity h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   overflow-wrap: anywhere;
   font-size: 1rem;
   line-height: 1.2;
+}
+
+.admin-dashboard-activity h3 .admin-dashboard-activity__title {
+  min-width: 0;
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.admin-dashboard-activity h3 .admin-dashboard-survey-new-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 38%, var(--rg-card-border));
+  border-radius: 999px;
+  padding: 0 9px;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.admin-dashboard-activity h3 .admin-dashboard-survey-new-badge[hidden] {
+  display: none;
 }
 
 .admin-dashboard-activity footer {

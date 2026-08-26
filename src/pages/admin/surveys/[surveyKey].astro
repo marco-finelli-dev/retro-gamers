@@ -252,6 +252,9 @@ const openResponses = openResponseGroups.flatMap((group) => group.responses);
 const exportCsvHref = surveyKey
   ? `/api/admin/surveys/${encodeURIComponent(surveyKey)}/export.csv`
   : '';
+const surveySeenStorageKey = surveyKey
+  ? `retro-gamers:admin-survey-seen:${surveyKey}`
+  : '';
 const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) => {
   if (language === 'en') {
     return `${formatCount(count)} ${count === 1 ? uiCopy.en.textResponse : uiCopy.en.textResponses}`;
@@ -270,7 +273,13 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
       <>
         {results ? (
           <>
-            <section class="community-card admin-surveys-header" aria-labelledby="admin-surveys-title">
+            <section
+              class="community-card admin-surveys-header"
+              aria-labelledby="admin-surveys-title"
+              data-admin-survey-seen-marker
+              data-seen-storage-key={surveySeenStorageKey}
+              data-last-response-at={results.latestResponseAt || ''}
+            >
               <div class="admin-surveys-header__copy">
                 <p>{t.adminKicker}</p>
                 <h1 id="admin-surveys-title">{results.survey.title || t.resultsTitle}</h1>
@@ -622,6 +631,21 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
 
             <script is:inline>
               (() => {
+                const seenMarker = document.querySelector('[data-admin-survey-seen-marker]');
+
+                if (seenMarker instanceof HTMLElement) {
+                  const storageKey = seenMarker.dataset.seenStorageKey || '';
+                  const lastResponseAt = seenMarker.dataset.lastResponseAt || '';
+
+                  if (storageKey && lastResponseAt && Number.isFinite(Date.parse(lastResponseAt))) {
+                    try {
+                      window.localStorage.setItem(storageKey, lastResponseAt);
+                    } catch {
+                      // Ignore storage failures: this is only a browser-local admin convenience marker.
+                    }
+                  }
+                }
+
                 const root = document.querySelector('[data-admin-surveys-tabs]');
                 if (!root) return;
 

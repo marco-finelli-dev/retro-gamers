@@ -64,6 +64,8 @@ type RecentActivity = {
   href: string;
   createdAt: string | null;
   tone?: 'attention' | 'calm';
+  surveyLastResponseAt?: string | null;
+  surveySeenStorageKey?: string | null;
 };
 
 type ActivityCategoryKey = 'comments' | 'editorial' | 'newsletter' | 'surveys' | 'reports';
@@ -152,6 +154,7 @@ const copy = isEnglish
         reportOpen: 'Open report',
         subscriber: 'New subscription',
         surveyAnswer: 'Anonymous survey response',
+        newSurveyResponses: 'New responses',
         articleSubmitted: 'Article submitted',
         articleApproved: 'Article approved',
       },
@@ -249,6 +252,7 @@ const copy = isEnglish
         reportOpen: 'Segnalazione aperta',
         subscriber: 'Nuova iscrizione',
         surveyAnswer: 'Risposta anonima al sondaggio',
+        newSurveyResponses: 'Nuove risposte',
         articleSubmitted: 'Articolo inviato',
         articleApproved: 'Articolo approvato',
       },
@@ -358,6 +362,13 @@ const truncate = (value = '', maxLength = 120) => {
   return normalized.length > maxLength
     ? `${normalized.slice(0, maxLength - 1).trim()}…`
     : normalized;
+};
+const getAdminSurveySeenStorageKey = (surveyKey?: string | null) => {
+  const cleanSurveyKey = String(surveyKey || '').trim();
+
+  return cleanSurveyKey
+    ? `retro-gamers:admin-survey-seen:${cleanSurveyKey}`
+    : null;
 };
 
 const getCommentAuthor = (comment: RecentComment) =>
@@ -604,18 +615,25 @@ if (isStaff) {
   }
 
   if (!surveyResponsesResult.error) {
-    recentActivitiesByCategory.surveys.push(...((surveyResponsesResult.data || []) as SimpleActivityRow[]).map((response) => ({
-      label: copy.activity.surveyResponse,
-      title: copy.activity.surveyAnswer,
-      description: [response.survey_key, String(response.survey_language || '').toUpperCase()]
-        .filter(Boolean)
-        .join(' · '),
-      href: response.survey_key
-        ? `/admin/surveys/${encodeURIComponent(response.survey_key)}/`
-        : `${adminBase}/`,
-      createdAt: response.submitted_at || null,
-      tone: 'calm',
-    } satisfies RecentActivity)));
+    recentActivitiesByCategory.surveys.push(...((surveyResponsesResult.data || []) as SimpleActivityRow[]).map((response) => {
+      const responseSurveyKey = String(response.survey_key || '').trim();
+      const responseSubmittedAt = response.submitted_at || null;
+
+      return {
+        label: copy.activity.surveyResponse,
+        title: copy.activity.surveyAnswer,
+        description: [responseSurveyKey, String(response.survey_language || '').toUpperCase()]
+          .filter(Boolean)
+          .join(' · '),
+        href: responseSurveyKey
+          ? `/admin/surveys/${encodeURIComponent(responseSurveyKey)}/`
+          : `${adminBase}/`,
+        createdAt: responseSubmittedAt,
+        tone: 'calm',
+        surveyLastResponseAt: responseSubmittedAt,
+        surveySeenStorageKey: getAdminSurveySeenStorageKey(responseSurveyKey),
+      } satisfies RecentActivity;
+    }));
   }
 
   if (!editorialResult.error) {
@@ -801,12 +819,25 @@ const activityCategories: ActivityCategory[] = [
                 {category.activities.length > 0 ? (
                   <div class="admin-dashboard-activity-list">
                     {category.activities.map((activity) => (
-                      <article class="admin-dashboard-activity" data-tone={activity.tone || 'calm'}>
-                        <div>
-                          <span>{activity.label}</span>
-                          <h3>{activity.title}</h3>
-                          <p>{activity.description}</p>
-                        </div>
+	                      <article class="admin-dashboard-activity" data-tone={activity.tone || 'calm'}>
+	                        <div>
+	                          <span>{activity.label}</span>
+	                          <h3>
+                              <span class="admin-dashboard-activity__title">{activity.title}</span>
+                              {activity.surveySeenStorageKey && activity.surveyLastResponseAt && (
+                                <span
+                                  class="admin-dashboard-survey-new-badge"
+                                  data-admin-survey-new-responses
+                                  data-seen-storage-key={activity.surveySeenStorageKey}
+                                  data-last-response-at={activity.surveyLastResponseAt}
+                                  hidden
+                                >
+                                  {copy.activity.newSurveyResponses}
+                                </span>
+                              )}
+                            </h3>
+	                          <p>{activity.description}</p>
+	                        </div>
                         <footer>
                           <time datetime={activity.createdAt || undefined}>
                             {formatActivityDate(activity.createdAt)}
@@ -861,6 +892,58 @@ const activityCategories: ActivityCategory[] = [
   )}
 
   <script>
+    (() => {
+      const badges = Array.from(document.querySelectorAll('[data-admin-survey-new-responses]'));
+
+      if (badges.length === 0) return;
+
+      const getTime = (value) => {
+        const time = Date.parse(String(value || ''));
+
+        return Number.isFinite(time) ? time : 0;
+      };
+
+      let storage = null;
+
+      try {
+        storage = window.localStorage;
+      } catch {
+        storage = null;
+      }
+
+      const shownSurveyBadges = new Set();
+
+      badges.forEach((badge) => {
+        if (!(badge instanceof HTMLElement)) return;
+
+        const storageKey = badge.dataset.seenStorageKey || '';
+        const lastResponseAt = badge.dataset.lastResponseAt || '';
+        const lastResponseTime = getTime(lastResponseAt);
+
+        if (!storageKey || !lastResponseTime || !storage) {
+          badge.hidden = true;
+          return;
+        }
+
+        const seenValue = storage.getItem(storageKey);
+        const seenTime = getTime(seenValue);
+
+        if (!seenValue || !seenTime) {
+          storage.setItem(storageKey, lastResponseAt);
+          badge.hidden = true;
+          return;
+        }
+
+        if (lastResponseTime <= seenTime || shownSurveyBadges.has(storageKey)) {
+          badge.hidden = true;
+          return;
+        }
+
+        shownSurveyBadges.add(storageKey);
+        badge.hidden = false;
+      });
+    })();
+
     document.querySelectorAll('[data-admin-activity-section]').forEach((section) => {
       const tabs = Array.from(section.querySelectorAll('[data-admin-activity-tab]'));
       const panels = Array.from(section.querySelectorAll('[data-admin-activity-panel]'));
