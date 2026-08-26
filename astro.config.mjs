@@ -10,7 +10,7 @@ const loadServerDevEnv = () => {
 
   const env = loadEnv('development', process.cwd(), '');
 
-  for (const key of ['SANITY_API_READ_TOKEN']) {
+  for (const key of ['SANITY_API_READ_TOKEN', 'SANITY_WRITE_TOKEN']) {
     if (!process.env[key] && env[key]) {
       process.env[key] = env[key];
     }
