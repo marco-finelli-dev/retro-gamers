@@ -6,6 +6,7 @@ import {
   submitCommunitySurveyResponse,
   surveyJson,
 } from '../../../../../lib/community-surveys';
+import { sendCommunitySurveyResponseAdminEmail } from '../../../../../lib/supabase/community-survey-emails';
 
 type SurveyResponsePayload = {
   surveyDocumentId?: unknown;
@@ -55,6 +56,17 @@ export const POST: APIRoute = async ({ params, request, cookies }) => {
         },
         result.status
       );
+    }
+
+    try {
+      await sendCommunitySurveyResponseAdminEmail({
+        surveyKey: result.surveyKey,
+        surveyTitle: result.surveyTitle,
+        surveyLanguage: result.surveyLanguage,
+        submittedAt: result.submittedAt,
+      });
+    } catch (notificationError) {
+      logApiError('community-surveys.admin-email', notificationError);
     }
 
     return surveyJson(

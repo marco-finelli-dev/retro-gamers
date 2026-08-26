@@ -873,7 +873,14 @@ export async function submitCommunitySurveyResponse({
   answers: unknown;
   cookies: SurveyCookies;
 }): Promise<
-  | { ok: true; responseId: string; submittedAt: string | null }
+  | {
+      ok: true;
+      responseId: string;
+      submittedAt: string | null;
+      surveyKey: string;
+      surveyTitle: string;
+      surveyLanguage: CommunitySurveyLanguage;
+    }
   | { ok: false; error: string; status: number; field?: string }
 > {
   const survey = await getPublishedCommunitySurveyByKey(surveyKey, {
@@ -989,6 +996,9 @@ export async function submitCommunitySurveyResponse({
     ok: true,
     responseId: insertedResponse.id,
     submittedAt: insertedResponse.submitted_at || null,
+    surveyKey: survey.surveyKey,
+    surveyTitle: survey.title,
+    surveyLanguage: survey.language,
   };
 }
 

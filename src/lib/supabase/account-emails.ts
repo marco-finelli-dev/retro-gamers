@@ -30,7 +30,7 @@ const formatDate = (value?: string | null) => {
   }).format(new Date(value));
 };
 
-async function getAdminNotificationRecipients() {
+export async function getAdminNotificationRecipients() {
   const recipients = new Set<string>();
 
   const { data: profiles, error } = await supabaseAdmin
