@@ -88,6 +88,7 @@ const uiCopy = {
     responseSingular: 'risposta',
     responsePlural: 'risposte',
     resultsKicker: 'Risultati',
+    exportCsv: 'Esporta CSV',
   },
   en: {
     adminKicker: 'Community surveys',
@@ -127,6 +128,7 @@ const uiCopy = {
     responseSingular: 'response',
     responsePlural: 'responses',
     resultsKicker: 'Results',
+    exportCsv: 'Export CSV',
   },
 };
 
@@ -247,6 +249,9 @@ const openResponseGroups = results
       .filter((group) => group.responses.length > 0)
   : [];
 const openResponses = openResponseGroups.flatMap((group) => group.responses);
+const exportCsvHref = surveyKey
+  ? `/api/admin/surveys/${encodeURIComponent(surveyKey)}/export.csv`
+  : '';
 const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) => {
   if (language === 'en') {
     return `${formatCount(count)} ${count === 1 ? uiCopy.en.textResponse : uiCopy.en.textResponses}`;
@@ -270,6 +275,13 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
                 <p>{t.adminKicker}</p>
                 <h1 id="admin-surveys-title">{results.survey.title || t.resultsTitle}</h1>
                 {results.survey.description && <p>{results.survey.description}</p>}
+                {exportCsvHref && (
+                  <div class="admin-surveys-header__actions">
+                    <a class="admin-surveys-inline-action" href={exportCsvHref}>
+                      {t.exportCsv}
+                    </a>
+                  </div>
+                )}
               </div>
 
               <div class="admin-surveys-kpis" aria-label="Riepilogo sondaggio">

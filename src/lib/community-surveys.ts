@@ -98,6 +98,25 @@ export type CommunitySurveyAdminResults = {
   questions: CommunitySurveyQuestionResult[];
 };
 
+export type CommunitySurveyAdminExportAnswer = {
+  questionId: string;
+  optionIds: string[];
+  textAnswer: string | null;
+};
+
+export type CommunitySurveyAdminExportResponse = {
+  submittedAt: string | null;
+  language: CommunitySurveyLanguage | null;
+  answers: CommunitySurveyAdminExportAnswer[];
+};
+
+export type CommunitySurveyAdminExportData = {
+  survey: CommunitySurveyPublic;
+  surveys: CommunitySurveyPublic[];
+  questions: CommunitySurveyQuestion[];
+  responses: CommunitySurveyAdminExportResponse[];
+};
+
 type SurveyCookies = {
   get: (name: string) => { value?: string } | undefined;
   set?: (name: string, value: string, options: Record<string, unknown>) => void;
@@ -1139,6 +1158,114 @@ export async function getCommunitySurveyAdminResults(
       languageCounts,
       latestResponseAt: responses[0]?.submitted_at || null,
       questions,
+    },
+  };
+}
+
+export async function getCommunitySurveyAdminExportData(
+  surveyKey: string
+): Promise<
+  | { ok: true; exportData: CommunitySurveyAdminExportData }
+  | { ok: false; error: 'invalid_survey_key' | 'survey_not_found' | 'results_unavailable'; details?: string }
+> {
+  const normalizedSurveyKey = normalizeTechnicalId(surveyKey);
+
+  if (!normalizedSurveyKey) {
+    return { ok: false, error: 'invalid_survey_key' };
+  }
+
+  const surveys = await getCommunitySurveyAdminDocumentsByKey(normalizedSurveyKey);
+  const survey = getPrimarySurveyDocument(surveys);
+
+  if (!survey) {
+    return { ok: false, error: 'survey_not_found' };
+  }
+
+  const { data: responseData, error: responsesError } = await supabaseAdmin
+    .from('community_survey_responses')
+    .select('id, survey_language, submitted_at')
+    .eq('survey_key', normalizedSurveyKey)
+    .order('submitted_at', { ascending: false });
+
+  if (responsesError) {
+    logApiError('community-surveys.admin-export-responses', responsesError);
+
+    return {
+      ok: false,
+      error: 'results_unavailable',
+      details: responsesError.message,
+    };
+  }
+
+  const responses = (responseData || []) as SurveyAdminResponseRow[];
+  const responseIds = responses
+    .map((response) => String(response.id || '').trim())
+    .filter(Boolean);
+  const responseMap = new Map(responses.map((response) => [response.id, response]));
+  const questionIds = new Set(survey.questions.map((question) => question.questionId));
+  let answers: SurveyAdminAnswerRow[] = [];
+
+  if (responseIds.length > 0) {
+    const { data: answerData, error: answersError } = await supabaseAdmin
+      .from('community_survey_answers')
+      .select('id, response_id, question_id, option_id, text_answer, created_at')
+      .in('response_id', responseIds)
+      .order('created_at', { ascending: true });
+
+    if (answersError) {
+      logApiError('community-surveys.admin-export-answers', answersError);
+
+      return {
+        ok: false,
+        error: 'results_unavailable',
+        details: answersError.message,
+      };
+    }
+
+    answers = (answerData || []) as SurveyAdminAnswerRow[];
+  }
+
+  const answerMap = new Map<string, CommunitySurveyAdminExportAnswer>();
+
+  answers.forEach((answer) => {
+    const responseId = String(answer.response_id || '').trim();
+    const response = responseMap.get(responseId);
+    const questionId = normalizeTechnicalId(answer.question_id);
+
+    if (!response || !questionId || !questionIds.has(questionId)) return;
+
+    const key = `${responseId}:${questionId}`;
+    const current = answerMap.get(key) || {
+      questionId,
+      optionIds: [],
+      textAnswer: null,
+    };
+    const optionId = normalizeTechnicalId(answer.option_id);
+
+    if (optionId && !current.optionIds.includes(optionId)) {
+      current.optionIds.push(optionId);
+    }
+
+    if (typeof answer.text_answer === 'string') {
+      current.textAnswer = answer.text_answer;
+    }
+
+    answerMap.set(key, current);
+  });
+
+  return {
+    ok: true,
+    exportData: {
+      survey,
+      surveys,
+      questions: survey.questions,
+      responses: responses.map((response) => ({
+        submittedAt: response.submitted_at || null,
+        language: normalizeCommunitySurveyLanguage(response.survey_language),
+        answers: survey.questions
+          .map((question) => answerMap.get(`${response.id}:${question.questionId}`))
+          .filter(Boolean) as CommunitySurveyAdminExportAnswer[],
+      })),
     },
   };
 }
