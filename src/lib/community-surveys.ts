@@ -98,6 +98,50 @@ export type CommunitySurveyAdminResults = {
   questions: CommunitySurveyQuestionResult[];
 };
 
+export const COMMUNITY_SURVEY_EDITORIAL_SUMMARY_MIN_RESPONSES = 10;
+
+export type CommunitySurveyEditorialSummaryOption = {
+  optionId: string;
+  label: string;
+  count: number;
+  percentage: number;
+};
+
+export type CommunitySurveyEditorialSummarySingleItem = {
+  questionId: string;
+  text: string;
+  type: 'single';
+  responseCount: number;
+  answerCount: number;
+  topOptions: CommunitySurveyEditorialSummaryOption[];
+  isTie: boolean;
+};
+
+export type CommunitySurveyEditorialSummaryMultipleItem = {
+  questionId: string;
+  text: string;
+  type: 'multiple';
+  responseCount: number;
+  answerCount: number;
+  topOptions: CommunitySurveyEditorialSummaryOption[];
+  otherOption: {
+    count: number;
+    percentage: number;
+  } | null;
+};
+
+export type CommunitySurveyEditorialSummaryItem =
+  | CommunitySurveyEditorialSummarySingleItem
+  | CommunitySurveyEditorialSummaryMultipleItem;
+
+export type CommunitySurveyEditorialSummary = {
+  minResponses: number;
+  isAvailable: boolean;
+  totalResponses: number;
+  languageCounts: Record<CommunitySurveyLanguage, number>;
+  items: CommunitySurveyEditorialSummaryItem[];
+};
+
 export type CommunitySurveyAdminExportAnswer = {
   questionId: string;
   optionIds: string[];
@@ -121,6 +165,94 @@ type SurveyCookies = {
   get: (name: string) => { value?: string } | undefined;
   set?: (name: string, value: string, options: Record<string, unknown>) => void;
 };
+
+export function buildCommunitySurveyEditorialSummary(
+  results: CommunitySurveyAdminResults
+): CommunitySurveyEditorialSummary {
+  const items = results.questions
+    .map((question): CommunitySurveyEditorialSummaryItem | null => {
+      if (question.type === 'text') {
+        return null;
+      }
+
+      const answeredOptions = question.options.filter((option) => option.count > 0);
+
+      if (answeredOptions.length === 0) {
+        return null;
+      }
+
+      if (question.type === 'single') {
+        const maxCount = Math.max(...answeredOptions.map((option) => option.count));
+        const topOptions = question.options
+          .filter((option) => option.count === maxCount && maxCount > 0)
+          .map((option) => ({
+            optionId: option.optionId,
+            label: option.label,
+            count: option.count,
+            percentage: option.percentage,
+          }));
+
+        return {
+          questionId: question.questionId,
+          text: question.text,
+          type: question.type,
+          responseCount: question.responseCount,
+          answerCount: question.answerCount,
+          topOptions,
+          isTie: topOptions.length > 1,
+        };
+      }
+
+      const rankedOptions = question.options
+        .map((option, index) => ({ option, index }))
+        .filter(({ option }) => option.count > 0)
+        .sort((a, b) => {
+          if (b.option.count !== a.option.count) {
+            return b.option.count - a.option.count;
+          }
+
+          return a.index - b.index;
+        })
+        .slice(0, 3);
+      const topOptions = rankedOptions.map(({ option }) => ({
+        optionId: option.optionId,
+        label: option.label,
+        count: option.count,
+        percentage: question.answerCount > 0
+          ? roundPercentage((option.count / question.answerCount) * 100)
+          : 0,
+      }));
+      const topCount = topOptions.reduce((sum, option) => sum + option.count, 0);
+      const otherCount = Math.max(question.answerCount - topCount, 0);
+      const otherOption = otherCount > 0
+        ? {
+            count: otherCount,
+            percentage: question.answerCount > 0
+              ? roundPercentage((otherCount / question.answerCount) * 100)
+              : 0,
+          }
+        : null;
+
+      return {
+        questionId: question.questionId,
+        text: question.text,
+        type: question.type,
+        responseCount: question.responseCount,
+        answerCount: question.answerCount,
+        topOptions,
+        otherOption,
+      };
+    })
+    .filter(Boolean) as CommunitySurveyEditorialSummaryItem[];
+
+  return {
+    minResponses: COMMUNITY_SURVEY_EDITORIAL_SUMMARY_MIN_RESPONSES,
+    isAvailable: results.totalResponses >= COMMUNITY_SURVEY_EDITORIAL_SUMMARY_MIN_RESPONSES,
+    totalResponses: results.totalResponses,
+    languageCounts: results.languageCounts,
+    items,
+  };
+}
 
 type SurveyAnswerInput = {
   questionId?: unknown;

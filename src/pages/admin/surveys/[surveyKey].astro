@@ -6,6 +6,7 @@ import LocalDateTime from '../../../components/common/LocalDateTime.astro';
 import CommunityHero from '../../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../../components/community/CommunityLayout.astro';
 import {
+  buildCommunitySurveyEditorialSummary,
   getCommunitySurveyAdminResults,
   type CommunitySurveyLanguage,
   normalizeTechnicalId,
@@ -60,8 +61,6 @@ const uiCopy = {
     summary: 'Sintesi',
     questions: 'Domande',
     openResponses: 'Risposte aperte',
-    quantitativeSummary: 'Domande quantitative',
-    quantitativeDescription: 'Distribuzione compatta delle risposte a scelta singola e multipla.',
     allQuestions: 'Tutte le domande',
     allQuestionsDescription: 'Dettaglio completo del sondaggio nell’ordine definito in Sanity.',
     responseArchive: 'Archivio risposte aperte',
@@ -73,7 +72,6 @@ const uiCopy = {
     goToOpenResponses: 'Vai alle risposte aperte',
     noTextAnswers: 'Nessuna risposta testuale raccolta.',
     noQuestions: 'Nessuna domanda trovata nel sondaggio.',
-    noQuantitativeQuestions: 'Nessuna domanda quantitativa trovata nel sondaggio.',
     noOpenResponses: 'Nessuna risposta aperta raccolta.',
     all: 'Tutte',
     it: 'IT',
@@ -89,6 +87,19 @@ const uiCopy = {
     responsePlural: 'risposte',
     resultsKicker: 'Risultati',
     exportCsv: 'Esporta CSV',
+    editorialSummaryTitle: 'Sintesi editoriale',
+    editorialSummaryDescription: 'Lettura automatica dei risultati quantitativi. Nessun dato viene inviato a servizi esterni.',
+    editorialSummarySample: 'Sintesi basata su {total} partecipazioni: {it} IT e {en} EN.',
+    editorialSummarySmallSample: 'Campione ancora ridotto. La sintesi editoriale sarà disponibile da {min} partecipanti.',
+    editorialSummaryCurrentParticipants: 'Partecipanti attuali: {total}',
+    editorialSummaryNoData: 'Non ci sono ancora risultati quantitativi sufficienti per comporre la sintesi.',
+    editorialSummaryMultipleNote: 'Le percentuali indicano il peso di ciascuna preferenza sul totale delle selezioni espresse.',
+    otherPreferences: 'Altre preferenze',
+    tie: 'Pari merito',
+    participantsSingular: 'partecipante',
+    participantsPlural: 'partecipanti',
+    selectionsSingular: 'selezione',
+    selectionsPlural: 'selezioni',
   },
   en: {
     adminKicker: 'Community surveys',
@@ -100,8 +111,6 @@ const uiCopy = {
     summary: 'Summary',
     questions: 'Questions',
     openResponses: 'Open responses',
-    quantitativeSummary: 'Quantitative questions',
-    quantitativeDescription: 'Compact distribution of single-choice and multiple-choice answers.',
     allQuestions: 'All questions',
     allQuestionsDescription: 'Full survey detail in the order defined in Sanity.',
     responseArchive: 'Open response archive',
@@ -113,7 +122,6 @@ const uiCopy = {
     goToOpenResponses: 'Go to open responses',
     noTextAnswers: 'No text responses collected.',
     noQuestions: 'No survey questions found.',
-    noQuantitativeQuestions: 'No quantitative questions found.',
     noOpenResponses: 'No open responses collected.',
     all: 'All',
     it: 'IT',
@@ -129,6 +137,19 @@ const uiCopy = {
     responsePlural: 'responses',
     resultsKicker: 'Results',
     exportCsv: 'Export CSV',
+    editorialSummaryTitle: 'Editorial summary',
+    editorialSummaryDescription: 'Automatic overview of quantitative results. No data is sent to external services.',
+    editorialSummarySample: 'Summary based on {total} participations: {it} IT and {en} EN.',
+    editorialSummarySmallSample: 'Sample still too small. The editorial summary will be available from {min} participants.',
+    editorialSummaryCurrentParticipants: 'Current participants: {total}',
+    editorialSummaryNoData: 'There are not enough quantitative results yet to compose the summary.',
+    editorialSummaryMultipleNote: "Percentages show each preference's share of all selections made.",
+    otherPreferences: 'Other preferences',
+    tie: 'Tie',
+    participantsSingular: 'participant',
+    participantsPlural: 'participants',
+    selectionsSingular: 'selection',
+    selectionsPlural: 'selections',
   },
 };
 
@@ -216,7 +237,7 @@ const getMultipleQuestionNote = (language: CommunitySurveyLanguage) =>
 const dateLocale = results?.survey.language === 'en' ? 'en-GB' : 'it-IT';
 const uiLanguage: CommunitySurveyLanguage = results?.survey.language === 'en' ? 'en' : 'it';
 const t = uiCopy[uiLanguage];
-const quantitativeQuestions = results?.questions.filter((question) => question.type !== 'text') || [];
+const editorialSummary = results ? buildCommunitySurveyEditorialSummary(results) : null;
 const textQuestions = results?.questions.filter((question) => question.type === 'text') || [];
 const sortTextAnswersNewestFirst = <T extends { timestamp: string }>(answers: T[]) =>
   [...answers].sort((a, b) => {
@@ -262,6 +283,24 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
 
   return `${formatCount(count)} ${count === 1 ? uiCopy.it.textResponse : uiCopy.it.textResponses}`;
 };
+const formatEditorialSummarySample = () =>
+  t.editorialSummarySample
+    .replace('{total}', formatCount(editorialSummary?.totalResponses || 0))
+    .replace('{it}', formatCount(editorialSummary?.languageCounts.it || 0))
+    .replace('{en}', formatCount(editorialSummary?.languageCounts.en || 0));
+const formatEditorialSummarySmallSample = () =>
+  t.editorialSummarySmallSample.replace('{min}', formatCount(editorialSummary?.minResponses || 10));
+const formatEditorialSummaryCurrentParticipants = () =>
+  t.editorialSummaryCurrentParticipants.replace('{total}', formatCount(editorialSummary?.totalResponses || 0));
+const getParticipantLabel = (count: number) =>
+  count === 1 ? t.participantsSingular : t.participantsPlural;
+const getSelectionLabel = (count: number) =>
+  count === 1 ? t.selectionsSingular : t.selectionsPlural;
+const formatEditorialSingleOptionMeta = (count: number, percentage: number) =>
+  `${formatCount(count)} ${getParticipantLabel(count)} · ${formatPercentage(percentage)}`;
+const formatEditorialMultipleOptionMeta = (count: number, percentage: number) =>
+  `${formatCount(count)} ${getSelectionLabel(count)} · ${formatPercentage(percentage)}`;
+const hasEditorialMultipleSummary = editorialSummary?.items.some((item) => item.type === 'multiple') || false;
 ---
 
 <BaseLayout title={title} description={description}>
@@ -383,55 +422,87 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
                 aria-labelledby="admin-surveys-tab-summary"
                 data-admin-surveys-panel="summary"
               >
-                <div class="admin-surveys-view-heading">
-                  <div>
-                    <p>{t.summary}</p>
-                    <h3>{t.quantitativeSummary}</h3>
-                  </div>
-                  <span>{t.quantitativeDescription}</span>
-                </div>
+                {editorialSummary && (
+                  <section class="admin-surveys-editorial-summary" aria-labelledby="admin-surveys-editorial-summary-title">
+                    <header class="admin-surveys-editorial-summary__header">
+                      <div>
+                        <p>{t.summary}</p>
+                        <h4 id="admin-surveys-editorial-summary-title">{t.editorialSummaryTitle}</h4>
+                      </div>
+                      <span>{t.editorialSummaryDescription}</span>
+                    </header>
 
-                {quantitativeQuestions.length > 0 ? (
-                  <div class="admin-surveys-question-list admin-surveys-question-list--compact">
-                    {quantitativeQuestions.map((question) => {
-                      const originalIndex = results.questions.findIndex((item) => item.questionId === question.questionId) + 1;
+                    {editorialSummary.isAvailable ? (
+                      <>
+                        <p class="admin-surveys-editorial-summary__sample">
+                          {formatEditorialSummarySample()}
+                        </p>
+                        {hasEditorialMultipleSummary && (
+                          <p class="admin-surveys-editorial-summary__multiple-note">
+                            {t.editorialSummaryMultipleNote}
+                          </p>
+                        )}
 
-                      return (
-                        <article class="admin-surveys-question-card admin-surveys-question-card--compact">
-                          <header>
-                            <div>
-                              <span>{t.questionLabel} {originalIndex} · {getTypeLabel(question.type, uiLanguage)}</span>
-                              <h3>{question.text}</h3>
-                            </div>
-                            <small>{getQuestionAnswerSummary(question, results.survey.language)}</small>
-                          </header>
-
-                          <div class="admin-surveys-options admin-surveys-options--compact">
-                            {question.options.map((option) => (
-                              <div class="admin-surveys-option">
-                                <div class="admin-surveys-option__meta">
-                                  <strong>{option.label}</strong>
-                                  <span>
-                                    {formatCount(option.count)} · {formatPercentage(option.percentage)}
-                                  </span>
+                        {editorialSummary.items.length > 0 ? (
+                          <div class="admin-surveys-editorial-summary__list">
+                            {editorialSummary.items.map((item) => (
+                              <article class="admin-surveys-editorial-summary__item">
+                                <div>
+                                  <span>{getTypeLabel(item.type, uiLanguage)}</span>
+                                  <h5>{item.text}</h5>
                                 </div>
-                                <div class="admin-surveys-option__bar" aria-hidden="true">
-                                  <span style={`--admin-survey-result-width: ${option.percentage}%`}></span>
+
+                                <div class="admin-surveys-editorial-summary__results">
+                                  {item.type === 'single' && item.isTie && <strong>{t.tie}</strong>}
+                                  <ul>
+                                    {item.topOptions.map((option, index) => (
+                                      <li style={`--admin-survey-summary-width: ${option.percentage}%`}>
+                                        <div class="admin-surveys-editorial-summary__option">
+                                          <span>{item.type === 'multiple' ? `${index + 1}. ${option.label}` : option.label}</span>
+                                          <strong>{formatPercentage(option.percentage)}</strong>
+                                        </div>
+                                        <small>
+                                          {item.type === 'multiple'
+                                            ? formatEditorialMultipleOptionMeta(option.count, option.percentage)
+                                            : formatEditorialSingleOptionMeta(option.count, option.percentage)}
+                                        </small>
+                                        <div class="admin-surveys-editorial-summary__bar" aria-hidden="true">
+                                          <span></span>
+                                        </div>
+                                      </li>
+                                    ))}
+                                    {item.type === 'multiple' && item.otherOption && (
+                                      <li style={`--admin-survey-summary-width: ${item.otherOption.percentage}%`}>
+                                        <div class="admin-surveys-editorial-summary__option">
+                                          <span>{t.otherPreferences}</span>
+                                          <strong>{formatPercentage(item.otherOption.percentage)}</strong>
+                                        </div>
+                                        <small>
+                                          {formatEditorialMultipleOptionMeta(item.otherOption.count, item.otherOption.percentage)}
+                                        </small>
+                                        <div class="admin-surveys-editorial-summary__bar" aria-hidden="true">
+                                          <span></span>
+                                        </div>
+                                      </li>
+                                    )}
+                                  </ul>
                                 </div>
-                              </div>
+                              </article>
                             ))}
-                            {question.type === 'multiple' && (
-                              <p class="admin-surveys-note admin-surveys-note--compact">
-                                {getMultipleQuestionNote(results.survey.language)}
-                              </p>
-                            )}
                           </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p class="admin-surveys-empty">{t.noQuantitativeQuestions}</p>
+                        ) : (
+                          <p class="admin-surveys-empty admin-surveys-empty--compact">
+                            {t.editorialSummaryNoData}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <div class="admin-surveys-editorial-summary__small-sample">
+                        <strong>{formatEditorialSummarySmallSample()}</strong>
+                        <span>{formatEditorialSummaryCurrentParticipants()}</span>
+                      </div>
+                    )}
+                  </section>
                 )}
               </div>
 
