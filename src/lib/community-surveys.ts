@@ -17,6 +17,7 @@ export type CommunitySurveyQuestion = {
   questionId: string;
   text: string;
   type: CommunitySurveyQuestionType;
+  maxSelections?: number;
   options: CommunitySurveyOption[];
 };
 
@@ -160,6 +161,7 @@ const communitySurveyFields = `
     questionId,
     text,
     type,
+    maxSelections,
     options[]{
       optionId,
       label
@@ -298,6 +300,7 @@ const normalizeSurveyQuestion = (question: unknown): CommunitySurveyQuestion | n
   const questionId = normalizeTechnicalId(value?.questionId);
   const text = String(value?.text || '').trim();
   const type = value?.type;
+  const maxSelections = Number(value?.maxSelections);
 
   if (
     !questionId ||
@@ -323,6 +326,9 @@ const normalizeSurveyQuestion = (question: unknown): CommunitySurveyQuestion | n
     questionId,
     text,
     type,
+    ...(type === 'multiple' && Number.isInteger(maxSelections) && maxSelections >= 2
+      ? { maxSelections }
+      : {}),
     options: type === 'text' ? [] : options,
   };
 };
@@ -776,6 +782,18 @@ const validateSubmittedAnswers = (
         };
       }
 
+      if (
+        typeof question.maxSelections === 'number' &&
+        uniqueOptionIds.length > question.maxSelections
+      ) {
+        return {
+          ok: false,
+          error: 'too_many_options',
+          status: 422,
+          field: question.questionId,
+        };
+      }
+
       uniqueOptionIds.forEach((optionId) => {
         rows.push({
           response_id: responseId,
@@ -1093,12 +1111,17 @@ export async function getCommunitySurveyAdminResults(
           : 0,
       };
     });
+    const answeredResponseIds = new Set(
+      questionAnswers
+        .map((answer) => String(answer.response_id || '').trim())
+        .filter(Boolean)
+    );
 
     return {
       questionId: question.questionId,
       text: question.text,
       type: question.type,
-      responseCount: questionAnswers.length,
+      responseCount: answeredResponseIds.size,
       answerCount: questionAnswers.length,
       options,
       textAnswers: [],

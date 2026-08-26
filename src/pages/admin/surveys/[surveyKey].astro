@@ -6,6 +6,7 @@ import CommunityHero from '../../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../../components/community/CommunityLayout.astro';
 import {
   getCommunitySurveyAdminResults,
+  type CommunitySurveyLanguage,
   normalizeTechnicalId,
   type CommunitySurveyQuestionResult,
   type CommunitySurveyStatus,
@@ -80,6 +81,48 @@ const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
   status && status in statusLabels
     ? statusLabels[status as CommunitySurveyStatus]
     : '—';
+const getQuestionAnswerSummary = (
+  question: CommunitySurveyQuestionResult,
+  language: CommunitySurveyLanguage
+) => {
+  if (question.type !== 'multiple') {
+    const answerLabel = language === 'en'
+      ? question.answerCount === 1
+        ? 'answer'
+        : 'answers'
+      : question.answerCount === 1
+        ? 'risposta'
+        : 'risposte';
+
+    return `${formatCount(question.answerCount)} ${
+      answerLabel
+    }`;
+  }
+
+  const participantLabel = language === 'en'
+    ? question.responseCount === 1
+      ? 'participant'
+      : 'participants'
+    : question.responseCount === 1
+      ? 'partecipante'
+      : 'partecipanti';
+  const selectionLabel = language === 'en'
+    ? question.answerCount === 1
+      ? 'selection'
+      : 'selections'
+    : question.answerCount === 1
+      ? 'selezione'
+      : 'selezioni';
+
+  return [
+    `${formatCount(question.responseCount)} ${participantLabel}`,
+    `${formatCount(question.answerCount)} ${selectionLabel}`,
+  ].join(' · ');
+};
+const getMultipleQuestionNote = (language: CommunitySurveyLanguage) =>
+  language === 'en'
+    ? 'For multiple-choice questions, percentages show the share of participants who selected each option. The total may exceed 100%.'
+    : 'Le percentuali delle domande a risposta multipla indicano la percentuale di partecipanti che ha selezionato ciascuna opzione. Il totale può superare il 100%.';
 ---
 
 <BaseLayout title={title} description={description}>
@@ -149,7 +192,7 @@ const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
                           <span>Domanda {index + 1} · {typeLabels[question.type]}</span>
                           <h3>{question.text}</h3>
                         </div>
-                        <small>{formatCount(question.answerCount)} risposte</small>
+                        <small>{getQuestionAnswerSummary(question, results.survey.language)}</small>
                       </header>
 
                       {question.type === 'text' ? (
@@ -188,10 +231,7 @@ const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
                           ))}
                           {question.type === 'multiple' && (
                             <p class="admin-surveys-note">
-                              Le percentuali delle domande a risposta multipla indicano la percentuale di partecipanti che ha selezionato ciascuna opzione. Il totale può superare il 100%.
-                              <span>
-                                For multiple-choice questions, percentages show the share of participants who selected each option. The total may exceed 100%.
-                              </span>
+                              {getMultipleQuestionNote(results.survey.language)}
                             </p>
                           )}
                         </div>

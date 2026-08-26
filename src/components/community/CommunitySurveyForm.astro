@@ -24,6 +24,7 @@ const copy = isEn
       questionCount: (count: number) => `${count} ${count === 1 ? 'question' : 'questions'}`,
       singleHint: 'Choose one option.',
       multipleHint: 'Choose one or more options.',
+      maxSelectionsHint: (count: number) => `Select up to ${count} options.`,
       textHint: 'Write your answer.',
       openAnswerPrivacy:
         'To protect your privacy, do not include personal data in open answers.',
@@ -35,6 +36,7 @@ const copy = isEn
       submit: 'Send answers',
       submitting: 'Sending...',
       missing: 'Answer this question before continuing.',
+      maxSelectionsError: 'You can select up to {count} options.',
       sending:
         'Saving your anonymous response...',
       success:
@@ -60,6 +62,7 @@ const copy = isEn
       questionCount: (count: number) => `${count} ${count === 1 ? 'domanda' : 'domande'}`,
       singleHint: 'Scegli una sola opzione.',
       multipleHint: 'Scegli una o più opzioni.',
+      maxSelectionsHint: (count: number) => `Seleziona fino a ${count} opzioni.`,
       textHint: 'Scrivi la tua risposta.',
       openAnswerPrivacy:
         'Per proteggere la tua privacy, non inserire dati personali nelle risposte aperte.',
@@ -71,6 +74,7 @@ const copy = isEn
       submit: 'Invia risposte',
       submitting: 'Invio in corso...',
       missing: 'Rispondi a questa domanda prima di continuare.',
+      maxSelectionsError: 'Puoi selezionare al massimo {count} opzioni.',
       sending:
         'Stiamo salvando la tua risposta anonima...',
       success:
@@ -137,6 +141,7 @@ const availabilityMessage = availabilityState === 'scheduled'
     data-survey-language={survey.language}
     data-endpoint={`/api/community/surveys/${encodeURIComponent(survey.surveyKey)}/responses`}
     data-message-missing={copy.missing}
+    data-message-max-selections={copy.maxSelectionsError}
     data-message-error={copy.error}
     data-message-success={copy.success}
     data-message-success-detail={copy.successDetail}
@@ -177,7 +182,9 @@ const availabilityMessage = availabilityState === 'scheduled'
         question.type === 'single'
           ? copy.singleHint
           : question.type === 'multiple'
-            ? copy.multipleHint
+            ? question.maxSelections
+              ? copy.maxSelectionsHint(question.maxSelections)
+              : copy.multipleHint
             : copy.textHint;
 
       return (
@@ -187,6 +194,9 @@ const availabilityMessage = availabilityState === 'scheduled'
           data-survey-step={index}
           data-question-id={question.questionId}
           data-question-type={question.type}
+          data-max-selections={question.type === 'multiple' && question.maxSelections
+            ? question.maxSelections
+            : undefined}
           tabindex="-1"
           hidden={index !== 0}
           aria-hidden={index === 0 ? 'false' : 'true'}
@@ -302,6 +312,7 @@ const availabilityMessage = availabilityState === 'scheduled'
     const submitLabel = form.dataset.labelSubmit || 'Invia';
     const submittingLabel = form.dataset.labelSubmitting || submitLabel;
     const missingMessage = form.dataset.messageMissing || '';
+    const maxSelectionsMessage = form.dataset.messageMaxSelections || '';
     const errorMessage = form.dataset.messageError || '';
     const successMessage = form.dataset.messageSuccess || '';
     const successDetail = form.dataset.messageSuccessDetail || '';
@@ -313,6 +324,43 @@ const availabilityMessage = availabilityState === 'scheduled'
     const questionLabel = form.dataset.labelQuestion || 'Domanda';
     const ofLabel = form.dataset.labelOf || 'di';
     let currentStep = 0;
+
+    const getQuestionMaxSelections = (question) => {
+      if (!(question instanceof HTMLElement)) return null;
+
+      const maxSelections = Number(question.dataset.maxSelections || 0);
+
+      return Number.isInteger(maxSelections) && maxSelections >= 2
+        ? maxSelections
+        : null;
+    };
+
+    const getMaxSelectionsMessage = (count) =>
+      (maxSelectionsMessage || missingMessage).replace('{count}', String(count));
+
+    const updateMultipleSelectionLimit = (question) => {
+      if (!(question instanceof HTMLElement)) return;
+      if (question.dataset.questionType !== 'multiple') return;
+
+      const maxSelections = getQuestionMaxSelections(question);
+      const inputs = Array.from(
+        question.querySelectorAll('input[type="checkbox"]')
+      ).filter((input) => input instanceof HTMLInputElement);
+
+      if (!maxSelections) {
+        inputs.forEach((input) => {
+          input.disabled = false;
+        });
+        return;
+      }
+
+      const checkedCount = inputs.filter((input) => input.checked).length;
+      const hasReachedLimit = checkedCount >= maxSelections;
+
+      inputs.forEach((input) => {
+        input.disabled = !input.checked && hasReachedLimit;
+      });
+    };
 
     const setSuccess = (message, detail) => {
       if (!(successNode instanceof HTMLElement)) return;
@@ -353,19 +401,29 @@ const availabilityMessage = availabilityState === 'scheduled'
       }
 
       if (type === 'multiple') {
+        const maxSelections = getQuestionMaxSelections(question);
         const optionIds = Array.from(
           question.querySelectorAll('input[type="checkbox"]:checked')
         )
           .filter((input) => input instanceof HTMLInputElement)
           .map((input) => input.value);
 
-        if (optionIds.length < 1 && markInvalid) {
+        if (
+          (optionIds.length < 1 ||
+            (maxSelections && optionIds.length > maxSelections)) &&
+          markInvalid
+        ) {
           setQuestionInvalid(question, true);
         }
 
         return {
           answer: { questionId, optionIds },
-          valid: optionIds.length > 0,
+          valid:
+            optionIds.length > 0 &&
+            (!maxSelections || optionIds.length <= maxSelections),
+          message: maxSelections && optionIds.length > maxSelections
+            ? getMaxSelectionsMessage(maxSelections)
+            : '',
         };
       }
 
@@ -460,11 +518,12 @@ const availabilityMessage = availabilityState === 'scheduled'
 
         const activeQuestion = questions[currentStep];
 
-        if (
-          !(activeQuestion instanceof HTMLElement) ||
-          !getQuestionAnswer(activeQuestion, { markInvalid: true }).valid
-        ) {
-          setMessage(statusNode, missingMessage, 'error');
+        const result = activeQuestion instanceof HTMLElement
+          ? getQuestionAnswer(activeQuestion, { markInvalid: true })
+          : null;
+
+        if (!result?.valid) {
+          setMessage(statusNode, result?.message || missingMessage, 'error');
           return;
         }
 
@@ -473,6 +532,21 @@ const availabilityMessage = availabilityState === 'scheduled'
         updateStep({ shouldFocus: true });
       });
     }
+
+    questions.forEach((question) => {
+      if (!(question instanceof HTMLElement)) return;
+
+      updateMultipleSelectionLimit(question);
+
+      question.addEventListener('change', () => {
+        setQuestionInvalid(question, false);
+        updateMultipleSelectionLimit(question);
+      });
+
+      question.addEventListener('input', () => {
+        setQuestionInvalid(question, false);
+      });
+    });
 
     updateStep();
 
@@ -484,6 +558,7 @@ const availabilityMessage = availabilityState === 'scheduled'
       const answers = [];
       let hasMissingAnswer = false;
       let firstInvalidStep = -1;
+      let validationMessage = missingMessage;
 
       questions.forEach((question, index) => {
         if (!(question instanceof HTMLElement)) return;
@@ -495,6 +570,7 @@ const availabilityMessage = availabilityState === 'scheduled'
 
           if (firstInvalidStep === -1) {
             firstInvalidStep = index;
+            validationMessage = result.message || missingMessage;
           }
         }
 
@@ -504,7 +580,7 @@ const availabilityMessage = availabilityState === 'scheduled'
       if (hasMissingAnswer) {
         currentStep = firstInvalidStep === -1 ? currentStep : firstInvalidStep;
         updateStep({ shouldFocus: true });
-        setMessage(statusNode, missingMessage, 'error');
+        setMessage(statusNode, validationMessage, 'error');
         return;
       }
 

@@ -236,11 +236,23 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
+.community-survey-options label:has(input:disabled) {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
 .community-survey-options label:hover,
 .community-survey-options label:focus-within {
   transform: translateY(-1px);
   border-color: var(--rg-cta-border);
   background: var(--rg-cta-hover-bg);
+}
+
+.community-survey-options label:has(input:disabled):hover,
+.community-survey-options label:has(input:disabled):focus-within {
+  transform: none;
+  border-color: var(--color-border);
+  background: color-mix(in srgb, var(--rg-panel-bg) 76%, transparent);
 }
 
 .community-survey-options input {
