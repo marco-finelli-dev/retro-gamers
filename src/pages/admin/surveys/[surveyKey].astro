@@ -2,6 +2,7 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import AdminDashboardBackLink from '../../../components/admin/AdminDashboardBackLink.astro';
 import AdminToolsSidebar from '../../../components/admin/AdminToolsSidebar.astro';
+import LocalDateTime from '../../../components/common/LocalDateTime.astro';
 import CommunityHero from '../../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../../components/community/CommunityLayout.astro';
 import {
@@ -23,13 +24,6 @@ const isAdmin = session.profile?.role === 'admin';
 const numberFormatter = new Intl.NumberFormat('it-IT');
 const percentageFormatter = new Intl.NumberFormat('it-IT', {
   maximumFractionDigits: 1,
-});
-const dateFormatter = new Intl.DateTimeFormat('it-IT', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
 });
 const statusLabels: Record<CommunitySurveyStatus, string> = {
   draft: 'Bozza',
@@ -70,13 +64,6 @@ if (isAdmin && surveyKey) {
 const formatCount = (count: number) => numberFormatter.format(count);
 const formatPercentage = (percentage: number) =>
   `${percentageFormatter.format(percentage)}%`;
-const formatDate = (date: string | null | undefined) => {
-  if (!date) return '—';
-
-  const parsed = new Date(date);
-
-  return Number.isFinite(parsed.getTime()) ? dateFormatter.format(parsed) : '—';
-};
 const getStatusLabel = (status: CommunitySurveyStatus | string | undefined) =>
   status && status in statusLabels
     ? statusLabels[status as CommunitySurveyStatus]
@@ -123,6 +110,7 @@ const getMultipleQuestionNote = (language: CommunitySurveyLanguage) =>
   language === 'en'
     ? 'For multiple-choice questions, percentages show the share of participants who selected each option. The total may exceed 100%.'
     : 'Le percentuali delle domande a risposta multipla indicano la percentuale di partecipanti che ha selezionato ciascuna opzione. Il totale può superare il 100%.';
+const dateLocale = results?.survey.language === 'en' ? 'en-GB' : 'it-IT';
 ---
 
 <BaseLayout title={title} description={description}>
@@ -168,7 +156,9 @@ const getMultipleQuestionNote = (language: CommunitySurveyLanguage) =>
 
               <article class="community-card admin-surveys-summary-card">
                 <span>Ultima risposta</span>
-                <strong>{formatDate(results.latestResponseAt)}</strong>
+                <strong>
+                  <LocalDateTime value={results.latestResponseAt} locale={dateLocale} />
+                </strong>
               </article>
             </section>
 
@@ -202,9 +192,10 @@ const getMultipleQuestionNote = (language: CommunitySurveyLanguage) =>
                               <blockquote>
                                 <p>{answer.text}</p>
                                 <footer>
-                                  <time datetime={answer.submittedAt || answer.createdAt || undefined}>
-                                    {formatDate(answer.submittedAt || answer.createdAt)}
-                                  </time>
+                                  <LocalDateTime
+                                    value={answer.submittedAt || answer.createdAt}
+                                    locale={dateLocale}
+                                  />
                                 </footer>
                               </blockquote>
                             ))}

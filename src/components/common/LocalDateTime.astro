@@ -1,0 +1,87 @@
+---
+type Props = {
+  value?: string | null;
+  locale?: string;
+  fallback?: string;
+  class?: string;
+};
+
+const {
+  value,
+  locale = 'it-IT',
+  fallback = '—',
+  class: className,
+} = Astro.props as Props;
+const isoValue = typeof value === 'string' ? value.trim() : '';
+const date = isoValue ? new Date(isoValue) : null;
+const isValidDate = Boolean(date && Number.isFinite(date.getTime()));
+const formatter = new Intl.DateTimeFormat(locale, {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const fallbackLabel = isValidDate && date ? formatter.format(date) : fallback;
+---
+
+<time
+  datetime={isValidDate ? isoValue : undefined}
+  class={className}
+  data-local-datetime={isValidDate ? '' : undefined}
+  data-local-datetime-locale={locale}
+>
+  {fallbackLabel}
+</time>
+
+<script is:inline>
+  (() => {
+    const getFormatter = (() => {
+      const cache = new Map();
+
+      return (locale) => {
+        const key = locale || 'it-IT';
+
+        if (!cache.has(key)) {
+          cache.set(
+            key,
+            new Intl.DateTimeFormat(key, {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          );
+        }
+
+        return cache.get(key);
+      };
+    })();
+
+    const formatLocalDateTimes = () => {
+      document.querySelectorAll('time[data-local-datetime]').forEach((node) => {
+        const isoValue = node.getAttribute('datetime') || '';
+        const date = new Date(isoValue);
+
+        if (!Number.isFinite(date.getTime())) return;
+
+        const locale = node.getAttribute('data-local-datetime-locale') || 'it-IT';
+        node.textContent = getFormatter(locale).format(date);
+      });
+    };
+
+    if (window.__rgFormatLocalDateTimes) {
+      window.__rgFormatLocalDateTimes();
+      return;
+    }
+
+    window.__rgFormatLocalDateTimes = formatLocalDateTimes;
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', formatLocalDateTimes, { once: true });
+    } else {
+      formatLocalDateTimes();
+    }
+  })();
+</script>
