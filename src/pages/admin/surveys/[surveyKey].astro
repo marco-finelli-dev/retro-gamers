@@ -84,6 +84,7 @@ const uiCopy = {
     noFilteredResponses: 'Nessuna risposta corrisponde ai filtri.',
     sortLabel: 'Ordina',
     statusLabel: 'Stato',
+    questionFilterLabel: 'Filtra per domanda',
     responseSingular: 'risposta',
     responsePlural: 'risposte',
     resultsKicker: 'Risultati',
@@ -122,6 +123,7 @@ const uiCopy = {
     noFilteredResponses: 'No responses match the current filters.',
     sortLabel: 'Sort',
     statusLabel: 'Status',
+    questionFilterLabel: 'Filter by question',
     responseSingular: 'response',
     responsePlural: 'responses',
     resultsKicker: 'Results',
@@ -214,24 +216,37 @@ const uiLanguage: CommunitySurveyLanguage = results?.survey.language === 'en' ? 
 const t = uiCopy[uiLanguage];
 const quantitativeQuestions = results?.questions.filter((question) => question.type !== 'text') || [];
 const textQuestions = results?.questions.filter((question) => question.type === 'text') || [];
-const openResponses = results
-  ? textQuestions
-      .flatMap((question) =>
-        question.textAnswers.map((answer) => ({
-          ...answer,
-          questionId: question.questionId,
-          questionIndex: results.questions.findIndex((item) => item.questionId === question.questionId) + 1,
-          questionText: question.text,
-          timestamp: answer.submittedAt || answer.createdAt || '',
-        }))
-      )
-      .sort((a, b) => {
-        const bTime = Date.parse(b.timestamp || '');
-        const aTime = Date.parse(a.timestamp || '');
+const sortTextAnswersNewestFirst = <T extends { timestamp: string }>(answers: T[]) =>
+  [...answers].sort((a, b) => {
+    const bTime = Date.parse(b.timestamp || '');
+    const aTime = Date.parse(a.timestamp || '');
 
-        return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+    return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+  });
+const openResponseGroups = results
+  ? textQuestions
+      .map((question) => {
+        const questionIndex = results.questions.findIndex((item) => item.questionId === question.questionId) + 1;
+        const responses = sortTextAnswersNewestFirst(
+          question.textAnswers.map((answer) => ({
+            ...answer,
+            questionId: question.questionId,
+            questionIndex,
+            questionText: question.text,
+            timestamp: answer.submittedAt || answer.createdAt || '',
+          }))
+        );
+
+        return {
+          questionId: question.questionId,
+          questionIndex,
+          questionText: question.text,
+          responses,
+        };
       })
+      .filter((group) => group.responses.length > 0)
   : [];
+const openResponses = openResponseGroups.flatMap((group) => group.responses);
 const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) => {
   if (language === 'en') {
     return `${formatCount(count)} ${count === 1 ? uiCopy.en.textResponse : uiCopy.en.textResponses}`;
@@ -260,9 +275,7 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
               <div class="admin-surveys-kpis" aria-label="Riepilogo sondaggio">
                 <article class="admin-surveys-kpi admin-surveys-kpi--status">
                   <span>{t.statusLabel}</span>
-                  <strong class:list={['admin-surveys-status', `admin-surveys-status--${results.survey.status}`]}>
-                    {getStatusLabel(results.survey.status, uiLanguage)}
-                  </strong>
+                  <strong>{getStatusLabel(results.survey.status, uiLanguage)}</strong>
                 </article>
                 <article class="admin-surveys-kpi">
                   <span>{t.totalParticipants}</span>
@@ -276,7 +289,7 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
                   <span>{t.englishParticipants}</span>
                   <strong>{formatCount(results.languageCounts.en)}</strong>
                 </article>
-                <article class="admin-surveys-kpi admin-surveys-kpi--wide">
+                <article class="admin-surveys-kpi admin-surveys-kpi--wide admin-surveys-kpi--latest">
                   <span>{t.latestResponse}</span>
                   <strong>
                     <LocalDateTime value={results.latestResponseAt} locale={dateLocale} />
@@ -513,8 +526,24 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
                         />
                       </label>
 
+                      <label class="admin-surveys-question-filter">
+                        <span class="sr-only">{t.questionFilterLabel}</span>
+                        <select data-admin-surveys-question-filter>
+                          <option value="all">{t.allQuestions}</option>
+                          {textQuestions.map((question) => {
+                            const questionIndex = results.questions.findIndex((item) => item.questionId === question.questionId) + 1;
+
+                            return (
+                              <option value={question.questionId}>
+                                {t.questionLabel} {questionIndex}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </label>
+
                       <label class="admin-surveys-sort">
-                        <span>{t.sortLabel}</span>
+                        <span class="sr-only">{t.sortLabel}</span>
                         <select data-admin-surveys-response-sort>
                           <option value="newest">{t.newest}</option>
                           <option value="oldest">{t.oldest}</option>
@@ -527,28 +556,45 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
                     </p>
 
                     <div class="admin-surveys-open-response-list" data-admin-surveys-open-list>
-                      {openResponses.map((answer) => (
-                        <article
-                          class="admin-surveys-open-response"
-                          data-admin-surveys-open-response
-                          data-language={answer.language}
-                          data-submitted-at={answer.timestamp}
-                          data-search={`${answer.text} ${answer.questionText}`.toLocaleLowerCase()}
+                      {openResponseGroups.map((group) => (
+                        <section
+                          class="admin-surveys-open-group"
+                          data-admin-surveys-open-group
+                          data-question-id={group.questionId}
                         >
-                          <header>
+                          <header class="admin-surveys-open-group__header">
                             <div>
-                              <span>{t.questionLabel} {answer.questionIndex}</span>
-                              <h4>{answer.questionText}</h4>
+                              <span>{t.questionLabel} {group.questionIndex}</span>
+                              <h4>{group.questionText}</h4>
                             </div>
-                            <span class:list={['admin-surveys-language-badge', `admin-surveys-language-badge--${answer.language}`]}>
-                              {answer.language.toUpperCase()}
-                            </span>
+                            <strong data-admin-surveys-group-count>
+                              {getTextAnswerSummary(group.responses.length, uiLanguage)}
+                            </strong>
                           </header>
-                          <p>{answer.text}</p>
-                          <footer>
-                            <LocalDateTime value={answer.timestamp} locale={dateLocale} />
-                          </footer>
-                        </article>
+
+                          <div class="admin-surveys-open-group__responses" data-admin-surveys-open-group-responses>
+                            {group.responses.map((answer) => (
+                              <article
+                                class="admin-surveys-open-response"
+                                data-admin-surveys-open-response
+                                data-question-id={group.questionId}
+                                data-language={answer.language}
+                                data-submitted-at={answer.timestamp}
+                                data-search={`${answer.text} ${answer.questionText}`.toLocaleLowerCase()}
+                              >
+                                <header>
+                                  <span class:list={['admin-surveys-language-badge', `admin-surveys-language-badge--${answer.language}`]}>
+                                    {answer.language.toUpperCase()}
+                                  </span>
+                                </header>
+                                <p>{answer.text}</p>
+                                <footer>
+                                  <LocalDateTime value={answer.timestamp} locale={dateLocale} />
+                                </footer>
+                              </article>
+                            ))}
+                          </div>
+                        </section>
                       ))}
                     </div>
 
@@ -621,10 +667,14 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
 
                 const languageButtons = Array.from(root.querySelectorAll('[data-admin-surveys-language-filter]'));
                 const searchInput = root.querySelector('[data-admin-surveys-response-search]');
+                const questionFilter = root.querySelector('[data-admin-surveys-question-filter]');
                 const sortSelect = root.querySelector('[data-admin-surveys-response-sort]');
                 const list = root.querySelector('[data-admin-surveys-open-list]');
                 const emptyState = root.querySelector('[data-admin-surveys-open-empty]');
                 const countNode = root.querySelector('[data-admin-surveys-open-count]');
+                const groups = list
+                  ? Array.from(list.querySelectorAll('[data-admin-surveys-open-group]'))
+                  : [];
                 const responses = list
                   ? Array.from(list.querySelectorAll('[data-admin-surveys-open-response]'))
                   : [];
@@ -639,36 +689,60 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
                   if (!list) return;
 
                   const query = String(searchInput?.value || '').trim().toLocaleLowerCase();
+                  const selectedQuestionId = String(questionFilter?.value || 'all');
                   const sortOrder = String(sortSelect?.value || 'newest');
-                  const visibleResponses = responses.filter((node) => {
-                    const language = node.getAttribute('data-language') || '';
-                    const searchable = node.getAttribute('data-search') || '';
-                    const matchesLanguage = activeLanguage === 'all' || language === activeLanguage;
-                    const matchesSearch = !query || searchable.includes(query);
+                  let visibleCount = 0;
 
-                    return matchesLanguage && matchesSearch;
+                  groups.forEach((group) => {
+                    const groupQuestionId = group.getAttribute('data-question-id') || '';
+                    const groupResponses = responses.filter(
+                      (node) => node.getAttribute('data-question-id') === groupQuestionId
+                    );
+                    const visibleResponses = groupResponses.filter((node) => {
+                      const language = node.getAttribute('data-language') || '';
+                      const searchable = node.getAttribute('data-search') || '';
+                      const matchesLanguage = activeLanguage === 'all' || language === activeLanguage;
+                      const matchesQuestion = selectedQuestionId === 'all' || groupQuestionId === selectedQuestionId;
+                      const matchesSearch = !query || searchable.includes(query);
+
+                      return matchesLanguage && matchesQuestion && matchesSearch;
+                    });
+
+                    visibleResponses.sort((a, b) => {
+                      const delta = getResponseTime(a) - getResponseTime(b);
+                      return sortOrder === 'oldest' ? delta : -delta;
+                    });
+
+                    groupResponses.forEach((node) => {
+                      node.hidden = !visibleResponses.includes(node);
+                    });
+
+                    const groupResponseList = group.querySelector('[data-admin-surveys-open-group-responses]');
+                    visibleResponses.forEach((node) => groupResponseList?.append(node));
+
+                    group.hidden = visibleResponses.length === 0;
+                    visibleCount += visibleResponses.length;
+
+                    const groupCountNode = group.querySelector('[data-admin-surveys-group-count]');
+
+                    if (groupCountNode) {
+                      const singular = root.getAttribute('data-response-singular') || 'risposta';
+                      const plural = root.getAttribute('data-response-plural') || 'risposte';
+                      groupCountNode.textContent = `${visibleResponses.length} ${
+                        visibleResponses.length === 1 ? singular : plural
+                      }`;
+                    }
                   });
-
-                  visibleResponses.sort((a, b) => {
-                    const delta = getResponseTime(a) - getResponseTime(b);
-                    return sortOrder === 'oldest' ? delta : -delta;
-                  });
-
-                  responses.forEach((node) => {
-                    node.hidden = !visibleResponses.includes(node);
-                  });
-
-                  visibleResponses.forEach((node) => list.append(node));
 
                   if (emptyState) {
-                    emptyState.hidden = visibleResponses.length > 0;
+                    emptyState.hidden = visibleCount > 0;
                   }
 
                   if (countNode) {
                     const singular = root.getAttribute('data-response-singular') || 'risposta';
                     const plural = root.getAttribute('data-response-plural') || 'risposte';
-                    countNode.textContent = `${visibleResponses.length} ${
-                      visibleResponses.length === 1 ? singular : plural
+                    countNode.textContent = `${visibleCount} ${
+                      visibleCount === 1 ? singular : plural
                     }`;
                   }
                 };
@@ -684,6 +758,7 @@ const getTextAnswerSummary = (count: number, language: CommunitySurveyLanguage) 
                 });
 
                 searchInput?.addEventListener('input', updateOpenResponses);
+                questionFilter?.addEventListener('change', updateOpenResponses);
                 sortSelect?.addEventListener('change', updateOpenResponses);
               })();
             </script>
