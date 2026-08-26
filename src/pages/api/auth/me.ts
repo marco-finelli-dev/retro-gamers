@@ -1,9 +1,5 @@
 import type { APIRoute } from 'astro';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
-import {
-  getLanguageSessionOverrideFromCookies,
-  resolveEffectiveLanguage,
-} from '../../../lib/preferred-language';
 import { getEditorialSessionForUserSession } from '../../../lib/editorial/session.server';
 
 const json = (payload: unknown, status = 200) =>
@@ -38,15 +34,10 @@ export const GET: APIRoute = async ({ cookies }) => {
   }
 
   const {
-    preferred_language: preferredLanguage,
     retro_experience: retroExperience,
     ...profile
   } = session.profile;
-  const effectiveLanguage = resolveEffectiveLanguage({
-    sessionOverride: getLanguageSessionOverrideFromCookies(cookies),
-    profileLanguage: preferredLanguage,
-    authenticated: true,
-  });
+  delete (profile as Record<string, unknown>).preferred_language;
   const editorialSession = await getEditorialSessionForUserSession(session);
 
   return json({
@@ -59,8 +50,8 @@ export const GET: APIRoute = async ({ cookies }) => {
     },
     profile,
     preferences: {
-      preferredLanguage,
-      effectiveLanguage,
+      preferredLanguage: null,
+      effectiveLanguage: null,
       retroExperience,
     },
     editorial: {

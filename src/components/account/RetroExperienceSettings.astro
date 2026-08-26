@@ -1,6 +1,5 @@
 ---
 import {
-  normalizePreferredLanguage,
   normalizeRetroExperience,
   type PreferredLanguage,
   type RetroExperience,
@@ -8,20 +7,15 @@ import {
 
 type Props = {
   lang?: PreferredLanguage;
-  languageSwitchUrl?: string;
-  preferredLanguage?: unknown;
   retroExperience?: unknown;
 };
 
 const {
   lang = 'it',
-  languageSwitchUrl = '',
-  preferredLanguage: preferredLanguageProp,
   retroExperience: retroExperienceProp,
 } = Astro.props as Props;
 
 const currentLang: PreferredLanguage = lang === 'en' ? 'en' : 'it';
-const preferredLanguage = normalizePreferredLanguage(preferredLanguageProp);
 const retroExperience = normalizeRetroExperience(retroExperienceProp);
 
 const copy = {
@@ -29,10 +23,7 @@ const copy = {
     kicker: 'Impostazioni',
     title: 'Retro Experience',
     description:
-      'Scegli la lingua dei collegamenti e l’esperienza grafica opzionale con cui entrare nel sito.',
-    language: 'Lingua preferita',
-    italian: 'Italiano',
-    english: 'English',
+      'Scegli l’esperienza grafica opzionale con cui entrare nel sito.',
     experience: 'Esperienza',
     standard: 'Standard',
     amiga: 'Amiga Workbench 1.3',
@@ -53,10 +44,7 @@ const copy = {
     kicker: 'Settings',
     title: 'Retro Experience',
     description:
-      'Choose the language for destinations and the optional visual experience used to enter the site.',
-    language: 'Preferred language',
-    italian: 'Italiano',
-    english: 'English',
+      'Choose the optional visual experience used to enter the site.',
     experience: 'Experience',
     standard: 'Standard',
     amiga: 'Amiga Workbench 1.3',
@@ -93,16 +81,7 @@ const ui = copy[currentLang];
     data-copy-failed={ui.failed}
     data-copy-connection={ui.connection}
     data-current-language={currentLang}
-    data-language-switch-url={languageSwitchUrl}
   >
-    <label>
-      <span>{ui.language}</span>
-      <select name="preferredLanguage" data-retro-settings-language>
-        <option value="it" selected={preferredLanguage === 'it'}>{ui.italian}</option>
-        <option value="en" selected={preferredLanguage === 'en'}>{ui.english}</option>
-      </select>
-    </label>
-
     <label>
       <span>{ui.experience}</span>
       <select name="retroExperience" data-retro-settings-experience>
@@ -155,14 +134,8 @@ const ui = copy[currentLang];
     isRetroExperienceDesktopSupported,
     retroExperienceEvents,
   } from '../../lib/retro-experience';
-  import {
-    clearLanguageSessionOverride,
-    resolveManualRetroLanguage,
-    setLanguageSessionOverride,
-  } from '../../lib/preferred-language';
 
   const form = document.querySelector('[data-retro-settings-form]');
-  const preferredLanguageSelect = form?.querySelector('[data-retro-settings-language]');
   const experienceSelect = form?.querySelector('[data-retro-settings-experience]');
   const launchButton = form?.querySelector('[data-retro-settings-launch]');
   const message = document.querySelector('[data-retro-settings-message]');
@@ -223,12 +196,10 @@ const ui = copy[currentLang];
       const isFresh = Number.isFinite(draft?.createdAt) &&
         Date.now() - draft.createdAt >= 0 &&
         Date.now() - draft.createdAt <= preferencesDraftMaxAge;
-      const isLanguageValid = draft?.preferredLanguage === 'it' || draft?.preferredLanguage === 'en';
       const isExperienceValid = ['standard', 'amiga', 'monkey'].includes(draft?.retroExperience);
 
-      if (!isFresh || !isLanguageValid || !isExperienceValid) return;
+      if (!isFresh || !isExperienceValid) return;
 
-      if (preferredLanguageSelect) preferredLanguageSelect.value = draft.preferredLanguage;
       if (experienceSelect) experienceSelect.value = draft.retroExperience;
       updateDescription();
     } catch {
@@ -236,42 +207,11 @@ const ui = copy[currentLang];
     }
   };
 
-  const handlePreferredLanguageChange = () => {
-    if (!form || !preferredLanguageSelect || !experienceSelect) return;
-
-    const preferredLanguage = preferredLanguageSelect.value;
-    const currentLanguage = form.dataset.currentLanguage;
-    const languageSwitchUrl = form.dataset.languageSwitchUrl;
-
-    if (
-      (preferredLanguage !== 'it' && preferredLanguage !== 'en') ||
-      preferredLanguage === currentLanguage ||
-      !languageSwitchUrl
-    ) {
-      return;
-    }
-
-    try {
-      window.sessionStorage.setItem(preferencesDraftKey, JSON.stringify({
-        preferredLanguage,
-        retroExperience: experienceSelect.value,
-        createdAt: Date.now(),
-      }));
-    } catch {
-      // Navigation still follows the existing language switch if storage is unavailable.
-    }
-
-    setLanguageSessionOverride(preferredLanguage);
-    window.location.assign(languageSwitchUrl);
-  };
-
   const savePreferences = async (shouldLaunch = false, launchTrigger = null) => {
     if (!form) return;
 
     const formData = new FormData(form);
-    const preferredLanguage = resolveManualRetroLanguage({
-      selectedLanguage: String(formData.get('preferredLanguage') || ''),
-    });
+    const currentLanguage = form.dataset.currentLanguage === 'en' ? 'en' : 'it';
     const retroExperience = String(formData.get('retroExperience') || 'standard');
     const buttons = form.querySelectorAll('button');
 
@@ -281,7 +221,7 @@ const ui = copy[currentLang];
       const response = await fetch('/api/account/update-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preferredLanguage, retroExperience }),
+        body: JSON.stringify({ retroExperience }),
       });
       const result = await response.json();
 
@@ -291,13 +231,12 @@ const ui = copy[currentLang];
       }
 
       clearPreferencesDraft();
-      clearLanguageSessionOverride();
 
       document.dispatchEvent(new CustomEvent(retroExperienceEvents.profile, {
         detail: {
           authenticated: true,
-          preferredLanguage,
-          effectiveLanguage: preferredLanguage,
+          preferredLanguage: currentLanguage,
+          effectiveLanguage: currentLanguage,
           retroExperience,
         },
       }));
@@ -311,8 +250,8 @@ const ui = copy[currentLang];
       if (shouldLaunch) {
         document.dispatchEvent(new CustomEvent(retroExperienceEvents.launch, {
           detail: {
-            preferredLanguage,
-            effectiveLanguage: preferredLanguage,
+            preferredLanguage: currentLanguage,
+            effectiveLanguage: currentLanguage,
             retroExperience,
             trigger: launchTrigger,
           },
@@ -327,7 +266,6 @@ const ui = copy[currentLang];
   };
 
   experienceSelect?.addEventListener('change', updateDescription);
-  preferredLanguageSelect?.addEventListener('change', handlePreferredLanguageChange);
   desktopSupport?.addEventListener('change', updateDesktopAvailability);
   restorePreferencesDraft();
   updateDesktopAvailability();
@@ -376,7 +314,7 @@ const ui = copy[currentLang];
   }
 
   .retro-settings__form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     margin-top: 0;
   }
 

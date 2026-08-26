@@ -14,8 +14,6 @@ import '../../styles/components/retro-experience.css';
     getRetroExperienceDesktopSupportMediaQuery,
     isRetroExperienceDesktopSupported,
     normalizeRetroExperience,
-    resolveEffectiveLanguage,
-    resolveManualRetroLanguage,
     retroExperienceEvents,
     retroExperienceSessionKey,
     type PreferredLanguage,
@@ -60,6 +58,12 @@ import '../../styles/components/retro-experience.css';
   let monkeyCursorGeneration = 0;
   let monkeyCursorState: 'idle' | 'loading' | 'active' = 'idle';
   let cleanupMonkeyCursor: (() => void) | null = null;
+
+  const getCurrentRouteLanguage = (): PreferredLanguage =>
+    /^\/en(?:\/|$)/.test(window.location.pathname) ? 'en' : 'it';
+
+  const getEventRouteLanguage = (value: unknown): PreferredLanguage =>
+    value === 'en' || value === 'it' ? value : getCurrentRouteLanguage();
 
   const getLocalizedValue = (element: HTMLElement, language: PreferredLanguage, prefix = 'label') =>
     element.dataset[`${prefix}${language === 'en' ? 'En' : 'It'}`] || '';
@@ -481,13 +485,10 @@ import '../../styles/components/retro-experience.css';
 
   const applyProfile = (detail: RetroProfileDetail) => {
     const authenticated = detail.authenticated === true;
+    const routeLanguage = getEventRouteLanguage(detail.effectiveLanguage);
     const profile: RetroRuntimeProfile = {
       authenticated,
-      preferredLanguage: resolveEffectiveLanguage({
-        sessionOverride: detail.effectiveLanguage,
-        profileLanguage: detail.preferredLanguage,
-        authenticated,
-      }),
+      preferredLanguage: routeLanguage,
       retroExperience: normalizeRetroExperience(detail.retroExperience),
     };
     currentProfile = profile;
@@ -520,11 +521,7 @@ import '../../styles/components/retro-experience.css';
 
   document.addEventListener(retroExperienceEvents.launch, (event) => {
     const detail = (event as CustomEvent<RetroProfileDetail>).detail || {};
-    const preferredLanguage = resolveManualRetroLanguage({
-      selectedLanguage: detail.preferredLanguage,
-      draftLanguage: detail.effectiveLanguage,
-      profileLanguage: currentProfile.preferredLanguage,
-    });
+    const preferredLanguage = getEventRouteLanguage(detail.effectiveLanguage);
     const retroExperience = normalizeRetroExperience(detail.retroExperience);
 
     currentProfile = {

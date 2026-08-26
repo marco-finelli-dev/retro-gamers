@@ -107,7 +107,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
         email: initialUser.email,
       },
       preferences: {
-        preferredLanguage: initialProfile.preferred_language,
+        preferredLanguage: Astro.locals.effectiveLanguage,
         effectiveLanguage: Astro.locals.effectiveLanguage,
         retroExperience: initialProfile.retro_experience,
       },
@@ -393,16 +393,6 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
 
 <MobileMenu lang={lang} />
 
-<script>
-  import { setLanguageSessionOverride } from '../../lib/preferred-language';
-
-  document.querySelectorAll('[data-language-session-override]').forEach((link) => {
-    link.addEventListener('click', () => {
-      setLanguageSessionOverride(link.dataset.languageSessionOverride);
-    });
-  });
-</script>
-
 <script is:inline>
 (() => {
   const dropdowns = Array.from(
@@ -563,7 +553,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
       ? 'en'
       : preferences?.effectiveLanguage === 'it'
         ? 'it'
-        : preferences?.preferredLanguage === 'en'
+        : isEnglish
           ? 'en'
           : 'it';
     const retroExperience = ['standard', 'amiga', 'monkey'].includes(preferences?.retroExperience)

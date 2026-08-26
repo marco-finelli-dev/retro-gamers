@@ -3,11 +3,8 @@ import { logApiError } from '../../../lib/api-errors';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import { supabaseAdmin } from '../../../lib/supabase/server';
 import { touchUserActivity } from '../../../lib/supabase/user-activity';
-import { clearLanguageSessionOverrideCookie } from '../../../lib/preferred-language';
 import {
-  isPreferredLanguage,
   isRetroExperience,
-  type PreferredLanguage,
   type RetroExperience,
 } from '../../../lib/retro-experience';
 
@@ -16,7 +13,7 @@ type UpdateProfilePayload = {
   badgeKey?: string;
   bio?: string;
   bioEn?: string;
-  preferredLanguage?: PreferredLanguage;
+  preferredLanguage?: unknown;
   retroExperience?: RetroExperience;
 };
 
@@ -59,20 +56,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     badge_key?: string;
     bio?: string | null;
     bio_en?: string | null;
-    preferred_language?: PreferredLanguage;
     retro_experience?: RetroExperience;
   } = {};
 
   if (!hasProfileFields && !hasBio && !hasBioEn && !hasRetroPreferences) {
     return json({ ok: false, error: 'Nessun dato da aggiornare.' }, 400);
-  }
-
-  if (hasPreferredLanguage) {
-    if (!isPreferredLanguage(payload.preferredLanguage)) {
-      return json({ ok: false, error: 'Lingua preferita non valida.' }, 400);
-    }
-
-    updatePayload.preferred_language = payload.preferredLanguage;
   }
 
   if (hasRetroExperience) {
@@ -217,10 +205,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   await touchUserActivity(session.user.id, 'account-update-profile');
-
-  if (hasPreferredLanguage) {
-    clearLanguageSessionOverrideCookie(cookies);
-  }
 
   return json({
     ok: true,

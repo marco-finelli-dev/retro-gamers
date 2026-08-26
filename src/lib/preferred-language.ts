@@ -32,10 +32,10 @@ export function resolveEffectiveLanguage({
   routeLanguage,
   authenticated = false,
 }: EffectiveLanguageOptions = {}): PreferredLanguage {
+  if (isPreferredLanguage(routeLanguage)) return routeLanguage;
   if (isPreferredLanguage(sessionOverride)) return sessionOverride;
   if (isPreferredLanguage(draftLanguage)) return draftLanguage;
   if (authenticated && isPreferredLanguage(profileLanguage)) return profileLanguage;
-  if (isPreferredLanguage(routeLanguage)) return routeLanguage;
   return defaultPreferredLanguage;
 }
 

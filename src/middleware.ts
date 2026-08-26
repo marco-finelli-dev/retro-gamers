@@ -1,13 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import {
-  getLocalizedLanguageUrl,
-  normalizeLanguagePath,
-} from './lib/language-switch.js';
-import {
-  getLanguageSessionOverrideFromCookies,
-  getRouteLanguage,
-  resolveEffectiveLanguage,
-} from './lib/preferred-language';
+import { getRouteLanguage } from './lib/preferred-language';
 import { getUserSessionFromCookies } from './lib/supabase/auth';
 
 const legacyPlatformRedirects: Record<string, string> = {
@@ -148,34 +140,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (isPageRequest(request, pathname)) {
     const session = await getUserSessionFromCookies(context.cookies);
-    const isAuthenticated = Boolean(!session.error && session.user && session.profile);
     const routeLanguage = getRouteLanguage(pathname);
-    const sessionOverride = getLanguageSessionOverrideFromCookies(context.cookies);
-    const effectiveLanguage = resolveEffectiveLanguage({
-      sessionOverride,
-      profileLanguage: session.profile?.preferred_language,
-      routeLanguage,
-      authenticated: isAuthenticated,
-    });
 
     context.locals.userSession = session;
     context.locals.routeLanguage = routeLanguage;
-    context.locals.effectiveLanguage = effectiveLanguage;
-    context.locals.languageSessionOverride = sessionOverride;
-
-    if (isAuthenticated && effectiveLanguage !== routeLanguage) {
-      const destination = getLocalizedLanguageUrl({
-        currentUrl: url,
-        targetLang: effectiveLanguage,
-      });
-      const target = new URL(destination, url.origin);
-      const currentPath = normalizeLanguagePath(pathname);
-      const targetPath = normalizeLanguagePath(target.pathname);
-
-      if (currentPath !== targetPath || url.search !== target.search) {
-        return context.redirect(target.toString(), 302);
-      }
-    }
+    context.locals.effectiveLanguage = routeLanguage;
+    context.locals.languageSessionOverride = null;
   }
 
   return next();
