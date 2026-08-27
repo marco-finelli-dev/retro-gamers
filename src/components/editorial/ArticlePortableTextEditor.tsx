@@ -7074,6 +7074,7 @@ export default function ArticlePortableTextEditor({
   const [editorialCommentNavigationToken, setEditorialCommentNavigationToken] = useState(0);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [typeChangeRequest, setTypeChangeRequest] = useState<TypeChangeRequest | null>(null);
+  const [pendingExitHref, setPendingExitHref] = useState<string | null>(null);
   const [bodyImagePreviewUrls, setBodyImagePreviewUrls] = useState<Record<string, string>>({});
   const allowEditorNavigationRef = useRef(false);
   const editorialCommentsSectionRef = useRef<HTMLDetailsElement | null>(null);
@@ -8306,6 +8307,8 @@ export default function ArticlePortableTextEditor({
     window.location.assign(href);
   };
 
+  const getExitHref = () => pendingExitHref || articlesHref;
+
   const requestPreview = async () => {
     if (!previewHref) return;
 
@@ -8322,6 +8325,8 @@ export default function ArticlePortableTextEditor({
   };
 
   const requestExit = () => {
+    setPendingExitHref(articlesHref || null);
+
     if (hasUnsavedChanges) {
       setIsExitModalOpen(true);
       return;
@@ -8334,13 +8339,69 @@ export default function ArticlePortableTextEditor({
     const saved = await saveArticle('manual');
 
     if (saved) {
-      navigateFromEditor(articlesHref);
+      navigateFromEditor(getExitHref());
     }
   };
 
   const discardAndExit = () => {
-    navigateFromEditor(articlesHref);
+    navigateFromEditor(getExitHref());
   };
+
+  const cancelExit = () => {
+    setPendingExitHref(null);
+    setIsExitModalOpen(false);
+  };
+
+  useEffect(() => {
+    if (!hasUnsavedChanges || isExitModalOpen) return undefined;
+
+    const handleInternalNavigationClick = (event: globalThis.MouseEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+
+      const target = event.target;
+
+      if (!(target instanceof Element)) return;
+
+      const anchor = target.closest('a[href]') as HTMLAnchorElement | null;
+
+      if (!anchor || anchor.download) return;
+      if (anchor.closest('.editorial-article-editor__preview-action')) return;
+
+      const targetAttribute = anchor.getAttribute('target');
+
+      if (targetAttribute && targetAttribute.toLowerCase() !== '_self') return;
+
+      let url: URL;
+
+      try {
+        url = new URL(anchor.href, window.location.href);
+      } catch {
+        return;
+      }
+
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+
+      event.preventDefault();
+      setPendingExitHref(url.href);
+      setIsExitModalOpen(true);
+    };
+
+    document.addEventListener('click', handleInternalNavigationClick);
+
+    return () => {
+      document.removeEventListener('click', handleInternalNavigationClick);
+    };
+  }, [hasUnsavedChanges, isExitModalOpen]);
 
   return (
     <div
@@ -9264,7 +9325,7 @@ export default function ArticlePortableTextEditor({
           isSaving={isSaving}
           onSaveAndClose={saveAndExit}
           onDiscard={discardAndExit}
-          onCancel={() => setIsExitModalOpen(false)}
+          onCancel={cancelExit}
         />
       )}
 
