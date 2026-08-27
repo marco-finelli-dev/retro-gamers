@@ -1,0 +1,81 @@
+---
+import {
+  getCommunitySurveyUrl,
+  getOpenCommunitySurveyForLanguage,
+  type CommunitySurveyLanguage,
+} from '../../lib/community-surveys';
+import '../../styles/article/article-survey-cta.css';
+
+interface Props {
+  lang?: CommunitySurveyLanguage;
+}
+
+const { lang = 'it' } = Astro.props;
+const currentLang: CommunitySurveyLanguage = lang === 'en' ? 'en' : 'it';
+const activeSurvey = await getOpenCommunitySurveyForLanguage(currentLang);
+const surveyHref = activeSurvey ? getCommunitySurveyUrl(activeSurvey, currentLang) : '';
+const completedKey = activeSurvey ? `communitySurveyCompleted:${activeSurvey.surveyKey}` : '';
+const titleId = `article-community-survey-title-${currentLang}`;
+
+const copy = currentLang === 'en'
+  ? {
+      eyebrow: 'COMMUNITY SURVEY',
+      title: 'Help shape the future of Retro-Gamers.it',
+      text:
+        "You've just read one of our articles. If you'd like, tell us what you enjoy, what we could improve and what you'd like to see on the site.",
+      note: 'It only takes a few minutes.',
+      cta: 'Take the survey',
+    }
+  : {
+      eyebrow: 'COMMUNITY SURVEY',
+      title: 'Aiutaci a costruire il futuro di Retro-Gamers.it',
+      text:
+        'Hai appena letto uno dei nostri articoli. Se ti va, raccontaci cosa apprezzi, cosa miglioreresti e cosa vorresti trovare sul sito.',
+      note: 'Bastano pochi minuti.',
+      cta: 'Partecipa al sondaggio',
+    };
+---
+
+{activeSurvey && (
+  <>
+    <aside
+      class="article-survey-cta"
+      aria-labelledby={titleId}
+      data-article-survey-cta
+      data-completed-key={completedKey}
+      hidden
+    >
+      <div class="article-survey-cta__content">
+        <p class="article-survey-cta__eyebrow">{copy.eyebrow}</p>
+        <h2 id={titleId}>{copy.title}</h2>
+        <p>{copy.text}</p>
+        <span>{copy.note}</span>
+      </div>
+
+      <a class="article-survey-cta__button" href={surveyHref}>
+        {copy.cta}
+      </a>
+    </aside>
+
+    <script is:inline>
+      (() => {
+        document.querySelectorAll('[data-article-survey-cta]').forEach((cta) => {
+          if (!(cta instanceof HTMLElement)) return;
+
+          const completedKey = cta.dataset.completedKey || '';
+          let hasCompleted = false;
+
+          try {
+            hasCompleted = Boolean(completedKey && window.localStorage.getItem(completedKey));
+          } catch {
+            hasCompleted = false;
+          }
+
+          if (!hasCompleted) {
+            cta.hidden = false;
+          }
+        });
+      })();
+    </script>
+  </>
+)}

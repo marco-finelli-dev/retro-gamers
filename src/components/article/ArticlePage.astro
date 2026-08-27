@@ -12,6 +12,7 @@ import SupportButton from '../common/SupportButton.astro';
 import ArticleSeriesBox from './ArticleSeriesBox.astro';
 import ArticleComments from './ArticleComments.astro';
 import ArticleCommunityPrompt from './ArticleCommunityPrompt.astro';
+import ArticleSurveyCta from './ArticleSurveyCta.astro';
 import NewsletterPromo from '../newsletter/NewsletterPromo.astro';
 import { getCanonicalReviewRatingPostId } from '../../lib/review-ratings';
 import { getContentDetailSegment } from '../../lib/routes.js';
@@ -53,6 +54,8 @@ const hasReviewProsCons = isReview && (reviewPros.length > 0 || reviewCons.lengt
 const reviewRatingPostId = isReview
   ? getCanonicalReviewRatingPostId(post)
   : '';
+const hasReviewFinalRating = Boolean(isReview && post.rating);
+const hasReviewEnding = hasReviewFinalRating || hasReviewProsCons;
 const getAnalyticsToken = (value) =>
   String(value || '')
     .trim()
@@ -177,6 +180,24 @@ const commentsDiscovery = currentLang === 'en'
         contentType={articleAnalyticsContentType}
       />
 
+      {showCommunity && !isPreview && !hasReviewEnding && <ArticleSurveyCta lang={currentLang} />}
+
+      {hasReviewFinalRating && (
+
+        <ArticleFinalRating
+          rating={post.rating}
+          lang={currentLang}
+          readerRatingPostId={reviewRatingPostId}
+        />
+
+      )}
+
+      {hasReviewProsCons && (
+        <ArticleProsCons pros={reviewPros} cons={reviewCons} lang={currentLang} />
+      )}
+
+      {showCommunity && !isPreview && hasReviewEnding && <ArticleSurveyCta lang={currentLang} />}
+
       {showCommunity && (
         <aside
           class="article-comments-discovery article-comments-discovery--article-end"
@@ -193,20 +214,6 @@ const commentsDiscovery = currentLang === 'en'
       )}
 
        <ArticleSeriesBox post={post} seriesPosts={seriesPosts} />
-
-      {isReview && post.rating && (
-
-        <ArticleFinalRating
-          rating={post.rating}
-          lang={currentLang}
-          readerRatingPostId={reviewRatingPostId}
-        />
-
-      )}
-
-      {hasReviewProsCons && (
-        <ArticleProsCons pros={reviewPros} cons={reviewCons} lang={currentLang} />
-      )}
 
       <SupportButton lang={currentLang} variant="box" />
 
