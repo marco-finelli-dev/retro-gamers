@@ -13,6 +13,7 @@ import {
   type CommunitySurveyQuestionResult,
   type CommunitySurveyStatus,
 } from '../../../lib/community-surveys';
+import { getCommunitySurveyOpenAnswerSummaryState } from '../../../lib/community-survey-open-answer-summaries.server';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 import '../../../styles/pages/admin-surveys.css';
 
@@ -100,6 +101,29 @@ const uiCopy = {
     participantsPlural: 'partecipanti',
     selectionsSingular: 'selezione',
     selectionsPlural: 'selezioni',
+    openAnswerAiTitle: 'Resoconto risposte aperte',
+    openAnswerAiDescription: 'Interpretazione qualitativa delle risposte testuali del sondaggio.',
+    openAnswerAiNote: 'Generato con AI su richiesta dell’amministratore.',
+    openAnswerAiNotConfigured: 'Resoconto AI non configurato.',
+    openAnswerAiStorageUnavailable: 'Resoconto AI non disponibile. Verifica che community-survey-summaries-v1.sql sia stato eseguito in Supabase.',
+    openAnswerAiInsufficient: 'Campione qualitativo ancora ridotto. Il resoconto sarà disponibile da {min} risposte aperte significative.',
+    openAnswerAiCurrentCount: 'Risposte significative attuali: {count}',
+    openAnswerAiGenerate: 'Genera resoconto',
+    openAnswerAiRegenerate: 'Rigenera resoconto',
+    openAnswerAiGenerating: 'Generazione in corso…',
+    openAnswerAiStale: 'Da aggiornare',
+    openAnswerAiGeneratedPrefix: 'Generato il',
+    openAnswerAiGeneratedSuffix: '{count} risposte testuali analizzate',
+    openAnswerAiError: 'Non è stato possibile generare il resoconto.',
+    openAnswerAiNoSummary: 'Nessun resoconto generato.',
+    openAnswerAiOverview: 'Quadro generale',
+    openAnswerAiRecurringThemes: 'Temi ricorrenti',
+    openAnswerAiAppreciatedAspects: 'Cosa viene apprezzato',
+    openAnswerAiRequests: 'Richieste e suggerimenti',
+    openAnswerAiCriticisms: 'Criticità',
+    openAnswerAiOpportunities: 'Opportunità editoriali',
+    openAnswerAiSignals: 'Segnali interessanti',
+    openAnswerAiCaveats: 'Limiti della lettura',
   },
   en: {
     adminKicker: 'Community surveys',
@@ -150,6 +174,29 @@ const uiCopy = {
     participantsPlural: 'participants',
     selectionsSingular: 'selection',
     selectionsPlural: 'selections',
+    openAnswerAiTitle: 'Open-answer report',
+    openAnswerAiDescription: 'Qualitative interpretation of the survey’s text responses.',
+    openAnswerAiNote: 'Generated with AI on administrator request.',
+    openAnswerAiNotConfigured: 'AI report is not configured.',
+    openAnswerAiStorageUnavailable: 'AI report unavailable. Check that community-survey-summaries-v1.sql has been run in Supabase.',
+    openAnswerAiInsufficient: 'Qualitative sample still too small. The report will be available from {min} significant open answers.',
+    openAnswerAiCurrentCount: 'Current significant answers: {count}',
+    openAnswerAiGenerate: 'Generate report',
+    openAnswerAiRegenerate: 'Regenerate report',
+    openAnswerAiGenerating: 'Generating…',
+    openAnswerAiStale: 'Needs update',
+    openAnswerAiGeneratedPrefix: 'Generated on',
+    openAnswerAiGeneratedSuffix: '{count} text responses analyzed',
+    openAnswerAiError: 'The report could not be generated.',
+    openAnswerAiNoSummary: 'No report generated yet.',
+    openAnswerAiOverview: 'Overview',
+    openAnswerAiRecurringThemes: 'Recurring themes',
+    openAnswerAiAppreciatedAspects: 'What is appreciated',
+    openAnswerAiRequests: 'Requests and suggestions',
+    openAnswerAiCriticisms: 'Friction points',
+    openAnswerAiOpportunities: 'Editorial opportunities',
+    openAnswerAiSignals: 'Notable signals',
+    openAnswerAiCaveats: 'Reading limits',
   },
 };
 
@@ -238,6 +285,9 @@ const dateLocale = results?.survey.language === 'en' ? 'en-GB' : 'it-IT';
 const uiLanguage: CommunitySurveyLanguage = results?.survey.language === 'en' ? 'en' : 'it';
 const t = uiCopy[uiLanguage];
 const editorialSummary = results ? buildCommunitySurveyEditorialSummary(results) : null;
+const openAnswerSummaryState = results
+  ? await getCommunitySurveyOpenAnswerSummaryState(results)
+  : null;
 const textQuestions = results?.questions.filter((question) => question.type === 'text') || [];
 const sortTextAnswersNewestFirst = <T extends { timestamp: string }>(answers: T[]) =>
   [...answers].sort((a, b) => {
@@ -301,6 +351,32 @@ const formatEditorialSingleOptionMeta = (count: number, percentage: number) =>
 const formatEditorialMultipleOptionMeta = (count: number, percentage: number) =>
   `${formatCount(count)} ${getSelectionLabel(count)} · ${formatPercentage(percentage)}`;
 const hasEditorialMultipleSummary = editorialSummary?.items.some((item) => item.type === 'multiple') || false;
+const openAnswerSummaryEndpoint = surveyKey
+  ? `/api/admin/surveys/${encodeURIComponent(surveyKey)}/summary`
+  : '';
+const openAnswerAiSummary = openAnswerSummaryState?.summary?.summary || null;
+const formatOpenAnswerAiInsufficient = () =>
+  t.openAnswerAiInsufficient.replace(
+    '{min}',
+    formatCount(openAnswerSummaryState?.minSignificantTextAnswerCount || 10)
+  );
+const formatOpenAnswerAiCurrentCount = () =>
+  t.openAnswerAiCurrentCount.replace(
+    '{count}',
+    formatCount(openAnswerSummaryState?.significantTextAnswerCount || 0)
+  );
+const formatOpenAnswerAiGeneratedSuffix = () =>
+  t.openAnswerAiGeneratedSuffix.replace(
+    '{count}',
+    formatCount(openAnswerSummaryState?.summary?.sourceTextAnswerCount || 0)
+  );
+const canGenerateOpenAnswerAiSummary = Boolean(
+  openAnswerSummaryState?.isConfigured &&
+  openAnswerSummaryState?.isThresholdMet &&
+  !openAnswerSummaryState?.storageError &&
+  (!openAnswerSummaryState.summary || openAnswerSummaryState.isStale) &&
+  openAnswerSummaryEndpoint
+);
 ---
 
 <BaseLayout title={title} description={description}>
@@ -501,6 +577,172 @@ const hasEditorialMultipleSummary = editorialSummary?.items.some((item) => item.
                         <strong>{formatEditorialSummarySmallSample()}</strong>
                         <span>{formatEditorialSummaryCurrentParticipants()}</span>
                       </div>
+                    )}
+                  </section>
+                )}
+
+                {openAnswerSummaryState && (
+                  <section class="admin-surveys-open-ai-summary" aria-labelledby="admin-surveys-open-ai-summary-title">
+                    <header class="admin-surveys-open-ai-summary__header">
+                      <div>
+                        <p>{t.openResponses}</p>
+                        <h4 id="admin-surveys-open-ai-summary-title">{t.openAnswerAiTitle}</h4>
+                      </div>
+                      <span>{t.openAnswerAiDescription}</span>
+                    </header>
+
+                    <p class="admin-surveys-open-ai-summary__note">
+                      {t.openAnswerAiNote}
+                    </p>
+
+                    {!openAnswerSummaryState.isConfigured ? (
+                      <div class="admin-surveys-open-ai-summary__status">
+                        <strong>{t.openAnswerAiNotConfigured}</strong>
+                      </div>
+                    ) : openAnswerSummaryState.storageError ? (
+                      <div class="admin-surveys-open-ai-summary__status">
+                        <strong>{t.openAnswerAiStorageUnavailable}</strong>
+                      </div>
+                    ) : !openAnswerSummaryState.isThresholdMet ? (
+                      <div class="admin-surveys-open-ai-summary__status">
+                        <strong>{formatOpenAnswerAiInsufficient()}</strong>
+                        <span>{formatOpenAnswerAiCurrentCount()}</span>
+                      </div>
+                    ) : (
+                      <>
+                        {openAnswerAiSummary ? (
+                          <div class="admin-surveys-open-ai-summary__content">
+                            <div class="admin-surveys-open-ai-summary__meta">
+                              <span>
+                                {t.openAnswerAiGeneratedPrefix}{' '}
+                                <LocalDateTime
+                                  value={openAnswerSummaryState.summary?.generatedAt}
+                                  locale={dateLocale}
+                                />
+                                {' · '}
+                                {formatOpenAnswerAiGeneratedSuffix()}
+                              </span>
+                              {openAnswerSummaryState.isStale && (
+                                <strong>{t.openAnswerAiStale}</strong>
+                              )}
+                            </div>
+
+                            <section class="admin-surveys-open-ai-summary__section">
+                              <h5>{t.openAnswerAiOverview}</h5>
+                              <p>{openAnswerAiSummary.overview}</p>
+                            </section>
+
+                            {openAnswerAiSummary.recurringThemes.length > 0 && (
+                              <section class="admin-surveys-open-ai-summary__section">
+                                <h5>{t.openAnswerAiRecurringThemes}</h5>
+                                <div class="admin-surveys-open-ai-summary__theme-list">
+                                  {openAnswerAiSummary.recurringThemes.map((theme) => (
+                                    <article>
+                                      <strong>{theme.title}</strong>
+                                      <p>{theme.summary}</p>
+                                    </article>
+                                  ))}
+                                </div>
+                              </section>
+                            )}
+
+                            {openAnswerAiSummary.appreciatedAspects.length > 0 && (
+                              <section class="admin-surveys-open-ai-summary__section">
+                                <h5>{t.openAnswerAiAppreciatedAspects}</h5>
+                                <ul>
+                                  {openAnswerAiSummary.appreciatedAspects.map((item) => (
+                                    <li>{item}</li>
+                                  ))}
+                                </ul>
+                              </section>
+                            )}
+
+                            {openAnswerAiSummary.requestsAndSuggestions.length > 0 && (
+                              <section class="admin-surveys-open-ai-summary__section">
+                                <h5>{t.openAnswerAiRequests}</h5>
+                                <ul>
+                                  {openAnswerAiSummary.requestsAndSuggestions.map((item) => (
+                                    <li>{item}</li>
+                                  ))}
+                                </ul>
+                              </section>
+                            )}
+
+                            {openAnswerAiSummary.criticismsOrFriction.length > 0 && (
+                              <section class="admin-surveys-open-ai-summary__section">
+                                <h5>{t.openAnswerAiCriticisms}</h5>
+                                <ul>
+                                  {openAnswerAiSummary.criticismsOrFriction.map((item) => (
+                                    <li>{item}</li>
+                                  ))}
+                                </ul>
+                              </section>
+                            )}
+
+                            {openAnswerAiSummary.editorialOpportunities.length > 0 && (
+                              <section class="admin-surveys-open-ai-summary__section">
+                                <h5>{t.openAnswerAiOpportunities}</h5>
+                                <ul>
+                                  {openAnswerAiSummary.editorialOpportunities.map((item) => (
+                                    <li>{item}</li>
+                                  ))}
+                                </ul>
+                              </section>
+                            )}
+
+                            {openAnswerAiSummary.notableSignals.length > 0 && (
+                              <section class="admin-surveys-open-ai-summary__section">
+                                <h5>{t.openAnswerAiSignals}</h5>
+                                <ul>
+                                  {openAnswerAiSummary.notableSignals.map((item) => (
+                                    <li>{item}</li>
+                                  ))}
+                                </ul>
+                              </section>
+                            )}
+
+                            {openAnswerAiSummary.caveats.length > 0 && (
+                              <section class="admin-surveys-open-ai-summary__section">
+                                <h5>{t.openAnswerAiCaveats}</h5>
+                                <ul>
+                                  {openAnswerAiSummary.caveats.map((item) => (
+                                    <li>{item}</li>
+                                  ))}
+                                </ul>
+                              </section>
+                            )}
+                          </div>
+                        ) : (
+                          <p class="admin-surveys-empty admin-surveys-empty--compact">
+                            {t.openAnswerAiNoSummary}
+                          </p>
+                        )}
+
+                        {canGenerateOpenAnswerAiSummary && (
+                          <form
+                            class="admin-surveys-open-ai-summary__actions"
+                            data-admin-survey-open-ai-form
+                            data-endpoint={openAnswerSummaryEndpoint}
+                            data-generating-label={t.openAnswerAiGenerating}
+                            data-error-message={t.openAnswerAiError}
+                          >
+                            <button
+                              class="admin-surveys-inline-action"
+                              type="submit"
+                              data-admin-survey-open-ai-submit
+                            >
+                              {openAnswerSummaryState.summary
+                                ? t.openAnswerAiRegenerate
+                                : t.openAnswerAiGenerate}
+                            </button>
+                            <p
+                              class="admin-surveys-open-ai-summary__error"
+                              data-admin-survey-open-ai-error
+                              hidden
+                            ></p>
+                          </form>
+                        )}
+                      </>
                     )}
                   </section>
                 )}
@@ -719,6 +961,55 @@ const hasEditorialMultipleSummary = editorialSummary?.items.some((item) => item.
 
                 const root = document.querySelector('[data-admin-surveys-tabs]');
                 if (!root) return;
+
+                const openAiSummaryForm = root.querySelector('[data-admin-survey-open-ai-form]');
+
+                if (openAiSummaryForm instanceof HTMLFormElement) {
+                  const submitButton = openAiSummaryForm.querySelector('[data-admin-survey-open-ai-submit]');
+                  const errorNode = openAiSummaryForm.querySelector('[data-admin-survey-open-ai-error]');
+                  const endpoint = openAiSummaryForm.getAttribute('data-endpoint') || '';
+                  const generatingLabel = openAiSummaryForm.getAttribute('data-generating-label') || 'Generazione in corso…';
+                  const fallbackError = openAiSummaryForm.getAttribute('data-error-message') || 'Errore.';
+                  const originalLabel = submitButton?.textContent || '';
+
+                  openAiSummaryForm.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    if (!endpoint || !(submitButton instanceof HTMLButtonElement)) return;
+
+                    submitButton.disabled = true;
+                    submitButton.textContent = generatingLabel;
+
+                    if (errorNode instanceof HTMLElement) {
+                      errorNode.hidden = true;
+                      errorNode.textContent = '';
+                    }
+
+                    try {
+                      const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                          Accept: 'application/json',
+                        },
+                      });
+                      const payload = await response.json().catch(() => null);
+
+                      if (!response.ok || !payload?.ok) {
+                        throw new Error(payload?.message || fallbackError);
+                      }
+
+                      window.location.reload();
+                    } catch (error) {
+                      if (errorNode instanceof HTMLElement) {
+                        errorNode.textContent = error instanceof Error ? error.message : fallbackError;
+                        errorNode.hidden = false;
+                      }
+
+                      submitButton.disabled = false;
+                      submitButton.textContent = originalLabel;
+                    }
+                  });
+                }
 
                 const tabs = Array.from(root.querySelectorAll('[data-admin-surveys-tab]'));
                 const panels = Array.from(root.querySelectorAll('[data-admin-surveys-panel]'));

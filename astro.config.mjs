@@ -10,7 +10,12 @@ const loadServerDevEnv = () => {
 
   const env = loadEnv('development', process.cwd(), '');
 
-  for (const key of ['SANITY_API_READ_TOKEN', 'SANITY_WRITE_TOKEN']) {
+  for (const key of [
+    'SANITY_API_READ_TOKEN',
+    'SANITY_WRITE_TOKEN',
+    'OPENAI_API_KEY',
+    'OPENAI_SURVEY_SUMMARY_MODEL'
+  ]) {
     if (!process.env[key] && env[key]) {
       process.env[key] = env[key];
     }
