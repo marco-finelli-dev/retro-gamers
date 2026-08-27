@@ -45,6 +45,7 @@ const copy = isEnglish
       editorialCommentsResolved: 'Resolved',
       editorialCommentsFallbackAuthor: 'Editorial team',
       editorialCommentsReplies: 'Replies',
+      editorialCommentsTargetMissing: 'The linked editorial comment is no longer available.',
       requestChanges: 'Request changes',
       approve: 'Approve',
       publish: 'Publish',
@@ -92,6 +93,7 @@ const copy = isEnglish
       editorialCommentsResolved: 'Risolto',
       editorialCommentsFallbackAuthor: 'Redazione',
       editorialCommentsReplies: 'Risposte',
+      editorialCommentsTargetMissing: 'Il commento indicato non è più disponibile.',
       requestChanges: 'Richiedi modifiche',
       approve: 'Approva',
       publish: 'Pubblica',
@@ -455,6 +457,7 @@ const previewAuthorLabel = articleAuthorName || previewAuthor?.label || '—';
     resolved: copy.editorialCommentsResolved,
     fallbackAuthor: copy.editorialCommentsFallbackAuthor,
     replies: copy.editorialCommentsReplies,
+    targetMissing: copy.editorialCommentsTargetMissing,
   },
   workflowUpdating: copy.workflowUpdating,
   workflowUpdated: copy.workflowUpdated,
@@ -642,7 +645,10 @@ const previewAuthorLabel = articleAuthorName || previewAuthor?.label || '—';
 
     const target = document.getElementById(getEditorialCommentElementId(targetEditorialCommentId));
 
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof HTMLElement)) {
+      setCommentsState(editorialCommentsLabels.targetMissing);
+      return;
+    }
 
     target.scrollIntoView({
       behavior: 'smooth',

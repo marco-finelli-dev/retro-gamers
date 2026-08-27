@@ -304,6 +304,7 @@ type Labels = {
   editorialCommentsCreateError: string;
   editorialCommentsReplyError: string;
   editorialCommentsResolveError: string;
+  editorialCommentsTargetMissing: string;
   workflowStatus: string;
   workflowStatusDraft: string;
   workflowStatusSubmitted: string;
@@ -7068,6 +7069,8 @@ export default function ArticlePortableTextEditor({
     useState<{ commentId: string; message: string } | null>(null);
   const [targetEditorialCommentId, setTargetEditorialCommentId] = useState<string | null>(null);
   const [highlightedEditorialCommentId, setHighlightedEditorialCommentId] = useState<string | null>(null);
+  const [editorialCommentNavigationMessage, setEditorialCommentNavigationMessage] = useState('');
+  const [hasEditorialCommentsLoaded, setHasEditorialCommentsLoaded] = useState(false);
   const [editorialCommentNavigationToken, setEditorialCommentNavigationToken] = useState(0);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [typeChangeRequest, setTypeChangeRequest] = useState<TypeChangeRequest | null>(null);
@@ -7174,6 +7177,7 @@ export default function ArticlePortableTextEditor({
   const loadEditorialComments = useCallback(async (signal?: AbortSignal) => {
     setIsEditorialCommentsLoading(true);
     setEditorialCommentsError('');
+    setHasEditorialCommentsLoaded(false);
 
     try {
       const response = await fetch(editorialCommentsEndpoint, {
@@ -7198,6 +7202,7 @@ export default function ArticlePortableTextEditor({
 
       setEditorialComments(payload.comments.filter(isEditorialComment));
       setEditorialCommentsError('');
+      setHasEditorialCommentsLoaded(true);
 
       return true;
     } catch (error) {
@@ -7222,9 +7227,11 @@ export default function ArticlePortableTextEditor({
       if (!commentId) {
         setTargetEditorialCommentId(null);
         setHighlightedEditorialCommentId(null);
+        setEditorialCommentNavigationMessage('');
         return;
       }
 
+      setEditorialCommentNavigationMessage('');
       editorialCommentNavigationTokenRef.current += 1;
       setTargetEditorialCommentId(commentId);
       setEditorialCommentNavigationToken(editorialCommentNavigationTokenRef.current);
@@ -7295,10 +7302,23 @@ export default function ArticlePortableTextEditor({
       !targetEditorialCommentId ||
       isEditorialCommentsLoading ||
       editorialCommentsError ||
-      !editorialComments.some((comment) => comment.id === targetEditorialCommentId)
+      !hasEditorialCommentsLoaded
     ) {
       return undefined;
     }
+
+    if (!editorialComments.some((comment) => comment.id === targetEditorialCommentId)) {
+      if (editorialCommentsSectionRef.current) {
+        editorialCommentsSectionRef.current.open = true;
+      }
+
+      setHighlightedEditorialCommentId(null);
+      setEditorialCommentNavigationMessage(labels.editorialCommentsTargetMissing);
+
+      return undefined;
+    }
+
+    setEditorialCommentNavigationMessage('');
 
     if (editorialCommentsSectionRef.current) {
       editorialCommentsSectionRef.current.open = true;
@@ -7334,8 +7354,10 @@ export default function ArticlePortableTextEditor({
     editorialCommentNavigationToken,
     editorialComments,
     editorialCommentsError,
+    hasEditorialCommentsLoaded,
     isEditorialCommentsLoading,
     isInspectorOpen,
+    labels.editorialCommentsTargetMissing,
     targetEditorialCommentId,
   ]);
 
@@ -8580,6 +8602,10 @@ export default function ArticlePortableTextEditor({
 
           <details className="editorial-inspector-section" open ref={editorialCommentsSectionRef}>
             <summary>{labels.inspectorEditorialComments}</summary>
+
+            {editorialCommentNavigationMessage && (
+              <p className="editorial-file-meta">{editorialCommentNavigationMessage}</p>
+            )}
 
             <EditorialCommentsReadOnly
               comments={editorialComments}
