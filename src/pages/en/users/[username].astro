@@ -15,6 +15,7 @@ import { getCommunityRank } from '../../../lib/community-rank';
 import { getUserSessionFromCookies } from '../../../lib/supabase/auth';
 
 const username = String(Astro.params.username || '');
+const isAccountPreview = Astro.url.searchParams.get('accountPreview') === '1';
 const result = await getPublicReaderProfile(username);
 const profile = result.profile;
 const comments = result.comments;
@@ -103,7 +104,8 @@ const communityRank = getCommunityRank(result.communityPoints);
   lang="en"
   canonical={canonical}
   languageSwitch={languageSwitch}
-  noindex={isUnavailable}
+  noindex={isUnavailable || isAccountPreview}
+  minimal={isAccountPreview}
 >
   <CommunityLayout class="public-user-community-page">
     {isUnavailable ? (

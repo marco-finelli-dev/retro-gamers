@@ -4,8 +4,9 @@ import '../../styles/pages/account-messages.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CommunityHero from '../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../components/community/CommunityLayout.astro';
-import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
-import CommunityStatList from '../../components/community/CommunityStatList.astro';
+import AccountSectionNav from './AccountSectionNav.astro';
+import AccountSidebar from './AccountSidebar.astro';
+import { getActiveReaderBadges, getReaderBadgeImageSrcForBadge, getReaderBadgeLabel } from '../../lib/badges';
 import {
   getAccountMessages,
   getUnreadAccountMessageCount,
@@ -175,9 +176,13 @@ const isRecentMessage = (message: AccountMessage) => {
   return Number.isFinite(createdAtMs) && nowMs - createdAtMs <= RECENT_MESSAGE_WINDOW_MS;
 };
 const profile = session.profile;
+const activeBadges = isLoggedIn ? await getActiveReaderBadges({ lang: currentLang }) : [];
+const accountBadge = activeBadges.find((badge) => badge.key === profile?.badge_key) || null;
 const accountDisplayName =
   profile?.display_name || profile?.username || session.user?.email || copy.fallbackName;
 const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, currentLang) : '';
+const accountBadgeLabel = accountBadge ? getReaderBadgeLabel(accountBadge, currentLang) : '';
+const accountBadgeImageSrc = getReaderBadgeImageSrcForBadge(accountBadge);
 const communityStatItems = [
   { label: copy.comments, value: communityStats.approved },
   { label: copy.pending, value: communityStats.pending },
@@ -203,22 +208,35 @@ const clientCopy = {
   <CommunityLayout class="account-messages-page" sidebar={isLoggedIn}>
     <Fragment slot="sidebar">
       {isLoggedIn && (
-        <>
-          <CommunitySidebarProfile
-            name={accountDisplayName}
-            username={profile?.username}
-            email={session.user?.email}
-            avatarUrl={profile?.avatar_url}
-            label="Community"
-          >
-            <a href={accountHref}>{copy.account}</a>
-            {publicProfileHref && <a href={publicProfileHref}>{copy.publicProfile}</a>}
-            <a href={privateMessagesHref}>{copy.privateMessages}</a>
-            <a href={ratingsHref}>{copy.ratings}</a>
-          </CommunitySidebarProfile>
-
-          <CommunityStatList title={copy.stats} items={communityStatItems} />
-        </>
+        <AccountSidebar
+          name={accountDisplayName}
+          username={profile?.username}
+          email={session.user?.email}
+          avatarUrl={profile?.avatar_url}
+          badge={accountBadgeLabel}
+          badgeImageUrl={accountBadgeImageSrc}
+          role={profile?.role}
+          status={profile?.status}
+          memoriesHref={isEn ? '/en/account/memories/' : '/account/memories/'}
+          ratingsHref={ratingsHref}
+          labels={{
+            account: isEn ? 'Account' : 'Account',
+            email: 'Email',
+            role: isEn ? 'Role' : 'Ruolo',
+            status: isEn ? 'Status' : 'Stato',
+            contributions: isEn ? 'Your contributions' : 'I tuoi contributi',
+            memories: isEn ? 'Your memories' : 'Le tue memorie',
+            ratings: isEn ? 'Your ratings' : 'I tuoi voti',
+            points: isEn ? 'Community points' : 'Punti community',
+            likes: isEn ? 'Likes received' : 'Like ricevuti',
+          }}
+          contributions={{
+            memories: communityStats.approved,
+            ratings: communityStats.reviewRatings,
+            points: communityStats.communityPoints,
+            likes: communityStats.likesReceived,
+          }}
+        />
       )}
     </Fragment>
 
@@ -229,6 +247,8 @@ const clientCopy = {
         ? copy.heroLogged
         : copy.heroGuest}
     />
+
+    {isLoggedIn && <AccountSectionNav activeSection="messages" lang={currentLang} publicProfileHref={publicProfileHref} />}
 
     <section class="community-card">
       {isLoggedIn ? (

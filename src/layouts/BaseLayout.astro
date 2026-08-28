@@ -33,7 +33,8 @@ const {
   articleAuthorName = null,
   articleAuthorUrl = null,
   noindex = false,
-  structuredData = []
+  structuredData = [],
+  minimal = false
 } = Astro.props;
 
 const hasProvidedReviews =
@@ -42,7 +43,7 @@ const hasProvidedReviews =
 const hasProvidedNews =
   Array.isArray(providedNews) && providedNews.length > 0;
 
-const needsMenuPosts = !hasProvidedReviews || !hasProvidedNews;
+const needsMenuPosts = !minimal && (!hasProvidedReviews || !hasProvidedNews);
 
 const menuPosts = needsMenuPosts ? await getAllPosts() : [];
 
@@ -271,29 +272,35 @@ if (isPreview) {
   </head>
 
   <body>
-    <RetroExperienceLauncher />
+    {!minimal && <RetroExperienceLauncher />}
 
-    <Header
-      reviews={reviews}
-      news={news}
-      lang={lang}
-      languageSwitch={resolvedLanguageSwitch}
-    />
+    {!minimal && (
+      <Header
+        reviews={reviews}
+        news={news}
+        lang={lang}
+        languageSwitch={resolvedLanguageSwitch}
+      />
+    )}
 
     <main>
       <slot />
     </main>
 
-    <Footer lang={lang} />
+    {!minimal && <Footer lang={lang} />}
 
-    <ConsentAnalytics />
-    <CookieConsent />
-    <Analytics />
-    <SpeedInsights />
+    {!minimal && (
+      <>
+        <ConsentAnalytics />
+        <CookieConsent />
+        <Analytics />
+        <SpeedInsights />
+      </>
+    )}
 
     {isPreview && <SanityVisualEditing client:only="react" />}
 
-    <script src="/scripts/ui.js" defer></script>
+    {!minimal && <script src="/scripts/ui.js" defer></script>}
     <script>
       import { trackRgEvent } from '../lib/analytics/client';
 

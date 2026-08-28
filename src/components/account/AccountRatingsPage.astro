@@ -4,8 +4,9 @@ import '../../styles/pages/account-ratings.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CommunityHero from '../community/CommunityHero.astro';
 import CommunityLayout from '../community/CommunityLayout.astro';
-import CommunitySidebarProfile from '../community/CommunitySidebarProfile.astro';
-import CommunityStatList from '../community/CommunityStatList.astro';
+import AccountSectionNav from './AccountSectionNav.astro';
+import AccountSidebar from './AccountSidebar.astro';
+import { getActiveReaderBadges, getReaderBadgeImageSrcForBadge, getReaderBadgeLabel } from '../../lib/badges';
 import { getAllPosts, type Post } from '../../lib/posts';
 import { getPostUrl } from '../../lib/routes.js';
 import {
@@ -33,6 +34,7 @@ type SummaryRow = {
 
 const { lang = 'it' } = Astro.props;
 const isEn = lang === 'en';
+const currentLang: 'it' | 'en' = isEn ? 'en' : 'it';
 
 const copy = isEn
   ? {
@@ -120,6 +122,10 @@ const user = session.user;
 const accountDisplayName =
   profile?.display_name || profile?.username || user?.email || (isEn ? 'Retro-Gamers user' : 'Utente Retro-Gamers');
 const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, lang) : '';
+const activeBadges = isLoggedIn ? await getActiveReaderBadges({ lang: currentLang }) : [];
+const accountBadge = activeBadges.find((badge) => badge.key === profile?.badge_key) || null;
+const accountBadgeLabel = accountBadge ? getReaderBadgeLabel(accountBadge, currentLang) : '';
+const accountBadgeImageSrc = getReaderBadgeImageSrcForBadge(accountBadge);
 const dateFormatter = new Intl.DateTimeFormat(isEn ? 'en-US' : 'it-IT', {
   day: 'numeric',
   month: 'long',
@@ -213,22 +219,20 @@ const getPlatformLabel = (post?: Post | null) => {
   <CommunityLayout class="account-ratings-page" sidebar={isLoggedIn}>
     <Fragment slot="sidebar">
       {isLoggedIn && (
-        <>
-          <CommunitySidebarProfile
-            name={accountDisplayName}
-            username={profile?.username}
-            email={user?.email}
-            avatarUrl={profile?.avatar_url}
-            label={copy.sidebarProfile}
-          >
-            <a href={accountHref}>{copy.account}</a>
-            {publicProfileHref && <a href={publicProfileHref}>{copy.publicProfile}</a>}
-            <a href={messagesHref}>{copy.messages}</a>
-            <a href={memoriesHref}>{copy.memories}</a>
-          </CommunitySidebarProfile>
-
-          <CommunityStatList title={copy.statsTitle} items={communityStatItems} />
-        </>
+        <AccountSidebar
+          name={accountDisplayName}
+          username={profile?.username}
+          email={user?.email}
+          avatarUrl={profile?.avatar_url}
+          badge={accountBadgeLabel}
+          badgeImageUrl={accountBadgeImageSrc}
+          role={profile?.role}
+          status={profile?.status}
+          memoriesHref={isEn ? '/en/account/memories/' : '/account/memories/'}
+          ratingsHref={isEn ? '/en/account/ratings/' : '/account/ratings/'}
+          labels={{ account: 'Account', email: 'Email', role: isEn ? 'Role' : 'Ruolo', status: isEn ? 'Status' : 'Stato', contributions: isEn ? 'Your contributions' : 'I tuoi contributi', memories: isEn ? 'Your memories' : 'Le tue memorie', ratings: isEn ? 'Your ratings' : 'I tuoi voti', points: isEn ? 'Community points' : 'Punti community', likes: isEn ? 'Likes received' : 'Like ricevuti' }}
+          contributions={{ memories: communityStats.approved, ratings: communityStats.reviewRatings, points: communityStats.communityPoints, likes: communityStats.likesReceived }}
+        />
       )}
     </Fragment>
 
@@ -237,6 +241,8 @@ const getPlatformLabel = (post?: Post | null) => {
       title={copy.heading}
       description={isLoggedIn ? copy.intro : copy.loginIntro}
     />
+
+    {isLoggedIn && <AccountSectionNav activeSection="ratings" lang={currentLang} publicProfileHref={publicProfileHref} />}
 
     <section class="community-card account-ratings-panel">
       {isLoggedIn ? (

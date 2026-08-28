@@ -6,6 +6,7 @@ import CommunityLayout from '../../components/community/CommunityLayout.astro';
 import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
 import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
 import NewsletterPromo from '../../components/newsletter/NewsletterPromo.astro';
+import AccountSectionNav from './AccountSectionNav.astro';
 import RetroExperienceSettings from './RetroExperienceSettings.astro';
 import { getActiveReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
 import { getCommunityRank } from '../../lib/community-rank';
@@ -687,12 +688,13 @@ const clientCopy = currentLang === 'en'
           kicker={ui.heroKicker}
           title={ui.heroTitle}
           description={ui.heroDescription}
-        >
-          <div class="account-hero-actions">
-            {publicProfileHref && <a href={publicProfileHref}>{ui.viewPublicProfile}</a>}
-            <a href={messagesHref}>{ui.messages}</a>
-          </div>
-        </CommunityHero>
+        />
+
+        <AccountSectionNav
+          activeSection="overview"
+          lang={currentLang}
+          publicProfileHref={publicProfileHref}
+        />
 
         <div class="community-content-stack">
             <section class="account-community-rank" aria-labelledby="account-community-rank-title">

@@ -1,0 +1,97 @@
+---
+import CommunitySidebarProfile from '../community/CommunitySidebarProfile.astro';
+import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+
+interface Props {
+  name?: string | null;
+  username?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  badge?: string | null;
+  badgeImageUrl?: string | null;
+  role?: string | null;
+  status?: string | null;
+  labels: {
+    account: string;
+    email: string;
+    role: string;
+    status: string;
+    contributions: string;
+    memories: string;
+    ratings: string;
+    points: string;
+    likes: string;
+  };
+  memoriesHref: string;
+  ratingsHref: string;
+  contributions: {
+    memories: string | number;
+    ratings: string | number;
+    points: string | number;
+    likes: string | number;
+  };
+}
+
+const {
+  name = '',
+  username = '',
+  email = '',
+  avatarUrl = '',
+  badge = '',
+  badgeImageUrl = '',
+  role = 'reader',
+  status = 'active',
+  labels,
+  memoriesHref,
+  ratingsHref,
+  contributions,
+} = Astro.props as Props;
+---
+
+<div class="account-sidebar">
+  <CommunitySidebarProfile
+    name={name}
+    username={username}
+    email={email}
+    avatarUrl={avatarUrl}
+    badge={badge}
+    badgeImageUrl={badgeImageUrl}
+    label={labels.account}
+  >
+    <dl class="community-detail-list account-sidebar-account-details" slot="details">
+      <div>
+        <dt>{labels.email}</dt>
+        <dd>{email}</dd>
+      </div>
+      <div>
+        <dt>{labels.role}</dt>
+        <dd>{role}</dd>
+      </div>
+      <div>
+        <dt>{labels.status}</dt>
+        <dd>{status}</dd>
+      </div>
+    </dl>
+  </CommunitySidebarProfile>
+
+  <CommunitySidebarSection title={labels.contributions}>
+    <div class="community-stat-list">
+      <a href={memoriesHref}>
+        <strong>{contributions.memories}</strong>
+        <span>{labels.memories}</span>
+      </a>
+      <a href={ratingsHref}>
+        <strong>{contributions.ratings}</strong>
+        <span>{labels.ratings}</span>
+      </a>
+      <div>
+        <strong>{contributions.points}</strong>
+        <span>{labels.points}</span>
+      </div>
+      <div>
+        <strong>{contributions.likes}</strong>
+        <span>{labels.likes}</span>
+      </div>
+    </div>
+  </CommunitySidebarSection>
+</div>
