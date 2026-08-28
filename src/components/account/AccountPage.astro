@@ -183,6 +183,15 @@ const copy = {
     chooseBadge: 'Scegli un badge',
     chooseBadgeHelp: 'Scegli quale badge mostrare nel profilo e nei commenti.',
     saveProfile: 'Salva profilo',
+    security: 'Sicurezza',
+    securityDescription: 'Aggiorna la password utilizzata per accedere al tuo account.',
+    currentPassword: 'Password attuale',
+    newPassword: 'Nuova password',
+    confirmNewPassword: 'Conferma nuova password',
+    changePassword: 'Cambia password',
+    passwordHelp: 'La nuova password deve contenere almeno 8 caratteri.',
+    passwordSocialOnly:
+      'Questo account usa l’accesso social. Gestisci la password dal provider con cui accedi.',
     privacyPolicy: 'Privacy Policy',
   },
   en: {
@@ -340,6 +349,15 @@ const copy = {
     chooseBadge: 'Choose a badge',
     chooseBadgeHelp: 'Choose which badge to show on your profile and comments.',
     saveProfile: 'Save profile',
+    security: 'Security',
+    securityDescription: 'Update the password you use to access your account.',
+    currentPassword: 'Current password',
+    newPassword: 'New password',
+    confirmNewPassword: 'Confirm new password',
+    changePassword: 'Change password',
+    passwordHelp: 'The new password must contain at least 8 characters.',
+    passwordSocialOnly:
+      'This account uses social sign-in. Manage the password with the provider you use to sign in.',
     privacyPolicy: 'Privacy Policy',
   },
 } as const;
@@ -360,6 +378,22 @@ const currentBadgeImageSrc = getReaderBadgeImageSrcForBadge(currentBadge || { ke
 const avatarUrl = profile?.avatar_url || '';
 const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const canEditDisplayName = profile?.role === 'admin';
+const authAppMetadata = user?.app_metadata as { provider?: string | null; providers?: string[] | null } | undefined;
+const identityProviders = new Set(
+  ((user as { identities?: Array<{ provider?: string | null }> } | null)?.identities || [])
+    .map((identity) => String(identity?.provider || '').toLowerCase())
+    .filter(Boolean)
+);
+const appMetadataProviders = Array.isArray(authAppMetadata?.providers)
+  ? authAppMetadata.providers.map((provider) => String(provider || '').toLowerCase()).filter(Boolean)
+  : [];
+const primaryAuthProvider = String(authAppMetadata?.provider || '').toLowerCase();
+const hasPasswordAuthProvider =
+  identityProviders.has('email') ||
+  appMetadataProviders.includes('email') ||
+  primaryAuthProvider === 'email' ||
+  (Boolean(user?.email) && identityProviders.size === 0 && appMetadataProviders.length === 0 && !primaryAuthProvider);
+const showPasswordChangeForm = Boolean(isLoggedIn && user?.email && hasPasswordAuthProvider);
 const accountDisplayName =
   profile?.display_name || profile?.username || user?.email || ui.fallbackName;
 const publicProfileHref = profile?.username ? getPublicUserUrl(profile.username, currentLang) : '';
@@ -598,6 +632,12 @@ const clientCopy = currentLang === 'en'
       bioTooLong: 'The bio cannot exceed 500 characters.',
       bioEnTooLong: 'The English bio cannot exceed 500 characters.',
       bioUpdated: 'Bio updated.',
+      passwordMissingFields: 'Fill in all password fields.',
+      passwordTooShort: 'The new password must contain at least 8 characters.',
+      passwordMismatch: 'The new password confirmation does not match.',
+      passwordSame: 'Choose a password different from the current one.',
+      passwordUpdated: 'Password updated.',
+      passwordUpdateFailed: 'Could not update the password.',
     }
   : {
       lang: 'it',
@@ -623,6 +663,12 @@ const clientCopy = currentLang === 'en'
       bioTooLong: 'La bio non può superare 500 caratteri.',
       bioEnTooLong: 'La bio inglese non può superare 500 caratteri.',
       bioUpdated: 'Bio aggiornata.',
+      passwordMissingFields: 'Compila tutti i campi password.',
+      passwordTooShort: 'La nuova password deve contenere almeno 8 caratteri.',
+      passwordMismatch: 'La conferma della nuova password non coincide.',
+      passwordSame: 'Scegli una password diversa da quella attuale.',
+      passwordUpdated: 'Password aggiornata.',
+      passwordUpdateFailed: 'Non è stato possibile aggiornare la password.',
     };
 
 ---
@@ -1329,6 +1375,60 @@ const clientCopy = currentLang === 'en'
 
               <p class="account-message" data-account-message hidden></p>
             </section>
+
+            <section class="account-settings-section" aria-labelledby="account-security-title">
+              <div class="account-settings-section__heading">
+                <p class="account-kicker">{ui.settingsKicker}</p>
+                <h2 id="account-security-title">{ui.security}</h2>
+                <p class="account-settings-section__hint">{ui.securityDescription}</p>
+              </div>
+
+              {showPasswordChangeForm ? (
+                <form class="account-form" data-account-password-form>
+                  <label>
+                    <span>{ui.currentPassword}</span>
+                    <input
+                      type="password"
+                      name="currentPassword"
+                      autocomplete="current-password"
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    <span>{ui.newPassword}</span>
+                    <input
+                      type="password"
+                      name="newPassword"
+                      autocomplete="new-password"
+                      minlength="8"
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    <span>{ui.confirmNewPassword}</span>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      autocomplete="new-password"
+                      minlength="8"
+                      required
+                    />
+                  </label>
+
+                  <small class="account-field-help">{ui.passwordHelp}</small>
+
+                  <div class="account-actions">
+                    <button type="submit">{ui.changePassword}</button>
+                  </div>
+                </form>
+              ) : (
+                <p class="account-field-help">{ui.passwordSocialOnly}</p>
+              )}
+
+              <p class="account-message" data-account-password-message hidden></p>
+            </section>
         </div>
       </>
     ) : (
@@ -1352,6 +1452,8 @@ const clientCopy = currentLang === 'en'
   <script define:vars={{ clientCopy }}>
     const form = document.querySelector('[data-account-profile-form]');
     const profileMessage = document.querySelector('[data-account-message]');
+    const passwordForm = document.querySelector('[data-account-password-form]');
+    const passwordMessage = document.querySelector('[data-account-password-message]');
     const profileSummary = document.querySelector('[data-account-profile-summary]');
     const profileEditButton = document.querySelector('[data-account-profile-edit]');
     const profileCancelButton = document.querySelector('[data-account-profile-cancel]');
@@ -1413,6 +1515,11 @@ const clientCopy = currentLang === 'en'
     const localizedMessage = (apiMessage, fallback) => {
       if (clientCopy.lang === 'en') return fallback;
       return apiMessage || fallback;
+    };
+
+    const localizedApiMessage = (payload, fallback) => {
+      if (clientCopy.lang === 'en') return payload?.errorEn || payload?.messageEn || payload?.error || payload?.message || fallback;
+      return payload?.error || payload?.message || fallback;
     };
 
     const setNewsletterLoading = (isLoading) => {
@@ -1839,6 +1946,64 @@ const clientCopy = currentLang === 'en'
       } catch {
         showMessage(avatarMessage, clientCopy.connectionError, 'error');
         avatarRemoveButton.disabled = false;
+      }
+    });
+
+    passwordForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(passwordForm);
+      const currentPassword = String(formData.get('currentPassword') || '');
+      const newPassword = String(formData.get('newPassword') || '');
+      const confirmPassword = String(formData.get('confirmPassword') || '');
+      const button = passwordForm.querySelector('button[type="submit"]');
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        showMessage(passwordMessage, clientCopy.passwordMissingFields, 'error');
+        return;
+      }
+
+      if (newPassword.length < 8) {
+        showMessage(passwordMessage, clientCopy.passwordTooShort, 'error');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showMessage(passwordMessage, clientCopy.passwordMismatch, 'error');
+        return;
+      }
+
+      if (newPassword === currentPassword) {
+        showMessage(passwordMessage, clientCopy.passwordSame, 'error');
+        return;
+      }
+
+      if (button) button.disabled = true;
+
+      try {
+        const response = await fetch('/api/account/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentPassword,
+            newPassword,
+            confirmPassword,
+          })
+        });
+
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || !result?.ok) {
+          showMessage(passwordMessage, localizedApiMessage(result, clientCopy.passwordUpdateFailed), 'error');
+          return;
+        }
+
+        passwordForm.reset();
+        showMessage(passwordMessage, localizedApiMessage(result, clientCopy.passwordUpdated), 'ok');
+      } catch {
+        showMessage(passwordMessage, clientCopy.connectionError, 'error');
+      } finally {
+        if (button) button.disabled = false;
       }
     });
 
