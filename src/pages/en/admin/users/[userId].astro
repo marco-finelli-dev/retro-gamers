@@ -117,10 +117,18 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       return (match?.[0] || '?').toUpperCase();
     };
 
-    const getPublicProfileHref = (username) => {
-      const normalizedUsername = String(username || '').trim().toLowerCase();
+    const usernamePattern = /^[a-z0-9_-]{3,24}$/;
 
-      if (!/^[a-z0-9_-]{3,24}$/.test(normalizedUsername)) {
+    const normalizeUsername = (value) =>
+      String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-');
+
+    const getPublicProfileHref = (username) => {
+      const normalizedUsername = normalizeUsername(username);
+
+      if (!usernamePattern.test(normalizedUsername)) {
         return '';
       }
 
@@ -175,6 +183,50 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
         ${user.status !== 'active' ? '<button type="button" data-status="active">Reactivate</button>' : ''}
         ${user.status !== 'suspended' ? '<button type="button" data-status="suspended" data-confirm="Suspend this user?">Suspend</button>' : ''}
         ${user.status !== 'banned' ? '<button type="button" data-status="banned" data-confirm="Ban this user?">Ban</button>' : ''}
+      `;
+    };
+
+    const renderUsernameManagement = (user) => {
+      if (viewerRole !== 'admin') {
+        return '';
+      }
+
+      const currentUsername = normalizeUsername(user.username || '');
+      const currentUsernameLabel = currentUsername ? `@${currentUsername}` : 'Not set';
+
+      return `
+        <section class="admin-user-card__username" aria-label="Public username" data-username-section data-current-username="${escapeHtml(currentUsername)}">
+          <div class="admin-user-card__username-header">
+            <div>
+              <h3>Public username</h3>
+              <p>Change only the public username used by profile URLs.</p>
+            </div>
+            <strong data-username-current>${escapeHtml(currentUsernameLabel)}</strong>
+          </div>
+
+          <div class="admin-user-card__username-form">
+            <label>
+              <span>New username</span>
+              <input
+                type="text"
+                data-username-input
+                value="${escapeHtml(currentUsername)}"
+                minlength="3"
+                maxlength="24"
+                pattern="[a-z0-9_-]{3,24}"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+              />
+            </label>
+
+            <button type="button" data-username-action="update">Update username</button>
+          </div>
+
+          <p class="admin-user-card__notice">
+            This does not change password, email, display name, content or account relations.
+          </p>
+        </section>
       `;
     };
 
@@ -346,6 +398,8 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
             <span>Likes received: ${Number(pointsBreakdown.receivedLikes || 0)}</span>
           </div>
 
+          ${renderUsernameManagement(user)}
+
           ${renderBadgeManagement(user)}
 
           <div class="admin-user-card__actions">
@@ -395,8 +449,71 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       }
     };
 
+    const handleUsernameUpdate = async (button) => {
+      const section = button.closest('[data-username-section]');
+      const card = button.closest('[data-user-id]');
+      const targetUserId = card?.dataset.userId;
+      const input = section?.querySelector('[data-username-input]');
+
+      if (!(input instanceof HTMLInputElement) || !targetUserId || viewerRole !== 'admin') {
+        showMessage('Insufficient permissions.', 'error');
+        return;
+      }
+
+      const username = normalizeUsername(input.value);
+      input.value = username;
+
+      if (!usernamePattern.test(username)) {
+        showMessage('Enter a valid username: 3-24 lowercase letters, numbers, hyphen or underscore.', 'error');
+        return;
+      }
+
+      if (username === section?.dataset.currentUsername) {
+        showMessage('This username is already set.', 'error');
+        return;
+      }
+
+      button.disabled = true;
+      showMessage('');
+
+      try {
+        const response = await fetch('/api/admin/users/username', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: targetUserId,
+            username
+          })
+        });
+        const result = await response.json();
+
+        if (!result.ok) {
+          showMessage(result.errorEn || result.error || 'Username not updated.', 'error');
+          button.disabled = false;
+          return;
+        }
+
+        showMessage(result.messageEn || 'Username updated.', 'ok');
+        await loadUser();
+      } catch {
+        showMessage('Connection error.', 'error');
+        button.disabled = false;
+      }
+    };
+
     detailNode?.addEventListener('click', async (event) => {
       const target = event.target;
+      const usernameButton = target instanceof Element
+        ? target.closest('button[data-username-action]')
+        : null;
+
+      if (usernameButton) {
+        await handleUsernameUpdate(usernameButton);
+        return;
+      }
+
       const badgeButton = target instanceof Element
         ? target.closest('button[data-badge-action]')
         : null;

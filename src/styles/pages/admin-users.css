@@ -645,6 +645,113 @@ html[data-theme="light"] .admin-user-card__avatar {
   cursor: not-allowed;
 }
 
+.admin-user-card__username {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--rg-card-bg) 74%, transparent);
+}
+
+.admin-user-card__username-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-user-card__username h3 {
+  margin: 0 0 4px;
+  color: var(--rg-section-title-color);
+  font-size: 0.98rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-user-card__username p {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+  font-weight: 760;
+}
+
+.admin-user-card__username-header strong {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.admin-user-card__username-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.admin-user-card__username-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-user-card__username-form label span {
+  color: var(--color-text-soft);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-user-card__username-form input {
+  min-height: 40px;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0 12px;
+  background: var(--color-glass);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.admin-user-card__username-form input:focus {
+  outline: none;
+  border-color: var(--rg-cta-border);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+
+.admin-user-card__username-form button {
+  min-height: 40px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 16px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-user-card__username-form button:hover,
+.admin-user-card__username-form button:focus-visible {
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.admin-user-card__username-form button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 .admin-user-card__actions {
   display: flex;
   flex-wrap: wrap;
@@ -1055,6 +1162,20 @@ html[data-theme="light"] .admin-user-card__avatar {
 
   .admin-user-card__badge-assign select,
   .admin-user-card__badge-assign button {
+    width: 100%;
+  }
+
+  .admin-user-card__username-header,
+  .admin-user-card__username-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-user-card__username-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-user-card__username-form button {
     width: 100%;
   }
 
