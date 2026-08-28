@@ -25,6 +25,14 @@ const json = (payload: unknown, status = 200) =>
     },
   });
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value && typeof value === 'object' && !Array.isArray(value));
+
+const containsPasswordField = (payload: Record<string, unknown>) =>
+  ['password', 'confirmPassword', 'passwordConfirmation'].some((field) =>
+    Object.prototype.hasOwnProperty.call(payload, field)
+  );
+
 export const POST: APIRoute = async ({ request, cookies }) => {
   const session = await getUserSessionFromCookies(cookies);
 
@@ -35,7 +43,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   let payload: UpdateProfilePayload;
 
   try {
-    payload = await request.json();
+    const body = await request.json();
+
+    if (!isRecord(body) || containsPasswordField(body)) {
+      return json({ ok: false, error: 'Richiesta non valida.' }, 400);
+    }
+
+    payload = body as UpdateProfilePayload;
   } catch {
     return json({ ok: false, error: 'Richiesta non valida.' }, 400);
   }

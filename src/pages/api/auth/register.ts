@@ -5,14 +5,6 @@ import { sendNewReaderRegistrationAdminEmail } from '../../../lib/supabase/accou
 import { createWelcomeAccountMessage } from '../../../lib/supabase/account-messages';
 import { supabaseAdmin, supabasePublic } from '../../../lib/supabase/server';
 
-type RegisterPayload = {
-  email?: string;
-  password?: string;
-  username?: string;
-  displayName?: string;
-  badgeKey?: string;
-};
-
 const json = (payload: unknown, status = 200) =>
   new Response(JSON.stringify(payload), {
     status,
@@ -26,6 +18,47 @@ const normalizeUsername = (value: string) =>
     .trim()
     .toLowerCase()
     .replace(/\s+/g, '-');
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value && typeof value === 'object' && !Array.isArray(value));
+
+const getStringField = (payload: Record<string, unknown>, key: string) => {
+  const value = payload[key];
+
+  return typeof value === 'string' ? value : '';
+};
+
+const normalizeComparableText = (value: string) =>
+  value
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const hasPasswordInPublicProfileField = (
+  password: string,
+  fields: string[]
+) => {
+  const normalizedPassword = normalizeComparableText(password);
+
+  if (!normalizedPassword) return false;
+
+  const passwordComparisons = new Set([
+    normalizedPassword,
+    normalizedPassword.toLowerCase(),
+    normalizeUsername(normalizedPassword),
+  ].filter(Boolean));
+
+  return fields.some((field) => {
+    const normalizedField = normalizeComparableText(field);
+
+    if (!normalizedField) return false;
+
+    return [
+      normalizedField,
+      normalizedField.toLowerCase(),
+      normalizeUsername(normalizedField),
+    ].some((candidate) => passwordComparisons.has(candidate));
+  });
+};
 
 const registrationReceivedMessage =
   'Registrazione ricevuta. Controlla la tua email per confermare l’account.';
@@ -85,19 +118,27 @@ const findAuthUserByEmail = async (email: string) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  let payload: RegisterPayload;
+  let payload: Record<string, unknown>;
 
   try {
-    payload = await request.json();
+    const body = await request.json();
+
+    if (!isRecord(body)) {
+      return json({ ok: false, error: 'Richiesta non valida.' }, 400);
+    }
+
+    payload = body;
   } catch {
     return json({ ok: false, error: 'Richiesta non valida.' }, 400);
   }
 
-  const email = payload.email?.trim().toLowerCase() ?? '';
-  const password = payload.password ?? '';
-  const username = normalizeUsername(payload.username ?? '');
-  const displayName = payload.displayName?.trim() || username;
-  const badgeKey = payload.badgeKey?.trim() ?? '';
+  const rawUsername = getStringField(payload, 'username');
+  const rawDisplayName = getStringField(payload, 'displayName');
+  const email = getStringField(payload, 'email').trim().toLowerCase();
+  const password = getStringField(payload, 'password');
+  const username = normalizeUsername(rawUsername);
+  const displayName = rawDisplayName.trim() || username;
+  const badgeKey = getStringField(payload, 'badgeKey').trim();
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return json({ ok: false, error: 'Inserisci un indirizzo email valido.' }, 400);
@@ -105,6 +146,15 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (password.length < 8) {
     return json({ ok: false, error: 'La password deve contenere almeno 8 caratteri.' }, 400);
+  }
+
+  if (hasPasswordInPublicProfileField(password, [rawUsername, rawDisplayName, username, displayName])) {
+    return json({
+      ok: false,
+      error: 'La password non può essere usata come nome pubblico del profilo.',
+      errorEn: 'The password cannot be used as a public profile name.',
+      code: 'password_in_public_profile_field',
+    }, 400);
   }
 
   if (!/^[a-z0-9_-]{3,24}$/.test(username)) {
