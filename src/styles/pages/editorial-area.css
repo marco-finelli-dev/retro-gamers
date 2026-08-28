@@ -3110,6 +3110,24 @@
     linear-gradient(135deg, rgba(64, 224, 255, 0.06), rgba(102, 81, 184, 0.04)),
     var(--rg-card-bg);
   color: var(--color-text-soft);
+  cursor: grab;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+.editorial-image-row-modal__item-preview:active {
+  cursor: grabbing;
+}
+
+.editorial-image-row-modal__item[data-dragging="true"] {
+  opacity: 0.58;
+}
+
+.editorial-image-row-modal__item[data-drag-over="true"] {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .editorial-image-row-modal__item-preview img {

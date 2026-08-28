@@ -278,6 +278,9 @@ type Labels = {
   exitSaveAndClose: string;
   exitWithoutSaving: string;
   exitCancel: string;
+  unsavedChangesTitle: string;
+  unsavedChangesText: string;
+  unsavedChangesSave: string;
   draftStatus: string;
   inspectorArticle: string;
   aiTransparency: string;
@@ -2755,6 +2758,24 @@ function AnnotationModal({
   );
 }
 
+type ExitConfirmationCopy = {
+  title: string;
+  text: string;
+  save: string;
+  discard: string;
+  cancel: string;
+};
+
+function getImageModalExitCopy(labels: Labels): ExitConfirmationCopy {
+  return {
+    title: labels.unsavedChangesTitle,
+    text: labels.unsavedChangesText,
+    save: labels.unsavedChangesSave,
+    discard: labels.exitWithoutSaving,
+    cancel: labels.exitCancel,
+  };
+}
+
 type SelectedBodyImageFile = {
   file: File;
   previewUrl: string;
@@ -2822,6 +2843,15 @@ function BodyImageModal({
   const [displayMode, setDisplayMode] = useState<ImageDisplayMode>(
     normalizeImageDisplayMode(initialImage?.displayMode, initialImage?.isWide)
   );
+  const [isUnsavedChangesModalOpen, setIsUnsavedChangesModalOpen] = useState(false);
+  const initialAlt = initialImage?.alt || '';
+  const initialCaption = initialImage?.caption || '';
+  const initialDisplayMode = normalizeImageDisplayMode(initialImage?.displayMode, initialImage?.isWide);
+  const hasUnsavedChanges =
+    selectedFile !== null ||
+    alt !== initialAlt ||
+    caption !== initialCaption ||
+    displayMode !== initialDisplayMode;
   const currentPreviewUrl = getBodyImagePreviewUrl(initialImage, 720, assetPreviewUrls);
   const selectedMetadata = getSelectedBodyImageMetadataLabel(selectedFile);
   const currentMetadata = getBodyImageMetadataLabel(initialImage, labels);
@@ -2927,14 +2957,34 @@ function BodyImageModal({
     }
   };
 
+  const requestClose = () => {
+    if (hasUnsavedChanges) {
+      setIsUnsavedChangesModalOpen(true);
+      return;
+    }
+
+    onClose();
+  };
+
+  const discardChanges = () => {
+    setIsUnsavedChangesModalOpen(false);
+    onClose();
+  };
+
+  const saveChangesAndClose = async () => {
+    setIsUnsavedChangesModalOpen(false);
+    await applyImage();
+  };
+
   return (
-    <AnnotationModal
-      title={title}
-      labels={labels}
-      onClose={onClose}
-      panelClassName="editorial-pte-modal__panel--image"
-    >
-      <div className="editorial-body-image-modal">
+    <>
+      <AnnotationModal
+        title={title}
+        labels={labels}
+        onClose={requestClose}
+        panelClassName="editorial-pte-modal__panel--image"
+      >
+        <div className="editorial-body-image-modal">
         {mode === 'edit' && (
           <div className="editorial-current-media editorial-current-media--body-image">
             <span>{labels.bodyImageCurrent}</span>
@@ -3053,7 +3103,7 @@ function BodyImageModal({
               {labels.bodyImageCancelSelection}
             </button>
           )}
-          <button type="button" className="editorial-mini-button" onClick={onClose} disabled={isUploading}>
+          <button type="button" className="editorial-mini-button" onClick={requestClose} disabled={isUploading}>
             {labels.annotationClose}
           </button>
           <button
@@ -3065,8 +3115,20 @@ function BodyImageModal({
             {isUploading ? labels.bodyImageUploading : submitLabel}
           </button>
         </div>
-      </div>
-    </AnnotationModal>
+        </div>
+      </AnnotationModal>
+
+      {isUnsavedChangesModalOpen && (
+        <ExitConfirmationModal
+          labels={labels}
+          copy={getImageModalExitCopy(labels)}
+          isSaving={isUploading}
+          onSaveAndClose={saveChangesAndClose}
+          onDiscard={discardChanges}
+          onCancel={() => setIsUnsavedChangesModalOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -3079,6 +3141,17 @@ type ImageRowDraftItem = {
   displayMode: ImageDisplayMode;
   selectedFile: SelectedBodyImageFile | null;
 };
+
+function getImageRowDraftItemSnapshot(item: ImageRowDraftItem) {
+  return {
+    key: item.key,
+    assetRef: getBodyImageAssetRef(item.image),
+    alt: item.alt,
+    caption: item.caption,
+    displayMode: item.displayMode,
+    hasSelectedFile: Boolean(item.selectedFile),
+  };
+}
 
 function createImageRowDraftItem(item: ImageRowItem): ImageRowDraftItem {
   const image = getImageRowItemImage(item);
@@ -3150,14 +3223,24 @@ function ImageRowModal({
     Array.isArray(initialRow?.images) ? initialRow.images.map(createImageRowDraftItem) : []
   );
   const itemsRef = useRef(items);
-  const [layout, setLayout] = useState<ImageRowLayout>(normalizeImageRowLayout(initialRow?.layout));
-  const [groupCaption, setGroupCaption] = useState(typeof initialRow?.groupCaption === 'string' ? initialRow.groupCaption : '');
+  const initialItemsSnapshotRef = useRef(items.map(getImageRowDraftItemSnapshot));
+  const initialLayout = normalizeImageRowLayout(initialRow?.layout);
+  const initialGroupCaption = typeof initialRow?.groupCaption === 'string' ? initialRow.groupCaption : '';
+  const [layout, setLayout] = useState<ImageRowLayout>(initialLayout);
+  const [groupCaption, setGroupCaption] = useState(initialGroupCaption);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [draggedItemKey, setDraggedItemKey] = useState<string | null>(null);
+  const [dragOverItemKey, setDragOverItemKey] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [status, setStatus] = useState('');
   const [statusTone, setStatusTone] = useState<'success' | 'error' | ''>('');
+  const [isUnsavedChangesModalOpen, setIsUnsavedChangesModalOpen] = useState(false);
   const title = mode === 'insert' ? labels.insertImageRow : labels.editImageRow;
   const submitLabel = mode === 'insert' ? labels.insertImageRow : labels.updateImageRow;
+  const hasUnsavedChanges =
+    JSON.stringify(items.map(getImageRowDraftItemSnapshot)) !== JSON.stringify(initialItemsSnapshotRef.current) ||
+    layout !== initialLayout ||
+    groupCaption !== initialGroupCaption;
 
   useEffect(() => {
     itemsRef.current = items;
@@ -3289,6 +3372,60 @@ function ImageRowModal({
     });
   };
 
+  const reorderItems = (sourceKey: string, targetKey: string) => {
+    if (!sourceKey || !targetKey || sourceKey === targetKey) return;
+
+    setItems((current) => {
+      const sourceIndex = current.findIndex((item) => item.key === sourceKey);
+      const targetIndex = current.findIndex((item) => item.key === targetKey);
+
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return current;
+
+      const next = [...current];
+      const [item] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, item);
+      return next;
+    });
+  };
+
+  const handleItemDragStart = (event: DragEvent<HTMLDivElement>, itemKey: string) => {
+    if (isUploading) {
+      event.preventDefault();
+      return;
+    }
+
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', itemKey);
+    setDraggedItemKey(itemKey);
+    setDragOverItemKey(null);
+  };
+
+  const handleItemDragOver = (event: DragEvent<HTMLElement>, itemKey: string) => {
+    if (isUploading || !draggedItemKey || draggedItemKey === itemKey) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setDragOverItemKey(itemKey);
+  };
+
+  const handleItemDrop = (event: DragEvent<HTMLElement>, itemKey: string) => {
+    event.preventDefault();
+
+    const sourceKey = event.dataTransfer.getData('text/plain') || draggedItemKey;
+
+    if (sourceKey) {
+      reorderItems(sourceKey, itemKey);
+    }
+
+    setDraggedItemKey(null);
+    setDragOverItemKey(null);
+  };
+
+  const handleItemDragEnd = () => {
+    setDraggedItemKey(null);
+    setDragOverItemKey(null);
+  };
+
   const uploadItemFile = async (item: ImageRowDraftItem) => {
     if (!item.selectedFile) return null;
 
@@ -3367,14 +3504,34 @@ function ImageRowModal({
     }
   };
 
+  const requestClose = () => {
+    if (hasUnsavedChanges) {
+      setIsUnsavedChangesModalOpen(true);
+      return;
+    }
+
+    onClose();
+  };
+
+  const discardChanges = () => {
+    setIsUnsavedChangesModalOpen(false);
+    onClose();
+  };
+
+  const saveChangesAndClose = async () => {
+    setIsUnsavedChangesModalOpen(false);
+    await applyImageRow();
+  };
+
   return (
-    <AnnotationModal
-      title={title}
-      labels={labels}
-      onClose={onClose}
-      panelClassName="editorial-pte-modal__panel--image-row"
-    >
-      <div className="editorial-image-row-modal">
+    <>
+      <AnnotationModal
+        title={title}
+        labels={labels}
+        onClose={requestClose}
+        panelClassName="editorial-pte-modal__panel--image-row"
+      >
+        <div className="editorial-image-row-modal">
         <label
           className="editorial-dropzone editorial-dropzone--body-image"
           data-drag-active={isDragActive ? 'true' : undefined}
@@ -3424,15 +3581,28 @@ function ImageRowModal({
                 const replaceFieldId = `${rowItemFieldId}-${item.key}-replace`;
 
                 return (
-                  <article className="editorial-image-row-modal__item" key={item.key}>
+                  <article
+                    className="editorial-image-row-modal__item"
+                    data-dragging={draggedItemKey === item.key ? 'true' : undefined}
+                    data-drag-over={dragOverItemKey === item.key ? 'true' : undefined}
+                    key={item.key}
+                    onDragOver={(event) => handleItemDragOver(event, item.key)}
+                    onDrop={(event) => handleItemDrop(event, item.key)}
+                  >
                     <div className="editorial-image-row-modal__item-heading">
                       <span>{labels.imageRowImageSettings}</span>
                       <small>{index + 1} / {items.length}</small>
                     </div>
 
-                    <div className="editorial-image-row-modal__item-preview">
+                    <div
+                      className="editorial-image-row-modal__item-preview"
+                      draggable={!isUploading}
+                      title={labels.bodyImageDragHandle}
+                      onDragStart={(event) => handleItemDragStart(event, item.key)}
+                      onDragEnd={handleItemDragEnd}
+                    >
                       {previewUrl ? (
-                        <img src={previewUrl} alt={item.alt || ''} loading="lazy" decoding="async" />
+                        <img src={previewUrl} alt={item.alt || ''} loading="lazy" decoding="async" draggable={false} />
                       ) : (
                         <span>{labels.bodyImageNoPreview}</span>
                       )}
@@ -3580,7 +3750,7 @@ function ImageRowModal({
         )}
 
         <div className="editorial-body-image-modal__actions">
-          <button type="button" className="editorial-mini-button" onClick={onClose} disabled={isUploading}>
+          <button type="button" className="editorial-mini-button" onClick={requestClose} disabled={isUploading}>
             {labels.annotationClose}
           </button>
           <button
@@ -3592,8 +3762,20 @@ function ImageRowModal({
             {isUploading ? labels.imageRowUploading : submitLabel}
           </button>
         </div>
-      </div>
-    </AnnotationModal>
+        </div>
+      </AnnotationModal>
+
+      {isUnsavedChangesModalOpen && (
+        <ExitConfirmationModal
+          labels={labels}
+          copy={getImageModalExitCopy(labels)}
+          isSaving={isUploading}
+          onSaveAndClose={saveChangesAndClose}
+          onDiscard={discardChanges}
+          onCancel={() => setIsUnsavedChangesModalOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -4656,32 +4838,42 @@ function ExitConfirmationModal({
   onSaveAndClose,
   onDiscard,
   onCancel,
+  copy,
 }: {
   labels: Labels;
   isSaving: boolean;
   onSaveAndClose: () => void;
   onDiscard: () => void;
   onCancel: () => void;
+  copy?: ExitConfirmationCopy;
 }) {
+  const confirmationCopy = copy || {
+    title: labels.exitConfirmTitle,
+    text: labels.exitConfirmText,
+    save: labels.exitSaveAndClose,
+    discard: labels.exitWithoutSaving,
+    cancel: labels.exitCancel,
+  };
+
   return (
     <AnnotationModal
-      title={labels.exitConfirmTitle}
+      title={confirmationCopy.title}
       labels={labels}
       onClose={onCancel}
       panelClassName="editorial-pte-modal__panel--exit"
     >
       <div className="editorial-exit-modal">
-        <p>{labels.exitConfirmText}</p>
+        <p>{confirmationCopy.text}</p>
 
         <div className="editorial-exit-modal__actions">
           <button type="button" className="editorial-button" onClick={onSaveAndClose} disabled={isSaving}>
-            {isSaving ? labels.saving : labels.exitSaveAndClose}
+            {isSaving ? labels.saving : confirmationCopy.save}
           </button>
           <button type="button" className="editorial-mini-button" onClick={onDiscard} disabled={isSaving}>
-            {labels.exitWithoutSaving}
+            {confirmationCopy.discard}
           </button>
           <button type="button" className="editorial-mini-button" onClick={onCancel} disabled={isSaving}>
-            {labels.exitCancel}
+            {confirmationCopy.cancel}
           </button>
         </div>
       </div>
