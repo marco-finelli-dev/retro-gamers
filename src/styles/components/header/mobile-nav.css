@@ -294,7 +294,8 @@
     display: none;
   }
 
-  .mobile-menu__links [data-account-unread][hidden] {
+  .mobile-menu__links [data-account-unread][hidden],
+  .mobile-menu__links [data-admin-unread][hidden] {
     display: none;
   }
 
@@ -436,7 +437,8 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.055);
   }
 
-  .mobile-menu__account-unread {
+  .mobile-menu__account-unread,
+  .mobile-menu__admin-unread {
     position: absolute;
     top: 50%;
     right: 58px;
@@ -453,6 +455,11 @@
     font-size: 0.82rem;
     font-weight: 950;
     transform: translateY(-50%);
+  }
+
+  .mobile-menu__admin-unread {
+    border-color: color-mix(in srgb, var(--color-primary) 44%, var(--rg-badge-border));
+    background: color-mix(in srgb, var(--color-primary) 14%, var(--rg-badge-bg));
   }
   
   .mobile-menu__links a:hover,

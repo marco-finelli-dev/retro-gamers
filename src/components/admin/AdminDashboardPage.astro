@@ -3,6 +3,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import AdminToolsSidebar from './AdminToolsSidebar.astro';
 import CommunityHero from '../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../components/community/CommunityLayout.astro';
+import {
+  getAdminActivitySummary,
+  type AdminActivityCategory,
+  type AdminActivitySummary,
+} from '../../lib/admin/activity.server';
 import { getPublishedReadClient } from '../../lib/sanity';
 import { getEditorialSessionForUserSession } from '../../lib/editorial/session.server';
 import { getUserSessionFromCookies, isStaffProfile } from '../../lib/supabase/auth';
@@ -64,8 +69,6 @@ type RecentActivity = {
   href: string;
   createdAt: string | null;
   tone?: 'attention' | 'calm';
-  surveyLastResponseAt?: string | null;
-  surveySeenStorageKey?: string | null;
 };
 
 type ActivityCategoryKey = 'comments' | 'editorial' | 'newsletter' | 'surveys' | 'reports';
@@ -74,6 +77,17 @@ type ActivityCategory = {
   key: ActivityCategoryKey;
   label: string;
   activities: RecentActivity[];
+};
+
+type AdminNewsItem = {
+  key: AdminActivityCategory;
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+  unreadCount: number;
+  latestAt: string | null;
+  error: string;
 };
 
 const { lang = 'it' } = Astro.props;
@@ -92,6 +106,12 @@ const copy = isEnglish
       todoKicker: 'Daily cockpit',
       todoTitle: 'To do',
       todoDescription: 'Operational items that may require staff action.',
+      newsKicker: 'Administration inbox',
+      newsTitle: 'New items',
+      newsDescription: 'Site events you have not opened yet.',
+      newsMarkAllRead: 'Mark all as read',
+      newsMarkCategoryRead: 'Mark read',
+      newsEmpty: 'No new items to review.',
       recentKicker: 'Latest signals',
       recentTitle: 'Recent activity',
       recentDescription: 'A compact feed from systems that already expose reliable timestamps.',
@@ -136,10 +156,32 @@ const copy = isEnglish
           cta: 'Open review queue',
         },
       },
+      news: {
+        users: {
+          title: 'New users',
+          description: 'Registered accounts you have not opened yet.',
+          cta: 'Open users',
+        },
+        comments: {
+          title: 'New public comments',
+          description: 'Public comments published or pending since your last check.',
+          cta: 'Open comments',
+        },
+        surveys: {
+          title: 'New survey responses',
+          description: 'Anonymous community survey participations.',
+          cta: 'Open survey',
+        },
+        newsletter: {
+          title: 'New newsletter subscribers',
+          description: 'Active newsletter subscriptions you have not reviewed yet.',
+          cta: 'Open newsletter',
+        },
+      },
       overview: {
-        users: 'Registered users',
+        users: 'Users',
         ratings: 'Reader ratings',
-        newsletter: 'Active newsletter subscribers',
+        newsletter: 'Newsletter',
         activeSurveys: 'Active surveys',
         surveyResponses: 'Survey responses',
         quizzes: 'Published quizzes',
@@ -154,7 +196,6 @@ const copy = isEnglish
         reportOpen: 'Open report',
         subscriber: 'New subscription',
         surveyAnswer: 'Anonymous survey response',
-        newSurveyResponses: 'New responses',
         articleSubmitted: 'Article submitted',
         articleApproved: 'Article approved',
       },
@@ -190,6 +231,12 @@ const copy = isEnglish
       todoKicker: 'Cockpit quotidiano',
       todoTitle: 'Da fare',
       todoDescription: 'Elementi operativi che possono richiedere un intervento dello staff.',
+      newsKicker: 'Inbox amministrativa',
+      newsTitle: 'Novità',
+      newsDescription: 'Eventi del sito che non hai ancora consultato.',
+      newsMarkAllRead: 'Segna tutte come lette',
+      newsMarkCategoryRead: 'Segna lette',
+      newsEmpty: 'Nessuna novità da consultare.',
       recentKicker: 'Ultimi segnali',
       recentTitle: 'Attività recenti',
       recentDescription: 'Un feed compatto dai sistemi che espongono già timestamp affidabili.',
@@ -234,10 +281,32 @@ const copy = isEnglish
           cta: 'Apri coda revisione',
         },
       },
+      news: {
+        users: {
+          title: 'Nuovi utenti',
+          description: 'Account registrati che non hai ancora consultato.',
+          cta: 'Apri utenti',
+        },
+        comments: {
+          title: 'Nuovi commenti pubblici',
+          description: 'Commenti pubblici arrivati dopo il tuo ultimo controllo.',
+          cta: 'Apri commenti',
+        },
+        surveys: {
+          title: 'Nuove risposte survey',
+          description: 'Partecipazioni anonime ai sondaggi community.',
+          cta: 'Apri survey',
+        },
+        newsletter: {
+          title: 'Nuovi iscritti newsletter',
+          description: 'Iscrizioni attive alla newsletter non ancora consultate.',
+          cta: 'Apri newsletter',
+        },
+      },
       overview: {
-        users: 'Utenti registrati',
+        users: 'Utenti',
         ratings: 'Voti lettori',
-        newsletter: 'Iscritti newsletter attivi',
+        newsletter: 'Newsletter',
         activeSurveys: 'Survey attive',
         surveyResponses: 'Risposte survey',
         quizzes: 'Quiz pubblicati',
@@ -252,7 +321,6 @@ const copy = isEnglish
         reportOpen: 'Segnalazione aperta',
         subscriber: 'Nuova iscrizione',
         surveyAnswer: 'Risposta anonima al sondaggio',
-        newSurveyResponses: 'Nuove risposte',
         articleSubmitted: 'Articolo inviato',
         articleApproved: 'Articolo approvato',
       },
@@ -283,6 +351,7 @@ const title = copy.title;
 const description = copy.description;
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isStaff = isStaffProfile(session.profile);
+const isAdmin = session.profile?.role === 'admin' && session.profile?.status === 'active';
 const editorialContext = isStaff
   ? await getEditorialSessionForUserSession(session)
   : null;
@@ -363,13 +432,6 @@ const truncate = (value = '', maxLength = 120) => {
     ? `${normalized.slice(0, maxLength - 1).trim()}…`
     : normalized;
 };
-const getAdminSurveySeenStorageKey = (surveyKey?: string | null) => {
-  const cleanSurveyKey = String(surveyKey || '').trim();
-
-  return cleanSurveyKey
-    ? `retro-gamers:admin-survey-seen:${cleanSurveyKey}`
-    : null;
-};
 
 const getCommentAuthor = (comment: RecentComment) =>
   comment.author_type === 'guest'
@@ -387,6 +449,7 @@ let editorialReviewQueue: CountResult = { value: null, error: '' };
 let activeSurveys: CountResult = { value: null, error: '' };
 let publishedQuizzes: CountResult = { value: null, error: '' };
 let activeSurveyDocuments: SurveySummary[] = [];
+let adminActivitySummary: AdminActivitySummary | null = null;
 const recentActivitiesByCategory: Record<ActivityCategoryKey, RecentActivity[]> = {
   comments: [],
   editorial: [],
@@ -396,6 +459,13 @@ const recentActivitiesByCategory: Record<ActivityCategoryKey, RecentActivity[]> 
 };
 
 if (isStaff) {
+  if (isAdmin && session.user) {
+    adminActivitySummary = await getAdminActivitySummary({
+      adminUserId: session.user.id,
+      lang,
+    });
+  }
+
   [
     pendingComments,
     openCommentReports,
@@ -630,8 +700,6 @@ if (isStaff) {
           : `${adminBase}/`,
         createdAt: responseSubmittedAt,
         tone: 'calm',
-        surveyLastResponseAt: responseSubmittedAt,
-        surveySeenStorageKey: getAdminSurveySeenStorageKey(responseSurveyKey),
       } satisfies RecentActivity;
     }));
   }
@@ -698,6 +766,19 @@ const overviewItems = [
   { label: copy.overview.surveyResponses, value: surveyResponses },
   { label: copy.overview.quizzes, value: publishedQuizzes },
 ];
+
+const adminNewsItems: AdminNewsItem[] = adminActivitySummary
+  ? (['users', 'comments', 'surveys', 'newsletter'] as AdminActivityCategory[]).map((category) => ({
+      key: category,
+      title: copy.news[category].title,
+      description: copy.news[category].description,
+      href: adminActivitySummary.categories[category].latestHref,
+      cta: copy.news[category].cta,
+      unreadCount: adminActivitySummary.categories[category].unreadCount,
+      latestAt: adminActivitySummary.categories[category].latestAt,
+      error: adminActivitySummary.categories[category].error,
+    }))
+  : [];
 
 const primarySurveyKey = activeSurveyDocuments
   .map((survey) => String(survey.surveyKey || '').trim())
@@ -780,6 +861,69 @@ const activityCategories: ActivityCategory[] = [
           )}
         </section>
 
+        {isAdmin && adminActivitySummary && (
+          <section class="community-card admin-dashboard-section admin-dashboard-section--news" aria-labelledby="admin-dashboard-news" data-admin-news-section>
+            <div class="admin-dashboard-section-heading">
+              <div>
+                <p>{copy.newsKicker}</p>
+                <h2 id="admin-dashboard-news">{copy.newsTitle}</h2>
+                <span>{adminActivitySummary.error || copy.newsDescription}</span>
+              </div>
+
+              {adminActivitySummary.totalUnread > 0 && (
+                <button
+                  type="button"
+                  class="admin-dashboard-section-action"
+                  data-admin-activity-mark-read
+                  data-category="all"
+                >
+                  {copy.newsMarkAllRead}
+                </button>
+              )}
+            </div>
+
+            <div class="admin-dashboard-news-grid">
+              {adminNewsItems.map((item) => (
+                <article class="admin-dashboard-news-card" data-unread={item.unreadCount > 0 ? 'true' : 'false'}>
+                  <div>
+                    <span>{item.title}</span>
+                    <strong>{numberFormatter.format(item.unreadCount)}</strong>
+                    <p>{item.error || item.description}</p>
+                    {item.latestAt && (
+                      <time datetime={item.latestAt}>{formatActivityDate(item.latestAt)}</time>
+                    )}
+                  </div>
+
+                  <footer>
+                    <a
+                      href={item.href}
+                      data-admin-activity-open-link
+                      data-category={item.key}
+                      data-has-unread={item.unreadCount > 0 ? 'true' : 'false'}
+                      data-auto-mark-read={item.key === 'surveys' && item.unreadCount > 0 ? 'true' : 'false'}
+                    >
+                      {item.cta}
+                    </a>
+                    {item.unreadCount > 0 && (
+                      <button
+                        type="button"
+                        data-admin-activity-mark-read
+                        data-category={item.key}
+                      >
+                        {copy.newsMarkCategoryRead}
+                      </button>
+                    )}
+                  </footer>
+                </article>
+              ))}
+            </div>
+
+            {adminActivitySummary.available && adminActivitySummary.totalUnread === 0 && (
+              <p class="admin-dashboard-empty">{copy.newsEmpty}</p>
+            )}
+          </section>
+        )}
+
         <section class="community-card admin-dashboard-section admin-dashboard-section--recent" aria-labelledby="admin-dashboard-recent" data-admin-activity-section>
           <div class="admin-dashboard-section-heading">
             <div>
@@ -824,17 +968,6 @@ const activityCategories: ActivityCategory[] = [
 	                          <span>{activity.label}</span>
 	                          <h3>
                               <span class="admin-dashboard-activity__title">{activity.title}</span>
-                              {activity.surveySeenStorageKey && activity.surveyLastResponseAt && (
-                                <span
-                                  class="admin-dashboard-survey-new-badge"
-                                  data-admin-survey-new-responses
-                                  data-seen-storage-key={activity.surveySeenStorageKey}
-                                  data-last-response-at={activity.surveyLastResponseAt}
-                                  hidden
-                                >
-                                  {copy.activity.newSurveyResponses}
-                                </span>
-                              )}
                             </h3>
 	                          <p>{activity.description}</p>
 	                        </div>
@@ -893,54 +1026,80 @@ const activityCategories: ActivityCategory[] = [
 
   <script>
     (() => {
-      const badges = Array.from(document.querySelectorAll('[data-admin-survey-new-responses]'));
+      const section = document.querySelector('[data-admin-news-section]');
 
-      if (badges.length === 0) return;
+      if (!section) return;
 
-      const getTime = (value) => {
-        const time = Date.parse(String(value || ''));
+      const markActivityRead = async (category) => {
+        const response = await fetch('/api/admin/activity/mark-read', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            category,
+            lang: document.documentElement.lang === 'en' ? 'en' : 'it',
+          }),
+        });
+        const result = await response.json().catch(() => null);
 
-        return Number.isFinite(time) ? time : 0;
+        if (!response.ok || result?.ok !== true) {
+          throw new Error('admin_activity_mark_read_failed');
+        }
+
+        window.dispatchEvent(new CustomEvent('retro-gamers:refresh-admin-unread'));
       };
 
-      let storage = null;
+      section.addEventListener('click', async (event) => {
+        if (!(event.target instanceof Element)) return;
 
-      try {
-        storage = window.localStorage;
-      } catch {
-        storage = null;
-      }
+        const link = event.target.closest('[data-admin-activity-open-link]');
 
-      const shownSurveyBadges = new Set();
+        if (link instanceof HTMLAnchorElement) {
+          if (
+            event.defaultPrevented ||
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey ||
+            link.dataset.autoMarkRead !== 'true'
+          ) {
+            return;
+          }
 
-      badges.forEach((badge) => {
-        if (!(badge instanceof HTMLElement)) return;
+          const category = link.dataset.category || '';
 
-        const storageKey = badge.dataset.seenStorageKey || '';
-        const lastResponseAt = badge.dataset.lastResponseAt || '';
-        const lastResponseTime = getTime(lastResponseAt);
+          if (!category) return;
 
-        if (!storageKey || !lastResponseTime || !storage) {
-          badge.hidden = true;
+          event.preventDefault();
+
+          try {
+            await markActivityRead(category);
+          } catch {
+            // The destination remains reachable even if the read checkpoint cannot be updated.
+          }
+
+          window.location.assign(link.href);
           return;
         }
 
-        const seenValue = storage.getItem(storageKey);
-        const seenTime = getTime(seenValue);
+        const button = event.target.closest('[data-admin-activity-mark-read]');
 
-        if (!seenValue || !seenTime) {
-          storage.setItem(storageKey, lastResponseAt);
-          badge.hidden = true;
-          return;
+        if (!(button instanceof HTMLButtonElement)) return;
+
+        const category = button.dataset.category || '';
+
+        if (!category) return;
+
+        button.disabled = true;
+
+        try {
+          await markActivityRead(category);
+          window.location.reload();
+        } catch {
+          button.disabled = false;
         }
-
-        if (lastResponseTime <= seenTime || shownSurveyBadges.has(storageKey)) {
-          badge.hidden = true;
-          return;
-        }
-
-        shownSurveyBadges.add(storageKey);
-        badge.hidden = false;
       });
     })();
 

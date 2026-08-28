@@ -282,6 +282,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
           />
 
           <span class="site-header__account-notification" data-account-unread hidden></span>
+          <span class="site-header__admin-notification" data-admin-unread hidden></span>
         </button>
 
         <div
@@ -336,7 +337,8 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
               data-language-session-override={currentLanguageTarget}
               hidden
             >
-              {isEnglish ? 'Administration area' : 'Area amministrazione'}
+              <span>{isEnglish ? 'Administration area' : 'Area amministrazione'}</span>
+              <span class="site-header__admin-unread" data-admin-unread hidden></span>
             </a>
 
             <a
@@ -537,6 +539,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
   const isEnglish = root?.dataset.lang === 'en';
   const unreadPollingIntervalMs = 55_000;
   let isAccountLoggedIn = false;
+  let isCurrentAdmin = false;
   let unreadPollingTimer = 0;
   let unreadRefreshInFlight = false;
 
@@ -625,6 +628,19 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
     });
   };
 
+  const setAdminUnreadCount = (count = 0) => {
+    const safeCount = Number.isFinite(Number(count)) ? Math.max(0, Number(count)) : 0;
+    const label = safeCount > 99 ? '99+' : String(safeCount);
+    const shouldShow = Boolean(isCurrentAdmin && safeCount > 0);
+
+    root?.classList.toggle('has-admin-unread', shouldShow);
+
+    document.querySelectorAll('[data-admin-unread]').forEach((node) => {
+      node.textContent = shouldShow ? label : '';
+      node.hidden = !shouldShow;
+    });
+  };
+
   const stopUnreadPolling = () => {
     if (!unreadPollingTimer) return;
     window.clearTimeout(unreadPollingTimer);
@@ -647,6 +663,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
   const refreshUnreadCount = async (isLoggedIn) => {
     if (!isLoggedIn) {
       setUnreadCount(0);
+      setAdminUnreadCount(0);
       stopUnreadPolling();
       return;
     }
@@ -662,8 +679,10 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
       const result = await response.json();
 
       setUnreadCount(result?.unreadCount || 0);
+      setAdminUnreadCount(result?.adminUnreadCount || 0);
     } catch {
       setUnreadCount(0);
+      setAdminUnreadCount(0);
     } finally {
       unreadRefreshInFlight = false;
     }
@@ -743,11 +762,17 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
     const isStaff = isAdmin || isModerator;
 
     isAccountLoggedIn = Boolean(isLoggedIn);
+    isCurrentAdmin = Boolean(isLoggedIn && isAdmin);
     publishRetroExperienceState(isLoggedIn, preferences);
     root?.classList.toggle('is-authenticated', isLoggedIn);
     root?.classList.toggle('is-staff', isLoggedIn && isStaff);
+    root?.classList.toggle('is-admin', isLoggedIn && isAdmin);
     root?.classList.toggle('has-editorial-access', isLoggedIn && hasEditorialAccess);
     setAccountAvatar(isLoggedIn, profile, user);
+
+    if (!isCurrentAdmin) {
+      setAdminUnreadCount(0);
+    }
 
     const accountLabel = isLoggedIn
       ? (isStaff
@@ -860,6 +885,12 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
   });
 
   window.addEventListener('retro-gamers:refresh-unread', () => {
+    if (isAccountLoggedIn) {
+      refreshUnreadCount(true).then(scheduleUnreadPolling);
+    }
+  });
+
+  window.addEventListener('retro-gamers:refresh-admin-unread', () => {
     if (isAccountLoggedIn) {
       refreshUnreadCount(true).then(scheduleUnreadPolling);
     }

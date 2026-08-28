@@ -369,7 +369,7 @@ const title = copy.title;
 const description = copy.description;
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
-const isAdmin = session.profile?.role === 'admin';
+const isAdmin = session.profile?.role === 'admin' && session.profile?.status === 'active';
 const loginHref = isEnglish ? '/en/account/login/' : '/account/login/';
 
 ---
@@ -393,6 +393,7 @@ const loginHref = isEnglish ? '/en/account/login/' : '/account/login/';
           class="community-card admin-comments-panel"
           data-admin-comments-panel
           data-can-hard-delete={isAdmin ? 'true' : 'false'}
+          data-can-mark-admin-seen={isAdmin ? 'true' : 'false'}
         >
           <form class="admin-comments-filters" data-admin-comments-filters>
             <div class="admin-comments__filter-fields">
@@ -498,6 +499,7 @@ const loginHref = isEnglish ? '/en/account/login/' : '/account/login/';
     const resetButton = document.querySelector('[data-admin-comments-reset]');
     const panelNode = document.querySelector('[data-admin-comments-panel]');
     const canHardDelete = panelNode?.dataset.canHardDelete === 'true';
+    const canMarkAdminSeen = panelNode?.dataset.canMarkAdminSeen === 'true';
     const labels = adminCommentsCopy;
     const allowedPageSizes = new Set(['30', '60', '100']);
     const maxBulkSelection = 50;
@@ -875,6 +877,7 @@ const loginHref = isEnglish ? '/en/account/login/' : '/account/login/';
           class="admin-comment-card"
           data-comment-id="${escapeHtml(comment.id)}"
           data-comment-status="${escapeHtml(comment.status || '')}"
+          data-comment-created-at="${escapeHtml(comment.created_at || '')}"
           data-comment-author-type="${isGuest ? 'guest' : 'registered'}"
           data-comment-hidden="${isHidden ? 'true' : 'false'}"
         >
@@ -1035,6 +1038,31 @@ const loginHref = isEnglish ? '/en/account/login/' : '/account/login/';
         if (button instanceof HTMLButtonElement) {
           button.disabled = bulkInProgress || selectedCount === 0;
         }
+      }
+    };
+
+    const markAdminCommentSeen = async (createdAt) => {
+      if (!canMarkAdminSeen || !createdAt || !Number.isFinite(Date.parse(createdAt))) return;
+
+      try {
+        const response = await fetch('/api/admin/activity/mark-read', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            category: 'comments',
+            seenThrough: createdAt,
+            lang: document.documentElement.lang === 'en' ? 'en' : 'it'
+          })
+        });
+        const result = await response.json().catch(() => null);
+
+        if (response.ok && result?.ok === true) {
+          window.dispatchEvent(new CustomEvent('retro-gamers:refresh-admin-unread'));
+        }
+      } catch {
+        // Read-state updates must never affect moderation actions.
       }
     };
 
@@ -1257,6 +1285,10 @@ const loginHref = isEnglish ? '/en/account/login/' : '/account/login/';
           details.hidden = !isOpening;
           toggleButton.setAttribute('aria-expanded', String(isOpening));
           toggleButton.textContent = isOpening ? labels.close : labels.manage;
+
+          if (isOpening) {
+            markAdminCommentSeen(card?.dataset.commentCreatedAt);
+          }
         }
 
         return;

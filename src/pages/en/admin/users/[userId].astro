@@ -68,6 +68,31 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
       messageNode.hidden = !text;
     };
 
+    const markAdminUserSeen = async (createdAt) => {
+      if (viewerRole !== 'admin' || !createdAt || !Number.isFinite(Date.parse(createdAt))) return;
+
+      try {
+        const response = await fetch('/api/admin/activity/mark-read', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            category: 'users',
+            seenThrough: createdAt,
+            lang: 'en'
+          })
+        });
+        const result = await response.json().catch(() => null);
+
+        if (response.ok && result?.ok === true) {
+          window.dispatchEvent(new CustomEvent('retro-gamers:refresh-admin-unread'));
+        }
+      } catch {
+        // Read-state updates must not affect user management.
+      }
+    };
+
     const formatDate = (value) => {
       if (!value) return 'Unavailable';
 
@@ -444,6 +469,7 @@ const isStaff = session.profile?.role === 'admin' || session.profile?.role === '
         }
 
         detailNode.innerHTML = renderUser(user);
+        markAdminUserSeen(user.createdAt);
       } catch {
         detailNode.innerHTML = '<p class="admin-users-empty">Connection error.</p>';
       }

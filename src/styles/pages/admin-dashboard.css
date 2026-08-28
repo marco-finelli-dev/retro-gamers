@@ -85,6 +85,44 @@
   line-height: 1.1;
 }
 
+.admin-dashboard-section-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 13px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.admin-dashboard-section-action:hover,
+.admin-dashboard-section-action:focus-visible {
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.admin-dashboard-section-action:disabled {
+  cursor: progress;
+  opacity: 0.62;
+  transform: none;
+}
+
 .admin-dashboard-todo-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -92,11 +130,12 @@
 }
 
 .admin-dashboard-todo-card {
-  display: flex;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   align-items: stretch;
-  justify-content: space-between;
   gap: 14px;
   min-width: 0;
+  min-height: 176px;
   border: 1px solid var(--rg-card-border);
   border-radius: 20px;
   padding: 15px;
@@ -123,6 +162,7 @@
 
 .admin-dashboard-todo-card > div {
   display: grid;
+  grid-template-rows: auto auto 1fr;
   gap: 7px;
   min-width: 0;
 }
@@ -134,6 +174,8 @@
 }
 
 .admin-dashboard-todo-card a,
+.admin-dashboard-news-card a,
+.admin-dashboard-news-card button,
 .admin-dashboard-activity a {
   display: inline-flex;
   align-items: center;
@@ -144,6 +186,8 @@
   padding: 0 12px;
   background: var(--rg-cta-bg);
   color: var(--rg-cta-color);
+  cursor: pointer;
+  font: inherit;
   font-size: 0.85rem;
   font-weight: 900;
   line-height: 1.2;
@@ -153,17 +197,106 @@
 
 .admin-dashboard-todo-card a {
   align-self: end;
+  justify-self: end;
   flex: 0 0 auto;
 }
 
 .admin-dashboard-todo-card a:hover,
 .admin-dashboard-todo-card a:focus-visible,
+.admin-dashboard-news-card a:hover,
+.admin-dashboard-news-card a:focus-visible,
+.admin-dashboard-news-card button:hover,
+.admin-dashboard-news-card button:focus-visible,
 .admin-dashboard-activity a:hover,
 .admin-dashboard-activity a:focus-visible {
   border-color: var(--rg-cta-border);
   background: var(--rg-cta-hover-bg);
   color: var(--color-primary);
   outline: none;
+}
+
+.admin-dashboard-news-card button:disabled {
+  cursor: progress;
+  opacity: 0.62;
+}
+
+.admin-dashboard-news-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-dashboard-news-card {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px;
+  min-width: 0;
+  min-height: 176px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 20px;
+  padding: 15px;
+  background: var(--rg-card-bg);
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.admin-dashboard-news-card[data-unread="true"] {
+  border-color: color-mix(in srgb, var(--color-primary) 38%, var(--rg-card-border));
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--color-primary) 8%, var(--rg-card-bg)),
+      var(--rg-card-bg));
+}
+
+.admin-dashboard-news-card:hover,
+.admin-dashboard-news-card:focus-within {
+  transform: translateY(-1px);
+  border-color: var(--rg-cta-border);
+}
+
+.admin-dashboard-news-card > div {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 7px;
+  min-width: 0;
+}
+
+.admin-dashboard-news-card span {
+  margin: 0;
+  color: var(--rg-eyebrow-color);
+  font-size: var(--text-xs);
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-dashboard-news-card strong {
+  color: var(--rg-section-title-color);
+  font-size: clamp(2rem, 5vw, 2.7rem);
+  line-height: 0.95;
+}
+
+.admin-dashboard-news-card p,
+.admin-dashboard-news-card time {
+  margin: 0;
+  color: var(--color-text-soft);
+  line-height: 1.55;
+}
+
+.admin-dashboard-news-card time {
+  font-size: var(--text-xs);
+  font-weight: 850;
+}
+
+.admin-dashboard-news-card footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-end;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
 }
 
 .admin-dashboard-activity-list {
@@ -295,18 +428,25 @@
 
 .admin-dashboard-overview-strip {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .admin-dashboard-overview-item {
   display: grid;
-  gap: 6px;
+  grid-template-rows: minmax(2.3rem, auto) auto auto;
+  align-content: start;
+  gap: 8px;
   min-width: 0;
+  min-height: 138px;
   border: 1px solid var(--rg-card-border);
   border-radius: 16px;
-  padding: 10px;
+  padding: 14px;
   background: color-mix(in srgb, var(--rg-card-bg) 86%, transparent);
+}
+
+.admin-dashboard-overview-item span {
+  min-height: 2.3rem;
 }
 
 .admin-dashboard-overview-item strong {
@@ -336,8 +476,13 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .admin-dashboard-news-grid,
   .admin-dashboard-overview-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-dashboard-news-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -348,11 +493,11 @@
   }
 
   .admin-dashboard-todo-grid,
+  .admin-dashboard-news-grid,
   .admin-dashboard-overview-strip {
     grid-template-columns: 1fr;
   }
 
-  .admin-dashboard-todo-card,
   .admin-dashboard-activity {
     grid-template-columns: 1fr;
   }
@@ -361,7 +506,15 @@
     flex-direction: column;
   }
 
+  .admin-dashboard-section-heading {
+    flex-direction: column;
+  }
+
+  .admin-dashboard-section-action,
   .admin-dashboard-todo-card a,
+  .admin-dashboard-news-card a,
+  .admin-dashboard-news-card button,
+  .admin-dashboard-news-card footer,
   .admin-dashboard-activity a,
   .admin-dashboard-activity footer {
     width: 100%;
@@ -370,5 +523,9 @@
   .admin-dashboard-activity footer {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .admin-dashboard-news-card footer {
+    justify-content: stretch;
   }
 }
