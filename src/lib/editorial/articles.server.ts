@@ -1627,11 +1627,12 @@ export async function searchEditorialReferences({
     }
 
     if (config.targetType === 'platform') {
+      const resultRange = hasSearch ? '[0...$limit]' : '';
       const documents = await rawClient.fetch<Record<string, unknown>[]>(
         `*[
           _type == "platform" &&
           (!$hasSearch || name match $search || platformType match $search || slug.current match $search)
-        ] | order(coalesce(name, slug.current) asc)[0...$limit] ${projection}`,
+        ] | order(coalesce(name, slug.current) asc)${resultRange} ${projection}`,
         { hasSearch, search, limit: safeLimit }
       );
 
