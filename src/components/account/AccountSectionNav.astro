@@ -1,0 +1,123 @@
+---
+type AccountSection = 'overview' | 'messages' | 'memories' | 'ratings' | 'favorites';
+
+interface Props {
+  activeSection: AccountSection;
+  lang?: 'it' | 'en' | string;
+  publicProfileHref?: string;
+}
+
+const { activeSection, lang = 'it', publicProfileHref = '' } = Astro.props as Props;
+const isEn = lang === 'en';
+const items = isEn
+  ? [
+      { key: 'overview', label: 'Overview', href: '/en/account/' },
+      { key: 'messages', label: 'Messages', href: '/en/account/messages/' },
+      { key: 'memories', label: 'Your memories', href: '/en/account/memories/' },
+      { key: 'ratings', label: 'Your ratings', href: '/en/account/ratings/' },
+      { key: 'favorites', label: 'Favorites & interests', href: '/en/account/favorites/' },
+    ]
+  : [
+      { key: 'overview', label: 'Panoramica', href: '/account/' },
+      { key: 'messages', label: 'Messaggi', href: '/account/messages/' },
+      { key: 'memories', label: 'Le tue memorie', href: '/account/memories/' },
+      { key: 'ratings', label: 'I tuoi voti', href: '/account/ratings/' },
+      { key: 'favorites', label: 'Preferiti e interessi', href: '/account/favorites/' },
+    ];
+
+const publicProfileItem = {
+  label: isEn ? 'Public profile' : 'Profilo pubblico',
+  href: publicProfileHref,
+};
+const previewUrl = publicProfileHref
+  ? `${publicProfileHref}${publicProfileHref.includes('?') ? '&' : '?'}accountPreview=1`
+  : '';
+---
+
+<nav class="account-section-nav" aria-label={isEn ? 'Account sections' : 'Sezioni account'}>
+  {items.map((item) => (
+    <a
+      href={item.href}
+      class:list={{ 'is-active': item.key === activeSection }}
+      aria-current={item.key === activeSection ? 'page' : undefined}
+    >
+      {item.label}
+    </a>
+  ))}
+  {publicProfileHref && (
+    <>
+      <button
+        class="account-section-nav__secondary"
+        type="button"
+        data-account-profile-preview
+        aria-haspopup="dialog"
+        aria-expanded="false"
+      >
+        {publicProfileItem.label}
+      </button>
+
+      <dialog
+        class="account-profile-preview-dialog"
+        data-account-profile-dialog
+        aria-labelledby="account-profile-preview-title"
+      >
+        <div class="account-profile-preview-dialog__surface">
+          <div class="account-profile-preview-dialog__header">
+            <h2 id="account-profile-preview-title">
+              {isEn ? 'Public profile preview' : 'Anteprima profilo pubblico'}
+            </h2>
+            <button
+              type="button"
+              class="account-profile-preview-dialog__close"
+              data-account-profile-preview-close
+              aria-label={isEn ? 'Close profile preview' : 'Chiudi anteprima profilo'}
+            >
+              ×
+            </button>
+          </div>
+          <iframe
+            class="account-profile-preview-dialog__frame"
+            src={previewUrl}
+            title={isEn ? 'Public profile preview' : 'Anteprima profilo pubblico'}
+            loading="lazy"
+          ></iframe>
+        </div>
+      </dialog>
+
+      <script>
+        const profilePreviewDialog = document.querySelector('[data-account-profile-dialog]');
+        const profilePreviewTrigger = document.querySelector('[data-account-profile-preview]');
+        const profilePreviewClose = document.querySelector('[data-account-profile-preview-close]');
+
+        if (
+          profilePreviewDialog instanceof HTMLDialogElement &&
+          profilePreviewTrigger instanceof HTMLButtonElement
+        ) {
+          const closeProfilePreview = () => {
+            profilePreviewDialog.close();
+            profilePreviewTrigger.classList.remove('is-preview-open');
+            profilePreviewTrigger.setAttribute('aria-expanded', 'false');
+            profilePreviewTrigger.focus();
+          };
+
+          profilePreviewTrigger.addEventListener('click', () => {
+            profilePreviewDialog.showModal();
+            profilePreviewTrigger.classList.add('is-preview-open');
+            profilePreviewTrigger.setAttribute('aria-expanded', 'true');
+          });
+
+          profilePreviewClose?.addEventListener('click', closeProfilePreview);
+          profilePreviewDialog.addEventListener('cancel', (event) => {
+            event.preventDefault();
+            closeProfilePreview();
+          });
+          profilePreviewDialog.addEventListener('click', (event) => {
+            if (event.target === profilePreviewDialog) {
+              closeProfilePreview();
+            }
+          });
+        }
+      </script>
+    </>
+  )}
+</nav>
