@@ -19,6 +19,7 @@ import * as selectors from '@portabletext/editor/selectors';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { urlFor } from '../../lib/image';
+import type { AiTransparency } from '../../lib/article-ai-transparency';
 import {
   getYouTubeThumbnailUrl,
   normalizeYouTubeVideoUrl,
@@ -213,6 +214,8 @@ type EditableArticle = {
   cardExcerpt: string;
   excerpt: string;
   seoTitle: string;
+  aiTransparency: AiTransparency;
+  aiTransparencyNote: string;
   type: ArticleType;
   language: ArticleLanguage;
   slug: string;
@@ -277,6 +280,12 @@ type Labels = {
   exitCancel: string;
   draftStatus: string;
   inspectorArticle: string;
+  aiTransparency: string;
+  aiTransparencyNone: string;
+  aiTransparencyTranslation: string;
+  aiTransparencySections: string;
+  aiTransparencyLegacy: string;
+  aiTransparencyNote: string;
   inspectorSeo: string;
   inspectorRelations: string;
   inspectorFeaturedImage: string;
@@ -4192,6 +4201,8 @@ function getEditableArticleSnapshot(articleDraft: EditableArticle, contentValue:
     cardExcerpt: articleDraft.cardExcerpt,
     excerpt: articleDraft.excerpt,
     seoTitle: articleDraft.seoTitle,
+    aiTransparency: articleDraft.aiTransparency,
+    aiTransparencyNote: articleDraft.aiTransparencyNote,
     type: articleDraft.type,
     language: articleDraft.language,
     slug: articleDraft.slug,
@@ -7964,6 +7975,8 @@ export default function ArticlePortableTextEditor({
     cardExcerpt: articleDraft.cardExcerpt,
     excerpt: articleDraft.excerpt,
     seoTitle: articleDraft.seoTitle,
+    aiTransparency: articleDraft.aiTransparency,
+    aiTransparencyNote: articleDraft.aiTransparencyNote,
     type: articleDraft.type,
     language: articleDraft.language,
     slug: articleDraft.slug,
@@ -8586,6 +8599,31 @@ export default function ArticlePortableTextEditor({
                 ))}
               </select>
             </label>
+
+            <label className="editorial-field">
+              <span>{labels.aiTransparency}</span>
+              <select
+                value={draft.aiTransparency}
+                onChange={(event) => updateField('aiTransparency', event.target.value as AiTransparency)}
+              >
+                <option value="none">{labels.aiTransparencyNone}</option>
+                <option value="aiTranslation">{labels.aiTransparencyTranslation}</option>
+                <option value="aiAssistedSections">{labels.aiTransparencySections}</option>
+                <option value="legacyAiAssisted">{labels.aiTransparencyLegacy}</option>
+              </select>
+            </label>
+
+            {draft.aiTransparency !== 'none' && (
+              <label className="editorial-field">
+                <span>{labels.aiTransparencyNote}</span>
+                <textarea
+                  value={draft.aiTransparencyNote}
+                  rows={3}
+                  maxLength={600}
+                  onChange={(event) => updateField('aiTransparencyNote', event.target.value)}
+                />
+              </label>
+            )}
 
             <label className="editorial-field">
               <span>{labels.slug}</span>

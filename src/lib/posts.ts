@@ -133,6 +133,8 @@ export type Post = {
 
   subtitle?: string;
   seoTitle?: string;
+  aiTransparency?: 'none' | 'aiTranslation' | 'aiAssistedSections' | 'legacyAiAssisted';
+  aiTransparencyNote?: string;
 
   featuredImage?: {
     asset?: {
@@ -215,6 +217,8 @@ export async function getAllPosts(): Promise<Post[]> {
       cardExcerpt,
       subtitle,
       seoTitle,
+      aiTransparency,
+      aiTransparencyNote,
       publishedAt,
       lastUpdated,
       promoteOnUpdate,

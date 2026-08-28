@@ -2,6 +2,7 @@ import { logApiError } from '../api-errors';
 import { getSanityRawClient, getSanityWriteClient } from '../sanity-write.server';
 import { supabaseAdmin } from '../supabase/server';
 import { normalizeYouTubeVideoUrl } from '../youtube-video';
+import type { AiTransparency } from '../article-ai-transparency';
 import {
   canChangeArticleAuthor,
   canCreateRevisionDraft,
@@ -187,6 +188,8 @@ export type EditorialArticleDraft = {
   cardExcerpt: string;
   excerpt: string;
   seoTitle: string;
+  aiTransparency: AiTransparency;
+  aiTransparencyNote: string;
   type: EditorialArticleType;
   language: EditorialArticleLanguage;
   slug: string;
@@ -1204,6 +1207,19 @@ function normalizeOptionalPositiveNumber(value: unknown) {
     : null;
 }
 
+const aiTransparencyValues = new Set<AiTransparency>([
+  'none',
+  'aiTranslation',
+  'aiAssistedSections',
+  'legacyAiAssisted',
+]);
+
+function normalizeAiTransparency(value: unknown): AiTransparency {
+  return typeof value === 'string' && aiTransparencyValues.has(value as AiTransparency)
+    ? value as AiTransparency
+    : 'none';
+}
+
 function hasEditorialSeriesValue(value: unknown) {
   return Array.isArray(value) && value.length > 0;
 }
@@ -1359,6 +1375,8 @@ function normalizeDraftArticle(
     cardExcerpt: normalizeString(document.cardExcerpt, 500),
     excerpt: normalizeString(document.excerpt, 500),
     seoTitle: normalizeString(document.seoTitle, 140),
+    aiTransparency: normalizeAiTransparency(document.aiTransparency),
+    aiTransparencyNote: normalizeString(document.aiTransparencyNote, 600).trim(),
     type: normalizeArticleType(document.type),
     language: normalizeArticleLanguage(document.language),
     slug: typeof slugValue === 'string' ? slugValue : '',
@@ -2819,6 +2837,17 @@ async function getPatchFromPayload(
   const pushUnset = (path: string) => {
     if (!unset.includes(path)) unset.push(path);
   };
+  if (Object.prototype.hasOwnProperty.call(payload, 'aiTransparency')) {
+    set.aiTransparency = normalizeAiTransparency(payload.aiTransparency);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'aiTransparencyNote')) {
+    const aiTransparencyNote = normalizeOptionalString(payload.aiTransparencyNote, 600);
+    if (aiTransparencyNote) {
+      set.aiTransparencyNote = aiTransparencyNote;
+    } else {
+      pushUnset('aiTransparencyNote');
+    }
+  }
   const reviewPatch = getReviewPatchFields(payload, {
     includeReviewData: !removeReviewSpecificData,
   });
@@ -3188,7 +3217,7 @@ export async function updateEditableEditorialArticle({
       nextWorkflowStatus: fetchResult.ownership.workflowStatus,
       metadata: {
         fields:
-          'title,subtitle,cardExcerpt,excerpt,seoTitle,type,language,slug,content,featuredImage.alt,categories,editorialSeries,platforms,creators,genres,developers,publishers,manufacturer,modes,series,translationOf,gameInfo.releaseYear,gameInfo.mediaFormat,gameInfo.cover.alt,rating,pros,cons,seriesOrder,seriesLabel',
+          'title,subtitle,cardExcerpt,excerpt,seoTitle,aiTransparency,aiTransparencyNote,type,language,slug,content,featuredImage.alt,categories,editorialSeries,platforms,creators,genres,developers,publishers,manufacturer,modes,series,translationOf,gameInfo.releaseYear,gameInfo.mediaFormat,gameInfo.cover.alt,rating,pros,cons,seriesOrder,seriesLabel',
       },
     });
 

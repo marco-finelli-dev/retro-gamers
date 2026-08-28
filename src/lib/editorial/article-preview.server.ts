@@ -100,6 +100,8 @@ const editorialArticlePreviewProjection = `{
   excerpt,
   cardExcerpt,
   seoTitle,
+  aiTransparency,
+  aiTransparencyNote,
   "slug": slug.current,
   publishedAt,
   lastUpdated,
