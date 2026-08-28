@@ -322,8 +322,8 @@ html[data-theme="light"] .account-social-auth__icon--dark {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 20px;
+  gap: 14px;
+  padding: 16px 18px;
   border: 1px solid var(--rg-card-border);
   border-radius: 22px;
   background:
@@ -334,20 +334,25 @@ html[data-theme="light"] .account-social-auth__icon--dark {
 
 .account-favorites-card > div {
   display: grid;
-  gap: 8px;
+  gap: 5px;
   min-width: 0;
 }
 
 .account-favorites-card h2 {
+  overflow: hidden;
   margin: 0;
   color: var(--rg-section-title-color);
-  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-favorites-card p:not(.account-kicker) {
   max-width: 620px;
   margin: 0;
   color: var(--color-text-soft);
+  font-size: 0.9rem;
   line-height: 1.55;
 }
 
@@ -356,13 +361,13 @@ html[data-theme="light"] .account-social-auth__icon--dark {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  min-height: 42px;
+  min-height: 38px;
   border: 1px solid var(--rg-cta-border);
   border-radius: 999px;
-  padding: 0 16px;
+  padding: 0 14px;
   background: var(--rg-cta-bg);
   color: var(--rg-cta-color);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   font-weight: 900;
   line-height: 1.1;
   text-align: center;
@@ -529,7 +534,7 @@ html[data-theme="light"] .account-social-auth__icon--dark {
 
 .account-community-rank__summary {
   display: grid;
-  align-content: start;
+  align-content: space-between;
   gap: 7px;
   min-width: 0;
   padding: 15px;
@@ -556,6 +561,29 @@ html[data-theme="light"] .account-social-auth__icon--dark {
 .account-community-rank__summary p {
   margin: 0;
   font-size: 0.9rem;
+}
+
+.account-community-rank__points {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--rg-badge-border);
+}
+
+.account-community-rank__points strong {
+  color: var(--color-text);
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.account-community-rank__points span {
+  color: var(--color-text-soft);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
 .account-community-rank__progress,
@@ -1218,9 +1246,11 @@ html[data-theme="light"] .account-social-auth__icon--dark {
 .account-contribution-stats a,
 .account-contribution-stats div {
   display: grid;
-  gap: 5px;
+  align-content: space-between;
+  gap: 12px;
   min-width: 0;
-  padding: 12px;
+  min-height: 116px;
+  padding: 14px;
   border: 1px solid var(--rg-card-border);
   border-radius: 15px;
   background: var(--color-glass);
@@ -1328,7 +1358,7 @@ html[data-theme="light"] .account-social-auth__icon--dark {
 
 .account-interest-articles__grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1597,6 +1627,10 @@ html[data-theme="light"] .account-interest-article-card__image {
   white-space: pre-wrap;
 }
 
+.account-profile-overview--compact {
+  justify-items: start;
+}
+
 .account-badge-preview {
   display: inline-flex;
   align-items: center;
@@ -1708,6 +1742,226 @@ html[data-theme="light"] .account-interest-article-card__image {
 
 .account-settings-section .account-form {
   margin-top: 0;
+}
+
+.account-profile-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.account-profile-editor {
+  display: grid;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.account-profile-editor__heading {
+  display: grid;
+  gap: 7px;
+  padding: 14px 16px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(64, 224, 255, 0.08), transparent 64%),
+    var(--color-glass);
+}
+
+.account-profile-editor__heading h3,
+.account-profile-editor-section h3 {
+  margin: 0;
+  color: var(--rg-section-title-color);
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  line-height: 1.18;
+}
+
+.account-profile-editor-section__heading {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.account-profile-editor__heading p,
+.account-profile-editor-section__heading p {
+  max-width: 660px;
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.account-profile-editor__shell {
+  display: grid;
+  gap: 16px;
+}
+
+.account-profile-editor-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 18px;
+  background: var(--color-glass);
+}
+
+.account-profile-editor-nav button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 42px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--color-text-soft);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.account-profile-editor-nav button[aria-selected="true"] {
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+}
+
+.account-profile-editor-nav button:hover,
+.account-profile-editor-nav button:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.account-profile-editor__panels {
+  min-width: 0;
+}
+
+.account-profile-editor__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.account-profile-editor__footer button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0 15px;
+  background: var(--color-glass);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.account-profile-editor__footer button:hover,
+.account-profile-editor__footer button:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--rg-cta-border);
+  background: var(--rg-cta-hover-bg);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.account-profile-editor-section {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 18px;
+  background: var(--color-glass);
+  box-shadow: none;
+}
+
+.account-profile-editor-section__heading p:not(.account-kicker),
+.account-profile-editor .account-avatar-section__content > p:not(.account-kicker):not(.account-message) {
+  max-width: 660px;
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.account-profile-editor .account-avatar-section__content {
+  display: grid;
+  gap: 16px;
+}
+
+.account-profile-editor .account-avatar-section,
+.account-profile-editor .account-public-profile,
+.account-profile-editor .account-newsletter-card {
+  margin: 0;
+  background: var(--color-glass);
+  box-shadow: none;
+}
+
+.account-profile-editor .account-avatar-section__content h3 {
+  margin: 0;
+}
+
+.account-profile-editor .account-avatar-form,
+.account-profile-editor .account-form--bio {
+  margin-top: 0;
+}
+
+.account-profile-editor .retro-settings {
+  border-radius: 18px;
+  background: var(--color-glass);
+  box-shadow: none;
+}
+
+.account-retention-column {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .account-retention-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-profile-editor-nav {
+    justify-content: flex-start;
+  }
+
+  .account-profile-editor-nav button {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .account-interest-articles__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .account-form label {
@@ -1979,8 +2233,17 @@ html[data-theme="light"] .account-message[data-type="warning"] {
 }
 
 @media (max-width: 680px) {
-  .account-retention-grid {
+  .account-profile-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .account-profile-editor__heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .account-profile-editor__footer button {
+    width: 100%;
   }
 
   .account-resume-item,
@@ -2077,5 +2340,82 @@ html[data-theme="light"] .account-message[data-type="warning"] {
 
   .account-interest-suggestion__image {
     width: 100%;
+  }
+
+  .account-interest-articles__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.account-community-page .community-profile-card__content > .community-profile-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 1px;
+  padding: 4px 8px;
+  border: 1px solid var(--rg-badge-border);
+  border-radius: 999px;
+  background: var(--rg-badge-bg);
+  color: var(--rg-badge-color);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.account-community-page .community-profile-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: start;
+  column-gap: 14px;
+  row-gap: 0;
+}
+
+.account-community-page .community-profile-card > .user-avatar {
+  grid-column: 2;
+  grid-row: 1;
+  margin-top: 2px;
+}
+
+.account-community-page .community-profile-card__content {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.account-community-page .community-profile-card > .account-sidebar-account-details {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  min-width: 0;
+}
+
+.account-community-page .community-profile-card__badge img {
+  display: block;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.account-community-page .account-sidebar-account-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.account-community-page .account-sidebar-account-details dd {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+@media (max-width: 700px) {
+  .account-community-page .account-sidebar-account-details dd {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }

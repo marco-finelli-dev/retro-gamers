@@ -6,6 +6,8 @@ interface Props {
   username?: string | null;
   email?: string | null;
   avatarUrl?: string | null;
+  badge?: string | null;
+  badgeImageUrl?: string | null;
   label?: string;
 }
 
@@ -14,6 +16,8 @@ const {
   username = '',
   email = '',
   avatarUrl = '',
+  badge = '',
+  badgeImageUrl = '',
   label = 'Profilo community',
 } = Astro.props;
 
@@ -28,9 +32,19 @@ const handle = username ? `@${username}` : email || '';
     <span>{label}</span>
     <strong>{displayName}</strong>
     {handle && <small>{handle}</small>}
+    {badge && (
+      <span class="community-profile-card__badge">
+        {badgeImageUrl && <img src={badgeImageUrl} alt="" loading="lazy" decoding="async" />}
+        <span>{badge}</span>
+      </span>
+    )}
 
-    <div class="community-link-list">
-      <slot />
-    </div>
+    {Astro.slots.has('default') && (
+      <div class="community-link-list">
+        <slot />
+      </div>
+    )}
   </div>
+
+  <slot name="details" />
 </section>

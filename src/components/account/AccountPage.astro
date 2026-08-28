@@ -5,7 +5,6 @@ import CommunityHero from '../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../components/community/CommunityLayout.astro';
 import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
 import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
-import CommunityStatList from '../../components/community/CommunityStatList.astro';
 import NewsletterPromo from '../../components/newsletter/NewsletterPromo.astro';
 import RetroExperienceSettings from './RetroExperienceSettings.astro';
 import { getActiveReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
@@ -37,6 +36,7 @@ const copy = {
     memories: 'Le mie memorie',
     ratings: 'I miei voti',
     accountData: 'Dati account',
+    accountIdentity: 'Account',
     role: 'Ruolo',
     status: 'Stato',
     badge: 'Badge',
@@ -78,10 +78,9 @@ const copy = {
     yourContributions: 'I tuoi contributi',
     yourContributionsDescription:
       'Un riepilogo rapido di quello che hai lasciato nella community.',
-    contributionRatings: 'Voti dati',
+    contributionRatings: 'I tuoi voti',
     contributionActionsMemories: 'Le tue memorie',
     contributionActionsRatings: 'I tuoi voti',
-    contributionActionsProfile: 'Profilo pubblico',
     fromInterests: 'Dai tuoi interessi',
     forYou: 'Per te',
     fromInterestsDescription:
@@ -163,15 +162,19 @@ const copy = {
     readerRatings: 'Voti lettori',
     settingsKicker: 'Impostazioni',
     profile: 'Profilo',
+    profileOverview:
+      'Gestisci le informazioni pubbliche, le preferenze e la sicurezza del tuo account.',
+    profileEditorTitle: 'Modifica profilo',
+    closeSettings: 'Chiudi',
+    identity: 'Identità',
+    bioStatus: 'Bio',
+    retroExperienceLabel: 'Retro Experience',
     profileHintAdmin:
       'Nome e badge sono già visibili nel tuo profilo pubblico. Modificali qui quando vuoi aggiornarli.',
     profileHintReader:
       'Nome e badge sono già visibili nel tuo profilo pubblico. Puoi scegliere qui il badge da mostrare.',
     displayName: 'Nome visualizzato',
-    currentBadge: 'Badge attuale',
     noMainBadge: 'Non hai ancora scelto un badge principale.',
-    badgeSummaryHelpSelected: 'Questo è il badge mostrato nel tuo profilo e nei commenti.',
-    badgeSummaryHelpEmpty: 'Quando scegli un badge, apparirà nel profilo e nei commenti.',
     editProfile: 'Modifica profilo',
     discoverBadges: 'Scopri tutti i badge',
     displayNameReadonly:
@@ -203,6 +206,7 @@ const copy = {
     memories: 'My memories',
     ratings: 'My ratings',
     accountData: 'Account data',
+    accountIdentity: 'Account',
     role: 'Role',
     status: 'Status',
     badge: 'Badge',
@@ -225,7 +229,7 @@ const copy = {
     login: 'Log in',
     register: 'Register',
     favoritesKicker: 'Favorites',
-    favoritesTitle: 'Favorites and interests',
+    favoritesTitle: 'Your favorites',
     favoritesDescription:
       'Find the articles you saved and manage your retro interests.',
     favoritesCta: 'Go to favorites',
@@ -244,10 +248,9 @@ const copy = {
     yourContributions: 'Your contributions',
     yourContributionsDescription:
       'A quick view of what you have added to the community.',
-    contributionRatings: 'Ratings',
+    contributionRatings: 'Your ratings',
     contributionActionsMemories: 'Your memories',
     contributionActionsRatings: 'Your ratings',
-    contributionActionsProfile: 'Public profile',
     fromInterests: 'From your interests',
     forYou: 'For you',
     fromInterestsDescription:
@@ -329,15 +332,19 @@ const copy = {
     readerRatings: 'Reader ratings',
     settingsKicker: 'Settings',
     profile: 'Profile',
+    profileOverview:
+      'Manage your public information, preferences and account security.',
+    profileEditorTitle: 'Edit profile',
+    closeSettings: 'Close',
+    identity: 'Identity',
+    bioStatus: 'Bio',
+    retroExperienceLabel: 'Retro Experience',
     profileHintAdmin:
       'Name and badge are already visible on your public profile. Update them here whenever you want.',
     profileHintReader:
       'Name and badge are already visible on your public profile. You can choose which badge to show here.',
     displayName: 'Display name',
-    currentBadge: 'Current badge',
     noMainBadge: 'You have not chosen a main badge yet.',
-    badgeSummaryHelpSelected: 'This badge appears on your profile and comments.',
-    badgeSummaryHelpEmpty: 'When you choose a badge, it will appear on your profile and comments.',
     editProfile: 'Edit profile',
     discoverBadges: 'Explore all badges',
     displayNameReadonly:
@@ -373,10 +380,7 @@ const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const profile = session.profile;
 const user = session.user;
-const currentBadge = profile?.user_badges;
-const currentBadgeImageSrc = getReaderBadgeImageSrcForBadge(currentBadge || { key: profile?.badge_key || '' });
 const avatarUrl = profile?.avatar_url || '';
-const isStaff = profile?.role === 'admin' || profile?.role === 'moderator';
 const canEditDisplayName = profile?.role === 'admin';
 const authAppMetadata = user?.app_metadata as { provider?: string | null; providers?: string[] | null } | undefined;
 const identityProviders = new Set(
@@ -524,68 +528,13 @@ if (isLoggedIn && user?.id) {
   dashboardRetention = retention;
 }
 
-const communityStatItems = [
-  {
-    label: ui.communityPoints,
-    value: commentActivity.communityPoints,
-    href: publicProfileHref || undefined,
-    ariaLabel: ui.goPublicProfile,
-  },
-  {
-    label: ui.publishedComments,
-    value: commentActivity.approved,
-    href: publicProfileHref ? `${publicProfileHref}#latest-comments-title` : undefined,
-    ariaLabel: ui.goPublishedComments,
-  },
-  { label: ui.pending, value: commentActivity.pending },
-  { label: ui.likesReceived, value: commentActivity.likesReceived },
-  { label: ui.dislikesReceived, value: commentActivity.dislikesReceived },
-];
-const resumeDateFormatter = new Intl.DateTimeFormat(currentLang === 'en' ? 'en-US' : 'it-IT', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
-const hasResumeItems =
-  dashboardRetention.unreadSystemMessagesCount > 0 ||
-  dashboardRetention.unreadPrivateMessagesCount > 0 ||
-  dashboardRetention.pendingCommentsCount > 0 ||
-  dashboardRetention.latestApprovedComments.length > 0;
-const contributionItems = [
-  {
-    label: ui.publishedComments,
-    value: commentActivity.approved,
-    href: memoriesHref,
-  },
-  {
-    label: ui.contributionRatings,
-    value: commentActivity.reviewRatings,
-    href: ratingsHref,
-  },
-  {
-    label: ui.communityPoints,
-    value: commentActivity.communityPoints,
-    href: publicProfileHref || undefined,
-  },
-  {
-    label: ui.likesReceived,
-    value: commentActivity.likesReceived,
-    href: publicProfileHref || undefined,
-  },
-];
 const communityRank = getCommunityRank(commentActivity.communityPoints);
 const communityRankProgress = Math.round(communityRank.progressToNext);
 const newsletterLanguageLabel = newsletterLanguage === 'en' ? 'English' : 'Italiano';
-const hasPublicBio = currentBio.trim().length > 0;
-const hasPublicBioEn = currentBioEn.trim().length > 0;
+const isNewsletterActive = newsletterStatus === 'active';
+const isNewsletterPending = newsletterStatus === 'pending';
+const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus === 'unsubscribed';
 const profileDisplayName = profile?.display_name || profile?.username || '';
-const currentBadgeFromCatalog = badges.find((badge) => badge.key === profile?.badge_key);
-const currentProfileBadge = currentBadgeFromCatalog || currentBadge || null;
-const currentProfileBadgeLabel =
-  getBadgeLabel(currentProfileBadge) || profile?.badge_key || '';
-const currentProfileBadgeImageSrc = getReaderBadgeImageSrcForBadge(
-  currentProfileBadge || { key: profile?.badge_key || '' }
-);
 const editableBadgeKey = badges.some((badge) => badge.key === profile?.badge_key)
   ? profile?.badge_key || ''
   : badges.length === 1
@@ -593,12 +542,13 @@ const editableBadgeKey = badges.some((badge) => badge.key === profile?.badge_key
     : '';
 const editableBadge = badges.find((badge) => badge.key === editableBadgeKey) || null;
 const editableBadgeLabel = getBadgeLabel(editableBadge);
+const accountBadge = profile?.badge_key
+  ? badges.find((badge) => badge.key === profile?.badge_key) || null
+  : null;
+const accountBadgeLabel = getBadgeLabel(accountBadge);
+const accountBadgeImageSrc = getReaderBadgeImageSrcForBadge(accountBadge);
 const editableBadgeImageSrc = getReaderBadgeImageSrcForBadge(editableBadge);
 const editableBadgePreviewImageSrc = editableBadgeImageSrc || getReaderBadgeImageSrcForBadge(badges[0]);
-const profileSummaryBadgeImageSrc = currentProfileBadgeImageSrc || editableBadgePreviewImageSrc;
-const isNewsletterActive = newsletterStatus === 'active';
-const isNewsletterPending = newsletterStatus === 'pending';
-const isNewsletterSubscribable = newsletterStatus === 'none' || newsletterStatus === 'unsubscribed';
 const communityRankDescription = currentLang === 'en'
   ? communityRank.descriptionEn
   : communityRank.descriptionIt;
@@ -611,8 +561,6 @@ const clientCopy = currentLang === 'en'
   ? {
       lang: 'en',
       notSet: ui.notSet,
-      badgeSummaryHelpSelected: ui.badgeSummaryHelpSelected,
-      badgeSummaryHelpEmpty: ui.badgeSummaryHelpEmpty,
       newsletterConsentRequired: 'To subscribe, you need to accept the privacy notice.',
       newsletterUpdateFailed: 'Could not update the newsletter.',
       newsletterConfirmEmail: 'Check your email to confirm the subscription.',
@@ -642,8 +590,6 @@ const clientCopy = currentLang === 'en'
   : {
       lang: 'it',
       notSet: ui.notSet,
-      badgeSummaryHelpSelected: ui.badgeSummaryHelpSelected,
-      badgeSummaryHelpEmpty: ui.badgeSummaryHelpEmpty,
       newsletterConsentRequired: 'Per iscriverti devi accettare l’informativa privacy.',
       newsletterUpdateFailed: 'Impossibile aggiornare la newsletter.',
       newsletterConfirmEmail: 'Controlla la tua email per confermare l’iscrizione.',
@@ -689,24 +635,14 @@ const clientCopy = currentLang === 'en'
             username={profile?.username}
             email={user?.email}
             avatarUrl={avatarUrl}
-            label={ui.communityKicker}
+            badge={accountBadgeLabel}
+            badgeImageUrl={accountBadgeImageSrc}
+            label={ui.accountIdentity}
           >
-            {publicProfileHref && <a href={publicProfileHref}>{ui.publicProfile}</a>}
-            <a href={messagesHref}>{ui.messages}</a>
-            <a href={memoriesHref}>{ui.memories}</a>
-            <a href={ratingsHref}>{ui.ratings}</a>
-          </CommunitySidebarProfile>
-
-          <CommunitySidebarSection title={ui.accountData}>
-            <dl class="community-detail-list" id="memories">
+            <dl slot="details" class="community-detail-list account-sidebar-account-details" id="memories">
               <div>
                 <dt>Email</dt>
                 <dd>{user?.email}</dd>
-              </div>
-
-              <div>
-                <dt>Username</dt>
-                <dd>{profile?.username}</dd>
               </div>
 
               <div>
@@ -718,24 +654,29 @@ const clientCopy = currentLang === 'en'
                 <dt>{ui.status}</dt>
                 <dd>{profile?.status || 'active'}</dd>
               </div>
-
-              <div>
-                <dt>{ui.badge}</dt>
-                <dd>
-                  {currentBadgeImageSrc ? (
-                    <span class="account-reader-badge">
-                      <img src={currentBadgeImageSrc} alt="" loading="lazy" decoding="async" />
-                      <span>{getBadgeLabel(currentBadge) || profile?.badge_key}</span>
-                    </span>
-                  ) : (
-                    getBadgeLabel(currentBadge) || profile?.badge_key || ui.notSet
-                  )}
-                </dd>
-              </div>
             </dl>
-          </CommunitySidebarSection>
+          </CommunitySidebarProfile>
 
-          <CommunityStatList title={ui.communityStats} items={communityStatItems} />
+          <CommunitySidebarSection title={ui.yourContributions}>
+            <div class="community-stat-list">
+              <a href={memoriesHref}>
+                <strong>{commentActivity.approved}</strong>
+                <span>{ui.contributionActionsMemories}</span>
+              </a>
+              <a href={ratingsHref}>
+                <strong>{commentActivity.reviewRatings}</strong>
+                <span>{ui.contributionActionsRatings}</span>
+              </a>
+              <div>
+                <strong>{commentActivity.communityPoints}</strong>
+                <span>{ui.communityPoints}</span>
+              </div>
+              <div>
+                <strong>{commentActivity.likesReceived}</strong>
+                <span>{ui.likesReceived}</span>
+              </div>
+            </div>
+          </CommunitySidebarSection>
         </>
       )}
     </Fragment>
@@ -747,272 +688,13 @@ const clientCopy = currentLang === 'en'
           title={ui.heroTitle}
           description={ui.heroDescription}
         >
-          {publicProfileHref && (
-            <div class="account-hero-actions">
-              <a href={publicProfileHref}>{ui.viewPublicProfile}</a>
-            </div>
-          )}
+          <div class="account-hero-actions">
+            {publicProfileHref && <a href={publicProfileHref}>{ui.viewPublicProfile}</a>}
+            <a href={messagesHref}>{ui.messages}</a>
+          </div>
         </CommunityHero>
 
         <div class="community-content-stack">
-            <section class="account-resume-card" aria-labelledby="account-resume-title">
-              <div class="account-section-heading">
-                <p class="account-kicker">{ui.communityKicker}</p>
-                <h2 id="account-resume-title">{ui.resumeTitle}</h2>
-                <p>{ui.resumeDescription}</p>
-              </div>
-
-              {hasResumeItems ? (
-                <div class="account-resume-list">
-                  {dashboardRetention.unreadSystemMessagesCount > 0 && (
-                    <a class="account-resume-item account-resume-item--notice" href={messagesHref}>
-                      <span>{ui.resumeSystemMessages(dashboardRetention.unreadSystemMessagesCount)}</span>
-                      <strong>{ui.resumeOpenMessages}</strong>
-                    </a>
-                  )}
-
-                  {dashboardRetention.unreadPrivateMessagesCount > 0 && (
-                    <a class="account-resume-item account-resume-item--notice" href={`${messagesHref}private/`}>
-                      <span>{ui.resumePrivateMessages(dashboardRetention.unreadPrivateMessagesCount)}</span>
-                      <strong>{ui.resumeOpenPrivateMessages}</strong>
-                    </a>
-                  )}
-
-                  {dashboardRetention.pendingCommentsCount > 0 && (
-                    <a class="account-resume-item account-resume-item--pending" href={memoriesHref}>
-                      <span>{ui.resumePendingComments(dashboardRetention.pendingCommentsCount)}</span>
-                      <strong>{ui.resumeOpenMemories}</strong>
-                    </a>
-                  )}
-
-                  {dashboardRetention.latestApprovedComments.map((comment) => (
-                    <article class="account-resume-comment">
-                      <div>
-                        <p>{comment.excerpt}</p>
-                        <span>
-                          {comment.articleTitle || ui.memories}
-                          {comment.createdAt && (
-                            <>
-                              {' · '}
-                              <time datetime={comment.createdAt}>
-                                {resumeDateFormatter.format(new Date(comment.createdAt))}
-                              </time>
-                            </>
-                          )}
-                        </span>
-                      </div>
-
-                      <a href={comment.href}>{ui.resumeReturnDiscussion}</a>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p class="account-resume-empty">{ui.resumeEmpty}</p>
-              )}
-            </section>
-
-            <div class="account-retention-grid">
-              <section class="account-contributions-card" aria-labelledby="account-contributions-title">
-                <div class="account-section-heading">
-                  <p class="account-kicker">{ui.communityKicker}</p>
-                  <h2 id="account-contributions-title">{ui.yourContributions}</h2>
-                  <p>{ui.yourContributionsDescription}</p>
-                </div>
-
-                <div class="account-contribution-stats">
-                  {contributionItems.map((item) => (
-                    item.href ? (
-                      <a href={item.href}>
-                        <strong>{item.value}</strong>
-                        <span>{item.label}</span>
-                      </a>
-                    ) : (
-                      <div>
-                        <strong>{item.value}</strong>
-                        <span>{item.label}</span>
-                      </div>
-                    )
-                  ))}
-                </div>
-
-                <div class="account-retention-actions">
-                  <a href={memoriesHref}>{ui.contributionActionsMemories}</a>
-                  <a href={ratingsHref}>{ui.contributionActionsRatings}</a>
-                  {publicProfileHref && <a href={publicProfileHref}>{ui.contributionActionsProfile}</a>}
-                </div>
-              </section>
-
-              <section class="account-interest-suggestions" aria-labelledby="account-interest-suggestions-title">
-                <div class="account-section-heading">
-                  <p class="account-kicker">{ui.forYou}</p>
-                  <h2 id="account-interest-suggestions-title">{ui.fromInterests}</h2>
-                  <p>{ui.fromInterestsDescription}</p>
-                </div>
-
-                {dashboardRetention.suggestedArticlesFromInterests.length > 0 ? (
-                  <div class="account-interest-suggestions__list">
-                    {dashboardRetention.suggestedArticlesFromInterests.map((article) => (
-                      <article class:list={['account-interest-suggestion', !article.imageUrl && 'account-interest-suggestion--text']}>
-                        {article.imageUrl && (
-                          <a class="account-interest-suggestion__image" href={article.href} aria-label={article.title}>
-                            <img
-                              src={article.imageUrl}
-                              alt={article.imageAlt || article.title}
-                              width="160"
-                              height="100"
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          </a>
-                        )}
-
-                        <div>
-                          <span>{article.categoryLabel || article.type}</span>
-                          <h3>
-                            <a href={article.href}>{article.title}</a>
-                          </h3>
-                          <a class="account-interest-suggestion__link" href={article.href}>
-                            {ui.readArticle}
-                          </a>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <p class="account-resume-empty">
-                    {dashboardRetention.hasInterests ? ui.interestsNoArticles : ui.interestsEmpty}
-                  </p>
-                )}
-
-                <div class="account-retention-actions">
-                  <a href={favoritesHref}>{ui.manageInterests}</a>
-                </div>
-              </section>
-            </div>
-
-            <section class="account-favorites-card" aria-labelledby="account-favorites-title">
-              <div>
-                <p class="account-kicker">{ui.favoritesKicker}</p>
-                <h2 id="account-favorites-title">{ui.favoritesTitle}</h2>
-                <p>
-                  {ui.favoritesDescription}
-                </p>
-              </div>
-
-              <a href={favoritesHref}>{ui.favoritesCta}</a>
-            </section>
-
-            <section
-              class="account-newsletter-card"
-              aria-labelledby="account-newsletter-title"
-              data-account-newsletter
-              data-status={newsletterStatus}
-            >
-              <div class="account-newsletter-card__heading">
-                <p class="account-kicker">Newsletter</p>
-                <h2 id="account-newsletter-title">Newsletter</h2>
-                <p>
-                  {ui.newsletterDescription}
-                </p>
-              </div>
-
-              {isNewsletterActive && (
-                <form class="account-form account-newsletter-form" data-account-newsletter-form>
-                  <p class="account-newsletter-status">{ui.newsletterActive}</p>
-
-                  <p class="account-newsletter-language-summary">
-                    <span>{ui.preferredLanguage}:</span>
-                    <strong>{newsletterLanguageLabel}</strong>
-                  </p>
-
-                  <p class="account-field-help">
-                    {ui.newsletterOperationalNote}
-                  </p>
-
-                  <p class="account-message" data-account-newsletter-message hidden></p>
-
-                  <div class="account-actions">
-                    <button type="button" data-account-newsletter-unsubscribe>
-                      {ui.newsletterUnsubscribe}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {isNewsletterPending && (
-                <form class="account-form account-newsletter-form" data-account-newsletter-form>
-                  <p class="account-newsletter-status">
-                    {ui.newsletterPending}
-                  </p>
-
-                  <p class="account-newsletter-language-summary">
-                    <span>{ui.preferredLanguage}:</span>
-                    <strong>{newsletterLanguageLabel}</strong>
-                  </p>
-
-                  <p class="account-field-help">
-                    {ui.newsletterPendingNote}
-                  </p>
-
-                  <p class="account-field-help">
-                    {ui.newsletterOperationalNote}
-                  </p>
-
-                  <p class="account-message" data-account-newsletter-message hidden></p>
-
-                  <div class="account-actions">
-                    <button type="button" data-account-newsletter-resend>
-                      {ui.newsletterResendConfirmation}
-                    </button>
-
-                    <button type="button" data-account-newsletter-unsubscribe>
-                      {ui.newsletterUnsubscribe}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {isNewsletterSubscribable && (
-                <form class="account-form account-newsletter-form" data-account-newsletter-form>
-                  <NewsletterPromo lang={currentLang} variant="account" compact />
-
-                  <p class="account-newsletter-status">
-                    {newsletterStatus === 'unsubscribed'
-                      ? ui.newsletterUnsubscribed
-                      : ui.newsletterNone}
-                  </p>
-
-                  <label>
-                    <span>{ui.preferredLanguage}</span>
-                    <select
-                      name="language"
-                      data-account-newsletter-language
-                    >
-                      <option value="it" selected={newsletterLanguage !== 'en'}>Italiano</option>
-                      <option value="en" selected={newsletterLanguage === 'en'}>English</option>
-                    </select>
-                  </label>
-
-                  <label class="account-newsletter-consent" data-account-newsletter-consent>
-                    <input type="checkbox" name="consent" />
-                    <span>
-                      {ui.newsletterConsent}
-                      {' '}
-                      <a href={privacyHref}>{ui.privacyPolicy}</a>.
-                    </span>
-                  </label>
-
-                  <p class="account-message" data-account-newsletter-message hidden></p>
-
-                  <div class="account-actions">
-                    <button type="button" data-account-newsletter-subscribe>
-                      {newsletterStatus === 'unsubscribed' ? ui.newsletterResubscribe : ui.newsletterSubscribe}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </section>
-
             <section class="account-community-rank" aria-labelledby="account-community-rank-title">
               <div>
                 <p class="account-kicker">{ui.communityKicker}</p>
@@ -1026,13 +708,16 @@ const clientCopy = currentLang === 'en'
                 <span>{ui.currentLevel}</span>
                 <strong>{communityRank.label}</strong>
                 <p>{communityRankDescription}</p>
+                <div class="account-community-rank__points">
+                  <strong>{commentActivity.communityPoints}</strong>
+                  <span>{ui.points}</span>
+                </div>
               </div>
 
               {communityRank.nextRank ? (
                 <div class="account-community-rank__progress">
                   <div>
                     <span>{ui.nextLevel}: {communityRank.nextRank.label}</span>
-                    <strong>{commentActivity.communityPoints} {ui.points}</strong>
                   </div>
                   <p class="account-community-rank__progress-note">
                     {ui.progress}: {communityRankProgress}%
@@ -1055,379 +740,562 @@ const clientCopy = currentLang === 'en'
               )}
             </section>
 
-            <section class="account-avatar-section" aria-labelledby="account-avatar-title">
-              <div class="account-avatar-section__content">
-                <p class="account-kicker">{ui.communityKicker}</p>
-                <h2 id="account-avatar-title">{ui.avatar}</h2>
-                <p>
-                  {avatarUrl
-                    ? ui.avatarLoaded
-                    : ui.avatarEmpty}
-                </p>
-
-                <form class="account-form account-avatar-form" data-account-avatar-form>
-                  <label
-                    class="account-avatar-dropzone"
-                    data-account-avatar-dropzone
-                    data-replace-label={avatarUrl ? ui.avatarDropReplace : ui.avatarDropUpload}
-                  >
-                    <input
-                      class="account-avatar-input"
-                      type="file"
-                      name="avatar"
-                      accept="image/jpeg,image/png,image/webp"
-                      data-account-avatar-input
-                    />
-                    <span class="account-avatar-dropzone__label" data-account-avatar-dropzone-label>
-                      {avatarUrl
-                        ? ui.avatarChooseReplace
-                        : ui.avatarChooseUpload}
-                    </span>
-                    <span class="account-avatar-dropzone__help">
-                      {avatarUrl
-                        ? ui.avatarHelpReplace
-                        : ui.avatarHelpUpload}
-                    </span>
-                    <span
-                      class="account-avatar-dropzone__filename"
-                      data-account-avatar-filename
-                      hidden
-                    ></span>
-                  </label>
-
-                  <p class="account-message" data-account-avatar-message hidden></p>
-
-                  <div class="account-actions">
-                    <button type="submit">{avatarUrl ? ui.avatarReplace : ui.avatarUpload}</button>
-                    <button
-                      type="button"
-                      data-account-avatar-remove
-                      hidden={!avatarUrl}
-                    >
-                      {ui.avatarRemove}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </section>
-
-            <section class="account-public-profile" aria-labelledby="account-public-profile-title">
-              <div class="account-public-profile__heading">
-                <p class="account-kicker">{ui.communityKicker}</p>
-                <h2 id="account-public-profile-title">{ui.publicProfileTitle}</h2>
-                <p>
-                  {ui.publicProfileDescription}
-                </p>
-              </div>
-
-              <div
-                class="account-public-profile__summary"
-                data-account-bio-summary
-                hidden={!hasPublicBio}
-              >
-                <div class="account-profile-summary">
-                  <span>{ui.bioIt}</span>
-                  <p data-account-bio-summary-it>{currentBio}</p>
-                </div>
-
-                <div
-                  class="account-profile-summary"
-                  data-account-bio-summary-en
-                  hidden={!hasPublicBioEn}
-                >
-                  <span>{ui.bioEn}</span>
-                  <p data-account-bio-summary-en-text>{currentBioEn}</p>
-                </div>
-
-                <p
-                  class="account-field-help"
-                  data-account-bio-en-fallback
-                  hidden={hasPublicBioEn}
-                >
-                  {ui.bioEnFallback}
-                </p>
-
-                <div class="account-actions">
-                  <button type="button" data-account-bio-edit>{ui.editBio}</button>
-                </div>
-              </div>
-
-              <div
-                class="account-public-profile__empty"
-                data-account-bio-empty
-                hidden={hasPublicBio}
-              >
-                <p>{ui.emptyBioTitle}</p>
-                <p>
-                  {ui.emptyBioDescription}
-                </p>
-
-                <div class="account-actions">
-                  <button type="button" data-account-bio-edit>{ui.writeBio}</button>
-                </div>
-              </div>
-
-              <form class="account-form account-form--bio" data-account-bio-form hidden>
-                <label>
-                  <span>{ui.bioIt}</span>
-                  <textarea
-                    name="bio"
-                    maxlength="500"
-                    rows="5"
-                    placeholder={ui.bioItPlaceholder}
-                  >{currentBio}</textarea>
-                </label>
-
-                <small class="account-character-count" data-account-bio-counter>
-                  {currentBio.length}/500
-                </small>
-
-                <label>
-                  <span>{ui.bioEn}</span>
-                  <textarea
-                    name="bioEn"
-                    maxlength="500"
-                    rows="5"
-                    placeholder={ui.bioEnPlaceholder}
-                  >{currentBioEn}</textarea>
-                </label>
-
-                <small class="account-character-count" data-account-bio-en-counter>
-                  {currentBioEn.length}/500
-                </small>
-
-                <p class="account-field-help">
-                  {ui.bioHelp}
-                </p>
-
-                <div class="account-actions">
-                  <button type="submit">{ui.saveBio}</button>
-                  <button type="button" data-account-bio-cancel>{ui.cancel}</button>
-                </div>
-              </form>
-
-              <p class="account-message" data-account-bio-message hidden></p>
-            </section>
-
-            {isStaff && (
-              <section class="account-editorial-tools" aria-labelledby="account-editorial-tools-title">
-                <div>
-                  <h2 id="account-editorial-tools-title">{ui.editorialTools}</h2>
-                  <p>{ui.editorialToolsDescription}</p>
-                </div>
-
-                <div class="account-editorial-tools__actions">
-                  <a href="/admin/comments/">{ui.moderationComments}</a>
-                  <a href="/admin/comment-reports/">{ui.commentReports}</a>
-                  <a href="/admin/users/">{ui.userManagement}</a>
-                  <a href="/admin/private-message-reports/">{ui.messageReports}</a>
-                  <a href="/admin/ratings/">{ui.readerRatings}</a>
-                </div>
-              </section>
-            )}
-
-            <RetroExperienceSettings
-              lang={currentLang}
-              retroExperience={profile?.retro_experience}
-            />
-
-            <section class="account-settings-section" aria-labelledby="account-settings-title">
+            <section class="account-settings-section account-profile-hub" aria-labelledby="account-settings-title">
               <div class="account-settings-section__heading">
                 <p class="account-kicker">{ui.settingsKicker}</p>
                 <h2 id="account-settings-title">{ui.profile}</h2>
                 <p class="account-settings-section__hint">
-                  {canEditDisplayName
-                    ? ui.profileHintAdmin
-                    : ui.profileHintReader}
+                  {ui.profileOverview}
                 </p>
               </div>
 
-              <div class="account-profile-overview" data-account-profile-summary>
-                <div class="account-profile-summary">
-                  <span>{ui.displayName}</span>
-                  <p data-account-profile-summary-name>{profileDisplayName || ui.notSet}</p>
-                </div>
-
-                <div class="account-profile-summary">
-                  <span>{ui.currentBadge}</span>
-
-                  <div
-                    class="account-badge-preview"
-                    data-account-profile-summary-badge
-                    hidden={!currentProfileBadgeLabel}
-                  >
-                    {profileSummaryBadgeImageSrc && (
-                      <img
-                        src={profileSummaryBadgeImageSrc}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        hidden={!currentProfileBadgeImageSrc}
-                      />
-                    )}
-                    <strong data-account-profile-summary-badge-label>
-                      {currentProfileBadgeLabel}
-                    </strong>
-                  </div>
-
-                  <p
-                    class="account-badge-preview__empty"
-                    data-account-profile-summary-badge-empty
-                    hidden={Boolean(currentProfileBadgeLabel)}
-                  >
-                    {ui.noMainBadge}
-                  </p>
-
-                  <p
-                    class="account-field-help"
-                    data-account-profile-summary-badge-help
-                  >
-                    {currentProfileBadgeLabel
-                      ? ui.badgeSummaryHelpSelected
-                      : ui.badgeSummaryHelpEmpty}
-                  </p>
-                </div>
-
+              <div class="account-profile-overview account-profile-overview--compact" data-account-profile-summary>
                 <div class="account-actions">
                   <button type="button" data-account-profile-edit>{ui.editProfile}</button>
-                  <a href={badgesHref}>{ui.discoverBadges}</a>
                 </div>
               </div>
 
-              <form class="account-form" data-account-profile-form hidden>
-                {canEditDisplayName ? (
-                  <label>
-                    <span>{ui.displayName}</span>
-                    <input
-                      type="text"
-                      name="displayName"
-                      required
-                      minlength="2"
-                      maxlength="40"
-                      value={profile?.display_name || profile?.username || ''}
-                    />
-                  </label>
-                ) : (
-                  <div class="account-profile-readonly">
-                    <span>{ui.displayName}</span>
-                    <p>{profileDisplayName || ui.notSet}</p>
-                    <small class="account-field-help">
-                      {ui.displayNameReadonly}
-                    </small>
+              <div class="account-profile-editor" data-account-profile-editor hidden>
+                <div class="account-profile-editor__heading">
+                  <div>
+                    <p class="account-kicker">{ui.settingsKicker}</p>
+                    <h3>{ui.profileEditorTitle}</h3>
+                    <p>{ui.profileOverview}</p>
                   </div>
-                )}
-
-                {badges.length === 0 && (
-                  <div class="account-badge-empty">
-                    <span>{ui.readerBadge}</span>
-                    <p>{ui.noBadgesAvailable}</p>
-                    <p>{ui.noBadgesDescription}</p>
-                    <a class="account-field-link" href={badgesHref}>{ui.discoverBadges}</a>
-                  </div>
-                )}
-
-                {badges.length > 0 && (
-                  <label>
-                    <span>{ui.readerBadge}</span>
-                    <select name="badgeKey" required data-account-badge-select>
-                      <option value="">{ui.chooseBadge}</option>
-                      {badges.map((badge) => (
-                        <option
-                          value={badge.key}
-                          selected={badge.key === editableBadgeKey}
-                          data-badge-label={getBadgeLabel(badge)}
-                          data-badge-image={getReaderBadgeImageSrcForBadge(badge)}
-                        >
-                          {getBadgeLabel(badge)}
-                        </option>
-                      ))}
-                    </select>
-
-                    <div
-                      class="account-badge-preview"
-                      data-account-badge-preview
-                      hidden={!editableBadgeLabel}
-                    >
-                      <img
-                        src={editableBadgePreviewImageSrc}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        hidden={!editableBadgeImageSrc}
-                        data-account-badge-preview-image
-                      />
-                      <strong data-account-badge-preview-label>{editableBadgeLabel}</strong>
-                    </div>
-
-                    <small class="account-field-help">
-                      {ui.chooseBadgeHelp}
-                    </small>
-
-                    <a class="account-field-link" href={badgesHref}>{ui.discoverBadges}</a>
-                  </label>
-                )}
-
-                <div class="account-actions">
-                  <button type="submit">{ui.saveProfile}</button>
-                  <button type="button" data-account-profile-cancel>{ui.cancel}</button>
                 </div>
-              </form>
 
-              <p class="account-message" data-account-message hidden></p>
+                <div class="account-profile-editor__shell">
+                  <nav
+                    class="account-profile-editor-nav"
+                    aria-label={ui.profileEditorTitle}
+                    role="tablist"
+                  >
+                    <button
+                      type="button"
+                      id="account-settings-tab-identity"
+                      data-account-settings-tab="identity"
+                      aria-controls="account-profile-identity-panel"
+                      aria-selected="true"
+                      role="tab"
+                    >
+                      {ui.identity}
+                    </button>
+                    <button
+                      type="button"
+                      id="account-settings-tab-avatar"
+                      data-account-settings-tab="avatar"
+                      aria-controls="account-avatar-panel"
+                      aria-selected="false"
+                      role="tab"
+                    >
+                      {ui.avatar}
+                    </button>
+                    <button
+                      type="button"
+                      id="account-settings-tab-bio"
+                      data-account-settings-tab="bio"
+                      aria-controls="account-public-profile-panel"
+                      aria-selected="false"
+                      role="tab"
+                    >
+                      {ui.bioStatus}
+                    </button>
+                    <button
+                      type="button"
+                      id="account-settings-tab-newsletter"
+                      data-account-settings-tab="newsletter"
+                      aria-controls="account-newsletter-panel"
+                      aria-selected="false"
+                      role="tab"
+                    >
+                      Newsletter
+                    </button>
+                    <button
+                      type="button"
+                      id="account-settings-tab-retro"
+                      data-account-settings-tab="retro"
+                      aria-controls="account-retro-experience-panel"
+                      aria-selected="false"
+                      role="tab"
+                    >
+                      {ui.retroExperienceLabel}
+                    </button>
+                    <button
+                      type="button"
+                      id="account-settings-tab-password"
+                      data-account-settings-tab="password"
+                      aria-controls="account-password-panel"
+                      aria-selected="false"
+                      role="tab"
+                    >
+                      {ui.security}
+                    </button>
+                  </nav>
+
+                  <div class="account-profile-editor__panels">
+                    <section
+                      class="account-profile-editor-section"
+                      id="account-profile-identity-panel"
+                      aria-labelledby="account-settings-tab-identity"
+                      data-account-settings-panel="identity"
+                      role="tabpanel"
+                    >
+                      <div class="account-profile-editor-section__heading">
+                        <h3 id="account-profile-identity-title">{ui.identity}</h3>
+                        <p>
+                          {canEditDisplayName
+                            ? ui.profileHintAdmin
+                            : ui.profileHintReader}
+                        </p>
+                      </div>
+
+                      <form class="account-form" data-account-profile-form>
+                        {canEditDisplayName ? (
+                          <label>
+                            <span>{ui.displayName}</span>
+                            <input
+                              type="text"
+                              name="displayName"
+                              required
+                              minlength="2"
+                              maxlength="40"
+                              value={profile?.display_name || profile?.username || ''}
+                            />
+                          </label>
+                        ) : (
+                          <div class="account-profile-readonly">
+                            <span>{ui.displayName}</span>
+                            <p>{profileDisplayName || ui.notSet}</p>
+                            <small class="account-field-help">
+                              {ui.displayNameReadonly}
+                            </small>
+                          </div>
+                        )}
+
+                        {badges.length === 0 && (
+                          <div class="account-badge-empty">
+                            <span>{ui.readerBadge}</span>
+                            <p>{ui.noBadgesAvailable}</p>
+                            <p>{ui.noBadgesDescription}</p>
+                            <a class="account-field-link" href={badgesHref}>{ui.discoverBadges}</a>
+                          </div>
+                        )}
+
+                        {badges.length > 0 && (
+                          <label>
+                            <span>{ui.readerBadge}</span>
+                            <select name="badgeKey" required data-account-badge-select>
+                              <option value="">{ui.chooseBadge}</option>
+                              {badges.map((badge) => (
+                                <option
+                                  value={badge.key}
+                                  selected={badge.key === editableBadgeKey}
+                                  data-badge-label={getBadgeLabel(badge)}
+                                  data-badge-image={getReaderBadgeImageSrcForBadge(badge)}
+                                >
+                                  {getBadgeLabel(badge)}
+                                </option>
+                              ))}
+                            </select>
+
+                            <div
+                              class="account-badge-preview"
+                              data-account-badge-preview
+                              hidden={!editableBadgeLabel}
+                            >
+                              <img
+                                src={editableBadgePreviewImageSrc}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                hidden={!editableBadgeImageSrc}
+                                data-account-badge-preview-image
+                              />
+                              <strong data-account-badge-preview-label>{editableBadgeLabel}</strong>
+                            </div>
+
+                            <small class="account-field-help">
+                              {ui.chooseBadgeHelp}
+                            </small>
+
+                            <a class="account-field-link" href={badgesHref}>{ui.discoverBadges}</a>
+                          </label>
+                        )}
+
+                        <div class="account-actions">
+                          <button type="submit">{ui.saveProfile}</button>
+                        </div>
+                      </form>
+
+                      <p class="account-message" data-account-message hidden></p>
+                    </section>
+
+                    <section
+                      class="account-profile-editor-section account-avatar-section"
+                      id="account-avatar-panel"
+                      aria-labelledby="account-settings-tab-avatar"
+                      data-account-settings-panel="avatar"
+                      role="tabpanel"
+                      hidden
+                    >
+                      <div class="account-avatar-section__content">
+                        <div class="account-profile-editor-section__heading">
+                          <h3 id="account-avatar-title">{ui.avatar}</h3>
+                          <p>
+                            {avatarUrl
+                              ? ui.avatarLoaded
+                              : ui.avatarEmpty}
+                          </p>
+                        </div>
+
+                        <form class="account-form account-avatar-form" data-account-avatar-form>
+                          <label
+                            class="account-avatar-dropzone"
+                            data-account-avatar-dropzone
+                            data-replace-label={avatarUrl ? ui.avatarDropReplace : ui.avatarDropUpload}
+                          >
+                            <input
+                              class="account-avatar-input"
+                              type="file"
+                              name="avatar"
+                              accept="image/jpeg,image/png,image/webp"
+                              data-account-avatar-input
+                            />
+                            <span class="account-avatar-dropzone__label" data-account-avatar-dropzone-label>
+                              {avatarUrl
+                                ? ui.avatarChooseReplace
+                                : ui.avatarChooseUpload}
+                            </span>
+                            <span class="account-avatar-dropzone__help">
+                              {avatarUrl
+                                ? ui.avatarHelpReplace
+                                : ui.avatarHelpUpload}
+                            </span>
+                            <span
+                              class="account-avatar-dropzone__filename"
+                              data-account-avatar-filename
+                              hidden
+                            ></span>
+                          </label>
+
+                          <p class="account-message" data-account-avatar-message hidden></p>
+
+                          <div class="account-actions">
+                            <button type="submit">{avatarUrl ? ui.avatarReplace : ui.avatarUpload}</button>
+                            <button
+                              type="button"
+                              data-account-avatar-remove
+                              hidden={!avatarUrl}
+                            >
+                              {ui.avatarRemove}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </section>
+
+                    <section
+                      class="account-profile-editor-section account-public-profile"
+                      id="account-public-profile-panel"
+                      aria-labelledby="account-settings-tab-bio"
+                      data-account-settings-panel="bio"
+                      role="tabpanel"
+                      hidden
+                    >
+                      <div class="account-public-profile__heading account-profile-editor-section__heading">
+                        <h3 id="account-public-profile-title">{ui.publicProfileTitle}</h3>
+                        <p>
+                          {ui.publicProfileDescription}
+                        </p>
+                      </div>
+
+                      <form
+                        class="account-form account-form--bio"
+                        data-account-bio-form
+                        data-account-bio-expanded="true"
+                      >
+                        <label>
+                          <span>{ui.bioIt}</span>
+                          <textarea
+                            name="bio"
+                            maxlength="500"
+                            rows="5"
+                            placeholder={ui.bioItPlaceholder}
+                          >{currentBio}</textarea>
+                        </label>
+
+                        <small class="account-character-count" data-account-bio-counter>
+                          {currentBio.length}/500
+                        </small>
+
+                        <label>
+                          <span>{ui.bioEn}</span>
+                          <textarea
+                            name="bioEn"
+                            maxlength="500"
+                            rows="5"
+                            placeholder={ui.bioEnPlaceholder}
+                          >{currentBioEn}</textarea>
+                        </label>
+
+                        <small class="account-character-count" data-account-bio-en-counter>
+                          {currentBioEn.length}/500
+                        </small>
+
+                        <p class="account-field-help">
+                          {ui.bioHelp}
+                        </p>
+
+                        <div class="account-actions">
+                          <button type="submit">{ui.saveBio}</button>
+                        </div>
+                      </form>
+
+                      <p class="account-message" data-account-bio-message hidden></p>
+                    </section>
+
+                    <section
+                      class="account-profile-editor-section account-newsletter-card"
+                      id="account-newsletter-panel"
+                      aria-labelledby="account-settings-tab-newsletter"
+                      data-account-settings-panel="newsletter"
+                      data-account-newsletter
+                      data-status={newsletterStatus}
+                      role="tabpanel"
+                      hidden
+                    >
+                      <div class="account-newsletter-card__heading account-profile-editor-section__heading">
+                        <h3 id="account-newsletter-title">Newsletter</h3>
+                        <p>
+                          {ui.newsletterDescription}
+                        </p>
+                      </div>
+
+                      {isNewsletterActive && (
+                        <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                          <p class="account-newsletter-status">{ui.newsletterActive}</p>
+
+                          <p class="account-newsletter-language-summary">
+                            <span>{ui.preferredLanguage}:</span>
+                            <strong>{newsletterLanguageLabel}</strong>
+                          </p>
+
+                          <p class="account-field-help">
+                            {ui.newsletterOperationalNote}
+                          </p>
+
+                          <p class="account-message" data-account-newsletter-message hidden></p>
+
+                          <div class="account-actions">
+                            <button type="button" data-account-newsletter-unsubscribe>
+                              {ui.newsletterUnsubscribe}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+
+                      {isNewsletterPending && (
+                        <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                          <p class="account-newsletter-status">
+                            {ui.newsletterPending}
+                          </p>
+
+                          <p class="account-newsletter-language-summary">
+                            <span>{ui.preferredLanguage}:</span>
+                            <strong>{newsletterLanguageLabel}</strong>
+                          </p>
+
+                          <p class="account-field-help">
+                            {ui.newsletterPendingNote}
+                          </p>
+
+                          <p class="account-field-help">
+                            {ui.newsletterOperationalNote}
+                          </p>
+
+                          <p class="account-message" data-account-newsletter-message hidden></p>
+
+                          <div class="account-actions">
+                            <button type="button" data-account-newsletter-resend>
+                              {ui.newsletterResendConfirmation}
+                            </button>
+
+                            <button type="button" data-account-newsletter-unsubscribe>
+                              {ui.newsletterUnsubscribe}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+
+                      {isNewsletterSubscribable && (
+                        <form class="account-form account-newsletter-form" data-account-newsletter-form>
+                          <NewsletterPromo lang={currentLang} variant="account" compact />
+
+                          <p class="account-newsletter-status">
+                            {newsletterStatus === 'unsubscribed'
+                              ? ui.newsletterUnsubscribed
+                              : ui.newsletterNone}
+                          </p>
+
+                          <label>
+                            <span>{ui.preferredLanguage}</span>
+                            <select
+                              name="language"
+                              data-account-newsletter-language
+                            >
+                              <option value="it" selected={newsletterLanguage !== 'en'}>Italiano</option>
+                              <option value="en" selected={newsletterLanguage === 'en'}>English</option>
+                            </select>
+                          </label>
+
+                          <label class="account-newsletter-consent" data-account-newsletter-consent>
+                            <input type="checkbox" name="consent" />
+                            <span>
+                              {ui.newsletterConsent}
+                              {' '}
+                              <a href={privacyHref}>{ui.privacyPolicy}</a>.
+                            </span>
+                          </label>
+
+                          <p class="account-message" data-account-newsletter-message hidden></p>
+
+                          <div class="account-actions">
+                            <button type="button" data-account-newsletter-subscribe>
+                              {newsletterStatus === 'unsubscribed' ? ui.newsletterResubscribe : ui.newsletterSubscribe}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </section>
+
+                    <section
+                      class="account-profile-editor-section account-profile-editor-section--retro"
+                      id="account-retro-experience-panel"
+                      aria-labelledby="account-settings-tab-retro"
+                      data-account-settings-panel="retro"
+                      role="tabpanel"
+                      hidden
+                    >
+                      <RetroExperienceSettings
+                        lang={currentLang}
+                        retroExperience={profile?.retro_experience}
+                      />
+                    </section>
+
+                    <section
+                      class="account-profile-editor-section"
+                      id="account-password-panel"
+                      aria-labelledby="account-settings-tab-password"
+                      data-account-settings-panel="password"
+                      role="tabpanel"
+                      hidden
+                    >
+                      <div class="account-profile-editor-section__heading">
+                        <h3 id="account-security-title">{ui.security}</h3>
+                        <p>{ui.securityDescription}</p>
+                      </div>
+
+                      {showPasswordChangeForm ? (
+                        <form class="account-form" data-account-password-form>
+                          <label>
+                            <span>{ui.currentPassword}</span>
+                            <input
+                              type="password"
+                              name="currentPassword"
+                              autocomplete="current-password"
+                              required
+                            />
+                          </label>
+
+                          <label>
+                            <span>{ui.newPassword}</span>
+                            <input
+                              type="password"
+                              name="newPassword"
+                              autocomplete="new-password"
+                              minlength="8"
+                              required
+                            />
+                          </label>
+
+                          <label>
+                            <span>{ui.confirmNewPassword}</span>
+                            <input
+                              type="password"
+                              name="confirmPassword"
+                              autocomplete="new-password"
+                              minlength="8"
+                              required
+                            />
+                          </label>
+
+                          <small class="account-field-help">{ui.passwordHelp}</small>
+
+                          <div class="account-actions">
+                            <button type="submit">{ui.changePassword}</button>
+                          </div>
+                        </form>
+                      ) : (
+                        <p class="account-field-help">{ui.passwordSocialOnly}</p>
+                      )}
+
+                      <p class="account-message" data-account-password-message hidden></p>
+                    </section>
+                  </div>
+                </div>
+
+                <div class="account-profile-editor__footer">
+                  <button type="button" data-account-profile-cancel>{ui.closeSettings}</button>
+                </div>
+              </div>
             </section>
 
-            <section class="account-settings-section" aria-labelledby="account-security-title">
-              <div class="account-settings-section__heading">
-                <p class="account-kicker">{ui.settingsKicker}</p>
-                <h2 id="account-security-title">{ui.security}</h2>
-                <p class="account-settings-section__hint">{ui.securityDescription}</p>
+            <section class="account-interest-articles" aria-labelledby="account-interest-suggestions-title">
+              <div class="account-section-heading">
+                <p class="account-kicker">{ui.forYou}</p>
+                <h2 id="account-interest-suggestions-title">{ui.fromInterests}</h2>
+                <p>{ui.fromInterestsDescription}</p>
               </div>
 
-              {showPasswordChangeForm ? (
-                <form class="account-form" data-account-password-form>
-                  <label>
-                    <span>{ui.currentPassword}</span>
-                    <input
-                      type="password"
-                      name="currentPassword"
-                      autocomplete="current-password"
-                      required
-                    />
-                  </label>
+              {dashboardRetention.suggestedArticlesFromInterests.length > 0 ? (
+                <div class="account-interest-articles__grid">
+                  {dashboardRetention.suggestedArticlesFromInterests.map((article) => (
+                    <article class="account-interest-article-card">
+                      {article.imageUrl && (
+                        <a class="account-interest-article-card__image" href={article.href} aria-label={article.title}>
+                          <img
+                            src={article.imageUrl}
+                            alt={article.imageAlt || article.title}
+                            width="640"
+                            height="400"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </a>
+                      )}
 
-                  <label>
-                    <span>{ui.newPassword}</span>
-                    <input
-                      type="password"
-                      name="newPassword"
-                      autocomplete="new-password"
-                      minlength="8"
-                      required
-                    />
-                  </label>
-
-                  <label>
-                    <span>{ui.confirmNewPassword}</span>
-                    <input
-                      type="password"
-                      name="confirmPassword"
-                      autocomplete="new-password"
-                      minlength="8"
-                      required
-                    />
-                  </label>
-
-                  <small class="account-field-help">{ui.passwordHelp}</small>
-
-                  <div class="account-actions">
-                    <button type="submit">{ui.changePassword}</button>
-                  </div>
-                </form>
+                      <div class="account-interest-article-card__body">
+                        <div class="account-interest-article-card__meta">
+                          {article.categoryLabel && <span>{article.categoryLabel}</span>}
+                        </div>
+                        <h3><a href={article.href}>{article.title}</a></h3>
+                        {article.excerpt && <p>{article.excerpt}</p>}
+                        <a class="account-interest-article-card__link" href={article.href}>
+                          {ui.readArticle}
+                        </a>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               ) : (
-                <p class="account-field-help">{ui.passwordSocialOnly}</p>
+                <p class="account-interest-articles__empty">
+                  {dashboardRetention.hasInterests ? ui.interestsNoArticles : ui.interestsEmpty}
+                </p>
               )}
 
-              <p class="account-message" data-account-password-message hidden></p>
+              <div class="account-retention-actions">
+                <a href={favoritesHref}>{ui.manageInterests}</a>
+              </div>
             </section>
         </div>
       </>
@@ -1455,16 +1323,14 @@ const clientCopy = currentLang === 'en'
     const passwordForm = document.querySelector('[data-account-password-form]');
     const passwordMessage = document.querySelector('[data-account-password-message]');
     const profileSummary = document.querySelector('[data-account-profile-summary]');
+    const profileEditor = document.querySelector('[data-account-profile-editor]');
     const profileEditButton = document.querySelector('[data-account-profile-edit]');
     const profileCancelButton = document.querySelector('[data-account-profile-cancel]');
+    const settingsTabButtons = document.querySelectorAll('[data-account-settings-tab]');
+    const settingsPanels = document.querySelectorAll('[data-account-settings-panel]');
     const profileDisplayNameInput = document.querySelector('[data-account-profile-form] input[name="displayName"]');
     const profileBadgeInput = document.querySelector('[data-account-profile-form] [name="badgeKey"]');
     const profileBadgeSelect = document.querySelector('[data-account-badge-select]');
-    const profileSummaryName = document.querySelector('[data-account-profile-summary-name]');
-    const profileSummaryBadge = document.querySelector('[data-account-profile-summary-badge]');
-    const profileSummaryBadgeLabel = document.querySelector('[data-account-profile-summary-badge-label]');
-    const profileSummaryBadgeEmpty = document.querySelector('[data-account-profile-summary-badge-empty]');
-    const profileSummaryBadgeHelp = document.querySelector('[data-account-profile-summary-badge-help]');
     const badgePreview = document.querySelector('[data-account-badge-preview]');
     const badgePreviewImage = document.querySelector('[data-account-badge-preview-image]');
     const badgePreviewLabel = document.querySelector('[data-account-badge-preview-label]');
@@ -1500,10 +1366,12 @@ const clientCopy = currentLang === 'en'
     let selectedAvatarFile = null;
     let savedDisplayName = profileDisplayNameInput?.value || '';
     let savedBadgeKey = profileBadgeInput?.value || '';
-    let savedBadgeLabel = profileSummaryBadgeLabel?.textContent?.trim() || '';
-    let savedBadgeImage = profileSummaryBadge?.querySelector('img')?.getAttribute('src') || '';
+    let savedBadgeLabel = badgePreviewLabel?.textContent?.trim() || '';
+    let savedBadgeImage = badgePreview?.querySelector('img')?.getAttribute('src') || '';
     let savedBio = bioTextarea?.value || '';
     let savedBioEn = bioEnTextarea?.value || '';
+    const bioAlwaysExpanded = bioForm?.dataset.accountBioExpanded === 'true';
+    let activeSettingsPanel = 'identity';
 
     const showMessage = (target, text, type = 'ok') => {
       if (!target) return;
@@ -1585,55 +1453,44 @@ const clientCopy = currentLang === 'en'
       }
     };
 
-    const updateProfileSummary = () => {
-      if (profileSummaryName) {
-        profileSummaryName.textContent = savedDisplayName || clientCopy.notSet;
-      }
-
-      if (profileSummaryBadge) profileSummaryBadge.hidden = !savedBadgeLabel;
-      if (profileSummaryBadgeLabel) profileSummaryBadgeLabel.textContent = savedBadgeLabel;
-      if (profileSummaryBadgeEmpty) profileSummaryBadgeEmpty.hidden = Boolean(savedBadgeLabel);
-
-      const existingSummaryImage = profileSummaryBadge?.querySelector('img');
-
-      if (existingSummaryImage) {
-        if (savedBadgeImage) {
-          existingSummaryImage.setAttribute('src', savedBadgeImage);
-          existingSummaryImage.hidden = false;
-        } else {
-          existingSummaryImage.hidden = true;
-        }
-      }
-
-      if (profileSummaryBadgeHelp) {
-        profileSummaryBadgeHelp.textContent = savedBadgeLabel
-          ? clientCopy.badgeSummaryHelpSelected
-          : clientCopy.badgeSummaryHelpEmpty;
-      }
-    };
-
     const setProfileEditMode = (isEditing, shouldFocus = false) => {
       if (profileSummary) profileSummary.hidden = isEditing;
-      if (form) form.hidden = !isEditing;
+      if (profileEditor) profileEditor.hidden = !isEditing;
+      if (form) form.hidden = false;
 
       if (isEditing) {
         if (profileMessage) profileMessage.hidden = true;
-        if (shouldFocus) {
-          window.setTimeout(() => {
-            if (profileDisplayNameInput) {
-              profileDisplayNameInput.focus();
-              return;
-            }
-
-            profileBadgeSelect?.focus();
-          }, 0);
-        }
+        setActiveSettingsPanel('identity', shouldFocus);
         updateBadgePreview();
-        return;
       }
-
-      updateProfileSummary();
     };
+
+    const setActiveSettingsPanel = (panelName, shouldFocus = false) => {
+      activeSettingsPanel = panelName || 'identity';
+
+      settingsTabButtons.forEach((button) => {
+        const isActive = button.dataset.accountSettingsTab === activeSettingsPanel;
+        button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+
+      settingsPanels.forEach((panel) => {
+        panel.hidden = panel.dataset.accountSettingsPanel !== activeSettingsPanel;
+      });
+
+      if (!shouldFocus) return;
+
+      window.setTimeout(() => {
+        const activePanel = document.querySelector(`[data-account-settings-panel="${activeSettingsPanel}"]`);
+        const focusTarget = activePanel?.querySelector('input:not([type="file"]), select, textarea, button');
+        focusTarget?.focus();
+      }, 0);
+    };
+
+    settingsTabButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setActiveSettingsPanel(button.dataset.accountSettingsTab || 'identity', true);
+      });
+    });
 
     profileEditButton?.addEventListener('click', () => {
       if (profileDisplayNameInput) profileDisplayNameInput.value = savedDisplayName;
@@ -1766,6 +1623,17 @@ const clientCopy = currentLang === 'en'
     };
 
     const setBioEditMode = (isEditing, shouldFocus = false) => {
+      if (bioAlwaysExpanded) {
+        if (bioForm) bioForm.hidden = false;
+        if (bioSummary) bioSummary.hidden = true;
+        if (bioEmpty) bioEmpty.hidden = true;
+        if (bioMessage && isEditing) bioMessage.hidden = true;
+        if (isEditing && shouldFocus) {
+          window.setTimeout(() => bioTextarea?.focus(), 0);
+        }
+        return;
+      }
+
       if (bioForm) bioForm.hidden = !isEditing;
 
       if (isEditing) {
@@ -2039,7 +1907,6 @@ const clientCopy = currentLang === 'en'
         savedBadgeKey = nextBadge.key;
         savedBadgeLabel = nextBadge.label;
         savedBadgeImage = nextBadge.image;
-        setProfileEditMode(false);
       } catch {
         showMessage(profileMessage, clientCopy.connectionError, 'error');
       } finally {

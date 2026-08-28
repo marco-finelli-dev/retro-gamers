@@ -8,11 +8,13 @@ import {
 type Props = {
   lang?: PreferredLanguage;
   retroExperience?: unknown;
+  kicker?: string;
 };
 
 const {
   lang = 'it',
   retroExperience: retroExperienceProp,
+  kicker,
 } = Astro.props as Props;
 
 const currentLang: PreferredLanguage = lang === 'en' ? 'en' : 'it';
@@ -68,7 +70,7 @@ const ui = copy[currentLang];
 
 <section class="retro-settings" aria-labelledby="retro-settings-title">
   <div class="retro-settings__heading">
-    <p class="account-kicker">{ui.kicker}</p>
+    <p class="account-kicker">{kicker || ui.kicker}</p>
     <h2 id="retro-settings-title">{ui.title}</h2>
     <p>{ui.description}</p>
   </div>

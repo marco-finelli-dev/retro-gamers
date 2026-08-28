@@ -168,20 +168,23 @@
 }
 
 .community-profile-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 14px;
 }
 
 .community-profile-card > .user-avatar {
-  flex: 0 0 auto;
+  grid-column: 2;
+  grid-row: 1;
   margin-top: 2px;
 }
 
 .community-profile-card__content {
+  grid-column: 1;
+  grid-row: 1;
   display: grid;
   gap: 5px;
-  flex: 1 1 auto;
   min-width: 0;
 }
 
