@@ -334,6 +334,44 @@ export async function getCommunitySurveyOpenAnswerSummaryState(
   }
 }
 
+export async function getCommunitySurveyOpenAnswerSummaryReadOnlyState(
+  results: CommunitySurveyAdminResults
+): Promise<CommunitySurveyOpenAnswerSummaryState> {
+  const source = buildSourceSnapshot(results);
+  const baseState = {
+    isConfigured: isOpenAiConfigured(),
+    minSignificantTextAnswerCount: COMMUNITY_SURVEY_OPEN_ANSWER_SUMMARY_MIN_SIGNIFICANT_ANSWERS,
+    significantTextAnswerCount: source.significantTextAnswerCount,
+    sourceLatestResponseAt: source.sourceLatestResponseAt,
+    isThresholdMet:
+      source.significantTextAnswerCount >= COMMUNITY_SURVEY_OPEN_ANSWER_SUMMARY_MIN_SIGNIFICANT_ANSWERS,
+  };
+
+  try {
+    const summary = await getSavedOpenAnswerSummary(results.survey.surveyKey);
+
+    return {
+      ...baseState,
+      summary,
+      isStale: isSummaryStale({
+        summary,
+        significantTextAnswerCount: source.significantTextAnswerCount,
+        sourceLatestResponseAt: source.sourceLatestResponseAt,
+      }),
+      storageError: null,
+    };
+  } catch (error) {
+    logApiError('community-survey-open-answer-summaries.read-only', error);
+
+    return {
+      ...baseState,
+      summary: null,
+      isStale: false,
+      storageError: 'summary_storage_unavailable',
+    };
+  }
+}
+
 const createMinimizedDataset = (answers: SignificantOpenAnswer[]) => {
   const minimized: MinimizedOpenAnswer[] = [];
   let totalLength = 0;

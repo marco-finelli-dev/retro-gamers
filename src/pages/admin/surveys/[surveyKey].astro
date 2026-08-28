@@ -88,6 +88,7 @@ const uiCopy = {
     responsePlural: 'risposte',
     resultsKicker: 'Risultati',
     exportCsv: 'Esporta CSV',
+    exportExcel: 'Esporta report Excel',
     editorialSummaryTitle: 'Sintesi editoriale',
     editorialSummaryDescription: 'Lettura automatica dei risultati quantitativi. Nessun dato viene inviato a servizi esterni.',
     editorialSummarySample: 'Sintesi basata su {total} partecipazioni: {it} IT e {en} EN.',
@@ -161,6 +162,7 @@ const uiCopy = {
     responsePlural: 'responses',
     resultsKicker: 'Results',
     exportCsv: 'Export CSV',
+    exportExcel: 'Export Excel report',
     editorialSummaryTitle: 'Editorial summary',
     editorialSummaryDescription: 'Automatic overview of quantitative results. No data is sent to external services.',
     editorialSummarySample: 'Summary based on {total} participations: {it} IT and {en} EN.',
@@ -323,6 +325,9 @@ const openResponses = openResponseGroups.flatMap((group) => group.responses);
 const exportCsvHref = surveyKey
   ? `/api/admin/surveys/${encodeURIComponent(surveyKey)}/export.csv`
   : '';
+const exportExcelHref = surveyKey
+  ? `/api/admin/surveys/${encodeURIComponent(surveyKey)}/export.xlsx`
+  : '';
 const surveySeenStorageKey = surveyKey
   ? `retro-gamers:admin-survey-seen:${surveyKey}`
   : '';
@@ -403,6 +408,9 @@ const canGenerateOpenAnswerAiSummary = Boolean(
                   <div class="admin-surveys-header__actions">
                     <a class="admin-surveys-inline-action" href={exportCsvHref}>
                       {t.exportCsv}
+                    </a>
+                    <a class="admin-surveys-inline-action" href={exportExcelHref}>
+                      {t.exportExcel}
                     </a>
                   </div>
                 )}
