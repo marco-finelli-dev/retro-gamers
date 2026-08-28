@@ -1,20 +1,11 @@
 ---
 import { getArchiveUrl, getPostUrl } from '../../lib/routes';
-import { getAiTransparencyNote } from '../../lib/article-ai-transparency';
 import ArticleShare from './ArticleShare.astro';
 import ArticleSaveButton from './ArticleSaveButton.astro';
 
 const { post, editorialQuickEdit = null } = Astro.props;
 
 const lang = post?.language || 'it';
-const aiTransparencyNote = getAiTransparencyNote(
-  post?.aiTransparency,
-  lang === 'en' ? 'en' : 'it',
-  post?.aiTransparencyNote
-);
-const aiTransparencyLabel = lang === 'en'
-  ? 'Editorial transparency note'
-  : 'Nota sulla trasparenza editoriale';
 
 const typeLabels = {
   it: {
@@ -335,13 +326,6 @@ const quickEditLabels = {
 
         <ArticleShare post={post} compact />
       </div>
-
-      {aiTransparencyNote && (
-        <aside class="article-hero__transparency" aria-label={aiTransparencyLabel}>
-          <p class="article-hero__transparency-label">{aiTransparencyLabel}</p>
-          <p>{aiTransparencyNote}</p>
-        </aside>
-      )}
 
     </div>
 

@@ -16,6 +16,7 @@ import ArticleSurveyCta from './ArticleSurveyCta.astro';
 import NewsletterPromo from '../newsletter/NewsletterPromo.astro';
 import { getCanonicalReviewRatingPostId } from '../../lib/review-ratings';
 import { getContentDetailSegment } from '../../lib/routes.js';
+import { getAiTransparencyNote } from '../../lib/article-ai-transparency';
 import '../../styles/article/article.css';
 
 const {
@@ -32,6 +33,14 @@ const {
 
 const isReview = post?.type === 'review';
 const currentLang = post?.language || 'it';
+const aiTransparencyNote = getAiTransparencyNote(
+  post?.aiTransparency,
+  currentLang === 'en' ? 'en' : 'it',
+  post?.aiTransparencyNote
+);
+const aiTransparencyLabel = currentLang === 'en'
+  ? 'Editorial transparency note'
+  : 'Nota sulla trasparenza editoriale';
 const showCommunity = !disableCommunity;
 const heroCommentCount = Number(post?.commentCount || 0);
 const heroCommentsLabel = currentLang === 'en'
@@ -155,6 +164,13 @@ const commentsDiscovery = currentLang === 'en'
   <div class="article-page__body">
 
     <article class="article-page__content">
+
+      {aiTransparencyNote && (
+        <aside class="affiliate-disclosure" aria-label={aiTransparencyLabel}>
+          <span>{aiTransparencyLabel}</span>
+          <p>{aiTransparencyNote}</p>
+        </aside>
+      )}
 
      {post.monetization?.isAffiliate && (
   <aside class="affiliate-disclosure">
