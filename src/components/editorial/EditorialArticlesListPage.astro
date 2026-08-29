@@ -43,12 +43,10 @@ const copy = isEnglish
       imageFallback: 'Editorial article',
       filtersLabel: 'Filter your articles',
       searchPlaceholder: 'Search article...',
-      statusFilter: 'Status',
       lifecycleFilter: 'Sanity status',
       languageFilter: 'Language',
       typeFilter: 'Type',
       sortFilter: 'Sort by',
-      allStatuses: 'All statuses',
       allLifecycles: 'All Sanity states',
       allLanguages: 'All languages',
       allTypes: 'All types',
@@ -64,15 +62,10 @@ const copy = isEnglish
       quickPublished: 'Published',
       quickRevisions: 'Revisions',
       quickOrphans: 'Orphans',
+      articleListKicker: 'Article list',
+      articleListTitle: 'Editorial articles',
       articleCountSingular: 'article',
       articleCountPlural: 'articles',
-      visibleCountSingular: 'shown',
-      visibleCountPlural: 'shown',
-      draft: 'Draft',
-      ownArticles: 'Your articles',
-      reviewQueue: 'Review queue',
-      reviewQueueKicker: 'Editorial review',
-      reviewQueueDescription: 'Submitted and approved articles waiting for editorial action.',
       missingDraft: 'Sanity document not found',
       lifecycle: {
         draft: 'DRAFT',
@@ -91,8 +84,6 @@ const copy = isEnglish
       noArticlesText: 'Create your first draft to start writing inside the custom editor.',
       noFilterResultsTitle: 'No articles match these filters',
       noFilterResultsText: 'Try changing search text, status, language or content type.',
-      noReviewItemsTitle: 'No articles waiting for review',
-      noReviewItemsText: 'Submitted articles will appear here when contributors send them to the editorial desk.',
       dashboard: 'Editorial dashboard',
       profile: 'Author profile',
       role: 'Editorial role',
@@ -141,12 +132,10 @@ const copy = isEnglish
       imageFallback: 'Articolo redazionale',
       filtersLabel: 'Filtra i tuoi articoli',
       searchPlaceholder: 'Cerca articolo...',
-      statusFilter: 'Stato',
       lifecycleFilter: 'Stato Sanity',
       languageFilter: 'Lingua',
       typeFilter: 'Tipo',
       sortFilter: 'Ordina per',
-      allStatuses: 'Tutti gli stati',
       allLifecycles: 'Tutti gli stati Sanity',
       allLanguages: 'Tutte le lingue',
       allTypes: 'Tutti i tipi',
@@ -162,15 +151,10 @@ const copy = isEnglish
       quickPublished: 'Pubblicati',
       quickRevisions: 'Revisioni',
       quickOrphans: 'Orfani',
+      articleListKicker: 'Lista articoli',
+      articleListTitle: 'Articoli redazionali',
       articleCountSingular: 'articolo',
       articleCountPlural: 'articoli',
-      visibleCountSingular: 'visualizzato',
-      visibleCountPlural: 'visualizzati',
-      draft: 'Bozza',
-      ownArticles: 'I tuoi articoli',
-      reviewQueue: 'Da revisionare',
-      reviewQueueKicker: 'Revisione editoriale',
-      reviewQueueDescription: 'Articoli inviati e approvati in attesa di azione redazionale.',
       missingDraft: 'Documento Sanity non trovato',
       lifecycle: {
         draft: 'BOZZA',
@@ -189,8 +173,6 @@ const copy = isEnglish
       noArticlesText: 'Crea la prima bozza per iniziare a scrivere nel custom editor.',
       noFilterResultsTitle: 'Nessun articolo corrisponde ai filtri',
       noFilterResultsText: 'Prova a cambiare ricerca, stato, lingua o tipo contenuto.',
-      noReviewItemsTitle: 'Nessun articolo in coda',
-      noReviewItemsText: 'Gli articoli inviati dai contributor compariranno qui.',
       dashboard: 'Dashboard redazionale',
       profile: 'Profilo autore',
       role: 'Ruolo redazionale',
@@ -227,10 +209,7 @@ let items = [];
 let listError = '';
 let reviewItems = [];
 let reviewError = '';
-const canSeeReviewQueue = Boolean(access.ok && access.context.permissions.canReadSubmittedArticles);
-const reviewQueueWorkflowStatuses = new Set(['submitted', 'approved']);
-const ownWorkflowFilterOptions = ['draft', 'submitted', 'changes_requested', 'approved', 'published'];
-const ownLifecycleFilterOptions = ['draft', 'revision_draft', 'published', 'missing'];
+let editorialArticleItems = [];
 
 function formatDateTime(value) {
   return value ? new Date(value).toLocaleString(isEnglish ? 'en' : 'it') : '—';
@@ -330,6 +309,36 @@ function canOpenPublishedRevisionForItem(item) {
   );
 }
 
+function buildUnifiedEditorialArticleItems(ownItems, queueItems) {
+  const queueIds = new Set(queueItems.map((item) => item.sanityDocumentId));
+  const mergedItems = new Map();
+
+  for (const item of ownItems) {
+    mergedItems.set(item.sanityDocumentId, {
+      ...item,
+      isReviewQueueItem: queueIds.has(item.sanityDocumentId),
+    });
+  }
+
+  for (const item of queueItems) {
+    const existing = mergedItems.get(item.sanityDocumentId);
+
+    mergedItems.set(item.sanityDocumentId, {
+      ...(existing || item),
+      workflowPermissions: item.workflowPermissions || existing?.workflowPermissions,
+      isReviewQueueItem: true,
+    });
+  }
+
+  return Array.from(mergedItems.values()).sort((first, second) => {
+    const firstTimestamp = Date.parse(first.article?.updatedAt || first.updatedAt || first.createdAt || '');
+    const secondTimestamp = Date.parse(second.article?.updatedAt || second.updatedAt || second.createdAt || '');
+
+    return (Number.isFinite(secondTimestamp) ? secondTimestamp : 0) -
+      (Number.isFinite(firstTimestamp) ? firstTimestamp : 0);
+  });
+}
+
 if (access.ok) {
   const result = await fetchOwnEditorialArticles(access.context);
 
@@ -348,14 +357,13 @@ if (access.ok) {
       reviewError = reviewResult.error;
     }
   }
+
+  editorialArticleItems = buildUnifiedEditorialArticleItems(items, reviewItems);
 }
 
-const visibleOwnItems = canSeeReviewQueue
-  ? items.filter((item) => !reviewQueueWorkflowStatuses.has(item.workflowStatus))
-  : items;
 const visibleOwnTypeOptions = Array.from(
   new Set(
-    visibleOwnItems
+    editorialArticleItems
       .map((item) => item.article || item.draft)
       .map((article) => article?.type)
       .filter(Boolean)
@@ -409,24 +417,30 @@ const visibleOwnTypeOptions = Array.from(
       <section class="editorial-card editorial-article-list">
         <div class="editorial-article-list__header">
           <div>
-            <p class="editorial-kicker">{copy.draft}</p>
-            <h2>{copy.ownArticles}</h2>
+            <p class="editorial-kicker">{copy.articleListKicker}</p>
+            <h2>{copy.articleListTitle}</h2>
           </div>
           <a class="editorial-button" href={newArticleHref}>{copy.newArticle}</a>
         </div>
+
+        <p class="editorial-message" data-editorial-workflow-status hidden aria-live="polite"></p>
 
         {listError && (
           <p class="editorial-message" data-tone="error">{listError}</p>
         )}
 
-        {!listError && visibleOwnItems.length === 0 && (
+        {reviewError && (
+          <p class="editorial-message" data-tone="error">{reviewError}</p>
+        )}
+
+        {!listError && editorialArticleItems.length === 0 && (
           <div class="editorial-empty-state">
             <h3>{copy.noArticlesTitle}</h3>
             <p>{copy.noArticlesText}</p>
           </div>
         )}
 
-        {!listError && visibleOwnItems.length > 0 && (
+        {!listError && editorialArticleItems.length > 0 && (
           <div class="editorial-article-controls">
             <div class="editorial-article-quick-filters" role="group" aria-label={copy.quickFiltersLabel}>
               <button type="button" data-editorial-quick-filter="all" aria-pressed="true">
@@ -467,15 +481,6 @@ const visibleOwnTypeOptions = Array.from(
                 />
               </label>
               <label class="editorial-article-filter">
-                <span>{copy.statusFilter}</span>
-                <select name="workflowStatus" data-editorial-filter-workflow>
-                  <option value="">{copy.allStatuses}</option>
-                  {ownWorkflowFilterOptions.map((status) => (
-                    <option value={status}>{getWorkflowLabel(status)}</option>
-                  ))}
-                </select>
-              </label>
-              <label class="editorial-article-filter">
                 <span>{copy.languageFilter}</span>
                 <select name="language" data-editorial-filter-language>
                   <option value="">{copy.allLanguages}</option>
@@ -505,31 +510,38 @@ const visibleOwnTypeOptions = Array.from(
             </form>
 
             <p class="editorial-article-count" data-editorial-article-count aria-live="polite">
-              {visibleOwnItems.length} {visibleOwnItems.length === 1 ? copy.articleCountSingular : copy.articleCountPlural} · {visibleOwnItems.length} {visibleOwnItems.length === 1 ? copy.visibleCountSingular : copy.visibleCountPlural}
+              {editorialArticleItems.length} {editorialArticleItems.length === 1 ? copy.articleCountSingular : copy.articleCountPlural}
             </p>
           </div>
         )}
 
-        {!listError && visibleOwnItems.length > 0 && (
-          <div class="editorial-article-list__items" data-editorial-own-items>
-            {visibleOwnItems.map((item, index) => {
+        {!listError && editorialArticleItems.length > 0 && (
+          <div class="editorial-article-list__items" data-editorial-article-items>
+            {editorialArticleItems.map((item, index) => {
               const article = item.article || item.draft;
+              const isReviewQueueItem = Boolean(item.isReviewQueueItem);
               const canEdit = item.workflowStatus === 'draft' || item.workflowStatus === 'changes_requested';
               const canCreatePublishedRevision = canCreatePublishedRevisionForItem(item);
               const canOpenPublishedRevision = canOpenPublishedRevisionForItem(item);
+              const canRequestChanges = isReviewQueueItem && item.workflowPermissions?.canRequestChanges;
+              const canApprove = isReviewQueueItem && item.workflowPermissions?.canApprove;
+              const showPublishPlaceholder =
+                isReviewQueueItem && item.workflowStatus === 'approved' && access.context.permissions.canPublishArticle;
               const href = canEdit || canOpenPublishedRevision
                 ? getEditorialArticleEditPath(item.sanityDocumentId, currentLang)
                 : getEditorialArticlePreviewPath(item.sanityDocumentId, currentLang);
               const actionLabel = canCreatePublishedRevision || canOpenPublishedRevision
                 ? copy.editArticle
-                : getOwnArticleActionLabel(item);
+                : isReviewQueueItem
+                  ? getReviewArticleActionLabel(item)
+                  : getOwnArticleActionLabel(item);
               const cardImage = getArticleImage(article);
               const summary = getArticleSummary(article);
               const authorLabel = article?.author?.label || item.author?.label || item.sanityAuthorId;
               const updatedAt = article?.updatedAt || item.updatedAt;
               const createdAt = article?.createdAt || item.createdAt;
               const articleTitle = article?.title || copy.untitled;
-              const menuId = getArticleMenuId('own', item);
+              const menuId = getArticleMenuId(isReviewQueueItem ? 'review' : 'own', item);
               const canCreateEnglishTranslation = canCreateEnglishTranslationForItem(item, article);
               const stateBadge = getArticleStateBadge(item);
               const searchIndex = [
@@ -541,9 +553,10 @@ const visibleOwnTypeOptions = Array.from(
               return (
                 <article
                   class="editorial-article-row"
-                  data-editorial-own-article
+                  data-editorial-article
                   data-workflow-status={item.workflowStatus}
                   data-sanity-lifecycle={item.sanityLifecycle}
+                  data-review-queue={isReviewQueueItem ? 'true' : 'false'}
                   data-article-language={article?.language || ''}
                   data-article-type={article?.type || ''}
                   data-search-index={searchIndex}
@@ -582,6 +595,9 @@ const visibleOwnTypeOptions = Array.from(
                     </p>
                     {!article && (
                       <p class="editorial-message" data-tone="error">{copy.missingDraft}</p>
+                    )}
+                    {showPublishPlaceholder && (
+                      <p class="editorial-message">{copy.readyForPublish}</p>
                     )}
                   </div>
 
@@ -633,141 +649,6 @@ const visibleOwnTypeOptions = Array.from(
                               {copy.createEnglishTranslation}
                             </button>
                           )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        )}
-
-        {!listError && visibleOwnItems.length > 0 && (
-          <div class="editorial-empty-state editorial-empty-state--compact" data-editorial-filter-empty hidden aria-live="polite">
-            <h3>{copy.noFilterResultsTitle}</h3>
-            <p>{copy.noFilterResultsText}</p>
-          </div>
-        )}
-      </section>
-    )}
-
-    {access.ok && canSeeReviewQueue && (
-      <section class="editorial-card editorial-article-list">
-        <div class="editorial-article-list__header">
-          <div>
-            <p class="editorial-kicker">{copy.reviewQueueKicker}</p>
-            <h2>{copy.reviewQueue}</h2>
-            <p>{copy.reviewQueueDescription}</p>
-          </div>
-        </div>
-
-        <p class="editorial-message" data-editorial-workflow-status hidden aria-live="polite"></p>
-
-        {reviewError && (
-          <p class="editorial-message" data-tone="error">{reviewError}</p>
-        )}
-
-        {!reviewError && reviewItems.length === 0 && (
-          <div class="editorial-empty-state editorial-empty-state--queue">
-            <h3>{copy.noReviewItemsTitle}</h3>
-            <p>{copy.noReviewItemsText}</p>
-          </div>
-        )}
-
-        {!reviewError && reviewItems.length > 0 && (
-          <div class="editorial-article-list__items">
-            {reviewItems.map((item) => {
-              const article = item.article || item.draft;
-              const previewHref = getEditorialArticlePreviewPath(item.sanityDocumentId, currentLang);
-              const actionLabel = getReviewArticleActionLabel(item);
-              const cardImage = getArticleImage(article);
-              const summary = getArticleSummary(article);
-              const authorLabel = article?.author?.label || item.author?.label || item.sanityAuthorId;
-              const updatedAt = article?.updatedAt || item.updatedAt;
-              const canRequestChanges = item.workflowPermissions?.canRequestChanges;
-              const canApprove = item.workflowPermissions?.canApprove;
-              const showPublishPlaceholder =
-                item.workflowStatus === 'approved' && access.context.permissions.canPublishArticle;
-              const menuId = getArticleMenuId('review', item);
-              const canCreateEnglishTranslation = canCreateEnglishTranslationForItem(item, article);
-              const stateBadge = getArticleStateBadge(item);
-
-              return (
-                <article class="editorial-article-row">
-                  <div class="editorial-article-row__media">
-                    {cardImage ? (
-                      <img
-                        class="editorial-article-row__image"
-                        src={cardImage.src}
-                        alt={cardImage.alt}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div class="editorial-article-row__placeholder" aria-hidden="true">
-                        <span>{copy.imageFallback}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div class="editorial-article-row__body">
-                    <div class="editorial-article-row__badges" aria-label={copy.workflowStatus}>
-                      <span class="editorial-article-row__badge" data-status={stateBadge.status}>
-                        {stateBadge.label}
-                      </span>
-                      <span class="editorial-article-row__badge">{getLanguageBadge(article?.language)}</span>
-                      <span class="editorial-article-row__badge">{article?.type || '—'}</span>
-                    </div>
-                    <h3>{article?.title || copy.untitled}</h3>
-                    {summary && <p class="editorial-article-row__summary">{summary}</p>}
-                    <p class="editorial-article-row__meta-line">
-                      {authorLabel} <span aria-hidden="true">·</span> {copy.updated} {formatDateTime(updatedAt)}
-                    </p>
-                    {!article && (
-                      <p class="editorial-message" data-tone="error">{copy.missingDraft}</p>
-                    )}
-                    {showPublishPlaceholder && (
-                      <p class="editorial-message">{copy.readyForPublish}</p>
-                    )}
-                  </div>
-
-                  {article && (
-                    <div class="editorial-article-row__actions">
-                      <div class="editorial-article-row__menu" data-editorial-article-menu>
-                        <button
-                          class="editorial-pte__image-menu-button editorial-article-row__menu-button"
-                          type="button"
-                          aria-label={copy.articleActions}
-                          title={copy.articleActions}
-                          aria-haspopup="menu"
-                          aria-expanded="false"
-                          aria-controls={menuId}
-                          data-editorial-article-menu-trigger
-                        >
-                          <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-                            <circle cx="7" cy="12" r="1.8" />
-                            <circle cx="12" cy="12" r="1.8" />
-                            <circle cx="17" cy="12" r="1.8" />
-                          </svg>
-                        </button>
-                        <div
-                          id={menuId}
-                          class="editorial-pte__image-menu-panel editorial-article-row__menu-panel"
-                          role="menu"
-                          data-editorial-article-menu-panel
-                          hidden
-                        >
-                          <a href={previewHref} role="menuitem">{actionLabel}</a>
-                          {canCreateEnglishTranslation && (
-                            <button
-                              type="button"
-                              role="menuitem"
-                              data-editorial-translation-action
-                              data-endpoint={`/api/editor/articles/${encodeURIComponent(item.sanityDocumentId)}/translation`}
-                            >
-                              {copy.createEnglishTranslation}
-                            </button>
-                          )}
                           {canRequestChanges && (
                             <button
                               type="button"
@@ -799,6 +680,13 @@ const visibleOwnTypeOptions = Array.from(
             })}
           </div>
         )}
+
+        {!listError && editorialArticleItems.length > 0 && (
+          <div class="editorial-empty-state editorial-empty-state--compact" data-editorial-filter-empty hidden aria-live="polite">
+            <h3>{copy.noFilterResultsTitle}</h3>
+            <p>{copy.noFilterResultsText}</p>
+          </div>
+        )}
       </section>
     )}
   </CommunityLayout>
@@ -818,8 +706,6 @@ const visibleOwnTypeOptions = Array.from(
   editorialUiLanguage: currentLang,
   articleCountSingular: copy.articleCountSingular,
   articleCountPlural: copy.articleCountPlural,
-  visibleCountSingular: copy.visibleCountSingular,
-  visibleCountPlural: copy.visibleCountPlural,
 }}>
   const dashboardStatus = document.querySelector('[data-editorial-dashboard-status]');
   const workflowStatus = document.querySelector('[data-editorial-workflow-status]');
@@ -829,8 +715,8 @@ const visibleOwnTypeOptions = Array.from(
   const translationButtons = document.querySelectorAll('[data-editorial-translation-action]');
   const revisionButtons = document.querySelectorAll('[data-editorial-revision-action]');
   const articleFilterForm = document.querySelector('[data-editorial-article-filters]');
-  const ownArticleItems = document.querySelector('[data-editorial-own-items]');
-  const ownArticleCards = Array.from(document.querySelectorAll('[data-editorial-own-article]'));
+  const articleItems = document.querySelector('[data-editorial-article-items]');
+  const articleCards = Array.from(document.querySelectorAll('[data-editorial-article]'));
   const filterEmptyState = document.querySelector('[data-editorial-filter-empty]');
   const articleCount = document.querySelector('[data-editorial-article-count]');
   const quickFilterButtons = Array.from(document.querySelectorAll('[data-editorial-quick-filter]'));
@@ -842,11 +728,10 @@ const visibleOwnTypeOptions = Array.from(
     .toLowerCase()
     .trim();
 
-  const getArticleCountLabel = (total, visible) => {
-    const articleLabel = total === 1 ? articleCountSingular : articleCountPlural;
-    const visibleLabel = visible === 1 ? visibleCountSingular : visibleCountPlural;
+  const getArticleCountLabel = (visible) => {
+    const articleLabel = visible === 1 ? articleCountSingular : articleCountPlural;
 
-    return `${total} ${articleLabel} · ${visible} ${visibleLabel}`;
+    return `${visible} ${articleLabel}`;
   };
 
   const getTimestamp = (value) => {
@@ -908,11 +793,7 @@ const visibleOwnTypeOptions = Array.from(
     }
 
     if (quickFilter === 'review') {
-      return (
-        card.dataset.workflowStatus === 'submitted' ||
-        card.dataset.workflowStatus === 'changes_requested' ||
-        card.dataset.workflowStatus === 'approved'
-      );
+      return card.dataset.workflowStatus === 'submitted';
     }
 
     if (quickFilter === 'published') {
@@ -920,7 +801,7 @@ const visibleOwnTypeOptions = Array.from(
     }
 
     if (quickFilter === 'revisions') {
-      return card.dataset.sanityLifecycle === 'revision_draft';
+      return card.dataset.reviewQueue === 'true';
     }
 
     if (quickFilter === 'orphans') {
@@ -936,7 +817,7 @@ const visibleOwnTypeOptions = Array.from(
 
       const quickFilter = button.dataset.editorialQuickFilter || 'all';
       const isActive = quickFilter === activeQuickFilter;
-      const count = ownArticleCards.filter((card) => matchesQuickFilter(card, quickFilter)).length;
+      const count = articleCards.filter((card) => matchesQuickFilter(card, quickFilter)).length;
       const countNode = button.querySelector('[data-editorial-quick-filter-count]');
 
       button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
@@ -1012,7 +893,7 @@ const visibleOwnTypeOptions = Array.from(
   };
 
   const updateArticleFilters = () => {
-    if (!articleFilterForm || ownArticleCards.length === 0) return;
+    if (!articleFilterForm || articleCards.length === 0) return;
 
     const getFilterValue = (selector) => {
       const control = articleFilterForm.querySelector(selector);
@@ -1022,34 +903,32 @@ const visibleOwnTypeOptions = Array.from(
         : '';
     };
     const search = normalizeFilterText(getFilterValue('[data-editorial-filter-search]'));
-    const workflowStatus = getFilterValue('[data-editorial-filter-workflow]');
     const sanityLifecycle = getFilterValue('[data-editorial-filter-lifecycle]');
     const language = getFilterValue('[data-editorial-filter-language]');
     const type = getFilterValue('[data-editorial-filter-type]');
     const sortMode = getFilterValue('[data-editorial-sort]') || 'updated_desc';
-    const sortedCards = [...ownArticleCards].sort(compareArticleCards(sortMode));
+    const sortedCards = [...articleCards].sort(compareArticleCards(sortMode));
     let visibleCount = 0;
 
     sortedCards.forEach((card) => {
       if (!(card instanceof HTMLElement)) return;
 
       const matchesSearch = !search || normalizeFilterText(card.dataset.searchIndex).includes(search);
-      const matchesWorkflow = !workflowStatus || card.dataset.workflowStatus === workflowStatus;
       const matchesLifecycle = !sanityLifecycle || card.dataset.sanityLifecycle === sanityLifecycle;
       const matchesLanguage = !language || card.dataset.articleLanguage === language;
       const matchesType = !type || card.dataset.articleType === type;
       const matchesQuick = matchesQuickFilter(card, activeQuickFilter);
-      const isVisible = matchesQuick && matchesSearch && matchesWorkflow && matchesLifecycle && matchesLanguage && matchesType;
+      const isVisible = matchesQuick && matchesSearch && matchesLifecycle && matchesLanguage && matchesType;
 
       card.hidden = !isVisible;
       if (isVisible) visibleCount += 1;
-      if (ownArticleItems) {
-        ownArticleItems.append(card);
+      if (articleItems) {
+        articleItems.append(card);
       }
     });
 
-    if (ownArticleItems) {
-      ownArticleItems.hidden = visibleCount === 0;
+    if (articleItems) {
+      articleItems.hidden = visibleCount === 0;
     }
 
     if (filterEmptyState) {
@@ -1057,7 +936,7 @@ const visibleOwnTypeOptions = Array.from(
     }
 
     if (articleCount) {
-      articleCount.textContent = getArticleCountLabel(ownArticleCards.length, visibleCount);
+      articleCount.textContent = getArticleCountLabel(visibleCount);
     }
     updateQuickFilterButtons();
   };
