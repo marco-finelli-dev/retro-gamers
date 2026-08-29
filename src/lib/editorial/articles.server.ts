@@ -156,6 +156,28 @@ export type EditorialArticleGameInfo = {
   cover: EditorialArticleFeaturedImage | null;
 };
 
+type EditorialArticleMonetizationProductType =
+  | 'book'
+  | 'hardware'
+  | 'accessory'
+  | 'software'
+  | 'gadget'
+  | 'service'
+  | 'other';
+
+type EditorialArticleMonetizationPriority = 'low' | 'medium' | 'high';
+
+export type EditorialArticleMonetization = {
+  isAffiliate: boolean;
+  productType: EditorialArticleMonetizationProductType | '';
+  affiliateUrl: string;
+  affiliateLabel: string;
+  affiliateDescription: string;
+  priceLabel: string;
+  disclaimer: string;
+  priority: EditorialArticleMonetizationPriority | '';
+};
+
 export type EditorialArticleRating = Record<EditorialArticleRatingField, number | null> & {
   summary: string;
 };
@@ -195,6 +217,10 @@ export type EditorialArticleDraft = {
   slug: string;
   isPublic: boolean;
   reviewStatus: string;
+  lastUpdated: string | null;
+  promoteOnUpdate: boolean;
+  featuredUntil: string | null;
+  monetization: EditorialArticleMonetization | null;
   content: PortableTextBlock[];
   authorId: string;
   author: EditorialArticleAuthorInfo | null;
@@ -264,6 +290,20 @@ const validAsideTones = new Set(['neutral', 'info', 'highlight']);
 const validTaxonomyReferenceTypes = ['genre', 'developer', 'publisher', 'manufacturer', 'mode', 'series', 'editorialSeries'];
 const companyTaxonomyTypes = ['developer', 'publisher', 'manufacturer'];
 const validMediaFormats = new Set<string>(editorialArticleMediaFormats);
+const validMonetizationProductTypes = new Set<EditorialArticleMonetizationProductType>([
+  'book',
+  'hardware',
+  'accessory',
+  'software',
+  'gadget',
+  'service',
+  'other',
+]);
+const validMonetizationPriorities = new Set<EditorialArticleMonetizationPriority>([
+  'low',
+  'medium',
+  'high',
+]);
 const editorialArticleReferenceFields: EditorialArticleReferenceField[] = [
   'categories',
   'editorialSeries',
@@ -1220,6 +1260,53 @@ function normalizeAiTransparency(value: unknown): AiTransparency {
     : 'none';
 }
 
+function normalizeDateTime(value: unknown) {
+  if (typeof value !== 'string') return null;
+
+  const normalized = value.trim();
+
+  return normalized && Number.isFinite(Date.parse(normalized)) ? normalized : null;
+}
+
+function normalizeDate(value: unknown) {
+  if (typeof value !== 'string') return null;
+
+  const normalized = value.trim();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return null;
+
+  const [year, month, day] = normalized.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+    ? normalized
+    : null;
+}
+
+function normalizeMonetization(value: unknown): EditorialArticleMonetization | null {
+  if (!isPlainObject(value)) return null;
+
+  const productType = normalizeString(value.productType, 40).trim();
+  const priority = normalizeString(value.priority, 40).trim();
+
+  return {
+    isAffiliate: value.isAffiliate === true,
+    productType: validMonetizationProductTypes.has(productType as EditorialArticleMonetizationProductType)
+      ? productType as EditorialArticleMonetizationProductType
+      : '',
+    affiliateUrl: normalizeString(value.affiliateUrl, 5000).trim(),
+    affiliateLabel: normalizeString(value.affiliateLabel, 500).trim(),
+    affiliateDescription: normalizeString(value.affiliateDescription, 5000).trim(),
+    priceLabel: normalizeString(value.priceLabel, 500).trim(),
+    disclaimer: normalizeString(value.disclaimer, 5000).trim(),
+    priority: validMonetizationPriorities.has(priority as EditorialArticleMonetizationPriority)
+      ? priority as EditorialArticleMonetizationPriority
+      : '',
+  };
+}
+
 function hasEditorialSeriesValue(value: unknown) {
   return Array.isArray(value) && value.length > 0;
 }
@@ -1382,6 +1469,10 @@ function normalizeDraftArticle(
     slug: typeof slugValue === 'string' ? slugValue : '',
     isPublic: document.isPublic === true,
     reviewStatus: normalizeString(document.reviewStatus, 80),
+    lastUpdated: normalizeDateTime(document.lastUpdated),
+    promoteOnUpdate: document.promoteOnUpdate === true,
+    featuredUntil: normalizeDate(document.featuredUntil),
+    monetization: normalizeMonetization(document.monetization),
     content: normalizePortableTextContent(document.content),
     authorId: authorReference?._ref || '',
     author,
@@ -1429,6 +1520,79 @@ function validateOptionalPositiveNumber(value: unknown, field: string) {
   }
 
   return number;
+}
+
+function validateOptionalDateTime(value: unknown, field: string) {
+  if (value === null || value === undefined || value === '') return null;
+
+  const normalized = normalizeDateTime(value);
+
+  if (!normalized) {
+    throw new Error(`invalid_${field}`);
+  }
+
+  return normalized;
+}
+
+function validateOptionalDate(value: unknown, field: string) {
+  if (value === null || value === undefined || value === '') return null;
+
+  const normalized = normalizeDate(value);
+
+  if (!normalized) {
+    throw new Error(`invalid_${field}`);
+  }
+
+  return normalized;
+}
+
+function validateMonetization(value: unknown) {
+  if (value === null || value === undefined) return null;
+  if (!isPlainObject(value)) throw new Error('invalid_monetization');
+  if (
+    Object.prototype.hasOwnProperty.call(value, 'isAffiliate') &&
+    typeof value.isAffiliate !== 'boolean'
+  ) {
+    throw new Error('invalid_monetization_isAffiliate');
+  }
+
+  const normalized = normalizeMonetization(value);
+  const rawProductType = normalizeString(value.productType, 40).trim();
+  const rawPriority = normalizeString(value.priority, 40).trim();
+
+  if (
+    rawProductType &&
+    !validMonetizationProductTypes.has(rawProductType as EditorialArticleMonetizationProductType)
+  ) {
+    throw new Error('invalid_monetization_productType');
+  }
+
+  if (
+    rawPriority &&
+    !validMonetizationPriorities.has(rawPriority as EditorialArticleMonetizationPriority)
+  ) {
+    throw new Error('invalid_monetization_priority');
+  }
+
+  if (normalized?.affiliateUrl) {
+    try {
+      const url = new URL(normalized.affiliateUrl);
+
+      if (!['http:', 'https:'].includes(url.protocol)) {
+        throw new Error('invalid_protocol');
+      }
+    } catch {
+      throw new Error('invalid_monetization_affiliateUrl');
+    }
+  }
+
+  if (!normalized) return null;
+
+  return Object.fromEntries(
+    Object.entries(normalized).filter(([key, fieldValue]) =>
+      key === 'isAffiliate' || fieldValue !== ''
+    )
+  );
 }
 
 function validateRatingValue(value: unknown, field: EditorialArticleRatingField) {
@@ -2849,6 +3013,40 @@ async function getPatchFromPayload(
       pushUnset('aiTransparencyNote');
     }
   }
+  if (Object.prototype.hasOwnProperty.call(payload, 'lastUpdated')) {
+    const lastUpdated = validateOptionalDateTime(payload.lastUpdated, 'lastUpdated');
+
+    if (lastUpdated) {
+      set.lastUpdated = lastUpdated;
+    } else {
+      pushUnset('lastUpdated');
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'promoteOnUpdate')) {
+    if (typeof payload.promoteOnUpdate !== 'boolean') {
+      throw new Error('invalid_promoteOnUpdate');
+    }
+
+    set.promoteOnUpdate = payload.promoteOnUpdate;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'featuredUntil')) {
+    const featuredUntil = validateOptionalDate(payload.featuredUntil, 'featuredUntil');
+
+    if (featuredUntil) {
+      set.featuredUntil = featuredUntil;
+    } else {
+      pushUnset('featuredUntil');
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'monetization')) {
+    const monetization = validateMonetization(payload.monetization);
+
+    if (monetization) {
+      set.monetization = monetization;
+    } else {
+      pushUnset('monetization');
+    }
+  }
   const reviewPatch = getReviewPatchFields(payload, {
     includeReviewData: !removeReviewSpecificData,
   });
@@ -3159,6 +3357,22 @@ export async function updateEditableEditorialArticle({
 
   if (!fetchResult.ok) return fetchResult;
 
+  const restrictedPublishingFields = ['lastUpdated', 'promoteOnUpdate', 'featuredUntil'];
+  const hasRestrictedPublishingPayload = restrictedPublishingFields.some((field) =>
+    Object.prototype.hasOwnProperty.call(payload, field)
+  );
+
+  if (!context.permissions.canPublishArticle && hasRestrictedPublishingPayload) {
+    return { ok: false as const, status: 403, error: 'article_publishing_fields_forbidden' };
+  }
+
+  if (
+    !context.permissions.canPublishArticle &&
+    Object.prototype.hasOwnProperty.call(payload, 'monetization')
+  ) {
+    return { ok: false as const, status: 403, error: 'article_monetization_forbidden' };
+  }
+
   let patch;
 
   try {
@@ -3218,7 +3432,7 @@ export async function updateEditableEditorialArticle({
       nextWorkflowStatus: fetchResult.ownership.workflowStatus,
       metadata: {
         fields:
-          'title,subtitle,cardExcerpt,excerpt,seoTitle,aiTransparency,aiTransparencyNote,type,language,slug,content,featuredImage.alt,categories,editorialSeries,platforms,creators,genres,developers,publishers,manufacturer,modes,series,translationOf,gameInfo.releaseYear,gameInfo.mediaFormat,gameInfo.cover.alt,rating,pros,cons,seriesOrder,seriesLabel',
+          'title,subtitle,cardExcerpt,excerpt,seoTitle,aiTransparency,aiTransparencyNote,lastUpdated,promoteOnUpdate,featuredUntil,monetization,type,language,slug,content,featuredImage.alt,categories,editorialSeries,platforms,creators,genres,developers,publishers,manufacturer,modes,series,translationOf,gameInfo.releaseYear,gameInfo.mediaFormat,gameInfo.cover.alt,rating,pros,cons,seriesOrder,seriesLabel',
       },
     });
 

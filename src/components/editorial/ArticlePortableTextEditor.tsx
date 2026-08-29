@@ -203,6 +203,28 @@ type EditableArticleRating = Record<RatingField, number | null> & {
   summary: string;
 };
 
+type MonetizationProductType =
+  | 'book'
+  | 'hardware'
+  | 'accessory'
+  | 'software'
+  | 'gadget'
+  | 'service'
+  | 'other';
+
+type MonetizationPriority = 'low' | 'medium' | 'high';
+
+type EditableArticleMonetization = {
+  isAffiliate: boolean;
+  productType: MonetizationProductType | '';
+  affiliateUrl: string;
+  affiliateLabel: string;
+  affiliateDescription: string;
+  priceLabel: string;
+  disclaimer: string;
+  priority: MonetizationPriority | '';
+};
+
 type EditableArticle = {
   _id: string;
   _rev: string;
@@ -220,6 +242,10 @@ type EditableArticle = {
   language: ArticleLanguage;
   slug: string;
   reviewStatus: string;
+  lastUpdated: string | null;
+  promoteOnUpdate: boolean;
+  featuredUntil: string | null;
+  monetization: EditableArticleMonetization | null;
   content: PortableTextBlock[];
   author: EditableArticleAuthor;
   featuredImage: EditableArticleFeaturedImage;
@@ -289,6 +315,36 @@ type Labels = {
   aiTransparencySections: string;
   aiTransparencyLegacy: string;
   aiTransparencyNote: string;
+  inspectorPublishing: string;
+  lastUpdated: string;
+  lastUpdatedHelp: string;
+  promoteOnUpdate: string;
+  promoteOnUpdateHelp: string;
+  featuredUntil: string;
+  featuredUntilHelp: string;
+  inspectorMonetization: string;
+  monetizationIsAffiliate: string;
+  monetizationIsAffiliateHelp: string;
+  monetizationProductType: string;
+  monetizationProductTypePlaceholder: string;
+  monetizationProductTypeBook: string;
+  monetizationProductTypeHardware: string;
+  monetizationProductTypeAccessory: string;
+  monetizationProductTypeSoftware: string;
+  monetizationProductTypeGadget: string;
+  monetizationProductTypeService: string;
+  monetizationProductTypeOther: string;
+  monetizationAffiliateUrl: string;
+  monetizationAffiliateUrlHelp: string;
+  monetizationAffiliateLabel: string;
+  monetizationAffiliateDescription: string;
+  monetizationPriceLabel: string;
+  monetizationDisclaimer: string;
+  monetizationPriority: string;
+  monetizationPriorityPlaceholder: string;
+  monetizationPriorityLow: string;
+  monetizationPriorityMedium: string;
+  monetizationPriorityHigh: string;
   inspectorSeo: string;
   inspectorRelations: string;
   inspectorFeaturedImage: string;
@@ -325,7 +381,6 @@ type Labels = {
   workflowStatusPublished: string;
   workflowSubmittedAt: string;
   workflowReviewedAt: string;
-  workflowReviewer: string;
   documentActions: string;
   workflowSubmit: string;
   workflowRequestChanges: string;
@@ -347,7 +402,6 @@ type Labels = {
   workflowForbidden: string;
   workflowNotFound: string;
   workflowGenericError: string;
-  futureSlot: string;
   featuredImageCurrent: string;
   featuredImageEmpty: string;
   featuredImageUploading: string;
@@ -643,6 +697,16 @@ const mediaFormatOptions: MediaFormat[] = [
   'other',
 ];
 const ratingFields: RatingField[] = ['grafica', 'sonoro', 'giocabilita', 'longevita', 'overall'];
+const monetizationProductTypes: MonetizationProductType[] = [
+  'book',
+  'hardware',
+  'accessory',
+  'software',
+  'gadget',
+  'service',
+  'other',
+];
+const monetizationPriorities: MonetizationPriority[] = ['low', 'medium', 'high'];
 const ratingSelectValues = Array.from({ length: 19 }, (_, index) => 1 + index * 0.5);
 const releaseYearSelectValues = Array.from({ length: 91 }, (_, index) => 2050 - index);
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -4376,6 +4440,63 @@ function createEmptyRating(): EditableArticleRating {
   };
 }
 
+function createDefaultMonetization(): EditableArticleMonetization {
+  return {
+    isAffiliate: false,
+    productType: '',
+    affiliateUrl: '',
+    affiliateLabel: 'Scopri di più',
+    affiliateDescription: '',
+    priceLabel: '',
+    disclaimer: 'Questo articolo può contenere link affiliati: acquistando tramite questi link potremmo ricevere una piccola commissione, senza costi aggiuntivi per te.',
+    priority: 'medium',
+  };
+}
+
+function toDateTimeLocalInputValue(value: string | null) {
+  if (!value) return '';
+
+  const date = new Date(value);
+
+  if (!Number.isFinite(date.getTime())) return '';
+
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+
+  return localDate.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocalInputValue(value: string) {
+  if (!value) return null;
+
+  const date = new Date(value);
+
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
+function getMonetizationProductTypeLabel(type: MonetizationProductType, labels: Labels) {
+  const productTypeLabels: Record<MonetizationProductType, string> = {
+    book: labels.monetizationProductTypeBook,
+    hardware: labels.monetizationProductTypeHardware,
+    accessory: labels.monetizationProductTypeAccessory,
+    software: labels.monetizationProductTypeSoftware,
+    gadget: labels.monetizationProductTypeGadget,
+    service: labels.monetizationProductTypeService,
+    other: labels.monetizationProductTypeOther,
+  };
+
+  return productTypeLabels[type];
+}
+
+function getMonetizationPriorityLabel(priority: MonetizationPriority, labels: Labels) {
+  const priorityLabels: Record<MonetizationPriority, string> = {
+    low: labels.monetizationPriorityLow,
+    medium: labels.monetizationPriorityMedium,
+    high: labels.monetizationPriorityHigh,
+  };
+
+  return priorityLabels[priority];
+}
+
 function getEditableArticleSnapshot(articleDraft: EditableArticle, contentValue: PortableTextBlock[]) {
   return JSON.stringify({
     title: articleDraft.title,
@@ -4385,6 +4506,10 @@ function getEditableArticleSnapshot(articleDraft: EditableArticle, contentValue:
     seoTitle: articleDraft.seoTitle,
     aiTransparency: articleDraft.aiTransparency,
     aiTransparencyNote: articleDraft.aiTransparencyNote,
+    lastUpdated: articleDraft.lastUpdated,
+    promoteOnUpdate: articleDraft.promoteOnUpdate,
+    featuredUntil: articleDraft.featuredUntil,
+    monetization: articleDraft.monetization,
     type: articleDraft.type,
     language: articleDraft.language,
     slug: articleDraft.slug,
@@ -8088,6 +8213,21 @@ export default function ArticlePortableTextEditor({
     }));
   };
 
+  const updateMonetization = <Field extends keyof EditableArticleMonetization>(
+    field: Field,
+    value: EditableArticleMonetization[Field]
+  ) => {
+    if (isManualSaveLocked || !capabilities.canEditMonetization) return;
+
+    setDraft((current) => ({
+      ...current,
+      monetization: {
+        ...(current.monetization || createDefaultMonetization()),
+        [field]: value,
+      },
+    }));
+  };
+
   const updateRelationField = (
     field: Exclude<RelationKind, 'translationOf'>,
     value: EditableArticleReference[]
@@ -8126,6 +8266,7 @@ export default function ArticlePortableTextEditor({
   ].some((values) => values.length > 0);
   const showReviewRelations = draft.type === 'review' || hasReviewRelations;
   const showHardwareRelations = draft.type === 'hardware' || draft.manufacturer.length > 0;
+  const monetization = draft.monetization || createDefaultMonetization();
   const featuredImage = draft.featuredImage;
   const featuredImageAsset = featuredImage?.asset || null;
   const hasFeaturedImage = Boolean(featuredImageAsset?._id || featuredImageAsset?.url);
@@ -8169,6 +8310,14 @@ export default function ArticlePortableTextEditor({
     seoTitle: articleDraft.seoTitle,
     aiTransparency: articleDraft.aiTransparency,
     aiTransparencyNote: articleDraft.aiTransparencyNote,
+    ...(capabilities.canPublish ? {
+      lastUpdated: articleDraft.lastUpdated,
+      promoteOnUpdate: articleDraft.promoteOnUpdate,
+      featuredUntil: articleDraft.featuredUntil,
+    } : {}),
+    ...(capabilities.canEditMonetization ? {
+      monetization: articleDraft.monetization,
+    } : {}),
     type: articleDraft.type,
     language: articleDraft.language,
     slug: articleDraft.slug,
@@ -8857,37 +9006,193 @@ export default function ArticlePortableTextEditor({
             )}
           </details>
 
+          {capabilities.canPublish && (
+            <details className="editorial-inspector-section" open>
+              <summary>{labels.inspectorPublishing}</summary>
+
+              <label className="editorial-field">
+                <span>{labels.lastUpdated}</span>
+                <input
+                  type="datetime-local"
+                  value={toDateTimeLocalInputValue(draft.lastUpdated)}
+                  disabled={isManualSaveLocked}
+                  onChange={(event) => updateField(
+                    'lastUpdated',
+                    fromDateTimeLocalInputValue(event.target.value)
+                  )}
+                />
+                <p className="editorial-file-meta">{labels.lastUpdatedHelp}</p>
+              </label>
+
+              {(draft.lastUpdated || draft.promoteOnUpdate) && (
+                <div className="editorial-field">
+                  <div className="editorial-checkbox-list">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={draft.promoteOnUpdate}
+                        disabled={isManualSaveLocked}
+                        onChange={(event) => updateField('promoteOnUpdate', event.target.checked)}
+                      />
+                      <span>{labels.promoteOnUpdate}</span>
+                    </label>
+                  </div>
+                  <p className="editorial-file-meta">{labels.promoteOnUpdateHelp}</p>
+                </div>
+              )}
+
+              {(draft.type === 'news' || draft.featuredUntil) && (
+                <label className="editorial-field">
+                  <span>{labels.featuredUntil}</span>
+                  <input
+                    type="date"
+                    value={draft.featuredUntil || ''}
+                    disabled={isManualSaveLocked}
+                    onChange={(event) => updateField('featuredUntil', event.target.value || null)}
+                  />
+                  <p className="editorial-file-meta">{labels.featuredUntilHelp}</p>
+                </label>
+              )}
+            </details>
+          )}
+
+          {capabilities.canEditMonetization && (
+            <details className="editorial-inspector-section" open>
+              <summary>{labels.inspectorMonetization}</summary>
+
+              <div className="editorial-field">
+                <div className="editorial-checkbox-list">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={monetization.isAffiliate}
+                      disabled={isManualSaveLocked}
+                      onChange={(event) => updateMonetization('isAffiliate', event.target.checked)}
+                    />
+                    <span>{labels.monetizationIsAffiliate}</span>
+                  </label>
+                </div>
+                <p className="editorial-file-meta">{labels.monetizationIsAffiliateHelp}</p>
+              </div>
+
+              {monetization.isAffiliate && (
+                <div className="editorial-inspector-subsection">
+                  <label className="editorial-field">
+                    <span>{labels.monetizationProductType}</span>
+                    <select
+                      value={monetization.productType}
+                      disabled={isManualSaveLocked}
+                      onChange={(event) => updateMonetization(
+                        'productType',
+                        event.target.value as MonetizationProductType | ''
+                      )}
+                    >
+                      <option value="">{labels.monetizationProductTypePlaceholder}</option>
+                      {monetizationProductTypes.map((type) => (
+                        <option value={type} key={type}>
+                          {getMonetizationProductTypeLabel(type, labels)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="editorial-field">
+                    <span>{labels.monetizationAffiliateUrl}</span>
+                    <input
+                      type="url"
+                      value={monetization.affiliateUrl}
+                      placeholder="https://…"
+                      disabled={isManualSaveLocked}
+                      onChange={(event) => updateMonetization('affiliateUrl', event.target.value)}
+                    />
+                    <p className="editorial-file-meta">{labels.monetizationAffiliateUrlHelp}</p>
+                  </label>
+
+                  <label className="editorial-field">
+                    <span>{labels.monetizationAffiliateLabel}</span>
+                    <input
+                      value={monetization.affiliateLabel}
+                      disabled={isManualSaveLocked}
+                      onChange={(event) => updateMonetization('affiliateLabel', event.target.value)}
+                    />
+                  </label>
+
+                  <label className="editorial-field">
+                    <span>{labels.monetizationAffiliateDescription}</span>
+                    <textarea
+                      value={monetization.affiliateDescription}
+                      rows={3}
+                      disabled={isManualSaveLocked}
+                      onChange={(event) => updateMonetization('affiliateDescription', event.target.value)}
+                    />
+                  </label>
+
+                  <label className="editorial-field">
+                    <span>{labels.monetizationPriceLabel}</span>
+                    <input
+                      value={monetization.priceLabel}
+                      disabled={isManualSaveLocked}
+                      onChange={(event) => updateMonetization('priceLabel', event.target.value)}
+                    />
+                  </label>
+
+                  <label className="editorial-field">
+                    <span>{labels.monetizationDisclaimer}</span>
+                    <textarea
+                      value={monetization.disclaimer}
+                      rows={2}
+                      disabled={isManualSaveLocked}
+                      onChange={(event) => updateMonetization('disclaimer', event.target.value)}
+                    />
+                  </label>
+
+                  <label className="editorial-field">
+                    <span>{labels.monetizationPriority}</span>
+                    <select
+                      value={monetization.priority}
+                      disabled={isManualSaveLocked}
+                      onChange={(event) => updateMonetization(
+                        'priority',
+                        event.target.value as MonetizationPriority | ''
+                      )}
+                    >
+                      <option value="">{labels.monetizationPriorityPlaceholder}</option>
+                      {monetizationPriorities.map((priority) => (
+                        <option value={priority} key={priority}>
+                          {getMonetizationPriorityLabel(priority, labels)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+            </details>
+          )}
+
           {capabilities.canEditWorkflow && (
             <details className="editorial-inspector-section" open>
               <summary>{labels.inspectorWorkflow}</summary>
 
-              <div className="editorial-readonly-field">
-                <span>{labels.workflowStatus}</span>
-                <p>{getWorkflowStatusLabel(currentWorkflow.workflowStatus, labels)}</p>
+              <div className="editorial-inspector-subsection">
+                <div className="editorial-readonly-field">
+                  <span>{labels.workflowStatus}</span>
+                  <p>{getWorkflowStatusLabel(currentWorkflow.workflowStatus, labels)}</p>
+                </div>
+
+                {currentWorkflow.submittedAt && (
+                  <div className="editorial-readonly-field">
+                    <span>{labels.workflowSubmittedAt}</span>
+                    <p>{formatWorkflowDate(currentWorkflow.submittedAt, lang)}</p>
+                  </div>
+                )}
+
+                {currentWorkflow.reviewedAt && (
+                  <div className="editorial-readonly-field">
+                    <span>{labels.workflowReviewedAt}</span>
+                    <p>{formatWorkflowDate(currentWorkflow.reviewedAt, lang)}</p>
+                  </div>
+                )}
               </div>
-
-              {currentWorkflow.submittedAt && (
-                <div className="editorial-readonly-field">
-                  <span>{labels.workflowSubmittedAt}</span>
-                  <p>{formatWorkflowDate(currentWorkflow.submittedAt, lang)}</p>
-                </div>
-              )}
-
-              {currentWorkflow.reviewedAt && (
-                <div className="editorial-readonly-field">
-                  <span>{labels.workflowReviewedAt}</span>
-                  <p>{formatWorkflowDate(currentWorkflow.reviewedAt, lang)}</p>
-                </div>
-              )}
-
-              {currentWorkflow.reviewedBy && (
-                <div className="editorial-readonly-field">
-                  <span>{labels.workflowReviewer}</span>
-                  <p>{currentWorkflow.reviewedBy}</p>
-                </div>
-              )}
-
-              <p className="editorial-file-meta">{labels.futureSlot}</p>
             </details>
           )}
 
