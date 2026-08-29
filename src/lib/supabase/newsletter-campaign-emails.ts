@@ -97,27 +97,31 @@ const renderCampaignItem = (item: NewsletterCampaignItem, language: 'it' | 'en')
   const title = escapeEmailHtml(item.title);
   const description = item.description ? escapeEmailHtml(item.description) : '';
   const type = escapeEmailHtml(getCampaignItemTypeLabel(item.type, language));
-  const titleHtml = url
-    ? `<a class="rg-newsletter-item-link" href="${escapeEmailHtml(url)}" style="color:#0b7f89; text-decoration:none;">${title}</a>`
-    : title;
+  const cardTag = url ? 'a' : 'div';
+  const cardAttributes = url
+    ? ` href="${escapeEmailHtml(url)}" aria-label="${title}"`
+    : '';
+  const titleClass = url
+    ? 'rg-newsletter-item-title rg-newsletter-item-link'
+    : 'rg-newsletter-item-title';
 
   return `
-    <div class="rg-newsletter-item" style="border:1px solid #e5e0d8; border-radius:14px; padding:14px; margin:0 0 14px 0; background:#f8fbfc;">
+    <${cardTag} class="rg-newsletter-item"${cardAttributes} style="display:block; color:inherit; text-decoration:none; border:1px solid #e5e0d8; border-radius:14px; padding:14px; margin:0 0 14px 0; background:#f8fbfc;">
       ${imageUrl && isAbsoluteHttpUrl(imageUrl) ? `
         <img src="${escapeEmailHtml(imageUrl)}" alt="" width="560" style="display:block; width:100%; max-width:560px; height:auto; border-radius:10px; margin:0 0 12px 0;">
       ` : ''}
       <div class="rg-newsletter-item-kicker" style="margin:0 0 7px 0; font-size:11px; line-height:1.3; letter-spacing:0.08em; text-transform:uppercase; color:#0b6b73; font-weight:700;">
         ${type}
       </div>
-      <h2 class="rg-newsletter-item-title" style="margin:0 0 8px 0; font-size:18px; line-height:1.3; color:#111827;">
-        ${titleHtml}
+      <h2 class="${titleClass}" style="margin:0 0 8px 0; font-size:18px; line-height:1.3; color:${url ? '#0b7f89' : '#111827'};">
+        ${title}
       </h2>
       ${description ? `
         <p class="rg-newsletter-item-text" style="margin:0; color:#374151; font-size:14px; line-height:1.55;">
           ${description}
         </p>
       ` : ''}
-    </div>
+    </${cardTag}>
   `;
 };
 
