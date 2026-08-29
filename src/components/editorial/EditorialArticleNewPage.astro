@@ -3,12 +3,17 @@ import '../../styles/pages/editorial-area.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CommunityHero from '../community/CommunityHero.astro';
 import CommunityLayout from '../community/CommunityLayout.astro';
-import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+import EditorialSectionNav from './EditorialSectionNav.astro';
+import EditorialSidebar from './EditorialSidebar.astro';
 import {
   editorialArticleLanguages,
   editorialArticleTypes,
   requireEditorialArticleContext,
 } from '../../lib/editorial/articles.server';
+import {
+  fetchEditorialAuthorProfile,
+  fetchPublishedArticleCountForAuthor,
+} from '../../lib/editorial/profile.server';
 import { canCreateArticle } from '../../lib/editorial/permissions';
 
 type EditorialLang = 'it' | 'en';
@@ -34,7 +39,6 @@ const copy = isEnglish
       type: 'Article type',
       create: 'Create draft',
       creating: 'Creating draft…',
-      dashboard: 'Editorial dashboard',
       articles: 'Article workspace',
       error: 'The draft could not be created. Try again in a moment.',
     }
@@ -52,14 +56,22 @@ const copy = isEnglish
       type: 'Tipo articolo',
       create: 'Crea bozza',
       creating: 'Creazione bozza…',
-      dashboard: 'Dashboard redazionale',
       articles: 'Editor articoli',
       error: 'Non è stato possibile creare la bozza. Riprova tra poco.',
     };
 
-const dashboardHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
 const articlesHref = isEnglish ? '/en/account/editor/articles/' : '/account/editor/articles/';
 const languageSwitch = isEnglish ? '/account/editor/articles/new/' : '/en/account/editor/articles/new/';
+let author = null;
+let publishedArticleCount = 0;
+
+if (access.ok) {
+  author = await fetchEditorialAuthorProfile(access.context.sanityAuthorId);
+
+  if (author) {
+    publishedArticleCount = await fetchPublishedArticleCountForAuthor(access.context.sanityAuthorId);
+  }
+}
 ---
 
 <BaseLayout
@@ -70,15 +82,15 @@ const languageSwitch = isEnglish ? '/account/editor/articles/new/' : '/en/accoun
   languageSwitch={languageSwitch}
   noindex={true}
 >
-  <CommunityLayout class="editorial-area-page editorial-workspace-page" sidebar={access.ok}>
-    {access.ok && (
+  <CommunityLayout class="editorial-area-page editorial-workspace-page" sidebar={access.ok && Boolean(author)}>
+    {access.ok && author && (
       <Fragment slot="sidebar">
-        <CommunitySidebarSection title={copy.kicker}>
-          <div class="community-link-list">
-            <a href={dashboardHref}>{copy.dashboard}</a>
-            <a href={articlesHref}>{copy.articles}</a>
-          </div>
-        </CommunitySidebarSection>
+        <EditorialSidebar
+          lang={currentLang}
+          author={author}
+          editorialRole={access.context.editorialRole}
+          publishedArticleCount={publishedArticleCount}
+        />
       </Fragment>
     )}
 
@@ -87,6 +99,14 @@ const languageSwitch = isEnglish ? '/account/editor/articles/new/' : '/en/accoun
       title={copy.title}
       description={copy.description}
     />
+
+    {access.ok && (
+      <EditorialSectionNav
+        activeSection="articles"
+        lang={currentLang}
+        authorPreviewHref={author?.publicUrls?.[currentLang]}
+      />
+    )}
 
     {(!access.ok || !canCreate) && (
       <section class="editorial-card editorial-card--notice">

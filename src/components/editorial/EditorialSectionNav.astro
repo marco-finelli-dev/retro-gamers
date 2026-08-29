@@ -1,0 +1,119 @@
+---
+type EditorialSection = 'dashboard' | 'articles' | 'profile';
+
+interface Props {
+  activeSection: EditorialSection;
+  lang?: 'it' | 'en' | string;
+  authorPreviewHref?: string | null;
+}
+
+const {
+  activeSection,
+  lang = 'it',
+  authorPreviewHref = '',
+} = Astro.props as Props;
+const isEnglish = lang === 'en';
+const basePath = isEnglish ? '/en/account/editor' : '/account/editor';
+const items = isEnglish
+  ? [
+      { key: 'dashboard', label: 'Dashboard', href: `${basePath}/` },
+      { key: 'profile', label: 'Author profile', href: `${basePath}/profile/` },
+      { key: 'articles', label: 'Manage articles', href: `${basePath}/articles/` },
+    ]
+  : [
+      { key: 'dashboard', label: 'Dashboard', href: `${basePath}/` },
+      { key: 'profile', label: 'Profilo autore', href: `${basePath}/profile/` },
+      { key: 'articles', label: 'Gestisci articoli', href: `${basePath}/articles/` },
+    ];
+const previewUrl = authorPreviewHref
+  ? `${authorPreviewHref}${authorPreviewHref.includes('?') ? '&' : '?'}accountPreview=1`
+  : '';
+---
+
+<nav class="editorial-section-nav" aria-label={isEnglish ? 'Editorial sections' : 'Sezioni redazionali'}>
+  {items.map((item) => (
+    <a
+      href={item.href}
+      class:list={{ 'is-active': item.key === activeSection }}
+      aria-current={item.key === activeSection ? 'page' : undefined}
+    >
+      {item.label}
+    </a>
+  ))}
+  {authorPreviewHref && (
+    <>
+      <button
+        class="editorial-section-nav__secondary"
+        type="button"
+        data-editorial-author-preview
+        aria-haspopup="dialog"
+        aria-expanded="false"
+      >
+        {isEnglish ? 'Author profile preview' : 'Anteprima profilo autore'}
+      </button>
+
+      <dialog
+        class="editorial-author-preview-dialog"
+        data-editorial-author-preview-dialog
+        aria-labelledby="editorial-author-preview-title"
+      >
+        <div class="account-profile-preview-dialog__surface">
+          <div class="account-profile-preview-dialog__header">
+            <h2 id="editorial-author-preview-title">
+              {isEnglish ? 'Author profile preview' : 'Anteprima profilo autore'}
+            </h2>
+            <button
+              type="button"
+              class="account-profile-preview-dialog__close"
+              data-editorial-author-preview-close
+              aria-label={isEnglish ? 'Close author profile preview' : 'Chiudi anteprima profilo autore'}
+            >
+              ×
+            </button>
+          </div>
+          <iframe
+            class="account-profile-preview-dialog__frame"
+            src={previewUrl}
+            title={isEnglish ? 'Author profile preview' : 'Anteprima profilo autore'}
+            loading="lazy"
+          ></iframe>
+        </div>
+      </dialog>
+
+      <script>
+        const authorPreviewDialog = document.querySelector('[data-editorial-author-preview-dialog]');
+        const authorPreviewTrigger = document.querySelector('[data-editorial-author-preview]');
+        const authorPreviewClose = document.querySelector('[data-editorial-author-preview-close]');
+
+        if (
+          authorPreviewDialog instanceof HTMLDialogElement &&
+          authorPreviewTrigger instanceof HTMLButtonElement
+        ) {
+          const closeAuthorPreview = () => {
+            authorPreviewDialog.close();
+            authorPreviewTrigger.classList.remove('is-preview-open');
+            authorPreviewTrigger.setAttribute('aria-expanded', 'false');
+            authorPreviewTrigger.focus();
+          };
+
+          authorPreviewTrigger.addEventListener('click', () => {
+            authorPreviewDialog.showModal();
+            authorPreviewTrigger.classList.add('is-preview-open');
+            authorPreviewTrigger.setAttribute('aria-expanded', 'true');
+          });
+
+          authorPreviewClose?.addEventListener('click', closeAuthorPreview);
+          authorPreviewDialog.addEventListener('cancel', (event) => {
+            event.preventDefault();
+            closeAuthorPreview();
+          });
+          authorPreviewDialog.addEventListener('click', (event) => {
+            if (event.target === authorPreviewDialog) {
+              closeAuthorPreview();
+            }
+          });
+        }
+      </script>
+    </>
+  )}
+</nav>

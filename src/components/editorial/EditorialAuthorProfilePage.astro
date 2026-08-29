@@ -3,10 +3,8 @@ import '../../styles/pages/editorial-area.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CommunityHero from '../community/CommunityHero.astro';
 import CommunityLayout from '../community/CommunityLayout.astro';
-import CommunitySidebarProfile from '../community/CommunitySidebarProfile.astro';
-import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
-import CommunityStatList from '../community/CommunityStatList.astro';
-import { getPublicAuthorRoleLabel } from '../../lib/editorial/labels';
+import EditorialSectionNav from './EditorialSectionNav.astro';
+import EditorialSidebar from './EditorialSidebar.astro';
 import {
   fetchEditorialAuthorProfile,
   fetchPublishedArticleCountForAuthor,
@@ -35,11 +33,16 @@ const copy = isEnglish
       missingAuthorDescription:
         'Your editorial access is linked to an author profile that is not available in the published dataset. Profile editing is blocked until the link is fixed.',
       back: 'Back to dashboard',
-      publicProfileIt: 'Italian author page',
-      publicProfileEn: 'English author page',
       profileLabel: 'Author identity',
-      overviewLabel: 'Overview',
-      tools: 'Tools',
+      tabsLabel: 'Author profile sections',
+      identityTab: 'Identity',
+      bioTab: 'Bio',
+      socialTab: 'Social',
+      imageTab: 'Author image',
+      coverTab: 'Author cover',
+      identityHint: 'Core public author details.',
+      bioHint: 'Public author biographies shown across the site.',
+      socialHint: 'Optional public social links.',
       accountCta: 'Go to account',
       name: 'Name',
       nickname: 'Nickname',
@@ -72,6 +75,9 @@ const copy = isEnglish
       currentCover: 'Current cover',
       noCurrentImage: 'No current avatar image',
       noCurrentCover: 'No current cover image',
+      imageDropTitle: 'Drag an image here',
+      coverDropTitle: 'Drag a new cover here',
+      dropSubtitle: 'or click to choose',
       localPreview: 'New image',
       recommendedAvatar: 'Recommended: 1000 × 1000 px, 1:1. JPG, PNG or WebP. Max 2 MB.',
       recommendedCover: 'Recommended: 1600 × 600 px, panoramic 8:3. JPG, PNG or WebP. Max 5 MB.',
@@ -84,11 +90,7 @@ const copy = isEnglish
       lowResolutionWarning: 'Low resolution: the result may look less sharp.',
       chooseFile: 'Choose a file or drop it here',
       dropFile: 'Drop the image here',
-      readonlyData: 'Editorial information',
-      slug: 'Slug',
-      authorRole: 'Public author role',
       completeness: 'Profile completeness',
-      publishedArticles: 'Published articles',
       notSet: 'Not set',
       error: 'Unable to update the profile. Please try again.',
       conflict: 'The author profile changed while you were editing. Reload the page and try again.',
@@ -114,11 +116,16 @@ const copy = isEnglish
       missingAuthorDescription:
         'Il tuo accesso redazionale è collegato a un profilo autore non disponibile nel dataset pubblicato. La modifica del profilo resta bloccata finché il collegamento non viene corretto.',
       back: 'Torna alla dashboard',
-      publicProfileIt: 'Pagina autore italiana',
-      publicProfileEn: 'Pagina autore inglese',
       profileLabel: 'Identità autore',
-      overviewLabel: 'Panoramica',
-      tools: 'Strumenti',
+      tabsLabel: 'Sezioni profilo autore',
+      identityTab: 'Identità',
+      bioTab: 'Bio',
+      socialTab: 'Social',
+      imageTab: 'Immagine autore',
+      coverTab: 'Cover autore',
+      identityHint: 'Dati pubblici principali del profilo autore.',
+      bioHint: 'Biografie pubbliche autore mostrate sul sito.',
+      socialHint: 'Link social pubblici opzionali.',
       accountCta: 'Vai all’account',
       name: 'Nome',
       nickname: 'Nickname',
@@ -151,6 +158,9 @@ const copy = isEnglish
       currentCover: 'Cover attuale',
       noCurrentImage: 'Nessuna immagine autore impostata',
       noCurrentCover: 'Nessuna cover autore impostata',
+      imageDropTitle: 'Trascina un’immagine qui',
+      coverDropTitle: 'Trascina una nuova cover qui',
+      dropSubtitle: 'oppure clicca per scegliere',
       localPreview: 'Nuova immagine',
       recommendedAvatar: 'Consigliato: 1000 × 1000 px, rapporto 1:1. JPG, PNG o WebP. Max 2 MB.',
       recommendedCover: 'Consigliato: 1600 × 600 px, panoramica 8:3. JPG, PNG o WebP. Max 5 MB.',
@@ -163,11 +173,7 @@ const copy = isEnglish
       lowResolutionWarning: 'Risoluzione bassa: il risultato potrebbe essere meno nitido.',
       chooseFile: 'Scegli un file o trascinalo qui',
       dropFile: 'Rilascia l’immagine qui',
-      readonlyData: 'Informazioni editoriali',
-      slug: 'Slug',
-      authorRole: 'Ruolo autore pubblico',
       completeness: 'Completezza profilo',
-      publishedArticles: 'Articoli pubblicati',
       notSet: 'Non impostato',
       error: 'Non riesco ad aggiornare il profilo. Riprova.',
       conflict: 'Il profilo autore è cambiato mentre lo stavi modificando. Ricarica la pagina e riprova.',
@@ -194,14 +200,6 @@ if (access.ok) {
 const dashboardHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
 const accountHref = isEnglish ? '/en/account/' : '/account/';
 const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/editor/profile/';
-const sidebarName = author?.displayName === 'nickname' && author.nickname
-  ? author.nickname
-  : author?.name || '';
-const authorPublicUrlIt = author?.slug ? `/autori/${author.slug}/` : '';
-const authorPublicUrlEn = author?.slug ? `/en/authors/${author.slug}/` : '';
-const authorRoleLabel = author
-  ? getPublicAuthorRoleLabel(author.role, currentLang)
-  : '';
 ---
 
 <BaseLayout
@@ -215,35 +213,12 @@ const authorRoleLabel = author
   <CommunityLayout class="editorial-area-page editorial-profile-page" sidebar={access.ok && Boolean(author)}>
     {access.ok && author && (
       <Fragment slot="sidebar">
-        <CommunitySidebarProfile
-          label={copy.profileLabel}
-          name={sidebarName || author.name}
-          avatarUrl={author.image?.asset?.url || ''}
+        <EditorialSidebar
+          lang={currentLang}
+          author={author}
+          editorialRole={access.context.editorialRole}
+          publishedArticleCount={publishedArticleCount}
         />
-
-        <CommunityStatList
-          title={copy.overviewLabel}
-          items={[
-            { label: copy.publishedArticles, value: publishedArticleCount },
-            { label: copy.completeness, value: author.completeness.label },
-          ]}
-        />
-
-        <CommunitySidebarSection title={copy.tools}>
-          <div class="community-link-list">
-            <a href={dashboardHref}>{copy.back}</a>
-            {authorPublicUrlIt && (
-              <a href={authorPublicUrlIt} data-language-session-override="it">
-                {copy.publicProfileIt}
-              </a>
-            )}
-            {authorPublicUrlEn && (
-              <a href={authorPublicUrlEn} data-language-session-override="en">
-                {copy.publicProfileEn}
-              </a>
-            )}
-          </div>
-        </CommunitySidebarSection>
       </Fragment>
     )}
 
@@ -252,6 +227,14 @@ const authorRoleLabel = author
       title={copy.title}
       description={copy.description}
     />
+
+    {access.ok && (
+      <EditorialSectionNav
+        activeSection="profile"
+        lang={currentLang}
+        authorPreviewHref={author?.publicUrls?.[currentLang]}
+      />
+    )}
 
     {!access.ok && (
       <section class="editorial-card editorial-card--notice">
@@ -272,42 +255,7 @@ const authorRoleLabel = author
 
     {access.ok && author && (
       <div class="editorial-profile-shell" data-editor-profile-root data-lang={currentLang}>
-        <section class="editorial-card editorial-profile-summary">
-          {author.cover?.asset?.url && (
-            <img
-              class="editorial-profile-summary__cover"
-              src={author.cover.asset.url}
-              alt={author.cover.alt || ''}
-              width="1180"
-              height="420"
-              data-editor-cover-preview
-            />
-          )}
-
-          <div class="editorial-profile-summary__body">
-            <div class="editorial-profile-summary__avatar">
-              <img
-                src={author.image?.asset?.url || ''}
-                alt={author.image?.alt || ''}
-                width="132"
-                height="132"
-                hidden={!author.image?.asset?.url}
-                data-editor-avatar-preview
-              />
-              <span aria-hidden="true" hidden={Boolean(author.image?.asset?.url)} data-editor-avatar-placeholder>
-                {author.name.slice(0, 1).toUpperCase()}
-              </span>
-            </div>
-
-            <div>
-              <p class="editorial-kicker">{copy.profileLabel}</p>
-              <h2>{sidebarName || author.name}</h2>
-              <p>{copy.completeness}: <strong data-editor-completeness>{author.completeness.label}</strong></p>
-            </div>
-          </div>
-        </section>
-
-        <section class="editorial-card">
+        <section class="editorial-card editorial-profile-editor-card">
           <div class="editorial-section-heading">
             <p class="editorial-kicker">{copy.profileLabel}</p>
             <h2>{copy.title}</h2>
@@ -318,219 +266,334 @@ const authorRoleLabel = author
             </p>
           </div>
 
-          <form class="editorial-form" data-editor-profile-form>
+          <form
+            id="editor-author-profile-form"
+            class="editorial-form editorial-profile-editor-form"
+            data-editor-profile-form
+          >
             <input type="hidden" name="_rev" value={author._rev} data-editor-profile-rev />
+          </form>
 
-            <div class="editorial-form-grid">
-              <label>
-                <span>{copy.name}</span>
-                <input name="name" value={author.name} maxlength="120" required />
-              </label>
-
-              <label>
-                <span>{copy.nickname}</span>
-                <input name="nickname" value={author.nickname} maxlength="120" />
-              </label>
-
-              <label>
-                <span>{copy.displayName}</span>
-                <select name="displayName">
-                  <option value="real" selected={author.displayName !== 'nickname'}>{copy.displayNameReal}</option>
-                  <option value="nickname" selected={author.displayName === 'nickname'}>{copy.displayNameNickname}</option>
-                </select>
-              </label>
-
-              <label>
-                <span>{copy.website}</span>
-                <input name="website" type="url" value={author.website} placeholder="https://…" />
-              </label>
-            </div>
-
-            {author.bioEditable ? (
-              <label>
-                <span>{copy.bio}</span>
-                <textarea name="bioText" rows="8" maxlength="3000">{author.bioText}</textarea>
-              </label>
-            ) : (
-              <div class="editorial-readonly-field">
-                <span>{copy.bio}</span>
-                <p>{copy.richBioReadOnly}</p>
-                <pre>{author.bioText}</pre>
-              </div>
-            )}
-
-            {author.bioEnEditable ? (
-              <label>
-                <span>{copy.bioEn}</span>
-                <textarea name="bioEnText" rows="8" maxlength="3000">{author.bioEnText}</textarea>
-              </label>
-            ) : (
-              <div class="editorial-readonly-field">
-                <span>{copy.bioEn}</span>
-                <p>{copy.richBioReadOnly}</p>
-                <pre>{author.bioEnText}</pre>
-              </div>
-            )}
-
-            <div class="editorial-form-grid">
-              <label>
-                <span>{copy.facebook}</span>
-                <input name="facebook" type="url" value={author.facebook} placeholder="https://…" />
-              </label>
-              <label>
-                <span>{copy.twitter}</span>
-                <input name="twitter" type="url" value={author.twitter} placeholder="https://…" />
-              </label>
-              <label>
-                <span>{copy.tiktok}</span>
-                <input name="tiktok" type="url" value={author.tiktok} placeholder="https://…" />
-              </label>
-              <label>
-                <span>{copy.youtube}</span>
-                <input name="youtube" type="url" value={author.youtube} placeholder="https://…" />
-              </label>
-              <label>
-                <span>{copy.twitch}</span>
-                <input name="twitch" type="url" value={author.twitch} placeholder="https://…" />
-              </label>
-            </div>
-
-            <div class="editorial-form-grid">
-              <label>
-                <span>{copy.imageAlt}</span>
-                <input name="imageAlt" value={author.image?.alt || ''} maxlength="120" />
-              </label>
-              <label>
-                <span>{copy.coverAlt}</span>
-                <input name="coverAlt" value={author.cover?.alt || ''} maxlength="120" />
-              </label>
-            </div>
-
-            <div class="editorial-form-actions">
-              <button type="submit" class="editorial-button" data-editor-save-button>
-                {copy.save}
+          <div class="editorial-profile-editor__shell">
+            <div
+              class="editorial-section-nav editorial-profile-editor-nav"
+              role="tablist"
+              aria-label={copy.tabsLabel}
+            >
+              <button
+                id="editor-profile-tab-identity"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="editor-profile-panel-identity"
+                data-editor-profile-tab="identity"
+              >
+                {copy.identityTab}
               </button>
-              <a href={dashboardHref}>{copy.back}</a>
+              <button
+                id="editor-profile-tab-bio"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="editor-profile-panel-bio"
+                data-editor-profile-tab="bio"
+              >
+                {copy.bioTab}
+              </button>
+              <button
+                id="editor-profile-tab-social"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="editor-profile-panel-social"
+                data-editor-profile-tab="social"
+              >
+                {copy.socialTab}
+              </button>
+              <button
+                id="editor-profile-tab-image"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="editor-profile-panel-image"
+                data-editor-profile-tab="image"
+              >
+                {copy.imageTab}
+              </button>
+              <button
+                id="editor-profile-tab-cover"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="editor-profile-panel-cover"
+                data-editor-profile-tab="cover"
+              >
+                {copy.coverTab}
+              </button>
             </div>
 
-            <p class="editorial-message editorial-message--unsaved" data-editor-unsaved-message hidden>{copy.unsaved}</p>
-            <p class="editorial-message" data-editor-profile-message hidden></p>
-          </form>
-        </section>
+            <div class="editorial-profile-editor__panels">
+              <section
+                class="editorial-profile-panel"
+                id="editor-profile-panel-identity"
+                role="tabpanel"
+                aria-labelledby="editor-profile-tab-identity"
+                data-editor-profile-panel="identity"
+              >
+                <div class="editorial-profile-panel__heading">
+                  <h3>{copy.identityTab}</h3>
+                  <p>{copy.identityHint}</p>
+                </div>
 
-        <section class="editorial-assets-grid">
-          <form class="editorial-card editorial-upload-card" data-editor-upload-form data-asset-type="avatar">
-            <div class="editorial-upload-card__header">
-              <p class="editorial-kicker">{copy.image}</p>
-              <h2>{copy.image}</h2>
-              <p>{copy.uploadHelpAvatar}</p>
-              <p class="editorial-upload-guidance">{copy.recommendedAvatar}</p>
+                <div class="editorial-form editorial-form-grid">
+                  <label>
+                    <span>{copy.name}</span>
+                    <input form="editor-author-profile-form" name="name" value={author.name} maxlength="120" required />
+                  </label>
+
+                  <label>
+                    <span>{copy.nickname}</span>
+                    <input form="editor-author-profile-form" name="nickname" value={author.nickname} maxlength="120" />
+                  </label>
+
+                  <label>
+                    <span>{copy.displayName}</span>
+                    <select form="editor-author-profile-form" name="displayName">
+                      <option value="real" selected={author.displayName !== 'nickname'}>{copy.displayNameReal}</option>
+                      <option value="nickname" selected={author.displayName === 'nickname'}>{copy.displayNameNickname}</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>{copy.website}</span>
+                    <input form="editor-author-profile-form" name="website" type="url" value={author.website} placeholder="https://…" />
+                  </label>
+                </div>
+              </section>
+
+              <section
+                class="editorial-profile-panel"
+                id="editor-profile-panel-bio"
+                role="tabpanel"
+                aria-labelledby="editor-profile-tab-bio"
+                data-editor-profile-panel="bio"
+                hidden
+              >
+                <div class="editorial-profile-panel__heading">
+                  <h3>{copy.bioTab}</h3>
+                  <p>{copy.bioHint}</p>
+                </div>
+
+                <div class="editorial-form">
+                  {author.bioEditable ? (
+                    <label>
+                      <span>{copy.bio}</span>
+                      <textarea form="editor-author-profile-form" name="bioText" rows="8" maxlength="3000">{author.bioText}</textarea>
+                    </label>
+                  ) : (
+                    <div class="editorial-readonly-field">
+                      <span>{copy.bio}</span>
+                      <p>{copy.richBioReadOnly}</p>
+                      <pre>{author.bioText}</pre>
+                    </div>
+                  )}
+
+                  {author.bioEnEditable ? (
+                    <label>
+                      <span>{copy.bioEn}</span>
+                      <textarea form="editor-author-profile-form" name="bioEnText" rows="8" maxlength="3000">{author.bioEnText}</textarea>
+                    </label>
+                  ) : (
+                    <div class="editorial-readonly-field">
+                      <span>{copy.bioEn}</span>
+                      <p>{copy.richBioReadOnly}</p>
+                      <pre>{author.bioEnText}</pre>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <section
+                class="editorial-profile-panel"
+                id="editor-profile-panel-social"
+                role="tabpanel"
+                aria-labelledby="editor-profile-tab-social"
+                data-editor-profile-panel="social"
+                hidden
+              >
+                <div class="editorial-profile-panel__heading">
+                  <h3>{copy.socialTab}</h3>
+                  <p>{copy.socialHint}</p>
+                </div>
+
+                <div class="editorial-form editorial-form-grid">
+                  <label>
+                    <span>{copy.facebook}</span>
+                    <input form="editor-author-profile-form" name="facebook" type="url" value={author.facebook} placeholder="https://…" />
+                  </label>
+                  <label>
+                    <span>{copy.twitter}</span>
+                    <input form="editor-author-profile-form" name="twitter" type="url" value={author.twitter} placeholder="https://…" />
+                  </label>
+                  <label>
+                    <span>{copy.tiktok}</span>
+                    <input form="editor-author-profile-form" name="tiktok" type="url" value={author.tiktok} placeholder="https://…" />
+                  </label>
+                  <label>
+                    <span>{copy.youtube}</span>
+                    <input form="editor-author-profile-form" name="youtube" type="url" value={author.youtube} placeholder="https://…" />
+                  </label>
+                  <label>
+                    <span>{copy.twitch}</span>
+                    <input form="editor-author-profile-form" name="twitch" type="url" value={author.twitch} placeholder="https://…" />
+                  </label>
+                </div>
+              </section>
+
+              <section
+                class="editorial-profile-panel"
+                id="editor-profile-panel-image"
+                role="tabpanel"
+                aria-labelledby="editor-profile-tab-image"
+                data-editor-profile-panel="image"
+                hidden
+              >
+                <div class="editorial-profile-panel__heading">
+                  <h3>{copy.image}</h3>
+                  <p>{copy.uploadHelpAvatar}</p>
+                  <p class="editorial-upload-guidance">{copy.recommendedAvatar}</p>
+                </div>
+
+                <div class="editorial-profile-media-grid">
+                  <div class="editorial-current-media editorial-current-media--avatar editorial-profile-media-card">
+                    <span>{copy.currentImage}</span>
+                    <div class="editorial-current-media__frame editorial-current-media__frame--avatar">
+                      <img
+                        src={author.image?.asset?.url || ''}
+                        alt={author.image?.alt || ''}
+                        hidden={!author.image?.asset?.url}
+                        data-editor-avatar-preview
+                      />
+                      <span
+                        class="editorial-current-media__placeholder"
+                        hidden={Boolean(author.image?.asset?.url)}
+                        data-editor-avatar-placeholder
+                      >
+                        {copy.noCurrentImage}
+                      </span>
+                    </div>
+                  </div>
+
+                  <form class="editorial-upload-card editorial-profile-upload-card" data-editor-upload-form data-asset-type="avatar">
+                    <label class="editorial-dropzone editorial-profile-upload-dropzone" data-editor-dropzone>
+                      <input type="file" name="file" accept="image/jpeg,image/png,image/webp" />
+                      <span class="editorial-dropzone__title" data-editor-drop-label>{copy.imageDropTitle}</span>
+                      <small>{copy.dropSubtitle}</small>
+                    </label>
+
+                    <p class="editorial-message" data-editor-upload-message hidden></p>
+                  </form>
+                </div>
+
+                <div class="editorial-local-preview editorial-local-preview--avatar" data-editor-local-preview hidden>
+                  <span>{copy.localPreview}</span>
+                  <div class="editorial-local-preview__frame editorial-local-preview__frame--avatar">
+                    <img alt="" data-editor-local-preview-image />
+                  </div>
+                  <p class="editorial-file-meta" data-editor-file-meta></p>
+                  <p class="editorial-file-advice" data-editor-file-advice></p>
+                </div>
+
+                <div class="editorial-form">
+                  <label>
+                    <span>{copy.imageAlt}</span>
+                    <input form="editor-author-profile-form" name="imageAlt" value={author.image?.alt || ''} maxlength="120" />
+                  </label>
+                </div>
+              </section>
+
+              <section
+                class="editorial-profile-panel"
+                id="editor-profile-panel-cover"
+                role="tabpanel"
+                aria-labelledby="editor-profile-tab-cover"
+                data-editor-profile-panel="cover"
+                hidden
+              >
+                <div class="editorial-profile-panel__heading">
+                  <h3>{copy.cover}</h3>
+                  <p>{copy.uploadHelpCover}</p>
+                  <p class="editorial-upload-guidance">{copy.recommendedCover}</p>
+                  <p class="editorial-upload-guidance">{copy.coverCropNote}</p>
+                </div>
+
+                <div class="editorial-profile-media-grid editorial-profile-media-grid--cover">
+                  <div class="editorial-current-media editorial-current-media--cover editorial-profile-media-card">
+                    <span>{copy.currentCover}</span>
+                    <div class="editorial-current-media__frame editorial-current-media__frame--cover">
+                      <img
+                        src={author.cover?.asset?.url || ''}
+                        alt={author.cover?.alt || ''}
+                        hidden={!author.cover?.asset?.url}
+                        data-editor-cover-preview
+                      />
+                      <span
+                        class="editorial-current-media__placeholder"
+                        hidden={Boolean(author.cover?.asset?.url)}
+                        data-editor-cover-placeholder
+                      >
+                        {copy.noCurrentCover}
+                      </span>
+                    </div>
+                  </div>
+
+                  <form class="editorial-upload-card editorial-profile-upload-card" data-editor-upload-form data-asset-type="cover">
+                    <label class="editorial-dropzone editorial-profile-upload-dropzone" data-editor-dropzone>
+                      <input type="file" name="file" accept="image/jpeg,image/png,image/webp" />
+                      <span class="editorial-dropzone__title" data-editor-drop-label>{copy.coverDropTitle}</span>
+                      <small>{copy.dropSubtitle}</small>
+                    </label>
+
+                    <p class="editorial-message" data-editor-upload-message hidden></p>
+                  </form>
+                </div>
+
+                <div class="editorial-local-preview editorial-local-preview--cover" data-editor-local-preview hidden>
+                  <span>{copy.localPreview}</span>
+                  <div class="editorial-local-preview__frame editorial-local-preview__frame--cover">
+                    <img alt="" data-editor-local-preview-image />
+                  </div>
+                  <p class="editorial-file-meta" data-editor-file-meta></p>
+                  <p class="editorial-file-advice" data-editor-file-advice></p>
+                </div>
+
+                <div class="editorial-form">
+                  <label>
+                    <span>{copy.coverAlt}</span>
+                    <input form="editor-author-profile-form" name="coverAlt" value={author.cover?.alt || ''} maxlength="120" />
+                  </label>
+                </div>
+              </section>
+
             </div>
 
-            <div class="editorial-current-media editorial-current-media--avatar">
-              <span>{copy.currentImage}</span>
-              <div class="editorial-current-media__frame editorial-current-media__frame--avatar">
-                <img
-                  src={author.image?.asset?.url || ''}
-                  alt={author.image?.alt || ''}
-                  hidden={!author.image?.asset?.url}
-                  data-editor-avatar-preview
-                />
-                <span
-                  class="editorial-current-media__placeholder"
-                  hidden={Boolean(author.image?.asset?.url)}
-                  data-editor-avatar-placeholder
+            <div class="editorial-profile-editor__footer">
+              <div class="editorial-form-actions">
+                <button
+                  type="submit"
+                  form="editor-author-profile-form"
+                  class="editorial-button"
+                  data-editor-save-button
                 >
-                  {copy.noCurrentImage}
-                </span>
+                  {copy.save}
+                </button>
+                <a href={dashboardHref}>{copy.back}</a>
               </div>
+
+              <p class="editorial-message editorial-message--unsaved" data-editor-unsaved-message hidden>{copy.unsaved}</p>
+              <p class="editorial-message" data-editor-profile-message hidden></p>
             </div>
-
-            <div class="editorial-local-preview editorial-local-preview--avatar" data-editor-local-preview hidden>
-              <span>{copy.localPreview}</span>
-              <div class="editorial-local-preview__frame editorial-local-preview__frame--avatar">
-                <img alt="" data-editor-local-preview-image />
-              </div>
-              <p class="editorial-file-meta" data-editor-file-meta></p>
-              <p class="editorial-file-advice" data-editor-file-advice></p>
-            </div>
-
-            <div class="editorial-upload-card__controls">
-              <label class="editorial-dropzone" data-editor-dropzone>
-                <input type="file" name="file" accept="image/jpeg,image/png,image/webp" />
-                <span data-editor-drop-label>{copy.chooseFile}</span>
-              </label>
-
-              <button type="submit" class="editorial-button">{copy.upload}</button>
-              <p class="editorial-message" data-editor-upload-message hidden></p>
-            </div>
-          </form>
-
-          <form class="editorial-card editorial-upload-card" data-editor-upload-form data-asset-type="cover">
-            <div class="editorial-upload-card__header">
-              <p class="editorial-kicker">{copy.cover}</p>
-              <h2>{copy.cover}</h2>
-              <p>{copy.uploadHelpCover}</p>
-              <p class="editorial-upload-guidance">{copy.recommendedCover}</p>
-              <p class="editorial-upload-guidance">{copy.coverCropNote}</p>
-            </div>
-
-            <div class="editorial-current-media editorial-current-media--cover">
-              <span>{copy.currentCover}</span>
-              <div class="editorial-current-media__frame editorial-current-media__frame--cover">
-                <img
-                  src={author.cover?.asset?.url || ''}
-                  alt={author.cover?.alt || ''}
-                  hidden={!author.cover?.asset?.url}
-                  data-editor-cover-preview
-                />
-                <span
-                  class="editorial-current-media__placeholder"
-                  hidden={Boolean(author.cover?.asset?.url)}
-                  data-editor-cover-placeholder
-                >
-                  {copy.noCurrentCover}
-                </span>
-              </div>
-            </div>
-
-            <div class="editorial-local-preview editorial-local-preview--cover" data-editor-local-preview hidden>
-              <span>{copy.localPreview}</span>
-              <div class="editorial-local-preview__frame editorial-local-preview__frame--cover">
-                <img alt="" data-editor-local-preview-image />
-              </div>
-              <p class="editorial-file-meta" data-editor-file-meta></p>
-              <p class="editorial-file-advice" data-editor-file-advice></p>
-            </div>
-
-            <div class="editorial-upload-card__controls">
-              <label class="editorial-dropzone" data-editor-dropzone>
-                <input type="file" name="file" accept="image/jpeg,image/png,image/webp" />
-                <span data-editor-drop-label>{copy.chooseFile}</span>
-              </label>
-
-              <button type="submit" class="editorial-button">{copy.upload}</button>
-              <p class="editorial-message" data-editor-upload-message hidden></p>
-            </div>
-          </form>
-        </section>
-
-        <section class="editorial-card">
-          <div class="editorial-section-heading">
-            <p class="editorial-kicker">{copy.readonlyData}</p>
-            <h2>{copy.readonlyData}</h2>
           </div>
-
-          <dl class="editorial-definition-list editorial-definition-list--grid">
-            <div>
-              <dt>{copy.slug}</dt>
-              <dd>{author.slug || copy.notSet}</dd>
-            </div>
-            <div>
-              <dt>{copy.authorRole}</dt>
-              <dd>{authorRoleLabel || copy.notSet}</dd>
-            </div>
-          </dl>
         </section>
       </div>
     )}
@@ -560,6 +623,8 @@ const authorRoleLabel = author
         invalidSizeAvatar: 'Avatar images must be 2 MB or smaller.',
         invalidSizeCover: 'Cover images must be 5 MB or smaller.',
         chooseFile: 'Choose a file or drop it here',
+        imageDropTitle: 'Drag an image here',
+        coverDropTitle: 'Drag a new cover here',
         dropFile: 'Drop the image here',
         fileReady: 'File ready',
         recommendedFormat: 'Recommended format.',
@@ -583,6 +648,8 @@ const authorRoleLabel = author
         invalidSizeAvatar: 'Le immagini autore devono essere al massimo 2 MB.',
         invalidSizeCover: 'Le cover devono essere al massimo 5 MB.',
         chooseFile: 'Scegli un file o trascinalo qui',
+        imageDropTitle: 'Trascina un’immagine qui',
+        coverDropTitle: 'Trascina una nuova cover qui',
         dropFile: 'Rilascia l’immagine qui',
         fileReady: 'File pronto',
         recommendedFormat: 'Formato consigliato.',
@@ -597,6 +664,9 @@ const authorRoleLabel = author
   const profileMessage = root.querySelector('[data-editor-profile-message]');
   const unsavedMessage = root.querySelector('[data-editor-unsaved-message]');
   const completenessNode = root.querySelector('[data-editor-completeness]');
+  const profileTabButtons = root.querySelectorAll('[data-editor-profile-tab]');
+  const profilePanels = root.querySelectorAll('[data-editor-profile-panel]');
+  const profileControls = root.querySelectorAll('[form="editor-author-profile-form"]');
   const selectedFiles = new WeakMap();
   const selectedObjectUrls = new WeakMap();
   const allowedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -644,6 +714,27 @@ const authorRoleLabel = author
     if (unsavedMessage) {
       unsavedMessage.hidden = true;
     }
+  };
+
+  const setActiveProfilePanel = (panelName, shouldFocus = false) => {
+    const activePanelName = panelName || 'identity';
+
+    profileTabButtons.forEach((button) => {
+      const isActive = button.dataset.editorProfileTab === activePanelName;
+      button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    profilePanels.forEach((panel) => {
+      panel.hidden = panel.dataset.editorProfilePanel !== activePanelName;
+    });
+
+    if (!shouldFocus) return;
+
+    window.setTimeout(() => {
+      const activePanel = root.querySelector(`[data-editor-profile-panel="${activePanelName}"]`);
+      const focusTarget = activePanel?.querySelector('input:not([type="file"]), select, textarea, button');
+      focusTarget?.focus();
+    }, 0);
   };
 
   const setMessage = (node, text, tone = 'info') => {
@@ -766,6 +857,9 @@ const authorRoleLabel = author
   };
 
   const clearSelectedFile = (uploadForm) => {
+    const uploadScope = uploadForm.closest('[data-editor-profile-panel]') || uploadForm;
+    const assetType = uploadForm.dataset.assetType === 'cover' ? 'cover' : 'avatar';
+    const defaultDropLabel = assetType === 'cover' ? messages.coverDropTitle : messages.imageDropTitle;
     const objectUrl = selectedObjectUrls.get(uploadForm);
 
     if (objectUrl) {
@@ -775,10 +869,10 @@ const authorRoleLabel = author
 
     selectedFiles.delete(uploadForm);
 
-    const localPreview = uploadForm.querySelector('[data-editor-local-preview]');
-    const localPreviewImage = uploadForm.querySelector('[data-editor-local-preview-image]');
-    const fileMeta = uploadForm.querySelector('[data-editor-file-meta]');
-    const fileAdvice = uploadForm.querySelector('[data-editor-file-advice]');
+    const localPreview = uploadScope.querySelector('[data-editor-local-preview]');
+    const localPreviewImage = uploadScope.querySelector('[data-editor-local-preview-image]');
+    const fileMeta = uploadScope.querySelector('[data-editor-file-meta]');
+    const fileAdvice = uploadScope.querySelector('[data-editor-file-advice]');
     const fileInput = uploadForm.querySelector('input[type="file"]');
     const dropLabel = uploadForm.querySelector('[data-editor-drop-label]');
 
@@ -804,13 +898,14 @@ const authorRoleLabel = author
     }
 
     if (dropLabel) {
-      dropLabel.textContent = messages.chooseFile;
+      dropLabel.textContent = defaultDropLabel;
     }
   };
 
   const updateSelectedFilePreview = async (uploadForm, file, assetType) => {
     if (!file) return;
 
+    const uploadScope = uploadForm.closest('[data-editor-profile-panel]') || uploadForm;
     const oldObjectUrl = selectedObjectUrls.get(uploadForm);
 
     if (oldObjectUrl) {
@@ -820,10 +915,10 @@ const authorRoleLabel = author
     selectedFiles.set(uploadForm, file);
 
     const dropLabel = uploadForm.querySelector('[data-editor-drop-label]');
-    const localPreview = uploadForm.querySelector('[data-editor-local-preview]');
-    const localPreviewImage = uploadForm.querySelector('[data-editor-local-preview-image]');
-    const fileMeta = uploadForm.querySelector('[data-editor-file-meta]');
-    const fileAdvice = uploadForm.querySelector('[data-editor-file-advice]');
+    const localPreview = uploadScope.querySelector('[data-editor-local-preview]');
+    const localPreviewImage = uploadScope.querySelector('[data-editor-local-preview-image]');
+    const fileMeta = uploadScope.querySelector('[data-editor-file-meta]');
+    const fileAdvice = uploadScope.querySelector('[data-editor-file-advice]');
     const blockingError = getBlockingFileError(file, assetType);
     const dimensions = await getImageDimensions(file);
 
@@ -898,6 +993,15 @@ const authorRoleLabel = author
 
   form?.addEventListener('input', setUnsavedState);
   form?.addEventListener('change', setUnsavedState);
+  profileControls.forEach((control) => {
+    control.addEventListener('input', setUnsavedState);
+    control.addEventListener('change', setUnsavedState);
+  });
+  profileTabButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      setActiveProfilePanel(button.dataset.editorProfileTab || 'identity', true);
+    });
+  });
 
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -947,8 +1051,13 @@ const authorRoleLabel = author
     const messageNode = uploadForm.querySelector('[data-editor-upload-message]');
     const assetType = uploadForm.dataset.assetType === 'cover' ? 'cover' : 'avatar';
 
-    fileInput?.addEventListener('change', () => {
-      updateSelectedFilePreview(uploadForm, fileInput.files?.[0], assetType);
+    fileInput?.addEventListener('change', async () => {
+      const file = fileInput.files?.[0];
+
+      if (!file) return;
+
+      await updateSelectedFilePreview(uploadForm, file, assetType);
+      uploadForm.requestSubmit();
     });
 
     dropzone?.addEventListener('dragover', (event) => {
@@ -962,14 +1071,19 @@ const authorRoleLabel = author
     dropzone?.addEventListener('dragleave', () => {
       dropzone.dataset.dragActive = 'false';
       if (dropLabel && !selectedFiles.get(uploadForm)) {
-        dropLabel.textContent = messages.chooseFile;
+        dropLabel.textContent = assetType === 'cover' ? messages.coverDropTitle : messages.imageDropTitle;
       }
     });
 
-    dropzone?.addEventListener('drop', (event) => {
+    dropzone?.addEventListener('drop', async (event) => {
       event.preventDefault();
       dropzone.dataset.dragActive = 'false';
-      updateSelectedFilePreview(uploadForm, event.dataTransfer?.files?.[0], assetType);
+      const file = event.dataTransfer?.files?.[0];
+
+      if (!file) return;
+
+      await updateSelectedFilePreview(uploadForm, file, assetType);
+      uploadForm.requestSubmit();
     });
 
     uploadForm.addEventListener('submit', async (event) => {
@@ -977,7 +1091,7 @@ const authorRoleLabel = author
       setMessage(messageNode, messages.uploading);
 
       const file = selectedFiles.get(uploadForm) || fileInput?.files?.[0];
-      const altInput = form?.querySelector(`[name="${assetType === 'cover' ? 'coverAlt' : 'imageAlt'}"]`);
+      const altInput = root.querySelector(`[name="${assetType === 'cover' ? 'coverAlt' : 'imageAlt'}"]`);
       const alt = String(altInput?.value || '').trim();
       const uploadButtonText = submitButton?.textContent || '';
 

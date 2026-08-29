@@ -3,9 +3,12 @@ import '../../styles/pages/editorial-area.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CommunityHero from '../community/CommunityHero.astro';
 import CommunityLayout from '../community/CommunityLayout.astro';
-import CommunitySidebarProfile from '../community/CommunitySidebarProfile.astro';
-import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
-import CommunityStatList from '../community/CommunityStatList.astro';
+import EditorialSectionNav from './EditorialSectionNav.astro';
+import EditorialSidebar from './EditorialSidebar.astro';
+import {
+  fetchOwnEditorialArticles,
+  fetchReviewQueueEditorialArticles,
+} from '../../lib/editorial/articles.server';
 import { getEditorialRoleLabel, getPublicAuthorRoleLabel } from '../../lib/editorial/labels';
 import {
   fetchEditorialAuthorProfile,
@@ -27,7 +30,7 @@ const copy = isEnglish
       kicker: 'Editorial area',
       title: 'Editorial dashboard',
       description:
-        'A first private workspace for your Retro-Gamers author identity. The article editor will arrive in a separate step.',
+        'Your private workspace for author identity, drafts and editorial actions on Retro-Gamers.it.',
       deniedTitle: 'Editorial access required',
       deniedDescription:
         'This area is available only to active editorial contributors linked to a Sanity author profile.',
@@ -40,17 +43,10 @@ const copy = isEnglish
       authorRole: 'Public author role',
       publishedArticles: 'Published articles',
       completeness: 'Profile completeness',
-      completenessHint: 'Informative profile checklist',
-      dashboardLinks: 'Workspace',
-      editProfile: 'Edit author profile',
-      publicProfileIt: 'Italian author page',
-      publicProfileEn: 'English author page',
-      articleEditorTitle: 'Article editor',
-      articleEditorDescription:
-        'Create and edit private article drafts in the custom editorial workspace.',
-      manageArticles: 'Manage articles',
-      newArticle: 'New article',
-      unavailable: 'Not available yet',
+      drafts: 'Drafts and changes',
+      reviewQueue: 'Review queue',
+      authorStatus: 'Author profile status',
+      authorSummary: 'Your editorial identity and operational status.',
       notSet: 'Not set',
       loginCta: 'Go to account',
     }
@@ -60,7 +56,7 @@ const copy = isEnglish
       kicker: 'Area redazione',
       title: 'Dashboard redazionale',
       description:
-        'Un primo spazio privato per la tua identità autore su Retro-Gamers. L’editor articoli arriverà in un cantiere separato.',
+        'Il tuo workspace privato per identità autore, bozze e azioni redazionali su Retro-Gamers.it.',
       deniedTitle: 'Accesso redazionale richiesto',
       deniedDescription:
         'Quest’area è disponibile solo per collaboratori redazionali attivi collegati a un profilo autore Sanity.',
@@ -73,23 +69,18 @@ const copy = isEnglish
       authorRole: 'Ruolo autore pubblico',
       publishedArticles: 'Articoli pubblicati',
       completeness: 'Completezza profilo',
-      completenessHint: 'Checklist informativa del profilo',
-      dashboardLinks: 'Strumenti',
-      editProfile: 'Modifica profilo autore',
-      publicProfileIt: 'Pagina autore italiana',
-      publicProfileEn: 'Pagina autore inglese',
-      articleEditorTitle: 'Editor articoli',
-      articleEditorDescription:
-        'Crea e modifica bozze private nel workspace redazionale custom.',
-      manageArticles: 'Gestisci articoli',
-      newArticle: 'Nuovo articolo',
-      unavailable: 'Non disponibile ancora',
+      drafts: 'Bozze e modifiche',
+      reviewQueue: 'Coda revisione',
+      authorStatus: 'Stato profilo autore',
+      authorSummary: 'La tua identità redazionale e lo stato operativo.',
       notSet: 'Non impostato',
       loginCta: 'Vai all’account',
     };
 
 let author = null;
 let publishedArticleCount = 0;
+let ownArticleItems = [];
+let reviewArticleItems = [];
 
 if (access.ok) {
   author = await fetchEditorialAuthorProfile(access.context.sanityAuthorId);
@@ -97,24 +88,38 @@ if (access.ok) {
   if (author) {
     publishedArticleCount = await fetchPublishedArticleCountForAuthor(access.context.sanityAuthorId);
   }
+
+  const ownArticlesResult = await fetchOwnEditorialArticles(access.context);
+
+  if (ownArticlesResult.ok) {
+    ownArticleItems = ownArticlesResult.items;
+  }
+
+  if (access.context.permissions.canReadSubmittedArticles) {
+    const reviewArticlesResult = await fetchReviewQueueEditorialArticles(access.context);
+
+    if (reviewArticlesResult.ok) {
+      reviewArticleItems = reviewArticlesResult.items;
+    }
+  }
 }
 
-const profileHref = isEnglish ? '/en/account/editor/profile/' : '/account/editor/profile/';
-const articlesHref = isEnglish ? '/en/account/editor/articles/' : '/account/editor/articles/';
-const newArticleHref = isEnglish ? '/en/account/editor/articles/new/' : '/account/editor/articles/new/';
 const accountHref = isEnglish ? '/en/account/' : '/account/';
 const languageSwitch = isEnglish ? '/account/editor/' : '/en/account/editor/';
 const sidebarName = author?.displayName === 'nickname' && author.nickname
   ? author.nickname
   : author?.name || (access.ok ? String(access.context.profile?.display_name || '') : '');
-const authorPublicUrlIt = author?.slug ? `/autori/${author.slug}/` : '';
-const authorPublicUrlEn = author?.slug ? `/en/authors/${author.slug}/` : '';
 const editorialRoleLabel = access.ok
   ? getEditorialRoleLabel(access.context.editorialRole, currentLang)
   : '';
 const authorRoleLabel = author
   ? getPublicAuthorRoleLabel(author.role, currentLang)
   : '';
+const draftArticleCount = ownArticleItems.filter((item) => (
+  item.workflowStatus === 'draft' ||
+  item.workflowStatus === 'changes_requested' ||
+  item.sanityLifecycle === 'revision_draft'
+)).length;
 ---
 
 <BaseLayout
@@ -128,35 +133,13 @@ const authorRoleLabel = author
   <CommunityLayout class="editorial-area-page" sidebar={access.ok && Boolean(author)}>
     {access.ok && author && (
       <Fragment slot="sidebar">
-        <CommunitySidebarProfile
-          label={copy.profileLabel}
-          name={sidebarName || author.name}
-          avatarUrl={author.image?.asset?.url || ''}
+        <EditorialSidebar
+          lang={currentLang}
+          author={author}
+          editorialRole={access.context.editorialRole}
+          fallbackName={String(access.context.profile?.display_name || '')}
+          publishedArticleCount={publishedArticleCount}
         />
-
-        <CommunityStatList
-          title={copy.overviewLabel}
-          items={[
-            { label: copy.publishedArticles, value: publishedArticleCount },
-            { label: copy.completeness, value: author.completeness.label },
-          ]}
-        />
-
-        <CommunitySidebarSection title={copy.dashboardLinks}>
-          <div class="community-link-list">
-            <a href={profileHref}>{copy.editProfile}</a>
-            {authorPublicUrlIt && (
-              <a href={authorPublicUrlIt} data-language-session-override="it">
-                {copy.publicProfileIt}
-              </a>
-            )}
-            {authorPublicUrlEn && (
-              <a href={authorPublicUrlEn} data-language-session-override="en">
-                {copy.publicProfileEn}
-              </a>
-            )}
-          </div>
-        </CommunitySidebarSection>
       </Fragment>
     )}
 
@@ -165,6 +148,14 @@ const authorRoleLabel = author
       title={copy.title}
       description={copy.description}
     />
+
+    {access.ok && (
+      <EditorialSectionNav
+        activeSection="dashboard"
+        lang={currentLang}
+        authorPreviewHref={author?.publicUrls?.[currentLang]}
+      />
+    )}
 
     {!access.ok && (
       <section class="editorial-card editorial-card--notice">
@@ -185,15 +176,12 @@ const authorRoleLabel = author
 
     {access.ok && author && (
       <div class="editorial-dashboard-grid">
-        <section class="editorial-card editorial-author-card">
+        <section class="editorial-card editorial-author-card editorial-dashboard-intro">
           <div class="editorial-author-card__body">
             <p class="editorial-kicker">{copy.overviewLabel}</p>
-            <h2>
-              {isEnglish
-                ? 'Your editorial workspace'
-                : 'Il tuo spazio redazionale'}
-            </h2>
-            <dl class="editorial-definition-list">
+            <h2>{sidebarName || author.name}</h2>
+            <p>{copy.authorSummary}</p>
+            <dl class="editorial-definition-list editorial-definition-list--grid">
               <div>
                 <dt>{copy.editorialRole}</dt>
                 <dd>{editorialRoleLabel}</dd>
@@ -202,43 +190,34 @@ const authorRoleLabel = author
                 <dt>{copy.authorRole}</dt>
                 <dd>{authorRoleLabel || copy.notSet}</dd>
               </div>
+              <div>
+                <dt>{copy.authorStatus}</dt>
+                <dd>{author.completeness.label}</dd>
+              </div>
             </dl>
           </div>
         </section>
 
-        <section class="editorial-card editorial-action-card">
-          <div>
-            <p class="editorial-kicker">{copy.dashboardLinks}</p>
-            <h2>{copy.editProfile}</h2>
-            <p>
-              {isEnglish
-                ? 'Update the public author information that appears on Retro-Gamers.it.'
-                : 'Aggiorna le informazioni pubbliche autore mostrate su Retro-Gamers.it.'}
-            </p>
-          </div>
-          <a class="editorial-button" href={profileHref}>{copy.editProfile}</a>
+        <section class="editorial-card editorial-card--compact">
+          <span>{copy.publishedArticles}</span>
+          <strong>{publishedArticleCount}</strong>
         </section>
 
-        <section class="editorial-card editorial-action-card">
-          <div>
-            <p class="editorial-kicker">{copy.completeness}</p>
-            <h2>{author.completeness.label}</h2>
-            <p>{copy.completenessHint}</p>
-          </div>
-          <span class="editorial-pill">{publishedArticleCount} {copy.publishedArticles.toLowerCase()}</span>
+        <section class="editorial-card editorial-card--compact">
+          <span>{copy.drafts}</span>
+          <strong>{draftArticleCount}</strong>
         </section>
 
-        <section class="editorial-card editorial-action-card">
-          <div>
-            <p class="editorial-kicker">{copy.dashboardLinks}</p>
-            <h2>{copy.articleEditorTitle}</h2>
-            <p>{copy.articleEditorDescription}</p>
-          </div>
-          <div class="editorial-action-card__actions">
-            <a class="editorial-button" href={articlesHref}>{copy.manageArticles}</a>
-            <a href={newArticleHref}>{copy.newArticle}</a>
-          </div>
+        <section class="editorial-card editorial-card--compact">
+          <span>{copy.reviewQueue}</span>
+          <strong>{reviewArticleItems.length}</strong>
         </section>
+
+        <section class="editorial-card editorial-card--compact">
+          <span>{copy.completeness}</span>
+          <strong>{author.completeness.label}</strong>
+        </section>
+
       </div>
     )}
   </CommunityLayout>

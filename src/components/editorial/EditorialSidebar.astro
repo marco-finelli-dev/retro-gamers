@@ -1,0 +1,89 @@
+---
+import CommunitySidebarProfile from '../community/CommunitySidebarProfile.astro';
+import CommunityStatList from '../community/CommunityStatList.astro';
+import { getEditorialRoleLabel, getPublicAuthorRoleLabel } from '../../lib/editorial/labels';
+import type { EditorialRole } from '../../lib/editorial/types';
+
+interface Props {
+  lang?: 'it' | 'en' | string;
+  author: {
+    name?: string | null;
+    nickname?: string | null;
+    displayName?: string | null;
+    role?: string | null;
+    image?: {
+      asset?: {
+        url?: string | null;
+      } | null;
+    } | null;
+    completeness?: {
+      label?: string | null;
+    } | null;
+  };
+  editorialRole?: EditorialRole | null;
+  fallbackName?: string | null;
+  publishedArticleCount?: number;
+}
+
+const {
+  lang = 'it',
+  author,
+  editorialRole = null,
+  fallbackName = '',
+  publishedArticleCount = 0,
+} = Astro.props as Props;
+const currentLang = lang === 'en' ? 'en' : 'it';
+const isEnglish = currentLang === 'en';
+const labels = isEnglish
+  ? {
+      profile: 'Author identity',
+      overview: 'Overview',
+      editorialRole: 'Editorial role',
+      authorRole: 'Public author role',
+      publishedArticles: 'Published articles',
+      completeness: 'Profile completeness',
+      notSet: 'Not set',
+    }
+  : {
+      profile: 'Identità autore',
+      overview: 'Panoramica',
+      editorialRole: 'Ruolo redazionale',
+      authorRole: 'Ruolo autore pubblico',
+      publishedArticles: 'Articoli pubblicati',
+      completeness: 'Completezza profilo',
+      notSet: 'Non impostato',
+    };
+const sidebarName = author?.displayName === 'nickname' && author.nickname
+  ? author.nickname
+  : author?.name || fallbackName || '';
+const editorialRoleLabel = getEditorialRoleLabel(editorialRole, currentLang);
+const authorRoleLabel = author?.role
+  ? getPublicAuthorRoleLabel(author.role, currentLang)
+  : '';
+const completenessLabel = author?.completeness?.label || labels.notSet;
+---
+
+<CommunitySidebarProfile
+  label={labels.profile}
+  name={sidebarName || author?.name || ''}
+  avatarUrl={author?.image?.asset?.url || ''}
+>
+  <dl class="community-detail-list" slot="details">
+    <div>
+      <dt>{labels.editorialRole}</dt>
+      <dd>{editorialRoleLabel || labels.notSet}</dd>
+    </div>
+    <div>
+      <dt>{labels.authorRole}</dt>
+      <dd>{authorRoleLabel || labels.notSet}</dd>
+    </div>
+  </dl>
+</CommunitySidebarProfile>
+
+<CommunityStatList
+  title={labels.overview}
+  items={[
+    { label: labels.publishedArticles, value: publishedArticleCount },
+    { label: labels.completeness, value: completenessLabel },
+  ]}
+/>

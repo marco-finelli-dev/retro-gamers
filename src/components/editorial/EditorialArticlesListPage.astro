@@ -3,7 +3,8 @@ import '../../styles/pages/editorial-area.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CommunityHero from '../community/CommunityHero.astro';
 import CommunityLayout from '../community/CommunityLayout.astro';
-import CommunitySidebarSection from '../community/CommunitySidebarSection.astro';
+import EditorialSectionNav from './EditorialSectionNav.astro';
+import EditorialSidebar from './EditorialSidebar.astro';
 import {
   fetchOwnEditorialArticles,
   fetchReviewQueueEditorialArticles,
@@ -11,7 +12,10 @@ import {
   getEditorialArticlePreviewPath,
   requireEditorialArticleContext,
 } from '../../lib/editorial/articles.server';
-import { getEditorialRoleLabel } from '../../lib/editorial/labels';
+import {
+  fetchEditorialAuthorProfile,
+  fetchPublishedArticleCountForAuthor,
+} from '../../lib/editorial/profile.server';
 import { canCreateRevisionDraft } from '../../lib/editorial/permissions';
 
 type EditorialLang = 'it' | 'en';
@@ -84,9 +88,6 @@ const copy = isEnglish
       noArticlesText: 'Create your first draft to start writing inside the custom editor.',
       noFilterResultsTitle: 'No articles match these filters',
       noFilterResultsText: 'Try changing search text, status, language or content type.',
-      dashboard: 'Editorial dashboard',
-      profile: 'Author profile',
-      role: 'Editorial role',
       type: 'Type',
       language: 'Language',
       author: 'Author',
@@ -173,9 +174,6 @@ const copy = isEnglish
       noArticlesText: 'Crea la prima bozza per iniziare a scrivere nel custom editor.',
       noFilterResultsTitle: 'Nessun articolo corrisponde ai filtri',
       noFilterResultsText: 'Prova a cambiare ricerca, stato, lingua o tipo contenuto.',
-      dashboard: 'Dashboard redazionale',
-      profile: 'Profilo autore',
-      role: 'Ruolo redazionale',
       type: 'Tipo',
       language: 'Lingua',
       author: 'Autore',
@@ -201,8 +199,6 @@ const copy = isEnglish
       revisionGenericError: 'Non è stato possibile creare la bozza di revisione.',
     };
 
-const dashboardHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
-const profileHref = isEnglish ? '/en/account/editor/profile/' : '/account/editor/profile/';
 const newArticleHref = isEnglish ? '/en/account/editor/articles/new/' : '/account/editor/articles/new/';
 const languageSwitch = isEnglish ? '/account/editor/articles/' : '/en/account/editor/articles/';
 let items = [];
@@ -210,6 +206,8 @@ let listError = '';
 let reviewItems = [];
 let reviewError = '';
 let editorialArticleItems = [];
+let author = null;
+let publishedArticleCount = 0;
 
 function formatDateTime(value) {
   return value ? new Date(value).toLocaleString(isEnglish ? 'en' : 'it') : '—';
@@ -340,6 +338,12 @@ function buildUnifiedEditorialArticleItems(ownItems, queueItems) {
 }
 
 if (access.ok) {
+  author = await fetchEditorialAuthorProfile(access.context.sanityAuthorId);
+
+  if (author) {
+    publishedArticleCount = await fetchPublishedArticleCountForAuthor(access.context.sanityAuthorId);
+  }
+
   const result = await fetchOwnEditorialArticles(access.context);
 
   if (result.ok) {
@@ -379,19 +383,15 @@ const visibleOwnTypeOptions = Array.from(
   languageSwitch={languageSwitch}
   noindex={true}
 >
-  <CommunityLayout class="editorial-area-page editorial-workspace-page" sidebar={access.ok}>
-    {access.ok && (
+  <CommunityLayout class="editorial-area-page editorial-workspace-page" sidebar={access.ok && Boolean(author)}>
+    {access.ok && author && (
       <Fragment slot="sidebar">
-        <CommunitySidebarSection title={copy.kicker}>
-          <div class="community-link-list">
-            <a href={dashboardHref}>{copy.dashboard}</a>
-            <a href={profileHref}>{copy.profile}</a>
-            <a href={newArticleHref}>{copy.newArticle}</a>
-          </div>
-        </CommunitySidebarSection>
-        <CommunitySidebarSection title={copy.role}>
-          <p>{getEditorialRoleLabel(access.context.editorialRole, currentLang)}</p>
-        </CommunitySidebarSection>
+        <EditorialSidebar
+          lang={currentLang}
+          author={author}
+          editorialRole={access.context.editorialRole}
+          publishedArticleCount={publishedArticleCount}
+        />
       </Fragment>
     )}
 
@@ -400,6 +400,14 @@ const visibleOwnTypeOptions = Array.from(
       title={copy.title}
       description={copy.description}
     />
+
+    {access.ok && (
+      <EditorialSectionNav
+        activeSection="articles"
+        lang={currentLang}
+        authorPreviewHref={author?.publicUrls?.[currentLang]}
+      />
+    )}
 
     {access.ok && (
       <p class="editorial-message" data-editorial-dashboard-status hidden aria-live="polite"></p>
