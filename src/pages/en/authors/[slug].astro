@@ -11,6 +11,7 @@ import { PUBLIC_POST_GROQ_FILTER, getAllPosts } from '../../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../lib/pagination';
 
 const { slug } = Astro.params;
+const isAccountPreview = Astro.url.searchParams.get('accountPreview') === '1';
 
 const author = await client.fetch(`
   *[
@@ -289,6 +290,8 @@ const socials = [
   image={pageImage}
   canonical={`https://www.retro-gamers.it/en/authors/${slug}/`}
   lang="en"
+  noindex={isAccountPreview}
+  minimal={isAccountPreview}
 >
 
   <div class="author-page">
