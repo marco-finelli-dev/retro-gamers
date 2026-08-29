@@ -3,9 +3,9 @@ import vercel from '@astrojs/vercel';
 import react from '@astrojs/react';
 import { loadEnv } from 'vite';
 
-const loadServerDevEnv = () => {
-  const isDevCommand = process.argv.some((arg) => arg === 'dev');
+const isDevCommand = process.argv.some((arg) => arg === 'dev');
 
+const loadServerDevEnv = () => {
   if (!isDevCommand) return;
 
   const env = loadEnv('development', process.cwd(), '');
@@ -30,6 +30,7 @@ export default defineConfig({
   adapter: vercel(),
   integrations: [react()],
   vite: {
+    cacheDir: isDevCommand ? 'node_modules/.vite/dev' : 'node_modules/.vite/build',
     optimizeDeps: {
       include: [
         'react/compiler-runtime',
