@@ -83,35 +83,23 @@ const accountLabels = isEnglish
       title: 'Account',
       signIn: 'Log in / Register',
       account: 'My account',
-      favorites: 'Favorites',
-      memories: 'My memories',
-      messages: 'Messages',
       editorialTools: 'Editorial area',
       administrationArea: 'Administration area',
-      moderationArea: 'Moderation area',
       signOut: 'Sign out'
     }
   : {
       title: 'Account',
       signIn: 'Accedi / Registrati',
       account: 'Il mio account',
-      favorites: 'Preferiti',
-      memories: 'Le mie memorie',
-      messages: 'Messaggi',
       editorialTools: 'Area redazione',
       administrationArea: 'Area amministrazione',
-      moderationArea: 'Area moderazione',
       signOut: 'Esci'
     };
 
 const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
 const accountHref = isEnglish ? '/en/account/' : '/account/';
-const accountFavoritesHref = isEnglish ? '/en/account/favorites/' : '/account/favorites/';
-const accountMemoriesHref = isEnglish ? '/en/account/memories/' : '/account/memories/';
-const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/messages/';
 const accountEditorHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
 const accountAdminHref = isEnglish ? '/en/admin/' : '/admin/';
-const accountModerationHref = isEnglish ? '/en/admin/comments/' : '/admin/comments/';
 const currentLanguageTarget = isEnglish ? 'en' : 'it';
 ---
 
@@ -153,15 +141,6 @@ const currentLanguageTarget = isEnglish ? 'en' : 'it';
           </div>
 
           <a href={accountHref}>{accountLabels.account}</a>
-          <a href={accountFavoritesHref}>{accountLabels.favorites}</a>
-          <a href={accountMemoriesHref}>{accountLabels.memories}</a>
-          <a href={accountMessagesHref}>
-            <span>{accountLabels.messages}</span>
-            <span class="mobile-menu__account-unread" data-account-unread hidden></span>
-          </a>
-          <a href={accountHref} data-account-public-profile hidden>
-            {isEnglish ? 'Public profile' : 'Profilo pubblico'}
-          </a>
 
           <a
             href={accountEditorHref}
@@ -182,16 +161,9 @@ const currentLanguageTarget = isEnglish ? 'en' : 'it';
             <span class="mobile-menu__admin-unread" data-admin-unread hidden></span>
           </a>
 
-          <a
-            href={accountModerationHref}
-            data-account-moderation-area
-            data-language-session-override={currentLanguageTarget}
-            hidden
-          >
-            {accountLabels.moderationArea}
-          </a>
+          <span class="mobile-menu__account-separator" aria-hidden="true"></span>
 
-          <button type="button" data-account-logout>{accountLabels.signOut}</button>
+          <button class="mobile-menu__account-logout" type="button" data-account-logout>{accountLabels.signOut}</button>
         </div>
       </div>
     </div>

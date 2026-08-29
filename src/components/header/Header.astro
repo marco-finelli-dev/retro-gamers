@@ -71,12 +71,8 @@ const flagAlt = isEnglish
 
 const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
 const accountHref = isEnglish ? '/en/account/' : '/account/';
-const accountFavoritesHref = isEnglish ? '/en/account/favorites/' : '/account/favorites/';
-const accountMemoriesHref = isEnglish ? '/en/account/memories/' : '/account/memories/';
-const accountMessagesHref = isEnglish ? '/en/account/messages/' : '/account/messages/';
 const accountEditorHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
 const accountAdminHref = isEnglish ? '/en/admin/' : '/admin/';
-const accountModerationHref = isEnglish ? '/en/admin/comments/' : '/admin/comments/';
 const languageTarget = isEnglish ? 'it' : 'en';
 const currentLanguageTarget = isEnglish ? 'en' : 'it';
 const initialSession = Astro.locals.userSession;
@@ -303,23 +299,6 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
               {isEnglish ? 'My account' : 'Il mio account'}
             </a>
 
-            <a href={accountFavoritesHref} role="menuitem">
-              {isEnglish ? 'Favorites' : 'Preferiti'}
-            </a>
-
-            <a href={accountMemoriesHref} role="menuitem">
-              {isEnglish ? 'My memories' : 'Le mie memorie'}
-            </a>
-
-            <a href={accountMessagesHref} role="menuitem">
-              <span>{isEnglish ? 'Messages' : 'Messaggi'}</span>
-              <span class="site-header__account-unread" data-account-unread hidden></span>
-            </a>
-
-            <a href={accountHref} role="menuitem" data-account-public-profile hidden>
-              {isEnglish ? 'Public profile' : 'Profilo pubblico'}
-            </a>
-
             <a
               href={accountEditorHref}
               role="menuitem"
@@ -341,17 +320,9 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
               <span class="site-header__admin-unread" data-admin-unread hidden></span>
             </a>
 
-            <a
-              href={accountModerationHref}
-              role="menuitem"
-              data-account-moderation-area
-              data-language-session-override={currentLanguageTarget}
-              hidden
-            >
-              {isEnglish ? 'Moderation area' : 'Area moderazione'}
-            </a>
+            <span class="site-header__account-separator" aria-hidden="true"></span>
 
-            <button type="button" role="menuitem" data-account-logout>
+            <button class="site-header__account-logout" type="button" role="menuitem" data-account-logout>
               {isEnglish ? 'Sign out' : 'Esci'}
             </button>
           </div>
