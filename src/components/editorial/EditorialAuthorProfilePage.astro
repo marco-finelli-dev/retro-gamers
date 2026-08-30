@@ -757,6 +757,15 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
     return messages.error;
   };
 
+  const getUploadAltInput = (assetType) =>
+    root.querySelector(`[name="${assetType === 'cover' ? 'coverAlt' : 'imageAlt'}"]`);
+
+  const getUploadAlt = (assetType) => {
+    const altInput = getUploadAltInput(assetType);
+
+    return String(altInput?.value || '').trim();
+  };
+
   const formatFileSize = (bytes) => {
     const size = Number(bytes || 0);
 
@@ -1050,6 +1059,40 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
     const submitButton = uploadForm.querySelector('button[type="submit"]');
     const messageNode = uploadForm.querySelector('[data-editor-upload-message]');
     const assetType = uploadForm.dataset.assetType === 'cover' ? 'cover' : 'avatar';
+    const altInput = getUploadAltInput(assetType);
+    let retryUploadTimer = 0;
+
+    const requestUploadIfReady = () => {
+      const file = selectedFiles.get(uploadForm) || fileInput?.files?.[0];
+      const alt = getUploadAlt(assetType);
+
+      if (!file) return false;
+
+      const fileError = getBlockingFileError(file, assetType);
+
+      if (fileError) {
+        setMessage(messageNode, fileError, 'error');
+        return false;
+      }
+
+      if (!alt || alt.length > 120) {
+        setMessage(messageNode, messages.invalidAlt, 'error');
+        return false;
+      }
+
+      uploadForm.requestSubmit();
+      return true;
+    };
+
+    const scheduleUploadRetry = () => {
+      window.clearTimeout(retryUploadTimer);
+
+      if (!selectedFiles.get(uploadForm) || !getUploadAlt(assetType)) return;
+
+      retryUploadTimer = window.setTimeout(() => {
+        requestUploadIfReady();
+      }, 700);
+    };
 
     fileInput?.addEventListener('change', async () => {
       const file = fileInput.files?.[0];
@@ -1057,7 +1100,7 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
       if (!file) return;
 
       await updateSelectedFilePreview(uploadForm, file, assetType);
-      uploadForm.requestSubmit();
+      requestUploadIfReady();
     });
 
     dropzone?.addEventListener('dragover', (event) => {
@@ -1083,7 +1126,13 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
       if (!file) return;
 
       await updateSelectedFilePreview(uploadForm, file, assetType);
-      uploadForm.requestSubmit();
+      requestUploadIfReady();
+    });
+
+    altInput?.addEventListener('input', scheduleUploadRetry);
+    altInput?.addEventListener('change', () => {
+      window.clearTimeout(retryUploadTimer);
+      requestUploadIfReady();
     });
 
     uploadForm.addEventListener('submit', async (event) => {
@@ -1091,8 +1140,7 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
       setMessage(messageNode, messages.uploading);
 
       const file = selectedFiles.get(uploadForm) || fileInput?.files?.[0];
-      const altInput = root.querySelector(`[name="${assetType === 'cover' ? 'coverAlt' : 'imageAlt'}"]`);
-      const alt = String(altInput?.value || '').trim();
+      const alt = getUploadAlt(assetType);
       const uploadButtonText = submitButton?.textContent || '';
 
       if (!file || !alt) {
