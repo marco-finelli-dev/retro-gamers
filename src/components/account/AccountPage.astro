@@ -120,19 +120,16 @@ const copy = {
     progressAria: 'Progresso verso',
     maxLevel: 'Hai raggiunto il livello massimo.',
     avatar: 'Avatar',
-    avatarLoaded:
-      'Avatar attuale caricato. Puoi sostituirlo caricando una nuova immagine.',
-    avatarEmpty:
-      'Carica un’immagine per rendere riconoscibile il tuo profilo nella community.',
+    avatarCurrent: 'Avatar attuale',
+    avatarCurrentEmpty: 'Nessun avatar caricato',
+    avatarDescription: 'JPG, PNG o WebP. Max 2 MB.',
+    avatarRecommendation: 'Consigliato: 512 × 512 px, rapporto 1:1.',
     avatarDropReplace: 'Rilascia l’immagine per sostituire l’avatar',
     avatarDropUpload: 'Rilascia l’immagine per caricarla',
-    avatarChooseReplace: 'Scegli una nuova immagine per sostituire l’avatar',
-    avatarChooseUpload: 'Trascina qui la tua immagine oppure scegli un file',
-    avatarHelpReplace:
-      'JPG, PNG o WebP. Max 2 MB. L’avatar attuale resterà attivo finché non carichi il nuovo file.',
-    avatarHelpUpload: 'JPG, PNG o WebP. Max 2 MB.',
-    avatarReplace: 'Sostituisci avatar',
-    avatarUpload: 'Carica avatar',
+    avatarChooseReplace: 'Trascina un’immagine qui',
+    avatarChooseUpload: 'Trascina un’immagine qui',
+    avatarHelpReplace: 'oppure clicca per scegliere',
+    avatarHelpUpload: 'oppure clicca per scegliere',
     avatarRemove: 'Rimuovi avatar',
     publicProfileTitle: 'Profilo pubblico',
     publicProfileDescription:
@@ -290,19 +287,16 @@ const copy = {
     progressAria: 'Progress toward',
     maxLevel: 'You have reached the highest level.',
     avatar: 'Avatar',
-    avatarLoaded:
-      'Current avatar uploaded. You can replace it by uploading a new image.',
-    avatarEmpty:
-      'Upload an image to make your community profile recognizable.',
+    avatarCurrent: 'Current avatar',
+    avatarCurrentEmpty: 'No avatar uploaded',
+    avatarDescription: 'JPG, PNG or WebP. Max 2 MB.',
+    avatarRecommendation: 'Recommended: 512 × 512 px, 1:1 ratio.',
     avatarDropReplace: 'Drop the image to replace your avatar',
     avatarDropUpload: 'Drop the image to upload it',
-    avatarChooseReplace: 'Choose a new image to replace your avatar',
-    avatarChooseUpload: 'Drag your image here or choose a file',
-    avatarHelpReplace:
-      'JPG, PNG or WebP. Max 2 MB. Your current avatar stays active until you upload the new file.',
-    avatarHelpUpload: 'JPG, PNG or WebP. Max 2 MB.',
-    avatarReplace: 'Replace avatar',
-    avatarUpload: 'Upload avatar',
+    avatarChooseReplace: 'Drag an image here',
+    avatarChooseUpload: 'Drag an image here',
+    avatarHelpReplace: 'or click to choose',
+    avatarHelpUpload: 'or click to choose',
     avatarRemove: 'Remove avatar',
     publicProfileTitle: 'Public profile',
     publicProfileDescription:
@@ -576,6 +570,10 @@ const clientCopy = currentLang === 'en'
       connectionError: 'Connection error. Please try again.',
       removeFailed: 'Removal failed.',
       avatarRemoved: 'Avatar removed.',
+      avatarRemoveConfirmTitle: 'Remove avatar?',
+      avatarRemoveConfirmText: 'Are you sure you want to remove your avatar?',
+      avatarRemoveConfirmAction: 'Remove avatar',
+      avatarRemoveConfirmCancel: 'Cancel',
       profileUpdateFailed: 'Update failed.',
       profileUpdated: 'Profile updated.',
       bioTooLong: 'The bio cannot exceed 500 characters.',
@@ -605,6 +603,10 @@ const clientCopy = currentLang === 'en'
       connectionError: 'Errore di connessione. Riprova.',
       removeFailed: 'Rimozione non riuscita.',
       avatarRemoved: 'Avatar rimosso.',
+      avatarRemoveConfirmTitle: 'Rimuovere l’avatar?',
+      avatarRemoveConfirmText: 'Sei sicuro di voler rimuovere il tuo avatar?',
+      avatarRemoveConfirmAction: 'Rimuovi avatar',
+      avatarRemoveConfirmCancel: 'Annulla',
       profileUpdateFailed: 'Aggiornamento non riuscito.',
       profileUpdated: 'Profilo aggiornato.',
       bioTooLong: 'La bio non può superare 500 caratteri.',
@@ -943,56 +945,67 @@ const clientCopy = currentLang === 'en'
                       <div class="account-avatar-section__content">
                         <div class="account-profile-editor-section__heading">
                           <h3 id="account-avatar-title">{ui.avatar}</h3>
-                          <p>
-                            {avatarUrl
-                              ? ui.avatarLoaded
-                              : ui.avatarEmpty}
-                          </p>
+                          <p>{ui.avatarDescription}</p>
+                          <p>{ui.avatarRecommendation}</p>
                         </div>
 
-                        <form class="account-form account-avatar-form" data-account-avatar-form>
-                          <label
-                            class="account-avatar-dropzone"
-                            data-account-avatar-dropzone
-                            data-replace-label={avatarUrl ? ui.avatarDropReplace : ui.avatarDropUpload}
-                          >
-                            <input
-                              class="account-avatar-input"
-                              type="file"
-                              name="avatar"
-                              accept="image/jpeg,image/png,image/webp"
-                              data-account-avatar-input
-                            />
-                            <span class="account-avatar-dropzone__label" data-account-avatar-dropzone-label>
-                              {avatarUrl
-                                ? ui.avatarChooseReplace
-                                : ui.avatarChooseUpload}
-                            </span>
-                            <span class="account-avatar-dropzone__help">
-                              {avatarUrl
-                                ? ui.avatarHelpReplace
-                                : ui.avatarHelpUpload}
-                            </span>
-                            <span
-                              class="account-avatar-dropzone__filename"
-                              data-account-avatar-filename
-                              hidden
-                            ></span>
-                          </label>
-
-                          <p class="account-message" data-account-avatar-message hidden></p>
-
-                          <div class="account-actions">
-                            <button type="submit">{avatarUrl ? ui.avatarReplace : ui.avatarUpload}</button>
-                            <button
-                              type="button"
-                              data-account-avatar-remove
-                              hidden={!avatarUrl}
-                            >
-                              {ui.avatarRemove}
-                            </button>
+                        <div class="account-avatar-media-grid">
+                          <div class="account-avatar-current-card">
+                            <span class="account-avatar-card-label">{ui.avatarCurrent}</span>
+                            <div class="account-avatar-current-card__frame" data-account-avatar-frame>
+                              <img
+                                src={avatarUrl}
+                                alt={accountDisplayName}
+                                hidden={!avatarUrl}
+                              />
+                              <span hidden={Boolean(avatarUrl)}>{ui.avatarCurrentEmpty}</span>
+                              <button
+                                class="account-avatar-current-card__remove"
+                                type="button"
+                                data-account-avatar-remove
+                                aria-haspopup="dialog"
+                                aria-controls="account-avatar-remove-dialog"
+                                aria-label={ui.avatarRemove}
+                                hidden={!avatarUrl}
+                              >
+                                ×
+                              </button>
+                            </div>
                           </div>
-                        </form>
+
+                          <form class="account-form account-avatar-form account-avatar-upload-card" data-account-avatar-form>
+                            <label
+                              class="account-avatar-dropzone"
+                              data-account-avatar-dropzone
+                              data-replace-label={avatarUrl ? ui.avatarDropReplace : ui.avatarDropUpload}
+                            >
+                              <input
+                                class="account-avatar-input"
+                                type="file"
+                                name="avatar"
+                                accept="image/jpeg,image/png,image/webp"
+                                data-account-avatar-input
+                              />
+                              <span class="account-avatar-dropzone__label" data-account-avatar-dropzone-label>
+                                {avatarUrl
+                                  ? ui.avatarChooseReplace
+                                  : ui.avatarChooseUpload}
+                              </span>
+                              <span class="account-avatar-dropzone__help">
+                                {avatarUrl
+                                  ? ui.avatarHelpReplace
+                                  : ui.avatarHelpUpload}
+                              </span>
+                              <span
+                                class="account-avatar-dropzone__filename"
+                                data-account-avatar-filename
+                                hidden
+                              ></span>
+                            </label>
+
+                            <p class="account-message" data-account-avatar-message hidden></p>
+                          </form>
+                        </div>
                       </div>
                     </section>
 
@@ -1319,6 +1332,40 @@ const clientCopy = currentLang === 'en'
     )}
   </CommunityLayout>
 
+  {isLoggedIn && (
+    <dialog
+      class="account-profile-preview-dialog account-avatar-confirm-dialog"
+      id="account-avatar-remove-dialog"
+      data-account-avatar-confirm-dialog
+      aria-labelledby="account-avatar-remove-title"
+    >
+      <div class="account-profile-preview-dialog__surface">
+        <div class="account-profile-preview-dialog__header">
+          <h2 id="account-avatar-remove-title">{clientCopy.avatarRemoveConfirmTitle}</h2>
+          <button
+            type="button"
+            class="account-profile-preview-dialog__close"
+            data-account-avatar-confirm-close
+            aria-label={currentLang === 'en' ? 'Close confirmation' : 'Chiudi conferma'}
+          >
+            ×
+          </button>
+        </div>
+        <div class="account-avatar-confirm-dialog__body">
+          <p>{clientCopy.avatarRemoveConfirmText}</p>
+          <div class="account-avatar-confirm-dialog__actions">
+            <button type="button" data-account-avatar-confirm-action>
+              {clientCopy.avatarRemoveConfirmAction}
+            </button>
+            <button type="button" class="account-avatar-confirm-dialog__cancel" data-account-avatar-confirm-cancel>
+              {clientCopy.avatarRemoveConfirmCancel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+  )}
+
   <script define:vars={{ clientCopy }}>
     const form = document.querySelector('[data-account-profile-form]');
     const profileMessage = document.querySelector('[data-account-message]');
@@ -1354,6 +1401,11 @@ const clientCopy = currentLang === 'en'
     const avatarInput = document.querySelector('[data-account-avatar-input]');
     const avatarMessage = document.querySelector('[data-account-avatar-message]');
     const avatarRemoveButton = document.querySelector('[data-account-avatar-remove]');
+    const avatarConfirmDialog = document.querySelector('[data-account-avatar-confirm-dialog]');
+    const avatarConfirmClose = document.querySelector('[data-account-avatar-confirm-close]');
+    const avatarConfirmCancel = document.querySelector('[data-account-avatar-confirm-cancel]');
+    const avatarConfirmAction = document.querySelector('[data-account-avatar-confirm-action]');
+    const avatarFrame = document.querySelector('[data-account-avatar-frame]');
     const avatarDropzone = document.querySelector('[data-account-avatar-dropzone]');
     const avatarDropzoneLabel = document.querySelector('[data-account-avatar-dropzone-label]');
     const avatarFilename = document.querySelector('[data-account-avatar-filename]');
@@ -1483,7 +1535,9 @@ const clientCopy = currentLang === 'en'
 
       window.setTimeout(() => {
         const activePanel = document.querySelector(`[data-account-settings-panel="${activeSettingsPanel}"]`);
-        const focusTarget = activePanel?.querySelector('input:not([type="file"]), select, textarea, button');
+        const focusTarget = activePanel?.querySelector(
+          'input:not([type="file"]), select, textarea, button:not(.account-avatar-current-card__remove)'
+        );
         focusTarget?.focus();
       }, 0);
     };
@@ -1708,6 +1762,7 @@ const clientCopy = currentLang === 'en'
 
       selectedAvatarFile = file;
       if (avatarMessage) avatarMessage.hidden = true;
+      avatarForm?.requestSubmit();
     };
 
     avatarInput?.addEventListener('change', () => {
@@ -1796,8 +1851,19 @@ const clientCopy = currentLang === 'en'
       }
     });
 
-    avatarRemoveButton?.addEventListener('click', async () => {
+    const closeAvatarConfirm = () => {
+      if (avatarConfirmDialog instanceof HTMLDialogElement && avatarConfirmDialog.open) {
+        avatarConfirmDialog.close();
+      }
+
+      avatarRemoveButton?.focus();
+    };
+
+    const removeAvatar = async () => {
       avatarRemoveButton.disabled = true;
+      if (avatarConfirmAction instanceof HTMLButtonElement) {
+        avatarConfirmAction.disabled = true;
+      }
 
       try {
         const response = await fetch('/api/account/avatar/remove', {
@@ -1807,15 +1873,61 @@ const clientCopy = currentLang === 'en'
 
         if (!result.ok) {
           showMessage(avatarMessage, localizedMessage(result.error, clientCopy.removeFailed), 'error');
-          avatarRemoveButton.disabled = false;
+          closeAvatarConfirm();
           return;
         }
 
+        closeAvatarConfirm();
         showMessage(avatarMessage, clientCopy.avatarRemoved, 'ok');
         window.setTimeout(() => window.location.reload(), 450);
       } catch {
+        closeAvatarConfirm();
         showMessage(avatarMessage, clientCopy.connectionError, 'error');
-        avatarRemoveButton.disabled = false;
+      }
+
+      avatarRemoveButton.disabled = false;
+      if (avatarConfirmAction instanceof HTMLButtonElement) {
+        avatarConfirmAction.disabled = false;
+      }
+    };
+
+    avatarRemoveButton?.addEventListener('click', () => {
+      if (!(avatarConfirmDialog instanceof HTMLDialogElement)) {
+        removeAvatar();
+        return;
+      }
+
+      avatarConfirmDialog.showModal();
+      avatarConfirmCancel?.focus();
+    });
+
+    avatarFrame?.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse') return;
+      avatarFrame.dataset.removeVisible = 'true';
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!avatarFrame || event.pointerType === 'mouse') return;
+      if (event.target instanceof Node && avatarFrame.contains(event.target)) return;
+      delete avatarFrame.dataset.removeVisible;
+    });
+
+    avatarConfirmAction?.addEventListener('click', removeAvatar);
+    avatarConfirmClose?.addEventListener('click', closeAvatarConfirm);
+    avatarConfirmCancel?.addEventListener('click', closeAvatarConfirm);
+    avatarConfirmDialog?.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      closeAvatarConfirm();
+    });
+    avatarConfirmDialog?.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeAvatarConfirm();
+      }
+    });
+    avatarConfirmDialog?.addEventListener('click', (event) => {
+      if (event.target === avatarConfirmDialog) {
+        closeAvatarConfirm();
       }
     });
 

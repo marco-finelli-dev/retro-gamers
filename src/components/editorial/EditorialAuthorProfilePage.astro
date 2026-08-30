@@ -75,6 +75,11 @@ const copy = isEnglish
       currentCover: 'Current cover',
       noCurrentImage: 'No current avatar image',
       noCurrentCover: 'No current cover image',
+      removeAuthorImage: 'Remove author image',
+      removeAuthorImageTitle: 'Remove author image?',
+      removeAuthorImageText: 'Are you sure you want to remove the author image?',
+      removeAuthorImageAction: 'Remove image',
+      removeAuthorImageCancel: 'Cancel',
       imageDropTitle: 'Drag an image here',
       coverDropTitle: 'Drag a new cover here',
       dropSubtitle: 'or click to choose',
@@ -158,6 +163,11 @@ const copy = isEnglish
       currentCover: 'Cover attuale',
       noCurrentImage: 'Nessuna immagine autore impostata',
       noCurrentCover: 'Nessuna cover autore impostata',
+      removeAuthorImage: 'Rimuovi immagine autore',
+      removeAuthorImageTitle: "Rimuovere l'immagine autore?",
+      removeAuthorImageText: "Sei sicuro di voler rimuovere l'immagine autore?",
+      removeAuthorImageAction: 'Rimuovi immagine',
+      removeAuthorImageCancel: 'Annulla',
       imageDropTitle: 'Trascina un’immagine qui',
       coverDropTitle: 'Trascina una nuova cover qui',
       dropSubtitle: 'oppure clicca per scegliere',
@@ -467,7 +477,10 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
                 <div class="editorial-profile-media-grid">
                   <div class="editorial-current-media editorial-current-media--avatar editorial-profile-media-card">
                     <span>{copy.currentImage}</span>
-                    <div class="editorial-current-media__frame editorial-current-media__frame--avatar">
+                    <div
+                      class="editorial-current-media__frame editorial-current-media__frame--avatar"
+                      data-editor-author-image-frame
+                    >
                       <img
                         src={author.image?.asset?.url || ''}
                         alt={author.image?.alt || ''}
@@ -481,6 +494,17 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
                       >
                         {copy.noCurrentImage}
                       </span>
+                      <button
+                        class="editorial-current-media__remove"
+                        type="button"
+                        data-editor-author-image-remove
+                        aria-haspopup="dialog"
+                        aria-controls="editor-author-image-remove-dialog"
+                        aria-label={copy.removeAuthorImage}
+                        hidden={!author.image?.asset?.url}
+                      >
+                        ×
+                      </button>
                     </div>
                   </div>
 
@@ -599,6 +623,44 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
     )}
   </CommunityLayout>
 
+  {access.ok && author && (
+    <dialog
+      class="editorial-author-image-confirm-dialog"
+      id="editor-author-image-remove-dialog"
+      data-editor-author-image-confirm-dialog
+      aria-labelledby="editor-author-image-remove-title"
+    >
+      <div class="account-profile-preview-dialog__surface">
+        <div class="account-profile-preview-dialog__header">
+          <h2 id="editor-author-image-remove-title">{copy.removeAuthorImageTitle}</h2>
+          <button
+            type="button"
+            class="account-profile-preview-dialog__close"
+            data-editor-author-image-confirm-close
+            aria-label={isEnglish ? 'Close confirmation' : 'Chiudi conferma'}
+          >
+            ×
+          </button>
+        </div>
+        <div class="editorial-author-image-confirm-dialog__body">
+          <p>{copy.removeAuthorImageText}</p>
+          <div class="editorial-author-image-confirm-dialog__actions">
+            <button type="button" class="editorial-button" data-editor-author-image-confirm-action>
+              {copy.removeAuthorImageAction}
+            </button>
+            <button
+              type="button"
+              class="editorial-author-image-confirm-dialog__cancel"
+              data-editor-author-image-confirm-cancel
+            >
+              {copy.removeAuthorImageCancel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+  )}
+
   <script is:inline>
 (() => {
   const root = document.querySelector('[data-editor-profile-root]');
@@ -625,6 +687,8 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
         chooseFile: 'Choose a file or drop it here',
         imageDropTitle: 'Drag an image here',
         coverDropTitle: 'Drag a new cover here',
+        removingImage: 'Removing image...',
+        imageRemoved: 'Image removed.',
         dropFile: 'Drop the image here',
         fileReady: 'File ready',
         recommendedFormat: 'Recommended format.',
@@ -650,6 +714,8 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
         chooseFile: 'Scegli un file o trascinalo qui',
         imageDropTitle: 'Trascina un’immagine qui',
         coverDropTitle: 'Trascina una nuova cover qui',
+        removingImage: 'Rimozione immagine...',
+        imageRemoved: 'Immagine rimossa.',
         dropFile: 'Rilascia l’immagine qui',
         fileReady: 'File pronto',
         recommendedFormat: 'Formato consigliato.',
@@ -664,6 +730,12 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
   const profileMessage = root.querySelector('[data-editor-profile-message]');
   const unsavedMessage = root.querySelector('[data-editor-unsaved-message]');
   const completenessNode = root.querySelector('[data-editor-completeness]');
+  const authorImageFrame = root.querySelector('[data-editor-author-image-frame]');
+  const authorImageRemoveButton = root.querySelector('[data-editor-author-image-remove]');
+  const authorImageConfirmDialog = document.querySelector('[data-editor-author-image-confirm-dialog]');
+  const authorImageConfirmClose = document.querySelector('[data-editor-author-image-confirm-close]');
+  const authorImageConfirmCancel = document.querySelector('[data-editor-author-image-confirm-cancel]');
+  const authorImageConfirmAction = document.querySelector('[data-editor-author-image-confirm-action]');
   const profileTabButtons = root.querySelectorAll('[data-editor-profile-tab]');
   const profilePanels = root.querySelectorAll('[data-editor-profile-panel]');
   const profileControls = root.querySelectorAll('[form="editor-author-profile-form"]');
@@ -732,7 +804,9 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
 
     window.setTimeout(() => {
       const activePanel = root.querySelector(`[data-editor-profile-panel="${activePanelName}"]`);
-      const focusTarget = activePanel?.querySelector('input:not([type="file"]), select, textarea, button');
+      const focusTarget = activePanel?.querySelector(
+        'input:not([type="file"]), select, textarea, button:not(.editorial-current-media__remove)'
+      );
       focusTarget?.focus();
     }, 0);
   };
@@ -996,6 +1070,16 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
 
     updatePreviews('[data-editor-avatar-preview]', '[data-editor-avatar-placeholder]', author.image);
     updatePreviews('[data-editor-cover-preview]', '[data-editor-cover-placeholder]', author.cover);
+
+    if (authorImageRemoveButton) {
+      authorImageRemoveButton.hidden = !author.image?.asset?.url;
+    }
+
+    const imageAltInput = root.querySelector('[name="imageAlt"]');
+
+    if (imageAltInput) {
+      imageAltInput.value = author.image?.alt || '';
+    }
   };
 
   markProfileClean();
@@ -1049,6 +1133,111 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
         saveButton.disabled = false;
         saveButton.textContent = saveButtonText || (isEnglish ? 'Save profile' : 'Salva profilo');
       }
+    }
+  });
+
+  const closeAuthorImageConfirm = (restoreFocus = true) => {
+    if (authorImageConfirmDialog instanceof HTMLDialogElement && authorImageConfirmDialog.open) {
+      authorImageConfirmDialog.close();
+    }
+
+    if (restoreFocus) {
+      authorImageRemoveButton?.focus();
+    }
+  };
+
+  const removeAuthorImage = async () => {
+    const uploadForm = root.querySelector('[data-editor-upload-form][data-asset-type="avatar"]');
+    const messageNode = uploadForm?.querySelector('[data-editor-upload-message]');
+
+    if (!uploadForm) return;
+
+    if (authorImageRemoveButton) {
+      authorImageRemoveButton.disabled = true;
+    }
+
+    if (authorImageConfirmAction instanceof HTMLButtonElement) {
+      authorImageConfirmAction.disabled = true;
+    }
+
+    setMessage(messageNode, messages.removingImage);
+
+    const payload = new FormData();
+    payload.set('action', 'remove');
+    payload.set('assetType', 'avatar');
+    payload.set('_rev', revInput?.value || '');
+
+    try {
+      const response = await fetch('/api/editor/assets', {
+        method: 'POST',
+        body: payload,
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        closeAuthorImageConfirm();
+        setMessage(messageNode, getErrorMessage(result?.error), 'error');
+        return;
+      }
+
+      updateAuthorState(result.author);
+      clearSelectedFile(uploadForm);
+      closeAuthorImageConfirm(false);
+      markProfileClean();
+      setMessage(messageNode, messages.imageRemoved, 'success');
+    } catch {
+      closeAuthorImageConfirm();
+      setMessage(messageNode, messages.error, 'error');
+    } finally {
+      if (authorImageRemoveButton) {
+        authorImageRemoveButton.disabled = false;
+      }
+
+      if (authorImageConfirmAction instanceof HTMLButtonElement) {
+        authorImageConfirmAction.disabled = false;
+      }
+    }
+  };
+
+  authorImageRemoveButton?.addEventListener('click', () => {
+    if (!(authorImageConfirmDialog instanceof HTMLDialogElement)) {
+      removeAuthorImage();
+      return;
+    }
+
+    authorImageConfirmDialog.showModal();
+    authorImageConfirmCancel?.focus();
+  });
+
+  authorImageFrame?.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'mouse') return;
+
+    authorImageFrame.dataset.removeVisible = 'true';
+  });
+
+  document.addEventListener('pointerdown', (event) => {
+    if (!authorImageFrame || event.pointerType === 'mouse') return;
+    if (event.target instanceof Node && authorImageFrame.contains(event.target)) return;
+
+    delete authorImageFrame.dataset.removeVisible;
+  });
+
+  authorImageConfirmAction?.addEventListener('click', removeAuthorImage);
+  authorImageConfirmClose?.addEventListener('click', () => closeAuthorImageConfirm());
+  authorImageConfirmCancel?.addEventListener('click', () => closeAuthorImageConfirm());
+  authorImageConfirmDialog?.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeAuthorImageConfirm();
+  });
+  authorImageConfirmDialog?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeAuthorImageConfirm();
+    }
+  });
+  authorImageConfirmDialog?.addEventListener('click', (event) => {
+    if (event.target === authorImageConfirmDialog) {
+      closeAuthorImageConfirm();
     }
   });
 

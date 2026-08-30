@@ -511,6 +511,59 @@ async function recordAuthorAudit({
   return true;
 }
 
+async function patchAuthorImageRemoval({
+  context,
+  revisionId,
+}: {
+  context: EditorialContextWithUser;
+  revisionId: string;
+}) {
+  const updatedAuthor = await getSanityWriteClient()
+    .patch(context.sanityAuthorId)
+    .ifRevisionId(revisionId)
+    .unset(['image'])
+    .commit<Partial<EditorialAuthorProfile>>();
+  const normalizedAuthor = normalizeAuthorProfile(updatedAuthor);
+
+  if (!normalizedAuthor) {
+    return {
+      ok: false as const,
+      status: 502,
+      error: 'sanity_author_invalid',
+      profileUpdated: false,
+    };
+  }
+
+  if (normalizedAuthor.image) {
+    return {
+      ok: false as const,
+      status: 502,
+      error: 'image_remove_not_persisted',
+      profileUpdated: false,
+    };
+  }
+
+  const auditLogged = await recordAuthorAudit({
+    actorUserId: context.user.id,
+    action: 'editorial_profile_updated',
+    sanityAuthorId: context.sanityAuthorId,
+    metadata: {
+      target: 'sanity_author_profile',
+      fields: 'image',
+      assetType: 'avatar',
+      imageAction: 'remove',
+    },
+  });
+
+  return {
+    ok: true as const,
+    author: normalizedAuthor,
+    assetType: 'avatar' as const,
+    auditLogged,
+    profileUpdated: true,
+  };
+}
+
 function validateRevision(value: unknown) {
   const rev = normalizeString(value, 160);
 
@@ -1045,6 +1098,99 @@ export async function uploadEditorialAuthorImage({
       status: 500,
       error: 'asset_upload_failed',
       assetUploaded: Boolean(uploadedAssetId),
+      profileUpdated: false,
+    };
+  }
+}
+
+export async function removeEditorialAuthorImage({
+  context,
+  formData,
+}: {
+  context: EditorialContextWithUser;
+  formData: FormData;
+}) {
+  if (!canUploadEditorialImages(context)) {
+    return {
+      ok: false as const,
+      status: 403,
+      error: 'upload_forbidden',
+      profileUpdated: false,
+    };
+  }
+
+  const assetType = normalizeAssetType(formData.get('assetType') || formData.get('type'));
+  const revisionId = validateRevision(formData.get('_rev'));
+
+  if (assetType !== 'avatar') {
+    return {
+      ok: false as const,
+      status: 400,
+      error: 'invalid_asset_type',
+      profileUpdated: false,
+    };
+  }
+
+  if (!revisionId) {
+    return {
+      ok: false as const,
+      status: 400,
+      error: 'missing_revision',
+      profileUpdated: false,
+    };
+  }
+
+  const currentAuthor = await fetchEditorialAuthorProfile(context.sanityAuthorId);
+
+  if (!currentAuthor) {
+    return {
+      ok: false as const,
+      status: 409,
+      error: 'sanity_author_missing',
+      profileUpdated: false,
+    };
+  }
+
+  if (currentAuthor._rev !== revisionId) {
+    return {
+      ok: false as const,
+      status: 409,
+      error: 'revision_conflict',
+      profileUpdated: false,
+    };
+  }
+
+  if (!currentAuthor.image?.asset?._id && !currentAuthor.image?.asset?.url) {
+    return {
+      ok: true as const,
+      author: currentAuthor,
+      assetType,
+      auditLogged: true,
+      profileUpdated: false,
+    };
+  }
+
+  try {
+    return await patchAuthorImageRemoval({
+      context,
+      revisionId,
+    });
+  } catch (error) {
+    if (isRevisionConflict(error)) {
+      return {
+        ok: false as const,
+        status: 409,
+        error: 'revision_conflict',
+        profileUpdated: false,
+      };
+    }
+
+    logApiError('editorial-author-profile.image-remove', error);
+
+    return {
+      ok: false as const,
+      status: 500,
+      error: 'image_remove_failed',
       profileUpdated: false,
     };
   }

@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import {
   fetchPublishedArticleCountForAuthor,
   normalizeAuthorProfileResponse,
+  removeEditorialAuthorImage,
   requireActiveEditorialAuthorContext,
   uploadEditorialAuthorImage,
 } from '../../../lib/editorial/profile.server';
@@ -30,10 +31,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ ok: false, error: 'invalid_request' }, 400);
   }
 
-  const result = await uploadEditorialAuthorImage({
-    context: access.context,
-    formData,
-  });
+  const action = String(formData.get('action') || 'upload').trim();
+
+  if (action !== 'upload' && action !== 'remove') {
+    return json({ ok: false, error: 'invalid_action' }, 400);
+  }
+
+  const result = action === 'remove'
+    ? await removeEditorialAuthorImage({
+        context: access.context,
+        formData,
+      })
+    : await uploadEditorialAuthorImage({
+        context: access.context,
+        formData,
+      });
 
   if (!result.ok) {
     return json({
