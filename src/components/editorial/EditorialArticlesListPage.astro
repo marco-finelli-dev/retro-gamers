@@ -796,24 +796,35 @@ const visibleOwnTypeOptions = Array.from(
   const matchesQuickFilter = (card, quickFilter) => {
     if (!(card instanceof HTMLElement)) return false;
 
+    const workflowStatus = card.dataset.workflowStatus || '';
+    const sanityLifecycle = card.dataset.sanityLifecycle || '';
+
     if (quickFilter === 'drafts') {
-      return card.dataset.workflowStatus === 'draft';
+      return (
+        (workflowStatus === 'draft' || workflowStatus === 'changes_requested') &&
+        sanityLifecycle !== 'missing' &&
+        sanityLifecycle !== 'revision_draft'
+      );
     }
 
     if (quickFilter === 'review') {
-      return card.dataset.workflowStatus === 'submitted';
+      return (
+        (workflowStatus === 'submitted' || workflowStatus === 'approved') &&
+        sanityLifecycle !== 'missing' &&
+        sanityLifecycle !== 'revision_draft'
+      );
     }
 
     if (quickFilter === 'published') {
-      return card.dataset.workflowStatus === 'published';
+      return workflowStatus === 'published' && sanityLifecycle === 'published';
     }
 
     if (quickFilter === 'revisions') {
-      return card.dataset.reviewQueue === 'true';
+      return sanityLifecycle === 'revision_draft';
     }
 
     if (quickFilter === 'orphans') {
-      return card.dataset.sanityLifecycle === 'missing';
+      return sanityLifecycle === 'missing';
     }
 
     return true;
