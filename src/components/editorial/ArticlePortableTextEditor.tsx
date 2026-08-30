@@ -4440,15 +4440,19 @@ function createEmptyRating(): EditableArticleRating {
   };
 }
 
-function createDefaultMonetization(): EditableArticleMonetization {
+function createDefaultMonetization(language: ArticleLanguage = 'it'): EditableArticleMonetization {
+  const isEnglishArticle = language === 'en';
+
   return {
     isAffiliate: false,
     productType: '',
     affiliateUrl: '',
-    affiliateLabel: 'Scopri di più',
+    affiliateLabel: isEnglishArticle ? 'View product' : 'Scopri di più',
     affiliateDescription: '',
     priceLabel: '',
-    disclaimer: 'Questo articolo può contenere link affiliati: acquistando tramite questi link potremmo ricevere una piccola commissione, senza costi aggiuntivi per te.',
+    disclaimer: isEnglishArticle
+      ? 'This article may contain affiliate links. If you buy through these links, Retro-Gamers.it may receive a small commission, at no additional cost to you.'
+      : 'Questo articolo può contenere link affiliati: acquistando tramite questi link potremmo ricevere una piccola commissione, senza costi aggiuntivi per te.',
     priority: 'medium',
   };
 }
@@ -8222,7 +8226,7 @@ export default function ArticlePortableTextEditor({
     setDraft((current) => ({
       ...current,
       monetization: {
-        ...(current.monetization || createDefaultMonetization()),
+        ...(current.monetization || createDefaultMonetization(current.language)),
         [field]: value,
       },
     }));
@@ -8266,7 +8270,7 @@ export default function ArticlePortableTextEditor({
   ].some((values) => values.length > 0);
   const showReviewRelations = draft.type === 'review' || hasReviewRelations;
   const showHardwareRelations = draft.type === 'hardware' || draft.manufacturer.length > 0;
-  const monetization = draft.monetization || createDefaultMonetization();
+  const monetization = draft.monetization || createDefaultMonetization(draft.language);
   const featuredImage = draft.featuredImage;
   const featuredImageAsset = featuredImage?.asset || null;
   const hasFeaturedImage = Boolean(featuredImageAsset?._id || featuredImageAsset?.url);
