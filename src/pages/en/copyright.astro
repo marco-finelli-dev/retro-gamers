@@ -1,0 +1,112 @@
+---
+import '../../styles/pages/legal.css';
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+import { getAllPosts } from '../../lib/posts';
+
+const allPosts = await getAllPosts();
+
+const englishReviews = allPosts.filter(
+  (post) => post.type === 'review' && post.language === 'en'
+);
+
+const englishNews = allPosts.filter(
+  (post) => post.type === 'news' && post.language === 'en'
+);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/copyright/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/copyright/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/copyright/' }
+];
+
+const languageSwitch = {
+  url: '/copyright/'
+};
+---
+
+<BaseLayout
+  reviews={englishReviews}
+  news={englishNews}
+  title="Copyright and Terms of Use"
+  description="Copyright, terms of use and rules for sharing, quoting and reproducing editorial content published on Retro-Gamers.it."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/en/copyright/"
+  lang="en"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <div class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Copyright</span>
+        <h1>Copyright and Terms of Use</h1>
+        <p>
+          Rules for sharing, quoting and reproducing editorial content published
+          on Retro-Gamers.it.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <p class="legal-updated">
+          Last updated: 31 August 2026
+        </p>
+
+        <p>
+          Original editorial content published on Retro-Gamers.it is protected by
+          copyright law. Unless otherwise stated, the relevant rights belong to
+          the respective authors and/or Retro-Gamers.it according to the applicable
+          agreements.
+        </p>
+
+        <p>
+          Without prior permission, the full or substantial reproduction of
+          articles and other original editorial content is prohibited, as is their
+          republication on other websites, social networks, forums, publications or
+          other media to an extent that substantially reproduces or replaces the
+          original content.
+        </p>
+
+        <p>
+          Sharing links to Retro-Gamers.it articles is freely permitted, including
+          on social networks, forums and other platforms. Links may be accompanied
+          by the article title, preview and short excerpts, provided that the
+          content reproduced is not extensive enough to replace reading the
+          original article on Retro-Gamers.it.
+        </p>
+
+        <p>
+          Quotations, summaries and the reproduction of short excerpts are permitted
+          within the limits provided by applicable law. When an excerpt from
+          Retro-Gamers.it is used, the author, article title and Retro-Gamers.it as
+          the original source should be credited when available, with a link to the
+          original page whenever technically possible.
+        </p>
+
+        <p>
+          Crediting the source alone does not grant permission to reproduce an
+          article in full or in substantial part.
+        </p>
+
+        <p>
+          Images, screenshots, cover artwork, logos, trademarks, promotional
+          materials and other third-party content remain the property of their
+          respective rights holders and are used by Retro-Gamers.it as part of its
+          editorial and informational activity. This notice does not claim ownership
+          by Retro-Gamers.it over third-party material.
+        </p>
+
+        <p>
+          For requests concerning reproduction, use or licensing of original
+          content, please contact the Retro-Gamers.it editorial team through the
+          contact channels provided on the website.
+        </p>
+
+      </article>
+
+    </div>
+  </div>
+</BaseLayout>

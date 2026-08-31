@@ -1,0 +1,104 @@
+---
+import '../styles/pages/legal.css';
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+import { getAllPosts, groupPosts } from '../lib/posts';
+
+const allPosts = await getAllPosts();
+const grouped = groupPosts(allPosts);
+
+const alternateLanguages = [
+  { lang: 'it', url: 'https://www.retro-gamers.it/copyright/' },
+  { lang: 'en', url: 'https://www.retro-gamers.it/en/copyright/' },
+  { lang: 'x-default', url: 'https://www.retro-gamers.it/copyright/' }
+];
+
+const languageSwitch = {
+  url: '/en/copyright/'
+};
+---
+
+<BaseLayout
+  reviews={grouped.allReviews}
+  news={grouped.allNews}
+  title="Copyright e condizioni d'uso"
+  description="Copyright, condizioni d’uso e regole per citare, condividere e riprodurre i contenuti editoriali di Retro-Gamers.it."
+  image="/og-image.jpg"
+  canonical="https://www.retro-gamers.it/copyright/"
+  languageSwitch={languageSwitch}
+  alternateLanguages={alternateLanguages}
+>
+  <div class="legal-page">
+    <div class="container">
+
+      <section class="legal-hero">
+        <span>Copyright</span>
+        <h1>Copyright e condizioni d’uso</h1>
+        <p>
+          Regole per citare, condividere e riprodurre i contenuti editoriali
+          pubblicati su Retro-Gamers.it.
+        </p>
+      </section>
+
+      <article class="legal-content">
+
+        <p class="legal-updated">
+          Ultimo aggiornamento: 31 agosto 2026
+        </p>
+
+        <p>
+          I contenuti editoriali originali pubblicati su Retro-Gamers.it sono
+          protetti dalla normativa sul diritto d’autore. Salvo diversa indicazione,
+          i relativi diritti spettano ai rispettivi autori e/o a Retro-Gamers.it
+          secondo gli accordi applicabili.
+        </p>
+
+        <p>
+          È vietata, senza preventiva autorizzazione, la riproduzione integrale o
+          sostanziale degli articoli e degli altri contenuti editoriali originali,
+          così come la loro ripubblicazione su altri siti, social network, forum,
+          pubblicazioni o altri mezzi in misura tale da sostituire o replicare
+          sostanzialmente il contenuto originale.
+        </p>
+
+        <p>
+          È invece libera la condivisione dei link agli articoli di Retro-Gamers.it,
+          anche su social network, forum e altre piattaforme. La condivisione può
+          essere accompagnata dal titolo, dall’anteprima e da brevi estratti del
+          contenuto, purché non venga riprodotto l’articolo in misura tale da
+          sostituirne la consultazione sul sito originale.
+        </p>
+
+        <p>
+          La citazione, il riassunto o la riproduzione di brevi brani sono consentiti
+          nei limiti previsti dalla legge. Quando viene utilizzato un estratto di un
+          contenuto di Retro-Gamers.it devono essere indicati, quando disponibili,
+          l’autore, il titolo dell’articolo e Retro-Gamers.it come fonte originale,
+          con collegamento alla pagina di provenienza quando tecnicamente possibile.
+        </p>
+
+        <p>
+          La semplice indicazione della fonte non autorizza la riproduzione
+          integrale o sostanziale di un articolo.
+        </p>
+
+        <p>
+          Immagini, screenshot, copertine, loghi, marchi, materiale promozionale e
+          altri contenuti appartenenti a terzi restano di proprietà dei rispettivi
+          titolari dei diritti e vengono utilizzati da Retro-Gamers.it nell’ambito
+          dell’attività editoriale e informativa. La presente dichiarazione non
+          attribuisce a Retro-Gamers.it diritti su materiali appartenenti a terzi.
+        </p>
+
+        <p>
+          Per richieste relative alla riproduzione, all’utilizzo o alla concessione
+          dei contenuti originali è possibile contattare la redazione di
+          Retro-Gamers.it attraverso i canali indicati sul sito.
+        </p>
+
+      </article>
+
+    </div>
+  </div>
+</BaseLayout>

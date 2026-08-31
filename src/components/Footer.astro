@@ -10,6 +10,7 @@ import {
 const { lang = 'it' } = Astro.props;
 
 const currentYear = new Date().getFullYear();
+const copyrightYears = currentYear > 2020 ? `2020–${currentYear}` : '2020';
 const isEnglish = lang === 'en';
 
 const archiveHrefs = {
@@ -47,7 +48,7 @@ const ui = isEnglish
       collaborations: 'Collaborations',
       contact: 'Contact',
       cookiePreferences: 'Cookie preferences',
-      rights: 'All rights reserved.',
+      rights: 'Original content protected by copyright.',
       links: {
         reviews: { label: 'Reviews', href: archiveHrefs.reviews },
         news: { label: 'News', href: archiveHrefs.news },
@@ -71,6 +72,7 @@ const ui = isEnglish
         collaborations: { label: 'Collaborations', href: '/en/collaborations/' },
         contact: { label: 'Contact', href: '/en/contact/' },
         newsletter: { label: 'Newsletter', href: '/en/newsletter/' },
+        copyright: { label: 'Copyright', href: '/en/copyright/' },
         privacy: { label: 'Privacy Policy', href: '/en/privacy-policy/' },
         cookies: { label: 'Cookie Policy', href: '/en/cookie-policy/' }
       }
@@ -93,7 +95,7 @@ const ui = isEnglish
       collaborations: 'Collaborazioni',
       contact: 'Contatti',
       cookiePreferences: 'Preferenze cookie',
-      rights: 'Tutti i diritti riservati.',
+      rights: 'Contenuti originali protetti dal diritto d’autore.',
             links: {
         reviews: { label: 'Recensioni', href: archiveHrefs.reviews },
         news: { label: 'News', href: archiveHrefs.news },
@@ -117,6 +119,7 @@ const ui = isEnglish
         howWeWork: { label: 'Come lavoriamo', href: '/come-lavoriamo/' },
         resources: { label: 'Risorse', href: '/risorse/' },
         newsletter: { label: 'Newsletter', href: '/newsletter/' },
+        copyright: { label: 'Copyright', href: '/copyright/' },
         privacy: { label: 'Privacy Policy', href: '/privacy-policy/' },
         cookies: { label: 'Cookie Policy', href: '/cookie-policy/' }
       }
@@ -227,6 +230,7 @@ const ui = isEnglish
         <a href={ui.links.howWeWork.href}>{ui.links.howWeWork.label}</a>
         <a href={ui.links.resources.href}>{ui.links.resources.label}</a>
         <a href={ui.links.newsletter.href}>{ui.links.newsletter.label}</a>
+        <a href={ui.links.copyright.href}>{ui.links.copyright.label}</a>
         <a href={ui.links.privacy.href}>{ui.links.privacy.label}</a>
         <a href={ui.links.cookies.href}>{ui.links.cookies.label}</a>
 
@@ -241,7 +245,7 @@ const ui = isEnglish
     <div class="site-footer__bottom">
 
       <p>
-        © {currentYear} Retro-Gamers.it. {ui.rights}
+        © {copyrightYears} Retro-Gamers.it · {ui.rights}
       </p>
 
       <p class="site-footer__credit">
