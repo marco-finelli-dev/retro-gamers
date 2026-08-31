@@ -270,7 +270,8 @@ export type EditorialPublishedArticleQuickEditAction = {
   articleId: string;
   editUrl: string;
   revisionEndpoint: string | null;
-  mode: 'edit' | 'create_revision';
+  adoptEndpoint: string | null;
+  mode: 'edit' | 'create_revision' | 'adopt';
 };
 
 type PortableTextBlock = Record<string, unknown>;
@@ -304,6 +305,7 @@ const validMonetizationPriorities = new Set<EditorialArticleMonetizationPriority
   'medium',
   'high',
 ]);
+const publishedStatus: EditorialWorkflowStatus = 'published';
 const editorialArticleReferenceFields: EditorialArticleReferenceField[] = [
   'categories',
   'editorialSeries',
@@ -2206,6 +2208,135 @@ async function fetchOwnership(rootDocumentId: string) {
   return { ok: true as const, ownership: normalizeOwnership(data as EditorialDocumentRow | null) };
 }
 
+function isSupabaseUniqueViolation(error: unknown) {
+  return (error as { code?: string } | null)?.code === '23505';
+}
+
+function isAdoptablePublishedSanityArticle(
+  document: Record<string, unknown> | null | undefined
+) {
+  return Boolean(
+    document &&
+      document._type === 'article' &&
+      document.isPublic !== false &&
+      getDocumentReferenceRootId(document, 'author')
+  );
+}
+
+async function fetchMappedEditorialOwnerUserId(sanityAuthorId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('editorial_profiles')
+    .select('user_id')
+    .eq('sanity_author_id', sanityAuthorId)
+    .maybeSingle();
+
+  if (error) {
+    logApiError('editorial-article.legacy-adoption.owner-profile', error);
+    return '';
+  }
+
+  return String((data as { user_id?: string | null } | null)?.user_id || '').trim();
+}
+
+async function fetchOwnershipAfterAdoptionConflict(sanityDocumentId: string) {
+  const ownershipResult = await fetchOwnership(sanityDocumentId);
+
+  if (ownershipResult.ok && ownershipResult.ownership) {
+    return {
+      ok: true as const,
+      ownership: ownershipResult.ownership,
+      adopted: false,
+    };
+  }
+
+  if (!ownershipResult.ok) return ownershipResult;
+
+  return { ok: false as const, status: 409, error: 'legacy_adoption_conflict' };
+}
+
+export async function adoptPublishedLegacyEditorialArticle({
+  context,
+  rootDocumentId,
+}: {
+  context: EditableEditorialContext;
+  rootDocumentId: unknown;
+}) {
+  if (!canCreateRevisionDraft(context)) {
+    return { ok: false as const, status: 403, error: 'legacy_adoption_forbidden' };
+  }
+
+  const sanityDocumentId = normalizeEditableArticleRootDocumentId(rootDocumentId);
+
+  if (!sanityDocumentId) {
+    return { ok: false as const, status: 400, error: 'invalid_article_id' };
+  }
+
+  const existingOwnershipResult = await fetchOwnership(sanityDocumentId);
+  if (!existingOwnershipResult.ok) return existingOwnershipResult;
+
+  if (existingOwnershipResult.ownership) {
+    return {
+      ok: true as const,
+      ownership: existingOwnershipResult.ownership,
+      adopted: false,
+    };
+  }
+
+  let publishedDocument: Record<string, unknown> | null = null;
+
+  try {
+    const resolved = await fetchSanityArticleDocumentPair(sanityDocumentId);
+    publishedDocument = resolved.publishedDocument;
+  } catch (error) {
+    logApiError('editorial-article.legacy-adoption.sanity', error);
+    return { ok: false as const, status: 503, error: 'legacy_article_check_failed' };
+  }
+
+  if (!publishedDocument) {
+    return { ok: false as const, status: 404, error: 'legacy_article_not_found' };
+  }
+
+  if (!isAdoptablePublishedSanityArticle(publishedDocument)) {
+    return { ok: false as const, status: 409, error: 'legacy_article_not_adoptable' };
+  }
+
+  const sanityAuthorId = getDocumentReferenceRootId(publishedDocument, 'author');
+  const mappedOwnerUserId = await fetchMappedEditorialOwnerUserId(sanityAuthorId);
+  const ownerUserId = mappedOwnerUserId || context.editorialProfile.userId || context.user.id;
+
+  const { data, error } = await supabaseAdmin
+    .from('editorial_documents')
+    .insert({
+      sanity_document_id: sanityDocumentId,
+      owner_user_id: ownerUserId,
+      sanity_author_id: sanityAuthorId,
+      workflow_status: publishedStatus,
+    })
+    .select('sanity_document_id, owner_user_id, sanity_author_id, workflow_status, submitted_at, reviewed_by, reviewed_at, created_at, updated_at')
+    .single();
+
+  if (error) {
+    if (isSupabaseUniqueViolation(error)) {
+      return fetchOwnershipAfterAdoptionConflict(sanityDocumentId);
+    }
+
+    logApiError('editorial-article.legacy-adoption.insert', error);
+    return { ok: false as const, status: 503, error: 'legacy_adoption_failed' };
+  }
+
+  const ownership = normalizeOwnership(data as EditorialDocumentRow | null);
+
+  if (!ownership) {
+    return { ok: false as const, status: 502, error: 'legacy_adoption_failed' };
+  }
+
+  return {
+    ok: true as const,
+    ownership,
+    adopted: true,
+  };
+}
+
 function getAuthorConflictResult({
   ownership,
   article,
@@ -2793,16 +2924,16 @@ export async function fetchEditableEditorialArticle({
     return { ok: false as const, status: 404, error: 'article_not_found' };
   }
 
-  const canEditPublishedRevisionDraft = (
+  const canEditPublishedArticleAsRevision = (
     ownership.workflowStatus === 'published' &&
     canCreateRevisionDraft(context)
   );
 
-  if (!isDocumentOwnedByContext(context, ownership) && !canEditPublishedRevisionDraft) {
+  if (!isDocumentOwnedByContext(context, ownership) && !canEditPublishedArticleAsRevision) {
     return { ok: false as const, status: 403, error: 'article_forbidden' };
   }
 
-  if (!canEditOwnArticle(context, ownership) && !canEditPublishedRevisionDraft) {
+  if (!canEditOwnArticle(context, ownership) && !canEditPublishedArticleAsRevision) {
     const workflowLockedError: Record<EditorialWorkflowStatus, string> = {
       draft: 'article_not_editable',
       submitted: 'article_submitted_locked',
@@ -2822,7 +2953,11 @@ export async function fetchEditableEditorialArticle({
   try {
     const resolved = await fetchSanityArticleDocumentPair(sanityDocumentId);
 
-    if (canEditPublishedRevisionDraft && resolved.lifecycle !== 'revision_draft') {
+    if (
+      canEditPublishedArticleAsRevision &&
+      resolved.lifecycle !== 'revision_draft' &&
+      resolved.lifecycle !== 'published'
+    ) {
       return {
         ok: false as const,
         status: 409,
@@ -4541,10 +4676,28 @@ export async function getPublishedArticleQuickEditAction({
   if (!ownershipResult.ok) return null;
 
   const ownership = ownershipResult.ownership;
+  const editUrl = getEditorialArticleEditPath(sanityDocumentId, language);
 
-  if (!ownership) return null;
+  if (!ownership) {
+    if (!canCreateRevisionDraft(context)) return null;
 
-  const editUrl = getEditorialArticleEditPath(ownership.sanityDocumentId, language);
+    try {
+      const resolved = await fetchSanityArticleDocumentPair(sanityDocumentId);
+
+      if (!isAdoptablePublishedSanityArticle(resolved.publishedDocument)) return null;
+
+      return {
+        articleId: sanityDocumentId,
+        editUrl,
+        revisionEndpoint: null,
+        adoptEndpoint: `/api/editor/articles/${encodeURIComponent(sanityDocumentId)}/adopt`,
+        mode: 'adopt',
+      };
+    } catch (error) {
+      logApiError('editorial-article.quick-edit.legacy-adoption', error);
+      return null;
+    }
+  }
 
   try {
     const resolved = await fetchSanityArticleDocumentPair(ownership.sanityDocumentId);
@@ -4554,6 +4707,7 @@ export async function getPublishedArticleQuickEditAction({
         articleId: ownership.sanityDocumentId,
         editUrl,
         revisionEndpoint: null,
+        adoptEndpoint: null,
         mode: 'edit',
       };
     }
@@ -4567,6 +4721,7 @@ export async function getPublishedArticleQuickEditAction({
         articleId: ownership.sanityDocumentId,
         editUrl,
         revisionEndpoint: null,
+        adoptEndpoint: null,
         mode: 'edit',
       };
     }
@@ -4576,6 +4731,7 @@ export async function getPublishedArticleQuickEditAction({
         articleId: ownership.sanityDocumentId,
         editUrl,
         revisionEndpoint: `/api/editor/articles/${encodeURIComponent(ownership.sanityDocumentId)}/revision`,
+        adoptEndpoint: null,
         mode: 'create_revision',
       };
     }

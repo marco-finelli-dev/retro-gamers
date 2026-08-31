@@ -160,6 +160,7 @@ const articleId =
 
 const quickEditLabels = {
   edit: lang === 'en' ? 'Edit article' : 'Modifica articolo',
+  adopt: lang === 'en' ? 'Open in new editor' : 'Apri nel nuovo editor',
   loading: lang === 'en' ? 'Opening editor…' : 'Apertura editor…',
   error: lang === 'en'
     ? 'The article editor could not be opened.'
@@ -308,6 +309,27 @@ const quickEditLabels = {
               title={quickEditLabels.edit}
             >
               {quickEditLabels.edit}
+            </button>
+            <p class="article-save__message article-editorial-edit__message" data-article-editorial-quick-edit-message hidden></p>
+          </div>
+        )}
+
+        {editorialQuickEdit?.mode === 'adopt' && editorialQuickEdit.adoptEndpoint && (
+          <div class="article-save article-hero__editor-action" data-article-editorial-quick-edit>
+            <button
+              class="article-save__button article-editorial-edit"
+              type="button"
+              data-article-editorial-quick-edit-button
+              data-endpoint={editorialQuickEdit.adoptEndpoint}
+              data-ui-language={lang}
+              data-fallback-edit-url={editorialQuickEdit.editUrl}
+              data-label-default={quickEditLabels.adopt}
+              data-label-loading={quickEditLabels.loading}
+              data-label-error={quickEditLabels.error}
+              aria-label={quickEditLabels.adopt}
+              title={quickEditLabels.adopt}
+            >
+              {quickEditLabels.adopt}
             </button>
             <p class="article-save__message article-editorial-edit__message" data-article-editorial-quick-edit-message hidden></p>
           </div>
