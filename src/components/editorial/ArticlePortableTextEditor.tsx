@@ -7009,11 +7009,12 @@ function RelationPicker({
       setStatus('loading');
 
       try {
+        const referenceLimit = kind === 'platforms' && query.trim().length === 0 ? '30' : '12';
         const params = new URLSearchParams({
           kind,
           q: query,
           language,
-          limit: '12',
+          limit: referenceLimit,
           currentArticleId,
         });
         const response = await fetch(`/api/editor/references?${params.toString()}`, {
