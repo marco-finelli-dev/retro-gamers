@@ -47,11 +47,9 @@ const copy = isEnglish
       imageFallback: 'Editorial article',
       filtersLabel: 'Filter your articles',
       searchPlaceholder: 'Search article...',
-      lifecycleFilter: 'Sanity status',
       languageFilter: 'Language',
       typeFilter: 'Type',
       sortFilter: 'Sort by',
-      allLifecycles: 'All Sanity states',
       allLanguages: 'All languages',
       allTypes: 'All types',
       sortUpdatedDesc: 'Last updated',
@@ -133,11 +131,9 @@ const copy = isEnglish
       imageFallback: 'Articolo redazionale',
       filtersLabel: 'Filtra i tuoi articoli',
       searchPlaceholder: 'Cerca articolo...',
-      lifecycleFilter: 'Stato Sanity',
       languageFilter: 'Lingua',
       typeFilter: 'Tipo',
       sortFilter: 'Ordina per',
-      allLifecycles: 'Tutti gli stati Sanity',
       allLanguages: 'Tutte le lingue',
       allTypes: 'Tutti i tipi',
       sortUpdatedDesc: 'Ultimo aggiornamento',
@@ -922,7 +918,6 @@ const visibleOwnTypeOptions = Array.from(
         : '';
     };
     const search = normalizeFilterText(getFilterValue('[data-editorial-filter-search]'));
-    const sanityLifecycle = getFilterValue('[data-editorial-filter-lifecycle]');
     const language = getFilterValue('[data-editorial-filter-language]');
     const type = getFilterValue('[data-editorial-filter-type]');
     const sortMode = getFilterValue('[data-editorial-sort]') || 'updated_desc';
@@ -933,11 +928,10 @@ const visibleOwnTypeOptions = Array.from(
       if (!(card instanceof HTMLElement)) return;
 
       const matchesSearch = !search || normalizeFilterText(card.dataset.searchIndex).includes(search);
-      const matchesLifecycle = !sanityLifecycle || card.dataset.sanityLifecycle === sanityLifecycle;
       const matchesLanguage = !language || card.dataset.articleLanguage === language;
       const matchesType = !type || card.dataset.articleType === type;
       const matchesQuick = matchesQuickFilter(card, activeQuickFilter);
-      const isVisible = matchesQuick && matchesSearch && matchesLifecycle && matchesLanguage && matchesType;
+      const isVisible = matchesQuick && matchesSearch && matchesLanguage && matchesType;
 
       card.hidden = !isVisible;
       if (isVisible) visibleCount += 1;

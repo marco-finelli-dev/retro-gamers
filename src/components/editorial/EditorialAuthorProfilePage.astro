@@ -95,7 +95,6 @@ const copy = isEnglish
       lowResolutionWarning: 'Low resolution: the result may look less sharp.',
       chooseFile: 'Choose a file or drop it here',
       dropFile: 'Drop the image here',
-      completeness: 'Profile completeness',
       notSet: 'Not set',
       error: 'Unable to update the profile. Please try again.',
       conflict: 'The author profile changed while you were editing. Reload the page and try again.',
@@ -183,7 +182,6 @@ const copy = isEnglish
       lowResolutionWarning: 'Risoluzione bassa: il risultato potrebbe essere meno nitido.',
       chooseFile: 'Scegli un file o trascinalo qui',
       dropFile: 'Rilascia l’immagine qui',
-      completeness: 'Completezza profilo',
       notSet: 'Non impostato',
       error: 'Non riesco ad aggiornare il profilo. Riprova.',
       conflict: 'Il profilo autore è cambiato mentre lo stavi modificando. Ricarica la pagina e riprova.',
@@ -729,7 +727,6 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
   const saveButton = root.querySelector('[data-editor-save-button]');
   const profileMessage = root.querySelector('[data-editor-profile-message]');
   const unsavedMessage = root.querySelector('[data-editor-unsaved-message]');
-  const completenessNode = root.querySelector('[data-editor-completeness]');
   const authorImageFrame = root.querySelector('[data-editor-author-image-frame]');
   const authorImageRemoveButton = root.querySelector('[data-editor-author-image-remove]');
   const authorImageConfirmDialog = document.querySelector('[data-editor-author-image-confirm-dialog]');
@@ -1048,10 +1045,6 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
     root.querySelectorAll('[data-editor-profile-rev]').forEach((node) => {
       node.value = author._rev || node.value;
     });
-
-    if (completenessNode && author.completeness?.label) {
-      completenessNode.textContent = author.completeness.label;
-    }
 
     const updatePreviews = (selector, placeholderSelector, image) => {
       const url = image?.asset?.url || '';
