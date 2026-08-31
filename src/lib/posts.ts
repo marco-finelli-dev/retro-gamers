@@ -236,6 +236,18 @@ export async function getAllPosts(): Promise<Post[]> {
         isPublic
       },
 
+      author->{
+        name,
+        nickname,
+        displayName,
+        role,
+        "slug": slug.current,
+        image {
+          asset->{ url },
+          alt
+        }
+      },
+
       featuredImage {
         asset->{ url },
         alt

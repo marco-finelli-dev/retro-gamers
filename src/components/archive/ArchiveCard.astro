@@ -67,6 +67,11 @@ const getExcerpt = (post) =>
   cleanText(post?.cardExcerpt) ||
   cleanText(post?.subtitle) ||
   cleanText(post?.excerpt);
+
+const getAuthorName = (post) =>
+  post?.author?.displayName === 'nickname' && post?.author?.nickname
+    ? post.author.nickname
+    : post?.author?.name || '';
   
 const date = post?.publishedAt
   ? new Date(post.publishedAt).toLocaleDateString(isEnglish ? 'en-US' : 'it-IT', {
@@ -78,6 +83,8 @@ const date = post?.publishedAt
 
 const score = post?.rating?.overall;
 const reviewBadge = getReviewRibbonBadge(score, lang);
+const showFooterAuthor = ['feature', 'interview'].includes(post?.type);
+const footerAuthorName = showFooterAuthor ? getAuthorName(post) : '';
 ---
 
 <a href={getPostUrl(post)} class="archive-card">
@@ -133,7 +140,9 @@ const reviewBadge = getReviewRibbonBadge(score, lang);
       <span class="archive-card__footer-meta">
         <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
 
-        {post.platforms?.[0]?.name && (
+        {footerAuthorName ? (
+          <small>{footerAuthorName}</small>
+        ) : !showFooterAuthor && post.platforms?.[0]?.name && (
           <small>{post.platforms[0].name}</small>
         )}
       </span>
