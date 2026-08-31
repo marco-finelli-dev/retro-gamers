@@ -1,0 +1,114 @@
+---
+interface Props {
+  id: string;
+  triggerClass: string;
+  triggerLabel: string;
+  dialogClass: string;
+  title: string;
+  closeLabel: string;
+  previewUrl: string;
+  triggerDataAttribute?: string;
+  dialogDataAttribute?: string;
+  closeDataAttribute?: string;
+}
+
+const {
+  id,
+  triggerClass,
+  triggerLabel,
+  dialogClass,
+  title,
+  closeLabel,
+  previewUrl,
+  triggerDataAttribute = '',
+  dialogDataAttribute = '',
+  closeDataAttribute = '',
+} = Astro.props as Props;
+
+const titleId = `${id}-title`;
+const triggerDataAttributes = triggerDataAttribute ? { [triggerDataAttribute]: '' } : {};
+const dialogDataAttributes = dialogDataAttribute ? { [dialogDataAttribute]: '' } : {};
+const closeDataAttributes = closeDataAttribute ? { [closeDataAttribute]: '' } : {};
+---
+
+<button
+  class={triggerClass}
+  type="button"
+  {...triggerDataAttributes}
+  data-public-profile-preview-trigger={id}
+  aria-haspopup="dialog"
+  aria-expanded="false"
+>
+  {triggerLabel}
+</button>
+
+<dialog
+  class={dialogClass}
+  {...dialogDataAttributes}
+  data-public-profile-preview-dialog={id}
+  aria-labelledby={titleId}
+>
+  <div class="account-profile-preview-dialog__surface">
+    <div class="account-profile-preview-dialog__header">
+      <h2 id={titleId}>{title}</h2>
+      <button
+        type="button"
+        class="account-profile-preview-dialog__close"
+        {...closeDataAttributes}
+        data-public-profile-preview-close={id}
+        aria-label={closeLabel}
+      >
+        ×
+      </button>
+    </div>
+    <iframe
+      class="account-profile-preview-dialog__frame"
+      src={previewUrl}
+      title={title}
+      loading="lazy"
+    ></iframe>
+  </div>
+</dialog>
+
+<script>
+  document.querySelectorAll('[data-public-profile-preview-trigger]').forEach((trigger) => {
+    if (!(trigger instanceof HTMLButtonElement)) return;
+    if (trigger.dataset.publicProfilePreviewBound === 'true') return;
+
+    const previewId = trigger.getAttribute('data-public-profile-preview-trigger');
+    if (!previewId) return;
+
+    const dialog = document.querySelector(`[data-public-profile-preview-dialog="${previewId}"]`);
+    const closeButton = document.querySelector(`[data-public-profile-preview-close="${previewId}"]`);
+
+    if (!(dialog instanceof HTMLDialogElement)) return;
+
+    trigger.dataset.publicProfilePreviewBound = 'true';
+
+    const closeProfilePreview = () => {
+      if (dialog.open) {
+        dialog.close();
+      }
+      trigger.classList.remove('is-preview-open');
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.focus();
+    };
+
+    trigger.addEventListener('click', () => {
+      dialog.showModal();
+      trigger.classList.add('is-preview-open');
+      trigger.setAttribute('aria-expanded', 'true');
+    });
+
+    closeButton?.addEventListener('click', closeProfilePreview);
+    dialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      closeProfilePreview();
+    });
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) {
+        closeProfilePreview();
+      }
+    });
+  });
+</script>
