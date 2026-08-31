@@ -780,6 +780,7 @@ const clientCopy = currentLang === 'en'
                       data-account-settings-tab="identity"
                       aria-controls="account-profile-identity-panel"
                       aria-selected="true"
+                      tabindex="0"
                       role="tab"
                     >
                       {ui.identity}
@@ -790,6 +791,7 @@ const clientCopy = currentLang === 'en'
                       data-account-settings-tab="avatar"
                       aria-controls="account-avatar-panel"
                       aria-selected="false"
+                      tabindex="-1"
                       role="tab"
                     >
                       {ui.avatar}
@@ -800,6 +802,7 @@ const clientCopy = currentLang === 'en'
                       data-account-settings-tab="bio"
                       aria-controls="account-public-profile-panel"
                       aria-selected="false"
+                      tabindex="-1"
                       role="tab"
                     >
                       {ui.bioStatus}
@@ -810,6 +813,7 @@ const clientCopy = currentLang === 'en'
                       data-account-settings-tab="newsletter"
                       aria-controls="account-newsletter-panel"
                       aria-selected="false"
+                      tabindex="-1"
                       role="tab"
                     >
                       Newsletter
@@ -820,6 +824,7 @@ const clientCopy = currentLang === 'en'
                       data-account-settings-tab="retro"
                       aria-controls="account-retro-experience-panel"
                       aria-selected="false"
+                      tabindex="-1"
                       role="tab"
                     >
                       {ui.retroExperienceLabel}
@@ -830,6 +835,7 @@ const clientCopy = currentLang === 'en'
                       data-account-settings-tab="password"
                       aria-controls="account-password-panel"
                       aria-selected="false"
+                      tabindex="-1"
                       role="tab"
                     >
                       {ui.security}
@@ -1525,6 +1531,7 @@ const clientCopy = currentLang === 'en'
       settingsTabButtons.forEach((button) => {
         const isActive = button.dataset.accountSettingsTab === activeSettingsPanel;
         button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        button.tabIndex = isActive ? 0 : -1;
       });
 
       settingsPanels.forEach((panel) => {
@@ -1545,6 +1552,31 @@ const clientCopy = currentLang === 'en'
     settingsTabButtons.forEach((button) => {
       button.addEventListener('click', () => {
         setActiveSettingsPanel(button.dataset.accountSettingsTab || 'identity', true);
+      });
+
+      button.addEventListener('keydown', (event) => {
+        const tabs = Array.from(settingsTabButtons).filter((node) => node instanceof HTMLButtonElement);
+        const currentIndex = tabs.indexOf(button);
+        if (currentIndex < 0) return;
+
+        let nextIndex = currentIndex;
+
+        if (event.key === 'ArrowRight') {
+          nextIndex = (currentIndex + 1) % tabs.length;
+        } else if (event.key === 'ArrowLeft') {
+          nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        } else if (event.key === 'Home') {
+          nextIndex = 0;
+        } else if (event.key === 'End') {
+          nextIndex = tabs.length - 1;
+        } else {
+          return;
+        }
+
+        event.preventDefault();
+        const nextTab = tabs[nextIndex];
+        setActiveSettingsPanel(nextTab.dataset.accountSettingsTab || 'identity');
+        nextTab.focus();
       });
     });
 

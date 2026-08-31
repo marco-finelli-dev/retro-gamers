@@ -294,6 +294,7 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
                 role="tab"
                 aria-selected="true"
                 aria-controls="editor-profile-panel-identity"
+                tabindex="0"
                 data-editor-profile-tab="identity"
               >
                 {copy.identityTab}
@@ -304,6 +305,7 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
                 role="tab"
                 aria-selected="false"
                 aria-controls="editor-profile-panel-bio"
+                tabindex="-1"
                 data-editor-profile-tab="bio"
               >
                 {copy.bioTab}
@@ -314,6 +316,7 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
                 role="tab"
                 aria-selected="false"
                 aria-controls="editor-profile-panel-social"
+                tabindex="-1"
                 data-editor-profile-tab="social"
               >
                 {copy.socialTab}
@@ -324,6 +327,7 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
                 role="tab"
                 aria-selected="false"
                 aria-controls="editor-profile-panel-image"
+                tabindex="-1"
                 data-editor-profile-tab="image"
               >
                 {copy.imageTab}
@@ -334,6 +338,7 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
                 role="tab"
                 aria-selected="false"
                 aria-controls="editor-profile-panel-cover"
+                tabindex="-1"
                 data-editor-profile-tab="cover"
               >
                 {copy.coverTab}
@@ -791,6 +796,7 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
     profileTabButtons.forEach((button) => {
       const isActive = button.dataset.editorProfileTab === activePanelName;
       button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      button.tabIndex = isActive ? 0 : -1;
     });
 
     profilePanels.forEach((panel) => {
@@ -1086,6 +1092,31 @@ const languageSwitch = isEnglish ? '/account/editor/profile/' : '/en/account/edi
   profileTabButtons.forEach((button) => {
     button.addEventListener('click', () => {
       setActiveProfilePanel(button.dataset.editorProfileTab || 'identity', true);
+    });
+
+    button.addEventListener('keydown', (event) => {
+      const tabs = Array.from(profileTabButtons).filter((node) => node instanceof HTMLButtonElement);
+      const currentIndex = tabs.indexOf(button);
+      if (currentIndex < 0) return;
+
+      let nextIndex = currentIndex;
+
+      if (event.key === 'ArrowRight') {
+        nextIndex = (currentIndex + 1) % tabs.length;
+      } else if (event.key === 'ArrowLeft') {
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      } else if (event.key === 'Home') {
+        nextIndex = 0;
+      } else if (event.key === 'End') {
+        nextIndex = tabs.length - 1;
+      } else {
+        return;
+      }
+
+      event.preventDefault();
+      const nextTab = tabs[nextIndex];
+      setActiveProfilePanel(nextTab.dataset.editorProfileTab || 'identity');
+      nextTab.focus();
     });
   });
 
