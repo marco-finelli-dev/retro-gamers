@@ -3,9 +3,8 @@ import '../../styles/pages/account.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CommunityHero from '../../components/community/CommunityHero.astro';
 import CommunityLayout from '../../components/community/CommunityLayout.astro';
-import CommunitySidebarProfile from '../../components/community/CommunitySidebarProfile.astro';
-import CommunitySidebarSection from '../../components/community/CommunitySidebarSection.astro';
 import NewsletterPromo from '../../components/newsletter/NewsletterPromo.astro';
+import AccountSidebar from './AccountSidebar.astro';
 import AccountSectionNav from './AccountSectionNav.astro';
 import RetroExperienceSettings from './RetroExperienceSettings.astro';
 import { getActiveReaderBadges, getReaderBadgeImageSrcForBadge } from '../../lib/badges';
@@ -632,55 +631,35 @@ const clientCopy = currentLang === 'en'
   <CommunityLayout class="account-community-page" sidebar={isLoggedIn}>
     <Fragment slot="sidebar">
       {isLoggedIn && (
-        <>
-          <CommunitySidebarProfile
-            name={accountDisplayName}
-            username={profile?.username}
-            email={user?.email}
-            avatarUrl={avatarUrl}
-            badge={accountBadgeLabel}
-            badgeImageUrl={accountBadgeImageSrc}
-            label={ui.accountIdentity}
-          >
-            <dl slot="details" class="community-detail-list account-sidebar-account-details" id="memories">
-              <div>
-                <dt>Email</dt>
-                <dd>{user?.email}</dd>
-              </div>
-
-              <div>
-                <dt>{ui.role}</dt>
-                <dd>{profile?.role || 'reader'}</dd>
-              </div>
-
-              <div>
-                <dt>{ui.status}</dt>
-                <dd>{profile?.status || 'active'}</dd>
-              </div>
-            </dl>
-          </CommunitySidebarProfile>
-
-          <CommunitySidebarSection title={ui.yourContributions}>
-            <div class="community-stat-list">
-              <a href={memoriesHref}>
-                <strong>{commentActivity.approved}</strong>
-                <span>{ui.contributionActionsMemories}</span>
-              </a>
-              <a href={ratingsHref}>
-                <strong>{commentActivity.reviewRatings}</strong>
-                <span>{ui.contributionActionsRatings}</span>
-              </a>
-              <div>
-                <strong>{commentActivity.communityPoints}</strong>
-                <span>{ui.communityPoints}</span>
-              </div>
-              <div>
-                <strong>{commentActivity.likesReceived}</strong>
-                <span>{ui.likesReceived}</span>
-              </div>
-            </div>
-          </CommunitySidebarSection>
-        </>
+        <AccountSidebar
+          name={accountDisplayName}
+          username={profile?.username}
+          email={user?.email}
+          avatarUrl={avatarUrl}
+          badge={accountBadgeLabel}
+          badgeImageUrl={accountBadgeImageSrc}
+          role={profile?.role || 'reader'}
+          status={profile?.status || 'active'}
+          memoriesHref={memoriesHref}
+          ratingsHref={ratingsHref}
+          labels={{
+            account: ui.accountIdentity,
+            email: 'Email',
+            role: ui.role,
+            status: ui.status,
+            contributions: ui.yourContributions,
+            memories: ui.contributionActionsMemories,
+            ratings: ui.contributionActionsRatings,
+            points: ui.communityPoints,
+            likes: ui.likesReceived,
+          }}
+          contributions={{
+            memories: commentActivity.approved,
+            ratings: commentActivity.reviewRatings,
+            points: commentActivity.communityPoints,
+            likes: commentActivity.likesReceived,
+          }}
+        />
       )}
     </Fragment>
 
