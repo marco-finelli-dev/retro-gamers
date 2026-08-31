@@ -16,7 +16,7 @@ import {
 } from '@portabletext/editor';
 import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
 import * as selectors from '@portabletext/editor/selectors';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { urlFor } from '../../lib/image';
 import type { AiTransparency } from '../../lib/article-ai-transparency';
@@ -2752,6 +2752,94 @@ function getAnnotationIcon(annotationName: AnnotationName) {
   return referenceAnnotationControls.find((control) => control.name === annotationName)?.icon || '';
 }
 
+const dialogFocusableSelector = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[contenteditable="true"]',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+function isUsableFocusableElement(element: HTMLElement) {
+  if (element.tabIndex < 0) return false;
+  if (element.closest('[hidden], [inert], fieldset[disabled]')) return false;
+  if (element.getAttribute('aria-hidden') === 'true') return false;
+
+  const style = window.getComputedStyle(element);
+  if (style.display === 'none' || style.visibility === 'hidden') return false;
+
+  return element.getClientRects().length > 0;
+}
+
+function getDialogFocusableElements(container: HTMLElement | null) {
+  if (!container) return [];
+
+  return Array.from(container.querySelectorAll<HTMLElement>(dialogFocusableSelector)).filter(isUsableFocusableElement);
+}
+
+function focusDialogElement(element: HTMLElement | null) {
+  if (!element) return;
+
+  element.focus({ preventScroll: true });
+}
+
+function useDialogFocusManagement(containerRef: RefObject<HTMLElement | null>) {
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(
+    typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
+  );
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const container = containerRef.current;
+      if (!container) return;
+      if (document.activeElement instanceof Node && container.contains(document.activeElement)) return;
+
+      focusDialogElement(getDialogFocusableElements(container)[0] || container);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+
+      const previouslyFocusedElement = previouslyFocusedElementRef.current;
+      if (previouslyFocusedElement?.isConnected) {
+        focusDialogElement(previouslyFocusedElement);
+      }
+    };
+  }, [containerRef]);
+
+  return useCallback((event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Tab') return;
+
+    const container = containerRef.current;
+    const focusableElements = getDialogFocusableElements(container);
+
+    if (!container || focusableElements.length === 0) {
+      event.preventDefault();
+      focusDialogElement(container);
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    const activeElement = document.activeElement;
+
+    if (event.shiftKey && activeElement === firstElement) {
+      event.preventDefault();
+      focusDialogElement(lastElement);
+    } else if (!event.shiftKey && activeElement === lastElement) {
+      event.preventDefault();
+      focusDialogElement(firstElement);
+    } else if (!(activeElement instanceof Node) || !container.contains(activeElement)) {
+      event.preventDefault();
+      focusDialogElement(event.shiftKey ? lastElement : firstElement);
+    }
+  }, [containerRef]);
+}
+
 function AnnotationModal({
   title,
   labels,
@@ -2766,6 +2854,8 @@ function AnnotationModal({
   panelClassName?: string;
 }) {
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const handleDialogKeyDown = useDialogFocusManagement(panelRef);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -2794,11 +2884,14 @@ function AnnotationModal({
       }}
     >
       <div
+        ref={panelRef}
         className={`editorial-pte-modal__panel${panelClassName ? ` ${panelClassName}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
+        onKeyDown={handleDialogKeyDown}
       >
         <div className="editorial-pte-modal__header">
           <h2 id={titleId}>{title}</h2>
@@ -6439,6 +6532,9 @@ function ArticleSettingsDrawer({
   onClose: () => void;
   disabled?: boolean;
 }) {
+  const panelRef = useRef<HTMLElement | null>(null);
+  const handleDialogKeyDown = useDialogFocusManagement(panelRef);
+
   if (typeof document === 'undefined') return null;
 
   return createPortal(
@@ -6452,11 +6548,14 @@ function ArticleSettingsDrawer({
       }}
     >
       <aside
+        ref={panelRef}
         className="editorial-article-editor__inspector"
         id={id}
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${id}-title`}
+        tabIndex={-1}
+        onKeyDown={handleDialogKeyDown}
       >
         <div className="editorial-article-editor__drawer-header">
           <div>
