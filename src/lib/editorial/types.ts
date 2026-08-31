@@ -35,7 +35,7 @@ export type EditorialDocumentOwnership = {
 
 export type EditorialArticleWorkflow = Pick<
   EditorialDocumentOwnership,
-  'workflowStatus' | 'submittedAt' | 'reviewedBy' | 'reviewedAt'
+  'workflowStatus' | 'submittedAt' | 'reviewedAt'
 >;
 
 export type EditorialArticleComment = {

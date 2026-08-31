@@ -268,7 +268,6 @@ async function applyWorkflowTransition({
     workflow: {
       workflowStatus: updatedOwnership.workflowStatus,
       submittedAt: updatedOwnership.submittedAt,
-      reviewedBy: updatedOwnership.reviewedBy,
       reviewedAt: updatedOwnership.reviewedAt,
     },
     permissions: getWorkflowTransitionPermissions(context, updatedOwnership),

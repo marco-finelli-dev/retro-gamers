@@ -343,7 +343,6 @@ async function completeSupabasePublish({
         workflow: {
           workflowStatus: latestOwnership.ownership.workflowStatus,
           submittedAt: latestOwnership.ownership.submittedAt,
-          reviewedBy: latestOwnership.ownership.reviewedBy,
           reviewedAt: latestOwnership.ownership.reviewedAt,
         },
         permissions: getWorkflowTransitionPermissions(context, latestOwnership.ownership),
@@ -368,7 +367,6 @@ async function completeSupabasePublish({
     workflow: {
       workflowStatus: updatedOwnership.workflowStatus,
       submittedAt: updatedOwnership.submittedAt,
-      reviewedBy: updatedOwnership.reviewedBy,
       reviewedAt: updatedOwnership.reviewedAt,
     },
     permissions: getWorkflowTransitionPermissions(context, updatedOwnership),
@@ -405,7 +403,6 @@ export async function publishApprovedEditorialArticle({
         workflow: {
           workflowStatus: ownership.workflowStatus,
           submittedAt: ownership.submittedAt,
-          reviewedBy: ownership.reviewedBy,
           reviewedAt: ownership.reviewedAt,
         },
         permissions: getWorkflowTransitionPermissions(context, ownership),
@@ -496,7 +493,6 @@ export async function publishApprovedEditorialArticle({
         workflow: {
           workflowStatus: ownership.workflowStatus,
           submittedAt: ownership.submittedAt,
-          reviewedBy: ownership.reviewedBy,
           reviewedAt: ownership.reviewedAt,
         },
         permissions: getWorkflowTransitionPermissions(context, ownership),
