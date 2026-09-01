@@ -49,8 +49,21 @@ const getExcerpt = (post) =>
   cleanText(post?.subtitle) ||
   cleanText(post?.excerpt);
 
+const getMonetizationProductTypes = (post) => [
+  post?.monetization?.productType,
+  ...(post?.monetization?.products || []).map((product) => product.productType)
+].filter(Boolean);
+
+const getPrimaryOffer = (post) => {
+  const offers = (post?.monetization?.products || [])
+    .flatMap((product) => product.offers || [])
+    .filter((offer) => offer?.affiliateUrl && offer.isActive !== false);
+
+  return offers.find((offer) => offer.isPrimary) || offers[0] || null;
+};
+
 const getProductLabel = (post) => {
-  const productType = post?.monetization?.productType;
+  const productType = getMonetizationProductTypes(post)[0];
 
   const map = isEn
     ? {
@@ -78,12 +91,23 @@ const getProductLabel = (post) => {
 };
 
 const getCta = (post) => {
+  const primaryOffer = getPrimaryOffer(post);
+
+  if (primaryOffer?.affiliateLabel) {
+    return primaryOffer.affiliateLabel;
+  }
+
   if (post?.monetization?.isAffiliate) {
     return post.monetization.affiliateLabel || labels.learnMore;
   }
 
   return labels.readArticle;
 };
+
+const getPriceLabel = (post) =>
+  getPrimaryOffer(post)?.priceLabel ||
+  post?.monetization?.priceLabel ||
+  '';
 ---
 
 <section class="section-box hardware-strip">
@@ -139,9 +163,9 @@ const getCta = (post) => {
                 {getCta(post)} →
               </small>
 
-              {isAffiliate && post.monetization?.priceLabel && (
+              {isAffiliate && getPriceLabel(post) && (
                 <em class="hardware-card__price">
-                  {post.monetization.priceLabel}
+                  {getPriceLabel(post)}
                 </em>
               )}
             </div>

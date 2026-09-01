@@ -163,9 +163,14 @@ const types = [...new Set(
     .filter(Boolean)
 )].sort();
 
+const getMonetizationProductTypes = (post) => [
+  post.monetization?.productType,
+  ...(post.monetization?.products || []).map((product) => product.productType)
+].filter(Boolean);
+
 const productTypes = [...new Set(
   posts
-    .map((post) => post.monetization?.productType)
+    .flatMap(getMonetizationProductTypes)
     .filter(Boolean)
 )].sort();
 
@@ -375,7 +380,7 @@ const hasFilters =
               ? [post.gameInfo.mediaFormat]
               : [];
           const formatSlugs = formatValues.flatMap((format) => getFormatFilterAliases(format));
-          const productType = post.monetization?.productType || '';
+          const productType = getMonetizationProductTypes(post).join('|');
 
           return (
             <article
@@ -531,7 +536,7 @@ const hasFilters =
       includesToken(item.dataset.modes, filters.mode) &&
       (!filters.year || item.dataset.year === filters.year) &&
       includesToken(item.dataset.formats, filters.format) &&
-      (!filters.product || item.dataset.product === filters.product)
+      includesToken(item.dataset.product, filters.product)
     );
 
     const updatePagination = (filters, matchingItems) => {

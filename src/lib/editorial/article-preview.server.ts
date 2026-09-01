@@ -204,7 +204,23 @@ const editorialArticlePreviewProjection = `{
     affiliateDescription,
     priceLabel,
     disclaimer,
-    priority
+    priority,
+    products[]{
+      _key,
+      name,
+      productType,
+      description,
+      offers[]{
+        _key,
+        label,
+        retailer,
+        affiliateUrl,
+        affiliateLabel,
+        priceLabel,
+        isPrimary,
+        isActive
+      }
+    }
   },
 
   content[]{

@@ -2179,6 +2179,48 @@
   font-weight: 950;
 }
 
+.editorial-monetization-card,
+.editorial-monetization-offer {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--rg-card-border);
+  border-radius: 16px;
+  background: var(--rg-panel-bg);
+}
+
+.editorial-monetization-card__header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.editorial-monetization-card__header h3 {
+  min-width: 0;
+}
+
+.editorial-monetization-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.editorial-monetization-card__body,
+.editorial-monetization-offer__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+
+.editorial-monetization-offer__toggles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .editorial-featured-image-control {
   display: grid;
   gap: 14px;
@@ -4526,6 +4568,19 @@
   }
 
   .editorial-pte__aside-preview-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .editorial-monetization-card__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .editorial-monetization-card__actions {
+    justify-content: flex-start;
+  }
+
+  .editorial-monetization-offer__toggles {
     grid-template-columns: minmax(0, 1fr);
   }
 }

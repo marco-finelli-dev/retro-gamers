@@ -91,6 +91,22 @@ export type Monetization = {
   priceLabel?: string;
   disclaimer?: string;
   priority?: 'low' | 'medium' | 'high';
+  products?: Array<{
+    _key?: string;
+    name?: string;
+    productType?: 'book' | 'hardware' | 'accessory' | 'software' | 'gadget' | 'service' | 'other';
+    description?: string;
+    offers?: Array<{
+      _key?: string;
+      label?: string;
+      retailer?: string;
+      affiliateUrl?: string;
+      affiliateLabel?: string;
+      priceLabel?: string;
+      isPrimary?: boolean;
+      isActive?: boolean;
+    }>;
+  }>;
 };
 
 export type Post = {
@@ -390,7 +406,23 @@ export async function getAllPosts(): Promise<Post[]> {
         affiliateDescription,
         priceLabel,
         disclaimer,
-        priority
+        priority,
+        products[]{
+          _key,
+          name,
+          productType,
+          description,
+          offers[]{
+            _key,
+            label,
+            retailer,
+            affiliateUrl,
+            affiliateLabel,
+            priceLabel,
+            isPrimary,
+            isActive
+          }
+        }
       },
 
       rating {
@@ -600,16 +632,30 @@ function takeUnused(
   return picked;
 }
 
+const commerciallyFeaturedProductTypes = [
+  'hardware',
+  'accessory',
+  'book',
+  'software',
+  'gadget'
+] as const;
+
+function getPostMonetizationProductTypes(post: Post) {
+  const monetization = post.monetization;
+  const productTypes = [
+    monetization?.productType,
+    ...(monetization?.products || []).map((product) => product.productType)
+  ].filter(Boolean);
+
+  return [...new Set(productTypes)];
+}
+
 function isAffiliateHardwareArea(post: Post) {
   if (!post.monetization?.isAffiliate) return false;
 
-  return [
-    'hardware',
-    'accessory',
-    'book',
-    'software',
-    'gadget'
-  ].includes(post.monetization.productType || '');
+  return getPostMonetizationProductTypes(post).some((productType) =>
+    commerciallyFeaturedProductTypes.includes(productType as typeof commerciallyFeaturedProductTypes[number])
+  );
 }
 
 export function getActiveFeaturedPost(posts: Post[] = [], today = new Date()) {

@@ -214,6 +214,25 @@ type MonetizationProductType =
 
 type MonetizationPriority = 'low' | 'medium' | 'high';
 
+type EditableArticleMonetizationOffer = {
+  _key?: string;
+  label: string;
+  retailer: string;
+  affiliateUrl: string;
+  affiliateLabel: string;
+  priceLabel: string;
+  isPrimary: boolean;
+  isActive: boolean;
+};
+
+type EditableArticleMonetizationProduct = {
+  _key?: string;
+  name: string;
+  productType: MonetizationProductType | '';
+  description: string;
+  offers: EditableArticleMonetizationOffer[];
+};
+
 type EditableArticleMonetization = {
   isAffiliate: boolean;
   productType: MonetizationProductType | '';
@@ -223,6 +242,7 @@ type EditableArticleMonetization = {
   priceLabel: string;
   disclaimer: string;
   priority: MonetizationPriority | '';
+  products: EditableArticleMonetizationProduct[];
 };
 
 type EditableArticle = {
@@ -334,17 +354,31 @@ type Labels = {
   monetizationProductTypeGadget: string;
   monetizationProductTypeService: string;
   monetizationProductTypeOther: string;
-  monetizationAffiliateUrl: string;
-  monetizationAffiliateUrlHelp: string;
-  monetizationAffiliateLabel: string;
-  monetizationAffiliateDescription: string;
-  monetizationPriceLabel: string;
-  monetizationDisclaimer: string;
-  monetizationPriority: string;
-  monetizationPriorityPlaceholder: string;
-  monetizationPriorityLow: string;
-  monetizationPriorityMedium: string;
-  monetizationPriorityHigh: string;
+  monetizationProducts: string;
+  monetizationProductsHelp: string;
+  monetizationProductTitle: string;
+  monetizationProductName: string;
+  monetizationProductNamePlaceholder: string;
+  monetizationProductDescription: string;
+  monetizationOffers: string;
+  monetizationOfferTitle: string;
+  monetizationOfferLabel: string;
+  monetizationOfferLabelPlaceholder: string;
+  monetizationRetailer: string;
+  monetizationRetailerPlaceholder: string;
+  monetizationOfferUrl: string;
+  monetizationOfferUrlHelp: string;
+  monetizationOfferCta: string;
+  monetizationOfferCtaPlaceholder: string;
+  monetizationOfferPriceLabel: string;
+  monetizationOfferPrimary: string;
+  monetizationOfferActive: string;
+  monetizationAddProduct: string;
+  monetizationRemoveProduct: string;
+  monetizationAddOffer: string;
+  monetizationRemoveOffer: string;
+  monetizationMoveUp: string;
+  monetizationMoveDown: string;
   inspectorSeo: string;
   inspectorRelations: string;
   inspectorFeaturedImage: string;
@@ -706,7 +740,6 @@ const monetizationProductTypes: MonetizationProductType[] = [
   'service',
   'other',
 ];
-const monetizationPriorities: MonetizationPriority[] = ['low', 'medium', 'high'];
 const ratingSelectValues = Array.from({ length: 19 }, (_, index) => 1 + index * 0.5);
 const releaseYearSelectValues = Array.from({ length: 91 }, (_, index) => 2050 - index);
 const allowedFeaturedImageMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -4547,6 +4580,32 @@ function createDefaultMonetization(language: ArticleLanguage = 'it'): EditableAr
       ? 'This article may contain affiliate links. If you buy through these links, Retro-Gamers.it may receive a small commission, at no additional cost to you.'
       : 'Questo articolo può contenere link affiliati: acquistando tramite questi link potremmo ricevere una piccola commissione, senza costi aggiuntivi per te.',
     priority: 'medium',
+    products: [],
+  };
+}
+
+function createDefaultMonetizationOffer(language: ArticleLanguage = 'it'): EditableArticleMonetizationOffer {
+  const isEnglishArticle = language === 'en';
+
+  return {
+    _key: getKey(),
+    label: '',
+    retailer: '',
+    affiliateUrl: '',
+    affiliateLabel: isEnglishArticle ? 'View product' : 'Scopri di più',
+    priceLabel: '',
+    isPrimary: false,
+    isActive: true,
+  };
+}
+
+function createDefaultMonetizationProduct(language: ArticleLanguage = 'it'): EditableArticleMonetizationProduct {
+  return {
+    _key: getKey(),
+    name: '',
+    productType: '',
+    description: '',
+    offers: [createDefaultMonetizationOffer(language)],
   };
 }
 
@@ -4582,16 +4641,6 @@ function getMonetizationProductTypeLabel(type: MonetizationProductType, labels: 
   };
 
   return productTypeLabels[type];
-}
-
-function getMonetizationPriorityLabel(priority: MonetizationPriority, labels: Labels) {
-  const priorityLabels: Record<MonetizationPriority, string> = {
-    low: labels.monetizationPriorityLow,
-    medium: labels.monetizationPriorityMedium,
-    high: labels.monetizationPriorityHigh,
-  };
-
-  return priorityLabels[priority];
 }
 
 function getEditableArticleSnapshot(articleDraft: EditableArticle, contentValue: PortableTextBlock[]) {
@@ -8332,6 +8381,234 @@ export default function ArticlePortableTextEditor({
     }));
   };
 
+  const addMonetizationProduct = () => {
+    if (isManualSaveLocked || !capabilities.canEditMonetization) return;
+
+    setDraft((current) => {
+      const monetizationValue = current.monetization || createDefaultMonetization(current.language);
+
+      return {
+        ...current,
+        monetization: {
+          ...monetizationValue,
+          isAffiliate: true,
+          products: [
+            ...(monetizationValue.products || []),
+            createDefaultMonetizationProduct(current.language),
+          ],
+        },
+      };
+    });
+  };
+
+  const updateMonetizationProduct = <Field extends keyof EditableArticleMonetizationProduct>(
+    productIndex: number,
+    field: Field,
+    value: EditableArticleMonetizationProduct[Field]
+  ) => {
+    if (isManualSaveLocked || !capabilities.canEditMonetization) return;
+
+    setDraft((current) => {
+      const monetizationValue = current.monetization || createDefaultMonetization(current.language);
+      const products = [...(monetizationValue.products || [])];
+      const product = products[productIndex];
+
+      if (!product) return current;
+
+      products[productIndex] = {
+        ...product,
+        [field]: value,
+      };
+
+      return {
+        ...current,
+        monetization: {
+          ...monetizationValue,
+          products,
+        },
+      };
+    });
+  };
+
+  const removeMonetizationProduct = (productIndex: number) => {
+    if (isManualSaveLocked || !capabilities.canEditMonetization) return;
+
+    setDraft((current) => {
+      const monetizationValue = current.monetization || createDefaultMonetization(current.language);
+      const products = (monetizationValue.products || []).filter((_, index) => index !== productIndex);
+
+      return {
+        ...current,
+        monetization: {
+          ...monetizationValue,
+          products,
+        },
+      };
+    });
+  };
+
+  const moveMonetizationProduct = (productIndex: number, direction: 'up' | 'down') => {
+    if (isManualSaveLocked || !capabilities.canEditMonetization) return;
+
+    setDraft((current) => {
+      const monetizationValue = current.monetization || createDefaultMonetization(current.language);
+      const products = [...(monetizationValue.products || [])];
+      const targetIndex = direction === 'up' ? productIndex - 1 : productIndex + 1;
+
+      if (targetIndex < 0 || targetIndex >= products.length) return current;
+
+      [products[productIndex], products[targetIndex]] = [products[targetIndex], products[productIndex]];
+
+      return {
+        ...current,
+        monetization: {
+          ...monetizationValue,
+          products,
+        },
+      };
+    });
+  };
+
+  const addMonetizationOffer = (productIndex: number) => {
+    if (isManualSaveLocked || !capabilities.canEditMonetization) return;
+
+    setDraft((current) => {
+      const monetizationValue = current.monetization || createDefaultMonetization(current.language);
+      const products = [...(monetizationValue.products || [])];
+      const product = products[productIndex];
+
+      if (!product) return current;
+
+      products[productIndex] = {
+        ...product,
+        offers: [
+          ...(product.offers || []),
+          createDefaultMonetizationOffer(current.language),
+        ],
+      };
+
+      return {
+        ...current,
+        monetization: {
+          ...monetizationValue,
+          products,
+        },
+      };
+    });
+  };
+
+  const updateMonetizationOffer = <Field extends keyof EditableArticleMonetizationOffer>(
+    productIndex: number,
+    offerIndex: number,
+    field: Field,
+    value: EditableArticleMonetizationOffer[Field]
+  ) => {
+    if (isManualSaveLocked || !capabilities.canEditMonetization) return;
+
+    setDraft((current) => {
+      const monetizationValue = current.monetization || createDefaultMonetization(current.language);
+      const products = [...(monetizationValue.products || [])];
+      const product = products[productIndex];
+
+      if (!product) return current;
+
+      const offers = [...(product.offers || [])];
+      const offer = offers[offerIndex];
+
+      if (!offer) return current;
+
+      offers[offerIndex] = {
+        ...offer,
+        [field]: value,
+      };
+
+      if (field === 'isPrimary' && value === true) {
+        offers.forEach((currentOffer, currentIndex) => {
+          if (currentIndex !== offerIndex && currentOffer.isPrimary) {
+            offers[currentIndex] = {
+              ...currentOffer,
+              isPrimary: false,
+            };
+          }
+        });
+      }
+
+      products[productIndex] = {
+        ...product,
+        offers,
+      };
+
+      return {
+        ...current,
+        monetization: {
+          ...monetizationValue,
+          products,
+        },
+      };
+    });
+  };
+
+  const removeMonetizationOffer = (productIndex: number, offerIndex: number) => {
+    if (isManualSaveLocked || !capabilities.canEditMonetization) return;
+
+    setDraft((current) => {
+      const monetizationValue = current.monetization || createDefaultMonetization(current.language);
+      const products = [...(monetizationValue.products || [])];
+      const product = products[productIndex];
+
+      if (!product) return current;
+
+      products[productIndex] = {
+        ...product,
+        offers: (product.offers || []).filter((_, index) => index !== offerIndex),
+      };
+
+      return {
+        ...current,
+        monetization: {
+          ...monetizationValue,
+          products,
+        },
+      };
+    });
+  };
+
+  const moveMonetizationOffer = (
+    productIndex: number,
+    offerIndex: number,
+    direction: 'up' | 'down'
+  ) => {
+    if (isManualSaveLocked || !capabilities.canEditMonetization) return;
+
+    setDraft((current) => {
+      const monetizationValue = current.monetization || createDefaultMonetization(current.language);
+      const products = [...(monetizationValue.products || [])];
+      const product = products[productIndex];
+
+      if (!product) return current;
+
+      const offers = [...(product.offers || [])];
+      const targetIndex = direction === 'up' ? offerIndex - 1 : offerIndex + 1;
+
+      if (targetIndex < 0 || targetIndex >= offers.length) return current;
+
+      [offers[offerIndex], offers[targetIndex]] = [offers[targetIndex], offers[offerIndex]];
+
+      products[productIndex] = {
+        ...product,
+        offers,
+      };
+
+      return {
+        ...current,
+        monetization: {
+          ...monetizationValue,
+          products,
+        },
+      };
+    });
+  };
+
   const updateRelationField = (
     field: Exclude<RelationKind, 'translationOf'>,
     value: EditableArticleReference[]
@@ -9181,93 +9458,273 @@ export default function ArticlePortableTextEditor({
 
               {monetization.isAffiliate && (
                 <div className="editorial-inspector-subsection">
-                  <label className="editorial-field">
-                    <span>{labels.monetizationProductType}</span>
-                    <select
-                      value={monetization.productType}
-                      disabled={isManualSaveLocked}
-                      onChange={(event) => updateMonetization(
-                        'productType',
-                        event.target.value as MonetizationProductType | ''
-                      )}
+                  <div>
+                    <h3>{labels.monetizationProducts}</h3>
+                    <p className="editorial-file-meta">{labels.monetizationProductsHelp}</p>
+                  </div>
+
+                  {(monetization.products || []).map((product, productIndex) => (
+                    <article
+                      className="editorial-monetization-card"
+                      key={product._key || `monetization-product-${productIndex}`}
                     >
-                      <option value="">{labels.monetizationProductTypePlaceholder}</option>
-                      {monetizationProductTypes.map((type) => (
-                        <option value={type} key={type}>
-                          {getMonetizationProductTypeLabel(type, labels)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      <header className="editorial-monetization-card__header">
+                        <h3>{labels.monetizationProductTitle} {productIndex + 1}</h3>
 
-                  <label className="editorial-field">
-                    <span>{labels.monetizationAffiliateUrl}</span>
-                    <input
-                      type="url"
-                      value={monetization.affiliateUrl}
-                      placeholder="https://…"
-                      disabled={isManualSaveLocked}
-                      onChange={(event) => updateMonetization('affiliateUrl', event.target.value)}
-                    />
-                    <p className="editorial-file-meta">{labels.monetizationAffiliateUrlHelp}</p>
-                  </label>
+                        <div className="editorial-monetization-card__actions">
+                          <button
+                            type="button"
+                            className="editorial-mini-button editorial-mini-button--subtle"
+                            disabled={isManualSaveLocked || productIndex === 0}
+                            onClick={() => moveMonetizationProduct(productIndex, 'up')}
+                          >
+                            {labels.monetizationMoveUp}
+                          </button>
 
-                  <label className="editorial-field">
-                    <span>{labels.monetizationAffiliateLabel}</span>
-                    <input
-                      value={monetization.affiliateLabel}
-                      disabled={isManualSaveLocked}
-                      onChange={(event) => updateMonetization('affiliateLabel', event.target.value)}
-                    />
-                  </label>
+                          <button
+                            type="button"
+                            className="editorial-mini-button editorial-mini-button--subtle"
+                            disabled={
+                              isManualSaveLocked ||
+                              productIndex >= (monetization.products || []).length - 1
+                            }
+                            onClick={() => moveMonetizationProduct(productIndex, 'down')}
+                          >
+                            {labels.monetizationMoveDown}
+                          </button>
 
-                  <label className="editorial-field">
-                    <span>{labels.monetizationAffiliateDescription}</span>
-                    <textarea
-                      value={monetization.affiliateDescription}
-                      rows={3}
-                      disabled={isManualSaveLocked}
-                      onChange={(event) => updateMonetization('affiliateDescription', event.target.value)}
-                    />
-                  </label>
+                          <button
+                            type="button"
+                            className="editorial-mini-button editorial-mini-button--danger"
+                            disabled={isManualSaveLocked}
+                            onClick={() => removeMonetizationProduct(productIndex)}
+                          >
+                            {labels.monetizationRemoveProduct}
+                          </button>
+                        </div>
+                      </header>
 
-                  <label className="editorial-field">
-                    <span>{labels.monetizationPriceLabel}</span>
-                    <input
-                      value={monetization.priceLabel}
-                      disabled={isManualSaveLocked}
-                      onChange={(event) => updateMonetization('priceLabel', event.target.value)}
-                    />
-                  </label>
+                      <div className="editorial-monetization-card__body">
+                        <label className="editorial-field">
+                          <span>{labels.monetizationProductName}</span>
+                          <input
+                            value={product.name}
+                            placeholder={labels.monetizationProductNamePlaceholder}
+                            disabled={isManualSaveLocked}
+                            onChange={(event) => updateMonetizationProduct(productIndex, 'name', event.target.value)}
+                          />
+                        </label>
 
-                  <label className="editorial-field">
-                    <span>{labels.monetizationDisclaimer}</span>
-                    <textarea
-                      value={monetization.disclaimer}
-                      rows={2}
-                      disabled={isManualSaveLocked}
-                      onChange={(event) => updateMonetization('disclaimer', event.target.value)}
-                    />
-                  </label>
+                        <label className="editorial-field">
+                          <span>{labels.monetizationProductType}</span>
+                          <select
+                            value={product.productType}
+                            disabled={isManualSaveLocked}
+                            onChange={(event) => updateMonetizationProduct(
+                              productIndex,
+                              'productType',
+                              event.target.value as MonetizationProductType | ''
+                            )}
+                          >
+                            <option value="">{labels.monetizationProductTypePlaceholder}</option>
+                            {monetizationProductTypes.map((type) => (
+                              <option value={type} key={type}>
+                                {getMonetizationProductTypeLabel(type, labels)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
 
-                  <label className="editorial-field">
-                    <span>{labels.monetizationPriority}</span>
-                    <select
-                      value={monetization.priority}
-                      disabled={isManualSaveLocked}
-                      onChange={(event) => updateMonetization(
-                        'priority',
-                        event.target.value as MonetizationPriority | ''
-                      )}
-                    >
-                      <option value="">{labels.monetizationPriorityPlaceholder}</option>
-                      {monetizationPriorities.map((priority) => (
-                        <option value={priority} key={priority}>
-                          {getMonetizationPriorityLabel(priority, labels)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                        <label className="editorial-field">
+                          <span>{labels.monetizationProductDescription}</span>
+                          <textarea
+                            value={product.description}
+                            rows={3}
+                            disabled={isManualSaveLocked}
+                            onChange={(event) => updateMonetizationProduct(
+                              productIndex,
+                              'description',
+                              event.target.value
+                            )}
+                          />
+                        </label>
+                      </div>
+
+                      <section className="editorial-inspector-subsection editorial-inspector-subsection--nested">
+                        <div className="editorial-monetization-card__header">
+                          <h3>{labels.monetizationOffers}</h3>
+
+                          <button
+                            type="button"
+                            className="editorial-mini-button editorial-mini-button--primary"
+                            disabled={isManualSaveLocked}
+                            onClick={() => addMonetizationOffer(productIndex)}
+                          >
+                            {labels.monetizationAddOffer}
+                          </button>
+                        </div>
+
+                        {(product.offers || []).map((offer, offerIndex) => (
+                          <div
+                            className="editorial-monetization-offer"
+                            key={offer._key || `monetization-offer-${productIndex}-${offerIndex}`}
+                          >
+                            <header className="editorial-monetization-card__header">
+                              <h3>{labels.monetizationOfferTitle} {offerIndex + 1}</h3>
+
+                              <div className="editorial-monetization-card__actions">
+                                <button
+                                  type="button"
+                                  className="editorial-mini-button editorial-mini-button--subtle"
+                                  disabled={isManualSaveLocked || offerIndex === 0}
+                                  onClick={() => moveMonetizationOffer(productIndex, offerIndex, 'up')}
+                                >
+                                  {labels.monetizationMoveUp}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="editorial-mini-button editorial-mini-button--subtle"
+                                  disabled={isManualSaveLocked || offerIndex >= (product.offers || []).length - 1}
+                                  onClick={() => moveMonetizationOffer(productIndex, offerIndex, 'down')}
+                                >
+                                  {labels.monetizationMoveDown}
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="editorial-mini-button editorial-mini-button--danger"
+                                  disabled={isManualSaveLocked}
+                                  onClick={() => removeMonetizationOffer(productIndex, offerIndex)}
+                                >
+                                  {labels.monetizationRemoveOffer}
+                                </button>
+                              </div>
+                            </header>
+
+                            <div className="editorial-monetization-offer__grid">
+                              <label className="editorial-field">
+                                <span>{labels.monetizationOfferLabel}</span>
+                                <input
+                                  value={offer.label}
+                                  placeholder={labels.monetizationOfferLabelPlaceholder}
+                                  disabled={isManualSaveLocked}
+                                  onChange={(event) => updateMonetizationOffer(
+                                    productIndex,
+                                    offerIndex,
+                                    'label',
+                                    event.target.value
+                                  )}
+                                />
+                              </label>
+
+                              <label className="editorial-field">
+                                <span>{labels.monetizationRetailer}</span>
+                                <input
+                                  value={offer.retailer}
+                                  placeholder={labels.monetizationRetailerPlaceholder}
+                                  disabled={isManualSaveLocked}
+                                  onChange={(event) => updateMonetizationOffer(
+                                    productIndex,
+                                    offerIndex,
+                                    'retailer',
+                                    event.target.value
+                                  )}
+                                />
+                              </label>
+
+                              <label className="editorial-field">
+                                <span>{labels.monetizationOfferUrl}</span>
+                                <input
+                                  type="url"
+                                  value={offer.affiliateUrl}
+                                  placeholder="https://…"
+                                  disabled={isManualSaveLocked}
+                                  onChange={(event) => updateMonetizationOffer(
+                                    productIndex,
+                                    offerIndex,
+                                    'affiliateUrl',
+                                    event.target.value
+                                  )}
+                                />
+                                <p className="editorial-file-meta">{labels.monetizationOfferUrlHelp}</p>
+                              </label>
+
+                              <label className="editorial-field">
+                                <span>{labels.monetizationOfferCta}</span>
+                                <input
+                                  value={offer.affiliateLabel}
+                                  placeholder={labels.monetizationOfferCtaPlaceholder}
+                                  disabled={isManualSaveLocked}
+                                  onChange={(event) => updateMonetizationOffer(
+                                    productIndex,
+                                    offerIndex,
+                                    'affiliateLabel',
+                                    event.target.value
+                                  )}
+                                />
+                              </label>
+
+                              <label className="editorial-field">
+                                <span>{labels.monetizationOfferPriceLabel}</span>
+                                <input
+                                  value={offer.priceLabel}
+                                  disabled={isManualSaveLocked}
+                                  onChange={(event) => updateMonetizationOffer(
+                                    productIndex,
+                                    offerIndex,
+                                    'priceLabel',
+                                    event.target.value
+                                  )}
+                                />
+                              </label>
+                            </div>
+
+                            <div className="editorial-checkbox-list editorial-monetization-offer__toggles">
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={offer.isPrimary}
+                                  disabled={isManualSaveLocked}
+                                  onChange={(event) => updateMonetizationOffer(
+                                    productIndex,
+                                    offerIndex,
+                                    'isPrimary',
+                                    event.target.checked
+                                  )}
+                                />
+                                <span>{labels.monetizationOfferPrimary}</span>
+                              </label>
+
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={offer.isActive}
+                                  disabled={isManualSaveLocked}
+                                  onChange={(event) => updateMonetizationOffer(
+                                    productIndex,
+                                    offerIndex,
+                                    'isActive',
+                                    event.target.checked
+                                  )}
+                                />
+                                <span>{labels.monetizationOfferActive}</span>
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                      </section>
+                    </article>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="editorial-mini-button editorial-mini-button--primary"
+                    disabled={isManualSaveLocked}
+                    onClick={addMonetizationProduct}
+                  >
+                    {labels.monetizationAddProduct}
+                  </button>
                 </div>
               )}
             </details>

@@ -167,6 +167,25 @@ type EditorialArticleMonetizationProductType =
 
 type EditorialArticleMonetizationPriority = 'low' | 'medium' | 'high';
 
+export type EditorialArticleMonetizationOffer = {
+  _key?: string;
+  label: string;
+  retailer: string;
+  affiliateUrl: string;
+  affiliateLabel: string;
+  priceLabel: string;
+  isPrimary: boolean;
+  isActive: boolean;
+};
+
+export type EditorialArticleMonetizationProduct = {
+  _key?: string;
+  name: string;
+  productType: EditorialArticleMonetizationProductType | '';
+  description: string;
+  offers: EditorialArticleMonetizationOffer[];
+};
+
 export type EditorialArticleMonetization = {
   isAffiliate: boolean;
   productType: EditorialArticleMonetizationProductType | '';
@@ -176,6 +195,7 @@ export type EditorialArticleMonetization = {
   priceLabel: string;
   disclaimer: string;
   priority: EditorialArticleMonetizationPriority | '';
+  products: EditorialArticleMonetizationProduct[];
 };
 
 export type EditorialArticleRating = Record<EditorialArticleRatingField, number | null> & {
@@ -1287,11 +1307,58 @@ function normalizeDate(value: unknown) {
     : null;
 }
 
+function normalizeMonetizationKey(value: unknown) {
+  const key = normalizeString(value, 120).trim();
+
+  return key || undefined;
+}
+
+function normalizeMonetizationOffer(value: unknown): EditorialArticleMonetizationOffer | null {
+  if (!isPlainObject(value)) return null;
+
+  return {
+    _key: normalizeMonetizationKey(value._key),
+    label: normalizeString(value.label, 500).trim(),
+    retailer: normalizeString(value.retailer, 500).trim(),
+    affiliateUrl: normalizeString(value.affiliateUrl, 5000).trim(),
+    affiliateLabel: normalizeString(value.affiliateLabel, 500).trim(),
+    priceLabel: normalizeString(value.priceLabel, 500).trim(),
+    isPrimary: value.isPrimary === true,
+    isActive: value.isActive !== false,
+  };
+}
+
+function normalizeMonetizationProduct(value: unknown): EditorialArticleMonetizationProduct | null {
+  if (!isPlainObject(value)) return null;
+
+  const productType = normalizeString(value.productType, 40).trim();
+  const offers = Array.isArray(value.offers)
+    ? value.offers
+        .map((offer) => normalizeMonetizationOffer(offer))
+        .filter((offer): offer is EditorialArticleMonetizationOffer => Boolean(offer))
+    : [];
+
+  return {
+    _key: normalizeMonetizationKey(value._key),
+    name: normalizeString(value.name, 500).trim(),
+    productType: validMonetizationProductTypes.has(productType as EditorialArticleMonetizationProductType)
+      ? productType as EditorialArticleMonetizationProductType
+      : '',
+    description: normalizeString(value.description, 5000).trim(),
+    offers,
+  };
+}
+
 function normalizeMonetization(value: unknown): EditorialArticleMonetization | null {
   if (!isPlainObject(value)) return null;
 
   const productType = normalizeString(value.productType, 40).trim();
   const priority = normalizeString(value.priority, 40).trim();
+  const products = Array.isArray(value.products)
+    ? value.products
+        .map((product) => normalizeMonetizationProduct(product))
+        .filter((product): product is EditorialArticleMonetizationProduct => Boolean(product))
+    : [];
 
   return {
     isAffiliate: value.isAffiliate === true,
@@ -1306,6 +1373,7 @@ function normalizeMonetization(value: unknown): EditorialArticleMonetization | n
     priority: validMonetizationPriorities.has(priority as EditorialArticleMonetizationPriority)
       ? priority as EditorialArticleMonetizationPriority
       : '',
+    products,
   };
 }
 
@@ -1548,6 +1616,20 @@ function validateOptionalDate(value: unknown, field: string) {
   return normalized;
 }
 
+function validateMonetizationUrl(value: string, errorCode: string) {
+  if (!value) return;
+
+  try {
+    const url = new URL(value);
+
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw new Error('invalid_protocol');
+    }
+  } catch {
+    throw new Error(errorCode);
+  }
+}
+
 function validateMonetization(value: unknown) {
   if (value === null || value === undefined) return null;
   if (!isPlainObject(value)) throw new Error('invalid_monetization');
@@ -1576,23 +1658,49 @@ function validateMonetization(value: unknown) {
     throw new Error('invalid_monetization_priority');
   }
 
-  if (normalized?.affiliateUrl) {
-    try {
-      const url = new URL(normalized.affiliateUrl);
-
-      if (!['http:', 'https:'].includes(url.protocol)) {
-        throw new Error('invalid_protocol');
-      }
-    } catch {
-      throw new Error('invalid_monetization_affiliateUrl');
-    }
-  }
+  validateMonetizationUrl(normalized?.affiliateUrl || '', 'invalid_monetization_affiliateUrl');
 
   if (!normalized) return null;
 
+  if (normalized.isAffiliate && normalized.products.length > 0) {
+    normalized.products.forEach((product) => {
+      if (!product.name) {
+        throw new Error('invalid_monetization_product_name');
+      }
+
+      const activeOffers = product.offers.filter((offer) => offer.isActive);
+      const primaryOffers = product.offers.filter((offer) => offer.isPrimary);
+
+      if (primaryOffers.length > 1) {
+        throw new Error('invalid_monetization_primary_offer');
+      }
+
+      activeOffers.forEach((offer) => {
+        if (!offer.affiliateUrl) {
+          throw new Error('invalid_monetization_offer_url_required');
+        }
+
+        if (!offer.label && !offer.affiliateLabel) {
+          throw new Error('invalid_monetization_offer_label_required');
+        }
+
+        validateMonetizationUrl(offer.affiliateUrl, 'invalid_monetization_offer_url');
+      });
+    });
+  }
+
+  if (
+    normalized.isAffiliate &&
+    normalized.products.length === 0 &&
+    !normalized.affiliateUrl
+  ) {
+    throw new Error('invalid_monetization_products');
+  }
+
   return Object.fromEntries(
     Object.entries(normalized).filter(([key, fieldValue]) =>
-      key === 'isAffiliate' || fieldValue !== ''
+      key === 'isAffiliate' ||
+      (Array.isArray(fieldValue) ? fieldValue.length > 0 : fieldValue !== '')
     )
   );
 }

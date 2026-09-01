@@ -50,66 +50,142 @@ const labels = {
 
 const t = labels[lang] || labels.it;
 
-const affiliateUrl = monetization.affiliateUrl || '';
-const affiliateProvider = getRgAffiliateProviderFromUrl(affiliateUrl);
 const articleSlug = getAnalyticsToken(
   typeof post?.slug === 'string' ? post.slug : post?.slug?.current
 );
 const contentType = getAnalyticsToken(post?.type || 'article');
 
-const affiliateLabel =
-  monetization.affiliateLabel ||
-  t.defaultAffiliateLabel;
+const normalizeOffer = (offer, index) => {
+  const affiliateUrl = String(offer?.affiliateUrl || '').trim();
 
-const priceLabel = monetization.priceLabel || '';
+  if (!affiliateUrl || offer?.isActive === false) return null;
 
-const affiliateDescription =
-  monetization.affiliateDescription ||
-  t.defaultDescription;
+  const label = String(offer?.label || '').trim();
+  const affiliateLabel =
+    String(offer?.affiliateLabel || '').trim() ||
+    label ||
+    t.defaultAffiliateLabel;
 
-const productType =
-  t.productTypeLabels[monetization.productType] ||
-  t.defaultProductType;
+  return {
+    key: offer?._key || `offer-${index}`,
+    label,
+    displayLabel: label || affiliateLabel,
+    retailer: String(offer?.retailer || '').trim(),
+    affiliateUrl,
+    affiliateProvider: getRgAffiliateProviderFromUrl(affiliateUrl),
+    affiliateLabel,
+    priceLabel: String(offer?.priceLabel || '').trim(),
+    isPrimary: offer?.isPrimary === true,
+  };
+};
 
-const isVisible =
-  monetization.isAffiliate &&
-  affiliateUrl;
+const normalizeProduct = (product, index) => {
+  const offers = Array.isArray(product?.offers)
+    ? product.offers
+        .map((offer, offerIndex) => normalizeOffer(offer, offerIndex))
+        .filter(Boolean)
+        .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
+    : [];
+
+  if (offers.length === 0) return null;
+
+  return {
+    key: product?._key || `product-${index}`,
+    name: String(product?.name || '').trim() || t.recommendedTitle,
+    description: String(product?.description || '').trim() || t.defaultDescription,
+    productType:
+      t.productTypeLabels[product?.productType] ||
+      t.defaultProductType,
+    offers,
+  };
+};
+
+const newProducts = Array.isArray(monetization.products)
+  ? monetization.products
+      .map((product, index) => normalizeProduct(product, index))
+      .filter(Boolean)
+  : [];
+
+const legacyAffiliateUrl = String(monetization.affiliateUrl || '').trim();
+const legacyProducts = legacyAffiliateUrl
+  ? [
+      {
+        key: 'legacy-product',
+        name: t.recommendedTitle,
+        description:
+          String(monetization.affiliateDescription || '').trim() ||
+          t.defaultDescription,
+        productType:
+          t.productTypeLabels[monetization.productType] ||
+          t.defaultProductType,
+        offers: [
+          {
+            key: 'legacy-offer',
+            label: '',
+            retailer: '',
+            affiliateUrl: legacyAffiliateUrl,
+            affiliateProvider: getRgAffiliateProviderFromUrl(legacyAffiliateUrl),
+            affiliateLabel:
+              String(monetization.affiliateLabel || '').trim() ||
+              t.defaultAffiliateLabel,
+            priceLabel: String(monetization.priceLabel || '').trim(),
+            isPrimary: true,
+          },
+        ],
+      },
+    ]
+  : [];
+
+const affiliateProducts = newProducts.length > 0 ? newProducts : legacyProducts;
+const isVisible = monetization.isAffiliate && affiliateProducts.length > 0;
 ---
 
 {isVisible && (
   <aside class="affiliate-box">
 
-    <div class="affiliate-box__content">
-      <span>{productType}</span>
+    {affiliateProducts.map((product) => (
+      <div class="affiliate-box__product">
+        <div class="affiliate-box__content">
+          <span>{product.productType}</span>
 
-      <h2>
-        {t.recommendedTitle}
-      </h2>
+          <h2>
+            {product.name}
+          </h2>
 
-      <p>{affiliateDescription}</p>
+          <p>{product.description}</p>
+        </div>
 
-      {priceLabel && (
-        <strong class="affiliate-box__price">
-          {priceLabel}
-        </strong>
-      )}
-    </div>
+        <div class="affiliate-box__offers">
+          {product.offers.map((offer) => (
+            <div class="affiliate-box__offer">
+              <div class="affiliate-box__offer-meta">
+                {offer.displayLabel && <strong>{offer.displayLabel}</strong>}
+                {offer.retailer && <span>{offer.retailer}</span>}
+                {offer.priceLabel && (
+                  <em class="affiliate-box__price">
+                    {offer.priceLabel}
+                  </em>
+                )}
+              </div>
 
-    <div class="affiliate-box__action">
-      <a
-        href={affiliateUrl}
-        target="_blank"
-        rel="sponsored nofollow noopener noreferrer"
-        data-rg-affiliate-link
-        data-rg-affiliate-language={lang === 'en' ? 'en' : 'it'}
-        data-rg-affiliate-provider={affiliateProvider}
-        data-rg-affiliate-placement="affiliate_box"
-        data-rg-affiliate-article-slug={articleSlug || undefined}
-        data-rg-affiliate-content-type={contentType || undefined}
-      >
-        {affiliateLabel}
-      </a>
-    </div>
+              <a
+                href={offer.affiliateUrl}
+                target="_blank"
+                rel="sponsored nofollow noopener noreferrer"
+                data-rg-affiliate-link
+                data-rg-affiliate-language={lang === 'en' ? 'en' : 'it'}
+                data-rg-affiliate-provider={offer.affiliateProvider}
+                data-rg-affiliate-placement="affiliate_box"
+                data-rg-affiliate-article-slug={articleSlug || undefined}
+                data-rg-affiliate-content-type={contentType || undefined}
+              >
+                {offer.affiliateLabel}
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
 
   </aside>
 )}
