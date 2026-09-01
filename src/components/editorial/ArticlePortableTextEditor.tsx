@@ -58,6 +58,7 @@ type RatingField = 'grafica' | 'sonoro' | 'giocabilita' | 'longevita' | 'overall
 type RelationKind =
   | 'categories'
   | 'editorialSeries'
+  | 'relatedArticles'
   | 'platforms'
   | 'creators'
   | 'genres'
@@ -271,6 +272,7 @@ type EditableArticle = {
   featuredImage: EditableArticleFeaturedImage;
   categories: EditableArticleReference[];
   editorialSeries: EditableArticleReference[];
+  relatedArticles: EditableArticleReference[];
   platforms: EditableArticleReference[];
   creators: EditableArticleReference[];
   genres: EditableArticleReference[];
@@ -503,6 +505,7 @@ type Labels = {
   relationsSection: string;
   categories: string;
   editorialSeries: string;
+  relatedArticles: string;
   platforms: string;
   creators: string;
   genres: string;
@@ -4662,6 +4665,7 @@ function getEditableArticleSnapshot(articleDraft: EditableArticle, contentValue:
     featuredImageAlt: articleDraft.featuredImage?.alt || '',
     categories: articleDraft.categories,
     editorialSeries: articleDraft.editorialSeries,
+    relatedArticles: articleDraft.relatedArticles,
     platforms: articleDraft.platforms,
     creators: articleDraft.creators,
     genres: articleDraft.genres,
@@ -8706,6 +8710,7 @@ export default function ArticlePortableTextEditor({
     ...(articleDraft.type === 'review' ? { gameCoverAlt: articleDraft.gameInfo.cover?.alt || '' } : {}),
     categories: articleDraft.categories,
     editorialSeries: articleDraft.editorialSeries,
+    relatedArticles: articleDraft.relatedArticles,
     platforms: articleDraft.platforms,
     creators: articleDraft.creators,
     genres: articleDraft.genres,
@@ -9906,6 +9911,20 @@ export default function ArticlePortableTextEditor({
 
             <div className="editorial-inspector-subsection">
               <h3>{labels.relationsSection}</h3>
+
+              <label className="editorial-field">
+                <span>{labels.relatedArticles}</span>
+                <RelationPicker
+                  label={labels.relatedArticles}
+                  kind="relatedArticles"
+                  values={draft.relatedArticles}
+                  onChange={(values) => updateRelationField('relatedArticles', values)}
+                  language={draft.language}
+                  currentArticleId={getRootArticleId(draft._id)}
+                  labels={labels}
+                  disabled={isManualSaveLocked}
+                />
+              </label>
 
               <label className="editorial-field">
                 <span>{labels.platforms}</span>

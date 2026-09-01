@@ -171,6 +171,7 @@ export type Post = {
   series?: TaxonomyRef[];
   editorialSeries?: TaxonomyRef[];
   creators?: CreatorRef[];
+  relatedArticles?: Post[];
 
   monetization?: Monetization;
 
@@ -852,6 +853,7 @@ export function getRelatedPosts(
   if (!currentPost?._id) return [];
 
   const currentLanguage = currentPost.language || 'it';
+  const currentId = currentPost._id.replace(/^drafts\./, '');
 
   const currentPlatformSlugs = new Set(
     currentPost.platforms?.map((item) => item.slug).filter(Boolean)
@@ -869,10 +871,36 @@ export function getRelatedPosts(
     currentPost.developers?.map((item) => item.slug).filter(Boolean)
   );
 
+  const manualSeenIds = new Set<string>();
+  const manualRelatedPosts = (currentPost.relatedArticles || [])
+    .filter((post) => {
+      const relatedId = post?._id?.replace(/^drafts\./, '');
+
+      if (
+        !relatedId ||
+        relatedId === currentId ||
+        manualSeenIds.has(relatedId) ||
+        !post.slug ||
+        !post.type ||
+        !isPostPubliclyDistributed(post) ||
+        (post.language || 'it') !== currentLanguage
+      ) {
+        return false;
+      }
+
+      manualSeenIds.add(relatedId);
+      return true;
+    });
+  const manualRelatedIds = new Set(
+    manualRelatedPosts.map((post) => post._id.replace(/^drafts\./, ''))
+  );
+
   const scorePost = (post: Post) => {
     let score = 0;
 
-    if (!post?._id || post._id === currentPost._id) return -999;
+    const postId = post?._id?.replace(/^drafts\./, '');
+
+    if (!postId || postId === currentId || manualRelatedIds.has(postId)) return -999;
     if (!isPostPubliclyDistributed(post)) return -999;
 
     /*
@@ -920,7 +948,7 @@ export function getRelatedPosts(
     return score;
   };
 
-  return posts
+  const automaticRelatedPosts = posts
     .filter((post) => post?._id && post._id !== currentPost._id)
     .map((post) => ({
       post,
@@ -939,4 +967,6 @@ export function getRelatedPosts(
     })
     .slice(0, limit)
     .map((item) => item.post);
+
+  return [...manualRelatedPosts, ...automaticRelatedPosts].slice(0, limit);
 }

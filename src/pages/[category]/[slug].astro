@@ -252,6 +252,55 @@ const post = await articleDetailClient.fetch(`
     }
   },
 
+  relatedArticles[]->{
+    _id,
+    _type,
+    type,
+    isPublic,
+    "language": coalesce(language, "it"),
+    title,
+    subtitle,
+    excerpt,
+    cardExcerpt,
+    "slug": slug.current,
+    publishedAt,
+    featuredImage {
+      alt,
+      asset->{ url }
+    },
+    categories[]->{
+      "name": coalesce(name, title),
+      "nameEn": coalesce(nameEn, titleEn),
+      "slug": slug.current
+    },
+    platforms[]->{
+      name,
+      "slug": slug.current,
+      platformType,
+      badgeLabel
+    },
+    genres[]->{
+      name,
+      nameEn,
+      "slug": slug.current
+    },
+    developers[]->{
+      name,
+      nameEn,
+      "slug": slug.current
+    },
+    rating {
+      overall
+    },
+    gameInfo {
+      releaseYear,
+      cover {
+        alt,
+        asset->{ url }
+      }
+    }
+  },
+
   gameInfo {
     releaseYear,
     mediaFormat,

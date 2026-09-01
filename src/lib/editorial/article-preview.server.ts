@@ -186,6 +186,8 @@ const editorialArticlePreviewProjection = `{
 
   creators[]->${editorialPreviewCreatorRefProjection},
 
+  relatedArticles[]->${editorialArticlePreviewCardProjection},
+
   gameInfo {
     releaseYear,
     mediaFormat,

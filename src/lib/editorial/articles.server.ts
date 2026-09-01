@@ -77,6 +77,7 @@ type EditorialArticleReferenceTargetType =
 type EditorialArticleReferenceField =
   | 'categories'
   | 'editorialSeries'
+  | 'relatedArticles'
   | 'platforms'
   | 'creators'
   | 'genres'
@@ -247,6 +248,7 @@ export type EditorialArticleDraft = {
   featuredImage: EditorialArticleFeaturedImage | null;
   categories: EditorialArticleReference[];
   editorialSeries: EditorialArticleReference[];
+  relatedArticles: EditorialArticleReference[];
   platforms: EditorialArticleReference[];
   creators: EditorialArticleReference[];
   genres: EditorialArticleReference[];
@@ -329,6 +331,7 @@ const publishedStatus: EditorialWorkflowStatus = 'published';
 const editorialArticleReferenceFields: EditorialArticleReferenceField[] = [
   'categories',
   'editorialSeries',
+  'relatedArticles',
   'platforms',
   'creators',
   'genres',
@@ -363,6 +366,7 @@ const editorialArticleReferenceKindConfig: Record<
     taxonomyType: 'editorialSeries',
     multiple: true,
   },
+  relatedArticles: { field: 'relatedArticles', targetType: 'article', multiple: true },
   platforms: { field: 'platforms', targetType: 'platform', multiple: true },
   creators: { field: 'creators', targetType: 'creator', multiple: true },
   genres: { field: 'genres', targetType: 'taxonomy', taxonomyType: 'genre', multiple: true },
@@ -1479,6 +1483,7 @@ async function hydrateDraftArticleReferences(article: EditorialArticleDraft): Pr
       ...article,
       categories: article.categories.map(hydrateReference),
       editorialSeries: article.editorialSeries.map(hydrateReference),
+      relatedArticles: article.relatedArticles.map(hydrateReference),
       platforms: article.platforms.map(hydrateReference),
       creators: article.creators.map(hydrateReference),
       genres: article.genres.map(hydrateReference),
@@ -1549,6 +1554,7 @@ function normalizeDraftArticle(
     featuredImage: normalizeFeaturedImage(document.featuredImage),
     categories: normalizeReferenceArray(document.categories, 'category'),
     editorialSeries: normalizeReferenceArray(document.editorialSeries, 'taxonomy'),
+    relatedArticles: normalizeReferenceArray(document.relatedArticles, 'article'),
     platforms: normalizeReferenceArray(document.platforms, 'platform'),
     creators: normalizeReferenceArray(document.creators, 'creator'),
     genres: normalizeReferenceArray(document.genres, 'taxonomy'),
@@ -1928,10 +1934,13 @@ export async function searchEditorialReferences({
     const articleLanguage = validateArticleLanguage(language);
     const currentId = normalizeEditableArticleRootDocumentId(currentArticleId);
     const draftId = currentId ? getDraftDocumentId(currentId) : '';
+    const languageFilter = normalizedKind === 'translationOf'
+      ? 'coalesce(language, "it") != $language'
+      : 'coalesce(language, "it") == $language';
     const documents = await rawClient.fetch<Record<string, unknown>[]>(
       `*[
         _type == "article" &&
-        coalesce(language, "it") != $language &&
+        ${languageFilter} &&
         _id != $currentId &&
         _id != $draftId &&
         (!$hasSearch || title match $search || slug.current match $search)
@@ -2119,10 +2128,12 @@ async function validateReferenceArrayField({
   field,
   ids,
   currentArticle,
+  language,
 }: {
   field: EditorialArticleReferenceField;
   ids: string[];
   currentArticle: EditorialArticleDraft;
+  language: EditorialArticleLanguage;
 }) {
   const config = editorialArticleReferenceKindConfig[field];
   const documents = await fetchReferenceValidationDocuments(ids, config);
@@ -2130,8 +2141,19 @@ async function validateReferenceArrayField({
   for (const id of ids) {
     const document = documents.get(id);
 
+    if (field === 'relatedArticles' && id === currentArticle.rootDocumentId) {
+      throw new Error('invalid_relatedArticles');
+    }
+
     if (!isDocumentValidForReferenceConfig(document, config)) {
       throw new Error(`invalid_${field}`);
+    }
+
+    if (
+      field === 'relatedArticles' &&
+      normalizeArticleLanguage(document.language) !== language
+    ) {
+      throw new Error('invalid_relatedArticles_language');
     }
   }
 
@@ -2188,7 +2210,7 @@ async function getRelationPatchFields(
     if (!Object.prototype.hasOwnProperty.call(payload, field)) continue;
 
     const ids = getPayloadReferenceIds(payload[field], field);
-    const references = await validateReferenceArrayField({ field, ids, currentArticle });
+    const references = await validateReferenceArrayField({ field, ids, currentArticle, language: nextLanguage });
 
     if (references.length > 0) {
       set[field] = references;
@@ -3675,7 +3697,7 @@ export async function updateEditableEditorialArticle({
       nextWorkflowStatus: fetchResult.ownership.workflowStatus,
       metadata: {
         fields:
-          'title,subtitle,cardExcerpt,excerpt,seoTitle,aiTransparency,aiTransparencyNote,lastUpdated,promoteOnUpdate,featuredUntil,monetization,type,language,slug,content,featuredImage.alt,categories,editorialSeries,platforms,creators,genres,developers,publishers,manufacturer,modes,series,translationOf,gameInfo.releaseYear,gameInfo.mediaFormat,gameInfo.cover.alt,rating,pros,cons,seriesOrder,seriesLabel',
+          'title,subtitle,cardExcerpt,excerpt,seoTitle,aiTransparency,aiTransparencyNote,lastUpdated,promoteOnUpdate,featuredUntil,monetization,type,language,slug,content,featuredImage.alt,categories,editorialSeries,relatedArticles,platforms,creators,genres,developers,publishers,manufacturer,modes,series,translationOf,gameInfo.releaseYear,gameInfo.mediaFormat,gameInfo.cover.alt,rating,pros,cons,seriesOrder,seriesLabel',
       },
     });
 
