@@ -59,6 +59,9 @@ const copy = isEn
       surveyPromptClose: 'Close survey invitation',
       voicesTitle: 'Community voices',
       voicesText: 'Comments, memories and conversations from readers who are bringing Retro-Gamers.it to life beyond the articles.',
+      whatsappTitle: 'Follow us on WhatsApp',
+      whatsappText: 'New articles, interviews and Retro-Gamers community updates, without spam.',
+      whatsappCta: 'Follow the channel',
       primary: 'Visit the community',
       secondary: isLoggedIn ? 'Go to your account' : 'Create your profile',
       empty: 'The first memories will arrive with the readers.',
@@ -96,6 +99,9 @@ const copy = isEn
       surveyPromptClose: 'Chiudi invito sondaggio',
       voicesTitle: 'Le voci della community',
       voicesText: 'Commenti, ricordi e discussioni dai lettori che stanno dando vita a Retro-Gamers.it oltre gli articoli.',
+      whatsappTitle: 'Seguici su WhatsApp',
+      whatsappText: 'Nuovi articoli, interviste e iniziative di Retro-Gamers, senza spam.',
+      whatsappCta: 'Segui il canale',
       primary: 'Vai alla community',
       secondary: isLoggedIn ? 'Vai al tuo account' : 'Crea il tuo profilo',
       empty: 'Le prime memorie arriveranno con i lettori.',
@@ -118,6 +124,7 @@ const copy = isEn
 const communityHref = isEn ? '/en/community/' : '/community/';
 const quizHref = isEn ? '/en/quiz/' : '/quiz/';
 const surveyHref = activeSurvey ? getCommunitySurveyUrl(activeSurvey, isEn ? 'en' : 'it') : '';
+const whatsappChannelUrl = 'https://whatsapp.com/channel/0029VbDPq3A7j6g5WNSANq0S';
 const profileHref = isEn
   ? (isLoggedIn ? '/en/account/' : '/en/account/register/')
   : (isLoggedIn ? '/account/' : '/account/register/');
@@ -296,6 +303,24 @@ const getQuizDifficultyLabel = (difficulty?: string) =>
         </a>
       </div>
     </header>
+
+    <a
+      class="home-community-strip__whatsapp-card"
+      href={whatsappChannelUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <span class="home-community-strip__whatsapp-icon" aria-hidden="true">
+        <img src="/icons/social/whatsapp.svg" alt="" width="22" height="22" loading="lazy" />
+      </span>
+
+      <span class="home-community-strip__whatsapp-copy">
+        <strong>{copy.whatsappTitle}</strong>
+        <span>{copy.whatsappText}</span>
+      </span>
+
+      <span class="home-community-strip__whatsapp-cta">{copy.whatsappCta}</span>
+    </a>
 
     <div class="home-community-strip__comments" aria-label={copy.railLabel} tabindex="0">
       {comments.length > 0 ? (

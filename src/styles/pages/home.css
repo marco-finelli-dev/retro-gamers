@@ -1066,6 +1066,101 @@ html:not([data-theme="light"]) .home-community-strip::after {
   font-weight: 860;
 }
 
+.home-community-strip__whatsapp-card {
+  position: relative;
+  overflow: hidden;
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+
+  border: 1px solid var(--home-card-border);
+  border-radius: 18px;
+  padding: 14px;
+
+  color: inherit;
+  text-decoration: none;
+
+  background: var(--home-card-bg);
+  box-shadow: var(--home-card-shadow);
+
+  transition:
+    transform var(--transition-smooth),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-smooth);
+}
+
+.home-community-strip__whatsapp-card:hover,
+.home-community-strip__whatsapp-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: rgba(34,240,255,0.26);
+  box-shadow: var(--home-card-hover-shadow);
+  outline: none;
+}
+
+.home-community-strip__whatsapp-card:focus-visible {
+  box-shadow:
+    var(--home-card-hover-shadow),
+    0 0 0 3px rgba(34,240,255,0.16);
+}
+
+.home-community-strip__whatsapp-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--home-badge-border);
+  border-radius: 999px;
+  background: var(--home-badge-bg);
+}
+
+.home-community-strip__whatsapp-icon img {
+  display: block;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  opacity: 0.84;
+  filter: brightness(0) invert(1);
+}
+
+.home-community-strip__whatsapp-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.home-community-strip__whatsapp-copy strong {
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.16;
+}
+
+.home-community-strip__whatsapp-copy span {
+  color: var(--color-text-soft);
+  font-size: 0.88rem;
+  line-height: 1.42;
+}
+
+.home-community-strip__whatsapp-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 36px;
+  border: 1px solid var(--rg-cta-border);
+  border-radius: 999px;
+  padding: 0 13px;
+  background: var(--rg-cta-bg);
+  color: var(--rg-cta-color);
+  font-size: 0.78rem;
+  font-weight: 880;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .home-survey-prompt {
   position: fixed;
   z-index: 1200;
@@ -1530,6 +1625,15 @@ html:not([data-theme="light"]) .home-community-strip::after {
     justify-content: flex-start;
   }
 
+  .home-community-strip__whatsapp-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: flex-start;
+  }
+
+  .home-community-strip__whatsapp-cta {
+    grid-column: 1 / -1;
+  }
+
   .home-play-today {
     border-radius: 18px;
     padding: 22px 16px;
@@ -1704,6 +1808,7 @@ html[data-theme="light"] .home-community-strip__link:focus-visible {
 }
 
 html[data-theme="light"] .home-community-strip__quiz-card,
+html[data-theme="light"] .home-community-strip__whatsapp-card,
 html[data-theme="light"] .home-community-strip__comment {
   border-color: var(--home-card-border);
   background: var(--home-card-bg);
@@ -1712,6 +1817,8 @@ html[data-theme="light"] .home-community-strip__comment {
 
 html[data-theme="light"] .home-community-strip__quiz-card:hover,
 html[data-theme="light"] .home-community-strip__quiz-card:focus-visible,
+html[data-theme="light"] .home-community-strip__whatsapp-card:hover,
+html[data-theme="light"] .home-community-strip__whatsapp-card:focus-visible,
 html[data-theme="light"] .home-community-strip__comment:hover {
   border-color: var(--home-badge-border);
   box-shadow: var(--home-card-hover-shadow);
@@ -1725,15 +1832,21 @@ html[data-theme="light"] .home-community-strip__comment header {
 html[data-theme="light"] .home-community-strip__author strong,
 html[data-theme="light"] .home-community-strip__author a,
 html[data-theme="light"] .home-community-strip__quiz-body strong,
+html[data-theme="light"] .home-community-strip__whatsapp-copy strong,
 html[data-theme="light"] .home-community-strip__comment footer a {
   color: rgba(17,24,39,0.92);
 }
 
 html[data-theme="light"] .home-community-strip__badge,
 html[data-theme="light"] .home-community-strip__block-header p,
+html[data-theme="light"] .home-community-strip__whatsapp-copy span,
 html[data-theme="light"] .home-community-strip__comment p,
 html[data-theme="light"] .home-community-strip__comment footer {
   color: rgba(55,65,81,0.78);
+}
+
+html[data-theme="light"] .home-community-strip__whatsapp-icon img {
+  filter: none;
 }
 
 html[data-theme="light"] .home-community-strip__comment footer .home-community-strip__discussion {
