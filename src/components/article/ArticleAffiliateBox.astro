@@ -1,10 +1,11 @@
 ---
 import { getRgAffiliateProviderFromUrl } from '../../lib/analytics/client';
 
-const { post } = Astro.props;
+const { post, products = null } = Astro.props;
 
 const lang = post?.language || 'it';
 const monetization = post?.monetization || {};
+const scopedProducts = Array.isArray(products) ? products : null;
 const getAnalyticsToken = (value) =>
   String(value || '')
     .trim()
@@ -100,8 +101,8 @@ const normalizeProduct = (product, index) => {
   };
 };
 
-const newProducts = Array.isArray(monetization.products)
-  ? monetization.products
+const newProducts = Array.isArray(scopedProducts || monetization.products)
+  ? (scopedProducts || monetization.products)
       .map((product, index) => normalizeProduct(product, index))
       .filter(Boolean)
   : [];
@@ -136,7 +137,7 @@ const legacyProducts = legacyAffiliateUrl
     ]
   : [];
 
-const affiliateProducts = newProducts.length > 0 ? newProducts : legacyProducts;
+const affiliateProducts = scopedProducts ? newProducts : newProducts.length > 0 ? newProducts : legacyProducts;
 const isVisible = monetization.isAffiliate && affiliateProducts.length > 0;
 ---
 

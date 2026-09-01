@@ -138,6 +138,11 @@ type AsideBoxBlock = PortableTextObject & {
   tone?: string;
 };
 
+type AffiliateProductsBlock = PortableTextObject & {
+  _type: 'affiliateProductsBlock';
+  productKeys?: string[];
+};
+
 type EditableArticleBodyImageAsset = {
   id: string;
   url: string;
@@ -381,6 +386,20 @@ type Labels = {
   monetizationRemoveOffer: string;
   monetizationMoveUp: string;
   monetizationMoveDown: string;
+  insertAffiliateProducts: string;
+  editAffiliateProducts: string;
+  updateAffiliateProducts: string;
+  removeAffiliateProducts: string;
+  affiliateProductsMenu: string;
+  affiliateProductsRemoveConfirm: string;
+  affiliateProductsSelectLabel: string;
+  affiliateProductsEmpty: string;
+  affiliateProductsNoSelection: string;
+  affiliateProductsMissingProduct: string;
+  affiliateProductsOfferCountSingular: string;
+  affiliateProductsOfferCountPlural: string;
+  affiliateProductsBlock: string;
+  affiliateProductsBlockHeader: string;
   inspectorSeo: string;
   inspectorRelations: string;
   inspectorFeaturedImage: string;
@@ -939,6 +958,17 @@ const asideBoxBlockObjectSchema = {
   ],
 };
 
+const affiliateProductsBlockObjectSchema = {
+  name: 'affiliateProductsBlock',
+  fields: [
+    {
+      name: 'productKeys',
+      type: 'array',
+      of: [{ type: 'string' }],
+    },
+  ],
+};
+
 const schemaDefinition = defineSchema({
   decorators: [{ name: 'strong' }, { name: 'em' }],
   styles: [
@@ -956,6 +986,7 @@ const schemaDefinition = defineSchema({
     videoBlockObjectSchema,
     videoRowBlockObjectSchema,
     asideBoxBlockObjectSchema,
+    affiliateProductsBlockObjectSchema,
   ],
 });
 
@@ -1005,6 +1036,7 @@ function getObjectLabel(type: string, labels: Labels) {
   if (type === 'video') return labels.video;
   if (type === 'videoRow') return labels.videoRow;
   if (type === 'asideBox') return labels.asideBox;
+  if (type === 'affiliateProductsBlock') return labels.affiliateProductsBlock;
 
   return labels.unsupportedObject;
 }
@@ -2388,6 +2420,196 @@ function AsideBoxObjectBlock({
   );
 }
 
+function AffiliateProductsObjectBlock({
+  attributes,
+  children,
+  node,
+  path,
+  focused,
+  selected,
+  labels,
+  monetization,
+  canEditMonetization,
+  readOnly,
+}: any) {
+  const editor = useEditor();
+  const block = node as AffiliateProductsBlock;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const productKeys = getAffiliateProductsBlockKeys(block);
+  const productOptions = getAffiliateProductOptions(monetization, labels);
+  const productOptionMap = new Map(productOptions.map((product) => [product.key, product]));
+  const rows = productKeys.map((key) => ({
+    key,
+    product: productOptionMap.get(key) || null,
+  }));
+  const canManage = Boolean(canEditMonetization && !readOnly);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isMenuOpen]);
+
+  const applyAffiliateProductsUpdate = (value: Record<string, unknown>) => {
+    editor.send({
+      type: 'block.set',
+      at: path,
+      props: value,
+    });
+    editor.send({ type: 'focus' });
+    setIsModalOpen(false);
+  };
+
+  const moveAffiliateProductsBlock = (direction: 'up' | 'down') => {
+    if (!canManage) return;
+
+    editor.send({
+      type: direction === 'up' ? 'move.block up' : 'move.block down',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  const selectAffiliateProductsBlock = () => {
+    editor.send({
+      type: 'select.block',
+      at: path,
+    });
+  };
+
+  const startAffiliateProductsDrag = (event: DragEvent<HTMLElement>) => {
+    if (!canManage) return;
+
+    selectAffiliateProductsBlock();
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const openAffiliateProductsModal = () => {
+    if (!canManage) return;
+
+    setIsMenuOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const removeAffiliateProductsBlock = () => {
+    if (!canManage || !window.confirm(labels.affiliateProductsRemoveConfirm)) return;
+
+    editor.send({
+      type: 'delete.block',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <div
+      {...attributes}
+      className="editorial-pte__object editorial-pte__image-object editorial-pte__custom-object editorial-pte__affiliate-products-object"
+      data-focused={focused ? 'true' : undefined}
+      data-selected={selected ? 'true' : undefined}
+    >
+      {children}
+      <div className="editorial-pte__image-content editorial-pte__custom-content" contentEditable={false}>
+        <MediaBlockHeader
+          icon="↗"
+          title={getAffiliateProductsBlockHeaderTitle(labels, productKeys.length)}
+          menuLabel={labels.affiliateProductsMenu}
+          isMenuOpen={isMenuOpen}
+          menuRef={menuRef}
+          onToggleMenu={() => setIsMenuOpen((value) => !value)}
+        >
+          <button type="button" role="menuitem" disabled={!canManage} onClick={openAffiliateProductsModal}>
+            {labels.editAffiliateProducts}
+          </button>
+          <button type="button" role="menuitem" disabled={!canManage} onClick={() => moveAffiliateProductsBlock('up')}>
+            {labels.moveUp}
+          </button>
+          <button type="button" role="menuitem" disabled={!canManage} onClick={() => moveAffiliateProductsBlock('down')}>
+            {labels.moveDown}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="editorial-pte__image-menu-danger"
+            disabled={!canManage}
+            onClick={removeAffiliateProductsBlock}
+          >
+            {labels.removeAffiliateProducts}
+          </button>
+        </MediaBlockHeader>
+
+        <article
+          className="editorial-pte__affiliate-products-card"
+          draggable={canManage}
+          title={canManage ? labels.bodyImageDragHandle : undefined}
+          onMouseDown={selectAffiliateProductsBlock}
+          onDragStart={startAffiliateProductsDrag}
+        >
+          <span className="editorial-pte__affiliate-products-kicker">{labels.monetizationProducts}</span>
+
+          {rows.length > 0 ? (
+            <ul className="editorial-pte__affiliate-products-list">
+              {rows.map(({ key, product }) => (
+                <li
+                  key={key}
+                  className="editorial-pte__affiliate-products-item"
+                  data-missing={product ? undefined : 'true'}
+                >
+                  <strong>{product?.name || labels.affiliateProductsMissingProduct}</strong>
+                  {product ? (
+                    <span>
+                      {[product.productType, getAffiliateProductsOfferCountLabel(product.offersCount, labels)]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  ) : (
+                    <code>{key}</code>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="editorial-pte__affiliate-products-empty">{labels.affiliateProductsNoSelection}</p>
+          )}
+        </article>
+      </div>
+
+      {isModalOpen && (
+        <AffiliateProductsBlockModal
+          mode="edit"
+          labels={labels}
+          monetization={monetization}
+          initialBlock={block}
+          onApply={applyAffiliateProductsUpdate}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 function ObjectBlock({
   attributes,
   children,
@@ -2398,6 +2620,8 @@ function ObjectBlock({
   saveEndpoint,
   assetPreviewUrls,
   onAssetPreview,
+  monetization,
+  canEditMonetization,
   ...props
 }: any) {
   const type = typeof node?._type === 'string' ? node._type : '';
@@ -2475,6 +2699,21 @@ function ObjectBlock({
       >
         {children}
       </AsideBoxObjectBlock>
+    );
+  }
+
+  if (type === 'affiliateProductsBlock') {
+    return (
+      <AffiliateProductsObjectBlock
+        attributes={attributes}
+        labels={labels}
+        node={node}
+        monetization={monetization}
+        canEditMonetization={canEditMonetization}
+        {...props}
+      >
+        {children}
+      </AffiliateProductsObjectBlock>
     );
   }
 
@@ -4540,6 +4779,122 @@ function AsideBoxModal({
   );
 }
 
+function AffiliateProductsBlockModal({
+  mode,
+  labels,
+  monetization,
+  initialBlock = null,
+  onApply,
+  onClose,
+}: {
+  mode: 'insert' | 'edit';
+  labels: Labels;
+  monetization?: EditableArticleMonetization | null;
+  initialBlock?: AffiliateProductsBlock | null;
+  onApply: (value: Record<string, unknown>) => void;
+  onClose: () => void;
+}) {
+  const productOptions = useMemo(
+    () => getAffiliateProductOptions(monetization, labels),
+    [labels, monetization]
+  );
+  const productOptionMap = useMemo(
+    () => new Map(productOptions.map((product) => [product.key, product])),
+    [productOptions]
+  );
+  const [selectedKeys, setSelectedKeys] = useState<string[]>(() =>
+    getAffiliateProductsBlockKeys(initialBlock)
+  );
+  const modalTitle = mode === 'insert'
+    ? labels.insertAffiliateProducts
+    : labels.editAffiliateProducts;
+  const submitLabel = mode === 'insert'
+    ? labels.insertAffiliateProducts
+    : labels.updateAffiliateProducts;
+  const validSelectedKeys = selectedKeys.filter((key) => productOptionMap.has(key));
+  const missingSelectedKeys = selectedKeys.filter((key) => !productOptionMap.has(key));
+  const canApply = validSelectedKeys.length > 0;
+
+  const toggleProduct = (productKey: string) => {
+    setSelectedKeys((currentKeys) => {
+      if (currentKeys.includes(productKey)) {
+        return currentKeys.filter((key) => key !== productKey);
+      }
+
+      return [...currentKeys, productKey];
+    });
+  };
+
+  const applyBlock = () => {
+    if (!canApply) return;
+
+    onApply(createAffiliateProductsBlockValue(validSelectedKeys));
+  };
+
+  return (
+    <AnnotationModal
+      title={modalTitle}
+      labels={labels}
+      onClose={onClose}
+      panelClassName="editorial-pte-modal__panel--affiliate-products"
+    >
+      <div className="editorial-affiliate-products-modal">
+        {productOptions.length === 0 ? (
+          <p className="editorial-affiliate-products-modal__notice">{labels.affiliateProductsEmpty}</p>
+        ) : (
+          <fieldset className="editorial-affiliate-products-modal__fieldset">
+            <legend>{labels.affiliateProductsSelectLabel}</legend>
+
+            <div className="editorial-affiliate-products-modal__options">
+              {productOptions.map((product) => (
+                <label className="editorial-affiliate-products-modal__option" key={product.key}>
+                  <input
+                    type="checkbox"
+                    checked={selectedKeys.includes(product.key)}
+                    onChange={() => toggleProduct(product.key)}
+                  />
+                  <span>
+                    <strong>{product.name}</strong>
+                    <small>
+                      {[product.productType, getAffiliateProductsOfferCountLabel(product.offersCount, labels)]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </small>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
+
+        {missingSelectedKeys.length > 0 && (
+          <p className="editorial-affiliate-products-modal__notice" data-tone="warning">
+            {labels.affiliateProductsMissingProduct}
+          </p>
+        )}
+
+        {productOptions.length > 0 && validSelectedKeys.length === 0 && (
+          <p className="editorial-affiliate-products-modal__notice">{labels.affiliateProductsNoSelection}</p>
+        )}
+
+        <div className="editorial-body-image-modal__actions">
+          <button type="button" className="editorial-mini-button" onClick={onClose}>
+            {labels.annotationClose}
+          </button>
+          <button
+            type="button"
+            className="editorial-button editorial-body-image-modal__submit"
+            disabled={!canApply}
+            onClick={applyBlock}
+          >
+            {submitLabel}
+          </button>
+        </div>
+      </div>
+    </AnnotationModal>
+  );
+}
+
 type ToolbarMenu = 'structure' | 'text' | 'link' | 'insert' | 'document' | 'contextLink';
 type SaveMode = 'manual' | 'autosave';
 type WorkflowAction = 'submit' | 'request_changes' | 'approve';
@@ -4644,6 +4999,86 @@ function getMonetizationProductTypeLabel(type: MonetizationProductType, labels: 
   };
 
   return productTypeLabels[type];
+}
+
+type AffiliateProductOption = {
+  key: string;
+  name: string;
+  productType: string;
+  offersCount: number;
+};
+
+function getMonetizationProductKey(product: EditableArticleMonetizationProduct | null | undefined) {
+  return typeof product?._key === 'string' ? product._key.trim() : '';
+}
+
+function normalizeAffiliateProductKeys(value: unknown) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((key) => String(key || '').trim())
+    .filter(Boolean);
+}
+
+function dedupeAffiliateProductKeys(keys: string[]) {
+  const seenKeys = new Set<string>();
+  const uniqueKeys: string[] = [];
+
+  keys.forEach((key) => {
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    uniqueKeys.push(key);
+  });
+
+  return uniqueKeys;
+}
+
+function getAffiliateProductOptions(
+  monetization: EditableArticleMonetization | null | undefined,
+  labels: Labels
+): AffiliateProductOption[] {
+  if (!monetization?.isAffiliate || !Array.isArray(monetization.products)) return [];
+
+  return monetization.products
+    .map((product, index) => {
+      const key = getMonetizationProductKey(product);
+
+      if (!key) return null;
+
+      const productType = product.productType
+        ? getMonetizationProductTypeLabel(product.productType, labels)
+        : '';
+
+      return {
+        key,
+        name: product.name?.trim() || `${labels.monetizationProductTitle} ${index + 1}`,
+        productType,
+        offersCount: Array.isArray(product.offers) ? product.offers.length : 0,
+      };
+    })
+    .filter((product): product is AffiliateProductOption => Boolean(product));
+}
+
+function getAffiliateProductsBlockKeys(block: AffiliateProductsBlock | null | undefined) {
+  return dedupeAffiliateProductKeys(normalizeAffiliateProductKeys(block?.productKeys));
+}
+
+function createAffiliateProductsBlockValue(productKeys: string[]) {
+  return {
+    productKeys: dedupeAffiliateProductKeys(productKeys),
+  };
+}
+
+function getAffiliateProductsBlockHeaderTitle(labels: Labels, count: number) {
+  return count > 0
+    ? `${labels.affiliateProductsBlockHeader} (${count})`
+    : labels.affiliateProductsBlockHeader;
+}
+
+function getAffiliateProductsOfferCountLabel(count: number, labels: Labels) {
+  return count === 1
+    ? labels.affiliateProductsOfferCountSingular
+    : labels.affiliateProductsOfferCountPlural.replace('{count}', String(count));
 }
 
 function getEditableArticleSnapshot(articleDraft: EditableArticle, contentValue: PortableTextBlock[]) {
@@ -5205,6 +5640,7 @@ function Toolbar({
   saveEndpoint,
   assetPreviewUrls,
   onAssetPreview,
+  monetization = null,
   articlesHref = '',
   previewHref = '',
   status = '',
@@ -5232,6 +5668,7 @@ function Toolbar({
   saveEndpoint: string;
   assetPreviewUrls: Record<string, string>;
   onAssetPreview: (assetId: string, url: string) => void;
+  monetization?: EditableArticleMonetization | null;
   articlesHref?: string;
   previewHref?: string;
   status?: string;
@@ -5293,6 +5730,10 @@ function Toolbar({
     selection: EditorSelection;
     trigger: HTMLButtonElement | null;
   } | null>(null);
+  const [affiliateProductsModal, setAffiliateProductsModal] = useState<{
+    selection: EditorSelection;
+    trigger: HTMLButtonElement | null;
+  } | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const contextualToolbarRef = useRef<HTMLDivElement | null>(null);
   const contextualLinkTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -5320,7 +5761,8 @@ function Toolbar({
     !imageRowModal &&
     !videoModal &&
     !videoRowModal &&
-    !asideBoxModal
+    !asideBoxModal &&
+    !affiliateProductsModal
   );
 
   useEffect(() => {
@@ -5744,6 +6186,22 @@ function Toolbar({
       trigger?.focus();
     }, 0);
   };
+  const openAffiliateProductsModal = (trigger: HTMLButtonElement) => {
+    if (!isBodyToolbar || !capabilities?.canEditMonetization) return;
+
+    setAffiliateProductsModal({
+      selection,
+      trigger,
+    });
+  };
+  const closeAffiliateProductsModal = () => {
+    const trigger = affiliateProductsModal?.trigger;
+    setAffiliateProductsModal(null);
+
+    window.setTimeout(() => {
+      trigger?.focus();
+    }, 0);
+  };
   const insertImageBlock = (value: Record<string, unknown>) => {
     if (!imageModal) return;
 
@@ -5819,6 +6277,21 @@ function Toolbar({
     editor.send({ type: 'focus' });
     setAsideBoxModal(null);
   };
+  const insertAffiliateProductsBlock = (value: Record<string, unknown>) => {
+    if (!affiliateProductsModal || !isBodyToolbar || !capabilities?.canEditMonetization) return;
+
+    restoreSelection(affiliateProductsModal.selection);
+    editor.send({
+      type: 'insert.block object',
+      placement: 'after',
+      blockObject: {
+        name: 'affiliateProductsBlock',
+        value,
+      },
+    });
+    editor.send({ type: 'focus' });
+    setAffiliateProductsModal(null);
+  };
   const insertMenuLabels = language === 'en'
     ? {
       image: 'Image',
@@ -5826,6 +6299,7 @@ function Toolbar({
       video: 'Video',
       videoRow: 'Video series',
       asideBox: 'Info box',
+      affiliateProducts: 'Affiliate products',
     }
     : {
       image: 'Immagine',
@@ -5833,6 +6307,7 @@ function Toolbar({
       video: 'Video',
       videoRow: 'Serie video',
       asideBox: 'Box informativo',
+      affiliateProducts: 'Prodotti affiliati',
     };
   const contextualLinkMenuPanel = (
     openMenu === 'contextLink' &&
@@ -6269,6 +6744,20 @@ function Toolbar({
               >
                 {insertMenuLabels.asideBox}
               </button>
+              {capabilities?.canEditMonetization && (
+                <button
+                  className="editorial-pte-toolbar__menu-item"
+                  type="button"
+                  role="menuitem"
+                  aria-expanded={Boolean(affiliateProductsModal)}
+                  title={insertMenuLabels.affiliateProducts}
+                  disabled={isLocked}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={(event) => runToolbarAction(() => openAffiliateProductsModal(event.currentTarget))}
+                >
+                  {insertMenuLabels.affiliateProducts}
+                </button>
+              )}
             </>
           )}
         </div>
@@ -6452,6 +6941,15 @@ function Toolbar({
           onAssetPreview={onAssetPreview}
           onApply={insertAsideBoxBlock}
           onClose={closeAsideBoxModal}
+        />
+      )}
+      {affiliateProductsModal && isBodyToolbar && (
+        <AffiliateProductsBlockModal
+          mode="insert"
+          labels={labels}
+          monetization={monetization}
+          onApply={insertAffiliateProductsBlock}
+          onClose={closeAffiliateProductsModal}
         />
       )}
     </div>
@@ -7646,8 +8144,33 @@ export default function ArticlePortableTextEditor({
           />
         ),
       }),
+      defineBlockObject({
+        type: 'affiliateProductsBlock',
+        render: (props) => (
+          <ObjectBlock
+            {...props}
+            labels={labels}
+            language={draft.language}
+            currentArticleId={getRootArticleId(draft._id)}
+            saveEndpoint={saveEndpoint}
+            assetPreviewUrls={bodyImagePreviewUrls}
+            onAssetPreview={rememberBodyImagePreview}
+            monetization={draft.monetization}
+            canEditMonetization={capabilities.canEditMonetization}
+          />
+        ),
+      }),
     ],
-    [bodyImagePreviewUrls, draft._id, draft.language, labels, rememberBodyImagePreview, saveEndpoint]
+    [
+      bodyImagePreviewUrls,
+      capabilities.canEditMonetization,
+      draft._id,
+      draft.language,
+      draft.monetization,
+      labels,
+      rememberBodyImagePreview,
+      saveEndpoint,
+    ]
   );
   const mediaFormatSelectOptions = useMemo<MultiSelectOption<MediaFormat>[]>(
     () => mediaFormatOptions.map((format) => ({
@@ -9182,6 +9705,7 @@ export default function ArticlePortableTextEditor({
               saveEndpoint={saveEndpoint}
               assetPreviewUrls={bodyImagePreviewUrls}
               onAssetPreview={rememberBodyImagePreview}
+              monetization={draft.monetization}
               articlesHref={articlesHref}
               previewHref={previewHref}
               status={status}

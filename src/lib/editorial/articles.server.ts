@@ -987,6 +987,20 @@ function normalizeAsideBox(block: Record<string, unknown>) {
   };
 }
 
+function normalizeAffiliateProductsBlock(block: Record<string, unknown>) {
+  const productKeys = Array.isArray(block.productKeys)
+    ? block.productKeys
+        .map((key) => normalizeString(key, 120).trim())
+        .filter(Boolean)
+    : [];
+
+  return {
+    _key: normalizeKey(block._key),
+    _type: 'affiliateProductsBlock',
+    productKeys,
+  };
+}
+
 function normalizePortableTextBlock(value: unknown, isAsideContent = false): Record<string, unknown> {
   if (!isPlainObject(value)) {
     throw new Error('invalid_content_block');
@@ -1016,6 +1030,10 @@ function normalizePortableTextBlock(value: unknown, isAsideContent = false): Rec
 
   if (!isAsideContent && value._type === 'asideBox') {
     return normalizeAsideBox(value);
+  }
+
+  if (!isAsideContent && value._type === 'affiliateProductsBlock') {
+    return normalizeAffiliateProductsBlock(value);
   }
 
   throw new Error('unsupported_content_block');
@@ -1089,6 +1107,73 @@ async function validatePortableTextAnnotationReferences(content: PortableTextBlo
 
     if (!isDocumentValidForReferenceConfig(documentMap.get(reference.id), config)) {
       throw new Error(`invalid_${reference.annotationType}`);
+    }
+  }
+}
+
+function getAffiliateProductsBlockKeys(block: Record<string, unknown>) {
+  return Array.isArray(block.productKeys)
+    ? block.productKeys
+        .map((key) => normalizeString(key, 120).trim())
+        .filter(Boolean)
+    : [];
+}
+
+function getAffiliateProductsBlockSignature(content: PortableTextBlock[]) {
+  return JSON.stringify(
+    content
+      .filter((block) => isPlainObject(block) && block._type === 'affiliateProductsBlock')
+      .map((block) => ({
+        _key: normalizeString(block._key, 120).trim(),
+        productKeys: getAffiliateProductsBlockKeys(block),
+      }))
+  );
+}
+
+function hasAffiliateProductsBlockChanged(
+  currentContent: PortableTextBlock[],
+  nextContent: PortableTextBlock[]
+) {
+  return getAffiliateProductsBlockSignature(currentContent) !==
+    getAffiliateProductsBlockSignature(nextContent);
+}
+
+function validateAffiliateProductsBlocks(
+  content: PortableTextBlock[],
+  monetization: EditorialArticleMonetization | null
+) {
+  const affiliateBlocks = content.filter(
+    (block) => isPlainObject(block) && block._type === 'affiliateProductsBlock'
+  );
+
+  if (affiliateBlocks.length === 0) return;
+
+  const availableProductKeys = new Set(
+    (monetization?.products || [])
+      .map((product) => normalizeString(product._key, 120).trim())
+      .filter(Boolean)
+  );
+
+  if (!monetization?.isAffiliate || availableProductKeys.size === 0) {
+    throw new Error('invalid_affiliate_products_block_products');
+  }
+
+  for (const block of affiliateBlocks) {
+    const productKeys = getAffiliateProductsBlockKeys(block);
+    const uniqueProductKeys = new Set(productKeys);
+
+    if (productKeys.length === 0) {
+      throw new Error('invalid_affiliate_products_block');
+    }
+
+    if (uniqueProductKeys.size !== productKeys.length) {
+      throw new Error('invalid_affiliate_products_block_duplicate');
+    }
+
+    for (const productKey of productKeys) {
+      if (!availableProductKeys.has(productKey)) {
+        throw new Error('invalid_affiliate_products_block_product');
+      }
     }
   }
 }
@@ -3303,8 +3388,11 @@ async function getPatchFromPayload(
       pushUnset('featuredUntil');
     }
   }
+  let nextMonetization = currentArticle.monetization;
+
   if (Object.prototype.hasOwnProperty.call(payload, 'monetization')) {
     const monetization = validateMonetization(payload.monetization);
+    nextMonetization = monetization as EditorialArticleMonetization | null;
 
     if (monetization) {
       set.monetization = monetization;
@@ -3312,6 +3400,8 @@ async function getPatchFromPayload(
       pushUnset('monetization');
     }
   }
+  validateAffiliateProductsBlocks(nextContent, nextMonetization);
+
   const reviewPatch = getReviewPatchFields(payload, {
     includeReviewData: !removeReviewSpecificData,
   });
@@ -3636,6 +3726,18 @@ export async function updateEditableEditorialArticle({
     Object.prototype.hasOwnProperty.call(payload, 'monetization')
   ) {
     return { ok: false as const, status: 403, error: 'article_monetization_forbidden' };
+  }
+
+  if (!context.permissions.canPublishArticle) {
+    try {
+      const nextContent = normalizePortableTextContent(payload.content);
+
+      if (hasAffiliateProductsBlockChanged(fetchResult.article.content, nextContent)) {
+        return { ok: false as const, status: 403, error: 'article_monetization_forbidden' };
+      }
+    } catch {
+      // Invalid content is reported by the normal payload validation path below.
+    }
   }
 
   let patch;

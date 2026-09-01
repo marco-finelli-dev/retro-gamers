@@ -9,9 +9,11 @@ import { getRgAffiliateProviderFromUrl } from '../../lib/analytics/client';
 import { urlFor } from '../../lib/image';
 import { getYouTubeVideoId } from '../../lib/youtube-video';
 import ConsentYouTube from '../common/ConsentYouTube.astro';
+import ArticleAffiliateBox from './ArticleAffiliateBox.astro';
 
 const {
   content = [],
+  post = null,
   lang = 'it',
   isPreview = false,
   articleSlug = '',
@@ -491,6 +493,35 @@ function chunkBalanced(images = []) {
 
   return rows;
 }
+
+function getAffiliateProductsBlockKeys(block) {
+  if (block?._type !== 'affiliateProductsBlock' || !Array.isArray(block.productKeys)) return [];
+
+  return Array.from(
+    new Set(
+      block.productKeys
+        .map((key) => String(key || '').trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+function getAffiliateProductsForBlock(block, articlePost) {
+  if (!articlePost?.monetization?.isAffiliate) return [];
+
+  const products = Array.isArray(articlePost.monetization.products)
+    ? articlePost.monetization.products
+    : [];
+  const productsByKey = new Map(
+    products
+      .map((product) => [String(product?._key || '').trim(), product])
+      .filter(([key]) => Boolean(key))
+  );
+
+  return getAffiliateProductsBlockKeys(block)
+    .map((key) => productsByKey.get(key))
+    .filter(Boolean);
+}
 ---
 
 <div class="article-content">
@@ -714,6 +745,14 @@ function chunkBalanced(images = []) {
           )}
         </div>
       );
+    }
+
+    if (block._type === 'affiliateProductsBlock') {
+      const affiliateProducts = getAffiliateProductsForBlock(block, post);
+
+      if (affiliateProducts.length === 0) return null;
+
+      return <ArticleAffiliateBox post={post} products={affiliateProducts} />;
     }
 
     if (block._type === 'asideBox') {

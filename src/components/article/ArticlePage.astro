@@ -82,6 +82,20 @@ const articleAnalyticsCategorySlug =
   articleAnalyticsContentType;
 const articleAnalyticsSlug = getAnalyticsToken(getSlug(post?.slug));
 const articleAnalyticsAuthorSlug = getAnalyticsToken(getSlug(post?.author?.slug));
+const getAffiliateProductsBlockKeys = (block) => {
+  if (block?._type !== 'affiliateProductsBlock' || !Array.isArray(block.productKeys)) return [];
+
+  return Array.from(
+    new Set(
+      block.productKeys
+        .map((key) => String(key || '').trim())
+        .filter(Boolean)
+    )
+  );
+};
+const hasManualAffiliatePlacement = Array.isArray(post?.content)
+  ? post.content.some((block) => getAffiliateProductsBlockKeys(block).length > 0)
+  : false;
 
 const articlePageClass = [
   'article-page',
@@ -186,10 +200,11 @@ const commentsDiscovery = currentLang === 'en'
   </aside>
 )}
 
-      <ArticleAffiliateBox post={post} />
+      {!hasManualAffiliatePlacement && <ArticleAffiliateBox post={post} />}
 
       <ArticleContent
         content={post.content}
+        post={post}
         lang={currentLang}
         isPreview={isPreview}
         articleSlug={articleAnalyticsSlug}
