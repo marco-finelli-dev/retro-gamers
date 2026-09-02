@@ -2579,7 +2579,7 @@ function AffiliateProductsObjectBlock({
                 >
                   <strong>{product?.name || labels.affiliateProductsMissingProduct}</strong>
                   {product ? (
-                    <span>
+                    <span className="editorial-pte__affiliate-products-meta">
                       {[product.productType, getAffiliateProductsOfferCountLabel(product.offersCount, labels)]
                         .filter(Boolean)
                         .join(' · ')}
