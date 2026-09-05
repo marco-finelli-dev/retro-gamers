@@ -4959,12 +4959,13 @@ export async function getPublishedArticleQuickEditAction({
     }
 
     if (resolved.lifecycle === 'published') {
+      // Opening the editor is read-only; the first save creates the revision draft.
       return {
         articleId: ownership.sanityDocumentId,
         editUrl,
-        revisionEndpoint: `/api/editor/articles/${encodeURIComponent(ownership.sanityDocumentId)}/revision`,
+        revisionEndpoint: null,
         adoptEndpoint: null,
-        mode: 'create_revision',
+        mode: 'edit',
       };
     }
   } catch (error) {

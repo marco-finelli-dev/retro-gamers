@@ -106,9 +106,6 @@ const copy = isEnglish
       translationCreated: 'English translation created.',
       translationAlreadyExists: 'An English translation already exists.',
       translationGenericError: 'The English translation could not be created.',
-      revisionCreating: 'Opening revision draft…',
-      revisionCreated: 'Revision draft ready.',
-      revisionGenericError: 'The revision draft could not be created.',
     }
   : {
       pageTitle: 'Editor articoli | Retro-Gamers.it',
@@ -190,9 +187,6 @@ const copy = isEnglish
       translationCreated: 'Traduzione inglese creata.',
       translationAlreadyExists: 'Esiste già una traduzione inglese.',
       translationGenericError: 'Non è stato possibile creare la traduzione inglese.',
-      revisionCreating: 'Apertura bozza di revisione…',
-      revisionCreated: 'Bozza di revisione pronta.',
-      revisionGenericError: 'Non è stato possibile creare la bozza di revisione.',
     };
 
 const newArticleHref = isEnglish ? '/en/account/editor/articles/new/' : '/account/editor/articles/new/';
@@ -531,7 +525,7 @@ const visibleOwnTypeOptions = Array.from(
               const canApprove = isReviewQueueItem && item.workflowPermissions?.canApprove;
               const showPublishPlaceholder =
                 isReviewQueueItem && item.workflowStatus === 'approved' && access.context.permissions.canPublishArticle;
-              const href = canEdit || canOpenPublishedRevision
+              const href = canEdit || canCreatePublishedRevision || canOpenPublishedRevision
                 ? getEditorialArticleEditPath(item.sanityDocumentId, currentLang)
                 : getEditorialArticlePreviewPath(item.sanityDocumentId, currentLang);
               const actionLabel = canCreatePublishedRevision || canOpenPublishedRevision
@@ -631,18 +625,7 @@ const visibleOwnTypeOptions = Array.from(
                           data-editorial-article-menu-panel
                           hidden
                         >
-                          {canCreatePublishedRevision ? (
-                            <button
-                              type="button"
-                              role="menuitem"
-                              data-editorial-revision-action
-                              data-endpoint={`/api/editor/articles/${encodeURIComponent(item.sanityDocumentId)}/revision`}
-                            >
-                              {actionLabel}
-                            </button>
-                          ) : (
-                            <a href={href} role="menuitem">{actionLabel}</a>
-                          )}
+                          <a href={href} role="menuitem">{actionLabel}</a>
                           {canCreateEnglishTranslation && (
                             <button
                               type="button"
@@ -704,10 +687,6 @@ const visibleOwnTypeOptions = Array.from(
   translationCreated: copy.translationCreated,
   translationAlreadyExists: copy.translationAlreadyExists,
   translationGenericError: copy.translationGenericError,
-  revisionCreating: copy.revisionCreating,
-  revisionCreated: copy.revisionCreated,
-  revisionGenericError: copy.revisionGenericError,
-  editorialUiLanguage: currentLang,
   articleCountSingular: copy.articleCountSingular,
   articleCountPlural: copy.articleCountPlural,
 }}>
@@ -717,7 +696,6 @@ const visibleOwnTypeOptions = Array.from(
   const articleMenuTriggers = document.querySelectorAll('[data-editorial-article-menu-trigger]');
   const workflowButtons = document.querySelectorAll('[data-editorial-workflow-action]');
   const translationButtons = document.querySelectorAll('[data-editorial-translation-action]');
-  const revisionButtons = document.querySelectorAll('[data-editorial-revision-action]');
   const articleFilterForm = document.querySelector('[data-editorial-article-filters]');
   const articleItems = document.querySelector('[data-editorial-article-items]');
   const articleCards = Array.from(document.querySelectorAll('[data-editorial-article]'));
@@ -1066,43 +1044,4 @@ const visibleOwnTypeOptions = Array.from(
     });
   });
 
-  revisionButtons.forEach((button) => {
-    button.addEventListener('click', async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const endpoint = button.getAttribute('data-endpoint') || '';
-
-      if (!endpoint || !(button instanceof HTMLButtonElement) || button.disabled) return;
-      closeArticleMenus();
-
-      const originalText = button.textContent || '';
-      button.setAttribute('disabled', 'disabled');
-      button.textContent = revisionCreating;
-      setDashboardStatus(revisionCreating);
-
-      try {
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({ uiLanguage: editorialUiLanguage }),
-        });
-        const result = await response.json().catch(() => null);
-        const editUrl = typeof result?.editUrl === 'string' ? result.editUrl.trim() : '';
-
-        if (!response.ok || !result?.ok || !editUrl) {
-          throw new Error(result?.error || 'revision_failed');
-        }
-
-        setDashboardStatus(revisionCreated, 'success');
-        window.location.assign(editUrl);
-      } catch {
-        button.removeAttribute('disabled');
-        button.textContent = originalText;
-        setDashboardStatus(revisionGenericError, 'error');
-      }
-    });
-  });
 </script>

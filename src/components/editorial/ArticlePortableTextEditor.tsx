@@ -9529,7 +9529,9 @@ export default function ArticlePortableTextEditor({
   };
 
   useEffect(() => {
-    if (!hasUnsavedChanges) {
+    // A published snapshot stays local until an explicit save starts its revision.
+    // Existing drafts and saved revisions retain the normal autosave behavior.
+    if (!hasUnsavedChanges || draft.documentSource === 'published') {
       lastAutosaveAttemptSignatureRef.current = '';
       return undefined;
     }
@@ -9544,7 +9546,7 @@ export default function ArticlePortableTextEditor({
     }, AUTOSAVE_IDLE_DELAY_MS);
 
     return () => window.clearTimeout(timerId);
-  }, [autosaveSignature, hasUnsavedChanges, isSaving]);
+  }, [autosaveSignature, draft.documentSource, hasUnsavedChanges, isSaving]);
 
   useEffect(() => {
     if (!hasUnsavedChanges) return undefined;
