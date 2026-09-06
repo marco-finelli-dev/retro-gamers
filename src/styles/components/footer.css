@@ -136,12 +136,25 @@
 }
 
 .site-footer__logo img {
+  display: block;
   width: 178px;
   height: auto;
 
   filter:
     drop-shadow(0 10px 22px rgba(0,0,0,0.52))
     drop-shadow(0 0 16px rgba(34,240,255,0.10));
+}
+
+.site-footer__logo .site-footer__logo-light {
+  display: none;
+}
+
+html[data-theme="light"] .site-footer__logo .site-footer__logo-dark {
+  display: none;
+}
+
+html[data-theme="light"] .site-footer__logo .site-footer__logo-light {
+  display: block;
 }
 
 .site-footer__brand p {
@@ -442,8 +455,6 @@ html[data-theme="light"] .site-footer__inner::after {
 
 html[data-theme="light"] .site-footer__logo img {
   filter:
-    contrast(1.14)
-    saturate(1.14)
     drop-shadow(0 1px 1px rgba(255,255,255,0.58))
     drop-shadow(0 4px 6px rgba(24,32,48,0.26))
     drop-shadow(0 14px 28px rgba(8,104,122,0.14));
@@ -451,8 +462,6 @@ html[data-theme="light"] .site-footer__logo img {
 
 html[data-theme="light"] .site-footer__logo:hover img {
   filter:
-    contrast(1.18)
-    saturate(1.18)
     drop-shadow(0 1px 1px rgba(255,255,255,0.60))
     drop-shadow(0 5px 8px rgba(24,32,48,0.30))
     drop-shadow(0 16px 32px rgba(8,104,122,0.18));
