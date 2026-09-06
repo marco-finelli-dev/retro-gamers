@@ -5,6 +5,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import CommunityHero from './CommunityHero.astro';
 import CommunityLayout from './CommunityLayout.astro';
 import CommunitySurveyForm from './CommunitySurveyForm.astro';
+import { urlFor } from '../../lib/image';
 import {
   getCommunitySurveyAvailability,
   getCommunitySurveyResponseState,
@@ -89,6 +90,16 @@ const alternateLanguages = [
     : []),
 ];
 const pageDescription = survey.description || copy.defaultDescription;
+const surveyImage = survey.cardImage?.asset
+  ? urlFor(survey.cardImage)
+      .width(1200)
+      .height(630)
+      .fit('crop')
+      .quality(78)
+      .auto('format')
+      .url()
+  : '';
+const pageImage = surveyImage || '/og-image.jpg';
 ---
 
 <BaseLayout
@@ -96,7 +107,7 @@ const pageDescription = survey.description || copy.defaultDescription;
   news={headerNews}
   title={survey.title}
   description={pageDescription}
-  image="/og-image.jpg"
+  image={pageImage}
   canonical={canonicalUrl}
   lang={currentLang}
   languageSwitch={translatedPath || copy.languageFallback}
