@@ -1045,3 +1045,249 @@ html[data-theme="light"] .rg-hero-main img.review-badge--hero {
     display: none;
   }
 }
+
+/* Homepage light: photographic lead, editorial copy, then three secondary stories. */
+.rg-hero .rg-hero__light-heading {
+  display: none;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero__dark-heading {
+  display: none;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero__light-heading {
+  display: inline;
+}
+
+html[data-theme="light"] .section-box.rg-hero {
+  border-radius: 18px;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero__signal strong,
+html[data-theme="light"] .rg-hero .rg-hero__top p {
+  font-size: 15px;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-side-card {
+  border-radius: 12px;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero__grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-lg);
+}
+
+html[data-theme="light"] .rg-hero :is(.rg-hero-main, .rg-hero-side-card) {
+  min-height: 0;
+  background: transparent;
+  border-color: rgba(9,37,71,0.10);
+  box-shadow: none;
+  transform: none;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  border-radius: 16px;
+  background: #F7F1E5;
+}
+
+html[data-theme="light"] .rg-hero :is(.rg-hero-main, .rg-hero-side-card)::before {
+  content: none;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-main__chrome {
+  display: none;
+}
+
+html[data-theme="light"] .rg-hero :is(.rg-hero-main, .rg-hero-side-card) img {
+  position: static;
+  inset: auto;
+  transform: none;
+  filter: none;
+}
+
+html[data-theme="light"] .rg-hero :is(.rg-hero-main, .rg-hero-side-card) > img:not(.review-badge--hero) {
+  filter: brightness(.87);
+  transition: filter 200ms ease;
+}
+
+html[data-theme="light"] .rg-hero :is(.rg-hero-main, .rg-hero-side-card):is(:hover, :focus-visible) > img:not(.review-badge--hero) {
+  filter: brightness(1);
+  transform: none;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-main > img:not(.review-badge--hero) {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-main img.review-badge--hero {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: auto;
+  height: auto;
+}
+
+html[data-theme="light"] .rg-hero :is(.rg-hero-main__content, .rg-hero-side-card__content) {
+  position: static;
+  min-width: 0;
+  max-width: none;
+  padding: var(--space-lg);
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-main__content {
+  align-self: center;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-main:not(:has(> img:not(.review-badge--hero))) .rg-hero-main__content {
+  grid-column: 1 / -1;
+}
+
+html[data-theme="light"] .rg-hero :is(.rg-hero-main h2, .rg-hero-side-card h3) {
+  color: #092547;
+  text-shadow: none;
+  overflow-wrap: anywhere;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-main h2 {
+  font-size: clamp(27px, 2.5vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.6px;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-main p {
+  display: block;
+  color: rgba(9,37,71,0.76);
+  text-shadow: none;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero__meta :is(span, small) {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: #092547;
+  box-shadow: none;
+  white-space: normal;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero__meta > :not(:first-child)::before {
+  content: "·";
+  margin-right: 7px;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero__cta {
+  display: inline-flex;
+  margin-top: var(--space-md);
+  padding: 0 0 4px;
+  border: 0;
+  border-bottom: 1px solid rgba(9,37,71,0.30);
+  border-radius: 0;
+  color: #092547;
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero__cta::after {
+  color: inherit;
+  transition: transform 200ms ease;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-main:is(:hover, :focus-visible) .rg-hero__cta {
+  background: none;
+  color: #092547;
+  border-bottom-color: rgba(9,37,71,0.65);
+  box-shadow: none;
+  transform: none;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-main:is(:hover, :focus-visible) .rg-hero__cta::after {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="light"] .rg-hero :is(.rg-hero-main, .rg-hero-side-card) > img:not(.review-badge--hero),
+  html[data-theme="light"] .rg-hero .rg-hero__cta::after {
+    transition: none;
+  }
+
+  html[data-theme="light"] .rg-hero .rg-hero-main:is(:hover, :focus-visible) .rg-hero__cta::after {
+    transform: none;
+  }
+}
+
+html[data-theme="light"] .rg-hero :is(.rg-hero-main, .rg-hero-side-card):hover {
+  border-color: rgba(9,37,71,0.28);
+}
+
+html[data-theme="light"] .rg-hero :is(.rg-hero-main, .rg-hero-side-card):focus-visible {
+  outline: 2px solid #092547;
+  outline-offset: 3px;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-side-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: none;
+  gap: var(--space-md);
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-side-card img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-side-card__content {
+  padding: var(--space-md);
+}
+
+html[data-theme="light"] .rg-hero .rg-hero-side-card h3 {
+  display: block;
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+@media (max-width: 1024px) {
+  html[data-theme="light"] .rg-hero .rg-hero-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html[data-theme="light"] .rg-hero .rg-hero-main > img:not(.review-badge--hero) {
+    height: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  html[data-theme="light"] .rg-hero .rg-hero-main__content {
+    padding: var(--space-md);
+  }
+
+  html[data-theme="light"] .rg-hero .rg-hero-main h2 {
+    font-size: 25px;
+  }
+
+  html[data-theme="light"] .rg-hero .rg-hero-main p {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    font-size: 14px;
+  }
+
+  html[data-theme="light"] .rg-hero .rg-hero-side-list {
+    gap: 12px;
+    padding: 4px;
+  }
+
+  html[data-theme="light"] .rg-hero .rg-hero-side-card h3 {
+    font-size: 16px;
+  }
+}

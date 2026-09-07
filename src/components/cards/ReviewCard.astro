@@ -19,7 +19,7 @@ const getScoreClass = (score) => {
   return 'is-low';
 };
 
-const getImage = (post, width = 520, height = 325) => {
+const getImage = (post, width = 520, height = 390) => {
   if (!post?.featuredImage?.asset) return '/og-image.jpg';
 
   return urlFor(post.featuredImage)
@@ -88,10 +88,10 @@ const metaItems = [
 
   <div class="rg-review-card__image">
     <img
-      src={getImage(post, 520, 325)}
+      src={getImage(post, 520, 390)}
       alt={post.featuredImage?.alt || post.title}
       width="520"
-      height="325"
+      height="390"
       loading="lazy"
       decoding="async"
     />

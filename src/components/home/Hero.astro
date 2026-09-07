@@ -14,6 +14,9 @@ const labels = {
   intro: isEn
     ? 'Arcade, consoles, home computers and digital memories.'
     : 'Arcade, console, home computer e memorie digitali.',
+  magazineIntro: isEn
+    ? 'Stories, games, platforms and people that shaped video game history.'
+    : 'Racconti, giochi, piattaforme e persone che hanno fatto la storia dei videogiochi.',
   readArticle: isEn ? 'Read the article' : 'Leggi l’articolo'
 };
 
@@ -83,9 +86,9 @@ const getImage = (image, width = 960, height = null) => {
 
 const getMainImageSrcSet = (image) =>
   [
-    [760, 456],
-    [960, 576],
-    [1200, 720]
+    [760, 570],
+    [960, 720],
+    [1200, 900]
   ]
     .map(([width, height]) => `${getImage(image, width, height)} ${width}w`)
     .join(', ');
@@ -105,11 +108,12 @@ const getCommentLabel = (count) => {
 
   <div class="rg-hero__top">
     <div class="rg-hero__signal">
-      <span>{labels.featured}</span>
-      <strong>{labels.magazine}</strong>
+      <span class="rg-hero__dark-heading">{labels.featured}</span>
+      <strong class="rg-hero__dark-heading">{labels.magazine}</strong>
+      <strong class="rg-hero__light-heading">Retro-Gamers Magazine</strong>
     </div>
 
-    <p>{labels.intro}</p>
+    <p><span class="rg-hero__dark-heading">{labels.intro}</span><span class="rg-hero__light-heading">{labels.magazineIntro}</span></p>
   </div>
 
   <div class="rg-hero__grid">
@@ -119,12 +123,12 @@ const getCommentLabel = (count) => {
 
         {main.featuredImage?.asset && (
           <img
-            src={getImage(main.featuredImage, 1200, 720)}
+            src={getImage(main.featuredImage, 1200, 900)}
             srcset={getMainImageSrcSet(main.featuredImage)}
             sizes="(max-width: 768px) calc(100vw - 68px), (max-width: 1024px) calc(100vw - 100px), 790px"
             alt={main.featuredImage?.alt || main.title}
             width="1200"
-            height="720"
+            height="900"
             loading="eager"
             fetchpriority="high"
             decoding="async"
@@ -186,10 +190,10 @@ const getCommentLabel = (count) => {
 
             {post.featuredImage?.asset && (
               <img
-                src={getImage(post.featuredImage, 520, 292)}
+                src={getImage(post.featuredImage, 520, 390)}
                 alt={post.featuredImage?.alt || post.title}
                 width="520"
-                height="292"
+                height="390"
                 loading="lazy"
                 decoding="async"
               />

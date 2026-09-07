@@ -8,6 +8,7 @@
 */
 
 
+
 /* ========================================
    BOX
 ======================================== */
@@ -969,5 +970,116 @@ html[data-theme="light"] .rg-review-card:hover .rg-platform-badge {
       brightness(0.98)
       contrast(1.03)
       saturate(1.04);
+  }
+}
+
+/* Homepage light: the approved Ivory / Navy magazine treatment. */
+html[data-theme="light"] .home-reviews .rg-reviews {
+  background: var(--rg-magazine-surface);
+  border-color: var(--rg-magazine-border);
+  border-radius: var(--rg-magazine-shell-radius);
+  box-shadow: var(--rg-magazine-shadow);
+}
+
+html[data-theme="light"] .home-reviews :is(.rg-reviews, .rg-review-card)::before,
+html[data-theme="light"] .home-reviews .rg-review-card__image::after {
+  content: none;
+}
+
+html[data-theme="light"] .home-reviews :is(.rg-reviews h2, .rg-review-card h3, .rg-reviews__link, .rg-review-card__meta, .rg-card-meta-inline) {
+  color: var(--rg-magazine-navy);
+  text-shadow: none;
+}
+
+html[data-theme="light"] .home-reviews .rg-reviews h2::after {
+  background: var(--rg-magazine-border-hover);
+  box-shadow: none;
+}
+
+html[data-theme="light"] .home-reviews .rg-reviews__title p {
+  color: color-mix(in srgb, var(--rg-magazine-navy) 76%, transparent);
+}
+
+html[data-theme="light"] .home-reviews .rg-review-card {
+  height: auto;
+  min-height: 335px;
+  background: var(--rg-magazine-surface);
+  border-color: var(--rg-magazine-border);
+  border-radius: var(--rg-magazine-card-radius);
+  box-shadow: none;
+  transform: none;
+  transition: border-color var(--rg-magazine-transition);
+}
+
+html[data-theme="light"] .home-reviews .rg-review-card:hover {
+  border-color: var(--rg-magazine-border-hover);
+}
+
+html[data-theme="light"] .home-reviews .rg-review-card__image {
+  flex-shrink: 0;
+  aspect-ratio: 4 / 3;
+  background: var(--rg-magazine-ivory);
+  border-color: var(--rg-magazine-border);
+  border-radius: var(--rg-magazine-card-radius);
+  box-shadow: none;
+}
+
+html[data-theme="light"] .home-reviews .rg-review-card__image > img:not(.rg-review-card__badge) {
+  object-fit: cover;
+  transform: none;
+  filter: brightness(var(--rg-magazine-image-brightness));
+  transition: filter var(--rg-magazine-transition);
+}
+
+html[data-theme="light"] .home-reviews .rg-review-card:is(:hover, :focus-visible) .rg-review-card__image > img:not(.rg-review-card__badge) {
+  filter: brightness(1);
+}
+
+html[data-theme="light"] .home-reviews .rg-review-card :is(.rg-score, .rg-platform-badge) {
+  background: var(--rg-magazine-ivory);
+  border-color: var(--rg-magazine-border);
+  border-radius: var(--rg-magazine-card-radius);
+  box-shadow: none;
+  backdrop-filter: none;
+  transform: none;
+}
+
+html[data-theme="light"] .home-reviews :is(.rg-score, .rg-platform-badge) :is(span, small) {
+  color: var(--rg-magazine-navy);
+  text-shadow: none;
+}
+
+html[data-theme="light"] .home-reviews .rg-reviews__link {
+  border-bottom: 1px solid var(--rg-magazine-border-hover);
+  transition: border-color var(--rg-magazine-transition);
+}
+
+html[data-theme="light"] .home-reviews .rg-reviews__link::after {
+  color: inherit;
+  transition: transform var(--rg-magazine-transition);
+}
+
+html[data-theme="light"] .home-reviews .rg-reviews__link:is(:hover, :focus-visible) {
+  border-bottom-color: var(--rg-magazine-navy);
+}
+
+html[data-theme="light"] .home-reviews .rg-reviews__link:is(:hover, :focus-visible)::after {
+  transform: translateX(3px);
+}
+
+html[data-theme="light"] .home-reviews :is(.rg-review-card, .rg-reviews__link):focus-visible {
+  outline: 2px solid var(--rg-magazine-navy);
+  outline-offset: -3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="light"] .home-reviews :is(.rg-review-card, .rg-reviews__link),
+  html[data-theme="light"] .home-reviews .rg-review-card__image > img:not(.rg-review-card__badge),
+  html[data-theme="light"] .home-reviews .rg-reviews__link::after {
+    transition: none;
+  }
+
+  html[data-theme="light"] .home-reviews .rg-reviews__link:is(:hover, :focus-visible)::after {
+    transform: none;
   }
 }

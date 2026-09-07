@@ -1,3 +1,66 @@
+/* First brand experiment: homepage light only; keep shared tokens and geometry intact. */
+html[data-theme="light"]:has(main > .home-hero) {
+  background: #F7F1E5;
+}
+
+html[data-theme="light"]:has(main > .home-hero) body {
+  background: #F7F1E5;
+}
+
+html[data-theme="light"]:has(main > .home-hero) .home-hero::before,
+html[data-theme="light"]:has(main > .home-hero) .home-hero::after,
+html[data-theme="light"]:has(main > .home-hero) .site-header::before,
+html[data-theme="light"]:has(main > .home-hero) .site-header::after,
+html[data-theme="light"]:has(main > .home-hero) .section-box.rg-hero::before,
+html[data-theme="light"]:has(main > .home-hero) .section-box.rg-hero::after {
+  content: none;
+}
+
+html[data-theme="light"]:has(main > .home-hero) .site-header {
+  background: rgba(247,241,229,0.96);
+  border-bottom-color: rgba(9,37,71,0.10);
+  box-shadow: none;
+}
+
+html[data-theme="light"]:has(main > .home-hero) .site-header__nav-link,
+html[data-theme="light"]:has(main > .home-hero) .site-header__nav-button {
+  color: #092547;
+  text-shadow: none;
+}
+
+html[data-theme="light"]:has(main > .home-hero) .site-header__nav-link::before {
+  background: #092547;
+  box-shadow: none;
+}
+
+html[data-theme="light"]:has(main > .home-hero) .site-header__nav-button:focus-visible {
+  outline-color: #092547;
+}
+
+html[data-theme="light"]:has(main > .home-hero) .section-box.rg-hero {
+  background: #FFFDF8;
+  border-color: rgba(9,37,71,0.10);
+  box-shadow: 0 12px 36px rgba(9,37,71,0.06);
+}
+
+html[data-theme="light"]:has(main > .home-hero) .rg-hero__ambient {
+  display: none;
+}
+
+html[data-theme="light"]:has(main > .home-hero) .rg-hero__top {
+  border-bottom-color: rgba(9,37,71,0.10);
+}
+
+html[data-theme="light"]:has(main > .home-hero) .rg-hero__signal span,
+html[data-theme="light"]:has(main > .home-hero) .rg-hero__signal strong {
+  color: #092547;
+  text-shadow: none;
+}
+
+html[data-theme="light"]:has(main > .home-hero) .rg-hero__top p {
+  color: rgba(9,37,71,0.70);
+}
+
 /* ========================================
    HOME PAGE
 ======================================== */
