@@ -1,0 +1,32 @@
+/* Shared editorial heading pattern for redesigned homepage modules. */
+.rg-home-module-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--rg-space-4);
+  margin-bottom: var(--rg-space-8);
+}
+
+.rg-home-module-heading::after {
+  flex: 1 1 auto;
+  min-width: var(--rg-space-3);
+  height: 2px;
+  background: var(--rg-module-heading-rule);
+  content: "";
+}
+
+.rg-home-module-heading h2 {
+  flex: 0 1 auto;
+  margin: 0;
+  color: var(--rg-module-heading-ink);
+  font-family: var(--font-base);
+  font-size: var(--rg-type-card);
+  font-weight: var(--rg-weight-bold);
+  line-height: 1.2;
+  letter-spacing: normal;
+}
+
+@media (max-width: 640px) {
+  .rg-home-module-heading {
+    margin-bottom: var(--rg-space-6);
+  }
+}

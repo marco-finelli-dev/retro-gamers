@@ -1,23 +1,14 @@
 ---
 import { urlFor } from '../../lib/image';
-import { getFormatLabel } from '../../lib/formatLabels';
 import { getPostUrl } from '../../lib/routes';
-import { formatReviewScore, getReviewRibbonBadge } from '../../lib/reviewBadges';
-import CommentCountBadge from '../common/CommentCountBadge.astro';
+import ReviewScoreRing from '../reviews/ReviewScoreRing.astro';
 
-const { post, lang = 'it' } = Astro.props;
+const { post, lang = 'it', variant = 'compact' } = Astro.props;
 
 const isEn = lang === 'en';
+const isFeature = variant === 'feature';
 
 if (!post) return;
-
-const getScore = (post) => post.rating?.overall ?? post.score ?? 0;
-
-const getScoreClass = (score) => {
-  if (score >= 9) return 'is-top';
-  if (score >= 7) return 'is-good';
-  return 'is-low';
-};
 
 const getImage = (post, width = 520, height = 390) => {
   if (!post?.featuredImage?.asset) return '/og-image.jpg';
@@ -31,10 +22,6 @@ const getImage = (post, width = 520, height = 390) => {
     .url();
 };
 
-const platform = post.platforms?.[0]?.name || '';
-const developer = post.developers?.[0]?.name || '';
-const year = post.gameInfo?.releaseYear || '';
-
 const getTaxonomyLabel = (item) => {
   if (!item) return '';
 
@@ -43,66 +30,61 @@ const getTaxonomyLabel = (item) => {
     : item.name;
 };
 
-const genres =
-  post.genres
-    ?.map((genre) => getTaxonomyLabel(genre))
-    .filter(Boolean) || [];
+const platforms = (post.platforms || [])
+  .map((platform) => getTaxonomyLabel(platform))
+  .filter(Boolean);
+const platformLabel = platforms.join(' - ');
+const reviewLabel = isEn ? 'Review' : 'Recensione';
+const rating = Number(post.rating?.overall);
+const isEditorsChoice = Number.isFinite(rating) && rating >= 9;
+const showEditorsChoice = true;
 
-const genreBadges = genres.slice(0, 1).map((genre) => ({
-  label: genre,
-  title: genre
-}));
+const cleanText = (value) =>
+  typeof value === 'string'
+    ? value.replace(/\[…\]/g, '').trim()
+    : '';
 
-const platformBadge =
-  post.platforms?.[0]?.badgeLabel ||
-  post.platforms?.[0]?.platformType?.toUpperCase() ||
-  '';
+const excerpt =
+  cleanText(post.cardExcerpt) ||
+  cleanText(post.excerpt) ||
+  cleanText(post.subtitle);
 
-const rawMediaFormat = Array.isArray(post.gameInfo?.mediaFormat)
-  ? post.gameInfo.mediaFormat[0]
-  : post.gameInfo?.mediaFormat;
-
-const mediaFormat =
-  getFormatLabel(rawMediaFormat, lang, { variant: 'compact' }) ||
-  post.platforms?.[0]?.platformType?.toUpperCase() ||
-  'SYSTEM';
-
-const score = getScore(post);
-const reviewBadge = getReviewRibbonBadge(score, lang);
-
-const metaItems = [
-  platform,
-  developer,
-  year
-].filter(Boolean);
+const imageWidth = isFeature ? 840 : 520;
+const imageHeight = isFeature ? 630 : 390;
 
 ---
 
-<a href={getPostUrl(post)} class="rg-review-card">
-
-  {metaItems.length > 0 && (
-    <div class="rg-review-card__meta">
-      {metaItems.join(' · ')}
-    </div>
-  )}
+<a
+  href={getPostUrl(post)}
+  class:list={['rg-review-card', `rg-review-card--${isFeature ? 'feature' : 'compact'}`]}
+>
 
   <div class="rg-review-card__image">
     <img
-      src={getImage(post, 520, 390)}
+      src={getImage(post, imageWidth, imageHeight)}
       alt={post.featuredImage?.alt || post.title}
-      width="520"
-      height="390"
+      width={imageWidth}
+      height={imageHeight}
       loading="lazy"
       decoding="async"
     />
 
-    {reviewBadge && (
+    <ReviewScoreRing
+      score={post.rating?.overall}
+      lang={lang}
+      size={isFeature ? 'feature' : 'compact'}
+    />
+
+    {showEditorsChoice && isEditorsChoice && (
       <img
-        src={reviewBadge.src}
-        alt={reviewBadge.alt}
-        class={`rg-review-card__badge review-ribbon-badge review-badge--home review-badge--${reviewBadge.key}`}
-        width="240"
-        height="81"
+        src="/images/badges/editor-choice-compact-ivory.svg"
+        alt="Editor's Choice"
+        class:list={[
+          'rg-review-card__editor-choice',
+          `rg-review-card__editor-choice--${isFeature ? 'feature' : 'compact'}`
+        ]}
+        width="922"
+        height="312"
         loading="lazy"
         decoding="async"
       />
@@ -110,29 +92,20 @@ const metaItems = [
   </div>
 
   <div class="rg-review-card__body">
-    <div class="rg-card-meta-inline">
-      <span>{genreBadges[0]?.label || (isEn ? 'Review' : 'Recensione')}</span>
-      <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
+    <div class="rg-review-card__kicker">
+      <span class="rg-review-card__type">{reviewLabel}</span>
+
+      {platformLabel && (
+        <>
+          <span class="rg-review-card__separator" aria-hidden="true">·</span>
+          <span class="rg-review-card__system" title={platformLabel}>{platformLabel}</span>
+        </>
+      )}
     </div>
 
     <h3>{post.title}</h3>
-  </div>
 
-  <div class="rg-review-card__footer">
-
-    {score ? (
-      <div class={`rg-score ${getScoreClass(score)}`}>
-        <span>{formatReviewScore(score)}</span>
-      </div>
-    ) : null}
-
-    {platformBadge && (
-      <div class="rg-platform-badge" title={`${platform} · ${mediaFormat}`}>
-        <span>{platformBadge}</span>
-        <small>{mediaFormat}</small>
-      </div>
-    )}
-
+    {excerpt && <p>{excerpt}</p>}
   </div>
 
 </a>

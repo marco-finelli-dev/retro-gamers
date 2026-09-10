@@ -1,0 +1,45 @@
+---
+import { formatReviewScore } from '../../lib/reviewBadges';
+
+const { score, lang = 'it', size = 'compact' } = Astro.props;
+
+const numericScore = Number(score);
+const isValidScore =
+  score !== null &&
+  score !== undefined &&
+  Number.isFinite(numericScore) &&
+  numericScore >= 1 &&
+  numericScore <= 10 &&
+  Number.isInteger(numericScore * 2);
+
+if (!isValidScore) return;
+
+const radius = 19;
+const formattedScore = formatReviewScore(numericScore);
+const accessibleScore = lang === 'en'
+  ? formattedScore
+  : formattedScore.replace('.', ',');
+const accessibleLabel = lang === 'en'
+  ? `Editorial score: ${accessibleScore} out of 10`
+  : `Voto editoriale: ${accessibleScore} su 10`;
+---
+
+<span
+  class:list={['rg-review-score', `rg-review-score--${size === 'feature' ? 'feature' : 'compact'}`]}
+  role="img"
+  aria-label={accessibleLabel}
+>
+  <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+    <circle class="rg-review-score__track" cx="24" cy="24" r={radius} />
+    <circle
+      class="rg-review-score__progress"
+      cx="24"
+      cy="24"
+      r={radius}
+      pathLength="100"
+      stroke-dasharray="100"
+      stroke-dashoffset={100 - numericScore * 10}
+    />
+  </svg>
+  <span class="rg-review-score__value" aria-hidden="true">{formattedScore}</span>
+</span>

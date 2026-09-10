@@ -140,6 +140,7 @@ html[data-theme="light"] {
 ======================================== */
 
 .home-hero,
+.home-stories,
 .home-reviews,
 .home-editorial,
 .home-community,
@@ -239,7 +240,6 @@ html[data-theme="light"] .home-hero::after {
 }
 
 /* profondità morbida tra sezioni, senza rettangoli visibili */
-.home-reviews::before,
 .home-editorial::before,
 .home-latest::before {
   content: "";
@@ -273,7 +273,6 @@ html[data-theme="light"] .home-hero::after {
   pointer-events: none;
 }
 
-html[data-theme="light"] .home-reviews::before,
 html[data-theme="light"] .home-editorial::before,
 html[data-theme="light"] .home-latest::before {
   opacity: 0;
@@ -285,10 +284,11 @@ html[data-theme="light"] .home-latest::before {
 ======================================== */
 
 .home-hero {
-  padding: 48px 0 36px;
+  padding: var(--rg-space-16) 0 var(--rg-space-6);
 }
 
 .home-reviews,
+.home-stories,
 .home-editorial,
 .home-community,
 .home-play-today-section,
@@ -298,6 +298,15 @@ html[data-theme="light"] .home-latest::before {
 .home-hardware,
 .home-latest {
   padding: 38px 0;
+}
+
+.home-stories,
+.home-reviews {
+  padding-block: var(--rg-space-8);
+}
+
+.home-stories {
+  padding-top: var(--rg-space-4);
 }
 
 /* ritmo subito dopo la hero */
@@ -1592,7 +1601,16 @@ html:not([data-theme="light"]) .home-community-strip::after {
 
 @media (max-width: 768px) {
   .home-hero {
-    padding: 28px 0 28px;
+    padding: var(--rg-space-8) 0 var(--rg-space-6);
+  }
+
+  .home-stories,
+  .home-reviews {
+    padding-block: var(--rg-space-6);
+  }
+
+  .home-stories {
+    padding-top: var(--rg-space-2);
   }
 
   .home-reviews,
@@ -1806,7 +1824,6 @@ html:not([data-theme="light"]) .home-community-strip::after {
   Niente hover sul box principale: l'interazione vive sulle card interne.
 */
 
-html[data-theme="light"] .rg-reviews,
 html[data-theme="light"] .editorial-hub,
 html[data-theme="light"] .home-community-strip,
 html[data-theme="light"] .home-play-today,
@@ -1818,7 +1835,6 @@ html[data-theme="light"] .rg-latest {
 }
 
 /* neutralizza eventuali hover ereditati sui contenitori principali */
-html[data-theme="light"] .rg-reviews:hover,
 html[data-theme="light"] .editorial-hub:hover,
 html[data-theme="light"] .home-community-strip:hover,
 html[data-theme="light"] .home-play-today:hover,
@@ -1830,7 +1846,6 @@ html[data-theme="light"] .rg-latest:hover {
 }
 
 /* nessun riflesso superiore sui box: in light creava una fascia visibile */
-html[data-theme="light"] .rg-reviews::after,
 html[data-theme="light"] .editorial-hub::after,
 html[data-theme="light"] .home-play-today::after,
 html[data-theme="light"] .archive-strip::after,

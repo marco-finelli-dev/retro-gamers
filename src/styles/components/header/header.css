@@ -1,5 +1,5 @@
 /* ========================================
-   SITE HEADER — APPLE GLASS / RETRO PREMIUM
+   SITE HEADER
 ======================================== */
 
 @import './mobile-nav.css';
@@ -8,135 +8,31 @@
    SHELL
 ======================================== */
 
-.site-header {
+.site-header,
+html[data-theme] body header.site-header.site-header {
+  --site-header-surface: #092547;
+  --site-header-ink: #F7F1E5;
+
   position: sticky;
   top: 0;
   z-index: 100;
   isolation: auto;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(15,17,25,0.58),
-      rgba(8,10,16,0.42)
-    ),
-    radial-gradient(circle at 18% 0%, rgba(34,240,255,0.12), transparent 34%),
-    radial-gradient(circle at 78% 0%, rgba(168,85,247,0.11), transparent 38%);
-
-  backdrop-filter:
-    blur(28px)
-    saturate(180%)
-    contrast(1.08);
-
-  -webkit-backdrop-filter:
-    blur(28px)
-    saturate(180%)
-    contrast(1.08);
-
-  border-bottom: 1px solid rgba(255,255,255,0.075);
-
-  box-shadow:
-    0 14px 36px rgba(0,0,0,0.50),
-    inset 0 1px 0 rgba(255,255,255,0.055);
+  background: var(--site-header-surface);
+  border-bottom: 1px solid color-mix(in srgb, var(--site-header-ink) 12%, transparent);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-html[data-theme="light"] .site-header {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255,255,255,0.78),
-      rgba(244,246,251,0.58)
-    ),
-    radial-gradient(circle at 18% 0%, rgba(0,142,163,0.12), transparent 34%),
-    radial-gradient(circle at 78% 0%, rgba(124,58,237,0.10), transparent 38%);
-
-  border-bottom: 1px solid rgba(18,24,38,0.10);
-
-  box-shadow:
-    0 12px 34px rgba(24,32,48,0.13),
-    inset 0 1px 0 rgba(255,255,255,0.78);
+html[data-theme="light"] body header.site-header.site-header {
+  --site-header-surface: #F7F1E5;
+  --site-header-ink: #092547;
 }
 
-/* riflessi morbidi tipo liquid glass */
-.site-header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-
-  background:
-    radial-gradient(circle at 22% 20%, rgba(255,255,255,0.10), transparent 18%),
-    radial-gradient(circle at 62% 0%, rgba(34,240,255,0.10), transparent 24%),
-    radial-gradient(circle at 82% 36%, rgba(168,85,247,0.09), transparent 22%),
-    linear-gradient(
-      120deg,
-      rgba(255,255,255,0.075),
-      rgba(255,255,255,0.018) 42%,
-      transparent 68%
-    );
-
-  opacity: 0.78;
-  mix-blend-mode: soft-light;
-
-  pointer-events: none;
-}
-
-html[data-theme="light"] .site-header::before {
-  background:
-    radial-gradient(circle at 22% 20%, rgba(255,255,255,0.74), transparent 18%),
-    radial-gradient(circle at 62% 0%, rgba(0,142,163,0.09), transparent 24%),
-    radial-gradient(circle at 82% 36%, rgba(124,58,237,0.08), transparent 22%),
-    linear-gradient(
-      120deg,
-      rgba(255,255,255,0.62),
-      rgba(255,255,255,0.18) 42%,
-      transparent 68%
-    );
-
-  opacity: 0.84;
-  mix-blend-mode: normal;
-}
-
-/* bordo neon inferiore, molto sottile */
+.site-header::before,
 .site-header::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  z-index: 0;
-
-  height: 1px;
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(34,240,255,0.34),
-      rgba(168,85,247,0.26),
-      transparent
-    );
-
-  box-shadow:
-    0 0 18px rgba(34,240,255,0.12),
-    0 0 28px rgba(168,85,247,0.10);
-
-  pointer-events: none;
-}
-
-html[data-theme="light"] .site-header::after {
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(0,142,163,0.28),
-      rgba(124,58,237,0.20),
-      transparent
-    );
-
-  box-shadow:
-    0 0 14px rgba(0,142,163,0.08),
-    0 0 22px rgba(124,58,237,0.06);
+  content: none;
 }
 
 
@@ -150,10 +46,10 @@ html[data-theme="light"] .site-header::after {
 
   width: 100%;
   max-width: var(--layout-wide);
-  min-height: 78px;
+  min-height: 68px;
 
   margin: 0 auto;
-  padding: 14px var(--space-md);
+  padding: 8px var(--space-md);
 
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -170,7 +66,7 @@ html[data-theme="light"] .site-header::after {
   display: inline-flex;
   align-items: center;
 
-  width: 224px;
+  width: 172px;
   max-width: 100%;
   min-width: 0;
 
@@ -181,21 +77,16 @@ html[data-theme="light"] .site-header::after {
 }
 
 .site-header__logo:hover {
-  transform: translateY(-1px);
-
-  filter:
-    drop-shadow(0 0 12px rgba(34,240,255,0.22))
-    drop-shadow(0 0 18px rgba(168,85,247,0.12));
+  transform: none;
+  filter: none;
 }
 
 html[data-theme="light"] .site-header__logo:hover {
-  filter:
-    drop-shadow(0 0 10px rgba(0,142,163,0.18))
-    drop-shadow(0 0 16px rgba(124,58,237,0.10));
+  filter: none;
 }
 
 .site-header__logo img {
-  aspect-ratio: 294.74 / 57.379;
+  aspect-ratio: 223.229 / 57.378;
   display: block;
   width: 100%;
   height: auto;
@@ -1026,8 +917,8 @@ html[data-theme="light"] .site-header__account-group button:focus-visible {
   }
 
   .site-header__logo {
-    width: 128px;
-    min-width: 128px;
+    width: 98px;
+    min-width: 98px;
   }
 
   .site-header__nav {
@@ -1058,115 +949,6 @@ html[data-theme="light"] .site-header__account-group button:focus-visible {
   .site-header__account-link {
     display: none;
   }
-}
-
-/* ========================================
-   SITE HEADER — LIGHT FINAL TUNING
-======================================== */
-
-html[data-theme="light"] .site-header {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(242,246,251,0.76),
-      rgba(226,234,245,0.62)
-    ),
-    radial-gradient(circle at 18% 0%, rgba(8,124,142,0.085), transparent 34%),
-    radial-gradient(circle at 78% 0%, rgba(102,81,184,0.060), transparent 38%);
-
-  border-bottom-color: var(--rg-panel-border);
-
-  box-shadow:
-    0 12px 28px rgba(24,32,48,0.12),
-    inset 0 1px 0 rgba(255,255,255,0.56);
-}
-
-html[data-theme="light"] .site-header::before {
-  background:
-    radial-gradient(circle at 22% 20%, rgba(255,255,255,0.42), transparent 18%),
-    radial-gradient(circle at 62% 0%, rgba(8,124,142,0.070), transparent 24%),
-    radial-gradient(circle at 82% 36%, rgba(102,81,184,0.055), transparent 22%),
-    linear-gradient(
-      120deg,
-      rgba(255,255,255,0.34),
-      rgba(255,255,255,0.10) 42%,
-      transparent 68%
-    );
-
-  opacity: 0.68;
-}
-
-html[data-theme="light"] .site-header::after {
-  height: 2px;
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(18,24,38,0.00) 0%,
-      rgba(18,24,38,0.10) 10%,
-      rgba(8,124,142,0.42) 28%,
-      rgba(102,81,184,0.30) 62%,
-      rgba(18,24,38,0.10) 90%,
-      rgba(18,24,38,0.00) 100%
-    );
-
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.72),
-    0 8px 22px rgba(24,32,48,0.14),
-    0 0 14px rgba(8,124,142,0.08);
-}
-
-html[data-theme="light"] .site-header__nav-link,
-html[data-theme="light"] .site-header__nav-button {
-  color: rgba(22,24,36,0.64);
-}
-
-html[data-theme="light"] .site-header__nav-link:hover,
-html[data-theme="light"] .site-header__nav-item:hover > .site-header__nav-link,
-html[data-theme="light"] .site-header__nav-item:hover > .site-header__nav-button,
-html[data-theme="light"] .site-header__nav-item.is-open > .site-header__nav-link,
-html[data-theme="light"] .site-header__nav-item.is-open > .site-header__nav-button,
-html[data-theme="light"] .site-header__nav-button:hover {
-  color: rgba(22,24,36,0.92);
-  text-shadow: none;
-}
-
-html[data-theme="light"] .site-header::after {
-  height: 1px;
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(18,24,38,0.00) 0%,
-      rgba(18,24,38,0.12) 10%,
-      rgba(8,124,142,0.36) 30%,
-      rgba(102,81,184,0.24) 64%,
-      rgba(18,24,38,0.12) 90%,
-      rgba(18,24,38,0.00) 100%
-    );
-
-  box-shadow:
-    0 10px 24px rgba(24,32,48,0.12),
-    0 0 10px rgba(8,124,142,0.06);
-}
-
-
-/* ========================================
-   HEADER LOGO — LIGHT BOOST
-======================================== */
-
-html[data-theme="light"] .site-header__logo img {
-  filter:
-    drop-shadow(0 1px 1px rgba(255,255,255,0.55))
-    drop-shadow(0 3px 5px rgba(24,32,48,0.24))
-    drop-shadow(0 10px 22px rgba(8,104,122,0.12));
-}
-
-html[data-theme="light"] .site-header__logo:hover img {
-  filter:
-    drop-shadow(0 1px 1px rgba(255,255,255,0.58))
-    drop-shadow(0 4px 7px rgba(24,32,48,0.28))
-    drop-shadow(0 12px 26px rgba(8,104,122,0.16));
 }
 
 /* ========================================
@@ -1231,4 +1013,32 @@ html[data-theme="light"] .site-header__theme-toggle:hover {
   background: var(--rg-badge-bg);
 
   box-shadow: var(--rg-card-hover-shadow);
+}
+
+/* Search remains a quiet, structural action inside the solid header. */
+html[data-theme] .site-header .search-toggle,
+html[data-theme] .site-header .search-toggle:hover {
+  color: #F7F1E5;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+html[data-theme] .site-header .search-toggle svg,
+html[data-theme] .site-header .search-toggle:hover svg {
+  filter: none;
+  transform: none;
+}
+
+html[data-theme] .site-header .search-toggle:focus-visible {
+  outline-color: #36BA81;
+}
+
+html[data-theme="light"] .site-header .search-toggle,
+html[data-theme="light"] .site-header .search-toggle:hover {
+  color: #092547;
+}
+
+html[data-theme="light"] .site-header .search-toggle:focus-visible {
+  outline-color: #005F8E;
 }

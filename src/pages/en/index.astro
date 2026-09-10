@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
 import Hero from '../../components/home/Hero.astro';
+import Stories from '../../components/home/Stories.astro';
 import Latest from '../../components/home/Latest.astro';
 import Reviews from '../../components/home/Reviews.astro';
 import EditorialHub from '../../components/home/EditorialHub.astro';
@@ -134,7 +135,7 @@ if (featuredPost) {
   }
 }
 
-const remainingHeroSlots = Math.max(0, 4 - hero.length);
+const remainingHeroSlots = Math.max(0, 5 - hero.length);
 
 if (remainingHeroSlots > 0) {
     hero.push(...takeUnused(
@@ -145,17 +146,7 @@ if (remainingHeroSlots > 0) {
 }
 
 const reviewsSource = englishPosts
-  .filter((post) => post.type === 'review')
-  .sort((a, b) => {
-    const scoreDiff = (b.score || 0) - (a.score || 0);
-
-    if (scoreDiff !== 0) return scoreDiff;
-
-    return (
-      new Date(b.publishedAt || 0).getTime() -
-      new Date(a.publishedAt || 0).getTime()
-    );
-  });
+  .filter((post) => post.type === 'review');
 
 const reviews = takeUnused(reviewsSource, 6, {
   requireImage: true
@@ -185,6 +176,18 @@ const interviews = takeUnused(
   englishPosts.filter((post) => post.type === 'interview'),
   3
 );
+
+const storyCandidates = [
+  specials[0],
+  memories[0],
+  interviews[0],
+  ...specials.slice(1),
+  ...memories.slice(1),
+  ...interviews.slice(1)
+];
+const stories = storyCandidates
+  .filter((post) => Boolean(post?.featuredImage?.asset?.url))
+  .slice(0, 4);
 
 const archive = takeArchivePosts(englishPosts, 4);
 
@@ -267,9 +270,15 @@ const alternateLanguages = [
     </div>
   </section>
 
+  <section class="home-stories">
+    <div class="container">
+      <Stories posts={stories} lang="en" />
+    </div>
+  </section>
+
   <section class="home-reviews">
     <div class="container">
-      <Reviews posts={withCommentCounts(reviews)} lang="en" />
+      <Reviews posts={withCommentCounts(reviews)} news={news} guides={guides} quizzes={quizzes} lang="en" />
     </div>
   </section>
 

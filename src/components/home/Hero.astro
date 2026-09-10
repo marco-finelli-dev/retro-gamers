@@ -8,20 +8,8 @@ const { posts = [], lang = 'it' } = Astro.props;
 
 const isEn = lang === 'en';
 
-const labels = {
-  featured: isEn ? 'Featured' : 'In evidenza',
-  magazine: isEn ? 'Retro-Gamers International' : 'Retro-Gamers Magazine',
-  intro: isEn
-    ? 'Arcade, consoles, home computers and digital memories.'
-    : 'Arcade, console, home computer e memorie digitali.',
-  magazineIntro: isEn
-    ? 'Stories, games, platforms and people that shaped video game history.'
-    : 'Racconti, giochi, piattaforme e persone che hanno fatto la storia dei videogiochi.',
-  readArticle: isEn ? 'Read the article' : 'Leggi l’articolo'
-};
-
 const [main, ...rest] = posts || [];
-const side = rest.slice(0, 3);
+const side = rest.slice(0, 4);
 const mainReviewBadge = getReviewBadge(main?.rating?.overall ?? main?.score, lang);
 
 const cleanText = (value) =>
@@ -102,52 +90,39 @@ const getCommentLabel = (count) => {
 };
 ---
 
-<div class="section-box rg-hero">
-
-  <div class="rg-hero__ambient" aria-hidden="true"></div>
-
-  <div class="rg-hero__top">
-    <div class="rg-hero__signal">
-      <span class="rg-hero__dark-heading">{labels.featured}</span>
-      <strong class="rg-hero__dark-heading">{labels.magazine}</strong>
-      <strong class="rg-hero__light-heading">Retro-Gamers Magazine</strong>
-    </div>
-
-    <p><span class="rg-hero__dark-heading">{labels.intro}</span><span class="rg-hero__light-heading">{labels.magazineIntro}</span></p>
-  </div>
-
+<div class="rg-hero">
   <div class="rg-hero__grid">
 
     {main && (
       <a href={getPostUrl(main)} class="rg-hero-main">
 
         {main.featuredImage?.asset && (
-          <img
-            src={getImage(main.featuredImage, 1200, 900)}
-            srcset={getMainImageSrcSet(main.featuredImage)}
-            sizes="(max-width: 768px) calc(100vw - 68px), (max-width: 1024px) calc(100vw - 100px), 790px"
-            alt={main.featuredImage?.alt || main.title}
-            width="1200"
-            height="900"
-            loading="eager"
-            fetchpriority="high"
-            decoding="async"
-          />
-        )}
+          <div class="rg-hero-main__visual">
+            <img
+              src={getImage(main.featuredImage, 1200, 900)}
+              srcset={getMainImageSrcSet(main.featuredImage)}
+              sizes="(max-width: 768px) calc(100vw - 68px), (max-width: 960px) calc(100vw - 100px), 62vw"
+              alt={main.featuredImage?.alt || main.title}
+              width="1200"
+              height="900"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+            />
 
-        {mainReviewBadge && (
-          <img
-            src={mainReviewBadge.src}
-            alt={mainReviewBadge.alt}
-            class={`review-badge review-badge--hero review-badge--${mainReviewBadge.key}`}
-            width="1024"
-            height="1024"
-            loading="eager"
-            decoding="async"
-          />
+            {mainReviewBadge && (
+              <img
+                src={mainReviewBadge.src}
+                alt={mainReviewBadge.alt}
+                class={`review-badge review-badge--hero review-badge--${mainReviewBadge.key}`}
+                width="1024"
+                height="1024"
+                loading="eager"
+                decoding="async"
+              />
+            )}
+          </div>
         )}
-
-        <div class="rg-hero-main__chrome" aria-hidden="true"></div>
 
         <div class="rg-hero-main__content">
 
@@ -172,31 +147,36 @@ const getCommentLabel = (count) => {
             <p>{getExcerpt(main)}</p>
           )}
 
-          <span class="rg-hero__cta">
-            {labels.readArticle}
-          </span>
-
         </div>
 
       </a>
     )}
 
     <div class="rg-hero-side-list">
-      {side.map((post) => {
+      {side.map((post, index) => {
         const cat = getCategory(post);
+        const isLead = index === 0;
 
         return (
-          <a href={getPostUrl(post)} class="rg-hero-side-card">
+          <a
+            href={getPostUrl(post)}
+            class:list={[
+              'rg-hero-side-card',
+              isLead ? 'rg-hero-side-card--lead' : 'rg-hero-side-card--compact'
+            ]}
+          >
 
             {post.featuredImage?.asset && (
-              <img
-                src={getImage(post.featuredImage, 520, 390)}
-                alt={post.featuredImage?.alt || post.title}
-                width="520"
-                height="390"
-                loading="lazy"
-                decoding="async"
-              />
+              <div class="rg-hero-side-card__visual">
+                <img
+                  src={getImage(post.featuredImage, isLead ? 640 : 320, isLead ? 480 : 240)}
+                  alt={post.featuredImage?.alt || post.title}
+                  width={isLead ? 640 : 320}
+                  height={isLead ? 480 : 240}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
             )}
 
             <div class="rg-hero-side-card__content">

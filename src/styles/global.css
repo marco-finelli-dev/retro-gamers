@@ -3,14 +3,90 @@
 ========================= */
 
 @font-face {
-  font-family: 'Inter';
-  src: url('/fonts/inter-variable.woff2') format('woff2');
-  font-weight: 300 950;
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans-latin-ext-variable.woff2') format('woff2-variations');
+  font-weight: 300 700;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans-latin-variable.woff2') format('woff2-variations');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 :root {
+  /* =========================================
+     RG DESIGN SYSTEM / VISUAL CONSTITUTION
+  ========================================= */
+  --rg-color-navy: #092547;
+  --rg-color-ivory: #F7F1E5;
+  --rg-color-gold: #E8BA46;
+  --rg-color-green: #36BA81;
+  --rg-color-teal: #005F8E;
+  --rg-color-coral: #EA4E47;
+  --rg-color-ink: var(--rg-color-ivory);
+  --rg-color-muted: color-mix(in srgb, var(--rg-color-ivory) 70%, transparent);
+  --rg-color-border: color-mix(in srgb, var(--rg-color-ivory) 17%, transparent);
+  --rg-color-surface: color-mix(in srgb, var(--rg-color-navy) 84%, var(--rg-color-ivory));
+  --rg-color-hover: var(--rg-color-green);
+
+  --rg-font-family: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --rg-weight-regular: 400;
+  --rg-weight-medium: 500;
+  --rg-weight-semibold: 600;
+  --rg-weight-bold: 700;
+  --rg-type-meta: 11px;
+  --rg-type-ui-small: 14px;
+  --rg-type-body: 16px;
+  --rg-type-card-small: 18px;
+  --rg-type-card: 22px;
+  --rg-type-section: clamp(26px, 2vw, 30px);
+  --rg-type-panel: 22px;
+  --rg-type-feature: clamp(34px, 3.25vw, 50px);
+  --rg-type-page-title: clamp(38px, 4vw, 52px);
+  --rg-leading-body: 1.6;
+
+  --rg-space-1: 4px;
+  --rg-space-2: 8px;
+  --rg-space-3: 12px;
+  --rg-space-4: 16px;
+  --rg-space-6: 24px;
+  --rg-space-8: 32px;
+  --rg-space-12: 48px;
+  --rg-space-16: 64px;
+  --rg-space-20: 80px;
+  --rg-space-24: 96px;
+  --rg-gap-micro: var(--rg-space-1);
+  --rg-gap-inline: var(--rg-space-2);
+  --rg-gap-card: var(--rg-space-4);
+  --rg-gap-module: var(--rg-space-6);
+  --rg-padding-section: var(--rg-space-8);
+  --rg-spacing-section: var(--rg-space-20);
+
+  --rg-layout-editorial-max: 1200px;
+  --rg-layout-gutter-desktop: 32px;
+  --rg-layout-gutter-tablet: 24px;
+  --rg-layout-gutter-mobile: 18px;
+
+  --rg-radius-small: 9px;
+  --rg-radius-medium: 12px;
+  --rg-radius-accent: 34px;
+  --rg-profile-neutral: var(--rg-radius-medium);
+  --rg-profile-feature-right: var(--rg-radius-medium) var(--rg-radius-medium) var(--rg-radius-accent) var(--rg-radius-medium);
+  --rg-profile-feature-left: var(--rg-radius-medium) var(--rg-radius-medium) var(--rg-radius-medium) var(--rg-radius-accent);
+
+  --rg-duration-fast: 140ms;
+  --rg-duration-media: 160ms;
+  --rg-ease-standard: ease;
+  --rg-focus-ring: 2px solid var(--rg-color-green);
+  --rg-focus-offset: 3px;
+
   /* Approved magazine values, adopted progressively without changing legacy UI. */
   --rg-magazine-ivory: #F7F1E5;
   --rg-magazine-navy: #092547;
@@ -22,6 +98,9 @@
   --rg-magazine-card-radius: 12px;
   --rg-magazine-image-brightness: .87;
   --rg-magazine-transition: 200ms ease;
+  --rg-shell-canvas: #0B1422;
+  --rg-shell-paper: #111C2B;
+  --rg-shell-surface: var(--color-surface-2);
 
   /* ======================
      BACKGROUND
@@ -175,14 +254,14 @@
   /* ======================
      TYPOGRAPHY
   ====================== */
-  --font-base: 'Inter', system-ui, sans-serif;
-  --font-display: 'Orbitron', sans-serif;
+  --font-base: var(--rg-font-family);
+  --font-display: var(--rg-font-family);
 
   --text-xs: 12px;
   --text-sm: 13px;
-  --text-base: 16px;
-  --text-lg: 18px;
-  --text-xl: 22px;
+  --text-base: var(--rg-type-body);
+  --text-lg: var(--rg-type-card-small);
+  --text-xl: var(--rg-type-card);
   --text-2xl: 28px;
   --text-3xl: 42px;
 
@@ -211,7 +290,7 @@
   /* ======================
      LAYOUT
   ====================== */
-  --layout-wide: 1200px;
+  --layout-wide: var(--rg-layout-editorial-max);
   --header-gap: 8px;
 }
 
@@ -228,7 +307,7 @@
 
   font-size: 10px;
   line-height: 1;
-  font-weight: 820;
+  font-weight: var(--rg-weight-semibold);
 
   letter-spacing: 0;
 
@@ -261,7 +340,7 @@
   color: var(--color-primary);
 
   font-size: 0.66rem;
-  font-weight: 950;
+  font-weight: var(--rg-weight-bold);
   letter-spacing: 0;
   line-height: 1;
 
@@ -296,7 +375,7 @@
   box-shadow: none;
   color: var(--home-section-eyebrow-color, var(--color-primary));
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--rg-weight-semibold);
   text-shadow: none;
 }
 
@@ -329,7 +408,7 @@
   color: var(--home-section-eyebrow-color);
   font-size: 10px;
   line-height: 1;
-  font-weight: var(--home-section-eyebrow-weight, 850);
+  font-weight: var(--home-section-eyebrow-weight, var(--rg-weight-semibold));
   letter-spacing: var(--home-section-eyebrow-letter-spacing, 0.08em);
   text-transform: uppercase;
 }
@@ -367,6 +446,14 @@
 ========================= */
 
 html[data-theme="light"] {
+  --rg-color-ink: var(--rg-color-navy);
+  --rg-color-muted: color-mix(in srgb, var(--rg-color-navy) 70%, transparent);
+  --rg-color-border: color-mix(in srgb, var(--rg-color-navy) 18%, transparent);
+  --rg-color-surface: var(--rg-color-ivory);
+  --rg-color-hover: var(--rg-color-teal);
+  --rg-shell-canvas: #ECE4D6;
+  --rg-shell-paper: #F0E8DA;
+  --rg-shell-surface: var(--rg-magazine-surface);
   /* ======================
      BACKGROUND
   ====================== */
@@ -571,7 +658,9 @@ body {
   color: var(--color-text);
   font-family: var(--font-base);
   font-size: var(--text-base);
-  line-height: 1.6;
+  font-weight: var(--rg-weight-regular);
+  line-height: var(--rg-leading-body);
+  font-synthesis: none;
 
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -664,13 +753,14 @@ video {
 h1,
 h2 {
   font-family: var(--font-display);
+  font-weight: var(--rg-weight-bold);
   letter-spacing: 0.5px;
 }
 
 h3,
 h4 {
   font-family: var(--font-base);
-  font-weight: 500;
+  font-weight: var(--rg-weight-semibold);
 }
 
 h1 {

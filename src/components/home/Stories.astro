@@ -1,0 +1,84 @@
+---
+import '../../styles/components/stories.css';
+import '../../styles/components/home-headings.css';
+import { urlFor } from '../../lib/image';
+import { getPostUrl } from '../../lib/routes';
+
+const { posts = [], lang = 'it' } = Astro.props;
+const isEn = lang === 'en';
+
+const labels = {
+  title: isEn ? 'Our stories' : 'Le nostre storie'
+};
+
+const getImage = (post, width = 560, height = 420) => {
+  if (!post?.featuredImage?.asset) return '/og-image.jpg';
+
+  return urlFor(post.featuredImage)
+    .width(width)
+    .height(height)
+    .fit('crop')
+    .quality(72)
+    .auto('format')
+    .url();
+};
+
+const getCategory = (post) => {
+  const category = post?.categories?.[0];
+
+  if (category) {
+    return isEn
+      ? category.nameEn || category.name || ''
+      : category.name || category.nameEn || '';
+  }
+
+  const typeLabels = isEn
+    ? { feature: 'Feature', memories: 'Memories', interview: 'Interview' }
+    : { feature: 'Speciale', memories: 'Memories', interview: 'Intervista' };
+
+  return typeLabels[post?.type] || '';
+};
+
+const getExcerpt = (post) => {
+  const excerpt = post?.cardExcerpt || post?.excerpt || post?.subtitle || '';
+
+  return typeof excerpt === 'string' ? excerpt.replace(/\s+/g, ' ').trim() : '';
+};
+
+const stories = posts.slice(0, 4);
+---
+
+{stories.length > 0 && (
+  <div class="rg-stories">
+    <div class="rg-home-module-heading">
+      <h2>{labels.title}</h2>
+    </div>
+
+    <div class="rg-stories__grid">
+      {stories.map((post) => {
+        const category = getCategory(post);
+
+        return (
+          <a href={getPostUrl(post)} class="rg-stories__item">
+            <div class="rg-stories__image">
+              <img
+                src={getImage(post)}
+                alt={post.featuredImage?.alt || post.title}
+                width="560"
+                height="420"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+
+            <div class="rg-stories__content">
+              {category && <span>{category}</span>}
+              <h3>{post.title}</h3>
+              {getExcerpt(post) && <p class="rg-stories__excerpt">{getExcerpt(post)}</p>}
+            </div>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+)}

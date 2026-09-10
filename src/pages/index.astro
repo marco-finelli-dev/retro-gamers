@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 import Hero from '../components/home/Hero.astro';
+import Stories from '../components/home/Stories.astro';
 import Latest from '../components/home/Latest.astro';
 import Reviews from '../components/home/Reviews.astro';
 import EditorialHub from '../components/home/EditorialHub.astro';
@@ -40,6 +41,18 @@ const {
   interviews,
   guides
 } = groupPosts(allPosts);
+
+const storyCandidates = [
+  specials[0],
+  memories[0],
+  interviews[0],
+  ...specials.slice(1),
+  ...memories.slice(1),
+  ...interviews.slice(1)
+];
+const stories = storyCandidates
+  .filter((post) => Boolean(post?.featuredImage?.asset?.url))
+  .slice(0, 4);
 
 const homeCommentCountMap = await getApprovedCommentCountMap(
   [
@@ -107,9 +120,15 @@ const alternateLanguages = [
     </div>
   </section>
 
+  <section class="home-stories">
+    <div class="container">
+      <Stories posts={stories} />
+    </div>
+  </section>
+
   <section class="home-reviews">
     <div class="container">
-      <Reviews posts={withCommentCounts(reviews)} />
+      <Reviews posts={withCommentCounts(reviews)} news={news} guides={guides} quizzes={quizzes} />
     </div>
   </section>
 

@@ -1,46 +1,199 @@
 ---
 import '../../styles/components/reviews.css';
+import '../../styles/components/home-headings.css';
 import ReviewCard from '../cards/ReviewCard.astro';
-import { getArchiveUrl } from '../../lib/routes';
+import { urlFor } from '../../lib/image';
+import { getArchiveUrl, getPostUrl } from '../../lib/routes';
+import { getQuizUrl } from '../../lib/quiz';
 
-const { posts = [], lang = 'it' } = Astro.props;
+const { posts = [], news = [], quizzes = [], lang = 'it' } = Astro.props;
 
 const isEn = lang === 'en';
 
 const labels = {
-  title: isEn ? 'Reviews' : 'Recensioni',
-  description: isEn
-    ? 'The latest reviews from consoles, arcade and home computers.'
-    : 'Le ultime prove dal mondo console, arcade e home computer.',
-  viewAll: isEn ? 'View all' : 'Vedi tutte',
-  aria: isEn ? 'Latest reviews' : 'Ultime recensioni',
-  href: getArchiveUrl('review', lang)
+  title: isEn ? 'Our latest reviews' : 'Le nostre ultime recensioni',
+  newsTitle: isEn ? 'Latest news' : 'Ultime news',
+  allReviews: isEn ? 'Read all reviews' : 'Leggi tutte le recensioni',
+  allNews: isEn ? 'Read all news' : 'Leggi tutte le news',
+  participationTitle: isEn ? 'Take part' : 'Partecipa',
+  quizLabel: isEn ? 'Quiz' : 'Quiz',
+  quizCta: isEn ? 'Play the quiz' : 'Gioca al quiz',
+  quickPollLabel: isEn ? 'Poll' : 'Sondaggio',
+  quickPollQuestion: isEn
+    ? 'Which Amiga platformer would you like us to review?'
+    : 'Quale platform Amiga vorresti vedere recensito?',
+  vote: isEn ? 'Vote' : 'Vota',
+  aria: isEn ? 'Latest reviews' : 'Ultime recensioni'
 };
 
 const reviews = posts.slice(0, 5);
+const [featureReview, ...secondaryReviews] = reviews;
+const latestNews = news.slice(0, 8);
+const reviewsHref = getArchiveUrl('review', lang);
+const newsHref = getArchiveUrl('news', lang);
+const latestQuiz = [...quizzes]
+  .sort((first, second) =>
+    new Date(second.publishedAt || 0).getTime() -
+    new Date(first.publishedAt || 0).getTime()
+  )[0];
+const quickPollOptions = ['Chuck Rock II', 'Superfrog', 'Kid Chaos', 'Fire & Ice'];
+
+const getQuizCoverUrl = (quiz) => {
+  if (!quiz?.coverImage?.asset) return '';
+
+  return urlFor(quiz.coverImage)
+    .width(480)
+    .height(270)
+    .fit('crop')
+    .quality(72)
+    .auto('format')
+    .url();
+};
+
+const getExcerpt = (value) =>
+  typeof value === 'string'
+    ? value.replace(/\s+/g, ' ').trim()
+    : '';
+
+const quizCoverUrl = getQuizCoverUrl(latestQuiz);
+const quizExcerpt = latestQuiz
+  ? getExcerpt(latestQuiz.excerpt) || getExcerpt(latestQuiz.subtitle)
+  : '';
+
+const getCategory = (post) => {
+  const category = post?.categories?.[0];
+
+  return isEn
+    ? category?.nameEn || category?.name || ''
+    : category?.name || category?.nameEn || '';
+};
+
+const getNewsImage = (post, width = 160) => {
+  if (!post?.featuredImage?.asset) return '/og-image.jpg';
+
+  return urlFor(post.featuredImage)
+    .width(width)
+    .height(width)
+    .fit('crop')
+    .quality(72)
+    .auto('format')
+    .url();
+};
+
 ---
 
-<div class="section-box rg-reviews">
+<div class="rg-reviews">
+  <div class="rg-reviews__grid">
+    <section class="rg-reviews__editorial" aria-labelledby="reviews-heading">
+      <div class="rg-home-module-heading">
+        <h2 id="reviews-heading">{labels.title}</h2>
+      </div>
 
-  <div class="rg-reviews__header">
+      {featureReview && (
+        <div class="rg-reviews__layout" aria-label={labels.aria}>
+          <ReviewCard post={featureReview} lang={lang} variant="feature" />
 
-    <div class="rg-reviews__title">
-      <h2>{labels.title}</h2>
-      <p>{labels.description}</p>
-    </div>
+          {secondaryReviews.length > 0 && (
+            <div class="rg-reviews__secondary-list">
+              {secondaryReviews.map((post) => (
+                <ReviewCard post={post} lang={lang} variant="compact" />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-    <a href={labels.href} class="rg-reviews__link">
-      {labels.viewAll}
-    </a>
+      <a href={reviewsHref} class="rg-reviews__section-footer">
+        {labels.allReviews} ›
+      </a>
+    </section>
 
-  </div>
+    <aside class="rg-reviews__sidebar" aria-label={labels.newsTitle}>
+      {latestNews.length > 0 && (
+        <section class="rg-reviews__sidebar-module rg-reviews__news" aria-labelledby="latest-news-heading">
+          <div class="rg-home-module-heading">
+            <h2 id="latest-news-heading">{labels.newsTitle}</h2>
+          </div>
 
-  <div class="rg-reviews__rail" aria-label={labels.aria}>
+          <div class="rg-reviews__news-list">
+            {latestNews.map((post) => {
+              const category = getCategory(post);
 
-    {reviews.map((post) => (
-      <ReviewCard post={post} lang={lang} />
-    ))}
+              return (
+                <a href={getPostUrl(post)} class="rg-reviews__news-item">
+                  <img
+                    src={getNewsImage(post)}
+                    alt={post.featuredImage?.alt || post.title}
+                    width="160"
+                    height="160"
+                    loading="lazy"
+                    decoding="async"
+                  />
 
+                  <span class="rg-reviews__news-copy">
+                    {category && <span class="rg-reviews__news-meta">{category}</span>}
+                    <span class="rg-reviews__news-title">{post.title}</span>
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+
+          <a href={newsHref} class="rg-reviews__section-footer">
+            {labels.allNews} ›
+          </a>
+        </section>
+      )}
+
+      {(latestQuiz || quickPollOptions.length > 0) && (
+        <section class="rg-reviews__sidebar-module rg-reviews__participation" aria-labelledby="participation-heading">
+          <div class="rg-reviews__participation-content rg-reviews__participation-card">
+            <div class="rg-reviews__participation-heading">
+              <h2 id="participation-heading">{labels.participationTitle}</h2>
+            </div>
+
+            {latestQuiz && (
+              <a href={getQuizUrl(latestQuiz, isEn ? 'en' : 'it')} class="rg-reviews__quiz">
+                {quizCoverUrl && (
+                  <img
+                    src={quizCoverUrl}
+                    alt={latestQuiz.coverImage?.alt || latestQuiz.title}
+                    width="480"
+                    height="270"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+
+                <span class="rg-reviews__quiz-body">
+                  <span class="rg-reviews__quiz-kicker">{labels.quizLabel}</span>
+                  <strong>{latestQuiz.title}</strong>
+                  {quizExcerpt && <span class="rg-reviews__quiz-excerpt">{quizExcerpt}</span>}
+                  <span class="rg-reviews__participation-cta">{labels.quizCta}</span>
+                </span>
+              </a>
+            )}
+
+            <div class="rg-reviews__quick-poll" aria-labelledby="quick-poll-question">
+              <span class="rg-reviews__quick-poll-label">{labels.quickPollLabel}</span>
+              <h4 id="quick-poll-question">{labels.quickPollQuestion}</h4>
+
+              <fieldset class="rg-reviews__quick-poll-options">
+                <legend class="sr-only">{labels.quickPollQuestion}</legend>
+                {quickPollOptions.map((option) => (
+                  <label class="rg-reviews__quick-poll-option">
+                    <input type="radio" name={`quick-poll-${lang}`} value={option} />
+                    <span>{option}</span>
+                  </label>
+                ))}
+              </fieldset>
+
+              <button type="button" class="rg-reviews__participation-cta">{labels.vote}</button>
+            </div>
+          </div>
+        </section>
+      )}
+    </aside>
   </div>
 
 </div>

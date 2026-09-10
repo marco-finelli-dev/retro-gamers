@@ -724,7 +724,7 @@ export function groupPosts(posts: Post[] = []) {
     }
   }
 
-  const remainingHeroSlots = Math.max(0, 4 - hero.length);
+  const remainingHeroSlots = Math.max(0, 5 - hero.length);
 
   if (remainingHeroSlots > 0) {
     hero.push(...takeUnused(allWithImage, usedIds, remainingHeroSlots, {
@@ -738,14 +738,10 @@ export function groupPosts(posts: Post[] = []) {
   */
   const reviewsSource = italianPosts
     .filter((post) => post.type === 'review')
-    .sort((a, b) => {
-      const scoreDiff = (b.score || 0) - (a.score || 0);
-
-      if (scoreDiff !== 0) return scoreDiff;
-
-      return new Date(b.publishedAt || 0).getTime() -
-        new Date(a.publishedAt || 0).getTime();
-    });
+    .sort((a, b) =>
+      new Date(b.publishedAt || 0).getTime() -
+      new Date(a.publishedAt || 0).getTime()
+    );
 
   const reviews = takeUnused(reviewsSource, usedIds, 6, {
     requireImage: true

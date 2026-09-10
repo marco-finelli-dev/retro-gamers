@@ -3,8 +3,6 @@ import '../../styles/components/editorial-hub.css';
 import { urlFor } from '../../lib/image';
 import {
   getArchiveUrl,
-  getPlatformIndexUrl,
-  getPlatformTypeUrl,
   getPostUrl
 } from '../../lib/routes';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
@@ -24,64 +22,19 @@ const labels = {
   memories: 'Memories',
   allMemories: isEn ? 'All memories' : 'Tutte le memories',
   quickGuides: isEn ? 'Quick guides' : 'Guide rapide',
-  allGuides: isEn ? 'All guides' : 'Tutte le guide',
-  platforms: isEn ? 'Platforms' : 'Piattaforme',
-  allPlatforms: isEn ? 'All platforms' : 'Tutte le piattaforme'
+  allGuides: isEn ? 'All guides' : 'Tutte le guide'
 };
 
 const urls = {
   specials: getArchiveUrl('feature', lang),
   memories: getArchiveUrl('memories', lang),
-  guides: getArchiveUrl('guide', lang),
-  platforms: getPlatformIndexUrl(lang)
+  guides: getArchiveUrl('guide', lang)
 };
 
-const specialItems = specials.slice(0, 5);
+const specialItems = specials.slice(0, 4);
 const mainMemory = memories[0] || null;
-const memoryItems = memories.slice(1, 4);
+const memoryItems = memories.slice(1, 3);
 const guideItems = guides.slice(0, 3);
-
-const platformItems = isEn
-  ? [
-      {
-        label: 'Consoles',
-        description: 'Home and handheld systems',
-        href: getPlatformTypeUrl('console', lang),
-        icon: '/images/icons/console-icon.png'
-      },
-      {
-        label: 'Computers',
-        description: 'Home computers',
-        href: getPlatformTypeUrl('computer', lang),
-        icon: '/images/icons/computer-icon.png'
-      },
-      {
-        label: 'Arcade',
-        description: 'Cabinets and boards',
-        href: getPlatformTypeUrl('arcade', lang),
-        icon: '/images/icons/arcade-icon.png'
-      }
-    ]
-  : [
-      {
-        label: 'Console',
-        description: 'Sistemi da salotto',
-        href: getPlatformTypeUrl('console', lang),
-        icon: '/images/icons/console-icon.png'
-      },
-      {
-        label: 'Computer',
-        description: 'Home computer',
-        href: getPlatformTypeUrl('computer', lang),
-        icon: '/images/icons/computer-icon.png'
-      },
-      {
-        label: 'Arcade',
-        description: 'Cabinet e board',
-        href: getPlatformTypeUrl('arcade', lang),
-        icon: '/images/icons/arcade-icon.png'
-      }
-    ];
 
 const fallbackGuides = isEn
   ? [
@@ -125,6 +78,7 @@ const getCategory = (post) => {
 };
 ---
 
+<div class="editorial-modules">
 <div class="section-box editorial-hub">
 
   <div class="editorial-hub__grid">
@@ -135,21 +89,29 @@ const getCategory = (post) => {
       <div class="editorial-panel__header">
         <h2>{labels.specials}</h2>
 
-        <a href={urls.specials} class="editorial-panel__link">
+        <a href={urls.specials} class="editorial-panel__link rg-magazine-link">
           {labels.allSpecials}
         </a>
       </div>
 
       <div class="editorial-list">
-        {specialItems.map((post) => (
-          <a href={getPostUrl(post)} class="editorial-list-card">
+        {specialItems.map((post, index) => (
+          <a
+            href={getPostUrl(post)}
+            class:list={[
+              'editorial-list-card',
+              index === 0
+                ? 'editorial-list-card--feature'
+                : 'editorial-list-card--secondary'
+            ]}
+          >
 
             <div class="editorial-list-card__image">
               <img
-                src={getImage(post, 260, 170)}
+                src={getImage(post, index === 0 ? 640 : 280, index === 0 ? 360 : 210)}
                 alt={post.featuredImage?.alt || post.title}
-                width="260"
-                height="170"
+                width={index === 0 ? 640 : 280}
+                height={index === 0 ? 360 : 210}
                 loading="lazy"
                 decoding="async"
               />
@@ -180,7 +142,7 @@ const getCategory = (post) => {
       <div class="editorial-panel__header">
         <h2>{labels.memories}</h2>
 
-        <a href={urls.memories} class="editorial-panel__link">
+        <a href={urls.memories} class="editorial-panel__link rg-magazine-link">
           {labels.allMemories}
         </a>
       </div>
@@ -190,10 +152,10 @@ const getCategory = (post) => {
 
           <div class="memory-feature__image">
             <img
-              src={getImage(mainMemory, 640, 400)}
+              src={getImage(mainMemory, 640, 360)}
               alt={mainMemory.featuredImage?.alt || mainMemory.title}
               width="640"
-              height="400"
+              height="360"
               loading="lazy"
               decoding="async"
             />
@@ -221,10 +183,10 @@ const getCategory = (post) => {
 
               <div class="memory-mini-card__image">
                 <img
-                  src={getImage(post, 220, 140)}
+                  src={getImage(post, 220, 165)}
                   alt={post.featuredImage?.alt || post.title}
                 width="220"
-                height="140"
+                height="165"
                 loading="lazy"
                 decoding="async"
               />
@@ -246,14 +208,18 @@ const getCategory = (post) => {
     </section>
 
 
-    <!-- ASIDE -->
-    <aside class="editorial-aside">
+  </div>
+</div>
 
+<div class="section-box editorial-hub">
       <!-- GUIDE -->
       <section class="editorial-panel editorial-panel--guides">
 
         <div class="editorial-panel__header">
           <h2>{labels.quickGuides}</h2>
+          <a href={urls.guides} class="editorial-panel__link rg-magazine-link">
+            {labels.allGuides}
+          </a>
         </div>
 
      <div class="quick-guides">
@@ -262,8 +228,15 @@ const getCategory = (post) => {
     guideItems.map((post) => (
       <a href={getPostUrl(post)} class="quick-guide">
 
-        <span class="quick-guide__icon" aria-hidden="true">
-          <span class="quick-guide__placeholder-icon"></span>
+        <span class="quick-guide__image">
+          <img
+            src={getImage(post, 320, 240)}
+            alt={post.featuredImage?.alt || post.title}
+            width="320"
+            height="240"
+            loading="lazy"
+            decoding="async"
+          />
         </span>
 
         <strong>{post.title}</strong>
@@ -275,10 +248,6 @@ const getCategory = (post) => {
     !isEn && fallbackGuides.map((title) => (
       <a href={urls.guides} class="quick-guide">
 
-        <span class="quick-guide__icon" aria-hidden="true">
-          <span class="quick-guide__placeholder-icon"></span>
-        </span>
-
         <strong>{title}</strong>
 
       </a>
@@ -287,52 +256,9 @@ const getCategory = (post) => {
 
 </div>
 
-        <a href={urls.guides} class="editorial-panel__footer-link">
-          {labels.allGuides}
-        </a>
-
       </section>
 
 
-      <!-- PIATTAFORME / PLATFORMS -->
-      <section class="editorial-panel editorial-panel--platforms">
-
-        <div class="editorial-panel__header">
-          <h2>{labels.platforms}</h2>
-        </div>
-
-        <div class="platform-shortcuts">
-          {platformItems.map((item) => (
-            <a href={item.href} class="platform-shortcut">
-
-              <span class="platform-shortcut__icon" aria-hidden="true">
-                <img
-                  src={item.icon}
-                  alt=""
-                  width="40"
-                  height="40"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </span>
-
-              <span class="platform-shortcut__text">
-                <strong>{item.label}</strong>
-                <small>{item.description}</small>
-              </span>
-
-            </a>
-          ))}
-        </div>
-
-        <a href={urls.platforms} class="editorial-panel__footer-link">
-          {labels.allPlatforms}
-        </a>
-
-      </section>
-
-    </aside>
-
-  </div>
+</div>
 
 </div>
