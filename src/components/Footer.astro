@@ -1,78 +1,34 @@
 ---
 import '../styles/components/footer.css';
 import SupportButton from './common/SupportButton.astro';
-import {
-  getArchiveUrl,
-  getPlatformIndexUrl,
-  getPlatformTypeUrl
-} from '../lib/routes.js';
 
 const { lang = 'it' } = Astro.props;
-
 const currentYear = new Date().getFullYear();
 const copyrightYears = currentYear > 2020 ? `2020–${currentYear}` : '2020';
 const isEnglish = lang === 'en';
-
-const archiveHrefs = {
-  reviews: getArchiveUrl('review', lang),
-  news: getArchiveUrl('news', lang),
-  features: getArchiveUrl('feature', lang),
-  guides: getArchiveUrl('guide', lang),
-  memories: getArchiveUrl('memories', lang),
-  interviews: getArchiveUrl('interview', lang)
-};
-
-const platformHrefs = {
-  index: getPlatformIndexUrl(lang),
-  console: getPlatformTypeUrl('console', lang),
-  computer: getPlatformTypeUrl('computer', lang),
-  arcade: getPlatformTypeUrl('arcade', lang)
-};
 
 const ui = isEnglish
   ? {
       homeUrl: '/en/',
       logoLabel: 'Retro Gamers home',
-      brandText: 'All the magic of an era that shaped our lives as teenagers.',
-      brandStrong: 'Retro-Gamers.it, the website that brings you back to the past!',
+      editorialDescription: 'Retro-Gamers.it tells the stories of the games, platforms and people that shaped video game history, through reviews, features, interviews and gaming culture.',
+      supportLead: 'Retro-Gamers.it is an independent project.',
+      supportText: 'If you enjoy what we do, you can help us grow.',
       socialsLabel: 'Retro-Gamers social links',
       facebookLabel: 'Retro-Gamers on Facebook',
       instagramLabel: 'Retro-Gamers on Instagram',
       whatsappLabel: 'Retro-Gamers.it WhatsApp channel',
       xLabel: 'Retro-Gamers on X',
       mailLabel: 'Write to Retro-Gamers',
-      discover: 'Discover',
-      platforms: 'Platforms',
-      info: 'Info',
-      allPlatforms: 'All platforms',
-      about: 'About',
-      collaborations: 'Collaborations',
-      contact: 'Contact',
+      retroGamers: 'Retro-Gamers',
+      legal: 'Legal',
       cookiePreferences: 'Cookie preferences',
       rights: 'Original content protected by copyright.',
       links: {
-        reviews: { label: 'Reviews', href: archiveHrefs.reviews },
-        news: { label: 'News', href: archiveHrefs.news },
-        features: { label: 'Features', href: archiveHrefs.features },
-        guides: { label: 'Guides', href: archiveHrefs.guides },
-        playableClassics: { label: 'Playable Classics', href: '/en/playable-classics/' },
-        emulators: { label: 'Emulators', href: '/en/emulators/' },
-        memories: { label: 'Memories', href: archiveHrefs.memories },
-        community: { label: 'Community', href: '/en/community/' },
-        creators: { label: 'Creators', href: '/en/creators/' },
-        companies: { label: 'Companies', href: '/en/companies/' },
-        interviews: { label: 'Interviews', href: archiveHrefs.interviews },
-        authors: { label: 'Authors', href: '/en/authors/' },
-        consoles: { label: 'Consoles', href: platformHrefs.console },
-        computers: { label: 'Computers', href: platformHrefs.computer },
-        arcade: { label: 'Arcade', href: platformHrefs.arcade },
-        allPlatforms: { label: 'All platforms', href: platformHrefs.index },
         about: { label: 'About', href: '/en/about/' },
-        howWeWork: { label: 'How we work', href: '/en/how-we-work/' },
-        resources: { label: 'Resources', href: '/en/resources/' },
         collaborations: { label: 'Collaborations', href: '/en/collaborations/' },
+        howWeWork: { label: 'How we work', href: '/en/how-we-work/' },
         contact: { label: 'Contact', href: '/en/contact/' },
-        newsletter: { label: 'Newsletter', href: '/en/newsletter/' },
         copyright: { label: 'Copyright', href: '/en/copyright/' },
         privacy: { label: 'Privacy Policy', href: '/en/privacy-policy/' },
         cookies: { label: 'Cookie Policy', href: '/en/cookie-policy/' }
@@ -81,46 +37,24 @@ const ui = isEnglish
   : {
       homeUrl: '/',
       logoLabel: 'Retro Gamers home',
-      brandText: 'Tutta la magia di un’epoca che ha segnato le nostre vite da adolescenti.',
-      brandStrong: 'Retro-Gamers.it, il sito che vi riporterà nel passato!',
+      editorialDescription: 'Retro-Gamers.it racconta giochi, piattaforme e persone che hanno fatto la storia del videogioco, tra recensioni, speciali, interviste e cultura videoludica.',
+      supportLead: 'Retro-Gamers.it è un progetto indipendente.',
+      supportText: 'Se ti piace quello che facciamo, puoi aiutarci a farlo crescere.',
       socialsLabel: 'Social Retro-Gamers',
       facebookLabel: 'Retro-Gamers su Facebook',
       instagramLabel: 'Retro-Gamers su Instagram',
       whatsappLabel: 'Canale WhatsApp di Retro-Gamers.it',
       xLabel: 'Retro-Gamers su X',
       mailLabel: 'Scrivi a Retro-Gamers',
-      discover: 'Scopri',
-      platforms: 'Piattaforme',
-      info: 'Info',
-      allPlatforms: 'Tutte le piattaforme',
-      about: 'Chi siamo',
-      collaborations: 'Collaborazioni',
-      contact: 'Contatti',
+      retroGamers: 'Retro-Gamers',
+      legal: 'Note legali',
       cookiePreferences: 'Preferenze cookie',
       rights: 'Contenuti originali protetti dal diritto d’autore.',
-            links: {
-        reviews: { label: 'Recensioni', href: archiveHrefs.reviews },
-        news: { label: 'News', href: archiveHrefs.news },
-        features: { label: 'Speciali', href: archiveHrefs.features },
-        guides: { label: 'Guide', href: archiveHrefs.guides },
-        playableClassics: { label: 'Classici giocabili oggi', href: '/classici-giocabili-oggi/' },
-        emulators: { label: 'Emulatori e interpreti', href: '/emulatori/' },
-        memories: { label: 'Memories', href: archiveHrefs.memories },
-        community: { label: 'Community', href: '/community/' },
-        creators: { label: 'Creatori', href: '/creatori/' },
-        companies: { label: 'Aziende', href: '/aziende/' },
-        interviews: { label: 'Interviste', href: archiveHrefs.interviews },
-        authors: { label: 'Autori', href: '/autori/' },
-        consoles: { label: 'Console', href: platformHrefs.console },
-        computers: { label: 'Computer', href: platformHrefs.computer },
-        arcade: { label: 'Arcade', href: platformHrefs.arcade },
-        allPlatforms: { label: 'Tutte le piattaforme', href: platformHrefs.index },
+      links: {
         about: { label: 'Chi siamo', href: '/chi-siamo/' },
         collaborations: { label: 'Collaborazioni', href: '/collaborazioni/' },
-        contact: { label: 'Contatti', href: '/contatti/' },
         howWeWork: { label: 'Come lavoriamo', href: '/come-lavoriamo/' },
-        resources: { label: 'Risorse', href: '/risorse/' },
-        newsletter: { label: 'Newsletter', href: '/newsletter/' },
+        contact: { label: 'Contatti', href: '/contatti/' },
         copyright: { label: 'Copyright', href: '/copyright/' },
         privacy: { label: 'Privacy Policy', href: '/privacy-policy/' },
         cookies: { label: 'Cookie Policy', href: '/cookie-policy/' }
@@ -129,158 +63,51 @@ const ui = isEnglish
 ---
 
 <footer class="site-footer">
-
   <div class="container">
-
     <div class="site-footer__inner">
-
-      <!-- BRAND -->
-      <div class="site-footer__brand">
-
+      <section class="site-footer__brand" aria-label="Retro-Gamers.it">
         <a href={ui.homeUrl} class="site-footer__logo" aria-label={ui.logoLabel}>
-          <img class="site-footer__logo-dark" src="/retro-gamers-logo-dark.svg" alt="Retro Gamers" width="224" height="58" />
-          <img class="site-footer__logo-light" src="/retro-gamers-logo-light.svg" alt="Retro Gamers" width="224" height="58" />
+          <img src="/images/brand/retro-gamers-logo-ivory.svg" alt="Retro-Gamers.it" width="223" height="57" />
         </a>
-
-        <p>{ui.brandText}</p>
-
-        <strong>{ui.brandStrong}</strong>
-
-            <SupportButton lang={lang} variant="footer" />
-
+        <p class="site-footer__description">{ui.editorialDescription}</p>
         <div class="site-footer__socials" aria-label={ui.socialsLabel}>
-
-          <a
-            href="https://www.facebook.com/profile.php?id=100063648424822"
-            aria-label={ui.facebookLabel}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img src="/icons/social/facebook.svg" alt="" width="20" height="20" loading="lazy" />
-            <span class="sr-only">Facebook</span>
-          </a>
-
-          <a
-            href="https://www.instagram.com/retro_gamers.it/"
-            aria-label={ui.instagramLabel}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img src="/icons/social/instagram.svg" alt="" width="20" height="20" loading="lazy" />
-            <span class="sr-only">Instagram</span>
-          </a>
-
-          <a
-            href="https://whatsapp.com/channel/0029VbDPq3A7j6g5WNSANq0S"
-            aria-label={ui.whatsappLabel}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img src="/icons/social/whatsapp.svg" alt="" width="20" height="20" loading="lazy" />
-            <span class="sr-only">WhatsApp</span>
-          </a>
-
-          <a
-            href="https://x.com/RetroGamers13"
-            aria-label={ui.xLabel}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img src="/icons/social/x.svg" alt="" width="20" height="20" loading="lazy" />
-            <span class="sr-only">X</span>
-          </a>
-
-          <a
-            href="mailto:info@retro-gamers.it"
-            aria-label={ui.mailLabel}
-          >
-            <img src="/icons/social/mail.svg" alt="" width="20" height="20" loading="lazy" />
-            <span class="sr-only">Email</span>
-          </a>
-
+          <a href="https://www.facebook.com/profile.php?id=100063648424822" aria-label={ui.facebookLabel} target="_blank" rel="noopener noreferrer"><span class="site-footer__social-icon site-footer__social-icon--facebook" aria-hidden="true"></span></a>
+          <a href="https://www.instagram.com/retro_gamers.it/" aria-label={ui.instagramLabel} target="_blank" rel="noopener noreferrer"><span class="site-footer__social-icon site-footer__social-icon--instagram" aria-hidden="true"></span></a>
+          <a href="https://whatsapp.com/channel/0029VbDPq3A7j6g5WNSANq0S" aria-label={ui.whatsappLabel} target="_blank" rel="noopener noreferrer"><span class="site-footer__social-icon site-footer__social-icon--whatsapp" aria-hidden="true"></span></a>
+          <a href="https://x.com/RetroGamers13" aria-label={ui.xLabel} target="_blank" rel="noopener noreferrer"><span class="site-footer__social-icon site-footer__social-icon--x" aria-hidden="true"></span></a>
+          <a href="mailto:info@retro-gamers.it" aria-label={ui.mailLabel}><span class="site-footer__social-icon site-footer__social-icon--mail" aria-hidden="true"></span></a>
         </div>
-
+      </section>
+      <section class="site-footer__support" aria-label={ui.supportLead}>
+        <p>{ui.supportLead}</p>
+        <p>{ui.supportText}</p>
+        <SupportButton lang={lang} variant="footer" />
+      </section>
+      <div class="site-footer__navigation">
+        <nav class="site-footer__nav" aria-label={ui.retroGamers}>
+          <h2>{ui.retroGamers}</h2>
+          <a href={ui.links.about.href}>{ui.links.about.label}</a>
+          <a href={ui.links.collaborations.href}>{ui.links.collaborations.label}</a>
+          <a href={ui.links.howWeWork.href}>{ui.links.howWeWork.label}</a>
+          <a href={ui.links.contact.href}>{ui.links.contact.label}</a>
+        </nav>
+        <nav class="site-footer__legal" aria-label={ui.legal}>
+          <h2>{ui.legal}</h2>
+          <a href={ui.links.copyright.href}>{ui.links.copyright.label}</a>
+          <a href={ui.links.privacy.href}>{ui.links.privacy.label}</a>
+          <a href={ui.links.cookies.href}>{ui.links.cookies.label}</a>
+          <button type="button" class="site-footer__cookie-button" data-open-cookie-preferences>{ui.cookiePreferences}</button>
+        </nav>
       </div>
-
-
-      <!-- DISCOVER -->
-      <nav class="site-footer__nav" aria-label={ui.discover}>
-        <h2>{ui.discover}</h2>
-
-        <a href={ui.links.reviews.href}>{ui.links.reviews.label}</a>
-        <a href={ui.links.news.href}>{ui.links.news.label}</a>
-        <a href={ui.links.features.href}>{ui.links.features.label}</a>
-        <a href={ui.links.guides.href}>{ui.links.guides.label}</a>
-        <a href={ui.links.playableClassics.href}>{ui.links.playableClassics.label}</a>
-        <a href={ui.links.emulators.href}>{ui.links.emulators.label}</a>
-        <a href={ui.links.memories.href}>{ui.links.memories.label}</a>
-        <a href={ui.links.community.href}>{ui.links.community.label}</a>
-        <a href={ui.links.interviews.href}>{ui.links.interviews.label}</a>
-        <a href={ui.links.creators.href}>{ui.links.creators.label}</a>
-        <a href={ui.links.authors.href}>{ui.links.authors.label}</a>
-        <a href={ui.links.companies.href}>{ui.links.companies.label}</a>
-      </nav>
-
-
-      <!-- PLATFORMS -->
-      <nav class="site-footer__nav" aria-label={ui.platforms}>
-        <h2>{ui.platforms}</h2>
-
-        <a href={ui.links.consoles.href}>{ui.links.consoles.label}</a>
-        <a href={ui.links.computers.href}>{ui.links.computers.label}</a>
-        <a href={ui.links.arcade.href}>{ui.links.arcade.label}</a>
-        <a href={ui.links.allPlatforms.href}>{ui.links.allPlatforms.label}</a>
-      </nav>
-
-
-      <!-- INFO -->
-      <nav class="site-footer__nav" aria-label={ui.info}>
-        <h2>{ui.info}</h2>
-
-        <a href={ui.links.about.href}>{ui.links.about.label}</a>
-        <a href={ui.links.collaborations.href}>{ui.links.collaborations.label}</a>
-        <a href={ui.links.contact.href}>{ui.links.contact.label}</a>
-        <a href={ui.links.howWeWork.href}>{ui.links.howWeWork.label}</a>
-        <a href={ui.links.resources.href}>{ui.links.resources.label}</a>
-        <a href={ui.links.newsletter.href}>{ui.links.newsletter.label}</a>
-        <a href={ui.links.copyright.href}>{ui.links.copyright.label}</a>
-        <a href={ui.links.privacy.href}>{ui.links.privacy.label}</a>
-        <a href={ui.links.cookies.href}>{ui.links.cookies.label}</a>
-
-        <button type="button" class="site-footer__cookie-button" data-open-cookie-preferences>
-          {ui.cookiePreferences}
-        </button>
-      </nav>
-
     </div>
-
-
     <div class="site-footer__bottom">
-
-      <p>
-        © {copyrightYears} Retro-Gamers.it · {ui.rights}
-      </p>
-
+      <p>© {copyrightYears} Retro-Gamers.it · {ui.rights}</p>
       <p class="site-footer__credit">
         Website by
-        <a
-          href="https://www.gcpstudio.it"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Website by GCP Studio"
-        >
-          <img
-            src="/images/logo-gcp-white.webp"
-            alt="GCP Studio"
-            width="18"
-            height="28"
-            loading="lazy"
-          />
+        <a href="https://www.gcpstudio.it" target="_blank" rel="noopener noreferrer" aria-label="Website by GCP Studio">
+          <img src="/images/logo-gcp-white.webp" alt="GCP Studio" width="18" height="28" loading="lazy" />
         </a>
       </p>
-
     </div>
-
   </div>
-
 </footer>

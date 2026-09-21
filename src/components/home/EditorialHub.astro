@@ -11,7 +11,8 @@ const {
   specials = [],
   memories = [],
   guides = [],
-  lang = 'it'
+  lang = 'it',
+  variant = 'editorial'
 } = Astro.props;
 
 const isEn = lang === 'en';
@@ -22,7 +23,7 @@ const labels = {
   memories: 'Memories',
   allMemories: isEn ? 'All memories' : 'Tutte le memories',
   quickGuides: isEn ? 'Quick guides' : 'Guide rapide',
-  allGuides: isEn ? 'All guides' : 'Tutte le guide'
+  viewAllGuides: isEn ? 'View all guides' : 'Vedi tutte le guide'
 };
 
 const urls = {
@@ -35,18 +36,6 @@ const specialItems = specials.slice(0, 4);
 const mainMemory = memories[0] || null;
 const memoryItems = memories.slice(1, 3);
 const guideItems = guides.slice(0, 3);
-
-const fallbackGuides = isEn
-  ? [
-      'How to start collecting',
-      'Emulation: the complete guide',
-      'RGB: cables and signal guide'
-    ]
-  : [
-      'Come iniziare a collezionare',
-      'Emulazione: la guida completa',
-      'RGB: guida ai cavi e al segnale'
-    ];
 
 const getImage = (post, width = 420, height = 263) => {
   if (!post?.featuredImage?.asset) return '/og-image.jpg';
@@ -78,8 +67,9 @@ const getCategory = (post) => {
 };
 ---
 
-<div class="editorial-modules">
-<div class="section-box editorial-hub">
+{variant !== 'guides' && (
+  <div class="editorial-modules">
+    <div class="section-box editorial-hub editorial-hub--chapters">
 
   <div class="editorial-hub__grid">
 
@@ -209,56 +199,65 @@ const getCategory = (post) => {
 
 
   </div>
-</div>
+    </div>
+  </div>
+)}
 
-<div class="section-box editorial-hub">
+{variant === 'guides' && (
+  <div class="editorial-modules editorial-modules--guides">
+    <div class="section-box editorial-hub editorial-hub--guides">
       <!-- GUIDE -->
       <section class="editorial-panel editorial-panel--guides">
 
-        <div class="editorial-panel__header">
+        <div class="rg-module-heading rg-module-heading--centered">
           <h2>{labels.quickGuides}</h2>
-          <a href={urls.guides} class="editorial-panel__link rg-magazine-link">
-            {labels.allGuides}
-          </a>
         </div>
 
      <div class="quick-guides">
 
-  {guideItems.length > 0 ? (
-    guideItems.map((post) => (
-      <a href={getPostUrl(post)} class="quick-guide">
+  {guideItems.map((post) => (
+      <a href={getPostUrl(post)} class="quick-guide rg-editorial-link">
 
         <span class="quick-guide__image">
           <img
-            src={getImage(post, 320, 240)}
+            src={getImage(post, 480, 270)}
             alt={post.featuredImage?.alt || post.title}
-            width="320"
-            height="240"
+            width="480"
+            height="270"
             loading="lazy"
             decoding="async"
           />
         </span>
 
-        <strong>{post.title}</strong>
-        <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
+        <span class="quick-guide__content">
+          {(getCategory(post) || Number(post.commentCount || 0) > 0) && (
+            <span class="quick-guide__meta rg-meta-line">
+              {getCategory(post) && (
+                <span class="quick-guide__kicker rg-meta-primary">
+                  {getCategory(post)}
+                </span>
+              )}
+              {getCategory(post) && Number(post.commentCount || 0) > 0 && <span class="rg-meta-separator" aria-hidden="true">·</span>}
+              <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+            </span>
+          )}
+          <strong class="rg-editorial-title">{post.title}</strong>
+          {getExcerpt(post) && <span class="quick-guide__excerpt">{getExcerpt(post)}</span>}
+        </span>
 
       </a>
-    ))
-  ) : (
-    !isEn && fallbackGuides.map((title) => (
-      <a href={urls.guides} class="quick-guide">
-
-        <strong>{title}</strong>
-
-      </a>
-    ))
-  )}
+    ))}
 
 </div>
+
+        <div class="quick-guides__footer">
+          <a href={urls.guides} class="rg-cta-filled-raised rg-cta-filled-raised--primary">
+            <span class="rg-cta-filled-raised__face">{labels.viewAllGuides}</span>
+          </a>
+        </div>
 
       </section>
 
-
-</div>
-
-</div>
+    </div>
+  </div>
+)}

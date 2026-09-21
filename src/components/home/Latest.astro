@@ -1,152 +1,194 @@
 ---
 import '../../styles/components/latest.css';
-import { getArchiveUrl, getPostUrl } from '../../lib/routes';
-import { urlFor } from '../../lib/image';
+import '../../styles/components/home-headings.css';
+import { toHomeLatestItem } from '../../lib/home-latest';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
 
-const { posts = [], lang = 'it' } = Astro.props;
+const {
+  posts = [],
+  excludedPostIds = [],
+  hasMore = false,
+  lang = 'it'
+} = Astro.props;
 
 const isEn = lang === 'en';
-
-const latest = posts.slice(0, 5);
-
+const items = posts.map((post) => toHomeLatestItem(post, isEn ? 'en' : 'it'));
 const labels = {
-  title: isEn ? 'Latest articles' : 'Ultimi articoli',
-  description: isEn
-    ? 'News, hardware, stories and deep dives from the retro world.'
-    : 'News, hardware, storie e approfondimenti dal mondo retro.',
-  viewAll: isEn ? 'View all' : 'Vedi tutti',
-  href: getArchiveUrl('article', lang)
-};
-
-/* ========================
-   EXCERPT SYSTEM
-======================== */
-
-const stripHTML = (html = '') =>
-  html.replace(/<[^>]*>?/gm, '').trim();
-
-const truncate = (text, length = 110) =>
-  text.length > length ? text.slice(0, length) + '…' : text;
-
-const getExcerpt = (post) => {
-  const clean = stripHTML(
-  post?.cardExcerpt ||
-  post?.subtitle ||
-  post?.excerpt ||
-  ''
-);
-  if (clean) return truncate(clean, 110);
-  return '';
-};
-
-const getTypeLabel = (type = '') => {
-  const map = isEn
-    ? {
-        review: 'Review',
-        article: 'Article',
-        guide: 'Guide',
-        interview: 'Interview',
-        news: 'News',
-        feature: 'Feature',
-        special: 'Feature',
-        memories: 'Memories',
-        memory: 'Memory',
-        hardware: 'Hardware'
-      }
-    : {
-        review: 'Recensione',
-        article: 'Articolo',
-        guide: 'Guida',
-        interview: 'Intervista',
-        news: 'News',
-        feature: 'Speciale',
-        special: 'Speciale',
-        memories: 'Memories',
-        memory: 'Memory',
-        hardware: 'Hardware'
-      };
-
-  return map[type] || type || (isEn ? 'Article' : 'Articolo');
-};
-
-const getCategory = (post) => {
-  const category = post.categories?.[0];
-
-  return (
-    (isEn ? category?.nameEn || category?.name : category?.name || category?.nameEn) ||
-    getTypeLabel(post.type)
-  );
-};
-
-const getImage = (post, width = 420, height = 263) => {
-  if (!post?.featuredImage?.asset) return '/og-image.jpg';
-
-  return urlFor(post.featuredImage)
-    .width(width)
-    .height(height)
-    .fit('crop')
-    .quality(72)
-    .auto('format')
-    .url();
+  title: isEn ? 'More articles' : 'Altri articoli',
+  loadMore: isEn ? 'Load more articles' : 'Carica altri articoli'
 };
 ---
 
-{latest.length > 0 && (
-  <div class="section-box rg-latest">
-
-    <div class="rg-latest__header">
-      <div>
-        <h2>{labels.title}</h2>
-        <p>{labels.description}</p>
-      </div>
-
-      <a href={labels.href} class="rg-latest__link">
-        {labels.viewAll}
-      </a>
+{items.length > 0 && (
+  <section
+    class="rg-latest"
+    aria-labelledby={`home-latest-${lang}`}
+    data-home-latest
+    data-endpoint="/api/home/latest-articles"
+    data-language={lang}
+    data-excluded-post-ids={JSON.stringify(excludedPostIds)}
+  >
+    <div class="rg-module-heading rg-latest__heading">
+      <h2 id={`home-latest-${lang}`}>{labels.title}</h2>
     </div>
 
-    <div class="rg-latest__grid">
-
-      {latest.map((post) => (
-        <article class="rg-latest-card">
-
-          <a href={getPostUrl(post)} class="rg-latest-card__image">
-            <img
-              src={getImage(post, 420, 263)}
-              alt={post.featuredImage?.alt || post.title || ''}
-              width="420"
-              height="263"
-              loading="lazy"
-              decoding="async"
-            />
-          </a>
-
-          <div class="rg-latest-card__content">
-
-            <div class="rg-card-meta-inline">
-              <span class="rg-latest-card__type">
-                {getCategory(post)}
+    <div class="rg-latest__grid" data-home-latest-grid>
+      {items.map((item) => (
+        <a href={item.url} class="rg-latest__item rg-editorial-link">
+          <span class="rg-latest__image">
+            <img src={item.image} alt={item.alt} width="240" height="240" loading="lazy" decoding="async" />
+          </span>
+          <span class="rg-latest__content">
+            <span class="rg-latest__meta rg-meta-line">
+              <span class="rg-latest__kicker rg-meta-primary">
+                {item.kicker}
               </span>
-              <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
-            </div>
-
-            <h3>
-              <a href={getPostUrl(post)}>
-                {post.title}
-              </a>
-            </h3>
-
-            {getExcerpt(post) && (
-              <p>{getExcerpt(post)}</p>
-            )}
-
-          </div>
-
-        </article>
+              {item.secondary && (
+                <>
+                  <span class="rg-meta-separator" aria-hidden="true">·</span>
+                  <span class="rg-latest__kicker rg-meta-secondary">{item.secondary}</span>
+                </>
+              )}
+              {item.commentCount > 0 && <span class="rg-meta-separator" aria-hidden="true">·</span>}
+              <CommentCountBadge count={item.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+            </span>
+            <strong class="rg-editorial-title">{item.title}</strong>
+            {item.excerpt && <span class="rg-latest__excerpt">{item.excerpt}</span>}
+          </span>
+        </a>
       ))}
-
     </div>
 
-  </div>
+    <div class="rg-latest__load-more" data-home-latest-controls hidden={!hasMore}>
+      <button type="button" class="rg-cta-filled-raised rg-cta-filled-raised--primary" data-home-latest-load>
+        <span class="rg-cta-filled-raised__face">{labels.loadMore}</span>
+      </button>
+    </div>
+  </section>
 )}
+
+<script>
+  const appendItem = (grid, item, language) => {
+    const link = document.createElement('a');
+    link.className = 'rg-latest__item rg-editorial-link';
+    link.href = item.url;
+
+    const image = document.createElement('span');
+    image.className = 'rg-latest__image';
+    const imageElement = document.createElement('img');
+    imageElement.src = item.image;
+    imageElement.alt = item.alt || item.title || '';
+    imageElement.width = 240;
+    imageElement.height = 240;
+    imageElement.loading = 'lazy';
+    imageElement.decoding = 'async';
+    image.append(imageElement);
+
+    const content = document.createElement('span');
+    content.className = 'rg-latest__content';
+    const kicker = document.createElement('span');
+    kicker.className = 'rg-latest__kicker rg-meta-primary';
+    kicker.textContent = item.kicker;
+    const title = document.createElement('strong');
+    title.className = 'rg-editorial-title';
+    title.textContent = item.title;
+    const meta = document.createElement('span');
+    meta.className = 'rg-latest__meta rg-meta-line';
+    meta.append(kicker);
+
+    if (item.secondary) {
+      const separator = document.createElement('span');
+      separator.className = 'rg-meta-separator';
+      separator.setAttribute('aria-hidden', 'true');
+      separator.textContent = '·';
+      const secondary = document.createElement('span');
+      secondary.className = 'rg-latest__kicker rg-meta-secondary';
+      secondary.textContent = item.secondary;
+      meta.append(separator, secondary);
+    }
+
+    if (Number(item.commentCount || 0) > 0) {
+      const separator = document.createElement('span');
+      separator.className = 'rg-meta-separator';
+      separator.setAttribute('aria-hidden', 'true');
+      separator.textContent = '·';
+      const commentCount = document.createElement('span');
+      commentCount.className = 'rg-comment-count rg-comment-count--compact rg-meta-auxiliary';
+      const count = Number(item.commentCount || 0);
+      commentCount.setAttribute(
+        'aria-label',
+        language === 'en'
+          ? `${count} ${count === 1 ? 'comment' : 'comments'}`
+          : `${count} ${count === 1 ? 'commento' : 'commenti'}`
+      );
+      const icon = document.createElement('span');
+      icon.className = 'rg-comment-count__icon';
+      icon.setAttribute('aria-hidden', 'true');
+      const value = document.createElement('span');
+      value.className = 'rg-comment-count__value';
+      value.textContent = String(item.commentCount);
+      commentCount.append(icon, value);
+      meta.append(separator, commentCount);
+    }
+
+    content.append(meta, title);
+
+    if (item.excerpt) {
+      const excerpt = document.createElement('span');
+      excerpt.className = 'rg-latest__excerpt';
+      excerpt.textContent = item.excerpt;
+      content.append(excerpt);
+    }
+
+    link.append(image, content);
+    grid.append(link);
+  };
+
+  document.querySelectorAll('[data-home-latest]').forEach((section) => {
+    const grid = section.querySelector('[data-home-latest-grid]');
+    const controls = section.querySelector('[data-home-latest-controls]');
+    const button = section.querySelector('[data-home-latest-load]');
+
+    if (!(grid instanceof HTMLElement) || !(controls instanceof HTMLElement) || !(button instanceof HTMLButtonElement)) return;
+
+    let excludedIds;
+
+    try {
+      excludedIds = new Set(JSON.parse(section.dataset.excludedPostIds || '[]'));
+    } catch {
+      excludedIds = new Set();
+    }
+
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
+
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+
+      try {
+        const params = new URLSearchParams({
+          lang: section.dataset.language === 'en' ? 'en' : 'it',
+          exclude: [...excludedIds].join(',')
+        });
+        const response = await fetch(`${section.dataset.endpoint}?${params.toString()}`, {
+          headers: { Accept: 'application/json' }
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload?.ok || !Array.isArray(payload.items)) return;
+
+        payload.items.forEach((item) => {
+          appendItem(grid, item, section.dataset.language);
+          if (item.id) excludedIds.add(item.id);
+        });
+
+        if (!payload.hasMore || payload.items.length === 0) controls.hidden = true;
+      } catch {
+        // Keep the existing visible feed and allow a later retry.
+      } finally {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+      }
+    });
+  });
+</script>

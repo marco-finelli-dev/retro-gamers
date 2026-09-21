@@ -35,6 +35,24 @@
   --rg-color-border: color-mix(in srgb, var(--rg-color-ivory) 17%, transparent);
   --rg-color-surface: color-mix(in srgb, var(--rg-color-navy) 84%, var(--rg-color-ivory));
   --rg-color-hover: var(--rg-color-green);
+  --rg-text-primary: var(--rg-color-ivory);
+  --rg-text-secondary: color-mix(in srgb, var(--rg-color-ivory) 70%, transparent);
+  --rg-text-muted: color-mix(in srgb, var(--rg-color-ivory) 56%, transparent);
+  --rg-title-color: var(--rg-text-primary);
+  --rg-title-hover: var(--rg-color-gold);
+  --rg-ui-text: var(--rg-text-primary);
+  --rg-link-color: var(--rg-text-secondary);
+  --rg-link-hover: var(--rg-text-primary);
+  --rg-meta-primary-color: var(--rg-color-coral);
+  --rg-meta-secondary-color: color-mix(in srgb, var(--rg-color-teal) 58%, var(--rg-color-ivory));
+  --rg-meta-accessory-color: color-mix(in srgb, var(--rg-color-ivory) 64%, transparent);
+  --rg-meta-separator-color: color-mix(in srgb, var(--rg-color-ivory) 24%, transparent);
+  --rg-surface-page: var(--rg-color-navy);
+  --rg-surface-card: color-mix(in srgb, var(--rg-color-ivory) 5%, transparent);
+  --rg-surface-card-subtle: color-mix(in srgb, var(--rg-color-ivory) 4%, transparent);
+  --rg-border-neutral: color-mix(in srgb, var(--rg-color-ivory) 16%, transparent);
+  --rg-divider-color: var(--rg-border-neutral);
+  --rg-divider-width: 2px;
 
   --rg-font-family: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --rg-weight-regular: 400;
@@ -50,6 +68,15 @@
   --rg-type-panel: 22px;
   --rg-type-feature: clamp(34px, 3.25vw, 50px);
   --rg-type-page-title: clamp(38px, 4vw, 52px);
+  --rg-type-display-title: var(--rg-type-page-title);
+  --rg-type-section-title: var(--rg-type-section);
+  --rg-type-module-title: var(--rg-type-card);
+  --rg-type-feature-title: var(--rg-type-section);
+  --rg-type-standard-title: var(--rg-type-card-small);
+  --rg-type-compact-title: var(--rg-type-ui-small);
+  --rg-type-excerpt: var(--rg-type-body);
+  --rg-type-metadata: var(--rg-type-meta);
+  --rg-type-utility: var(--rg-type-ui-small);
   --rg-leading-body: 1.6;
 
   --rg-space-1: 4px;
@@ -291,7 +318,16 @@
      LAYOUT
   ====================== */
   --layout-wide: var(--rg-layout-editorial-max);
+  /* The container supplies --space-md; editorial modules share this inner inset. */
+  --rg-page-content-inset: clamp(24px, 2.4vw, 38px);
+  --rg-page-content-gutter: calc(var(--space-md) + var(--rg-page-content-inset));
   --header-gap: 8px;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --rg-page-content-inset: var(--rg-layout-gutter-mobile);
+  }
 }
 
 .rg-comment-count {
@@ -446,12 +482,28 @@
 ========================= */
 
 html[data-theme="light"] {
+  --rg-text-primary: var(--rg-color-navy);
+  --rg-text-secondary: color-mix(in srgb, var(--rg-color-navy) 70%, transparent);
+  --rg-text-muted: color-mix(in srgb, var(--rg-color-navy) 56%, transparent);
+  --rg-title-color: var(--rg-text-primary);
+  --rg-title-hover: var(--rg-color-teal);
+  --rg-ui-text: var(--rg-text-primary);
+  --rg-link-color: var(--rg-text-secondary);
+  --rg-link-hover: var(--rg-text-primary);
+  --rg-meta-secondary-color: var(--rg-color-teal);
+  --rg-meta-accessory-color: color-mix(in srgb, var(--rg-color-navy) 64%, transparent);
+  --rg-meta-separator-color: color-mix(in srgb, var(--rg-color-navy) 24%, transparent);
   --rg-color-ink: var(--rg-color-navy);
   --rg-color-muted: color-mix(in srgb, var(--rg-color-navy) 70%, transparent);
   --rg-color-border: color-mix(in srgb, var(--rg-color-navy) 18%, transparent);
   --rg-color-surface: var(--rg-color-ivory);
   --rg-color-hover: var(--rg-color-teal);
-  --rg-shell-canvas: #ECE4D6;
+  --rg-surface-page: var(--rg-color-ivory);
+  --rg-surface-card: color-mix(in srgb, var(--rg-color-navy) 5%, transparent);
+  --rg-surface-card-subtle: color-mix(in srgb, var(--rg-color-navy) 4%, transparent);
+  --rg-border-neutral: color-mix(in srgb, var(--rg-color-navy) 18%, transparent);
+  --rg-divider-color: var(--rg-border-neutral);
+  --rg-shell-canvas: #061B33;
   --rg-shell-paper: #F0E8DA;
   --rg-shell-surface: var(--rg-magazine-surface);
   /* ======================
@@ -608,6 +660,47 @@ html[data-theme="light"] {
   --rg-select-caret-icon: var(--rg-select-caret-icon-light);
 }
 
+.rg-meta-primary {
+  color: var(--rg-meta-primary-color);
+}
+
+.rg-meta-secondary,
+.rg-meta-tertiary {
+  color: var(--rg-meta-secondary-color);
+}
+
+.rg-meta-auxiliary {
+  color: var(--rg-meta-accessory-color);
+}
+
+.rg-meta-separator {
+  color: var(--rg-meta-separator-color);
+}
+
+.rg-editorial-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.rg-editorial-title {
+  color: var(--rg-title-color);
+  text-decoration: none;
+  text-shadow: none;
+  transition: color var(--rg-duration-fast) var(--rg-ease-standard);
+}
+
+.rg-editorial-link:is(:hover, :focus-visible, :active) .rg-editorial-title {
+  color: var(--rg-title-hover);
+  text-decoration: none;
+  text-shadow: none;
+}
+
+.rg-editorial-link:focus-visible,
+.rg-archive-link:focus-visible {
+  outline: var(--rg-focus-ring);
+  outline-offset: var(--rg-focus-offset);
+}
+
 
 /* =========================
    🔧 RESET
@@ -673,6 +766,116 @@ body > * {
 
 body.no-scroll {
   overflow-y: scroll;
+}
+
+
+/* =========================
+   🔘 FILLED / RAISED CTA
+========================= */
+
+.rg-cta-filled-raised {
+  --rg-cta-filled-surface: var(--rg-color-gold);
+  --rg-cta-filled-ink: var(--rg-color-navy);
+  --rg-cta-filled-plinth: color-mix(in srgb, var(--rg-color-gold) 62%, var(--rg-color-navy));
+  --rg-cta-filled-press: 0px;
+  --rg-cta-filled-min-inline-size: 176px;
+  --rg-cta-filled-padding-inline: var(--rg-space-4);
+
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: fit-content;
+  min-inline-size: var(--rg-cta-filled-min-inline-size);
+  max-inline-size: 100%;
+  block-size: 44px;
+  padding: 0;
+  flex: 0 0 auto;
+  overflow: visible;
+  border: 0;
+  border-radius: 10px 10px 20px 10px;
+  background: transparent;
+  color: var(--rg-cta-filled-ink);
+  cursor: pointer;
+  font-family: var(--rg-font-family);
+  font-size: var(--rg-type-body);
+  font-weight: var(--rg-weight-bold);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  justify-self: center;
+}
+
+.rg-cta-filled-raised::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--rg-cta-filled-plinth);
+  content: "";
+  pointer-events: none;
+  transform: translateY(4px);
+}
+
+.rg-cta-filled-raised__face {
+  position: relative;
+  z-index: 1;
+  align-self: stretch;
+  display: flex;
+  flex: 1 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--rg-cta-filled-padding-inline);
+  border-radius: inherit;
+  background: var(--rg-cta-filled-surface);
+  color: var(--rg-cta-filled-ink);
+  pointer-events: none;
+  text-align: center;
+  transform: translateY(var(--rg-cta-filled-press));
+  transition: transform var(--rg-duration-fast) var(--rg-ease-standard);
+}
+
+.rg-cta-filled-raised:hover {
+  --rg-cta-filled-press: 3px;
+}
+
+.rg-cta-filled-raised:active {
+  --rg-cta-filled-press: 5px;
+}
+
+.rg-cta-filled-raised:focus-visible {
+  outline: var(--rg-focus-ring);
+  outline-offset: var(--rg-focus-offset);
+}
+
+.rg-cta-filled-raised--primary {
+  --rg-cta-filled-surface: var(--rg-color-gold);
+  --rg-cta-filled-ink: var(--rg-color-navy);
+  --rg-cta-filled-plinth: color-mix(in srgb, var(--rg-color-gold) 62%, var(--rg-color-navy));
+}
+
+html[data-theme="light"] .rg-cta-filled-raised--primary {
+  --rg-cta-filled-surface: var(--rg-color-coral);
+  --rg-cta-filled-ink: var(--rg-color-ivory);
+  --rg-cta-filled-plinth: color-mix(in srgb, var(--rg-color-coral) 62%, var(--rg-color-navy));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rg-cta-filled-raised__face {
+    transition: none;
+  }
+
+  .rg-editorial-title,
+  .rg-archive-link {
+    transition: none;
+  }
+
+  .rg-cta-filled-raised:is(:hover, :active) {
+    --rg-cta-filled-press: 0px;
+  }
 }
 
 main,
@@ -830,6 +1033,18 @@ html[data-theme="light"] a:hover {
   padding-right: var(--space-md);
 }
 
+/* Shared outer frame for RG editorial pages. */
+@media (max-width: 1199px) {
+  body:has(> main.rg-page-shell) {
+    background: var(--rg-shell-paper);
+    background-image: none;
+  }
+
+  body:has(> main.rg-page-shell):has(main > .home-hero) {
+    background: var(--page-background);
+    background-size: var(--page-background-size, auto);
+  }
+}
 
 /* =========================
    🧊 SECTION BOX BASE
@@ -957,14 +1172,13 @@ html[data-theme="light"] .article-content a:hover {
 }
 
 /* Kicker, label e micro-titoli: niente cyan fluo in light */
-html[data-theme="light"] [class*="__kicker"],
-html[data-theme="light"] [class*="__eyebrow"],
-html[data-theme="light"] [class*="__type"],
+html[data-theme="light"] [class*="__kicker"]:not(.rg-meta-primary, .rg-meta-secondary, .rg-meta-tertiary),
+html[data-theme="light"] [class*="__eyebrow"]:not(.rg-meta-primary, .rg-meta-secondary, .rg-meta-tertiary),
+html[data-theme="light"] [class*="__type"]:not(.rg-meta-primary, .rg-meta-secondary, .rg-meta-tertiary),
 html[data-theme="light"] .archive-hero__content span,
 html[data-theme="light"] .platforms-hero span,
 html[data-theme="light"] .platform-sheet__section-title span,
 html[data-theme="light"] .article-final-rating__heading span,
-html[data-theme="light"] .hardware-strip__header span,
 html[data-theme="light"] .archive-card__meta span,
 html[data-theme="light"] .editorial-list-card__content span,
 html[data-theme="light"] .platform-card__main span,
@@ -1030,23 +1244,6 @@ html[data-theme="light"] .search-trigger:hover {
   color: var(--color-primary);
 }
 
-/* Credit/logo bianchi nel footer */
-html[data-theme="light"] .site-footer__credit a {
-  padding: 3px 6px;
-  border-radius: 8px;
-
-  background: rgba(22,24,36,0.045);
-}
-
-html[data-theme="light"] .site-footer__credit img {
-  opacity: 0.72;
-
-  filter:
-    drop-shadow(0 1px 2px rgba(24,32,48,0.20))
-    contrast(1.05);
-}
-
-
 /* =========================
    🎯 UTILITIES
 ========================= */
@@ -1102,4 +1299,18 @@ html[data-theme="light"] ::selection {
 html.has-mobile-menu-open,
 html.has-mobile-menu-open body {
   overflow: hidden;
+}
+
+/* Positional metadata hierarchy. Meaning stays in content; color follows order. */
+.rg-meta-primary {
+  color: var(--rg-meta-primary-color);
+}
+
+.rg-meta-secondary,
+.rg-meta-tertiary {
+  color: var(--rg-meta-secondary-color);
+}
+
+.rg-meta-auxiliary {
+  color: var(--rg-meta-accessory-color);
 }

@@ -6,23 +6,20 @@ import Stories from '../components/home/Stories.astro';
 import Latest from '../components/home/Latest.astro';
 import Reviews from '../components/home/Reviews.astro';
 import EditorialHub from '../components/home/EditorialHub.astro';
-import ArchiveStrip from '../components/home/ArchiveStrip.astro';
+import LowerEditorial from '../components/home/LowerEditorial.astro';
 import Interviews from '../components/home/Interviews.astro';
-import Hardware from '../components/home/Hardware.astro';
-import CommunityStrip from '../components/home/CommunityStrip.astro';
-import PlayToday from '../components/home/PlayToday.astro';
 import NewsletterPromo from '../components/newsletter/NewsletterPromo.astro';
 
 import '../styles/pages/home.css';
 
 import { getAllPosts, groupPosts } from '../lib/posts';
+import { HOME_LATEST_PAGE_SIZE, getHomeLatestPosts, getHomePostKey } from '../lib/home-latest';
 import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
 } from '../lib/supabase/comment-counts';
 import { getUserSessionFromCookies } from '../lib/supabase/auth';
 import { getNewsletterSubscriptionForUser } from '../lib/supabase/newsletter';
-import { getLatestCommunityComments } from '../lib/supabase/community-hub';
 import { getHomePlayableClassics } from '../lib/playable-classics';
 import { getHomeEmulatorTools } from '../lib/emulator-tools';
 import { getPublishedQuizSummaries } from '../lib/quiz';
@@ -33,38 +30,55 @@ const {
   hero,
   reviews,
   specials,
-  memories,
-  latest,
   news,
   hardware,
-  archive,
   interviews,
   guides
 } = groupPosts(allPosts);
 
 const storyCandidates = [
   specials[0],
-  memories[0],
   interviews[0],
   ...specials.slice(1),
-  ...memories.slice(1),
   ...interviews.slice(1)
 ];
 const stories = storyCandidates
   .filter((post) => Boolean(post?.featuredImage?.asset?.url))
   .slice(0, 4);
 
+const latestFeedExcludedIds = new Set(
+  [
+    ...hero,
+    ...reviews.slice(0, 5),
+    ...news.slice(0, 8),
+    ...guides.slice(0, 3),
+    ...specials.slice(0, 5),
+    ...stories,
+    ...interviews.slice(0, 5),
+    ...hardware.slice(0, 4)
+  ]
+    .map(getHomePostKey)
+    .filter(Boolean)
+);
+const latestFeedCandidates = getHomeLatestPosts(
+  allPosts,
+  'it',
+  latestFeedExcludedIds,
+  HOME_LATEST_PAGE_SIZE + 1
+);
+const latestFeed = latestFeedCandidates.slice(0, HOME_LATEST_PAGE_SIZE);
+const latestFeedHasMore = latestFeedCandidates.length > HOME_LATEST_PAGE_SIZE;
+
 const homeCommentCountMap = await getApprovedCommentCountMap(
   [
     ...hero,
     ...reviews,
+    ...news.slice(0, 8),
     ...specials,
-    ...memories,
     ...guides,
-    ...archive,
     ...interviews,
     ...hardware,
-    ...latest
+    ...latestFeed,
   ],
   'it'
 );
@@ -73,12 +87,10 @@ const withCommentCounts = (posts) =>
   attachApprovedCommentCounts(posts, homeCommentCountMap, 'it');
 
 const [
-  latestCommunityComments,
   playableClassics,
   emulatorTools,
   quizzes
 ] = await Promise.all([
-  getLatestCommunityComments('it', 10, allPosts),
   getHomePlayableClassics('it', 4),
   getHomeEmulatorTools('it', 4),
   getPublishedQuizSummaries('it')
@@ -103,6 +115,7 @@ const alternateLanguages = [
 ---
 
 <BaseLayout
+  pageShell="editorial"
   reviews={reviews}
   news={news}
   title="Storia, recensioni e cultura del retro gaming"
@@ -132,34 +145,24 @@ const alternateLanguages = [
     </div>
   </section>
 
+  <section class="home-editorial home-editorial--guides">
+    <div class="container">
+      <EditorialHub guides={withCommentCounts(guides)} variant="guides" />
+    </div>
+  </section>
+
   <section class="home-editorial">
     <div class="container">
-      <EditorialHub
+      <LowerEditorial
         specials={withCommentCounts(specials)}
-        memories={withCommentCounts(memories)}
-        guides={withCommentCounts(guides)}
-      />
-    </div>
-  </section>
-
-  <section class="home-community">
-    <div class="container">
-      <CommunityStrip
-        lang="it"
-        latestComments={latestCommunityComments}
-        quizzes={quizzes}
-        isLoggedIn={!viewerSession.error && Boolean(viewerSession.user)}
-      />
-    </div>
-  </section>
-
-  <section class="home-play-today-section">
-    <div class="container">
-      <PlayToday
-        lang="it"
+        hardware={withCommentCounts(hardware)}
         playableClassics={playableClassics}
         emulatorTools={emulatorTools}
-      />
+      >
+        {interviews.length > 0 && (
+          <Interviews slot="interviews" posts={withCommentCounts(interviews)} />
+        )}
+      </LowerEditorial>
     </div>
   </section>
 
@@ -171,29 +174,13 @@ const alternateLanguages = [
     </section>
   )}
 
-  {interviews.length > 0 && (
-    <section class="home-interviews">
-      <div class="container">
-        <Interviews posts={withCommentCounts(interviews)} />
-      </div>
-    </section>
-  )}
-
-  <section class="home-archive">
-    <div class="container">
-      <ArchiveStrip posts={withCommentCounts(archive)} />
-    </div>
-  </section>
-
-  <section class="home-hardware">
-    <div class="container">
-      <Hardware posts={withCommentCounts(hardware)} />
-    </div>
-  </section>
-
   <section class="home-latest">
     <div class="container">
-      <Latest posts={withCommentCounts(latest)} />
+      <Latest
+        posts={withCommentCounts(latestFeed)}
+        excludedPostIds={[...latestFeedExcludedIds, ...latestFeed.map(getHomePostKey)]}
+        hasMore={latestFeedHasMore}
+      />
     </div>
   </section>
 

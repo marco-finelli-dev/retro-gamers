@@ -36,8 +36,6 @@ const typeLabel =
   'Articolo';
 
 const byLabel = lang === 'en' ? 'By' : 'A cura di';
-const readingTimeLabel = lang === 'en' ? 'Reading time' : 'Tempo di lettura';
-const minuteLabel = lang === 'en' ? 'min.' : 'min.';
 const roleLabels = {
   it: {
     editor: 'Redattore',
@@ -52,6 +50,10 @@ const roleLabels = {
 };
 
 const isReview = post.type === 'review';
+const overallRating = Number(post?.rating?.overall);
+const isEditorsChoice =
+  isReview && Number.isFinite(overallRating) && overallRating >= 9;
+const editorChoiceAlt = lang === 'en' ? "Editor's Choice" : 'Scelta della redazione';
 
 const platforms =
   isReview
@@ -137,12 +139,11 @@ const readingTime =
   post.tempoLettura ||
   null;
 
-const infoItems = [
+const mastheadInfoItems = [
   publishedDate,
   showUpdated && updatedDate ? `${updatedLabel} ${updatedDate}` : '',
-  readingTime ? `${readingTimeLabel}: ${readingTime} ${minuteLabel}` : '',
 ].filter(Boolean);
-const heroInfoItems = [authorRole, ...infoItems].filter(Boolean);
+const heroInfoItems = [authorRole, ...mastheadInfoItems].filter(Boolean);
 
 const articleSlug =
   typeof post.slug === 'string'
@@ -173,183 +174,45 @@ const quickEditLabels = {
   <div class="article-hero__top">
 
     <div class="article-hero__top-main">
-      <a href={getArchiveUrl(post.type, lang)} class="article-hero__eyebrow">
+      <a href={getArchiveUrl(post.type, lang)} class="article-hero__eyebrow rg-meta-primary">
         {typeLabel}
       </a>
 
-      {metaItems.length > 0 && (
-        <div class="article-hero__meta">
-          {metaItems.map((item) => (
-            <span>{item}</span>
-          ))}
-        </div>
-      )}
     </div>
 
   </div>
 
-  <div class="article-hero__content">
+  <div class:list={[
+    'article-hero__content',
+    { 'article-hero__content--with-editor-choice': isEditorsChoice }
+  ]}>
 
     <h1>{post.title}</h1>
+
+    {isEditorsChoice && (
+      <span class="article-hero__editor-choice">
+        <img
+          src="/images/badges/editor-choice-ivory.svg"
+          alt={editorChoiceAlt}
+          class="article-hero__editor-choice-asset article-hero__editor-choice-asset--light"
+          width="850"
+          height="639"
+          decoding="async"
+        />
+        <img
+          src="/images/badges/editor-choice-navy.svg"
+          alt={editorChoiceAlt}
+          class="article-hero__editor-choice-asset article-hero__editor-choice-asset--dark"
+          width="850"
+          height="639"
+          decoding="async"
+        />
+      </span>
+    )}
 
     {(post.subtitle || post.excerpt) && (
       <p>{post.subtitle || post.excerpt}</p>
     )}
-
-    <div class="article-hero__footer">
-
-      {(authorDisplayName || infoItems.length > 0) && (
-        <div class="article-hero__byline">
-
-          {authorDisplayName && (
-            <div class="article-hero__author">
-              {authorUrl ? (
-                <a href={authorUrl} class="article-hero__author-avatar" aria-label={authorDisplayName}>
-                  {authorAvatar ? (
-                    <img
-                      src={authorAvatar}
-                      alt={authorAvatarAlt}
-                      width="56"
-                      height="56"
-                      loading="eager"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span>{authorInitials || 'RG'}</span>
-                  )}
-                </a>
-              ) : (
-                <span class="article-hero__author-avatar" aria-hidden={!authorAvatar}>
-                  {authorAvatar ? (
-                    <img
-                      src={authorAvatar}
-                      alt={authorAvatarAlt}
-                      width="56"
-                      height="56"
-                      loading="eager"
-                      decoding="async"
-                    />
-                  ) : (
-                    <span>{authorInitials || 'RG'}</span>
-                  )}
-                </span>
-              )}
-
-              <div class="article-hero__author-body">
-                <div class="article-hero__author-line">
-                  <small>{byLabel}</small>
-
-                  {authorUrl ? (
-                    <a href={authorUrl} class="article-hero__author-name">
-                      {authorDisplayName}
-                    </a>
-                  ) : (
-                    <strong class="article-hero__author-name">
-                      {authorDisplayName}
-                    </strong>
-                  )}
-                </div>
-
-                {heroInfoItems.length > 0 && (
-                  <div class="article-hero__info">
-                    {heroInfoItems.map((item) => (
-                      <span>{item}</span>
-                    ))}
-                  </div>
-                )}
-
-              </div>
-            </div>
-          )}
-
-          {!authorDisplayName && infoItems.length > 0 && (
-            <div class="article-hero__meta-stack">
-              {infoItems.length > 0 && (
-                <div class="article-hero__info">
-                  {infoItems.map((item) => (
-                    <span>{item}</span>
-                  ))}
-                </div>
-              )}
-
-            </div>
-          )}
-
-        </div>
-      )}
-
-      <div class="article-hero__actions">
-        {editorialQuickEdit?.mode === 'edit' && editorialQuickEdit.editUrl && (
-          <div class="article-save article-hero__editor-action">
-            <a
-              class="article-save__button article-editorial-edit"
-              href={editorialQuickEdit.editUrl}
-              rel="nofollow"
-              aria-label={quickEditLabels.edit}
-              title={quickEditLabels.edit}
-            >
-              {quickEditLabels.edit}
-            </a>
-          </div>
-        )}
-
-        {editorialQuickEdit?.mode === 'create_revision' && editorialQuickEdit.revisionEndpoint && (
-          <div class="article-save article-hero__editor-action" data-article-editorial-quick-edit>
-            <button
-              class="article-save__button article-editorial-edit"
-              type="button"
-              data-article-editorial-quick-edit-button
-              data-endpoint={editorialQuickEdit.revisionEndpoint}
-              data-ui-language={lang}
-              data-fallback-edit-url={editorialQuickEdit.editUrl}
-              data-label-default={quickEditLabels.edit}
-              data-label-loading={quickEditLabels.loading}
-              data-label-error={quickEditLabels.error}
-              aria-label={quickEditLabels.edit}
-              title={quickEditLabels.edit}
-            >
-              {quickEditLabels.edit}
-            </button>
-            <p class="article-save__message article-editorial-edit__message" data-article-editorial-quick-edit-message hidden></p>
-          </div>
-        )}
-
-        {editorialQuickEdit?.mode === 'adopt' && editorialQuickEdit.adoptEndpoint && (
-          <div class="article-save article-hero__editor-action" data-article-editorial-quick-edit>
-            <button
-              class="article-save__button article-editorial-edit"
-              type="button"
-              data-article-editorial-quick-edit-button
-              data-endpoint={editorialQuickEdit.adoptEndpoint}
-              data-ui-language={lang}
-              data-fallback-edit-url={editorialQuickEdit.editUrl}
-              data-label-default={quickEditLabels.adopt}
-              data-label-loading={quickEditLabels.loading}
-              data-label-error={quickEditLabels.error}
-              aria-label={quickEditLabels.adopt}
-              title={quickEditLabels.adopt}
-            >
-              {quickEditLabels.adopt}
-            </button>
-            <p class="article-save__message article-editorial-edit__message" data-article-editorial-quick-edit-message hidden></p>
-          </div>
-        )}
-
-        <div class="article-hero__save-action">
-          <ArticleSaveButton
-            articleId={articleId}
-            articleSlug={articleSlug}
-            articleTitle={post.title}
-            articleLanguage={lang}
-            articleCategory={typeLabel}
-            articleUrl={articleUrl}
-          />
-        </div>
-
-        <ArticleShare post={post} compact />
-      </div>
-
-    </div>
 
   </div>
 

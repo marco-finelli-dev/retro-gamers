@@ -10,6 +10,13 @@ Principio fondamentale:
 
 > Coerenza senza uniformità.
 
+> Layout locale, linguaggio visivo globale.
+
+Un componente compone il design system RG, non lo reinventa. Il componente
+decide griglia, proporzioni e responsive del proprio contenuto; palette,
+tipografia, stati interattivi, superfici, bordi, divider, radius e motion
+provengono dalle primitive condivise.
+
 Retro-Gamers deve essere riconoscibile senza diventare ripetitivo.
 
 ---
@@ -127,6 +134,17 @@ I componenti devono utilizzare la scala condivisa.
 
 Non introdurre nuove dimensioni locali senza una motivazione reale.
 
+### Gerarchia testuale
+
+I livelli autorizzati sono: display, section, feature, standard, compact,
+body/excerpt, metadata e UI/utility. Ogni livello definisce centralmente
+famiglia, dimensione, peso e interlinea. I colori testuali condivisi sono:
+primary, secondary, muted, title, title-hover, UI, link e link-hover.
+
+I titoli editoriali cliccabili usano un solo comportamento: colore title a
+riposo, Gold in hover nel tema dark e Teal nel tema light. Non usano underline,
+background, shadow, glow, lift, scale o transform decorativi.
+
 ---
 
 ## 4. Palette RG
@@ -166,6 +184,19 @@ Un colore deve essere scelto perché comunica qualcosa, non perché riempie uno 
 Evitare rainbow UI.
 
 Non introdurre colori esterni alla palette senza una necessità documentata.
+
+### Gerarchia dei metadata
+
+Il colore segue la posizione visiva, non il significato del testo:
+
+- primo metadata visibile: Coral;
+- secondo e terzo metadata: Teal;
+- separatori: muted/neutri;
+- commenti e metadata accessori: muted.
+
+Le primitive si chiamano quindi primary, secondary, tertiary, separator e
+auxiliary. Il CSS non deve conoscere nomi di tipi, categorie o piattaforme.
+Gli override cromatici locali gratuiti sono vietati.
 
 ---
 
@@ -291,6 +322,10 @@ Evitare:
 
 La geometria deve emergere dalle masse, non dagli ornamenti.
 
+Il set condiviso comprende radius small, medium e accent e i profili neutral,
+feature-leading e feature-trailing. I componenti scelgono uno di questi
+profili senza introdurre valori intermedi quasi duplicati.
+
 ---
 
 ## 9. Card e superfici
@@ -309,6 +344,11 @@ Preferire:
 - composizione;
 - divider;
 - variazioni di densità.
+
+Le superfici condivise sono page, card e subtle-card. Bordi e divider usano
+token neutri, invarianti nella funzione fra light e dark. Glow, gradienti,
+shadow decorative colorate e glassmorphism non appartengono alla famiglia
+standard delle card RG.
 
 ### Regola assoluta
 
@@ -359,6 +399,9 @@ Le transizioni devono essere brevi e discrete.
 Il focus da tastiera deve restare chiaramente riconoscibile e non deve dipendere esclusivamente dal colore.
 
 Rispettare `prefers-reduced-motion`.
+
+Durata, easing, focus ring e focus offset sono token condivisi. I componenti
+non definiscono timing o focus alternativi senza una necessità funzionale.
 
 ---
 
@@ -489,6 +532,35 @@ Ogni pattern testuale deve avere un significato stabile.
 Metadata, kicker e label devono essere brevi.
 
 La UI non deve spiegare ciò che la gerarchia visuale comunica già.
+
+### CTA filled / raised
+
+Le CTA filled importanti usano il pattern condiviso **filled / raised**:
+una faccia piena sopra uno zoccolo della stessa sagoma, più scuro e netto.
+In hover la faccia scende verso lo zoccolo; in active completa la pressione.
+Il pattern non utilizza shadow sfocate, gradienti, glow, scale o variazioni di geometria.
+Le varianti cromatiche sono semantiche e condividono la stessa struttura.
+
+Nel tema dark la variante primaria usa Gold con testo Navy; nel tema light usa
+Coral con testo Ivory. Geometria, zoccolo, hover, active, focus e reduced motion
+restano identici fra i temi.
+
+### CTA testuali / link archivio
+
+Le chiusure editoriali usano una linea neutra elastica prima del link, testo
+attenuato a riposo e pieno in hover, freccia `→`, focus condiviso e nessun
+background. La stessa primitive vale per recensioni, news, speciali,
+interviste e futuri archivi equivalenti.
+
+### Heading di modulo
+
+Sono ufficiali due composizioni:
+
+- editorial section: titolo a sinistra e linea elastica a destra;
+- autonomous module: linea, titolo centrato, linea.
+
+Colore, spessore e opacity delle linee derivano dal divider globale. Le linee
+sono strutturali e non cambiano colore per sezione.
 
 ---
 

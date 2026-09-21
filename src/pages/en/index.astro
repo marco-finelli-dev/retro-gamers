@@ -6,11 +6,8 @@ import Stories from '../../components/home/Stories.astro';
 import Latest from '../../components/home/Latest.astro';
 import Reviews from '../../components/home/Reviews.astro';
 import EditorialHub from '../../components/home/EditorialHub.astro';
-import ArchiveStrip from '../../components/home/ArchiveStrip.astro';
+import LowerEditorial from '../../components/home/LowerEditorial.astro';
 import Interviews from '../../components/home/Interviews.astro';
-import Hardware from '../../components/home/Hardware.astro';
-import CommunityStrip from '../../components/home/CommunityStrip.astro';
-import PlayToday from '../../components/home/PlayToday.astro';
 import NewsletterPromo from '../../components/newsletter/NewsletterPromo.astro';
 
 import '../../styles/pages/home.css';
@@ -18,15 +15,16 @@ import '../../styles/pages/home.css';
 import {
   getActiveFeaturedPost,
   getAllPosts,
+  isAffiliateHardwareAndBooksPost,
   sortPostsForHome
 } from '../../lib/posts';
+import { HOME_LATEST_PAGE_SIZE, getHomeLatestPosts, getHomePostKey } from '../../lib/home-latest';
 import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
 } from '../../lib/supabase/comment-counts';
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { getNewsletterSubscriptionForUser } from '../../lib/supabase/newsletter';
-import { getLatestCommunityComments } from '../../lib/supabase/community-hub';
 import { getHomePlayableClassics } from '../../lib/playable-classics';
 import { getHomeEmulatorTools } from '../../lib/emulator-tools';
 import { getPublishedQuizSummaries } from '../../lib/quiz';
@@ -79,50 +77,6 @@ const takeUnused = (source, limit, options = {}) => {
   return picked;
 };
 
-const archiveEvergreenTypes = new Set([
-  'review',
-  'memories',
-  'guide',
-  'interview',
-  'article',
-  'feature',
-  'special'
-]);
-
-const isArchiveEvergreenCandidate = (post) =>
-  archiveEvergreenTypes.has(post.type || '') && post.type !== 'news';
-
-const isOlderThanDays = (post, days) => {
-  if (!post.publishedAt) return false;
-
-  const publishedTime = new Date(post.publishedAt).getTime();
-
-  if (!Number.isFinite(publishedTime)) return false;
-
-  const cutoffTime = Date.now() - days * 24 * 60 * 60 * 1000;
-
-  return publishedTime < cutoffTime;
-};
-
-const takeArchivePosts = (source, limit) => {
-  const evergreen = takeUnused(
-    source.filter((post) => isArchiveEvergreenCandidate(post) && isOlderThanDays(post, 14)),
-    limit,
-    { requireImage: true }
-  );
-
-  if (evergreen.length >= limit) return evergreen;
-
-  return [
-    ...evergreen,
-    ...takeUnused(
-      source.filter(isArchiveEvergreenCandidate),
-      limit - evergreen.length,
-      { requireImage: true }
-    )
-  ];
-};
-
 const hero = [];
 
 if (featuredPost) {
@@ -159,61 +113,67 @@ const guides = takeUnused(
 );
 
 const specials = takeUnused(
-  englishPosts.filter((post) =>
-    ['feature', 'special', 'article'].includes(post.type || '')
-  ),
+  englishPosts.filter((post) => post.type === 'feature'),
   5,
-  { requireImage: true }
-);
-
-const memories = takeUnused(
-  englishPosts.filter((post) => post.type === 'memories'),
-  4,
   { requireImage: true }
 );
 
 const interviews = takeUnused(
   englishPosts.filter((post) => post.type === 'interview'),
-  3
+  5
 );
 
 const storyCandidates = [
   specials[0],
-  memories[0],
   interviews[0],
   ...specials.slice(1),
-  ...memories.slice(1),
   ...interviews.slice(1)
 ];
 const stories = storyCandidates
   .filter((post) => Boolean(post?.featuredImage?.asset?.url))
   .slice(0, 4);
 
-const archive = takeArchivePosts(englishPosts, 4);
-
 const hardware = takeUnused(
-  englishPosts.filter((post) => post.type === 'hardware'),
+  englishPosts.filter(isAffiliateHardwareAndBooksPost),
   4,
   { requireImage: true }
 );
 
 const news = englishPosts.filter((post) => post.type === 'news');
 
-const latest = takeUnused(homeEditorialPosts, 6, {
-  requireImage: true
-});
+const latestFeedExcludedIds = new Set(
+  [
+    ...hero,
+    ...reviews.slice(0, 5),
+    ...news.slice(0, 8),
+    ...guides.slice(0, 3),
+    ...specials.slice(0, 5),
+    ...stories,
+    ...interviews.slice(0, 5),
+    ...hardware.slice(0, 4)
+  ]
+    .map(getHomePostKey)
+    .filter(Boolean)
+);
+const latestFeedCandidates = getHomeLatestPosts(
+  allPosts,
+  'en',
+  latestFeedExcludedIds,
+  HOME_LATEST_PAGE_SIZE + 1
+);
+const latestFeed = latestFeedCandidates.slice(0, HOME_LATEST_PAGE_SIZE);
+const latestFeedHasMore = latestFeedCandidates.length > HOME_LATEST_PAGE_SIZE;
 
 const homeCommentCountMap = await getApprovedCommentCountMap(
   [
     ...hero,
     ...reviews,
+    ...news.slice(0, 8),
     ...guides,
     ...specials,
-    ...memories,
     ...interviews,
-    ...archive,
     ...hardware,
-    ...latest
+    ...latestFeed,
   ],
   'en'
 );
@@ -222,12 +182,10 @@ const withCommentCounts = (posts) =>
   attachApprovedCommentCounts(posts, homeCommentCountMap, 'en');
 
 const [
-  latestCommunityComments,
   playableClassics,
   emulatorTools,
   quizzes
 ] = await Promise.all([
-  getLatestCommunityComments('en', 10, allPosts),
   getHomePlayableClassics('en', 4),
   getHomeEmulatorTools('en', 4),
   getPublishedQuizSummaries('en')
@@ -252,6 +210,7 @@ const alternateLanguages = [
 ---
 
 <BaseLayout
+  pageShell="editorial"
   reviews={headerReviews}
   news={headerNews}
   title="Retro-Gamers International: retro gaming culture"
@@ -282,35 +241,25 @@ const alternateLanguages = [
     </div>
   </section>
 
+  <section class="home-editorial home-editorial--guides">
+    <div class="container">
+      <EditorialHub guides={withCommentCounts(guides)} lang="en" variant="guides" />
+    </div>
+  </section>
+
   <section class="home-editorial">
     <div class="container">
-      <EditorialHub
+      <LowerEditorial
         specials={withCommentCounts(specials)}
-        memories={withCommentCounts(memories)}
-        guides={withCommentCounts(guides)}
-        lang="en"
-      />
-    </div>
-  </section>
-
-  <section class="home-community">
-    <div class="container">
-      <CommunityStrip
-        lang="en"
-        latestComments={latestCommunityComments}
-        quizzes={quizzes}
-        isLoggedIn={!viewerSession.error && Boolean(viewerSession.user)}
-      />
-    </div>
-  </section>
-
-  <section class="home-play-today-section">
-    <div class="container">
-      <PlayToday
-        lang="en"
+        hardware={withCommentCounts(hardware)}
         playableClassics={playableClassics}
         emulatorTools={emulatorTools}
-      />
+        lang="en"
+      >
+        {interviews.length > 0 && (
+          <Interviews slot="interviews" posts={withCommentCounts(interviews)} lang="en" />
+        )}
+      </LowerEditorial>
     </div>
   </section>
 
@@ -322,29 +271,14 @@ const alternateLanguages = [
     </section>
   )}
 
-  {interviews.length > 0 && (
-    <section class="home-interviews">
-      <div class="container">
-        <Interviews posts={withCommentCounts(interviews)} lang="en" />
-      </div>
-    </section>
-  )}
-
-  <section class="home-archive">
-    <div class="container">
-      <ArchiveStrip posts={withCommentCounts(archive)} lang="en" />
-    </div>
-  </section>
-
-  <section class="home-hardware">
-    <div class="container">
-      <Hardware posts={withCommentCounts(hardware)} lang="en" />
-    </div>
-  </section>
-
   <section class="home-latest">
     <div class="container">
-      <Latest posts={withCommentCounts(latest)} lang="en" />
+      <Latest
+        posts={withCommentCounts(latestFeed)}
+        excludedPostIds={[...latestFeedExcludedIds, ...latestFeed.map(getHomePostKey)]}
+        hasMore={latestFeedHasMore}
+        lang="en"
+      />
     </div>
   </section>
 

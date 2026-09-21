@@ -3,6 +3,7 @@ import '../../styles/components/stories.css';
 import '../../styles/components/home-headings.css';
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 
 const { posts = [], lang = 'it' } = Astro.props;
 const isEn = lang === 'en';
@@ -50,7 +51,7 @@ const stories = posts.slice(0, 4);
 
 {stories.length > 0 && (
   <div class="rg-stories">
-    <div class="rg-home-module-heading">
+    <div class="rg-module-heading">
       <h2>{labels.title}</h2>
     </div>
 
@@ -59,7 +60,7 @@ const stories = posts.slice(0, 4);
         const category = getCategory(post);
 
         return (
-          <a href={getPostUrl(post)} class="rg-stories__item">
+          <a href={getPostUrl(post)} class="rg-stories__item rg-editorial-link">
             <div class="rg-stories__image">
               <img
                 src={getImage(post)}
@@ -72,8 +73,16 @@ const stories = posts.slice(0, 4);
             </div>
 
             <div class="rg-stories__content">
-              {category && <span>{category}</span>}
-              <h3>{post.title}</h3>
+              {(category || Number(post.commentCount || 0) > 0) && (
+                <div class="rg-stories__meta rg-meta-line">
+                  {category && (
+                    <span class="rg-meta-primary">{category}</span>
+                  )}
+                  {category && Number(post.commentCount || 0) > 0 && <span class="rg-meta-separator" aria-hidden="true">·</span>}
+                  <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+                </div>
+              )}
+              <h3 class="rg-editorial-title">{post.title}</h3>
               {getExcerpt(post) && <p class="rg-stories__excerpt">{getExcerpt(post)}</p>}
             </div>
           </a>

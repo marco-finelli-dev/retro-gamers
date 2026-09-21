@@ -94,7 +94,7 @@ const getCommentLabel = (count) => {
   <div class="rg-hero__grid">
 
     {main && (
-      <a href={getPostUrl(main)} class="rg-hero-main">
+      <a href={getPostUrl(main)} class="rg-hero-main rg-editorial-link">
 
         {main.featuredImage?.asset && (
           <div class="rg-hero-main__visual">
@@ -127,21 +127,21 @@ const getCommentLabel = (count) => {
         <div class="rg-hero-main__content">
 
           <div class="rg-hero__meta">
-            <span>{getTypeLabel(main.type)}</span>
+            <span class="rg-meta-primary">{getTypeLabel(main.type)}</span>
 
             {getCategory(main) && (
-              <small>{getCategory(main)}</small>
+              <small class="rg-meta-secondary">{getCategory(main)}</small>
             )}
 
             {Number(main.commentCount || 0) > 0 && (
-              <span class="hero-comment-pill" aria-label={getCommentLabel(main.commentCount)}>
+              <span class="hero-comment-pill rg-meta-auxiliary" aria-label={getCommentLabel(main.commentCount)}>
                 <i aria-hidden="true"></i>
                 <b>{main.commentCount}</b>
               </span>
             )}
           </div>
 
-          <h2>{main.title}</h2>
+          <h2 class="rg-editorial-title">{main.title}</h2>
 
           {getExcerpt(main) && (
             <p>{getExcerpt(main)}</p>
@@ -162,6 +162,7 @@ const getCommentLabel = (count) => {
             href={getPostUrl(post)}
             class:list={[
               'rg-hero-side-card',
+              'rg-editorial-link',
               isLead ? 'rg-hero-side-card--lead' : 'rg-hero-side-card--compact'
             ]}
           >
@@ -182,21 +183,21 @@ const getCommentLabel = (count) => {
             <div class="rg-hero-side-card__content">
 
               <div class="rg-hero__meta small">
-                <span>{getTypeLabel(post.type)}</span>
+                <span class="rg-meta-primary">{getTypeLabel(post.type)}</span>
 
                 {cat && (
-                  <small>{cat}</small>
+                  <small class="rg-meta-secondary">{cat}</small>
                 )}
 
                 {Number(post.commentCount || 0) > 0 && (
-                  <span class="hero-comment-pill" aria-label={getCommentLabel(post.commentCount)}>
+                  <span class="hero-comment-pill rg-meta-auxiliary" aria-label={getCommentLabel(post.commentCount)}>
                     <i aria-hidden="true"></i>
                     <b>{post.commentCount}</b>
                   </span>
                 )}
               </div>
 
-              <h3>{post.title}</h3>
+              <h3 class="rg-editorial-title">{post.title}</h3>
 
             </div>
 

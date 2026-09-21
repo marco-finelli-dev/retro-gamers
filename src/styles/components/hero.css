@@ -7,7 +7,7 @@
   --hero-feature: var(--rg-color-gold);
 
   position: relative;
-  padding-inline: clamp(24px, 2.4vw, 38px);
+  padding-inline: var(--rg-page-content-inset);
   color: var(--hero-ink);
 }
 
@@ -96,7 +96,7 @@ html[data-theme="light"] .rg-hero :is(.rg-hero-main__visual, .rg-hero-side-card_
 }
 
 .rg-hero-main__content {
-  max-width: 790px;
+  max-width: 900px;
   padding-top: 20px;
 }
 
@@ -117,12 +117,12 @@ html[data-theme="light"] .rg-hero :is(.rg-hero-main__visual, .rg-hero-side-card_
   font-weight: var(--rg-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--hero-meta);
 }
 
 .rg-hero__meta > :not(:first-child)::before {
   content: "·";
   margin-right: 1px;
+  color: var(--rg-meta-separator-color);
 }
 
 .hero-comment-pill i {
@@ -140,12 +140,12 @@ html[data-theme="light"] .rg-hero :is(.rg-hero-main__visual, .rg-hero-side-card_
 .rg-hero-main h2 {
   margin: 0;
   font-family: var(--font-base);
-  font-size: var(--rg-type-feature);
+  font-size: clamp(31px, 2.95vw, 45px);
   line-height: 1.04;
   font-weight: var(--rg-weight-bold);
   letter-spacing: -0.035em;
   color: var(--hero-ink);
-  text-wrap: balance;
+  text-wrap: wrap;
 }
 
 .rg-hero-main p {
@@ -225,14 +225,6 @@ html[data-theme="light"] .rg-hero :is(.rg-hero-main__visual, .rg-hero-side-card_
   margin-bottom: 7px;
 }
 
-.rg-hero-main:is(:hover, :focus-visible, :active) h2 {
-  color: color-mix(in srgb, var(--hero-ink) 82%, var(--hero-feature));
-}
-
-.rg-hero-side-card:is(:hover, :focus-visible, :active) h3 {
-  color: color-mix(in srgb, var(--hero-ink) 82%, var(--hero-meta));
-}
-
 @media (max-width: 960px) {
   .rg-hero__grid {
     grid-template-columns: minmax(0, 1fr);
@@ -261,7 +253,7 @@ html[data-theme="light"] .rg-hero :is(.rg-hero-main__visual, .rg-hero-side-card_
 
 @media (max-width: 640px) {
   .rg-hero {
-    padding-inline: 18px;
+    padding-inline: var(--rg-page-content-inset);
   }
 
   .rg-hero__grid {

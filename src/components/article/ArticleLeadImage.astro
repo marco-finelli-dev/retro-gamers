@@ -1,0 +1,37 @@
+---
+import { urlFor } from '../../lib/image';
+
+const { post } = Astro.props;
+
+const image = post?.featuredImage?.asset
+  ? post.featuredImage
+  : post?.gameInfo?.cover?.asset
+    ? post.gameInfo.cover
+    : null;
+
+const assetUrl = image?.asset?.url || '';
+const dimensionsMatch = assetUrl.match(/-(\d+)x(\d+)\.[a-z0-9]+(?:\?|$)/i);
+const naturalWidth = dimensionsMatch ? Number(dimensionsMatch[1]) : undefined;
+const naturalHeight = dimensionsMatch ? Number(dimensionsMatch[2]) : undefined;
+const imageUrl = image
+  ? urlFor(image)
+      .width(1200)
+      .fit('max')
+      .quality(82)
+      .auto('format')
+      .url()
+  : '';
+---
+
+{imageUrl && (
+  <figure class="article-lead-image">
+    <img
+      src={imageUrl}
+      alt={image?.alt || post?.title || ''}
+      width={naturalWidth}
+      height={naturalHeight}
+      loading="eager"
+      decoding="async"
+    />
+  </figure>
+)}

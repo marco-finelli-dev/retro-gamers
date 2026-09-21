@@ -7,15 +7,9 @@
 
   height: 4px;
 
-  background:
-    linear-gradient(
-      90deg,
-      rgba(45,240,255,0.10),
-      rgba(130,90,255,0.075)
-    );
-
-  border-bottom: 1px solid rgba(45,240,255,0.10);
-  box-shadow: 0 1px 8px rgba(45,240,255,0.08);
+  background: var(--rg-divider-color);
+  border-bottom: 0;
+  box-shadow: none;
 
   pointer-events: none;
   overflow: hidden;
@@ -29,16 +23,8 @@
   transform: scaleX(0);
   transform-origin: left center;
 
-  background:
-    linear-gradient(
-      90deg,
-      rgba(45,240,255,1),
-      rgba(130,90,255,0.82)
-    );
-
-  box-shadow:
-    0 0 12px rgba(45,240,255,0.34),
-    0 0 18px rgba(130,90,255,0.20);
+  background: var(--rg-color-gold);
+  box-shadow: none;
 
   transition: transform 90ms linear;
 }
@@ -49,28 +35,11 @@ html.has-lightbox-open .article-reading-progress {
 }
 
 html[data-theme="light"] .article-reading-progress {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(8,124,142,0.12),
-      rgba(102,81,184,0.08)
-    );
-
-  border-bottom-color: rgba(8,124,142,0.14);
-  box-shadow: 0 1px 8px rgba(8,124,142,0.08);
+  background: var(--rg-divider-color);
 }
 
 html[data-theme="light"] .article-reading-progress__bar {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(8,124,142,0.92),
-      rgba(102,81,184,0.70)
-    );
-
-  box-shadow:
-    0 0 10px rgba(8,124,142,0.18),
-    0 0 14px rgba(102,81,184,0.12);
+  background: var(--rg-color-teal);
 }
 
 @media (prefers-reduced-motion: reduce) {

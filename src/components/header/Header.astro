@@ -8,10 +8,20 @@ import '../../styles/components/header/navigation-rails.css';
 
 const {
   lang = 'it',
-  languageSwitch = null
+  languageSwitch = null,
+  readingContext = null
 } = Astro.props;
 
 const isEnglish = lang === 'en';
+const readingAuthorName = String(readingContext?.authorName || '').trim();
+const readingAuthorAvatar = String(readingContext?.authorAvatar || '').trim();
+const readingAuthorInitials = readingAuthorName
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0])
+  .join('')
+  .toUpperCase();
 
 const labels = isEnglish
   ? {
@@ -112,6 +122,34 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
       />
     </a>
 
+    {readingContext && (
+      <div class="site-header__reading" data-reading-header hidden>
+        <div class="site-header__reading-content">
+          <span class="rg-card-meta-inline rg-card-meta-inline--primary">{readingContext.typeLabel}</span>
+          <span class="site-header__reading-title">{readingContext.title}</span>
+        </div>
+
+        {readingAuthorName && (
+          <div class="site-header__reading-author">
+            <span class="site-header__reading-author-avatar" aria-hidden="true">
+              {readingAuthorAvatar ? (
+                <img src={readingAuthorAvatar} alt="" width="30" height="30" decoding="async" />
+              ) : (
+                <span>{readingAuthorInitials || 'RG'}</span>
+              )}
+            </span>
+
+            <span class="site-header__reading-author-copy">
+              <strong class="site-header__reading-author-name">{readingAuthorName}</strong>
+              {readingContext.readingTimeLabel && (
+                <small class="site-header__reading-time">{readingContext.readingTimeLabel}</small>
+              )}
+            </span>
+          </div>
+        )}
+      </div>
+    )}
+
 
     <!-- ACTIONS -->
     <div class="site-header__actions">
@@ -181,6 +219,63 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
 
 </header>
 
+{readingContext && (
+  <script is:inline>
+    (() => {
+      const initReadingHeader = () => {
+        const header = document.querySelector('[data-reading-header]');
+        const title = document.querySelector('.article-hero h1');
+        const articleContent = document.querySelector('.article-page__content > .article-content');
+        if (!header || !title || !articleContent || !window.matchMedia('(min-width: 1200px)').matches) return;
+        const shell = header.closest('.site-header');
+        const progress = document.createElement('span');
+        progress.className = 'site-header__reading-progress';
+        shell?.append(progress);
+        let frame;
+        const updateReadingState = () => {
+          frame = undefined;
+          const headerBounds = shell?.getBoundingClientRect();
+          if (!headerBounds) return;
+
+          const titleBounds = title.getBoundingClientRect();
+          const visibleFraction = Math.min(
+            1,
+            Math.max(0, (titleBounds.bottom - headerBounds.bottom) / Math.max(1, titleBounds.height)),
+          );
+          const readingReveal = 1 - visibleFraction;
+          const isReading = readingReveal > 0;
+          shell.classList.toggle('is-reading', isReading);
+          shell.style.setProperty('--rg-reading-reveal', String(readingReveal));
+          header.hidden = !isReading;
+
+          const articleBounds = articleContent.getBoundingClientRect();
+          const travelled = headerBounds.height - articleBounds.top;
+          const available = Math.max(1, articleBounds.height - window.innerHeight + headerBounds.height);
+          progress.style.transform = `scaleX(${Math.min(1, Math.max(0, travelled / available))})`;
+        };
+        const requestUpdate = () => {
+          if (frame !== undefined) return;
+          frame = requestAnimationFrame(updateReadingState);
+        };
+        addEventListener('scroll', requestUpdate, { passive: true });
+        addEventListener('resize', requestUpdate, { passive: true });
+        addEventListener('pagehide', () => {
+          if (frame !== undefined) cancelAnimationFrame(frame);
+          removeEventListener('scroll', requestUpdate);
+          removeEventListener('resize', requestUpdate);
+        }, { once: true });
+        updateReadingState();
+      };
+
+      if (document.readyState === 'loading') {
+        addEventListener('DOMContentLoaded', initReadingHeader, { once: true });
+      } else {
+        initReadingHeader();
+      }
+    })();
+  </script>
+)}
+
 <MobileMenu lang={lang} />
 
 <NavigationRails lang={lang}>
@@ -209,7 +304,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
 
           <img
             class="site-header__account-icon"
-            src="/icons/account-user.svg"
+            src="/icons/rails/user.svg"
             alt=""
             width="22"
             height="22"

@@ -11,13 +11,13 @@ const isFooter = variant === 'footer';
 
 const copy = isEnglish
   ? {
-      label: isFooter ? 'Support Retro-Gamers.it' : 'Did you enjoy this article?',
+      label: isFooter ? 'Support Retro-Gamers' : 'Did you enjoy this article?',
       title: 'Support Retro-Gamers.it',
       text: 'Retro-Gamers.it is an independent project, built in our spare time and free from invasive advertising. If you enjoy what you read, you can help us keep it alive.',
       cta: 'Donate'
     }
   : {
-      label: isFooter ? 'Sostieni Retro-Gamers.it' : 'Ti è piaciuto l’articolo?',
+      label: isFooter ? 'Sostieni Retro-Gamers' : 'Ti è piaciuto l’articolo?',
       title: 'Supporta Retro-Gamers.it',
       text: 'Retro-Gamers.it è un progetto indipendente, costruito nel tempo libero e senza pubblicità invasiva. Se ti piace quello che leggi, puoi aiutarci a tenerlo vivo.',
       cta: 'Dona'
@@ -33,7 +33,10 @@ const className = `support support--${variant}`;
     target="_blank"
     rel="noopener noreferrer"
   >
-    <span>{copy.label}</span>
+    <span class="support__footer-content">
+      <span class="support__paypal-icon" aria-hidden="true"></span>
+      <span>{copy.label}</span>
+    </span>
   </a>
 )}
 

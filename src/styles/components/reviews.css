@@ -1,14 +1,23 @@
 /* Homepage reviews: an editorial review column alongside a compact news list. */
 
+/* The primary home bands share this content inset so their outer edges align
+   independently of the module rendered inside each section. */
+.home-reviews,
+.home-editorial--guides {
+  --rg-home-content-inset: var(--rg-page-content-inset);
+}
+
 .rg-reviews {
   --review-ink: var(--rg-color-ivory);
   --review-muted: color-mix(in srgb, var(--rg-color-ivory) 70%, transparent);
   --review-rule: color-mix(in srgb, var(--rg-color-ivory) 16%, transparent);
   --review-secondary: color-mix(in srgb, var(--rg-color-teal) 58%, var(--rg-color-ivory));
+  --review-kicker: var(--rg-color-coral);
   --review-image-brightness: 0.92;
-  --reviews-inline-spacing: clamp(24px, 2.4vw, 38px);
+  --reviews-inline-spacing: var(--rg-home-content-inset);
   --rg-module-heading-ink: var(--review-ink);
   --rg-module-heading-rule: var(--review-rule);
+  --rg-module-heading-muted: var(--review-muted);
 
   padding-inline: var(--reviews-inline-spacing);
   color: var(--review-ink);
@@ -22,26 +31,8 @@ html[data-theme="light"] .rg-reviews {
   --review-muted: color-mix(in srgb, var(--rg-color-navy) 72%, transparent);
   --review-rule: color-mix(in srgb, var(--rg-color-navy) 18%, transparent);
   --review-secondary: var(--rg-color-teal);
+  --review-kicker: var(--rg-color-teal);
   --review-image-brightness: 0.96;
-}
-
-html[data-theme="light"] .rg-reviews__participation :is(.rg-reviews__quiz-kicker, .rg-reviews__quick-poll-label) {
-  color: var(--rg-color-navy);
-}
-
-html[data-theme="light"] .rg-reviews__participation-cta {
-  border-color: color-mix(in srgb, var(--rg-color-coral) 76%, var(--rg-color-navy));
-  border-bottom-color: color-mix(in srgb, var(--rg-color-coral) 62%, var(--rg-color-navy));
-  background: var(--rg-color-coral);
-  color: var(--rg-color-ivory);
-}
-
-html[data-theme="light"] .rg-reviews__participation-cta:is(:hover, :focus-visible) {
-  background: color-mix(in srgb, var(--rg-color-coral) 88%, var(--rg-color-ivory));
-}
-
-html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
-  color: var(--rg-color-navy);
 }
 
 .rg-reviews__grid {
@@ -92,31 +83,47 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
   transition: filter var(--rg-duration-media) var(--rg-ease-standard);
 }
 
-.rg-review-card__image > img.rg-review-card__editor-choice {
+.rg-review-card__editor-choice {
   position: absolute;
   z-index: 1;
-  width: auto;
-  height: auto;
   max-width: calc(100% - var(--rg-space-4));
-  border-radius: 0;
-  object-fit: contain;
   pointer-events: none;
-  filter: none;
 }
 
-.rg-review-card__image > img.rg-review-card__editor-choice--feature {
-  top: var(--rg-space-4);
-  left: var(--rg-space-4);
+.rg-review-card__editor-choice--feature {
+  top: var(--rg-space-3);
+  right: var(--rg-space-3);
+  left: auto;
   width: 128px;
 }
 
-.rg-review-card__image > img.rg-review-card__editor-choice--compact {
-  top: var(--rg-space-1);
-  left: var(--rg-space-2);
+.rg-review-card__editor-choice--compact {
+  top: var(--rg-space-3);
+  right: var(--rg-space-3);
+  left: auto;
   width: 72px;
 }
 
-.rg-review-card:is(:hover, :focus-visible) .rg-review-card__image > img:not(.rg-review-card__editor-choice) {
+.rg-review-card__editor-choice-asset {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0;
+}
+
+.rg-review-card__editor-choice-asset--light {
+  display: none;
+}
+
+html[data-theme="light"] .rg-review-card__editor-choice-asset--dark {
+  display: none;
+}
+
+html[data-theme="light"] .rg-review-card__editor-choice-asset--light {
+  display: block;
+}
+
+.rg-review-card:is(:hover, :focus-visible) .rg-review-card__image > img {
   filter: brightness(1);
 }
 
@@ -135,8 +142,7 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
 }
 
 .rg-review-card__kicker {
-  display: flex;
-  align-items: baseline;
+  gap: 0;
   min-width: 0;
   margin-bottom: var(--rg-space-2);
   font-size: var(--rg-type-meta);
@@ -149,20 +155,23 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
 
 .rg-review-card__type {
   flex: 0 0 auto;
-  color: var(--rg-color-coral);
 }
 
 .rg-review-card__separator {
   flex: 0 0 auto;
   margin-inline: var(--rg-space-2);
-  color: var(--review-rule);
+  color: var(--rg-meta-separator-color);
 }
 
 .rg-review-card__system {
   min-width: 0;
   overflow: hidden;
-  color: var(--review-secondary);
   text-overflow: ellipsis;
+}
+
+.rg-review-card__kicker .rg-comment-count {
+  color: var(--rg-meta-accessory-color);
+  font-size: var(--rg-type-meta);
 }
 
 .rg-review-card h3 {
@@ -191,14 +200,6 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.rg-review-card--feature:is(:hover, :focus-visible, :active) h3 {
-  color: color-mix(in srgb, var(--review-ink) 82%, var(--rg-color-gold));
-}
-
-.rg-review-card--compact:is(:hover, :focus-visible, :active) h3 {
-  color: color-mix(in srgb, var(--review-ink) 82%, var(--review-secondary));
 }
 
 .rg-review-card__body p {
@@ -308,37 +309,6 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
   gap: 0;
 }
 
-.rg-reviews__section-footer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--rg-space-4);
-  margin-top: var(--rg-space-4);
-  color: var(--review-muted);
-  font-size: var(--rg-type-ui-small);
-  font-weight: var(--rg-weight-semibold);
-  line-height: 1.3;
-  text-align: right;
-  text-decoration: none;
-  transition: color var(--rg-duration-fast) var(--rg-ease-standard);
-}
-
-.rg-reviews__section-footer::before {
-  min-width: 0;
-  height: 2px;
-  background: var(--review-rule);
-  content: "";
-}
-
-.rg-reviews__section-footer:is(:hover, :focus-visible) {
-  color: var(--review-ink);
-}
-
-.rg-reviews__section-footer:focus-visible {
-  outline: var(--rg-focus-ring);
-  outline-offset: var(--rg-focus-offset);
-}
-
 .rg-reviews__news-item {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
@@ -356,7 +326,6 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
   object-fit: cover;
   border-radius: var(--rg-profile-neutral);
   filter: brightness(var(--review-image-brightness));
-  transition: filter var(--rg-duration-media) var(--rg-ease-standard);
 }
 
 .rg-reviews__news-copy {
@@ -365,9 +334,13 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
   min-width: 0;
 }
 
-.rg-reviews__news-meta {
+.rg-reviews__news-meta-line .rg-comment-count {
+  color: var(--rg-meta-accessory-color);
+}
+
+.rg-reviews__news-meta,
+.rg-reviews__news-meta-line .rg-comment-count {
   overflow: hidden;
-  color: var(--rg-color-coral);
   font-size: var(--rg-type-meta);
   font-weight: var(--rg-weight-semibold);
   letter-spacing: 0.06em;
@@ -391,10 +364,6 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
 
 .rg-reviews__news-item:is(:hover, :focus-visible) img {
   filter: brightness(1);
-}
-
-.rg-reviews__news-item:is(:hover, :focus-visible) .rg-reviews__news-title {
-  color: color-mix(in srgb, var(--review-ink) 82%, var(--rg-color-coral));
 }
 
 .rg-reviews__sidebar-list {
@@ -453,6 +422,10 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
   text-align: center;
 }
 
+.rg-reviews__participation-heading.rg-module-heading {
+  margin-bottom: 0;
+}
+
 .rg-reviews__participation-heading h2 {
   margin: 0;
   color: var(--review-ink);
@@ -465,9 +438,9 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
 .rg-reviews__participation-card {
   min-width: 0;
   padding: var(--rg-space-4);
-  border: 1px solid var(--review-rule);
+  border: 1px solid var(--rg-border-neutral);
   border-radius: var(--rg-profile-feature-right);
-  background: color-mix(in srgb, var(--review-ink) 5%, transparent);
+  background: var(--rg-surface-card);
 }
 
 .rg-reviews__quiz {
@@ -494,7 +467,7 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
 
 .rg-reviews__quiz-kicker,
 .rg-reviews__quick-poll-label {
-  color: var(--rg-color-green);
+  color: var(--review-kicker);
   font-size: var(--rg-type-meta);
   font-weight: var(--rg-weight-semibold);
   letter-spacing: 0.06em;
@@ -506,11 +479,10 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
 .rg-reviews__quick-poll h4 {
   display: -webkit-box;
   overflow: hidden;
-  color: inherit;
+  color: var(--review-ink);
   font-size: var(--rg-type-card-small);
   font-weight: var(--rg-weight-bold);
   line-height: 1.25;
-  transition: color var(--rg-duration-fast) var(--rg-ease-standard);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -525,50 +497,13 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
   -webkit-line-clamp: 2;
 }
 
-.rg-reviews__participation-cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 176px;
-  block-size: 44px;
-  padding: var(--rg-space-2) var(--rg-space-4) calc(var(--rg-space-2) + 6px);
-  border: 1px solid color-mix(in srgb, var(--rg-color-gold) 76%, var(--rg-color-navy));
-  border-bottom: 6px solid color-mix(in srgb, var(--rg-color-gold) 62%, var(--rg-color-navy));
-  border-radius: 10px 10px 20px 10px;
-  background: var(--rg-color-gold);
-  color: var(--rg-color-navy);
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--rg-type-ui-small);
-  font-weight: var(--rg-weight-semibold);
-  line-height: 1.2;
-  text-decoration: none;
-  justify-self: center;
-  transition:
-    background-color var(--rg-duration-fast) var(--rg-ease-standard),
-    border-color var(--rg-duration-fast) var(--rg-ease-standard);
+.rg-reviews__quiz .rg-reviews__participation-cta {
+  margin-top: var(--rg-space-4);
 }
 
-.rg-reviews__participation-cta:is(:hover, :focus-visible) {
-  background: color-mix(in srgb, var(--rg-color-gold) 88%, var(--rg-color-ivory));
-}
-
-.rg-reviews__participation-cta:focus-visible {
-  outline: var(--rg-focus-ring);
-  outline-offset: var(--rg-focus-offset);
-}
-
-.rg-reviews__quiz:is(:hover, :focus-visible) > img {
-  filter: brightness(1);
-}
-
-.rg-reviews__quiz:is(:hover, :focus-visible) strong {
-  color: color-mix(in srgb, var(--review-ink) 82%, var(--rg-color-green));
-}
-
-.rg-reviews__quiz:focus-visible {
-  outline: var(--rg-focus-ring);
-  outline-offset: var(--rg-focus-offset);
+.rg-reviews__quick-poll .rg-reviews__participation-cta {
+  margin-top: var(--rg-space-3);
+  margin-bottom: var(--rg-space-1);
 }
 
 .rg-reviews__quick-poll {
@@ -671,7 +606,7 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
 
 @media (max-width: 640px) {
   .rg-reviews {
-    padding-inline: 18px;
+    padding-inline: var(--rg-page-content-inset);
   }
 
   .rg-reviews__sidebar {
@@ -709,7 +644,6 @@ html[data-theme="light"] .rg-reviews__quiz:is(:hover, :focus-visible) strong {
   .rg-reviews__quick-poll-option,
   .rg-reviews__quick-poll-options input,
   .rg-reviews__quick-poll-options input::after,
-  .rg-reviews__participation-cta,
   .rg-reviews__section-footer {
     transition: none;
   }

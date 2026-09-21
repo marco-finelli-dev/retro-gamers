@@ -2,11 +2,13 @@
 import { urlFor } from '../../lib/image';
 import { getPostUrl } from '../../lib/routes';
 import ReviewScoreRing from '../reviews/ReviewScoreRing.astro';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
 
-const { post, lang = 'it', variant = 'compact' } = Astro.props;
+const { post, lang = 'it', variant = 'compact', metadataVariant = 'default' } = Astro.props;
 
 const isEn = lang === 'en';
 const isFeature = variant === 'feature';
+const isHomeReviews = metadataVariant === 'home-reviews';
 
 if (!post) return;
 
@@ -30,10 +32,11 @@ const getTaxonomyLabel = (item) => {
     : item.name;
 };
 
-const platforms = (post.platforms || [])
-  .map((platform) => getTaxonomyLabel(platform))
-  .filter(Boolean);
-const platformLabel = platforms.join(' - ');
+const homeReviewMetadata = [
+  getTaxonomyLabel(post.platforms?.[0]),
+  getTaxonomyLabel(post.publishers?.[0]),
+  post.gameInfo?.releaseYear ? String(post.gameInfo.releaseYear) : ''
+].filter(Boolean);
 const reviewLabel = isEn ? 'Review' : 'Recensione';
 const rating = Number(post.rating?.overall);
 const isEditorsChoice = Number.isFinite(rating) && rating >= 9;
@@ -56,7 +59,7 @@ const imageHeight = isFeature ? 630 : 390;
 
 <a
   href={getPostUrl(post)}
-  class:list={['rg-review-card', `rg-review-card--${isFeature ? 'feature' : 'compact'}`]}
+  class:list={['rg-review-card', 'rg-editorial-link', `rg-review-card--${isFeature ? 'feature' : 'compact'}`]}
 >
 
   <div class="rg-review-card__image">
@@ -76,34 +79,71 @@ const imageHeight = isFeature ? 630 : 390;
     />
 
     {showEditorsChoice && isEditorsChoice && (
-      <img
-        src="/images/badges/editor-choice-compact-ivory.svg"
-        alt="Editor's Choice"
+      <span
         class:list={[
           'rg-review-card__editor-choice',
           `rg-review-card__editor-choice--${isFeature ? 'feature' : 'compact'}`
         ]}
-        width="922"
-        height="312"
-        loading="lazy"
-        decoding="async"
-      />
+        role="img"
+        aria-label="Editor's Choice"
+      >
+        <img
+          src="/images/badges/editor-choice-compact-navy.svg"
+          alt=""
+          class="rg-review-card__editor-choice-asset rg-review-card__editor-choice-asset--dark"
+          width="922"
+          height="312"
+          loading="lazy"
+          decoding="async"
+          aria-hidden="true"
+        />
+        <img
+          src="/images/badges/editor-choice-compact-ivory.svg"
+          alt=""
+          class="rg-review-card__editor-choice-asset rg-review-card__editor-choice-asset--light"
+          width="922"
+          height="312"
+          loading="lazy"
+          decoding="async"
+          aria-hidden="true"
+        />
+      </span>
     )}
   </div>
 
   <div class="rg-review-card__body">
-    <div class="rg-review-card__kicker">
-      <span class="rg-review-card__type">{reviewLabel}</span>
+    {isHomeReviews ? (
+      (homeReviewMetadata.length > 0 || Number(post.commentCount || 0) > 0) && (
+        <div class="rg-review-card__kicker rg-meta-line">
+          {homeReviewMetadata.map((item, index) => (
+            <>
+              {index > 0 && <span class="rg-review-card__separator rg-meta-separator" aria-hidden="true">·</span>}
+              <span class:list={['rg-review-card__system', index === 0 ? 'rg-meta-primary' : 'rg-meta-secondary']}>{item}</span>
+            </>
+          ))}
+          {homeReviewMetadata.length > 0 && Number(post.commentCount || 0) > 0 && <span class="rg-review-card__separator rg-meta-separator" aria-hidden="true">·</span>}
+          <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+        </div>
+      )
+    ) : (
+      <div class="rg-review-card__kicker rg-meta-line">
+        <span class="rg-review-card__type rg-meta-primary">{reviewLabel}</span>
+        {getTaxonomyLabel(post.platforms?.[0]) && (
+          <>
+            <span class="rg-review-card__separator rg-meta-separator" aria-hidden="true">·</span>
+            <span class="rg-review-card__system rg-meta-secondary">{getTaxonomyLabel(post.platforms?.[0])}</span>
+          </>
+        )}
+        {Number(post.commentCount || 0) > 0 && (
+          <>
+            <span class="rg-review-card__separator rg-meta-separator" aria-hidden="true">·</span>
+            <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+          </>
+        )}
+      </div>
+    )}
 
-      {platformLabel && (
-        <>
-          <span class="rg-review-card__separator" aria-hidden="true">·</span>
-          <span class="rg-review-card__system" title={platformLabel}>{platformLabel}</span>
-        </>
-      )}
-    </div>
-
-    <h3>{post.title}</h3>
+    <h3 class="rg-editorial-title">{post.title}</h3>
 
     {excerpt && <p>{excerpt}</p>}
   </div>

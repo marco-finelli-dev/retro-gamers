@@ -3,10 +3,12 @@ const { pros = [], cons = [], lang = 'it' } = Astro.props;
 
 const prosItems = Array.isArray(pros)
   ? pros.filter((item) => typeof item === 'string' && item.trim())
+      .slice(0, 3)
   : [];
 
 const consItems = Array.isArray(cons)
   ? cons.filter((item) => typeof item === 'string' && item.trim())
+      .slice(0, 3)
   : [];
 
 const labels = {

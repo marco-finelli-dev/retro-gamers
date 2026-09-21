@@ -50,6 +50,17 @@ const expectedType = category && isContentRouteSegment(category, 'en')
   ? getContentTypeFromRouteSegment(category, 'en')
   : null;
 
+const readingTypeLabels = {
+  article: 'Article',
+  feature: 'Feature',
+  guide: 'Guide',
+  hardware: 'Hardware',
+  interview: 'Interview',
+  memories: 'Memories',
+  news: 'News',
+  review: 'Review'
+};
+
 if (!expectedType) {
   return Astro.rewrite('/404');
 }
@@ -817,9 +828,12 @@ const articleAuthorSlug =
 const articleAuthorUrl = articleAuthorSlug
   ? `/en/authors/${articleAuthorSlug}/`
   : '';
+const articleAuthorAvatar = post.author?.image?.asset?.url || '';
+const readingTimeLabel = `${readingTime} min. read`;
 ---
 
 <Layout
+  pageShell="article"
   reviews={englishReviews}
   news={englishNews}
   title={pageTitle}
@@ -831,6 +845,13 @@ const articleAuthorUrl = articleAuthorSlug
   updatedAt={post.lastUpdated}
   articleAuthorName={articleAuthorName}
   articleAuthorUrl={articleAuthorUrl}
+  readingContext={{
+    typeLabel: readingTypeLabels[expectedType] || 'Article',
+    title: post.title,
+    authorName: articleAuthorName,
+    authorAvatar: articleAuthorAvatar,
+    readingTimeLabel
+  }}
   lang="en"
   alternateLanguages={alternateLanguages}
   noindex={isPreview || !isPostPubliclyDistributed(post)}
@@ -848,6 +869,8 @@ const articleAuthorUrl = articleAuthorSlug
     hideNewsletterPromo={hideNewsletterPromo}
     isPreview={isPreview}
     editorialQuickEdit={editorialQuickEdit}
+    readingTime={readingTime}
+    readingTypeLabel={readingTypeLabels[expectedType] || 'Article'}
     languageSwitch={
       italianPath
         ? { url: italianPath, language: italianTranslation.language }

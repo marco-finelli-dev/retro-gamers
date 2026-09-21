@@ -1,5 +1,6 @@
 ---
 import { formatReviewScore } from '../../lib/reviewBadges';
+import '../../styles/components/reviews.css';
 
 const { score, lang = 'it', size = 'compact' } = Astro.props;
 
@@ -22,10 +23,11 @@ const accessibleScore = lang === 'en'
 const accessibleLabel = lang === 'en'
   ? `Editorial score: ${accessibleScore} out of 10`
   : `Voto editoriale: ${accessibleScore} su 10`;
+const scoreSize = size === 'feature' ? 'feature' : 'compact';
 ---
 
 <span
-  class:list={['rg-review-score', `rg-review-score--${size === 'feature' ? 'feature' : 'compact'}`]}
+  class:list={['rg-review-score', `rg-review-score--${scoreSize}`]}
   role="img"
   aria-label={accessibleLabel}
 >

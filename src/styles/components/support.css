@@ -150,38 +150,54 @@ box-shadow: var(--rg-panel-shadow);
 
 .support--footer {
   display: inline-flex;
+  align-items: center;
+  justify-self: start;
   width: fit-content;
-
-  margin: 12px 0 18px;
-
-  font-family: var(--font-display);
-  font-size: 11px;
-  line-height: 1;
-  font-weight: 850;
-
-  text-transform: uppercase;
-  letter-spacing: 0.75px;
-
-  color: var(--color-primary);
+  min-height: calc(var(--rg-space-8) + var(--rg-space-1));
+  padding-inline: var(--rg-space-3);
+  border: 1px solid var(--rg-border-neutral);
+  border-radius: var(--rg-radius-accent);
+  color: var(--rg-text-secondary);
+  background: transparent;
+  font-family: var(--rg-font-family);
+  font-size: var(--rg-type-ui-small);
+  font-weight: var(--rg-weight-semibold);
+  line-height: 1.4;
   text-decoration: none;
-
   transition:
-    color var(--transition-fast),
-    text-shadow var(--transition-fast);
+    color var(--rg-duration-fast) var(--rg-ease-standard),
+    border-color var(--rg-duration-fast) var(--rg-ease-standard),
+    background-color var(--rg-duration-fast) var(--rg-ease-standard);
 }
 
-.support--footer:hover {
-  color: rgba(255,255,255,0.94);
-  text-shadow: 0 0 12px rgba(34,240,255,0.22);
+.support--footer:is(:hover, :active) {
+  border-color: var(--rg-border-neutral);
+  color: var(--rg-text-primary);
+  background: transparent;
 }
 
-html[data-theme="light"] .support--footer {
-  color: var(--rg-action-hover-color);
+.support__footer-content {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rg-gap-inline);
 }
 
-html[data-theme="light"] .support--footer:hover {
-  color: rgba(22,24,36,0.92);
-  text-shadow: 0 0 10px rgba(0,142,163,0.10);
+.support__paypal-icon {
+  display: block;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  background: currentColor;
+  mask: url('/icons/paypal.svg') center / contain no-repeat;
+  -webkit-mask: url('/icons/paypal.svg') center / contain no-repeat;
+}
+
+.support--footer:focus-visible {
+  border-color: var(--rg-border-neutral);
+  outline: 1px solid var(--rg-text-secondary);
+  outline-offset: 2px;
+  color: var(--rg-text-primary);
+  background: transparent;
 }
 
 
@@ -241,15 +257,6 @@ html[data-theme="light"] .support--box:hover .support__cta {
   box-shadow:
     0 10px 22px rgba(24,32,48,0.11),
     inset 0 1px 0 rgba(255,255,255,0.80);
-}
-
-html[data-theme="light"] .support--footer {
-  color: var(--rg-action-hover-color);
-}
-
-html[data-theme="light"] .support--footer:hover {
-  color: rgba(22,24,36,0.92);
-  text-shadow: 0 0 10px rgba(0,142,163,0.10);
 }
 
 

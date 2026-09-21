@@ -1,0 +1,359 @@
+---
+import '../../styles/components/home-headings.css';
+import '../../styles/components/lower-editorial.css';
+import { urlFor } from '../../lib/image';
+import {
+  getArchiveUrl,
+  getEmulatorToolUrl,
+  getPlayableClassicUrl,
+  getPostUrl
+} from '../../lib/routes';
+import { getAffiliateHardwareAndBooksProductType } from '../../lib/posts';
+import type { EmulatorTool } from '../../lib/emulator-tools';
+import type { PlayableClassic } from '../../lib/playable-classics';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
+
+const {
+  specials = [],
+  hardware = [],
+  playableClassics = [],
+  emulatorTools = [],
+  lang = 'it'
+} = Astro.props as {
+  specials?: any[];
+  hardware?: any[];
+  playableClassics?: PlayableClassic[];
+  emulatorTools?: EmulatorTool[];
+  lang?: 'it' | 'en';
+};
+
+const isEn = lang === 'en';
+
+const copy = isEn
+  ? {
+      regionLabel: 'Features and practical resources',
+      specials: 'Features',
+      allSpecials: 'All features',
+      picks: 'Chosen for you',
+      discoverAll: 'Discover all',
+      rediscover: 'Rediscover today',
+      classics: 'Playable classics',
+      allClassics: 'All classics',
+      tools: 'Emulators and interpreters',
+      allTools: 'All tools',
+      playableClassic: 'Playable classic',
+      affiliateProductTypes: {
+        hardware: 'Hardware',
+        book: 'Book',
+        accessory: 'Accessory'
+      },
+      toolTypes: {
+        interpreter: 'Interpreter',
+        emulator: 'Emulator',
+        frontend: 'Frontend',
+        utility: 'Utility',
+        other: 'Tool'
+      }
+    }
+  : {
+      regionLabel: 'Speciali e risorse pratiche',
+      specials: 'Speciali',
+      allSpecials: 'Tutti gli speciali',
+      picks: 'Scelti per voi',
+      discoverAll: 'Scopri tutti',
+      rediscover: 'Riscoprire oggi',
+      classics: 'Classici giocabili',
+      allClassics: 'Tutti i classici',
+      tools: 'Emulatori e interpreti',
+      allTools: 'Tutti gli strumenti',
+      playableClassic: 'Classico giocabile',
+      affiliateProductTypes: {
+        hardware: 'Hardware',
+        book: 'Libro',
+        accessory: 'Accessorio'
+      },
+      toolTypes: {
+        interpreter: 'Interprete',
+        emulator: 'Emulatore',
+        frontend: 'Frontend',
+        utility: 'Utility',
+        other: 'Strumento'
+      }
+    };
+
+const urls = {
+  specials: getArchiveUrl('feature', lang),
+  hardware: getArchiveUrl('hardware', lang),
+  classics: isEn ? '/en/playable-classics/' : '/classici-giocabili-oggi/',
+  tools: isEn ? '/en/emulators/' : '/emulatori/'
+};
+
+const cleanText = (value?: string) => value?.replace(/\[…\]/g, '').trim() || '';
+
+const getPostExcerpt = (post: any) =>
+  cleanText(post?.cardExcerpt) || cleanText(post?.subtitle) || cleanText(post?.excerpt);
+
+const getPostCategory = (post: any, fallback: string) => {
+  const category = post?.categories?.[0];
+
+  if (!category) return fallback;
+
+  return isEn
+    ? category.nameEn || category.name || fallback
+    : category.name || category.nameEn || fallback;
+};
+
+const getPostImage = (post: any, width: number, height: number) => {
+  if (!post?.featuredImage?.asset) return '/og-image.jpg';
+
+  return urlFor(post.featuredImage)
+    .width(width)
+    .height(height)
+    .fit('crop')
+    .quality(74)
+    .auto('format')
+    .url();
+};
+
+const getCoverImage = (item: PlayableClassic | EmulatorTool, width = 160) => {
+  if (!item?.coverImage?.asset) return '';
+
+  return urlFor(item.coverImage)
+    .width(width)
+    .height(width)
+    .fit('crop')
+    .quality(74)
+    .auto('format')
+    .url();
+};
+
+const getLocalizedName = (item: any) =>
+  isEn
+    ? item?.nameEn || item?.name || item?.title || ''
+    : item?.name || item?.title || item?.nameEn || '';
+
+const getOriginalPlatforms = (item: PlayableClassic) => {
+  const names = item.originalPlatforms
+    ?.map(getLocalizedName)
+    .map((name) => name.trim())
+    .filter(Boolean) || [];
+
+  return [...new Set(names)];
+};
+
+const specialItems = specials.slice(0, 5);
+const [specialFeature, ...specialSecondary] = specialItems;
+
+const hardwareItems = hardware.slice(0, 4).map((post: any) => ({
+  id: post._id || post.slug,
+  title: post.title,
+  url: getPostUrl(post),
+  image: getPostImage(post, 160, 160),
+  alt: post.featuredImage?.alt || post.title,
+  kicker: (() => {
+    const productType = getAffiliateHardwareAndBooksProductType(post);
+
+    return productType ? copy.affiliateProductTypes[productType] : '';
+  })(),
+  commentCount: post.commentCount
+}));
+
+const classicItems = playableClassics.slice(0, 3).map((item) => ({
+  id: item._id || item.slug,
+  title: item.title,
+  url: getPlayableClassicUrl(item, lang),
+  image: getCoverImage(item),
+  alt: item.coverImage?.alt || item.title,
+  kicker: getOriginalPlatforms(item),
+  kickerClass: 'rg-lower-editorial__kicker--platforms'
+}));
+
+const toolItems = emulatorTools.slice(0, 3).map((item) => ({
+  id: item._id || item.slug,
+  title: item.title,
+  url: getEmulatorToolUrl(item, lang),
+  image: getCoverImage(item),
+  alt: item.coverImage?.alt || item.title,
+  kicker: item.toolType
+    ? copy.toolTypes[item.toolType as keyof typeof copy.toolTypes] || copy.toolTypes.other
+    : copy.toolTypes.other
+}));
+
+---
+
+<section class="rg-lower-editorial" aria-label={copy.regionLabel}>
+  <div class="rg-lower-editorial__main">
+    <section class="rg-lower-editorial__specials" aria-labelledby={`home-specials-${lang}`}>
+      <div class="rg-module-heading">
+        <h2 id={`home-specials-${lang}`}>{copy.specials}</h2>
+      </div>
+
+      {specialFeature && (
+        <a href={getPostUrl(specialFeature)} class="rg-special-feature rg-editorial-link">
+          <span class="rg-special-feature__image">
+            <img
+              src={getPostImage(specialFeature, 960, 540)}
+              alt={specialFeature.featuredImage?.alt || specialFeature.title}
+              width="960"
+              height="540"
+              loading="lazy"
+              decoding="async"
+            />
+          </span>
+
+          <span class="rg-special-feature__content">
+            <span class="rg-lower-editorial__meta rg-meta-line">
+              <span class="rg-lower-editorial__kicker rg-meta-primary">
+                {getPostCategory(specialFeature, copy.specials)}
+              </span>
+              {Number(specialFeature.commentCount || 0) > 0 && <span class="rg-meta-separator" aria-hidden="true">·</span>}
+              <CommentCountBadge count={specialFeature.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+            </span>
+            <strong class="rg-editorial-title">{specialFeature.title}</strong>
+            {getPostExcerpt(specialFeature) && <span class="rg-special-feature__excerpt">{getPostExcerpt(specialFeature)}</span>}
+          </span>
+        </a>
+      )}
+
+      {specialSecondary.length > 0 && (
+        <div class="rg-special-secondary-list">
+          {specialSecondary.map((post: any) => (
+            <a href={getPostUrl(post)} class="rg-special-secondary rg-editorial-link">
+              <span class="rg-special-secondary__image">
+                <img
+                  src={getPostImage(post, 320, 240)}
+                  alt={post.featuredImage?.alt || post.title}
+                  width="320"
+                  height="240"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </span>
+
+              <span class="rg-special-secondary__content">
+                <span class="rg-lower-editorial__meta rg-meta-line">
+                  <span class="rg-lower-editorial__kicker rg-meta-primary">
+                    {getPostCategory(post, copy.specials)}
+                  </span>
+                  {Number(post.commentCount || 0) > 0 && <span class="rg-meta-separator" aria-hidden="true">·</span>}
+                  <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+                </span>
+                <strong class="rg-editorial-title">{post.title}</strong>
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
+
+      <a href={urls.specials} class="rg-archive-link rg-lower-editorial__section-link">{copy.allSpecials} →</a>
+    </section>
+
+    <slot name="interviews" />
+  </div>
+
+  <aside class="rg-lower-editorial__utility" aria-label={copy.regionLabel}>
+    <section class="rg-lower-editorial__utility-card" aria-labelledby={`home-picks-${lang}`}>
+      <div class="rg-module-heading rg-module-heading--centered rg-utility-card__heading">
+        <h2 id={`home-picks-${lang}`}>{copy.picks}</h2>
+      </div>
+
+      {hardwareItems.length > 0 && (
+        <div class="rg-utility-group__list">
+          {hardwareItems.map((item) => (
+            <a href={item.url} class:list={['rg-utility-item', 'rg-editorial-link', !item.image && 'rg-utility-item--no-image']}>
+              {item.image && (
+                <span class="rg-utility-item__image">
+                  <img src={item.image} alt={item.alt} width="160" height="160" loading="lazy" decoding="async" />
+                </span>
+              )}
+
+              <span class="rg-utility-item__content">
+                {(item.kicker || Number(item.commentCount || 0) > 0) && (
+                  <span class="rg-lower-editorial__meta rg-meta-line">
+                    {item.kicker && <span class:list={['rg-lower-editorial__kicker', 'rg-meta-primary', item.kickerClass]}>{item.kicker}</span>}
+                    {item.kicker && Number(item.commentCount || 0) > 0 && <span class="rg-meta-separator" aria-hidden="true">·</span>}
+                    <CommentCountBadge count={item.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+                  </span>
+                )}
+                <strong class="rg-editorial-title">{item.title}</strong>
+              </span>
+            </a>
+          ))}
+        </div>
+      )}
+
+      <a href={urls.hardware} class="rg-cta-filled-raised rg-cta-filled-raised--primary rg-utility-card__cta">
+        <span class="rg-cta-filled-raised__face">{copy.discoverAll}</span>
+      </a>
+    </section>
+
+    <section class="rg-lower-editorial__utility-card" aria-labelledby={`home-rediscover-${lang}`}>
+      <div class="rg-module-heading rg-module-heading--centered rg-utility-card__heading">
+        <h2 id={`home-rediscover-${lang}`}>{copy.rediscover}</h2>
+      </div>
+
+      <section class="rg-utility-group" aria-labelledby={`home-classics-${lang}`}>
+        <h3 id={`home-classics-${lang}`}>{copy.classics}</h3>
+
+        {classicItems.length > 0 && (
+          <div class="rg-utility-group__list">
+            {classicItems.map((item) => (
+              <a href={item.url} class:list={['rg-utility-item', 'rg-editorial-link', !item.image && 'rg-utility-item--no-image']}>
+                {item.image && (
+                  <span class="rg-utility-item__image">
+                    <img src={item.image} alt={item.alt} width="160" height="160" loading="lazy" decoding="async" />
+                  </span>
+                )}
+
+                <span class="rg-utility-item__content">
+                  {item.kicker?.length > 0 && (
+                    <span class:list={['rg-lower-editorial__kicker', item.kickerClass, 'rg-meta-line']}>
+                      {item.kicker.map((platform, index) => (
+                        <>
+                          {index > 0 && <span class="rg-meta-separator" aria-hidden="true">·</span>}
+                          <span class={index === 0 ? 'rg-meta-primary' : index === 1 ? 'rg-meta-secondary' : 'rg-meta-tertiary'}>{platform}</span>
+                        </>
+                      ))}
+                    </span>
+                  )}
+                  <strong class="rg-editorial-title">{item.title}</strong>
+                </span>
+              </a>
+            ))}
+          </div>
+        )}
+
+        <a href={urls.classics} class="rg-cta-filled-raised rg-cta-filled-raised--primary rg-utility-card__cta">
+          <span class="rg-cta-filled-raised__face">{copy.allClassics}</span>
+        </a>
+      </section>
+
+      <section class="rg-utility-group" aria-labelledby={`home-tools-${lang}`}>
+        <h3 id={`home-tools-${lang}`}>{copy.tools}</h3>
+
+        {toolItems.length > 0 && (
+          <div class="rg-utility-group__list">
+            {toolItems.map((item) => (
+              <a href={item.url} class:list={['rg-utility-item', 'rg-editorial-link', !item.image && 'rg-utility-item--no-image']}>
+                {item.image && (
+                  <span class="rg-utility-item__image">
+                    <img src={item.image} alt={item.alt} width="160" height="160" loading="lazy" decoding="async" />
+                  </span>
+                )}
+
+                <span class="rg-utility-item__content">
+                  {item.kicker && <span class:list={['rg-lower-editorial__kicker', 'rg-meta-primary', item.kickerClass]}>{item.kicker}</span>}
+                  <strong class="rg-editorial-title">{item.title}</strong>
+                </span>
+              </a>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <a href={urls.tools} class="rg-cta-filled-raised rg-cta-filled-raised--primary rg-utility-card__cta">
+        <span class="rg-cta-filled-raised__face">{copy.allTools}</span>
+      </a>
+    </section>
+  </aside>
+</section>
