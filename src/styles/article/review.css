@@ -533,6 +533,13 @@ html[data-theme="light"] .review-sidebar .review-score-box.is-compact .review-sc
   text-transform: uppercase;
 }
 
+html[data-theme="light"] .article-page :is(
+  .article-final-rating__heading > span,
+  .article-pros-cons__eyebrow
+) {
+  color: var(--rg-meta-secondary-color);
+}
+
 .article-pros-cons__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -578,7 +585,7 @@ html[data-theme="light"] .review-sidebar .review-score-box.is-compact .review-sc
 }
 
 .article-pros-cons__column--cons h2 {
-  color: var(--rg-color-coral);
+  color: var(--rg-meta-primary-color);
 }
 
 .article-pros-cons ul {
@@ -610,6 +617,10 @@ html[data-theme="light"] .review-sidebar .review-score-box.is-compact .review-sc
 
 .article-pros-cons__column--cons li::before {
   background: var(--rg-color-coral);
+}
+
+html[data-theme="light"] .article-pros-cons__column--pros h2 {
+  color: color-mix(in srgb, var(--rg-color-green) 50%, var(--rg-color-navy));
 }
 
 html[data-theme="light"] .article-pros-cons__column--pros {

@@ -614,7 +614,7 @@ const commentsClass = [
     `;
 
     return anchorId
-      ? `<a class="article-comment__permalink" href="#${escapeHtml(anchorId)}" aria-label="${escapeHtml(labels.directLink)}">${time}</a>`
+      ? `<a class="article-comment__permalink" href="#${escapeHtml(anchorId)}" aria-label="${escapeHtml(formatCommentDate(comment.created_at, language))} — ${escapeHtml(labels.directLink)}">${time}</a>`
       : time;
   };
 
@@ -732,7 +732,7 @@ const commentsClass = [
             data-own-comment="${ownCommentValue}"
             aria-pressed="${userReaction === 'like' ? 'true' : 'false'}"
             ${disabledAttributes}
-            aria-label="${escapeHtml(labels.like)}"
+            aria-label="${escapeHtml(labels.like)}: ${likeCount}"
           >
             <span class="comment-reaction__count" data-reaction-count>${likeCount}</span>
           </button>
@@ -748,7 +748,7 @@ const commentsClass = [
             data-own-comment="${ownCommentValue}"
             aria-pressed="${userReaction === 'dislike' ? 'true' : 'false'}"
             ${disabledAttributes}
-            aria-label="${escapeHtml(labels.dislike)}"
+            aria-label="${escapeHtml(labels.dislike)}: ${dislikeCount}"
           >
             <span class="comment-reaction__count" data-reaction-count>${dislikeCount}</span>
           </button>
@@ -1227,6 +1227,7 @@ const commentsClass = [
 
         if (countNode) {
           countNode.textContent = String(Number(count || 0));
+          reactionButton.setAttribute('aria-label', `${title}: ${countNode.textContent}`);
         }
 
         if (Array.isArray(users)) {

@@ -90,18 +90,19 @@ export default function HomeSurvey({ lang = 'it' }: { lang?: string }) {
   const question = poll?.survey.questions[0];
   const results = poll?.results;
   const completed = confirmed || poll?.responseState.hasResponded;
+  const showVotingForm = question && !results && !completed && poll?.availability.isOpen;
   const message = sending ? copy.sending : loading ? copy.loading : error ? copy.error
     : accepted ? copy.thanks : poll?.availability.state === 'closed' ? copy.closed
     : completed ? copy.already : '';
 
   return <div className="rg-reviews__quick-poll" data-home-survey aria-busy={loading || sending}>
     <span className="rg-reviews__quick-poll-label">{copy.poll}</span>
-    {question && <h4 id="quick-poll-question">{question.text}</h4>}
+    {question && !showVotingForm && <p id="quick-poll-question" className="rg-home-poll__question">{question.text}</p>}
     <p className="rg-home-poll__status" role="status" aria-live="polite" hidden={!message}>{message}</p>
     {error && <button className="rg-home-poll__retry" type="button" onClick={() => void load()} disabled={loading || sending}>{copy.retry}</button>}
-    {question && !results && !completed && poll?.availability.isOpen && <form onSubmit={vote}>
+    {showVotingForm && <form onSubmit={vote}>
       <fieldset className="rg-reviews__quick-poll-options" disabled={sending || loading || error}>
-        <legend className="sr-only">{question.text}</legend>
+        <legend id="quick-poll-question" className="rg-home-poll__question">{question.text}</legend>
         {question.options.map(option => <label className="rg-reviews__quick-poll-option" key={option.optionId}>
           <input type="radio" name="home-survey-choice" value={option.optionId} checked={selection === option.optionId}
             onChange={() => setSelection(option.optionId)} />

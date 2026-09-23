@@ -12,7 +12,7 @@
   --review-muted: color-mix(in srgb, var(--rg-color-ivory) 70%, transparent);
   --review-rule: color-mix(in srgb, var(--rg-color-ivory) 16%, transparent);
   --review-secondary: color-mix(in srgb, var(--rg-color-teal) 58%, var(--rg-color-ivory));
-  --review-kicker: var(--rg-color-coral);
+  --review-kicker: var(--rg-meta-primary-color);
   --review-image-brightness: 0.92;
   --reviews-inline-spacing: var(--rg-home-content-inset);
   --rg-module-heading-ink: var(--review-ink);
@@ -476,7 +476,7 @@ html[data-theme="light"] .rg-review-card__editor-choice-asset--light {
 }
 
 .rg-reviews__quiz strong,
-.rg-reviews__quick-poll h4 {
+.rg-reviews__quick-poll .rg-home-poll__question {
   display: -webkit-box;
   overflow: hidden;
   color: var(--review-ink);
@@ -511,10 +511,16 @@ html[data-theme="light"] .rg-review-card__editor-choice-asset--light {
   gap: var(--rg-space-3);
 }
 
-.rg-reviews__quick-poll h4 {
+.rg-reviews__quick-poll .rg-home-poll__question {
   margin: 0;
   font-family: var(--font-base);
   -webkit-line-clamp: 2;
+}
+
+.rg-reviews__quick-poll legend.rg-home-poll__question {
+  width: 100%;
+  padding: 0;
+  margin-bottom: var(--rg-space-3);
 }
 
 .rg-reviews__quick-poll-options {
