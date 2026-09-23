@@ -1,0 +1,90 @@
+/* Mobile counterparts of standard-content-refresh. Scope compatibility tokens to
+   the audited templates: never the shell, account panels or Home survey. */
+@media (max-width: 1199px) {
+  html[data-theme] body :is(.community-hub-page, .legal-document-refresh, .legal-page:has(.reader-badges-grid)) {
+    --color-text: var(--rg-text-primary);
+    --color-text-soft: var(--rg-text-secondary);
+    --color-text-muted: var(--rg-text-muted);
+    --color-primary: var(--rg-text-primary);
+    --color-primary-soft: var(--rg-surface-card);
+    --color-border: var(--rg-border-neutral);
+    --rg-panel-bg: var(--rg-shell-paper);
+    --rg-panel-border: var(--rg-border-neutral);
+    --rg-panel-grid: none;
+    --rg-panel-highlight: transparent;
+    --rg-panel-shadow: none;
+    --rg-card-bg: var(--rg-shell-paper);
+    --rg-card-border: var(--rg-border-neutral);
+    --rg-card-shadow: none;
+    --rg-card-hover-shadow: none;
+    --rg-badge-bg: transparent;
+    --rg-badge-border: var(--rg-border-neutral);
+    --rg-badge-color: var(--rg-text-secondary);
+    --rg-eyebrow-color: var(--rg-text-secondary);
+    --rg-section-title-color: var(--rg-title-color);
+    --rg-section-title-line: var(--rg-divider-color);
+    --rg-action-color: var(--rg-text-primary);
+    --rg-action-hover-color: var(--rg-title-hover);
+    --rg-cta-bg: var(--rg-shell-paper);
+    --rg-cta-hover-bg: var(--rg-surface-card);
+    --rg-cta-border: var(--rg-border-neutral);
+    --rg-cta-color: var(--rg-text-primary);
+    color: var(--rg-text-primary);
+  }
+
+  html[data-theme] body :is(.quiz-page, .legal-document-refresh, .legal-page:has(.reader-badges-grid)) { padding-block: var(--rg-space-6) var(--rg-space-12); }
+  html[data-theme] body :is(.quiz-page, .legal-document-refresh, .legal-page:has(.reader-badges-grid)) > .container { padding-inline: var(--rg-layout-gutter-mobile); }
+  html[data-theme] body :is(.community-survey-page, .community-hub-page) { width: calc(100% - 2 * var(--rg-layout-gutter-mobile)); margin-block: var(--rg-space-6) var(--rg-space-12); gap: var(--rg-space-6); }
+
+  /* One editorial header and canvas, as in the refreshed mobile listings. */
+  html[data-theme] body :is(.community-hub-page .community-hero, .community-hub-page .community-card, .legal-document-refresh .legal-hero, .legal-document-refresh .legal-content, .legal-page:has(.reader-badges-grid) :is(.legal-hero, .legal-content)) {
+    padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none; overflow: visible;
+  }
+  html[data-theme] body :is(.community-hub-page .community-hero, .community-hub-page .community-card, .legal-document-refresh :is(.legal-hero, .legal-content), .legal-page:has(.reader-badges-grid) :is(.legal-hero, .legal-content))::before, html[data-theme] body :is(.legal-document-refresh .legal-hero, .legal-page:has(.reader-badges-grid) .legal-hero)::after { content: none; }
+  html[data-theme] body :is(.community-hub-hero, .legal-document-refresh .legal-hero, .legal-page:has(.reader-badges-grid) .legal-hero) { padding-bottom: var(--rg-space-6); border-bottom: 1px solid var(--rg-divider-color); }
+  html[data-theme] body :is(.community-hub-page, .legal-document-refresh, .legal-page:has(.reader-badges-grid)) h1 {
+    margin: 0; max-width: none; font: var(--rg-weight-bold) clamp(30px, 5vw, 40px)/1.15 var(--rg-font-family);
+    letter-spacing: -.02em; text-transform: none; text-shadow: none; color: var(--rg-title-color); overflow-wrap: anywhere;
+  }
+  html[data-theme] body :is(.community-hub-hero, .legal-document-refresh .legal-hero, .legal-page:has(.reader-badges-grid) .legal-hero) p {
+    color: var(--rg-text-secondary); font-size: var(--rg-type-body); line-height: 1.5; font-weight: var(--rg-weight-regular);
+  }
+  :is(.community-hub-hero) .community-kicker, :is(.legal-document-refresh, .legal-page:has(.reader-badges-grid)) .legal-hero > span { display: none; }
+
+  /* Quiz images and editorial cards; game states keep their existing semantics. */
+  html[data-theme] body .quiz-grid { grid-template-columns: minmax(0, 1fr); gap: var(--rg-space-8); margin-top: var(--rg-space-6); }
+  html[data-theme] body .quiz-detail-hero { grid-template-columns: minmax(0, 1fr); gap: var(--rg-space-4); }
+  html[data-theme] body .quiz-detail-hero__media { order: -1; }
+
+  /* Shared control grammar, scoped to these audited community templates. */
+  html[data-theme] body :is(.community-hub-hero__primary, .community-hub-hero__secondary-cta) {
+    min-height: 44px; border-radius: var(--rg-radius-small); border-color: var(--rg-border-neutral);
+    background: var(--rg-shell-paper); color: var(--rg-text-primary); box-shadow: none; transform: none;
+    font-size: var(--rg-type-body); font-weight: var(--rg-weight-semibold); text-transform: none; letter-spacing: normal;
+  }
+  html[data-theme] body :is(.community-hub-page) :is(a, button):hover { box-shadow: none; transform: none; }
+  html[data-theme] body :is(.community-hub-page, .legal-document-refresh, .legal-page:has(.reader-badges-grid)) :is(a, button, input, textarea):focus-visible { outline: 1px solid var(--rg-text-secondary); outline-offset: 3px; box-shadow: none; }
+
+  /* Hub and badge directory reuse the same canvas and compact list treatment. */
+  html[data-theme] body .community-hub-stats article { background: none; border: 0; border-radius: 0; padding: var(--rg-space-2) 0; box-shadow: none; }
+  html[data-theme] body .community-hub-stats span { white-space: normal; letter-spacing: normal; text-transform: none; font-size: var(--rg-type-ui-small); }
+  html[data-theme] body :is(.community-hub-column, .community-hub-memory, .community-hub-discussion-card) { background: none; border: 0; border-radius: 0; box-shadow: none; padding-inline: 0; }
+  html[data-theme] body .community-hub-column { border-top: 1px solid var(--rg-divider-color); padding-top: var(--rg-space-4); }
+  html[data-theme] body .community-hub-page .user-avatar { background: var(--rg-shell-paper); box-shadow: none; border-color: var(--rg-border-neutral); }
+  html[data-theme] body :is(.legal-document-refresh, .legal-page:has(.reader-badges-grid)) .legal-content :is(h2, h3) { font-family: var(--rg-font-family); color: var(--rg-text-primary); font-weight: var(--rg-weight-semibold); text-transform: none; letter-spacing: normal; line-height: 1.3; text-shadow: none; }
+  html[data-theme] body :is(.legal-document-refresh, .legal-page:has(.reader-badges-grid)) .legal-content h2::after { content: none; }
+  html[data-theme] body :is(.legal-document-refresh, .legal-page:has(.reader-badges-grid)) .legal-content :is(p, li) { color: var(--rg-text-secondary); font-size: var(--rg-type-body); }
+  html[data-theme] body :is(.legal-document-refresh, .legal-page:has(.reader-badges-grid)) .legal-content strong { color: var(--rg-text-primary); }
+  html[data-theme] body :is(.legal-document-refresh, .legal-page:has(.reader-badges-grid)) .legal-content a { color: var(--rg-text-primary); }
+  html[data-theme] body .legal-document-refresh .legal-updated { padding: 0; background: none; border: 0; box-shadow: none; color: var(--rg-text-secondary) !important; line-height: 1.5 !important; }
+  html[data-theme] body .reader-badge-card { background: none; border: 0; border-bottom: 1px solid var(--rg-divider-color); border-radius: 0; padding: var(--rg-space-4) 0; }
+  html[data-theme] body .reader-badge-card__visual { background: none; border: 0; box-shadow: none; }
+}
+
+@media (min-width: 700px) and (max-width: 1199px) {
+  html[data-theme] body .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  html[data-theme] body .quiz-leaderboard__metric { padding-left: 0; }
+}

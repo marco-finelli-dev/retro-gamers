@@ -1,0 +1,108 @@
+/* Quiz and Community Survey share presentation at every viewport. Layout adaptations remain in mobile-community.css. */
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-page, .community-survey-page) {
+  --color-text: var(--rg-text-primary);
+  --color-text-soft: var(--rg-text-secondary);
+  --color-text-muted: var(--rg-text-muted);
+  --color-primary: var(--rg-text-primary);
+  --color-primary-soft: var(--rg-surface-card);
+  --color-border: var(--rg-border-neutral);
+  --rg-panel-bg: var(--rg-shell-paper);
+  --rg-panel-border: var(--rg-border-neutral);
+  --rg-panel-grid: none;
+  --rg-panel-highlight: transparent;
+  --rg-panel-shadow: none;
+  --rg-card-bg: var(--rg-shell-paper);
+  --rg-card-border: var(--rg-border-neutral);
+  --rg-card-shadow: none;
+  --rg-card-hover-shadow: none;
+  --rg-badge-bg: transparent;
+  --rg-badge-border: var(--rg-border-neutral);
+  --rg-badge-color: var(--rg-text-secondary);
+  --rg-eyebrow-color: var(--rg-text-secondary);
+  --rg-section-title-color: var(--rg-title-color);
+  --rg-section-title-line: var(--rg-divider-color);
+  --rg-action-color: var(--rg-text-primary);
+  --rg-action-hover-color: var(--rg-title-hover);
+  --rg-cta-bg: var(--rg-shell-paper);
+  --rg-cta-hover-bg: var(--rg-surface-card);
+  --rg-cta-border: var(--rg-border-neutral);
+  --rg-cta-color: var(--rg-text-primary);
+  color: var(--rg-text-primary);
+}
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-hero, .quiz-detail-hero, .quiz-panel, .community-survey-page .community-hero, .community-survey-card) {
+  padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none; overflow: visible;
+}
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-hero, .quiz-detail-hero, .quiz-panel, .community-survey-page .community-hero, .community-survey-card)::before, html[data-theme] body.rg-standard-page-layout > main :is(.quiz-hero, .quiz-detail-hero, .quiz-panel)::after { content: none; }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-hero, .community-survey-hero) { padding-bottom: var(--rg-space-6); border-bottom: 1px solid var(--rg-divider-color); }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-hero__content, .quiz-detail-hero__content) { padding: 0; gap: var(--rg-space-3); }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-page, .community-survey-page) h1 {
+  margin: 0; max-width: none; font: var(--rg-weight-bold) clamp(30px, 5vw, 40px)/1.15 var(--rg-font-family);
+  letter-spacing: -.02em; text-transform: none; text-shadow: none; color: var(--rg-title-color); overflow-wrap: anywhere;
+}
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-hero__content, .quiz-detail-hero__content, .community-survey-hero) p {
+  color: var(--rg-text-secondary); font-size: var(--rg-type-body); line-height: 1.5; font-weight: var(--rg-weight-regular);
+}
+.quiz-page :is(.quiz-hero, .quiz-detail-hero) .quiz-eyebrow, :is(.community-survey-hero) .community-kicker { display: none; }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-card__meta span, .quiz-card__meta small, .quiz-detail__facts span, .quiz-detail__facts small, .quiz-player__mode, .quiz-player__score, .quiz-player__progress, .quiz-leaderboard__total, .quiz-leaderboard__badge, .quiz-leaderboard__you, .community-survey-hero__badges span, .community-survey-card__title-row > span) {
+  min-height: 0; padding: 0; border: 0; border-radius: 0; background: none;
+  color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small); font-weight: var(--rg-weight-semibold); line-height: 1.5; letter-spacing: normal; text-transform: none;
+}
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-card__meta, .quiz-detail__facts, .community-survey-hero__badges) { gap: var(--rg-space-2) var(--rg-space-4); }
+html[data-theme] body.rg-standard-page-layout > main .quiz-card { background: none; border: 0; border-radius: 0; box-shadow: none; transform: none; }
+html[data-theme] body.rg-standard-page-layout > main .quiz-card:is(:hover, :focus-visible) { transform: none; box-shadow: none; }
+html[data-theme] body.rg-standard-page-layout > main .quiz-card__body { padding: var(--rg-space-4) 0 0; gap: var(--rg-space-3); }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-card__media, .quiz-detail-hero__media) { min-height: 0; aspect-ratio: 16 / 10; border-radius: var(--rg-radius-medium); background: var(--rg-shell-paper); }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-player__intro, .quiz-player__question, .quiz-player__feedback, .quiz-player__result, .quiz-leaderboard, .quiz-staff-leaderboard) {
+  padding: var(--rg-space-6) 0; background: none; border: 0; border-top: 1px solid var(--rg-divider-color); border-radius: 0; box-shadow: none;
+}
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-leaderboard, .quiz-staff-leaderboard)::before, html[data-theme] body.rg-standard-page-layout > main :is(.quiz-leaderboard, .quiz-staff-leaderboard)::after { content: none; }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-player__question-title, .quiz-player__result h2) { font-size: var(--rg-type-section); line-height: 1.3; }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-player__answer, .quiz-player__answer:where(:disabled:hover)) {
+  min-height: 56px; padding: var(--rg-space-3); border: 1px solid var(--rg-border-neutral); border-radius: var(--rg-radius-small);
+  background: var(--rg-shell-paper); color: var(--rg-text-primary); box-shadow: none; transform: none; font-size: var(--rg-type-body);
+}
+html[data-theme] body.rg-standard-page-layout > main .quiz-player__answer.is-selected { border-color: var(--rg-text-primary); }
+html[data-theme] body.rg-standard-page-layout > main .quiz-player__answer.is-correct { border-color: var(--rg-color-green); background: color-mix(in srgb, var(--rg-color-green) 8%, var(--rg-shell-paper)); color: var(--rg-text-primary); }
+html[data-theme] body.rg-standard-page-layout > main .quiz-player__answer:is(.is-wrong, .is-timeout) { border-color: var(--rg-color-coral); background: color-mix(in srgb, var(--rg-color-coral) 8%, var(--rg-shell-paper)); color: var(--rg-text-primary); }
+html[data-theme] body.rg-standard-page-layout > main .quiz-player__answer .quiz-player__answer-status { color: var(--rg-text-primary); }
+html[data-theme] body.rg-standard-page-layout > main .quiz-player__answer-index { background: none; color: var(--rg-text-secondary); }
+html[data-theme] body.rg-standard-page-layout > main .quiz-player__timer-bar span { background: var(--rg-color-gold); box-shadow: none; }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-player__message, .quiz-player__guest-note) { background: var(--rg-shell-paper); border: 1px solid var(--rg-border-neutral); border-radius: var(--rg-radius-small); box-shadow: none; }
+html[data-theme] body.rg-standard-page-layout > main .quiz-player__message[data-type="error"] { border-color: var(--rg-color-coral); color: var(--rg-text-primary); }
+html[data-theme] body.rg-standard-page-layout > main .quiz-player__result.is-loading::after { border-color: var(--rg-border-neutral); border-top-color: var(--rg-text-primary); }
+html[data-theme] body.rg-standard-page-layout > main .quiz-leaderboard__row { background: none; border: 0; border-bottom: 1px solid var(--rg-divider-color); border-radius: 0; padding: var(--rg-space-3) 0; box-shadow: none; }
+html[data-theme] body.rg-standard-page-layout > main .quiz-leaderboard__row.is-current-user { border-left: 2px solid var(--rg-text-primary); padding-left: var(--rg-space-2); }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-leaderboard__rank, .quiz-leaderboard__avatar) { background: none; color: var(--rg-text-primary); box-shadow: none; }
+html[data-theme] body.rg-standard-page-layout > main .quiz-leaderboard__skeleton span { background: var(--rg-surface-card); animation: none; }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-question { padding: var(--rg-space-4) 0; background: none; border: 0; border-radius: 0; box-shadow: none; transform: none; }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-question[data-invalid] { border-left: 2px solid var(--rg-color-coral); padding-left: var(--rg-space-3); }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-question legend { font-size: var(--rg-type-card-small); line-height: 1.35; }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-question legend span { background: none; color: var(--rg-text-secondary); }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-options label {
+  min-height: 44px; border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-small);
+  background: var(--rg-shell-paper); color: var(--rg-text-primary); font-size: var(--rg-type-body); font-weight: var(--rg-weight-regular); box-shadow: none; transform: none;
+}
+html[data-theme] body.rg-standard-page-layout > main .community-survey-options label:has(input:checked) { border-color: var(--rg-text-primary); box-shadow: inset 0 0 0 1px var(--rg-text-primary); }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-options input { accent-color: var(--rg-text-primary); }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-question textarea { background: var(--rg-shell-paper); border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-small); color: var(--rg-text-primary); font-size: var(--rg-type-body); }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-progress span { background: var(--rg-color-gold); }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-stepper__meta { color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small); letter-spacing: normal; text-transform: none; }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-status { background: var(--rg-shell-paper); border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-small); }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-status--success { border-left: 3px solid var(--rg-color-green); }
+html[data-theme] body.rg-standard-page-layout > main .community-survey-form__message[data-tone="error"] { color: var(--rg-text-primary); }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-card__cta, .quiz-detail__start-button, .community-survey-page .community-action-button, .community-survey-page .community-action-link) {
+  min-height: 44px; border-radius: var(--rg-radius-small); border-color: var(--rg-border-neutral);
+  background: var(--rg-shell-paper); color: var(--rg-text-primary); box-shadow: none; transform: none;
+  font-size: var(--rg-type-body); font-weight: var(--rg-weight-semibold); text-transform: none; letter-spacing: normal;
+}
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-page, .community-survey-page) :is(a, button):hover { box-shadow: none; transform: none; }
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-page, .community-survey-page) :is(a, button, input, textarea):focus-visible { outline: 1px solid var(--rg-text-secondary); outline-offset: 3px; box-shadow: none; }
+
+/* Match specificity of the panel reset above without changing page gutters. */
+html[data-theme] body.rg-standard-page-layout > main :is(.quiz-page .quiz-hero, .community-survey-page .community-survey-hero) {
+padding-bottom: var(--rg-space-6);
+border-bottom: 1px solid var(--rg-divider-color);
+}
+.community-survey-card__header > .community-kicker,
+.community-survey-card__title-row .community-kicker { display: none; }

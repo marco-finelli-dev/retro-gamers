@@ -20,7 +20,13 @@ Impostare `PUBLIC_SITE_URL` sull'URL pubblico canonico:
 https://www.retro-gamers.it
 ```
 
-In locale il fallback usato dal codice è:
+L'origine OAuth è scelta separatamente dall'URL canonico:
+
+- localhost/loopback: origine della richiesta, con la sua porta;
+- Vercel `VERCEL_ENV=preview`: origine della richiesta, anche per gli alias del branch;
+- produzione o altro hosting: origine di `PUBLIC_SITE_URL` / `SITE`.
+
+Non cambiare il Site URL hosted di produzione. In locale la callback resta su:
 
 ```text
 http://localhost:4321
@@ -41,12 +47,30 @@ https://www.retro-gamers.it/api/auth/oauth/callback
 http://localhost:4321/api/auth/oauth/callback
 ```
 
-Se vengono usati domini preview Vercel, aggiungere anche il dominio preview
-specifico con lo stesso path:
+Il progetto non dispone di uno script per applicare questa allowlist hosted;
+`supabase/config.toml` configura lo stack locale. La modifica hosted resta manuale.
+
+Per una Preview, autorizzare la sua origine e il path callback. Il parametro
+`redirectTo` include anche `returnTo` e `provider`: per esempio dalla Home IT:
 
 ```text
-https://DOMINIO-PREVIEW.vercel.app/api/auth/oauth/callback
+https://DOMINIO-PREVIEW.vercel.app/api/auth/oauth/callback?returnTo=%2F&provider=google
 ```
+
+Per consentire i diversi percorsi post-login senza autorizzare altri domini o
+path, aggiungere il pattern seguente (il `\?` indica il punto interrogativo
+letterale; `**` copre la query variabile):
+
+```text
+https://DOMINIO-PREVIEW.vercel.app/api/auth/oauth/callback\?**
+http://localhost:4321/api/auth/oauth/callback\?**
+```
+
+Usare l'hostname del nuovo deployment quando cambia. Non autorizzare
+indistintamente tutti i domini `vercel.app`. Vedi la
+[sintassi wildcard Supabase](https://supabase.com/docs/guides/auth/redirect-urls#use-wildcards-in-redirect-urls).
+Se un redirect locale/Preview non è autorizzato, Supabase può usare il Site URL:
+questo non dimostra che il frontend abbia costruito un callback production.
 
 ## Google OAuth
 
