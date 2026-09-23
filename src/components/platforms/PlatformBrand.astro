@@ -1,0 +1,46 @@
+---
+const { manufacturerLogo, manufacturerLogoLight, logo, logoLight, logoAlt, platform, header = false, decorativePlatform = false } = Astro.props;
+---
+
+{(manufacturerLogo || logo || (header && platform.manufacturer?.name)) && (
+  <div class="platform-sheet__brand">
+    {header && !manufacturerLogo && platform.manufacturer?.name && <p class="platform-sheet__eyebrow">{platform.manufacturer.name}</p>}
+    {manufacturerLogo && (
+      <picture class="platform-sheet__manufacturer-logo-picture">
+        <img
+          src={manufacturerLogo}
+          alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
+          class="platform-sheet__manufacturer-logo platform-sheet__manufacturer-logo--dark"
+          loading="eager"
+        />
+        <img
+          src={manufacturerLogoLight}
+          alt=""
+          class="platform-sheet__manufacturer-logo platform-sheet__manufacturer-logo--light"
+          loading="eager"
+          aria-hidden="true"
+        />
+      </picture>
+    )}
+    {!header && manufacturerLogo && logo && (
+      <span class="platform-sheet__brand-separator" aria-hidden="true"></span>
+    )}
+    {logo && (
+      <picture class="platform-sheet__platform-logo-picture" aria-hidden={decorativePlatform ? "true" : undefined}>
+        <img
+          src={logo}
+          alt={decorativePlatform ? '' : logoAlt}
+          class="platform-sheet__platform-logo platform-sheet__platform-logo--dark"
+          loading="eager"
+        />
+        <img
+          src={logoLight}
+          alt=""
+          class="platform-sheet__platform-logo platform-sheet__platform-logo--light"
+          loading="eager"
+          aria-hidden="true"
+        />
+      </picture>
+    )}
+  </div>
+)}

@@ -2,6 +2,7 @@
 import '../../styles/components/pagination.css';
 
 const {
+  numbered = false,
   currentPage = 1,
   totalPages = 1,
   lang = 'it',
@@ -24,18 +25,31 @@ const previousUrl = page > 1 && typeof getPageUrl === 'function'
 const nextUrl = page < pages && typeof getPageUrl === 'function'
   ? getPageUrl(page + 1)
   : '';
+// Same range policy as the numbered editorial archive, rendered server-side here.
+const candidates = pages <= 7 ? Array.from({length: pages}, (_, i) => i + 1)
+  : [...new Set([1, page - 1, page, page + 1, pages])].filter(n => n >= 1 && n <= pages).sort((a,b) => a-b);
+const numbers = [];
+candidates.forEach((n, i) => {
+  const previous = candidates[i - 1];
+  if (n - previous === 2) numbers.push(previous + 1);
+  else if (n - previous > 2) numbers.push(null);
+  numbers.push(n);
+});
 ---
 
 {pages > 1 && (
   <nav class:list={['rg-pagination', className]} aria-label={ariaLabel}>
     {previousUrl && (
-      <a class="rg-pagination__link" href={previousUrl}>{previousLabel}</a>
+      <a class="rg-pagination__link" href={previousUrl} data-pagination-prev={numbered || undefined}>{numbered && <svg class="reviews-pagination__chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="m7.5 3-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>}{previousLabel}</a>
     )}
 
-    <span class="rg-pagination__status">{statusLabel}</span>
+    <span class:list={["rg-pagination__status", numbered && "reviews-listing__mobile"]}>{statusLabel}</span>
 
+    {numbered && <span class="reviews-pagination__numbers">{numbers.map(n => n === null
+      ? <span class="reviews-pagination__ellipsis" aria-hidden="true">…</span>
+      : <a class="reviews-pagination__number" href={getPageUrl(n)} aria-current={n === page ? 'page' : undefined} aria-label={`${isEnglish ? 'Page' : 'Pagina'} ${n}`}>{n}</a>)}</span>}
     {nextUrl && (
-      <a class="rg-pagination__link" href={nextUrl}>{nextLabel}</a>
+      <a class="rg-pagination__link" href={nextUrl} data-pagination-next={numbered || undefined}>{nextLabel}{numbered && <svg class="reviews-pagination__chevron" viewBox="0 0 12 12" aria-hidden="true"><path d="m4.5 3 3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>}</a>
     )}
   </nav>
 )}

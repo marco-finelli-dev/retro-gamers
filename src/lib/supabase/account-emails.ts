@@ -96,25 +96,25 @@ export async function sendNewReaderRegistrationAdminEmail({
     title: 'Nuovo utente registrato',
     intro: 'È stato creato un nuovo profilo lettore su Retro-Gamers.it.',
     bodyHtml: `
-      <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%; border-collapse:collapse; margin:0;">
+      <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%; table-layout:fixed; border-collapse:collapse; margin:0;">
         <tr>
-          <td style="padding:8px 0; color:#647883; width:150px;">Email</td>
-          <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(email || 'Non disponibile')}</strong></td>
+          <td class="rg-email-muted rg-email-data-label" style="padding:8px 0; vertical-align:top; color:#506276; width:30%;">Email</td>
+          <td class="rg-email-value" style="padding:8px 0; vertical-align:top; overflow-wrap:anywhere; word-break:break-word; color:#092547;"><strong style="color:inherit;">${escapeEmailHtml(email || 'Non disponibile')}</strong></td>
         </tr>
         <tr>
-          <td style="padding:8px 0; color:#647883;">Username</td>
-          <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(username)}</strong></td>
+          <td class="rg-email-muted rg-email-data-label" style="padding:8px 0; vertical-align:top; color:#506276;">Username</td>
+          <td class="rg-email-value" style="padding:8px 0; vertical-align:top; overflow-wrap:anywhere; word-break:break-word; color:#092547;"><strong style="color:inherit;">${escapeEmailHtml(username)}</strong></td>
         </tr>
         <tr>
-          <td style="padding:8px 0; color:#647883;">Display name</td>
-          <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(displayName)}</strong></td>
+          <td class="rg-email-muted rg-email-data-label" style="padding:8px 0; vertical-align:top; color:#506276;">Display name</td>
+          <td class="rg-email-value" style="padding:8px 0; vertical-align:top; overflow-wrap:anywhere; word-break:break-word; color:#092547;"><strong style="color:inherit;">${escapeEmailHtml(displayName)}</strong></td>
         </tr>
         <tr>
-          <td style="padding:8px 0; color:#647883;">Data registrazione</td>
-          <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(formatDate(createdAt))}</strong></td>
+          <td class="rg-email-muted rg-email-data-label" style="padding:8px 0; vertical-align:top; color:#506276;">Data registrazione</td>
+          <td class="rg-email-value" style="padding:8px 0; vertical-align:top; overflow-wrap:anywhere; word-break:break-word; color:#092547;"><strong style="color:inherit;">${escapeEmailHtml(formatDate(createdAt))}</strong></td>
         </tr>
       </table>
-      <p style="margin:18px 0 0 0; color:#647883;">
+      <p class="rg-email-muted" style="margin:18px 0 0 0; color:#506276;">
         Puoi gestire ruolo e stato dal pannello utenti.
       </p>
     `,

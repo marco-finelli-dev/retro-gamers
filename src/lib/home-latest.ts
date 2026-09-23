@@ -86,7 +86,7 @@ export const toHomeLatestItem = (post: Post, language: 'it' | 'en'): HomeLatestI
     url: getPostUrl(post),
     image: post.featuredImage?.asset
       ? urlFor(post.featuredImage).width(240).height(240).fit('crop').quality(74).auto('format').url()
-      : '/og-image.jpg',
+      : '/og-image.webp',
     alt: post.featuredImage?.alt || post.title || '',
     kicker,
     secondary,

@@ -13,6 +13,8 @@ import { getAllPosts, groupPosts } from '../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../lib/pagination';
 import { createCollectionPageStructuredData, createListItems } from '../../lib/structured-data.js';
 import '../../styles/pages/companies.css';
+import '../../styles/components/reviews-listing.css';
+import '../../styles/components/entity-listings.css';
 
 const companies = await getAllCompanies();
 const allPosts = await getAllPosts();
@@ -77,14 +79,12 @@ const structuredData = createCollectionPageStructuredData({
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <div class="companies-page">
+  <div class="companies-page entity-listing reviews-listing">
     <section class="companies-hero">
       <span class="companies-eyebrow">Archivio aziende</span>
       <h1>Aziende</h1>
-      <p>
-        Software house, publisher, sviluppatori e produttori che hanno dato forma
-        all'immaginario e alla tecnologia del videogioco.
-      </p>
+      <p><span class="entity-listing__mobile-intro">Software house, publisher, sviluppatori e produttori che hanno dato forma
+        all'immaginario e alla tecnologia del videogioco.</span><span class="entity-listing__desktop-intro">Sviluppatori, publisher e produttori hardware.</span></p>
     </section>
 
     {companies.length > 0 ? (
@@ -149,6 +149,7 @@ const structuredData = createCollectionPageStructuredData({
         </section>
 
         <Pagination
+          numbered
           currentPage={currentPage}
           totalPages={totalPages}
           getPageUrl={getCompaniesPageUrl}

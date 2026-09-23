@@ -139,6 +139,7 @@ export const POST: APIRoute = async ({ request }) => {
   const username = normalizeUsername(rawUsername);
   const displayName = rawDisplayName.trim() || username;
   const badgeKey = getStringField(payload, 'badgeKey').trim();
+  const language = getStringField(payload, 'language') === 'en' ? 'en' : 'it';
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return json({ ok: false, error: 'Inserisci un indirizzo email valido.' }, 400);
@@ -237,6 +238,7 @@ export const POST: APIRoute = async ({ request }) => {
     password,
     options: {
       emailRedirectTo: `${siteUrl.replace(/\/$/, '')}/account/confirmed/`,
+      data: { language },
     },
   });
 

@@ -2,11 +2,18 @@
 import '../../styles/components/archive-page.css';
 import '../../styles/components/pagination.css';
 import ArchiveCard from './ArchiveCard.astro';
+import EntityArticleCard from './EntityArticleCard.astro';
+import '../../styles/components/reviews-listing.css';
+import ReviewCard from '../cards/ReviewCard.astro';
 import { getFormatFilterAliases, getFormatFilterValue, getFormatLabel } from '../../lib/formatLabels';
 import { PAGE_SIZE } from '../../lib/pagination';
 import { withApprovedCommentCounts } from '../../lib/supabase/comment-counts';
 
 const {
+  reviewListing = false,
+  editorialListing = false,
+  desktopTitle = '',
+  desktopDescription = '',
   title = 'Archivio',
   eyebrow = 'Retro-Gamers',
   description = '',
@@ -18,6 +25,7 @@ const {
 } = Astro.props;
 
 const isEnglish = lang === 'en';
+const refreshedListing = reviewListing || editorialListing;
 const posts = await withApprovedCommentCounts(rawPosts, isEnglish ? 'en' : 'it');
 
 const ui = isEnglish
@@ -209,22 +217,22 @@ const hasFilters =
   productTypes.length > 0;
 ---
 
-<div class="archive-page">
+<div class:list={["archive-page", !refreshedListing && "reviews-listing archive-standard-refresh"]}>
   <div class="container">
 
     <section class="archive-hero">
       <div class="archive-hero__inner">
 
         <div class="archive-hero__content">
-          <span>{eyebrow}</span>
-          <h1>{title}</h1>
+          <span class:list={[refreshedListing && 'reviews-listing__mobile']}>{eyebrow}</span>
+          {refreshedListing ? <><h1 class="reviews-listing__mobile">{title}</h1><h1 class="reviews-listing__desktop">{editorialListing ? desktopTitle : isEnglish ? 'Reviews' : 'Recensioni'}</h1></> : <h1>{title}</h1>}
 
           {description && (
-            <p>{description}</p>
+            refreshedListing ? <><p class="reviews-listing__mobile">{description}</p><p class="reviews-listing__desktop">{editorialListing ? desktopDescription : isEnglish ? 'Our console, computer and arcade game reviews.' : 'Le nostre recensioni per console, computer e arcade.'}</p></> : <p>{description}</p>
           )}
 
           {total > 0 && (
-            <small class="archive-hero__count">
+            <small class:list={['archive-hero__count', refreshedListing && 'reviews-listing__mobile']}>
               {total} {contentCountLabel}
             </small>
           )}
@@ -233,12 +241,12 @@ const hasFilters =
       </div>
     </section>
 
-    {showFilters && hasFilters && posts.length > 0 && (
-      <section class="archive-filters" data-archive-filters>
+    {(showFilters || reviewListing) && hasFilters && posts.length > 0 && (
+      <section class:list={['archive-filters', reviewListing && !showFilters && 'reviews-listing__desktop']} data-archive-filters>
 
         <div class="archive-filters__bar">
 
-          <div class="archive-filters__intro">
+          <div class:list={['archive-filters__intro', reviewListing && 'reviews-listing__mobile']}>
             <span>{ui.filterArchive}</span>
             <strong>{ui.filterIntro}</strong>
           </div>
@@ -331,7 +339,7 @@ const hasFilters =
               </label>
             )}
 
-            {productTypes.length > 0 && (
+            {(productTypes.length > 0 || reviewListing) && (
               <label class="archive-filter">
                 <span>{ui.product}</span>
                 <select data-filter="product">
@@ -355,7 +363,7 @@ const hasFilters =
             </button>
           </div>
 
-          <div class="archive-filters__result">
+          <div class:list={['archive-filters__result', reviewListing && 'reviews-listing__mobile']}>
             <span data-filter-count>{posts.length}</span>
             <small set:html={ui.visibleContents} />
           </div>
@@ -364,6 +372,8 @@ const hasFilters =
 
       </section>
     )}
+
+    {refreshedListing && <p class="reviews-listing__desktop reviews-listing__count"><span data-filter-count>{posts.length}</span> {editorialListing ? contentCountLabel : isEnglish ? 'reviews' : 'recensioni'}</p>}
 
     {posts.length > 0 ? (
 
@@ -395,7 +405,12 @@ const hasFilters =
               data-product={productType}
               hidden={index >= PAGE_SIZE}
             >
-              <ArchiveCard post={post} lang={lang} />
+              {refreshedListing ? (
+                <>
+                  <div class="reviews-listing__desktop reviews-listing__card"><ReviewCard post={post} lang={lang} variant="compact" metadataVariant={editorialListing ? "editorial" : "home-reviews"} /></div>
+                  <div class="reviews-listing__mobile reviews-listing__card"><ArchiveCard post={post} lang={lang} /></div>
+                </>
+              ) : <EntityArticleCard post={post} lang={lang} />}
             </article>
           );
         })}
@@ -403,21 +418,27 @@ const hasFilters =
 
       <nav
         class="rg-pagination archive-pagination"
-        aria-label={isEnglish ? 'Archive pagination' : 'Paginazione archivio'}
+        aria-label={reviewListing ? (isEnglish ? 'Reviews pagination' : 'Paginazione recensioni') : (isEnglish ? 'Archive pagination' : 'Paginazione archivio')}
         data-archive-pagination
         hidden={posts.length <= PAGE_SIZE}
       >
-        <a class="rg-pagination__link" href="#" data-pagination-prev hidden>{ui.previous}</a>
-        <span class="rg-pagination__status" data-pagination-status>
+        <a class="rg-pagination__link" href="#" data-pagination-prev hidden>
+          <><svg class="reviews-pagination__chevron" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="m7.5 3-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg><span data-pagination-label>{ui.previous}</span></>
+        </a>
+        <span class:list={['rg-pagination__status', 'reviews-listing__mobile']} data-pagination-status>
           {ui.pageStatus(1, Math.max(1, Math.ceil(posts.length / PAGE_SIZE)))}
         </span>
-        <a class="rg-pagination__link" href="#" data-pagination-next hidden>{ui.next}</a>
+        <span class="reviews-pagination__numbers" data-pagination-numbers></span>
+        <a class="rg-pagination__link" href="#" data-pagination-next hidden>
+          <><span data-pagination-label>{ui.next}</span><svg class="reviews-pagination__chevron" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="m4.5 3 3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg></>
+        </a>
       </nav>
 
     ) : (
 
       <section class="archive-empty">
-        <span>RG</span>
+        <span class:list={[refreshedListing && 'reviews-listing__mobile']}>RG</span>
+        {refreshedListing && <img class="reviews-listing__desktop reviews-listing__empty-logo" src="/favicon.svg" alt="" aria-hidden="true" width="52" height="52" />}
         <h2>{finalEmptyTitle}</h2>
         <p>{finalEmptyText}</p>
       </section>
@@ -425,7 +446,8 @@ const hasFilters =
     )}
 
     <section class="archive-empty archive-empty--filtered" data-filter-empty hidden>
-      <span>RG</span>
+      <span class:list={[refreshedListing && 'reviews-listing__mobile']}>RG</span>
+        {refreshedListing && <img class="reviews-listing__desktop reviews-listing__empty-logo" src="/favicon.svg" alt="" aria-hidden="true" width="52" height="52" />}
       <h2>{ui.noResults}</h2>
       <p>{ui.noResultsText}</p>
     </section>
@@ -442,11 +464,12 @@ const hasFilters =
   const root = document.querySelector('[data-archive-filters]');
   const grid = document.querySelector('[data-archive-grid]');
   const empty = document.querySelector('[data-filter-empty]');
-  const count = document.querySelector('[data-filter-count]');
+  const counts = document.querySelectorAll('[data-filter-count]');
   const pagination = document.querySelector('[data-archive-pagination]');
   const paginationPrev = pagination?.querySelector('[data-pagination-prev]');
   const paginationNext = pagination?.querySelector('[data-pagination-next]');
   const paginationStatus = pagination?.querySelector('[data-pagination-status]');
+  const paginationNumbers = pagination?.querySelector('[data-pagination-numbers]');
 
   if (grid) {
     const controls = root
@@ -539,6 +562,21 @@ const hasFilters =
       includesToken(item.dataset.product, filters.product)
     );
 
+    const getReviewPageNumbers = (total, current) => {
+      if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+      const pages = [...new Set([1, current - 1, current, current + 1, total])]
+        .filter((page) => page >= 1 && page <= total)
+        .sort((a, b) => a - b);
+      const result = [];
+      pages.forEach((page, index) => {
+        const previous = pages[index - 1];
+        if (page - previous === 2) result.push(previous + 1);
+        else if (page - previous > 2) result.push(null);
+        result.push(page);
+      });
+      return result;
+    };
+
     const updatePagination = (filters, matchingItems) => {
       currentTotalPages = Math.max(1, Math.ceil(matchingItems.length / pageSize));
       currentPage = Math.min(Math.max(1, currentPage), currentTotalPages);
@@ -547,25 +585,46 @@ const hasFilters =
 
       pagination.hidden = matchingItems.length <= pageSize;
 
+      if (paginationNumbers) {
+        paginationNumbers.replaceChildren();
+        getReviewPageNumbers(currentTotalPages, currentPage).forEach((page) => {
+          const item = document.createElement(page === null ? 'span' : 'a');
+          item.textContent = page === null ? '…' : String(page);
+          if (page === null) {
+            item.className = 'reviews-pagination__ellipsis';
+            item.setAttribute('aria-hidden', 'true');
+          } else {
+            item.className = 'reviews-pagination__number';
+            item.href = buildPageUrl(filters, page);
+            item.dataset.page = String(page);
+            item.setAttribute('aria-label', `${pageStatusPrefix} ${page}`);
+            if (page === currentPage) item.setAttribute('aria-current', 'page');
+          }
+          paginationNumbers.append(item);
+        });
+      }
+
       if (paginationStatus) {
         paginationStatus.textContent = `${pageStatusPrefix} ${currentPage} ${pageStatusSeparator} ${currentTotalPages}`;
       }
 
       if (paginationPrev) {
         paginationPrev.hidden = currentPage <= 1;
-        paginationPrev.textContent = previousLabel;
+        (paginationPrev.querySelector('[data-pagination-label]') || paginationPrev).textContent = previousLabel;
         paginationPrev.href = buildPageUrl(filters, currentPage - 1);
       }
 
       if (paginationNext) {
         paginationNext.hidden = currentPage >= currentTotalPages;
-        paginationNext.textContent = nextLabel;
+        (paginationNext.querySelector('[data-pagination-label]') || paginationNext).textContent = nextLabel;
         paginationNext.href = buildPageUrl(filters, currentPage + 1);
       }
     };
 
-    const applyFilters = ({ updateUrl = false, resetPage = false } = {}) => {
-      const filters = getFilters();
+    let appliedFilters = {};
+    const applyFilters = ({ updateUrl = false, resetPage = false, keepApplied = false } = {}) => {
+      const filters = keepApplied ? appliedFilters : getFilters();
+      appliedFilters = { ...filters };
       const matchingItems = getMatchingItems(filters);
 
       if (resetPage) {
@@ -581,7 +640,7 @@ const hasFilters =
         item.hidden = !pageItems.has(item);
       });
 
-      if (count) count.textContent = String(matchingItems.length);
+      counts.forEach((count) => { count.textContent = String(matchingItems.length); });
       if (empty) empty.hidden = matchingItems.length > 0;
       grid.hidden = matchingItems.length === 0;
 
@@ -631,6 +690,7 @@ const hasFilters =
 
     controls.forEach((control) => {
       control.addEventListener('change', () => {
+        if (root?.dataset.customFilters === 'ready') return;
         applyFilters({ updateUrl: true, resetPage: true });
       });
     });
@@ -650,6 +710,17 @@ const hasFilters =
       });
 
       applyFilters({ updateUrl: true, resetPage: true });
+      root?.dispatchEvent(new Event('archive:filters-reset'));
+    });
+
+    paginationNumbers?.addEventListener('click', (event) => {
+      const link = event.target.closest('a[data-page]');
+      if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      currentPage = Number(link.dataset.page);
+      applyFilters({ updateUrl: true, keepApplied: true });
+      paginationNumbers.querySelector('[aria-current="page"]')?.focus({ preventScroll: true });
+      grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
 
     paginationPrev?.addEventListener('click', (event) => {
@@ -657,7 +728,7 @@ const hasFilters =
 
       event.preventDefault();
       currentPage -= 1;
-      applyFilters({ updateUrl: true });
+      applyFilters({ updateUrl: true, keepApplied: root?.dataset.customFilters === 'ready' });
       grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
 
@@ -666,7 +737,7 @@ const hasFilters =
 
       event.preventDefault();
       currentPage += 1;
-      applyFilters({ updateUrl: true });
+      applyFilters({ updateUrl: true, keepApplied: root?.dataset.customFilters === 'ready' });
       grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
     });
 

@@ -1,0 +1,213 @@
+/* Remaining standard templates share the approved editorial grammar.
+   Presentation only, at the existing desktop breakpoint. */
+@media (min-width: 1200px) {
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .author-index-hero, .legal-hero, .quiz-hero, .playable-classics-hero,
+    .emulator-tools-hero, .community-hub-hero
+  ) {
+    width: 100%; max-width: none; padding: 0 0 var(--rg-space-8);
+    background: none; border: 0; border-bottom: 1px solid var(--rg-divider-color);
+    border-radius: 0; box-shadow: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .quiz-hero__content {
+    padding: 0; max-width: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .author-index-hero > span, .legal-hero > span, .quiz-hero .quiz-eyebrow,
+    .playable-classics-hero__content > span, .emulator-tools-hero__content > span,
+    .community-hub-hero .community-kicker
+  ) { display: none; }
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .author-index-hero, .author-hero, .quiz-hero, .quiz-detail-hero,
+    .legal-hero, .emulator-tools-hero, .emulator-tool-hero,
+    .playable-classics-hero, .playable-classic-hero, .community-hero,
+    .account-card, .thanks-card, .error-card
+  ) h1 {
+    font: var(--rg-weight-bold) var(--rg-type-page-title)/1.1 var(--rg-font-family);
+    letter-spacing: -.02em; text-transform: none; text-shadow: none;
+    color: var(--rg-title-color); max-width: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .author-index-hero, .legal-hero, .quiz-hero, .emulator-tools-hero,
+    .playable-classics-hero
+  ) p { max-width: none; color: var(--rg-text-secondary); font-size: var(--rg-type-body); line-height: var(--rg-leading-body); }
+
+  /* Retain different content structures, remove only legacy decoration. */
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .author-index-card__link, .author-hero, .author-stats, .user-avatar,
+    .quiz-card, .quiz-panel, .quiz-detail__intro, .quiz-leaderboard,
+    .quiz-staff-leaderboard, .emulator-tools-card, .emulator-tool-panel,
+    .emulator-tool-facts, .playable-classics-card, .playable-classic-panel,
+    .community-hub-card, .community-survey-question, .reader-badge-card,
+    .newsletter-status-panel, .editorial-card--notice
+  ) {
+    background: var(--rg-page-surface); border: 1px solid var(--rg-border-neutral);
+    border-radius: var(--rg-radius-medium); box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .author-index-card__link, .author-bio, .author-stats, .author-posts,
+    .emulator-tools-card, .emulator-tool-panel, .emulator-tool-facts,
+    .playable-classics-card, .playable-classic-panel,
+    .quiz-leaderboard, .quiz-staff-leaderboard, .community-hub-card
+  )::before,
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .author-index-card__link, .emulator-tools-card, .playable-classics-card,
+    .quiz-leaderboard, .quiz-staff-leaderboard
+  )::after { content: none; }
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .author-index-card__link, .quiz-card, .emulator-tools-card,
+    .playable-classics-card, .community-survey-question
+  ):is(:hover, :focus-within) { transform: none; box-shadow: none; }
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .quiz-card__media, .emulator-tools-card__media, .emulator-tool-hero__media,
+    .reader-badge-card__visual
+  ) { background: none; border-color: var(--rg-border-neutral); box-shadow: none; }
+
+  /* Text links and controls inherit approved tokens, with keyboard-only focus. */
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .legal-content, .author-bio__content, .playable-classic-panel, .emulator-tool-panel
+  ) a { color: var(--rg-title-hover); background: none; text-decoration: underline; text-underline-offset: .16em; }
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .legal-content, .author-bio__content, .playable-classic-panel, .emulator-tool-panel
+  ) a:hover { color: var(--rg-text-primary); }
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .quiz-card__cta, .quiz-detail__start-button, .community-hub-hero__primary,
+    .community-hub-hero__secondary-cta, .playable-classics-hero__policy,
+    .playable-classics-card__cta, .playable-classic-back,
+    .playable-classic-download__actions a, .playable-classic-download__actions button,
+    .emulator-tool-back, .emulator-tools-card__cta, .newsletter-status-panel__cta,
+    .error-card__actions a, .thanks-card__actions a
+  ) {
+    border-radius: var(--rg-radius-small); background: var(--rg-page-surface);
+    border-color: var(--rg-border-neutral); color: var(--rg-text-primary);
+    box-shadow: none; transform: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .quiz-card__cta, .quiz-detail__start-button, .community-hub-hero__primary,
+    .community-hub-hero__secondary-cta, .playable-classics-hero__policy,
+    .playable-classics-card__cta, .playable-classic-back,
+    .playable-classic-download__actions a, .playable-classic-download__actions button,
+    .emulator-tool-back, .emulator-tools-card__cta, .newsletter-status-panel__cta,
+    .error-card__actions a, .thanks-card__actions a
+  ):hover { color: var(--rg-title-hover); box-shadow: none; transform: none; }
+  html[data-theme] body.rg-standard-page-layout > main :is(a, button, input, select, textarea):focus-visible {
+    outline: 1px solid var(--rg-text-secondary); outline-offset: 3px; box-shadow: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main :is(a, button, input, select, textarea):focus:not(:focus-visible) { outline: none; box-shadow: none; }
+  html[data-theme] body.rg-standard-page-layout > main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]), select, textarea) {
+    color: var(--rg-text-primary); background-color: var(--rg-page-surface);
+    border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-small);
+  }
+  html[data-theme] body.rg-standard-page-layout > main :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--rg-title-hover); }
+  html[data-theme] body.rg-standard-page-layout > main :is(.community-survey-progress__bar, .quiz-detail__progress-bar) > span { background: var(--rg-title-hover); }
+
+  /* Author index/profile: preserve portraits and editorial background assets. */
+  html[data-theme] body.rg-standard-page-layout > main .author-index-grid { align-items: stretch; gap: var(--rg-space-6); }
+  html[data-theme] body.rg-standard-page-layout > main .author-index-card__link { height: 100%; min-height: 0; padding: var(--rg-space-4); }
+  html[data-theme] body.rg-standard-page-layout > main :is(.author-index-card__avatar, .author-hero__avatar) {
+    background: var(--rg-page-surface); border-color: var(--rg-border-neutral); color: var(--rg-text-secondary); box-shadow: none; border-radius: var(--rg-radius-medium);
+  }
+  html[data-theme] body.rg-standard-page-layout > main :is(.author-index-card__role, .author-index-card__meta) {
+    background: none; border: 0; padding: 0; min-height: 0;
+    color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small);
+    font-weight: var(--rg-weight-semibold); letter-spacing: normal; text-transform: none;
+  }
+  /* Public author profile: one metadata line, with the mobile layout retained. */
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__badges {
+    flex-wrap: nowrap; width: max-content; align-items: baseline;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__badges :is(span, .author-hero__article-count) {
+    background: none; border: 0; border-radius: 0; box-shadow: none; text-shadow: none;
+    padding: 0; min-height: 0; color: var(--rg-text-secondary);
+    font-size: var(--rg-type-ui-small); font-weight: var(--rg-weight-semibold);
+    line-height: 1.5; letter-spacing: normal; text-transform: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__article-count {
+    display: inline-flex; align-items: baseline; gap: var(--rg-space-2); white-space: nowrap; flex-shrink: 0;
+    text-decoration: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__article-count::before { content: "·"; }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__article-count:hover {
+    color: var(--rg-title-color); text-decoration: underline; text-underline-offset: .16em;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .author-layout {
+    grid-template-columns: minmax(0, 1fr); max-width: 960px;
+    width: 100%; margin-inline: 0;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .author-layout > .author-stats { display: none; }
+  html[data-theme] body.rg-standard-page-layout > main #author-published-posts { scroll-margin-top: var(--rg-space-8); }
+
+  html[data-theme] body.rg-standard-page-layout > main .author-index-card strong { color: var(--rg-title-color); font-size: var(--rg-type-card); line-height: 1.25; }
+  html[data-theme] body.rg-standard-page-layout > main .author-index-card__link:hover strong { color: var(--rg-title-hover); }
+  html[data-theme] body.rg-standard-page-layout > main .author-index-card__bio { color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small); line-height: 1.6; -webkit-line-clamp: 2; }
+  html[data-theme] body.rg-standard-page-layout > main :is(.author-hero__nickname, .author-bio__content) { color: var(--rg-text-secondary); }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__profile { padding: var(--rg-space-6); }
+  html[data-theme] body.rg-standard-page-layout > main :is(.author-bio, .author-stats) { padding: var(--rg-space-6); }
+  html[data-theme] body.rg-standard-page-layout > main .author-bio {
+    background: none; border: 0; border-radius: 0; box-shadow: none;
+    padding-inline: 0;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .author-posts { padding: 0; border: 0; background: none; box-shadow: none; overflow: visible; }
+  html[data-theme] body.rg-standard-page-layout > main .author-posts__header { border-bottom: 1px solid var(--rg-divider-color); padding-bottom: var(--rg-space-4); margin-bottom: var(--rg-space-6); }
+  html[data-theme] body.rg-standard-page-layout > main :is(.author-posts__header > span, .author-bio > span) { display: none; }
+  html[data-theme] body.rg-standard-page-layout > main :is(.author-posts__header, .author-bio, .author-stats) h2 { color: var(--rg-title-color); font-size: var(--rg-type-section); line-height: 1.2; text-transform: none; text-shadow: none; }
+  html[data-theme] body.rg-standard-page-layout > main .author-posts__grid { gap: var(--rg-space-6); }
+  html[data-theme] body.rg-standard-page-layout > main .author-stats div { background: none; border: 0; border-bottom: 1px solid var(--rg-divider-color); border-radius: 0; padding-inline: 0; }
+  html[data-theme] body.rg-standard-page-layout > main .author-stats :is(dt,dd) { color: var(--rg-text-secondary); }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__socials a { color: var(--rg-text-secondary); background: none; border: 0; box-shadow: none; }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__social-icon { background-color: currentColor; }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__socials a:is(:hover, :focus-visible) { color: var(--rg-title-color); background: none; border: 0; box-shadow: none; transform: none; }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__socials a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__socials a:hover .author-hero__social-icon { background: currentColor; transform: none; }
+
+  html[data-theme] body.rg-standard-page-layout > main :is(.emulator-tool-cover, .playable-classic-cover)::after { content: none; }
+  html[data-theme] body.rg-standard-page-layout > main :is(
+    .quiz-detail-hero__media, .quiz-player__intro, .quiz-leaderboard__row,
+    .quiz-leaderboard__avatar, .playable-classic-download-package,
+    .playable-classic-download, .playable-classics-card__media
+  ) { background: var(--rg-page-surface); border-color: var(--rg-border-neutral); box-shadow: none; }
+  html[data-theme] body.rg-standard-page-layout > main .playable-classic-download::before { content: none; }
+  html[data-theme] body.rg-standard-page-layout > main .community-survey-progress > span { background: var(--rg-title-hover); }
+  html[data-theme] body.rg-standard-page-layout > main .entity-related-type {
+    margin: 0 0 var(--rg-space-2); color: var(--rg-text-secondary);
+    font-size: var(--rg-type-ui-small); font-weight: var(--rg-weight-semibold); line-height: 1.5;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .archive-standard-refresh .archive-hero__content > span { display: none; }
+
+  html[data-theme] body.rg-standard-page-layout > main :is(.community-hub-stats article, .community-hub-column, .community-hub-memory, .community-hub-discussion-card) {
+    background: var(--rg-page-surface); border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-medium); box-shadow: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .community-hub-discussion-card__media--placeholder { background: var(--rg-page-surface); }
+  html[data-theme] body.rg-standard-page-layout > main :is(.playable-classic-related-post, .playable-classic-creator-card, .emulator-tool-related-post) {
+    background: var(--rg-page-surface); border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-medium); box-shadow: none; transform: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main :is(.playable-classic-related-post, .playable-classic-creator-card, .emulator-tool-related-post)::before { content: none; }
+  html[data-theme] body.rg-standard-page-layout > main :is(.playable-classic-related-post, .emulator-tool-related-post):hover strong { color: var(--rg-title-hover); text-shadow: none; }
+  html[data-theme] body.rg-standard-page-layout > main :is(.quiz-player__answer, .quiz-player__answer.is-selected) {
+    background: var(--rg-page-surface); box-shadow: none; transform: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .quiz-player__answer.is-selected { border-color: var(--rg-title-hover); }
+  html[data-theme] body.rg-standard-page-layout > main .quiz-player__answer.is-correct { border-color: var(--rg-color-green); background: color-mix(in srgb, var(--rg-color-green) 8%, var(--rg-page-surface)); }
+  html[data-theme] body.rg-standard-page-layout > main :is(.quiz-player__answer.is-wrong, .quiz-player__answer.is-timeout) { border-color: var(--rg-color-coral); background: color-mix(in srgb, var(--rg-color-coral) 8%, var(--rg-page-surface)); }
+
+  /* A stable neutral scrim protects the overlaid identity without tinting the artwork. */
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__cover::after {
+    content: "";
+    background: linear-gradient(to top, rgba(0, 0, 0, .88), rgba(0, 0, 0, .55) 30%, transparent 72%);
+  }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero__cover img { filter: none; }
+  html[data-theme] body.rg-standard-page-layout > main .author-hero--with-background {
+    --rg-title-color: var(--rg-color-ivory);
+    --rg-text-secondary: color-mix(in srgb, var(--rg-color-ivory) 85%, transparent);
+  }
+  html[data-theme] body.rg-standard-page-layout > main .editorial-pte-toolbar {
+    background: var(--rg-page-surface); border-color: var(--rg-border-neutral);
+    border-radius: var(--rg-radius-medium); box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  html[data-theme] body.rg-standard-page-layout > main .editorial-pte h2::after {
+    height: 1px; background: var(--rg-divider-color); border-radius: 0;
+  }
+
+}

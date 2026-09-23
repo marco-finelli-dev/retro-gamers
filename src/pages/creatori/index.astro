@@ -1,13 +1,16 @@
 ---
+import CountryFlag from '../../components/common/CountryFlag.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Pagination from '../../components/common/Pagination.astro';
 import { urlFor } from '../../lib/image';
-import { countryCodeToFlag, getAllCreators } from '../../lib/creators';
+import { getAllCreators } from '../../lib/creators';
 import { getAllPosts, groupPosts } from '../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../lib/pagination';
 import { getCreatorUrl } from '../../lib/routes.js';
 import { createCollectionPageStructuredData, createListItems } from '../../lib/structured-data.js';
 import '../../styles/pages/creators.css';
+import '../../styles/components/reviews-listing.css';
+import '../../styles/components/entity-listings.css';
 
 const creators = await getAllCreators();
 const allPosts = await getAllPosts();
@@ -78,14 +81,12 @@ const structuredData = createCollectionPageStructuredData({
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <div class="creators-page">
+  <div class="creators-page entity-listing reviews-listing">
     <section class="creators-hero">
       <span class="creators-eyebrow">Storia videoludica</span>
       <h1>Creatori</h1>
-      <p>
-        Designer, programmatori, compositori, producer e figure creative che hanno dato forma
-        all'immaginario dei videogiochi.
-      </p>
+      <p><span class="entity-listing__mobile-intro">Designer, programmatori, compositori, producer e figure creative che hanno dato forma
+        all'immaginario dei videogiochi.</span><span class="entity-listing__desktop-intro">Autori, programmatori, artisti e compositori dei videogiochi.</span></p>
     </section>
 
     {creators.length > 0 ? (
@@ -94,7 +95,6 @@ const structuredData = createCollectionPageStructuredData({
           {pageCreators.map((creator) => {
             const portrait = getPortrait(creator);
             const knownFor = creator.knownFor?.slice(0, 3) || [];
-            const flag = countryCodeToFlag(creator.countryCode);
 
             return (
               <article class="creator-card">
@@ -123,7 +123,7 @@ const structuredData = createCollectionPageStructuredData({
 
                     {creator.country && (
                       <span class="creator-card__country">
-                        {flag && <span aria-hidden="true">{flag}</span>}
+                        <CountryFlag code={creator.countryCode} />
                         {creator.country}
                       </span>
                     )}
@@ -149,6 +149,7 @@ const structuredData = createCollectionPageStructuredData({
         </section>
 
         <Pagination
+          numbered
           currentPage={currentPage}
           totalPages={totalPages}
           getPageUrl={getCreatorsPageUrl}

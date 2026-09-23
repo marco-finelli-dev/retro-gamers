@@ -974,7 +974,7 @@ const commentsClass = [
     const communityPoints = isLegacy || isGuest ? 0 : getCommunityPoints(profile);
     const hasOwnReply = replies.some((reply) => Boolean(reply.isOwnComment));
 
-    const canReplyToComment = canReply && !isLegacy && comment.status === 'approved' && !hasOwnReply;
+    const canReplyToComment = canReply && !isLegacy && !comment.isOwnComment && comment.status === 'approved' && !hasOwnReply;
 
     return `
       <article

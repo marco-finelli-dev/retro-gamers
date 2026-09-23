@@ -30,7 +30,7 @@ const getSecondaryMetadata = (post: any) => {
 };
 
 const getImage = (post: any, width: number, height: number) => {
-  if (!post?.featuredImage?.asset) return '/og-image.jpg';
+  if (!post?.featuredImage?.asset) return '/og-image.webp';
 
   return urlFor(post.featuredImage)
     .width(width)

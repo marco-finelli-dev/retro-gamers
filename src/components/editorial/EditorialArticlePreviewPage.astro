@@ -139,7 +139,7 @@ function getPlainTextFromContent(content = []) {
         return block.children?.map((child) => child.text || '') || [];
       }
 
-      if (block?._type === 'asideBox') {
+      if (block?._type === 'asideBox' || block?._type === 'quote') {
         return block.content
           ?.filter((inner) => inner?._type === 'block')
           .flatMap((inner) =>
@@ -286,7 +286,7 @@ const pageDescription =
 const pageImage =
   hydratedPostWithCommentCount?.featuredImage?.asset?.url ||
   hydratedPostWithCommentCount?.gameInfo?.cover?.asset?.url ||
-  '/og-image.jpg';
+  '/og-image.webp';
 const articleAuthorName =
   hydratedPostWithCommentCount?.author?.displayName === 'nickname' && hydratedPostWithCommentCount?.author?.nickname
     ? hydratedPostWithCommentCount.author.nickname

@@ -1,4 +1,5 @@
 ---
+import ArticleEditorialActions from './ArticleEditorialActions.astro';
 import ArticleShare from './ArticleShare.astro';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
 import { getFormatFilterValue, getFormatLabel } from '../../lib/formatLabels';
@@ -10,7 +11,7 @@ import {
 } from '../../lib/routes';
 import { urlFor } from '../../lib/image';
 
-const { post, relatedPosts = [] } = Astro.props;
+const { post, relatedPosts = [], editorialQuickEdit = null, editorialNewArticleHref = null } = Astro.props;
 const lang = post?.language === 'en' ? 'en' : 'it';
 const isReview = post?.type === 'review';
 
@@ -29,6 +30,7 @@ const copy = lang === 'en'
       manufacturers: 'Hardware manufacturers',
       series: 'Series',
       categories: 'Categories',
+      category: 'Category',
       format: 'Format',
       developer: 'Developer',
       publisher: 'Publisher',
@@ -55,6 +57,7 @@ const copy = lang === 'en'
       manufacturers: 'Produttori hardware',
       series: 'Serie',
       categories: 'Categorie',
+      category: 'Categoria',
       format: 'Formato',
       developer: 'Sviluppatore',
       publisher: 'Publisher',
@@ -177,6 +180,13 @@ const infoRows = (isReview
     ])
   .filter((row) => row.items.length > 0);
 
+const singleInfo = !isReview && infoRows.length === 1 && infoRows[0].items.length === 1;
+const infoHeading = singleInfo
+  ? (infoRows[0].label === copy.categories ? copy.category : infoRows[0].label)
+  : isReview ? copy.gameInfo : copy.contextInfo;
+const InfoList = singleInfo ? 'div' : 'dl';
+const InfoValue = singleInfo ? 'div' : 'dd';
+
 const authorName =
   post?.author?.displayName === 'nickname' && post?.author?.nickname
     ? post.author.nickname
@@ -226,8 +236,8 @@ const related = relatedPosts
   .slice(0, 3);
 ---
 
-<div class="article-context-sidebar">
-  <section class="article-context-author" aria-labelledby="article-context-author-title">
+<div class="article-context-sidebar public-context-sidebar">
+  <section class="article-context-author public-context-group" aria-labelledby="article-context-author-title">
     <h2 id="article-context-author-title">{copy.author}</h2>
 
     {(authorName || publishedDate) && (
@@ -260,6 +270,8 @@ const related = relatedPosts
       </div>
     )}
 
+    <ArticleEditorialActions action={editorialQuickEdit} newArticleHref={editorialNewArticleHref} lang={lang} />
+
     {(publishedDate || (showUpdated && updatedDate)) && (
       <dl class="article-context-author__dates">
         {publishedDate && <div><dt>{copy.published}</dt><dd>{publishedDate}</dd></div>}
@@ -271,27 +283,27 @@ const related = relatedPosts
   </section>
 
   {infoRows.length > 0 && (
-    <section class="article-context-card article-context-card--info">
-      <h2>{isReview ? copy.gameInfo : copy.contextInfo}</h2>
-      <dl class="article-context-info">
+    <section class="public-context-group article-context-card article-context-card--info">
+      <h2>{infoHeading}</h2>
+      <InfoList class="article-context-info">
         {infoRows.map((row) => (
           <div>
-            <dt>{row.label}</dt>
-            <dd class="article-context-info__values">
+            {!singleInfo && <dt>{row.label}</dt>}
+            <InfoValue class="article-context-info__values">
               {row.items.map((item) => (
                 <span class="article-context-info__value">
                   {item.href ? <a href={item.href}>{item.label}</a> : <span>{item.label}</span>}
                 </span>
               ))}
-            </dd>
+            </InfoValue>
           </div>
         ))}
-      </dl>
+      </InfoList>
     </section>
   )}
 
   {related.length > 0 && (
-    <section class="article-context-card article-context-card--related">
+    <section class="public-context-group article-context-card article-context-card--related">
       <h2>{copy.related}</h2>
       <div class="article-context-related">
         {related.map((item) => {
@@ -306,7 +318,7 @@ const related = relatedPosts
               <span class="article-context-related__body">
                 <small>{typeLabels[item.type] || typeLabels.article}</small>
                 <strong>{item.title}</strong>
-                <CommentCountBadge count={item.commentCount} lang={lang} variant="compact" />
+                <CommentCountBadge count={item.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
               </span>
             </a>
           );

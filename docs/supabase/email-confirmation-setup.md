@@ -1,137 +1,80 @@
-# Email confirmation setup
+# Conferma registrazione: Supabase Auth Confirm signup
 
-Questa nota documenta il flusso di conferma email usato dagli account
-Retro-Gamers.it con Supabase Auth.
+## Stato — 23 settembre 2026
 
-## SMTP
+Source of truth confermata nel codice e nel Dashboard del progetto `retro-gamers-comments`: **Authentication → Emails / Email Templates → Confirm sign up**.
 
-Supabase Auth deve usare il custom SMTP configurato con Resend.
-Questo evita i rate limit del mailer predefinito Supabase e mantiene le email
-operative sotto il controllo del dominio del sito.
+Il template hosted è stato letto, ma NON modificato. Il file `confirm-signup-email-template.html` è il Body definitivo da incollare nel provider; `confirm-signup-email-subject.txt` è il Subject. Non sono un secondo renderer frontend: Supabase li userà soltanto dopo installazione nel Dashboard.
 
-Configurazione da verificare in Supabase Dashboard:
+## Flusso e lingua
 
-```text
-Authentication -> Settings -> SMTP Settings
-```
+- `/account/register/` e `/en/account/register/` montano `src/components/account/RegisterPage.astro` con `lang="it"` / `lang="en"`.
+- Il form ora aggiunge `language: clientCopy.lang` al payload esistente di `POST /api/auth/register`.
+- `src/pages/api/auth/register.ts` normalizza la lingua: esattamente `en` → EN; ogni altro valore o metadata assente → IT. Passa `options.data: { language }` a `supabasePublic.auth.signUp`.
+- Username, display name, badge, email/password, validazioni e salvataggio profilo restano invariati. Il metadata è solo presentazionale, mai usato per permessi.
+- Il template legge `{{ .Data.language }}`: un solo ramo EN oppure IT. Nessuna deduzione da email, browser o preferenze account.
+- Account precedenti senza metadata: fallback IT. Nessun backfill o modifica utenti effettuato.
+- `POST /api/auth/resend-confirmation` resta invariato e riusa il template signup con i metadata dell'utente già memorizzati.
 
-Non salvare chiavi SMTP, API key Resend o secret nel repository.
+La notifica admin è separata: `sendNewReaderRegistrationAdminEmail` in `src/lib/supabase/account-emails.ts` usa il renderer locale `renderRetroGamersEmail` e Resend. Non è stata modificata.
 
-## URL principali
+## Cause verificate nel template hosted
 
-Site URL attuale:
+- Il logo puntava a `https://www.retro-gamers.it/images/icons/retro-gamers-hero-logo-2`, che restituisce **HTTP 404**.
+- Il Body conteneva due sezioni complete consecutive, IT e EN, senza alcuna condizione Go.
+- Subject precedente: `Conferma il tuo account Retro-Gamers.it / Confirm your account`.
+- Palette hosted: background `#f3f8fb`, card bianca, CTA `#dff4f8` / `#0f7780`, pill e ombra. Il refresh delle mail locali non poteva cambiare questa configurazione esterna.
+- Le due CTA hosted usavano già `{{ .ConfirmationURL }}`: il nuovo template conserva la stessa variabile, senza introdurre endpoint o ricostruire token.
 
-```text
-https://www.retro-gamers.it
-```
+## Installazione manuale: solo Confirm signup
 
-Redirect URL OAuth usato dal sito:
+Nel Dashboard del progetto usato dal frontend aprire:
 
-```text
-https://www.retro-gamers.it/api/auth/oauth/callback
-```
+**Authentication → Emails (Email Templates) → Confirm sign up**
 
-Pagina preparata per la conferma email:
+URL verificato: https://supabase.com/dashboard/project/rfozwxtnmttuugvyhakb/auth/templates/confirm-sign-up
 
-```text
-https://www.retro-gamers.it/account/confirmed/
-```
+1. Conservare una copia del Subject e del Body correnti.
+2. Nel campo **Subject**, incollare il contenuto completo di `docs/supabase/confirm-signup-email-subject.txt`:
 
-Il vecchio path locale `/account/conferma/` rimanda alla nuova pagina per
-compatibilità con eventuali link già generati.
+   ```gotemplate
+   {{ if eq .Data.language "en" }}Confirm your Retro-Gamers.it account{{ else }}Conferma il tuo account Retro-Gamers.it{{ end }}
+   ```
 
-## Conferma email Supabase
+3. In **Body → Source**, sostituire tutto il contenuto con `docs/supabase/confirm-signup-email-template.html`.
+4. Verificare la preview del provider e salvare **Save changes**. Non cambiare altri template, SMTP, Site URL, Redirect URLs, scadenza OTP o conferma obbligatoria.
 
-Il link standard inviato da Supabase parte dal dominio del progetto:
+Il subject supporta template Go: il Dashboard indica che i placeholder valgono per subject e body; il sorgente ufficiale Supabase Auth compila il subject con `template.New("Subject").Parse` e lo esegue con gli stessi dati del body. Non serve un workaround o un secondo flusso.
 
-```text
-https://PROJECT-REF.supabase.co/auth/v1/verify?token=...
-```
+Non è presente un meccanismo versionato/configurato di aggiornamento hosted nel progetto: nessuno script Management API, nessun `SUPABASE_ACCESS_TOKEN` nelle configurazioni esaminate, nessuna CLI Supabase nel PATH. La service-role key non è un token Management. `supabase/config.toml` descrive il solo ambiente locale (`enable_confirmations = false`): **non applicarlo al progetto hosted**.
 
-Dopo la verifica, Supabase può rimandare alla Site URL o al redirect indicato
-nel flusso di signup, se consentito dalla configurazione URL del progetto.
+Il deploy del frontend da solo NON installa il template; viceversa, il ramo EN richiede che il codice signup con il nuovo metadata sia quello in esecuzione. Nessun deploy è stato effettuato in questo task.
 
-Nel codice frontend la registrazione email/password passa come destinazione:
+## Link e logo
 
-```text
-/account/confirmed/
-```
+`{{ .ConfirmationURL }}` compare tre volte: href CTA, href fallback e testo URL fallback. Redirect esistente invariato: `${siteUrl}/account/confirmed/`. Nessun TokenHash/RedirectTo custom, nessuna modifica alla sicurezza Auth. Non esiste un plain-text separato nei file locali; nessuna parte alternativa rimossa.
 
-## Template Confirm signup
+Logo: **https://www.retro-gamers.it/icon-192.png**. PNG approvato, HTTP 200 `image/png`, dimensione nativa 192×192, resa 48×48. Alt e nome brand testuale restano visibili anche se il client blocca immagini esterne. Nessun asset creato o convertito.
 
-Il Body HTML pronto da copiare in Supabase è in:
+## Design e limiti client
 
-```text
-docs/supabase/confirm-signup-email-template.html
-```
+Tabelle email-safe, max-width 640 px, wrapper condizionale MSO, proprietà critiche inline. Canvas Ivory `#F7F1E5`, testo Navy `#092547`, CTA Gold `#E8BA46` con testo Navy. Dark: fondo Navy, testo Ivory, link Gold, divider sobri. Nessuna card bianca esterna, cyan, CSS variable, grid/flex o JavaScript.
 
-In Supabase Dashboard:
+Meta `color-scheme`, `supported-color-schemes` e media query `prefers-color-scheme:dark`; colori inline coerenti in assenza di CSS head. La preview browser verifica il CSS standard, NON certifica tutte le inversioni proprietarie di Gmail/Outlook/Apple Mail. La verifica definitiva in quei client richiede un test manuale di ricezione dopo installazione: nessuna email reale inviata automaticamente.
 
-```text
-Authentication -> Emails -> Confirm signup -> Body
-```
+## Verifiche senza invio
 
-Subject consigliato:
+- `node --test tests/auth-signup-language.test.mjs`: cinque casi sul vero handler con tutti i side effect sostituiti da mock (IT, EN, assente, lingua non supportata, tipo non valido). Metadata, redirect e dati profilo verificati.
+- `node tests/helpers/confirm-signup-preview.mjs`: fixture IT/EN/fallback con URL `example.invalid` e token `PREVIEW_ONLY`; subject corretto, un H1 e una CTA, nessun doppio blocco, tre placeholder URL nel sorgente.
+- Il generatore fixture espande solo la condizione letterale usata dal template: **non è un motore Go e non sostituisce il rendering hosted**. Nessuna nuova dipendenza.
+- Browser reale: IT/EN × light/dark × 640/390 px, otto casi. Logo caricato, colori attesi, CTA e fallback URL coerenti, nessun overflow.
+- `npm run build`: PASS; `git diff --check`: PASS; suite esistente con nuovi test: **61 PASS**. Resta il warning bundle oltre 500 kB, estraneo alla modifica.
+- Nessun utente creato, nessuna chiamata live signup/resend, nessuna email reale, nessuna modifica admin mail, nessun commit/push/deploy.
 
-```text
-Conferma il tuo account Retro-Gamers.it / Confirm your account
-```
+Preview e screenshot: `/tmp/rg-confirm-signup/`; evidenze DOM in `browser-checks.json`. HTML fixture in `/tmp/rg-confirm-signup/preview/`. Copia del vecchio Body letto dal Dashboard in `/tmp/rg-confirm-signup/hosted-before.html`.
 
-Il template non usa immagini e mantiene il placeholder Supabase:
+## Fonti ufficiali
 
-```text
-{{ .ConfirmationURL }}
-```
-
-## Redirect consigliato
-
-In futuro, se il template email o la configurazione Supabase lo supportano in
-modo affidabile, configurare la conferma email verso:
-
-```text
-https://www.retro-gamers.it/account/confirmed/
-```
-
-In Supabase Dashboard verificare:
-
-```text
-Authentication -> URL Configuration
-```
-
-Additional Redirect URLs consigliati:
-
-```text
-https://www.retro-gamers.it/account/confirmed/
-http://localhost:4321/account/confirmed/
-```
-
-Il comportamento minimo accettabile resta:
-
-1. l'utente crea l'account;
-2. Supabase invia la mail di conferma;
-3. il link Supabase conferma l'indirizzo;
-4. Supabase rimanda alla Site URL;
-5. l'utente accede manualmente da `/account/login/`.
-
-## Reinvio conferma
-
-Il sito espone:
-
-```text
-POST /api/auth/resend-confirmation
-```
-
-L'endpoint usa:
-
-```text
-supabase.auth.resend({ type: 'signup', email })
-```
-
-La risposta pubblica è sempre generica per email formalmente valide, così non
-permette di scoprire se un account esiste:
-
-```text
-Se l'indirizzo è valido, riceverai una nuova email di conferma.
-```
-
-Gli errori SMTP, rate limit o Supabase vengono loggati solo lato server.
+- https://supabase.com/docs/guides/auth/auth-email-templates
+- https://supabase.com/docs/guides/troubleshooting/customizing-emails-by-language-KZ_38Q
+- https://github.com/supabase/auth/blob/master/internal/mailer/templatemailer/template.go

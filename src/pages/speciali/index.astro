@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArchivePage from '../../components/archive/ArchivePage.astro';
+import EditorialListing from '../../components/archive/EditorialListing.astro';
 
 import { getAllPosts, groupPosts } from '../../lib/posts';
 import { PAGE_SIZE } from '../../lib/pagination';
@@ -35,12 +35,14 @@ const structuredData = createCollectionPageStructuredData({
   news={grouped.allNews}
   title="Speciali e retrospettive videoludiche"
   description="Approfondimenti e retrospettive su videogiochi, autori, software house e cultura digitale, dalla storia del medium alla sua evoluzione."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/speciali/"
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <ArchivePage
+  <EditorialListing
+      desktopTitle="Speciali"
+      desktopDescription="Storie e approfondimenti su giochi, autori e cultura videoludica."
     title="Speciali e retrospettive videoludiche"
     eyebrow="Approfondimenti"
     description="Gli speciali di Retro-Gamers.it approfondiscono storie, autori, software house e momenti decisivi della cultura videoludica. Ricostruiamo lo sviluppo di serie, generi e tecnologie attraverso fonti, testimonianze e contesto storico, osservando anche ciò che è rimasto fuori dalle cronache più conosciute. Dai protagonisti dell’industria alle scene creative nate attorno a console e home computer, ogni articolo cerca di restituire complessità, memoria e valore culturale al percorso del videogioco."

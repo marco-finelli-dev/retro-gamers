@@ -5,6 +5,7 @@ import MobileMenu from './MobileMenu.astro';
 import { getEditorialSessionForUserSession } from '../../lib/editorial/session.server';
 import '../../styles/components/header/header.css';
 import '../../styles/components/header/navigation-rails.css';
+import '../../styles/components/header/mobile-shell.css';
 
 const {
   lang = 'it',
@@ -104,6 +105,34 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
 
   <div class="site-header__inner">
 
+      <button
+        type="button"
+        class="mobile-menu-toggle"
+        aria-label={labels.openMenu}
+        aria-controls="mobile-menu"
+        aria-expanded="false"
+        data-mobile-menu-toggle
+      >
+        <svg
+          class="mobile-menu-toggle__icon mobile-menu-toggle__icon--open"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M4 7H20" />
+          <path d="M4 12H20" />
+          <path d="M4 17H20" />
+        </svg>
+
+        <svg
+          class="mobile-menu-toggle__icon mobile-menu-toggle__icon--close"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M6 6L18 18" />
+          <path d="M18 6L6 18" />
+        </svg>
+      </button>
+
     <!-- LOGO -->
     <a href={homeUrl} class="site-header__logo" aria-label={labels.home}>
       <img
@@ -182,37 +211,11 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
         />
       </a>
 
-      <div data-header-account></div>
-
       <Search lang={lang} />
 
-      <button
-        type="button"
-        class="mobile-menu-toggle"
-        aria-label={labels.openMenu}
-        aria-controls="mobile-menu"
-        aria-expanded="false"
-        data-mobile-menu-toggle
-      >
-        <svg
-          class="mobile-menu-toggle__icon mobile-menu-toggle__icon--open"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path d="M4 7H20" />
-          <path d="M4 12H20" />
-          <path d="M4 17H20" />
-        </svg>
+      <div data-header-account></div>
 
-        <svg
-          class="mobile-menu-toggle__icon mobile-menu-toggle__icon--close"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path d="M6 6L18 18" />
-          <path d="M18 6L6 18" />
-        </svg>
-      </button>
+
     </div>
 
   </div>
@@ -276,7 +279,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
   </script>
 )}
 
-<MobileMenu lang={lang} />
+<MobileMenu lang={lang} languageSwitch={languageSwitch} />
 
 <NavigationRails lang={lang}>
       <div
@@ -355,6 +358,8 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
               <span>{isEnglish ? 'Administration area' : 'Area amministrazione'}</span>
               <span class="site-header__admin-unread" data-admin-unread hidden></span>
             </a>
+
+            <a href={isEnglish ? '/en/admin/comments/' : '/admin/comments/'} role="menuitem" data-account-moderation-area hidden>{isEnglish ? 'Moderation' : 'Moderazione'}</a>
 
             <span class="site-header__account-separator" aria-hidden="true"></span>
 
@@ -452,11 +457,38 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
       : `/utenti/${encodeURIComponent(username)}/`;
   };
 
+  let previousSidebarUnread = 0;
+
   const setUnreadCount = (count = 0) => {
     const safeCount = Number.isFinite(Number(count)) ? Math.max(0, Number(count)) : 0;
     const label = safeCount > 99 ? '99+' : String(safeCount);
 
     root?.classList.toggle('has-unread', safeCount > 0);
+
+    const notificationLabel = isEnglish
+      ? `${safeCount} ${safeCount === 1 ? 'new notification' : 'new notifications'}`
+      : `${safeCount} ${safeCount === 1 ? 'nuova notifica' : 'nuove notifiche'}`;
+    document.querySelectorAll('[data-sidebar-notifications]').forEach((link) => {
+      link.hidden = safeCount <= 0;
+      if (safeCount === previousSidebarUnread) return;
+      link.setAttribute('aria-label', notificationLabel);
+      const text = link.querySelector('[data-sidebar-notifications-label]');
+      if (text) {
+        text.replaceChildren();
+        if (safeCount > 0) {
+          const number = document.createElement('strong');
+          number.textContent = String(safeCount);
+          text.append(number, document.createTextNode(notificationLabel.slice(String(safeCount).length)));
+        }
+      }
+      link.classList.remove('is-announcing');
+      if (safeCount > previousSidebarUnread && matchMedia('(min-width: 1200px)').matches) {
+        // Restart only on an actual increase, using the existing unread refresh.
+        void link.offsetWidth;
+        link.classList.add('is-announcing');
+      }
+    });
+    previousSidebarUnread = safeCount;
 
     document.querySelectorAll('[data-account-unread]').forEach((node) => {
       node.textContent = safeCount > 0 ? label : '';

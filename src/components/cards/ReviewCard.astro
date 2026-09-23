@@ -8,12 +8,13 @@ const { post, lang = 'it', variant = 'compact', metadataVariant = 'default' } = 
 
 const isEn = lang === 'en';
 const isFeature = variant === 'feature';
+const isEditorial = metadataVariant === 'editorial';
 const isHomeReviews = metadataVariant === 'home-reviews';
 
 if (!post) return;
 
 const getImage = (post, width = 520, height = 390) => {
-  if (!post?.featuredImage?.asset) return '/og-image.jpg';
+  if (!post?.featuredImage?.asset) return '/og-image.webp';
 
   return urlFor(post.featuredImage)
     .width(width)
@@ -37,6 +38,14 @@ const homeReviewMetadata = [
   getTaxonomyLabel(post.publishers?.[0]),
   post.gameInfo?.releaseYear ? String(post.gameInfo.releaseYear) : ''
 ].filter(Boolean);
+const editorialMetadata = [
+  getTaxonomyLabel(post.categories?.[0]),
+  post.publishedAt ? new Date(post.publishedAt).toLocaleDateString(isEn ? 'en-US' : 'it-IT', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+  ['feature', 'interview'].includes(post.type)
+    ? (post.author?.displayName === 'nickname' && post.author?.nickname ? post.author.nickname : post.author?.name || '')
+    : getTaxonomyLabel(post.platforms?.[0])
+].filter(Boolean);
+const cardMetadata = isEditorial ? editorialMetadata : homeReviewMetadata;
 const reviewLabel = isEn ? 'Review' : 'Recensione';
 const rating = Number(post.rating?.overall);
 const isEditorsChoice = Number.isFinite(rating) && rating >= 9;
@@ -49,8 +58,8 @@ const cleanText = (value) =>
 
 const excerpt =
   cleanText(post.cardExcerpt) ||
-  cleanText(post.excerpt) ||
-  cleanText(post.subtitle);
+  cleanText(isEditorial ? post.subtitle : post.excerpt) ||
+  cleanText(isEditorial ? post.excerpt : post.subtitle);
 
 const imageWidth = isFeature ? 840 : 520;
 const imageHeight = isFeature ? 630 : 390;
@@ -72,13 +81,13 @@ const imageHeight = isFeature ? 630 : 390;
       decoding="async"
     />
 
-    <ReviewScoreRing
+    {!isEditorial && <ReviewScoreRing
       score={post.rating?.overall}
       lang={lang}
       size={isFeature ? 'feature' : 'compact'}
-    />
+    />}
 
-    {showEditorsChoice && isEditorsChoice && (
+    {!isEditorial && showEditorsChoice && isEditorsChoice && (
       <span
         class:list={[
           'rg-review-card__editor-choice',
@@ -112,16 +121,16 @@ const imageHeight = isFeature ? 630 : 390;
   </div>
 
   <div class="rg-review-card__body">
-    {isHomeReviews ? (
-      (homeReviewMetadata.length > 0 || Number(post.commentCount || 0) > 0) && (
+    {isHomeReviews || isEditorial ? (
+      (cardMetadata.length > 0 || Number(post.commentCount || 0) > 0) && (
         <div class="rg-review-card__kicker rg-meta-line">
-          {homeReviewMetadata.map((item, index) => (
+          {cardMetadata.map((item, index) => (
             <>
               {index > 0 && <span class="rg-review-card__separator rg-meta-separator" aria-hidden="true">·</span>}
               <span class:list={['rg-review-card__system', index === 0 ? 'rg-meta-primary' : 'rg-meta-secondary']}>{item}</span>
             </>
           ))}
-          {homeReviewMetadata.length > 0 && Number(post.commentCount || 0) > 0 && <span class="rg-review-card__separator rg-meta-separator" aria-hidden="true">·</span>}
+          {cardMetadata.length > 0 && Number(post.commentCount || 0) > 0 && <span class="rg-review-card__separator rg-meta-separator" aria-hidden="true">·</span>}
           <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
         </div>
       )

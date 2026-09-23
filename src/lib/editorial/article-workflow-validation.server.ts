@@ -106,6 +106,8 @@ function customBlockHasContent(block: Record<string, unknown>): boolean {
       );
   }
 
+  if (block._type === 'quote') return hasPortableTextContent(block.content);
+
   if (block._type === 'asideBox') {
     return normalizeString(block.title, 160).trim().length > 0 ||
       hasPortableTextContent(block.content);

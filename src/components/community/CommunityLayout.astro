@@ -1,5 +1,7 @@
 ---
 import '../../styles/pages/community.css';
+import '../../styles/pages/management-refresh.css';
+import '../../styles/pages/management-mobile.css';
 
 interface Props {
   class?: string;
@@ -9,7 +11,14 @@ interface Props {
 const { class: className = '', sidebar } = Astro.props;
 const hasSidebar = sidebar ?? Astro.slots.has('sidebar');
 const hasBefore = Astro.slots.has('before');
-const classes = ['community-page', className].filter(Boolean).join(' ');
+// Presentation only: the writing workspace and public Community pages do not opt in.
+const areaPath = Astro.url.pathname.replace(/^\/en(?=\/)/, '').replace(/\/+$/, '');
+const managementRefresh = areaPath.startsWith('/admin/') || areaPath === '/admin'
+  || ['/account', '/account/memories', '/account/ratings', '/account/favorites',
+    '/account/messages', '/account/editor', '/account/editor/profile', '/account/editor/articles',
+    '/account/editor/articles/new'].includes(areaPath)
+  || areaPath.startsWith('/account/messages/private');
+const classes = ['community-page', managementRefresh && 'management-area', className].filter(Boolean).join(' ');
 ---
 
 <div class={classes}>

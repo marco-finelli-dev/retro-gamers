@@ -1,5 +1,8 @@
 ---
 import '../../styles/components/platforms.css';
+import '../../styles/components/platforms-refresh.css';
+import PlatformBreadcrumb from './PlatformBreadcrumb.astro';
+import PlatformBrand from './PlatformBrand.astro';
 import { urlFor } from '../../lib/image';
 
 import {
@@ -139,8 +142,10 @@ const historyParagraphs = historyText
 
 <div class="platforms-page">
   <div class="container">
+    <PlatformBreadcrumb type={platform.platformType} manufacturer={platform.manufacturer} platform={platform} lang={lang} />
 
     <section class={`platform-sheet platform-sheet--${platform.platformType}`}>
+
 
       <div class="platform-sheet__grid">
 
@@ -183,7 +188,7 @@ const historyParagraphs = historyText
           </div>
 
           {chips.length > 0 && (
-            <div class="platform-sheet__chips">
+            <div class="platform-sheet__chips platform-mobile">
               {chips.map((chip) => (
                 <span>{chip}</span>
               ))}
@@ -213,61 +218,26 @@ const historyParagraphs = historyText
 
         <div class="platform-sheet__right">
 
-          {hasPlatformLogo ? (
-            <h1 class="sr-only">{platform.name}</h1>
-          ) : (
-            <h1 class="platform-sheet__section-title">
+          <header class="platform-sheet__header" data-platform={platform.slug} data-manufacturer={platform.manufacturer?.slug}>
+            <div class="platform-desktop">
+              <PlatformBrand manufacturerLogo={manufacturerLogo} manufacturerLogoLight={manufacturerLogoLight} logo={logo} logoLight={logoLight} logoAlt={logoAlt} platform={platform} header={true} decorativePlatform={true} />
+            </div>
+            <h1 class:list={{ 'sr-only': hasPlatformLogo, 'platform-sheet__title': true, 'platform-sheet__section-title': !hasPlatformLogo }}>
               <span>{platform.name}</span>
             </h1>
-          )}
-
-          {(manufacturerLogo || logo) && (
-            <div class="platform-sheet__brand">
-
-           {manufacturerLogo && (
-  <picture class="platform-sheet__manufacturer-logo-picture">
-    <img
-      src={manufacturerLogo}
-      alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
-      class="platform-sheet__manufacturer-logo platform-sheet__manufacturer-logo--dark"
-      loading="eager"
-    />
-
-    <img
-      src={manufacturerLogoLight}
-      alt=""
-      class="platform-sheet__manufacturer-logo platform-sheet__manufacturer-logo--light"
-      loading="eager"
-      aria-hidden="true"
-    />
-  </picture>
-)}
-
-              {manufacturerLogo && logo && (
-                <span class="platform-sheet__brand-separator" aria-hidden="true"></span>
-              )}
-
-              {logo && (
-                <picture class="platform-sheet__platform-logo-picture">
-                  <img
-                    src={logo}
-                    alt={logoAlt}
-                    class="platform-sheet__platform-logo platform-sheet__platform-logo--dark"
-                    loading="eager"
-                  />
-
-                  <img
-                    src={logoLight}
-                    alt=""
-                    class="platform-sheet__platform-logo platform-sheet__platform-logo--light"
-                    loading="eager"
-                    aria-hidden="true"
-                  />
-                </picture>
-              )}
-
+            <div class="platform-sheet__metadata platform-desktop">
+              {[typeLabel, platform.badgeLabel].filter(Boolean).map((value, index) => (
+                <span class="platform-sheet__metadata-item">
+                  {index > 0 && <span class="platform-sheet__metadata-separator" aria-hidden="true">·</span>}
+                  {value}
+                </span>
+              ))}
             </div>
-          )}
+          </header>
+
+          <div class="platform-mobile">
+            <PlatformBrand manufacturerLogo={manufacturerLogo} manufacturerLogoLight={manufacturerLogoLight} logo={logo} logoLight={logoLight} logoAlt={logoAlt} platform={platform} decorativePlatform={true} />
+          </div>
 
           {historyParagraphs.length > 0 && (
             <section class="platform-sheet__history">

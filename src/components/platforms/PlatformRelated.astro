@@ -1,0 +1,21 @@
+---
+import '../../styles/components/reviews-listing.css';
+import ArchiveCard from '../archive/ArchiveCard.astro';
+import ReviewCard from '../cards/ReviewCard.astro';
+import Pagination from '../common/Pagination.astro';
+const { posts, lang = 'it', currentPage, totalPages, getPageUrl } = Astro.props;
+const en = lang === 'en';
+const types = en ? {review:'Review',news:'News',feature:'Feature',interview:'Interview',guide:'Guide',article:'Article',hardware:'Hardware',memories:'Memories'} : {review:'Recensione',news:'News',feature:'Speciale',interview:'Intervista',guide:'Guida',article:'Articolo',hardware:'Hardware',memories:'Memories'};
+---
+<section class="platform-related reviews-listing">
+ <div class="container"><div class="platform-related__inner">
+  <div class="platform-related__header"><span>{en ? 'Archive' : 'Archivio'}</span><h2>{en ? 'Related articles' : 'Articoli collegati'}</h2><p>{en ? 'Reviews, features, guides and stories connected to this platform.' : 'Recensioni, speciali, guide e approfondimenti legati a questa piattaforma.'}</p></div>
+  <div class="platform-related__grid">
+   {posts.map(post => <div>
+    <div class="reviews-listing__mobile"><ArchiveCard post={post} lang={lang} /></div>
+    <div class="reviews-listing__desktop"><p class="platform-related__type">{types[post.type] || post.type}{post.type === 'review' && <>{post.categories?.[0] && <> · {en ? post.categories[0].nameEn || post.categories[0].name : post.categories[0].name}</>}{post.publishedAt && <> · <time datetime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString(en ? 'en-US' : 'it-IT', {day:'2-digit',month:'short',year:'numeric'})}</time></>}</>}</p><ReviewCard post={post} lang={lang} metadataVariant={post.type === 'review' ? 'home-reviews' : 'editorial'} /></div>
+   </div>)}
+  </div>
+  <Pagination numbered currentPage={currentPage} totalPages={totalPages} getPageUrl={getPageUrl} lang={lang} ariaLabel={en ? 'Related articles pagination' : 'Paginazione articoli collegati'} />
+ </div></div>
+</section>

@@ -1,3 +1,5 @@
+@import './standard-content-refresh.css';
+
 /* The desktop reader shell is shared by every standard page. Keep the
    article and home treatments independent of this page grammar. */
 @media (min-width: 1200px) {
@@ -20,6 +22,47 @@
     --rg-page-surface: color-mix(in srgb, var(--rg-desktop-canvas-surface) 72%, var(--rg-shell-paper));
   }
 
+  /* Match the approved Home/article content edge, including the footer.
+     Some pages own their wrapper, others use .container: apply the inset once. */
+  body.rg-standard-page-layout > main .container {
+    padding-inline: var(--rg-page-content-gutter);
+  }
+
+  /* Compatibility tokens are scoped to standard page content. Home, article,
+     shell and mobile keep their own approved tokens. */
+  body.rg-standard-page-layout > main {
+    --color-text: var(--rg-text-primary);
+    --color-text-soft: var(--rg-text-secondary);
+    --color-text-muted: var(--rg-text-muted);
+    --color-primary: var(--rg-title-hover);
+    --color-primary-light: var(--rg-title-hover);
+    --color-accent: var(--rg-title-hover);
+    --color-secondary: var(--rg-title-hover);
+    --color-primary-soft: var(--rg-page-surface);
+    --color-secondary-soft: var(--rg-page-surface);
+    --color-border: var(--rg-border-neutral);
+    --color-surface: var(--rg-page-surface);
+    --color-surface-2: var(--rg-page-surface);
+    --color-surface-strong: var(--rg-page-surface);
+    --color-glass: var(--rg-page-surface);
+    --rg-badge-bg: var(--rg-page-surface);
+    --rg-badge-border: var(--rg-border-neutral);
+    --rg-badge-color: var(--rg-text-secondary);
+    --rg-eyebrow-color: var(--rg-text-secondary);
+    --rg-section-title-color: var(--rg-title-color);
+    --rg-section-title-line: var(--rg-divider-color);
+    --rg-action-color: var(--rg-link-color);
+    --rg-action-hover-color: var(--rg-title-hover);
+    --rg-cta-bg: var(--rg-page-surface);
+    --rg-cta-hover-bg: var(--rg-surface-card);
+    --rg-cta-border: var(--rg-border-neutral);
+    --rg-cta-color: var(--rg-text-primary);
+    --section-box-shadow: none;
+    --section-box-hover-shadow: none;
+    --rg-focus-ring: 1px solid var(--rg-text-secondary);
+    color: var(--rg-text-primary);
+  }
+
   /* One editorial measure and gutter for listings, records, community,
      account and management. Containers already owned by a page keep their
      own inner grids and contextual sidebars. */
@@ -27,7 +70,8 @@
     .community-page, .account-page, .admin-dashboard-page,
     .creators-page, .companies-page, .author-page
   ) {
-    width: min(var(--rg-layout-editorial-max), calc(100% - 2 * var(--rg-space-6)));
+    width: min(var(--rg-layout-editorial-max), 100%);
+    padding-inline: var(--rg-page-content-gutter);
     margin-inline: auto;
   }
 

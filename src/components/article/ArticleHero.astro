@@ -1,9 +1,7 @@
 ---
 import { getArchiveUrl, getPostUrl } from '../../lib/routes';
-import ArticleShare from './ArticleShare.astro';
-import ArticleSaveButton from './ArticleSaveButton.astro';
 
-const { post, editorialQuickEdit = null } = Astro.props;
+const { post } = Astro.props;
 
 const lang = post?.language || 'it';
 
@@ -50,10 +48,6 @@ const roleLabels = {
 };
 
 const isReview = post.type === 'review';
-const overallRating = Number(post?.rating?.overall);
-const isEditorsChoice =
-  isReview && Number.isFinite(overallRating) && overallRating >= 9;
-const editorChoiceAlt = lang === 'en' ? "Editor's Choice" : 'Scelta della redazione';
 
 const platforms =
   isReview
@@ -159,14 +153,7 @@ const articleId =
   String(post._id || post.id || `${lang}:${post.type || 'article'}:${articleSlug}`)
     .replace(/^drafts\./, '');
 
-const quickEditLabels = {
-  edit: lang === 'en' ? 'Edit article' : 'Modifica articolo',
-  adopt: lang === 'en' ? 'Open in new editor' : 'Apri nel nuovo editor',
-  loading: lang === 'en' ? 'Opening editor…' : 'Apertura editor…',
-  error: lang === 'en'
-    ? 'The article editor could not be opened.'
-    : 'Non è stato possibile aprire l’editor articolo.',
-};
+
 ---
 
 <section class="article-hero">
@@ -182,33 +169,9 @@ const quickEditLabels = {
 
   </div>
 
-  <div class:list={[
-    'article-hero__content',
-    { 'article-hero__content--with-editor-choice': isEditorsChoice }
-  ]}>
+  <div class="article-hero__content">
 
     <h1>{post.title}</h1>
-
-    {isEditorsChoice && (
-      <span class="article-hero__editor-choice">
-        <img
-          src="/images/badges/editor-choice-ivory.svg"
-          alt={editorChoiceAlt}
-          class="article-hero__editor-choice-asset article-hero__editor-choice-asset--light"
-          width="850"
-          height="639"
-          decoding="async"
-        />
-        <img
-          src="/images/badges/editor-choice-navy.svg"
-          alt={editorChoiceAlt}
-          class="article-hero__editor-choice-asset article-hero__editor-choice-asset--dark"
-          width="850"
-          height="639"
-          decoding="async"
-        />
-      </span>
-    )}
 
     {(post.subtitle || post.excerpt) && (
       <p>{post.subtitle || post.excerpt}</p>
@@ -217,82 +180,3 @@ const quickEditLabels = {
   </div>
 
 </section>
-
-<script>
-  const initArticleEditorialQuickEdit = () => {
-    document
-      .querySelectorAll('[data-article-editorial-quick-edit]:not([data-article-editorial-quick-edit-ready])')
-      .forEach((root) => {
-        if (!(root instanceof HTMLElement)) return;
-
-        root.dataset.articleEditorialQuickEditReady = 'true';
-
-        const button = root.querySelector('[data-article-editorial-quick-edit-button]');
-        const message = root.querySelector('[data-article-editorial-quick-edit-message]');
-
-        if (!(button instanceof HTMLButtonElement)) return;
-
-        const defaultLabel = button.dataset.labelDefault || button.textContent || '';
-        const loadingLabel = button.dataset.labelLoading || defaultLabel;
-        const errorLabel = button.dataset.labelError || '';
-
-        const showMessage = (text) => {
-          if (!(message instanceof HTMLElement)) return;
-
-          message.textContent = text;
-          message.hidden = !text;
-        };
-
-        button.addEventListener('click', async () => {
-          const endpoint = button.dataset.endpoint || '';
-
-          if (!endpoint || button.disabled) return;
-
-          button.disabled = true;
-          button.textContent = loadingLabel;
-          showMessage('');
-
-          try {
-            const response = await fetch(endpoint, {
-              method: 'POST',
-              headers: {
-                'content-type': 'application/json',
-              },
-              body: JSON.stringify({
-                uiLanguage: button.dataset.uiLanguage === 'en' ? 'en' : 'it',
-              }),
-            });
-            const result = await response.json().catch(() => null);
-            const editUrl = typeof result?.editUrl === 'string' && result.editUrl.trim()
-              ? result.editUrl.trim()
-              : button.dataset.fallbackEditUrl || '';
-
-            if (
-              !response.ok &&
-              result?.error === 'revision_draft_exists' &&
-              button.dataset.fallbackEditUrl
-            ) {
-              window.location.assign(button.dataset.fallbackEditUrl);
-              return;
-            }
-
-            if (!response.ok || !result?.ok || !editUrl) {
-              throw new Error(result?.error || 'quick_edit_failed');
-            }
-
-            window.location.assign(editUrl);
-          } catch {
-            button.disabled = false;
-            button.textContent = defaultLabel;
-            showMessage(errorLabel);
-          }
-        });
-      });
-  };
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initArticleEditorialQuickEdit, { once: true });
-  } else {
-    initArticleEditorialQuickEdit();
-  }
-</script>

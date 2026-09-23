@@ -327,7 +327,7 @@ function collectCreatorLinksFromBlocks(blocks: any[] = []): CreatorRef[] {
       .filter((def) => def?._type === 'creatorLink' && def.reference?.slug)
       .map((def) => def.reference);
 
-    if (block._type === 'asideBox' && Array.isArray(block.content)) {
+    if ((block._type === 'asideBox' || block._type === 'quote') && Array.isArray(block.content)) {
       return [
         ...markDefCreators,
         ...collectCreatorLinksFromBlocks(block.content)

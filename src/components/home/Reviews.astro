@@ -1,6 +1,8 @@
 ---
 import '../../styles/components/reviews.css';
 import '../../styles/components/home-headings.css';
+import HomeSurvey from './HomeSurvey';
+import '../../styles/components/home-survey.css';
 import ReviewCard from '../cards/ReviewCard.astro';
 import { urlFor } from '../../lib/image';
 import { getArchiveUrl, getPostUrl } from '../../lib/routes';
@@ -19,11 +21,6 @@ const labels = {
   participationTitle: isEn ? 'Take part' : 'Partecipa',
   quizLabel: isEn ? 'Quiz' : 'Quiz',
   quizCta: isEn ? 'Play the quiz' : 'Gioca al quiz',
-  quickPollLabel: isEn ? 'Poll' : 'Sondaggio',
-  quickPollQuestion: isEn
-    ? 'Which Amiga platformer would you like us to review?'
-    : 'Quale platform Amiga vorresti vedere recensito?',
-  vote: isEn ? 'Vote' : 'Vota',
   aria: isEn ? 'Latest reviews' : 'Ultime recensioni'
 };
 
@@ -37,7 +34,6 @@ const latestQuiz = [...quizzes]
     new Date(second.publishedAt || 0).getTime() -
     new Date(first.publishedAt || 0).getTime()
   )[0];
-const quickPollOptions = ['Chuck Rock II', 'Superfrog', 'Kid Chaos', 'Fire & Ice'];
 
 const getQuizCoverUrl = (quiz) => {
   if (!quiz?.coverImage?.asset) return '';
@@ -70,7 +66,7 @@ const getCategory = (post) => {
 };
 
 const getNewsImage = (post, width = 160) => {
-  if (!post?.featuredImage?.asset) return '/og-image.jpg';
+  if (!post?.featuredImage?.asset) return '/og-image.webp';
 
   return urlFor(post.featuredImage)
     .width(width)
@@ -152,7 +148,7 @@ const getNewsImage = (post, width = 160) => {
         </section>
       )}
 
-      {(latestQuiz || quickPollOptions.length > 0) && (
+      {(
         <section class="rg-reviews__sidebar-module rg-reviews__participation" aria-labelledby="participation-heading">
           <div class="rg-reviews__participation-content rg-reviews__participation-card">
             <div class="rg-reviews__participation-heading rg-module-heading rg-module-heading--centered">
@@ -186,24 +182,7 @@ const getNewsImage = (post, width = 160) => {
               </div>
             )}
 
-            <div class="rg-reviews__quick-poll" aria-labelledby="quick-poll-question">
-              <span class="rg-reviews__quick-poll-label">{labels.quickPollLabel}</span>
-              <h4 id="quick-poll-question">{labels.quickPollQuestion}</h4>
-
-              <fieldset class="rg-reviews__quick-poll-options">
-                <legend class="sr-only">{labels.quickPollQuestion}</legend>
-                {quickPollOptions.map((option) => (
-                  <label class="rg-reviews__quick-poll-option">
-                    <input type="radio" name={`quick-poll-${lang}`} value={option} />
-                    <span>{option}</span>
-                  </label>
-                ))}
-              </fieldset>
-
-              <button type="button" class="rg-reviews__participation-cta rg-cta-filled-raised rg-cta-filled-raised--primary">
-                <span class="rg-cta-filled-raised__face">{labels.vote}</span>
-              </button>
-            </div>
+            <HomeSurvey lang={lang} client:load />
           </div>
         </section>
       )}

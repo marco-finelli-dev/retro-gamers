@@ -16,7 +16,7 @@ import {
 } from '@portabletext/editor';
 import { EventListenerPlugin, NodePlugin } from '@portabletext/editor/plugins';
 import * as selectors from '@portabletext/editor/selectors';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type DragEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { urlFor } from '../../lib/image';
 import type { AiTransparency } from '../../lib/article-ai-transparency';
@@ -91,6 +91,13 @@ type BodyImageBlock = PortableTextObject & {
   caption?: string;
   displayMode?: string;
   isWide?: boolean;
+};
+
+type QuoteBlock = PortableTextObject & {
+  _type: 'quote';
+  content: PortableTextBlock[];
+  attribution?: string;
+  source?: string;
 };
 
 type ImageRowLayout = 'standard' | 'uniformHeight';
@@ -710,6 +717,17 @@ type Labels = {
   videoBlockHeader: string;
   videoRowBlockHeader: string;
   asideBoxHeader: string;
+  insertQuote: string;
+  editQuote: string;
+  updateQuote: string;
+  removeQuote: string;
+  quoteRemoveConfirm: string;
+  quoteText: string;
+  quoteHelp: string;
+  quoteRequired: string;
+  quoteAttribution: string;
+  quoteSource: string;
+
   unsupportedObject: string;
   cardExcerptWarning: string;
   excerptWarning: string;
@@ -949,6 +967,21 @@ const videoRowBlockObjectSchema = {
   ],
 };
 
+const quoteBlockObjectSchema = {
+  name: 'quote',
+  fields: [
+    { name: 'content', type: 'array' },
+    { name: 'attribution', type: 'string' },
+    { name: 'source', type: 'string' },
+  ],
+};
+const quoteSchemaDefinition = defineSchema({
+  decorators: [{ name: 'strong' }, { name: 'em' }],
+  styles: [{ name: 'normal' }],
+  annotations: annotationSchema,
+  lists: [], inlineObjects: [], blockObjects: [],
+});
+
 const asideBoxBlockObjectSchema = {
   name: 'asideBox',
   fields: [
@@ -986,6 +1019,7 @@ const schemaDefinition = defineSchema({
     videoBlockObjectSchema,
     videoRowBlockObjectSchema,
     asideBoxBlockObjectSchema,
+    quoteBlockObjectSchema,
     affiliateProductsBlockObjectSchema,
   ],
 });
@@ -1036,6 +1070,7 @@ function getObjectLabel(type: string, labels: Labels) {
   if (type === 'video') return labels.video;
   if (type === 'videoRow') return labels.videoRow;
   if (type === 'asideBox') return labels.asideBox;
+  if (type === 'quote') return labels.insertQuote;
   if (type === 'affiliateProductsBlock') return labels.affiliateProductsBlock;
 
   return labels.unsupportedObject;
@@ -2254,6 +2289,174 @@ function AsideContentPreview({
   return <div className="editorial-pte__aside-preview-content">{renderedItems}</div>;
 }
 
+function QuoteObjectBlock({
+  attributes,
+  children,
+  node,
+  path,
+  focused,
+  selected,
+  labels,
+  language,
+  currentArticleId,
+  saveEndpoint,
+  assetPreviewUrls,
+  onAssetPreview,
+  readOnly: propReadOnly,
+}: any) {
+  const editor = useEditor();
+  const readOnly = useEditorSelector(editor, snapshot => snapshot.context.readOnly) || propReadOnly;
+  const quote = node as QuoteBlock;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const content = normalizeAsideContentForEditor(quote.content);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isMenuOpen]);
+
+  const applyQuoteUpdate = (value: Record<string, unknown>) => {
+    if (readOnly) return;
+    // One atomic update also clears optional fields; the save normalizer omits empty strings.
+    editor.send({
+      type: 'block.set', at: path,
+      props: { ...value, attribution: value.attribution || '', source: value.source || '' },
+    });
+    editor.send({ type: 'focus' });
+    setIsModalOpen(false);
+  };
+
+  const moveQuoteBlock = (direction: 'up' | 'down') => {
+    if (readOnly) return;
+    editor.send({
+      type: direction === 'up' ? 'move.block up' : 'move.block down',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  const selectQuoteBlock = () => {
+    editor.send({
+      type: 'select.block',
+      at: path,
+    });
+  };
+
+  const startQuoteDrag = (event: DragEvent<HTMLElement>) => {
+    selectQuoteBlock();
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const openQuoteModal = () => {
+    if (readOnly) return;
+    setIsMenuOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const removeQuoteBlock = () => {
+    if (readOnly) return;
+    if (!window.confirm(labels.quoteRemoveConfirm)) return;
+
+    editor.send({
+      type: 'delete.block',
+      at: path,
+    });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <div
+      {...attributes}
+      className="editorial-pte__object editorial-pte__image-object editorial-pte__custom-object editorial-pte__quote-object"
+      data-focused={focused ? 'true' : undefined}
+      data-selected={selected ? 'true' : undefined}
+    >
+      {children}
+      <div className="editorial-pte__image-content editorial-pte__custom-content" contentEditable={false}>
+        <MediaBlockHeader
+          icon="“"
+          title={labels.insertQuote}
+          menuLabel={labels.editQuote}
+          isMenuOpen={isMenuOpen}
+          menuRef={menuRef}
+          onToggleMenu={() => setIsMenuOpen((value) => !value)}
+        >
+          <button type="button" role="menuitem" disabled={readOnly} onClick={openQuoteModal}>
+            {labels.editQuote}
+          </button>
+          <button type="button" role="menuitem" disabled={readOnly} onClick={() => moveQuoteBlock('up')}>
+            {labels.moveUp}
+          </button>
+          <button type="button" role="menuitem" disabled={readOnly} onClick={() => moveQuoteBlock('down')}>
+            {labels.moveDown}
+          </button>
+          <button type="button" role="menuitem" disabled={readOnly} className="editorial-pte__image-menu-danger" onClick={removeQuoteBlock}>
+            {labels.removeQuote}
+          </button>
+        </MediaBlockHeader>
+
+        <figure className="editorial-pte__quote-preview" draggable={!readOnly}
+          onMouseDown={selectQuoteBlock} onDragStart={startQuoteDrag}>
+          <blockquote>
+            <span className="editorial-pte__quote-mark" aria-hidden="true">“</span>
+            {content.filter(block => block._type === 'block').map(block => (
+              <p key={block._key}>{(block.children as any[] || []).map(span => {
+                let text: ReactNode = span.text;
+                if (span.marks?.includes('strong')) text = <strong>{text}</strong>;
+                if (span.marks?.includes('em')) text = <em>{text}</em>;
+                return <span key={span._key}>{text}</span>;
+              })}</p>
+            ))}
+            <span className="editorial-pte__quote-mark editorial-pte__quote-mark--closing" aria-hidden="true">”</span>
+          </blockquote>
+          {(quote.attribution || quote.source) && <figcaption>
+            {quote.attribution && <strong>{quote.attribution}</strong>}
+            {quote.source && <span>{quote.source}</span>}
+          </figcaption>}
+        </figure>
+      </div>
+
+      {isModalOpen && !readOnly && (
+        <QuoteModal
+          mode="edit"
+          labels={labels}
+          language={language}
+          currentArticleId={currentArticleId}
+          saveEndpoint={saveEndpoint}
+          initialQuote={quote}
+          assetPreviewUrls={assetPreviewUrls}
+          onAssetPreview={onAssetPreview}
+          onApply={applyQuoteUpdate}
+          onClose={() => { setIsModalOpen(false); editor.send({ type: 'focus' }); }}
+        />
+      )}
+    </div>
+  );
+}
+
 function AsideBoxObjectBlock({
   attributes,
   children,
@@ -2681,6 +2884,24 @@ function ObjectBlock({
       >
         {children}
       </VideoRowObjectBlock>
+    );
+  }
+
+  if (type === 'quote') {
+    return (
+      <QuoteObjectBlock
+        attributes={attributes}
+        labels={labels}
+        node={node}
+        language={language}
+        currentArticleId={currentArticleId}
+        saveEndpoint={saveEndpoint}
+        assetPreviewUrls={assetPreviewUrls}
+        onAssetPreview={onAssetPreview}
+        {...props}
+      >
+        {children}
+      </QuoteObjectBlock>
     );
   }
 
@@ -4583,7 +4804,21 @@ function VideoRowModal({
   );
 }
 
+// Read the live value when applying: mutation events can be batched while typing.
+function QuoteContentSnapshot({ readContentRef }: {
+  readContentRef: RefObject<(() => PortableTextBlock[]) | null>;
+}) {
+  const editor = useEditor();
+  useEffect(() => {
+    readContentRef.current = () => selectors.getValue(editor.getSnapshot());
+    return () => { readContentRef.current = null; };
+  }, [editor, readContentRef]);
+  return null;
+}
+
 function AsideContentEditor({
+  textOnly = false,
+  readContentRef,
   content,
   labels,
   language,
@@ -4593,6 +4828,8 @@ function AsideContentEditor({
   onAssetPreview,
   onChange,
 }: {
+  textOnly?: boolean;
+  readContentRef?: RefObject<(() => PortableTextBlock[]) | null>;
   content: PortableTextBlock[];
   labels: Labels;
   language: ArticleLanguage;
@@ -4639,11 +4876,12 @@ function AsideContentEditor({
   return (
     <EditorProvider
       initialConfig={{
-        schemaDefinition: asideSchemaDefinition,
+        schemaDefinition: textOnly ? quoteSchemaDefinition : asideSchemaDefinition,
         initialValue: content,
         keyGenerator: getKey,
       }}
     >
+      {readContentRef && <QuoteContentSnapshot readContentRef={readContentRef} />}
       <EventListenerPlugin
         on={(event) => {
           if (event.type === 'mutation') {
@@ -4651,9 +4889,9 @@ function AsideContentEditor({
           }
         }}
       />
-      <NodePlugin nodes={nestedNodes} />
+      <NodePlugin nodes={textOnly ? [] : nestedNodes} />
       <Toolbar
-        variant="aside"
+        variant={textOnly ? "quote" : "aside"}
         labels={labels}
         language={language}
         currentArticleId={currentArticleId}
@@ -4663,6 +4901,8 @@ function AsideContentEditor({
       />
       <PortableTextEditable
         className="editorial-pte editorial-pte--nested"
+        aria-label={textOnly ? labels.quoteText : undefined}
+        aria-required={textOnly || undefined}
         renderAnnotation={renderAnnotation}
         renderDecorator={renderDecorator}
         renderListItem={renderListItem}
@@ -4671,6 +4911,81 @@ function AsideContentEditor({
       />
     </EditorProvider>
   );
+}
+
+const QuoteTextEditor = memo(AsideContentEditor);
+
+function QuoteModal({ mode, labels, language, currentArticleId, saveEndpoint,
+  initialQuote = null, assetPreviewUrls = {}, onAssetPreview, onApply, onClose,
+}: {
+  mode: 'insert' | 'edit'; labels: Labels; language: ArticleLanguage;
+  currentArticleId: string; saveEndpoint: string; initialQuote?: QuoteBlock | null;
+  assetPreviewUrls?: Record<string, string>; onAssetPreview: (id: string, url: string) => void;
+  onApply: (value: Record<string, unknown>) => void; onClose: () => void;
+}) {
+  const initialContent = useRef<PortableTextBlock[]>(initialQuote?.content || []);
+  const [content, setContent] = useState<PortableTextBlock[]>(initialContent.current);
+  const [attribution, setAttribution] = useState(initialQuote?.attribution || '');
+  const [source, setSource] = useState(initialQuote?.source || '');
+  const [confirmExit, setConfirmExit] = useState(false);
+  const [error, setError] = useState(false);
+  const onContentChange = useCallback((value: PortableTextBlock[]) => { setContent(value); setError(false); }, []);
+  const textId = useId();
+  const readContentRef = useRef<(() => PortableTextBlock[]) | null>(null);
+  const initial = useRef(JSON.stringify({ content, attribution, source }));
+  const dirty = initial.current !== JSON.stringify({ content, attribution, source });
+  const hasText = (value: PortableTextBlock[]) => value.some(block => block._type === 'block' &&
+    (block.children as any[] || []).some(span => String(span.text || '').trim()));
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+  const apply = () => {
+    setConfirmExit(false);
+    const currentContent = readContentRef.current?.() || content;
+    if (!hasText(currentContent)) { setError(true); return; }
+    onApply({ content: currentContent, ...(attribution.trim() ? { attribution } : {}), ...(source.trim() ? { source } : {}) });
+  };
+  const requestClose = () => {
+    if (confirmExit) return;
+    // Escape in a nested link dialog belongs to that dialog only.
+    const dialogs = document.querySelectorAll('.editorial-pte-modal__panel');
+    if (!dialogs[dialogs.length - 1]?.classList.contains('editorial-pte-modal__panel--quote')) return;
+    const currentContent = readContentRef.current?.() || content;
+    if (initial.current !== JSON.stringify({ content: currentContent, attribution, source })) setConfirmExit(true);
+    else onClose();
+  };
+  return <>
+    <AnnotationModal title={mode === 'insert' ? labels.insertQuote : labels.editQuote}
+      labels={labels} onClose={requestClose} panelClassName="editorial-pte-modal__panel--aside editorial-pte-modal__panel--quote">
+      <div className="editorial-aside-modal">
+        <div className="editorial-field" role="group" aria-labelledby={textId}>
+          <span id={textId}>{labels.quoteText}</span>
+          <p>{labels.quoteHelp}</p>
+          <QuoteTextEditor textOnly readContentRef={readContentRef} content={initialContent.current} labels={labels} language={language}
+            currentArticleId={currentArticleId} saveEndpoint={saveEndpoint}
+            assetPreviewUrls={assetPreviewUrls} onAssetPreview={onAssetPreview} onChange={onContentChange} />
+          {error && <p role="alert">{labels.quoteRequired}</p>}
+        </div>
+        <label className="editorial-field"><span>{labels.quoteAttribution}</span>
+          <AutoGrowTextField singleLine value={attribution} onChange={setAttribution} />
+        </label>
+        <label className="editorial-field"><span>{labels.quoteSource}</span>
+          <AutoGrowTextField singleLine value={source} onChange={setSource} />
+        </label>
+        <div className="editorial-body-image-modal__actions">
+          <button type="button" className="editorial-mini-button" onClick={requestClose}>{labels.annotationClose}</button>
+          <button type="button" className="editorial-button" onClick={apply}>
+            {mode === 'insert' ? labels.insertQuote : labels.updateQuote}
+          </button>
+        </div>
+      </div>
+    </AnnotationModal>
+    {confirmExit && <ExitConfirmationModal labels={labels} copy={getImageModalExitCopy(labels)} isSaving={false}
+      onSaveAndClose={apply} onDiscard={onClose} onCancel={() => setConfirmExit(false)} />}
+  </>;
 }
 
 function AsideBoxModal({
@@ -5687,7 +6002,7 @@ function Toolbar({
   onRequestExit?: () => void;
   onWorkflowAction?: (action: WorkflowAction) => void | Promise<void>;
   onPublishRevision?: () => void | Promise<void>;
-  variant?: 'body' | 'aside';
+  variant?: 'body' | 'aside' | 'quote';
   capabilities?: EditorialArticleCapabilities;
 }) {
   const editor = useEditor();
@@ -5726,6 +6041,7 @@ function Toolbar({
     selection: EditorSelection;
     trigger: HTMLButtonElement | null;
   } | null>(null);
+  const [quoteModal, setQuoteModal] = useState<{ selection: EditorSelection; trigger: HTMLButtonElement | null } | null>(null);
   const [asideBoxModal, setAsideBoxModal] = useState<{
     selection: EditorSelection;
     trigger: HTMLButtonElement | null;
@@ -5762,6 +6078,7 @@ function Toolbar({
     !videoModal &&
     !videoRowModal &&
     !asideBoxModal &&
+    !quoteModal &&
     !affiliateProductsModal
   );
 
@@ -5791,6 +6108,40 @@ function Toolbar({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [openMenu]);
+
+  // Keep mobile menus outside the scrolling action row and inside the visible viewport.
+  useEffect(() => {
+    if (!openMenu || !isBodyToolbar) return;
+    const toolbar = toolbarRef.current;
+    if (!toolbar) return;
+    const clearPlacement = () => {
+      delete toolbar.dataset.mobileMenuPlacement;
+      toolbar.style.removeProperty('--mobile-toolbar-menu-height');
+    };
+    const positionMenu = () => {
+      if (!window.matchMedia('(max-width: 1199px)').matches) {
+        clearPlacement();
+        return;
+      }
+      const panel = toolbar.querySelector<HTMLElement>('.editorial-pte-toolbar__menu-panel:not([hidden])');
+      if (!panel) return;
+      const rect = toolbar.getBoundingClientRect();
+      const stickyTop = Number.parseFloat(getComputedStyle(toolbar).top) || 0;
+      const below = Math.max(0, window.innerHeight - rect.bottom - 14);
+      const above = Math.max(0, rect.top - stickyTop - 6);
+      const placeAbove = below < Math.min(panel.scrollHeight, 200) && above > below;
+      toolbar.dataset.mobileMenuPlacement = placeAbove ? 'above' : 'below';
+      toolbar.style.setProperty('--mobile-toolbar-menu-height', `${placeAbove ? above : below}px`);
+    };
+    positionMenu();
+    window.addEventListener('resize', positionMenu);
+    window.addEventListener('scroll', positionMenu, true);
+    return () => {
+      window.removeEventListener('resize', positionMenu);
+      window.removeEventListener('scroll', positionMenu, true);
+      clearPlacement();
+    };
+  }, [openMenu, isBodyToolbar]);
 
   useEffect(() => {
     if (isLocked || isWorkflowUpdating) {
@@ -6170,6 +6521,22 @@ function Toolbar({
       trigger?.focus();
     }, 0);
   };
+  const openQuoteModal = (trigger: HTMLButtonElement) => {
+    if (!isBodyToolbar) return;
+
+    setQuoteModal({
+      selection,
+      trigger,
+    });
+  };
+  const closeQuoteModal = () => {
+    const trigger = quoteModal?.trigger;
+    setQuoteModal(null);
+
+    window.setTimeout(() => {
+      trigger?.focus();
+    }, 0);
+  };
   const openAsideBoxModal = (trigger: HTMLButtonElement) => {
     if (!isBodyToolbar) return;
 
@@ -6261,6 +6628,21 @@ function Toolbar({
     });
     editor.send({ type: 'focus' });
     setVideoRowModal(null);
+  };
+  const insertQuoteBlock = (value: Record<string, unknown>) => {
+    if (!quoteModal || !isBodyToolbar) return;
+
+    restoreSelection(quoteModal.selection);
+    editor.send({
+      type: 'insert.block object',
+      placement: 'after',
+      blockObject: {
+        name: 'quote',
+        value,
+      },
+    });
+    editor.send({ type: 'focus' });
+    setQuoteModal(null);
   };
   const insertAsideBoxBlock = (value: Record<string, unknown>) => {
     if (!asideBoxModal || !isBodyToolbar) return;
@@ -6431,6 +6813,7 @@ function Toolbar({
       ref={toolbarRef}
     >
       <div className="editorial-pte-toolbar__content-tools">
+        {variant !== 'quote' && (
         <div className="editorial-pte-toolbar__menu">
         <button
           className="editorial-pte-toolbar__menu-trigger"
@@ -6486,6 +6869,7 @@ function Toolbar({
           )}
         </div>
         </div>
+        )}
 
         <div className="editorial-pte-toolbar__menu">
         <button
@@ -6528,7 +6912,7 @@ function Toolbar({
           >
             {labels.italic}
           </button>
-          {isBodyToolbar && (
+          {isBodyToolbar && isBlockquoteActive && (
             <button
               className="editorial-pte-toolbar__menu-item"
               type="button"
@@ -6543,6 +6927,7 @@ function Toolbar({
               {labels.quote}
             </button>
           )}
+          {variant !== 'quote' && (
           <button
             className="editorial-pte-toolbar__menu-item"
             type="button"
@@ -6556,6 +6941,7 @@ function Toolbar({
           >
             {labels.bullet}
           </button>
+          )}
           {isBodyToolbar && (
             <button
               className="editorial-pte-toolbar__menu-item"
@@ -6667,6 +7053,7 @@ function Toolbar({
         </div>
         </div>
 
+        {variant !== 'quote' && (
         <div className="editorial-pte-toolbar__menu">
         <button
           className="editorial-pte-toolbar__menu-trigger"
@@ -6736,6 +7123,18 @@ function Toolbar({
                 className="editorial-pte-toolbar__menu-item"
                 type="button"
                 role="menuitem"
+                aria-expanded={Boolean(quoteModal)}
+                title={labels.insertQuote}
+                disabled={isLocked}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => runToolbarAction(() => openQuoteModal(event.currentTarget))}
+              >
+                {labels.insertQuote}
+              </button>
+              <button
+                className="editorial-pte-toolbar__menu-item"
+                type="button"
+                role="menuitem"
                 aria-expanded={Boolean(asideBoxModal)}
                 title={insertMenuLabels.asideBox}
                 disabled={isLocked}
@@ -6762,6 +7161,7 @@ function Toolbar({
           )}
         </div>
         </div>
+        )}
       </div>
 
       {isBodyToolbar && (
@@ -6928,6 +7328,19 @@ function Toolbar({
           labels={labels}
           onApply={insertVideoRowBlock}
           onClose={closeVideoRowModal}
+        />
+      )}
+      {quoteModal && isBodyToolbar && (
+        <QuoteModal
+          mode="insert"
+          labels={labels}
+          language={language}
+          currentArticleId={currentArticleId}
+          saveEndpoint={saveEndpoint}
+          assetPreviewUrls={assetPreviewUrls}
+          onAssetPreview={onAssetPreview}
+          onApply={insertQuoteBlock}
+          onClose={closeQuoteModal}
         />
       )}
       {asideBoxModal && isBodyToolbar && (
@@ -8131,6 +8544,21 @@ export default function ArticlePortableTextEditor({
         ),
       }),
       defineBlockObject({
+        type: 'quote',
+        render: (props) => (
+          <ObjectBlock
+            {...props}
+            readOnly={isManualSaveLocked}
+            labels={labels}
+            language={draft.language}
+            currentArticleId={getRootArticleId(draft._id)}
+            saveEndpoint={saveEndpoint}
+            assetPreviewUrls={bodyImagePreviewUrls}
+            onAssetPreview={rememberBodyImagePreview}
+          />
+        ),
+      }),
+      defineBlockObject({
         type: 'asideBox',
         render: (props) => (
           <ObjectBlock
@@ -8163,6 +8591,7 @@ export default function ArticlePortableTextEditor({
     ],
     [
       bodyImagePreviewUrls,
+      isManualSaveLocked,
       capabilities.canEditMonetization,
       draft._id,
       draft.language,
@@ -9319,7 +9748,9 @@ export default function ArticlePortableTextEditor({
     } catch (error) {
       const message = error instanceof Error && error.message === 'revision_conflict'
         ? labels.conflict
-        : labels.genericError;
+        : error instanceof Error && error.message === 'invalid_quote_content'
+          ? labels.quoteRequired
+          : labels.genericError;
 
       setStatus(isAutosave ? labels.autosaveError : message);
       setStatusTone('error');

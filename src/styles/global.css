@@ -111,8 +111,8 @@
   --rg-duration-fast: 140ms;
   --rg-duration-media: 160ms;
   --rg-ease-standard: ease;
-  --rg-focus-ring: 2px solid var(--rg-color-green);
-  --rg-focus-offset: 3px;
+  --rg-focus-ring: none;
+  --rg-focus-offset: 0px;
 
   /* Approved magazine values, adopted progressively without changing legacy UI. */
   --rg-magazine-ivory: #F7F1E5;
@@ -367,24 +367,18 @@
   height: 22px;
   padding: 0 6px;
 
-  border: 1px solid rgba(34,240,255,0.34);
+  border: 1px solid var(--rg-border-neutral);
   border-radius: 999px;
-
-  background:
-    linear-gradient(180deg, rgba(16,22,32,0.96), rgba(5,7,14,0.98)),
-    radial-gradient(circle at 20% 10%, rgba(34,240,255,0.28), transparent 48%);
-  color: var(--color-primary);
+  background: var(--rg-surface-page);
+  color: var(--rg-text-primary);
 
   font-size: 0.66rem;
   font-weight: var(--rg-weight-bold);
   letter-spacing: 0;
   line-height: 1;
 
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.16),
-    0 0 0 2px rgba(5,7,14,0.82),
-    0 8px 18px rgba(0,0,0,0.28),
-    0 0 16px rgba(34,240,255,0.12);
+  box-shadow: none;
+  animation: none;
 
   white-space: nowrap;
 }
@@ -671,6 +665,38 @@ html[data-theme="light"] {
 
 .rg-meta-auxiliary {
   color: var(--rg-meta-accessory-color);
+}
+
+/* Shared keyboard focus: no perimeter rings or glow. Important intentionally
+   replaces the legacy per-component focus outlines without changing layout. */
+html body :focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+html body :focus-visible {
+  box-shadow: inset 0 -2px 0 currentColor !important;
+}
+
+html body :is(a, button):focus-visible {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* The face covers its parent's inset indicator on the shared raised CTA. */
+html body .rg-cta-filled-raised:focus-visible .rg-cta-filled-raised__face {
+  box-shadow: inset 0 -2px 0 currentColor;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+@media (forced-colors: active) {
+  html body :focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px;
+  }
 }
 
 .rg-meta-separator {
@@ -1149,28 +1175,6 @@ html[data-theme="light"] .card:hover .card-title-sm {
    ☀️ LIGHT THEME GLOBAL TUNING
 ========================= */
 
-/* Link testuali dentro articoli: meno neon, più editoriale */
-html[data-theme="light"] .article-content a {
-  color: var(--color-primary);
-
-  background:
-    linear-gradient(
-      to right,
-      rgba(8,124,142,0.26),
-      rgba(8,124,142,0.26)
-    );
-
-  background-size: 100% 1px;
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-}
-
-html[data-theme="light"] .article-content a:hover {
-  color: #065F6F;
-  text-shadow: none;
-  background-size: 100% 2px;
-}
-
 /* Kicker, label e micro-titoli: niente cyan fluo in light */
 html[data-theme="light"] [class*="__kicker"]:not(.rg-meta-primary, .rg-meta-secondary, .rg-meta-tertiary),
 html[data-theme="light"] [class*="__eyebrow"]:not(.rg-meta-primary, .rg-meta-secondary, .rg-meta-tertiary),
@@ -1204,18 +1208,6 @@ html[data-theme="light"] .article-comments button {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.70),
     0 8px 18px rgba(24,32,48,0.07);
-}
-
-html[data-theme="light"] .community-points-badge {
-  border-color: rgba(8,124,142,0.28);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(230,244,248,0.98)),
-    radial-gradient(circle at 20% 10%, rgba(8,124,142,0.16), transparent 48%);
-  color: #065F6F;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.74),
-    0 0 0 2px rgba(245,248,252,0.90),
-    0 8px 18px rgba(24,32,48,0.12);
 }
 
 /* Hover light più editoriale, meno laser */

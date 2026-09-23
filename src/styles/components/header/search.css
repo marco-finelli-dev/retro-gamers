@@ -500,7 +500,7 @@
   text-shadow: 0 5px 20px rgba(0,0,0,0.72);
 }
 
-.highlight {
+.search-bar .highlight {
   color: var(--rg-action-hover-color);
   font-weight: 800;
 
@@ -830,7 +830,7 @@ html[data-theme="light"] .search-item:hover .search-title {
   text-shadow: none;
 }
 
-html[data-theme="light"] .highlight {
+html[data-theme="light"] .search-bar .highlight {
   color: var(--rg-action-hover-color);
   text-shadow: none;
 }
@@ -902,4 +902,62 @@ html[data-theme="light"] .search-overlay {
 html[data-theme="light"] .search-toggle:focus-visible,
 html[data-theme="light"] .search-close:focus-visible {
   outline-color: rgba(8,104,122,0.38);
+}
+
+/* Desktop search: solid canvas, editorial rows, scoped highlighting. */
+@media (min-width: 1200px) {
+  html[data-theme] body.rg-desktop-layout .search-overlay {
+    background: color-mix(in srgb, var(--rg-color-navy) 35%, transparent);
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  html[data-theme] body.rg-desktop-layout .search-bar {
+    background: var(--rg-desktop-canvas-surface); border: 1px solid var(--rg-border-neutral);
+    border-radius: var(--rg-radius-medium); box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  html[data-theme] body.rg-desktop-layout .search-bar::before,
+  html[data-theme] body.rg-desktop-layout .search-bar::after { content: none; }
+  html[data-theme] body.rg-desktop-layout .search-bar input {
+    color: var(--rg-text-primary); background: none; border: 0;
+    border-bottom: 1px solid var(--rg-divider-color); border-radius: 0;
+    box-shadow: none; outline: none; caret-color: var(--rg-text-primary);
+    font-size: 20px; font-weight: var(--rg-weight-medium); text-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .search-bar input::placeholder { color: var(--rg-text-secondary); }
+  html[data-theme] body.rg-desktop-layout .search-close {
+    display: grid; place-items: center; color: var(--rg-text-secondary); background: none;
+    box-shadow: none; text-shadow: none; transform: none;
+  }
+  html[data-theme] body.rg-desktop-layout .search-close:hover { color: var(--rg-text-primary); background: var(--rg-surface-card); }
+  html[data-theme] body.rg-desktop-layout .search-results { padding: 8px 16px; }
+  html[data-theme] body.rg-desktop-layout .search-item {
+    grid-template-columns: 80px minmax(0, 1fr); gap: 16px; padding: 16px 8px;
+    margin: 0; border: 0; border-bottom: 1px solid var(--rg-divider-color); border-radius: 0;
+    color: var(--rg-text-primary); background: none; box-shadow: none; transform: none;
+  }
+  html[data-theme] body.rg-desktop-layout .search-item:last-child { border-bottom: 0; }
+  html[data-theme] body.rg-desktop-layout .search-item:hover { background: var(--rg-surface-card); }
+  html[data-theme] body.rg-desktop-layout .search-thumb {
+    width: 80px; aspect-ratio: 4 / 3; border: 0; border-radius: var(--rg-radius-small);
+    background: var(--rg-surface-card); box-shadow: none; color: var(--rg-text-secondary);
+  }
+  html[data-theme] body.rg-desktop-layout .search-thumb img { filter: none; transform: none; }
+  html[data-theme] body.rg-desktop-layout .search-category {
+    color: var(--rg-text-secondary); font-size: 12px; line-height: 1.5;
+    font-weight: var(--rg-weight-medium); letter-spacing: normal; white-space: normal;
+  }
+  html[data-theme] body.rg-desktop-layout .search-title {
+    color: var(--rg-text-primary); font-size: 18px; line-height: 1.35;
+    font-weight: var(--rg-weight-semibold); background: none; text-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .search-item:hover .search-title { color: var(--rg-title-hover); }
+  html[data-theme] body.rg-desktop-layout .search-empty {
+    padding: 24px 8px; color: var(--rg-text-secondary); background: none; border: 0; box-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .search-empty strong { color: var(--rg-text-primary); }
+  html[data-theme] body.rg-desktop-layout .search-bar .highlight { color: var(--rg-title-hover); background: none; text-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .search-bar :is(a,button,input):focus-visible { outline: 1px solid var(--rg-text-secondary); outline-offset: -3px; box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .search-bar input:focus-visible {
+    outline: none; box-shadow: inset 0 -2px 0 var(--rg-title-hover);
+  }
 }

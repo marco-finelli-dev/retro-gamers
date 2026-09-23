@@ -1,0 +1,105 @@
+---
+const { action = null, newArticleHref = null, lang = 'it' } = Astro.props;
+const en = lang === 'en';
+const editLabel = en ? 'Edit article' : 'Modifica articolo';
+const loadingLabel = en ? 'Opening editor…' : 'Apertura editor…';
+const errorLabel = en ? 'The article editor could not be opened.' : 'Non è stato possibile aprire l’editor articolo.';
+---
+{(action || newArticleHref) && (
+  <div class="article-editorial-actions" data-article-editorial-quick-edit>
+    <div class="article-editorial-actions__links">
+      {action && (action.mode === 'edit' ? (
+        <a href={action.editUrl}><span class="article-editorial-actions__icon article-editorial-actions__icon--edit" aria-hidden="true"></span><span>{editLabel}</span></a>
+      ) : (
+        <button type="button" data-article-editorial-quick-edit-button
+          data-endpoint={action.adoptEndpoint || action.revisionEndpoint}
+          data-fallback-edit-url={action.editUrl} data-ui-language={lang}
+          data-label-default={editLabel} data-label-loading={loadingLabel} data-label-error={errorLabel}>
+          <span class="article-editorial-actions__icon article-editorial-actions__icon--edit" aria-hidden="true"></span><span data-article-editorial-quick-edit-label>{editLabel}</span>
+        </button>
+      ))}
+      {newArticleHref && <a href={newArticleHref}><span class="article-editorial-actions__icon article-editorial-actions__icon--new" aria-hidden="true"></span><span>{en ? 'New article' : 'Nuovo articolo'}</span></a>}
+    </div>
+    <p hidden role="status" data-article-editorial-quick-edit-message></p>
+  </div>
+)}
+
+<script>
+  const initArticleEditorialQuickEdit = () => {
+    document
+      .querySelectorAll('[data-article-editorial-quick-edit]:not([data-article-editorial-quick-edit-ready])')
+      .forEach((root) => {
+        if (!(root instanceof HTMLElement)) return;
+
+        root.dataset.articleEditorialQuickEditReady = 'true';
+
+        const button = root.querySelector('[data-article-editorial-quick-edit-button]');
+        const message = root.querySelector('[data-article-editorial-quick-edit-message]');
+        const label = root.querySelector('[data-article-editorial-quick-edit-label]');
+
+        if (!(button instanceof HTMLButtonElement)) return;
+
+        const defaultLabel = button.dataset.labelDefault || button.textContent || '';
+        const loadingLabel = button.dataset.labelLoading || defaultLabel;
+        const errorLabel = button.dataset.labelError || '';
+
+        const showMessage = (text) => {
+          if (!(message instanceof HTMLElement)) return;
+
+          message.textContent = text;
+          message.hidden = !text;
+        };
+
+        button.addEventListener('click', async () => {
+          const endpoint = button.dataset.endpoint || '';
+
+          if (!endpoint || button.disabled) return;
+
+          button.disabled = true;
+          if (label) label.textContent = loadingLabel;
+          showMessage('');
+
+          try {
+            const response = await fetch(endpoint, {
+              method: 'POST',
+              headers: {
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify({
+                uiLanguage: button.dataset.uiLanguage === 'en' ? 'en' : 'it',
+              }),
+            });
+            const result = await response.json().catch(() => null);
+            const editUrl = typeof result?.editUrl === 'string' && result.editUrl.trim()
+              ? result.editUrl.trim()
+              : button.dataset.fallbackEditUrl || '';
+
+            if (
+              !response.ok &&
+              result?.error === 'revision_draft_exists' &&
+              button.dataset.fallbackEditUrl
+            ) {
+              window.location.assign(button.dataset.fallbackEditUrl);
+              return;
+            }
+
+            if (!response.ok || !result?.ok || !editUrl) {
+              throw new Error(result?.error || 'quick_edit_failed');
+            }
+
+            window.location.assign(editUrl);
+          } catch {
+            button.disabled = false;
+            if (label) label.textContent = defaultLabel;
+            showMessage(errorLabel);
+          }
+        });
+      });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initArticleEditorialQuickEdit, { once: true });
+  } else {
+    initArticleEditorialQuickEdit();
+  }
+</script>

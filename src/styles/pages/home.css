@@ -118,6 +118,12 @@ html[data-theme="light"]:has(main > .home-hero) .rg-hero__top p {
    HOME RESPONSIVE
 ======================================== */
 
+@media (min-width: 1200px) {
+  .home-hero {
+    padding-top: calc(var(--rg-space-16) + var(--rg-space-6));
+  }
+}
+
 @media (max-width: 768px) {
   .home-hero {
     padding: var(--rg-space-8) 0 var(--rg-space-6);
@@ -142,4 +148,158 @@ html[data-theme="light"]:has(main > .home-hero) .rg-hero__top p {
     padding-top: 26px;
   }
 
+}
+
+/* Mobile Home composition. Keep the approved desktop and shared shell intact. */
+@media (max-width: 1199px) {
+  main > :is(.home-hero, .home-stories, .home-reviews, .home-editorial, .home-newsletter, .home-latest) {
+    --rg-type-meta: 12px;
+    --rg-page-content-inset: 0px;
+    --rg-home-content-inset: 0px;
+    padding-block: var(--rg-space-6);
+  }
+
+  main > .home-hero {
+    padding-top: var(--rg-space-6);
+  }
+
+  main > .home-stories {
+    padding-top: var(--rg-space-4);
+  }
+
+  main > :is(.home-hero, .home-stories, .home-reviews, .home-editorial, .home-newsletter, .home-latest) > .container {
+    padding-inline: var(--rg-layout-gutter-mobile);
+  }
+
+  .home-latest .rg-latest {
+    padding-inline: 0;
+  }
+
+  .home-hero .rg-hero-main h2 {
+    font-size: clamp(28px, 5vw, 40px);
+    line-height: 1.12;
+  }
+
+  .home-hero .rg-hero-side-card--compact h3,
+  .home-reviews .rg-reviews__news-title,
+  .home-editorial :is(.rg-special-secondary strong, .rg-utility-item strong, .rg-home-interviews__secondary strong),
+  .home-latest .rg-latest__item strong {
+    font-size: var(--rg-type-body);
+    line-height: 1.35;
+  }
+
+  .home-hero .rg-hero-main__content {
+    padding-top: var(--rg-space-4);
+  }
+
+  main > :is(.home-hero, .home-stories, .home-reviews, .home-editorial, .home-latest) :is(.rg-editorial-title, .rg-review-card h3, .rg-hero-side-card h3) {
+    display: block;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    -webkit-line-clamp: unset;
+    overflow-wrap: anywhere;
+  }
+
+  main > :is(.home-hero, .home-stories, .home-reviews, .home-editorial, .home-latest) .rg-meta-line {
+    flex-wrap: wrap;
+    row-gap: var(--rg-space-1);
+  }
+
+  main > :is(.home-hero, .home-stories, .home-reviews, .home-editorial, .home-latest) :is(.rg-meta-line > :not(.rg-comment-count, .rg-meta-separator), .rg-review-card__system) {
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+  }
+
+  main > :is(.home-stories, .home-reviews, .home-editorial, .home-latest) .rg-module-heading {
+    margin-bottom: var(--rg-space-6);
+    gap: var(--rg-space-3);
+  }
+
+  main > :is(.home-stories, .home-reviews, .home-editorial, .home-latest) .rg-module-heading--centered {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+  }
+
+  main > :is(.home-stories, .home-reviews, .home-editorial, .home-latest) .rg-archive-link {
+    grid-template-columns: minmax(16px, 1fr) minmax(0, auto);
+    min-height: 44px;
+  }
+
+  .home-reviews .rg-reviews__grid,
+  .home-editorial .rg-lower-editorial {
+    gap: var(--rg-space-8);
+  }
+
+  .home-editorial .rg-lower-editorial__utility {
+    margin-top: 0;
+  }
+
+  html[data-theme] .home-editorial .editorial-hub--guides {
+    padding: var(--rg-space-4);
+    margin-bottom: 0;
+  }
+
+  .home-editorial .editorial-hub--guides .quick-guide strong {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+  }
+
+  .home-editorial .editorial-hub--guides .quick-guides__footer {
+    position: static;
+    transform: none;
+    margin-top: var(--rg-space-6);
+  }
+
+  .home-editorial :is(.rg-home-interviews, .rg-lower-editorial__utility-card) {
+    padding: var(--rg-space-4);
+  }
+
+  .home-editorial .rg-home-interviews__heading.rg-module-heading,
+  .home-editorial .rg-utility-card__heading.rg-module-heading {
+    margin-bottom: var(--rg-space-4);
+  }
+}
+
+@media (max-width: 640px) {
+  /* Short stories become readable rows instead of narrow two-column tiles. */
+  .home-stories .rg-stories__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--rg-space-6);
+  }
+
+  .home-stories .rg-stories__item {
+    display: grid;
+    grid-template-columns: minmax(96px, 32%) minmax(0, 1fr);
+    gap: var(--rg-space-3);
+    align-items: start;
+  }
+
+  .home-stories .rg-stories__content {
+    padding-top: 0;
+  }
+
+  .home-stories .rg-stories h3 {
+    display: block;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+  }
+
+  .home-reviews .rg-reviews__secondary-list,
+  .home-reviews .rg-reviews__sidebar {
+    gap: var(--rg-space-8);
+  }
+
+  .home-reviews .rg-review-card__body p {
+    -webkit-line-clamp: 2;
+  }
+
+  .home-latest .rg-latest {
+    --latest-thumbnail-size: 80px;
+  }
+
+  .home-editorial .rg-home-interviews__secondary {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
 }

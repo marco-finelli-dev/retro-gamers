@@ -225,8 +225,8 @@
 
 .article-final-rating__content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 72px;
-  gap: var(--rg-space-6) var(--rg-space-6);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--rg-space-6);
   align-items: center;
 }
 
@@ -257,18 +257,6 @@
   text-transform: uppercase;
 }
 
-.article-final-rating__score {
-  display: grid;
-  grid-column: 2;
-  place-items: center;
-}
-
-.article-final-rating__score .rg-review-score {
-  position: relative;
-  right: auto;
-  bottom: auto;
-}
-
 .article-final-rating__body {
   grid-column: 1 / -1;
   display: flow-root;
@@ -289,23 +277,53 @@
 }
 
 .article-final-rating__ratings {
+  --article-rating-value-column: 64px;
   box-sizing: border-box;
-  width: fit-content;
-  max-width: 100%;
-  margin: 0 0 var(--rg-space-6) var(--rg-space-8);
-  padding: 20px;
+  width: 227px;
+  margin-left: 26px;
+  padding-left: 26px;
   float: right;
-  border: 1px solid var(--rg-border-neutral);
-  border-radius: var(--rg-radius-medium);
-  background: var(--rg-surface-card-subtle);
-  box-shadow: none;
+  border-left: 1px solid var(--rg-divider-color);
+}
+
+.article-final-rating__ratings-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--article-rating-value-column);
+  gap: 20px;
+  align-items: center;
+  min-height: 48px;
+  margin-bottom: var(--rg-space-4);
+}
+
+.article-final-rating__editor-choice {
+  width: 64px;
+  justify-self: center;
+  pointer-events: none;
+}
+
+.article-final-rating__editor-choice-asset {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.article-final-rating__editor-choice-asset--light {
+  display: none;
+}
+
+html[data-theme="light"] .article-final-rating__editor-choice-asset--dark {
+  display: none;
+}
+
+html[data-theme="light"] .article-final-rating__editor-choice-asset--light {
+  display: block;
 }
 
 .article-final-rating__ratings h3 {
-  margin: 0 0 var(--rg-space-3);
+  margin: 0;
   color: var(--rg-meta-secondary-color);
   font-family: var(--rg-font-family);
-  font-size: var(--rg-type-meta);
+  font-size: 13px;
   font-weight: var(--rg-weight-bold);
   letter-spacing: 0.05em;
   line-height: 1.3;
@@ -314,7 +332,7 @@
 
 .article-final-rating__ratings dl {
   display: grid;
-  grid-template-columns: max-content max-content;
+  grid-template-columns: minmax(0, 1fr) var(--article-rating-value-column);
   gap: var(--rg-space-4) 20px;
   justify-content: start;
   margin: 0;
@@ -332,7 +350,7 @@
 
 .article-final-rating__ratings dt {
   color: var(--rg-text-secondary);
-  font-size: var(--rg-type-meta);
+  font-size: 13px;
   font-weight: var(--rg-weight-semibold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -341,9 +359,33 @@
 .article-final-rating__ratings dd {
   color: var(--rg-text-primary);
   font-family: var(--font-display);
-  font-size: var(--rg-type-body);
+  font-size: 18px;
   font-weight: var(--rg-weight-bold);
-  text-align: right;
+  text-align: center;
+}
+
+.article-final-rating__total {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--article-rating-value-column);
+  gap: 20px;
+  align-items: center;
+  margin-top: var(--rg-space-4);
+  padding-top: var(--rg-space-3);
+  border-top: 1px solid var(--rg-divider-color);
+}
+
+.article-final-rating__total-label {
+  color: var(--rg-text-primary);
+  font-size: 13px;
+  font-weight: var(--rg-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.article-final-rating__total .rg-review-score {
+  position: static;
+  width: 58px;
+  justify-self: center;
 }
 
 @media (max-width: 720px) {
@@ -353,16 +395,8 @@
   }
 
   .article-final-rating__content {
-    grid-template-columns: minmax(0, 1fr) 72px;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--rg-space-4);
-  }
-
-  .article-final-rating__heading {
-    grid-column: 1;
-  }
-
-  .article-final-rating__score {
-    grid-column: 2;
   }
 
   .article-final-rating__body {
@@ -373,9 +407,12 @@
 
   .article-final-rating__ratings {
     order: 2;
-    float: none;
     width: 100%;
     margin: 0;
+    padding: var(--rg-space-6) 0 0;
+    float: none;
+    border-left: 0;
+    border-top: 1px solid var(--rg-divider-color);
   }
 
   .article-final-rating__summary {

@@ -1,0 +1,130 @@
+/* Public authentication only; private account/editor surfaces keep their styles. */
+.auth-page .account-social-auth__google-mono {
+  background: currentColor;
+  mask: url('/icons/oauth/google-mono.svg') center / contain no-repeat;
+}
+
+@media (min-width: 1200px) {
+  html[data-theme] body.rg-desktop-layout .account-page.auth-page {
+    width: min(560px, calc(100% - 48px));
+    max-width: 560px;
+    padding: 0;
+    margin: var(--rg-space-12) auto var(--rg-space-16);
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-card {
+    width: 100%; padding: 0; border: 0; border-radius: 0;
+    background: none; box-shadow: none; backdrop-filter: none;
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-card::before { content: none; }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-card h1 {
+    font: var(--rg-weight-bold) 36px/1.15 var(--rg-font-family);
+    color: var(--rg-text-primary); text-transform: none; letter-spacing: -.02em; text-shadow: none;
+    margin: 0 0 var(--rg-space-3);
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-card > p {
+    color: var(--rg-text-secondary); line-height: 1.6;
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-kicker {
+    font-size: var(--rg-type-ui-small); font-weight: var(--rg-weight-medium);
+    letter-spacing: normal; text-transform: none; margin: 0 0 var(--rg-space-2);
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-social-auth { margin-top: var(--rg-space-6); }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-social-auth a {
+    min-height: 44px; padding: 10px 16px; border-radius: var(--rg-radius-small);
+    border: 1px solid var(--rg-border-neutral); background: var(--rg-surface-card);
+    color: var(--rg-text-primary); font-size: var(--rg-type-body); font-weight: var(--rg-weight-semibold);
+    box-shadow: none; transform: none;
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-social-auth a:hover {
+    color: var(--rg-title-hover); border-color: var(--rg-text-secondary); background: var(--rg-surface-card);
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-divider {
+    margin-top: var(--rg-space-6); color: var(--rg-text-secondary);
+    font-size: var(--rg-type-ui-small); font-weight: var(--rg-weight-regular); text-transform: none; letter-spacing: normal;
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-divider::before,
+  html[data-theme] body.rg-desktop-layout .auth-page .account-divider::after { background: var(--rg-divider-color); }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-form { margin-top: var(--rg-space-6); gap: var(--rg-space-4); }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-form label { gap: var(--rg-space-2); color: var(--rg-text-primary); font-weight: var(--rg-weight-medium); }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-form :is(input:not([type="hidden"]), select) {
+    width: 100%; min-height: 44px; padding: 10px 12px;
+    background: var(--rg-shell-paper); border: 1px solid var(--rg-border-neutral); border-radius: var(--rg-radius-small);
+    color: var(--rg-text-primary); box-shadow: none; font: inherit;
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page :is(.account-form button[type="submit"], .account-actions a) {
+    min-height: 44px; padding: 10px 20px; border: 1px solid transparent; border-radius: var(--rg-radius-small);
+    background: var(--rg-text-primary); color: var(--rg-desktop-canvas-surface);
+    font: var(--rg-weight-semibold) var(--rg-type-body)/1.4 var(--rg-font-family);
+    box-shadow: none; text-shadow: none; transform: none;
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page :is(.account-form button[type="submit"], .account-actions a):hover {
+    background: var(--rg-title-hover); color: var(--rg-desktop-canvas-surface);
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page :is(.account-switch a, .account-resend-confirmation button) {
+    color: var(--rg-link-color); font-weight: var(--rg-weight-medium);
+    text-decoration: underline; text-underline-offset: .2em; box-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page :is(.account-switch a, .account-resend-confirmation button):hover { color: var(--rg-text-primary); }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-message {
+    color: var(--rg-text-primary); background: var(--rg-surface-card); border-color: var(--rg-border-neutral); box-shadow: none;
+    margin: var(--rg-space-4) 0; padding: var(--rg-space-3); border-radius: var(--rg-radius-small);
+  }
+  html[data-theme] body.rg-desktop-layout .auth-page .account-message[data-type="error"] { color: var(--rg-text-primary); border-left: 3px solid var(--rg-color-coral); padding-left: var(--rg-space-3); }
+  html[data-theme] body.rg-desktop-layout .auth-page :is(a, button, input, select):focus-visible {
+    outline: 2px solid var(--rg-text-secondary); outline-offset: 3px; box-shadow: none;
+  }
+}
+
+/* Auth field/link colors apply at every viewport; geometry stays above/in account.css. */
+html[data-theme="light"] .auth-page { color-scheme: light; }
+html[data-theme="dark"] .auth-page { color-scheme: dark; }
+
+html[data-theme] body.rg-desktop-layout .account-page.auth-page .account-form :is(input:not([type="hidden"]):where(:not([type="checkbox"]):not([type="radio"])), select, textarea) {
+  background-color: var(--rg-shell-paper);
+  color: var(--rg-text-primary);
+  caret-color: var(--rg-text-primary);
+  border-color: var(--rg-border-neutral);
+  /* Beat the global :focus shadow without changing focus elsewhere. */
+  box-shadow: none !important;
+}
+
+html[data-theme] body.rg-desktop-layout .account-page.auth-page .account-form :is(input, textarea)::placeholder {
+  color: var(--rg-text-secondary);
+  opacity: 1;
+}
+
+html[data-theme] body.rg-desktop-layout .account-page.auth-page .account-form :is(input, select, textarea):focus-visible {
+  border-color: var(--rg-text-secondary);
+  box-shadow: inset 0 -2px 0 var(--rg-text-secondary) !important;
+}
+
+/* Opaque inset fill covers the browser's autofill paint, including while focused.
+   Keep autocomplete enabled and preserve a separate keyboard-focus indicator. */
+html[data-theme] body.rg-desktop-layout .account-page.auth-page .account-form input:is(:autofill, :-webkit-autofill) {
+  -webkit-text-fill-color: var(--rg-text-primary);
+  caret-color: var(--rg-text-primary);
+  box-shadow: inset 0 0 0 1000px var(--rg-shell-paper) !important;
+}
+
+html[data-theme] body.rg-desktop-layout .account-page.auth-page .account-form input:is(:autofill, :-webkit-autofill):focus-visible {
+  box-shadow: inset 0 -2px 0 var(--rg-text-secondary), inset 0 0 0 1000px var(--rg-shell-paper) !important;
+}
+
+html[data-theme] body.rg-desktop-layout .auth-page :is(.account-switch a, .account-resend-confirmation button) {
+  color: var(--rg-link-color);
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+
+html[data-theme] body.rg-desktop-layout .auth-page :is(.account-switch a, .account-resend-confirmation button):is(:hover, :focus-visible) {
+  color: var(--rg-link-hover);
+}
+
+/* The confirmation page uses an action link instead of a form. */
+@media (max-width: 1199px) {
+  html[data-theme] body.rg-desktop-layout .auth-page .account-actions a {
+    background: var(--rg-text-primary);
+    color: var(--rg-surface-page);
+    border-color: var(--rg-border-neutral);
+  }
+}

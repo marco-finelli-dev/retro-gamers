@@ -1,0 +1,13 @@
+---
+import { getCreatorUrl, getCompanyUrl } from '../../lib/routes';
+const { family, name, lang = 'it' } = Astro.props;
+const en = lang === 'en';
+const archiveLabel = family === 'creator' ? (en ? 'Creators' : 'Creatori') : (en ? 'Companies' : 'Aziende');
+const archiveHref = family === 'creator' ? getCreatorUrl(null, lang) : getCompanyUrl(null, lang);
+---
+<nav class="entity-breadcrumb entity-detail__desktop" aria-label={en ? 'Breadcrumb' : 'Percorso di navigazione'}>
+  <ol>
+    <li><a href={archiveHref}>{archiveLabel}</a></li>
+    <li><span aria-hidden="true">›</span><span aria-current="page">{name}</span></li>
+  </ol>
+</nav>

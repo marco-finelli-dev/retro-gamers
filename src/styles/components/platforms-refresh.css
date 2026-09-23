@@ -1,0 +1,115 @@
+/* Desktop-only platform family. Existing mobile presentation is retained. */
+.platform-desktop { display: none; }
+.platform-sheet__header { display: contents; }
+/* Local navigation also wraps naturally on the existing mobile layout. */
+.platform-breadcrumb { margin-bottom: var(--rg-space-6); font-family: var(--rg-font-family); font-size: var(--rg-type-ui-small); line-height: 1.6; color: var(--rg-text-secondary); }
+.platform-breadcrumb ol { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 0; margin: 0; list-style: none; }
+.platform-breadcrumb li { display: inline-flex; align-items: baseline; gap: 10px; min-width: 0; overflow-wrap: anywhere; }
+.platform-breadcrumb a { color: var(--rg-link-color); text-decoration: none; }
+.platform-breadcrumb a:hover { color: var(--rg-title-hover); }
+.platform-breadcrumb a:focus-visible { outline: 2px solid var(--rg-text-secondary); outline-offset: 3px; }
+.platform-breadcrumb [aria-current] { color: var(--rg-text-primary); }
+.platform-breadcrumb__separator { color: var(--rg-text-muted); }
+@media (min-width: 1200px) {
+  html[data-theme] body.rg-desktop-layout .platform-mobile { display: none; }
+  html[data-theme] body.rg-desktop-layout .platform-desktop { display: block; }
+  html[data-theme] body.rg-desktop-layout .platforms-page { --platform-surface: color-mix(in srgb, var(--rg-text-primary) 4%, var(--rg-desktop-canvas-surface)); padding-block: var(--rg-space-8); }
+  html[data-theme] body.rg-desktop-layout :is(.platforms-hero__inner, .platform-type-card, .platform-type-card__icon, .platform-card__visual, .platform-card__fallback, .platform-card__body, .platform-sheet, .platform-sheet__fallback, .platform-sheet__brand, .platform-related__inner, .platform-empty) {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    text-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout :is(.platforms-hero__inner, .platform-type-card, .platform-card__visual, .platform-sheet, .platform-sheet__brand, .platform-related__inner)::before,
+  html[data-theme] body.rg-desktop-layout :is(.platform-card__visual, .platform-related__header h2)::after { content: none; }
+  html[data-theme] body.rg-desktop-layout :is(.platform-type-card, .platform-card):hover { transform: none; box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout :is(.platform-type-card, .platform-card) { transition: color 160ms ease; }
+  html[data-theme] body.rg-desktop-layout :is(.platforms-hero__inner, .platform-sheet, .platform-related__inner) { padding: 0; overflow: visible; }
+  html[data-theme] body.rg-desktop-layout .platforms-hero { margin-bottom: var(--rg-space-8); }
+  html[data-theme] body.rg-desktop-layout .platforms-hero__inner { padding-bottom: var(--rg-space-8); border-bottom: 1px solid var(--rg-divider-color); }
+  html[data-theme] body.rg-desktop-layout .platforms-hero h1 {
+    font-family: var(--rg-font-family); font-size: var(--rg-type-page-title); font-weight: var(--rg-weight-bold);
+    line-height: 1.1; letter-spacing: -.02em; text-transform: none; color: var(--rg-title-color); text-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout :is(.platforms-hero > .platforms-hero__inner > span, .platforms-hero__content > span, .manufacturer-block__header > div > span, .platform-related__header > span) { display: none; }
+  html[data-theme] body.rg-desktop-layout :is(.platforms-hero p, .platform-type-card__content p, .platform-related__header p, .platform-empty p) {
+    max-width: none; color: var(--rg-text-secondary); font-size: var(--rg-type-body); line-height: 1.65;
+  }
+  html[data-theme] body.rg-desktop-layout :is(.platform-grid, .platform-type-grid) { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--rg-space-6); }
+  html[data-theme] body.rg-desktop-layout .platform-browser__toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--rg-space-4); margin-bottom: var(--rg-space-4); }
+  html[data-theme] body.rg-desktop-layout .platform-browser__types { display: flex; flex-wrap: wrap; gap: var(--rg-space-6); }
+  html[data-theme] body.rg-desktop-layout .platform-browser__types a { padding-block: 10px; border-bottom: 2px solid transparent; color: var(--rg-text-secondary); font-size: var(--rg-type-body); font-weight: var(--rg-weight-semibold); text-decoration: none; transition: color 160ms ease; }
+  html[data-theme] body.rg-desktop-layout .platform-browser__types a[aria-current="page"] { color: var(--rg-title-color); border-bottom-color: currentColor; }
+  html[data-theme] body.rg-desktop-layout .platform-browser__count { margin: 0; color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small); }
+  html[data-theme] body.rg-desktop-layout .platform-browser__makers { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: var(--rg-space-6); color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small); }
+  html[data-theme] body.rg-desktop-layout .platform-browser__makers a { color: var(--rg-text-secondary); text-decoration: none; }
+  html[data-theme] body.rg-desktop-layout :is(.platform-browser__types a, .platform-browser__makers a):hover { color: var(--rg-title-hover); }
+  html[data-theme] body.rg-desktop-layout .platform-browser .platform-grid { row-gap: var(--rg-space-8); }
+  html[data-theme] body.rg-desktop-layout .platform-type-card { align-items: start; min-height: 0; padding: 0; gap: var(--rg-space-4); }
+  html[data-theme] body.rg-desktop-layout .platform-type-card__icon { position: static; flex: 0 0 42px; width: 42px; height: 42px; }
+  html[data-theme] body.rg-desktop-layout .platform-type-card__content { display: flex; flex-direction: column; }
+  html[data-theme] body.rg-desktop-layout .platform-type-card__content h2 { order: -1; }
+  html[data-theme] body.rg-desktop-layout :is(.platform-type-card__content h2, .manufacturer-block__header h2, .platform-related__header h2, .platform-empty h2) {
+    font-family: var(--rg-font-family); font-size: var(--rg-type-section-title); font-weight: var(--rg-weight-bold); line-height: 1.2;
+    text-transform: none; letter-spacing: -.01em; color: var(--rg-title-color); text-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .platform-type-card__content span { margin: 8px 0 0; }
+  html[data-theme] body.rg-desktop-layout :is(.platform-type-card__content span, .platform-card__main span, .platform-card__facts span, .platform-sheet__chips span, .platform-spec-row span, .platform-sheet__section-title span) {
+    color: var(--rg-text-secondary); font-family: var(--rg-font-family); font-size: var(--rg-type-ui-small); line-height: 1.5;
+    font-weight: var(--rg-weight-semibold); letter-spacing: .02em;
+  }
+  html[data-theme] body.rg-desktop-layout .manufacturer-list { gap: var(--rg-space-8); }
+  html[data-theme] body.rg-desktop-layout .manufacturer-block__header { padding-bottom: var(--rg-space-4); border-bottom: 1px solid var(--rg-divider-color); }
+  html[data-theme] body.rg-desktop-layout :is(.manufacturer-block__header a, .platforms-back-link) { color: var(--rg-title-hover); text-transform: none; font-size: var(--rg-type-ui-small); text-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .platform-card { display: flex; flex-direction: column; padding: var(--rg-space-4); gap: 0; background: var(--platform-surface); border: 1px solid var(--rg-border-neutral); border-radius: var(--rg-radius-medium); box-shadow: none; backdrop-filter: none; text-decoration: none; }
+  html[data-theme] body.rg-desktop-layout .platform-card:hover { border-color: var(--rg-text-muted); }
+  html[data-theme] body.rg-desktop-layout .platform-card__visual { width: 100%; aspect-ratio: 16 / 9; }
+
+  html[data-theme] body.rg-desktop-layout .platform-card__cover { padding: var(--rg-space-2); object-position: center; }
+  html[data-theme] body.rg-desktop-layout :is(.platforms-page img, .platform-card:hover img) { filter: none; transform: none; transition: none; opacity: 1; }
+  html[data-theme] body.rg-desktop-layout .platform-card__body { min-height: 0; padding: var(--rg-space-3) 0 0; grid-template-columns: 1fr; gap: var(--rg-space-2); }
+  html[data-theme] body.rg-desktop-layout .platform-card__main h2 { color: var(--rg-title-color); font-family: var(--rg-font-family); font-size: var(--rg-type-card); line-height: 1.25; font-weight: var(--rg-weight-bold); }
+  html[data-theme] body.rg-desktop-layout :is(.platform-card__facts, .platform-sheet__chips) { justify-content: start; flex-wrap: wrap; gap: 8px 16px; white-space: normal; }
+  html[data-theme] body.rg-desktop-layout :is(.platform-card__facts span, .platform-sheet__chips span) { min-height: 0; padding: 0; border: 0; background: none; border-radius: 0; box-shadow: none; text-shadow: none; text-transform: none; }
+  html[data-theme] body.rg-desktop-layout :is(.platform-type-card:hover h2, .platform-card:hover h2, .manufacturer-block__header a:hover, .platforms-back-link:hover) { color: var(--rg-title-hover); text-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .platforms-page a:focus:not(:focus-visible) { outline: none; }
+  html[data-theme] body.rg-desktop-layout .platforms-page a:focus-visible { outline: 2px solid var(--rg-text-secondary); outline-offset: 4px; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__header { display: block; grid-column: 1 / -1; grid-row: 1; padding: 0; margin: 0; border: 0; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__eyebrow { margin: 0 0 var(--rg-space-2); color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small); font-weight: var(--rg-weight-semibold); }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__title:not(.sr-only),
+  html[data-theme] body.rg-desktop-layout .platform-sheet__title:not(.sr-only) span { margin: 0; color: var(--rg-title-color); font-family: var(--rg-font-family); font-size: var(--rg-type-page-title); line-height: 1.1; letter-spacing: -.02em; text-transform: none; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__metadata { display: flex; flex-wrap: wrap; gap: var(--rg-space-2); margin-top: var(--rg-space-4); color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small); }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__metadata-item { display: inline-flex; align-items: baseline; gap: var(--rg-space-2); }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__metadata-separator { color: var(--rg-meta-separator-color); }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--rg-space-8); align-items: start; }
+  html[data-theme] body.rg-desktop-layout :is(.platform-sheet__left, .platform-sheet__right) { display: contents; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__history { grid-column: 1 / -1; width: 100%; max-width: 960px; margin-inline: 0; padding-top: 0; border-top: 0; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__history .platform-sheet__section-title span { color: var(--rg-title-color); font-size: var(--rg-type-section); font-weight: var(--rg-weight-bold); text-transform: none; letter-spacing: -.01em; }
+  html[data-theme] body.rg-desktop-layout .platform-spec-row { grid-template-columns: minmax(0, .6fr) minmax(0, 1fr); }
+  html[data-theme] body.rg-desktop-layout .platform-spec-row strong { overflow-wrap: anywhere; }
+
+  html[data-theme] body.rg-desktop-layout .platform-sheet__visual { min-height: 0; padding: var(--rg-space-6); background: var(--platform-surface); border: 0; border-radius: var(--rg-radius-medium); box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__cover { height: auto; max-height: 420px; padding: 0; object-fit: contain; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__fallback { min-height: 0; padding: var(--rg-space-6); }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__brand { width: fit-content; max-width: 100%; flex-direction: column; align-items: flex-start; min-width: 0; min-height: 0; padding: 0; gap: var(--rg-space-3); }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__brand picture { width: auto; max-width: 100%; min-width: 0; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__brand img { width: auto; height: auto; max-width: 100%; margin: 0; object-fit: contain; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__brand .platform-sheet__manufacturer-logo { max-width: min(160px, 100%); max-height: 48px; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__brand .platform-sheet__platform-logo { max-width: min(380px, 100%); max-height: 120px; }
+
+  /* Size these wide marks without changing the bounds of other platform logos.
+     Transparent padding inside the WebP assets is intentionally retained. */
+  html[data-theme] body.rg-desktop-layout .platform-sheet__header[data-manufacturer="sega"] .platform-sheet__manufacturer-logo { max-width: min(100px, 100%); }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__header[data-platform="mega-drive"] .platform-sheet__platform-logo { max-height: none; }
+  html[data-theme] body.rg-desktop-layout :is(.platform-spec-table, .platform-spec-row, .platform-sheet__history) { border-color: var(--rg-divider-color); }
+  html[data-theme] body.rg-desktop-layout .platform-spec-row span { text-transform: none; }
+  html[data-theme] body.rg-desktop-layout .platform-spec-row strong { color: var(--rg-text-primary); font-size: var(--rg-type-ui-small); font-weight: var(--rg-weight-semibold); line-height: 1.6; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__history-text p { color: var(--rg-text-primary); font-family: var(--rg-font-family); font-size: var(--rg-type-body); line-height: 1.85; }
+  html[data-theme] body.rg-desktop-layout .platform-sheet__history-text p + p { margin-top: 1em; }
+  html[data-theme] body.rg-desktop-layout .platform-related { margin-top: var(--rg-space-8); }
+  html[data-theme] body.rg-desktop-layout .platform-related__header { max-width: none; padding-bottom: var(--rg-space-4); border-bottom: 1px solid var(--rg-divider-color); margin-bottom: var(--rg-space-6); }
+  html[data-theme] body.rg-desktop-layout .platform-related__grid { gap: 18px; }
+  html[data-theme] body.rg-desktop-layout .platform-related__type { margin: 0 0 var(--rg-space-2); color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small); font-weight: var(--rg-weight-semibold); }
+}

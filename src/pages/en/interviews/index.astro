@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import ArchivePage from '../../../components/archive/ArchivePage.astro';
+import EditorialListing from '../../../components/archive/EditorialListing.astro';
 
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 
@@ -23,11 +23,13 @@ const posts = grouped.english.filter((post) => post.type === 'interview');
   news={englishNews}
   title="Interviews"
   description="Interviews from Retro-Gamers.it in English."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/en/interviews/"
   lang="en"
 >
-  <ArchivePage
+  <EditorialListing
+      desktopTitle="Interviews"
+      desktopDescription="Conversations with creators, developers and people from the retro gaming scene."
     title="Interviews"
     eyebrow="English edition"
     description="Interviews and conversations with people from the world of retro gaming and classic computing."

@@ -8,7 +8,7 @@ import Reviews from '../../components/home/Reviews.astro';
 import EditorialHub from '../../components/home/EditorialHub.astro';
 import LowerEditorial from '../../components/home/LowerEditorial.astro';
 import Interviews from '../../components/home/Interviews.astro';
-import NewsletterPromo from '../../components/newsletter/NewsletterPromo.astro';
+import NewsletterPrompt from '../../components/newsletter/NewsletterPrompt.astro';
 
 import '../../styles/pages/home.css';
 
@@ -215,7 +215,7 @@ const alternateLanguages = [
   news={headerNews}
   title="Retro-Gamers International: retro gaming culture"
   description="Retro-Gamers.it is an international editorial project about retro gaming history, classic consoles, arcade culture, creators and digital preservation."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/en/"
   lang="en"
   alternateLanguages={alternateLanguages}
@@ -263,13 +263,7 @@ const alternateLanguages = [
     </div>
   </section>
 
-  {!hideNewsletterPromo && (
-    <section class="home-newsletter">
-      <div class="container">
-        <NewsletterPromo lang="en" variant="home" />
-      </div>
-    </section>
-  )}
+  {!hideNewsletterPromo && <NewsletterPrompt lang="en" />}
 
   <section class="home-latest">
     <div class="container">

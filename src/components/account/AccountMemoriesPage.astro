@@ -17,11 +17,13 @@ import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { emptyCommunityStats, getCommunityStats } from '../../lib/supabase/community';
 import { supabaseAdmin } from '../../lib/supabase/server';
 import { touchUserActivity } from '../../lib/supabase/user-activity';
+import { getMemoryPresentation } from '../../lib/account-memory-presentation';
 
 type MemoryStatus = 'approved' | 'pending' | 'rejected' | 'spam';
 
 type ReaderMemory = PublicReaderComment & {
   status: MemoryStatus | string | null;
+  deleted_at: string | null;
   parent_id: string | null;
   likeCount: number;
   dislikeCount: number;
@@ -54,6 +56,7 @@ const copy = isEn
         'not-approved': 'Not approved',
       },
       statusLabels: {
+        hidden: 'Hidden',
         approved: 'Published',
         pending: 'Awaiting moderation',
         rejected: 'Not approved',
@@ -104,6 +107,7 @@ const copy = isEn
         'not-approved': 'Non approvati',
       },
       statusLabels: {
+        hidden: 'Nascosto',
         approved: 'Pubblicato',
         pending: 'In attesa di moderazione',
         rejected: 'Non approvato',
@@ -218,6 +222,7 @@ if (isLoggedIn && session.user) {
       body,
       created_at,
       status,
+      deleted_at,
       parent_id,
       article_title,
       article_url,
@@ -370,14 +375,14 @@ const communityStatItems = [
             <>
               <div class="account-memories-list">
                 {memories.map((memory) => {
-                  const isApproved = memory.status === 'approved';
+                  const presentation = getMemoryPresentation(memory);
                   const articleHref = getArticleHref(memory);
-                  const commentHref = isApproved ? getCommentArticleHref(memory) : '';
+                  const commentHref = presentation.isPublic ? getCommentArticleHref(memory) : '';
 
                   return (
-                    <article class="account-memory-card" data-status={memory.status || ''}>
+                    <article class="account-memory-card" data-status={presentation.status}>
                       <header>
-                        <span>{statusLabels[String(memory.status || '')] || memory.status || copy.unavailableStatus}</span>
+                        <span>{statusLabels[presentation.status] || presentation.status || copy.unavailableStatus}</span>
                         {memory.parent_id && <span>{copy.reply}</span>}
                         <time datetime={memory.created_at || undefined}>
                           {memory.created_at

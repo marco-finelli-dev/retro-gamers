@@ -1,6 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArchiveCard from '../../components/archive/ArchiveCard.astro';
+import EntityArticleCard from '../../components/archive/EntityArticleCard.astro';
+import EntityBreadcrumb from '../../components/common/EntityBreadcrumb.astro';
+import '../../styles/components/entity-details.css';
+import '../../styles/components/reviews-listing.css';
 import Pagination from '../../components/common/Pagination.astro';
 import PlatformCard from '../../components/platforms/PlatformCard.astro';
 import { urlFor } from '../../lib/image';
@@ -83,10 +86,7 @@ const {
   items: relatedArticlesPageItems,
 } = paginateItems(relatedArticles, getCurrentPage(Astro.url), PAGE_SIZE);
 const getRelatedArticlesPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber);
-const hasRelations =
-  relatedArticles.length > 0 ||
-  relatedCreators.length > 0 ||
-  relatedPlatforms.length > 0;
+
 ---
 
 <BaseLayout
@@ -101,7 +101,8 @@ const hasRelations =
     { lang: 'en', url: `https://www.retro-gamers.it/en/companies/${company.slug}/` }
   ]}
 >
-  <div class="companies-page company-detail-page">
+  <div class="companies-page company-detail-page entity-detail">
+    <EntityBreadcrumb family="company" name={name} lang="it" />
     <section class="company-detail-hero">
       <div class="company-detail-hero__logo">
         {primaryLogo ? (
@@ -135,7 +136,7 @@ const hasRelations =
 
       <div class="company-detail-hero__content">
         <span class="companies-eyebrow">Scheda azienda</span>
-        <h1>{name}</h1>
+        <h1 class:list={[primaryLogo && 'company-detail-hero__name--with-logo']}>{name}</h1>
 
         {typeLabels.length > 0 && (
           <ul class="company-type-list" aria-label="Tipologie">
@@ -167,7 +168,7 @@ const hasRelations =
     )}
 
     {relatedArticles.length > 0 && (
-      <section class="company-section">
+      <section class="company-section reviews-listing">
         <div class="company-section__header">
           <span class="companies-eyebrow">Archivio</span>
           <h2>Articoli collegati</h2>
@@ -175,11 +176,12 @@ const hasRelations =
 
         <div class="company-article-grid">
           {relatedArticlesPageItems.map((post) => (
-            <ArchiveCard post={post} lang="it" />
+            <EntityArticleCard post={post} lang="it" />
           ))}
         </div>
 
         <Pagination
+          numbered
           currentPage={relatedArticlesPage}
           totalPages={relatedArticlesTotalPages}
           getPageUrl={getRelatedArticlesPageUrl}
@@ -241,11 +243,5 @@ const hasRelations =
       </section>
     )}
 
-    {!hasRelations && (
-      <section class="companies-empty">
-        <h2>Collegamenti in preparazione</h2>
-        <p>Articoli, creator e piattaforme saranno aggiunti quando disponibili.</p>
-      </section>
-    )}
   </div>
 </BaseLayout>

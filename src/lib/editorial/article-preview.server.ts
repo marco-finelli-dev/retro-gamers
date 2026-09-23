@@ -324,7 +324,7 @@ const editorialArticlePreviewProjection = `{
       }
     },
 
-    _type == "asideBox" => {
+    _type in ["asideBox", "quote"] => {
       ...,
       content[]{
         ...,

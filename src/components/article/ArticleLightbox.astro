@@ -41,37 +41,35 @@ const labels = isEnglish
       data-lightbox-close
       aria-label={labels.close}
     >
-      ×
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
     </button>
 
-    <button
-      class="article-lightbox__nav article-lightbox__nav--previous"
-      type="button"
-      data-lightbox-previous
-      aria-label={labels.previous}
-      hidden
-    >
-      ‹
-    </button>
+    <figure class="article-lightbox__figure">
+      <div class="article-lightbox__media">
+        <button
+          class="article-lightbox__nav article-lightbox__nav--previous"
+          type="button"
+          data-lightbox-previous
+          aria-label={labels.previous}
+          hidden
+        >
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m7.5 3-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
 
-    <img
-      src=""
-      alt=""
-      class="article-lightbox__image"
-      data-lightbox-image
-    />
+        <img src="" alt="" class="article-lightbox__image" data-lightbox-image />
 
-    <button
-      class="article-lightbox__nav article-lightbox__nav--next"
-      type="button"
-      data-lightbox-next
-      aria-label={labels.next}
-      hidden
-    >
-      ›
-    </button>
-
-    <p class="article-lightbox__caption" data-lightbox-caption hidden></p>
+        <button
+          class="article-lightbox__nav article-lightbox__nav--next"
+          type="button"
+          data-lightbox-next
+          aria-label={labels.next}
+          hidden
+        >
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="m4.5 3 3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+      </div>
+      <figcaption class="article-lightbox__caption" data-lightbox-caption tabindex="0" hidden></figcaption>
+    </figure>
   </div>
 </div>
 
@@ -92,6 +90,9 @@ const labels = isEnglish
     const candidates = document.querySelectorAll('.js-article-lightbox-image');
 
     if (!candidates.length) return;
+
+    // Escape the article shell stacking context so the viewer covers the whole viewport.
+    document.body.append(lightbox);
 
     let lastFocusedElement = null;
     let activeItems = [];
@@ -289,7 +290,7 @@ const labels = isEnglish
 
       if (event.key === 'Tab') {
         const focusable = Array
-          .from(lightbox.querySelectorAll('button:not([hidden])'))
+          .from(lightbox.querySelectorAll('button:not([hidden]), [data-lightbox-caption]:not([hidden])'))
           .filter((button) => !button.disabled);
 
         if (!focusable.length) return;

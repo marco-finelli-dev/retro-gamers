@@ -6,6 +6,9 @@ const { rating, lang = 'it', readerRatingPostId = '' } = Astro.props;
 
 const score = rating?.overall;
 const numericScore = Number(score);
+const hasOverallScore = score !== null && score !== undefined && Number.isFinite(numericScore);
+const isEditorsChoice = hasOverallScore && numericScore >= 9;
+const editorChoiceAlt = lang === 'en' ? "Editor's Choice" : 'Scelta della redazione';
 
 const labels = {
   it: {
@@ -15,7 +18,8 @@ const labels = {
     graphics: 'Grafica',
     sound: 'Sonoro',
     gameplay: 'Gameplay',
-    longevity: 'Longevità'
+    longevity: 'Longevità',
+    total: 'Totale'
   },
   en: {
     kicker: 'Verdict',
@@ -24,7 +28,8 @@ const labels = {
     graphics: 'Graphics',
     sound: 'Sound',
     gameplay: 'Gameplay',
-    longevity: 'Longevity'
+    longevity: 'Longevity',
+    total: 'Total'
   }
 };
 
@@ -46,23 +51,49 @@ const technicalRatings = [
       <h2>{t.title}</h2>
     </div>
 
-    <div class="article-final-rating__score">
-      <ReviewScoreRing score={numericScore} lang={lang} size="feature" />
-    </div>
-
-    {(rating?.summary || technicalRatings.length > 0) && (
+    {(rating?.summary || technicalRatings.length > 0 || hasOverallScore) && (
       <div class="article-final-rating__body">
-        {technicalRatings.length > 0 && (
+        {(technicalRatings.length > 0 || hasOverallScore) && (
           <section class="article-final-rating__ratings" aria-labelledby="article-final-rating-ratings-title">
-            <h3 id="article-final-rating-ratings-title">{t.technical}</h3>
-            <dl>
-              {technicalRatings.map((item) => (
-                <div>
-                  <dt>{item.label}</dt>
-                  <dd>{Number(item.value).toFixed(1)}</dd>
-                </div>
-              ))}
-            </dl>
+            <div class="article-final-rating__ratings-heading">
+              <h3 id="article-final-rating-ratings-title">{t.technical}</h3>
+              {isEditorsChoice && (
+                <span class="article-final-rating__editor-choice">
+                  <img
+                    src="/images/badges/editor-choice-ivory.svg"
+                    alt={editorChoiceAlt}
+                    class="article-final-rating__editor-choice-asset article-final-rating__editor-choice-asset--light"
+                    width="850"
+                    height="639"
+                    decoding="async"
+                  />
+                  <img
+                    src="/images/badges/editor-choice-navy.svg"
+                    alt={editorChoiceAlt}
+                    class="article-final-rating__editor-choice-asset article-final-rating__editor-choice-asset--dark"
+                    width="850"
+                    height="639"
+                    decoding="async"
+                  />
+                </span>
+              )}
+            </div>
+            {technicalRatings.length > 0 && (
+              <dl>
+                {technicalRatings.map((item) => (
+                  <div>
+                    <dt>{item.label}</dt>
+                    <dd>{Number(item.value).toFixed(1)}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {hasOverallScore && (
+              <div class="article-final-rating__total">
+                <span class="article-final-rating__total-label">{t.total}</span>
+                <ReviewScoreRing score={numericScore} lang={lang} size="compact" />
+              </div>
+            )}
           </section>
         )}
 

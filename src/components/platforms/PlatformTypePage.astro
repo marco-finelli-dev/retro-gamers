@@ -1,6 +1,9 @@
 ---
 import '../../styles/components/platforms.css';
+import '../../styles/components/platforms-refresh.css';
+import PlatformBreadcrumb from './PlatformBreadcrumb.astro';
 import PlatformCard from './PlatformCard.astro';
+import PlatformBrowser from './PlatformBrowser.astro';
 
 import {
   platformTypeLabels,
@@ -52,8 +55,9 @@ const title = typeLabels[lang]?.[type] || platformTypeLabels[type] || 'Piattafor
 const description = typeDescriptions[lang]?.[type] || platformTypeDescriptions[type] || '';
 ---
 
-<div class="platforms-page">
+<div class="platforms-page platform-listing">
   <div class="container">
+    <PlatformBreadcrumb type={type} lang={lang} />
 
     <section class="platforms-hero">
       <div class="platforms-hero__inner">
@@ -63,6 +67,8 @@ const description = typeDescriptions[lang]?.[type] || platformTypeDescriptions[t
       </div>
     </section>
 
+    <PlatformBrowser platforms={platforms} type={type} lang={lang} />
+    <div class="platform-mobile">
     {groups.length > 0 ? (
       <section class="manufacturer-list">
 
@@ -99,6 +105,7 @@ const description = typeDescriptions[lang]?.[type] || platformTypeDescriptions[t
         <p>{labels.emptyText}</p>
       </section>
     )}
+    </div>
 
   </div>
 </div>

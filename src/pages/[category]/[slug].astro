@@ -23,6 +23,7 @@ import {
 import { getUserSessionFromCookies } from '../../lib/supabase/auth';
 import { getNewsletterSubscriptionForUser } from '../../lib/supabase/newsletter';
 import { getPublishedArticleQuickEditAction } from '../../lib/editorial/articles.server';
+import { canCreateArticle } from '../../lib/editorial/permissions';
 import { getEditorialSessionForUserSession } from '../../lib/editorial/session.server';
 import {
   getCreatorRefsFromPortableText,
@@ -76,7 +77,7 @@ function getPlainTextFromContent(content = []) {
         return block.children?.map((child) => child.text || '') || [];
       }
 
-      if (block._type === 'asideBox') {
+      if (block._type === 'asideBox' || block._type === 'quote') {
         return block.content
           ?.filter((inner) => inner._type === 'block')
           .flatMap((inner) =>
@@ -454,7 +455,7 @@ _type == "videoRow" => {
   }
 },
 
-    _type == "asideBox" => {
+    _type in ["asideBox", "quote"] => {
       ...,
       content[]{
         ...,
@@ -750,6 +751,12 @@ if (!viewerSession.error && viewerSession.user) {
 }
 
 const editorialSession = await getEditorialSessionForUserSession(viewerSession);
+const editorialNewArticleHref = editorialSession.user && editorialSession.isEditorialActive && canCreateArticle(editorialSession)
+  ? '/account/editor/articles/new/'
+  : null;
+// Public content includes viewer-specific actions; never share cached permissions.
+Astro.response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+Astro.response.headers.set('Vary', 'Cookie');
 const editorialQuickEdit = await getPublishedArticleQuickEditAction({
   context: editorialSession,
   rootDocumentId: publishedPostId,
@@ -768,7 +775,7 @@ const pageDescription =
 const pageImage =
   post.featuredImage?.asset?.url ||
   post.gameInfo?.cover?.asset?.url ||
-  '/og-image.jpg';
+  '/og-image.webp';
 
 const canonicalUrl =
   `${siteUrl}/${category}/${slug}/`;
@@ -855,6 +862,7 @@ const readingTimeLabel = `${readingTime} min. di lettura`;
     hideNewsletterPromo={hideNewsletterPromo}
     isPreview={isPreview}
     editorialQuickEdit={editorialQuickEdit}
+    editorialNewArticleHref={editorialNewArticleHref}
     readingTime={readingTime}
     readingTypeLabel={readingTypeLabels[expectedType] || 'Articolo'}
     languageSwitch={

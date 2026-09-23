@@ -52,11 +52,13 @@
     z-index: 140;
     display: flex;
     width: var(--rg-article-nav-width);
-    min-height: 100dvh;
+    height: 100dvh;
+    min-height: 0;
     padding: 24px 20px 20px;
     flex-direction: column;
     gap: var(--rg-space-4);
-    overflow: visible;
+    overflow-y: auto;
+    scrollbar-width: none;
     border-right: 1px solid var(--rg-article-sidebar-border);
     background: var(--rg-article-sidebar-bg);
     color: var(--rg-article-sidebar-text);
@@ -64,7 +66,7 @@
 
   .article-desktop-sidebar__brand {
     display: block;
-    margin-bottom: var(--rg-space-6);
+    margin-bottom: var(--rg-space-3);
     color: inherit;
   }
 
@@ -88,18 +90,14 @@
 
   .article-desktop-sidebar__utilities {
     display: grid;
-    margin-top: auto;
   }
 
   .article-desktop-sidebar__account-wrap {
     position: relative;
   }
 
-  @media (max-height: 740px) {
-    .article-desktop-sidebar__brand {
-      margin-bottom: var(--rg-space-2);
-    }
-  }
+  .article-desktop-sidebar > * { flex-shrink: 0; }
+  .article-desktop-sidebar::-webkit-scrollbar { display: none; }
 
   .article-desktop-sidebar__account {
     display: flex;
@@ -183,7 +181,7 @@
     border-radius: 0 0 var(--rg-radius-small) var(--rg-radius-small);
   }
 
-  .article-desktop-sidebar__account > span:last-child {
+  .article-desktop-sidebar__account-name {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -217,50 +215,50 @@
     -webkit-mask: url('/icons/rails/user.svg') center / contain no-repeat;
   }
 
+  .article-desktop-sidebar__chevron {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    color: var(--rg-article-sidebar-secondary);
+  }
+
   .article-desktop-sidebar__preferences {
     display: flex;
-    gap: var(--rg-space-3);
+    gap: var(--rg-space-2);
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
   }
 
-  .article-desktop-sidebar__language,
-  .article-desktop-sidebar__themes {
-    display: flex;
-    gap: 2px;
-    align-items: center;
-  }
-
-  .article-desktop-sidebar__themes {
-    justify-content: center;
-  }
+  .article-desktop-sidebar__themes { position: relative; }
 
   .article-desktop-sidebar__language a,
   .article-desktop-sidebar__themes button {
-    display: grid;
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    gap: var(--rg-space-2);
+    min-height: 34px;
+    padding: 4px;
     border: 0;
     border-radius: var(--rg-radius-small);
     background: transparent;
-    color: var(--rg-article-sidebar-muted);
+    color: var(--rg-article-sidebar-secondary);
+    font: inherit;
+    font-size: 13px;
+    font-weight: var(--rg-weight-semibold);
     text-decoration: none;
     cursor: pointer;
+    transition: color var(--rg-duration-fast) var(--rg-ease-standard), background var(--rg-duration-fast) var(--rg-ease-standard);
   }
 
   .article-desktop-sidebar__language img {
     display: block;
     width: 18px;
     height: 18px;
-    border-radius: 50%;
-    opacity: .82;
-    transition: opacity var(--rg-duration-fast) var(--rg-ease-standard);
   }
 
   .article-desktop-sidebar__theme-icon {
     display: block;
+    flex: 0 0 17px;
     width: 17px;
     height: 17px;
     background: currentColor;
@@ -268,15 +266,32 @@
     -webkit-mask: var(--article-sidebar-theme-icon) center / contain no-repeat;
   }
 
-  .article-desktop-sidebar__language a[aria-current="page"],
-  .article-desktop-sidebar__themes button.is-active {
-    background: color-mix(in srgb, var(--rg-article-sidebar-text) 8%, transparent);
-    color: var(--rg-article-sidebar-text);
+  .article-desktop-sidebar__theme-menu {
+    position: absolute;
+    bottom: calc(100% + var(--rg-space-2));
+    right: 0;
+    z-index: 3;
+    width: 160px;
+    padding: 4px;
+    border: 1px solid var(--rg-article-sidebar-border);
+    border-radius: var(--rg-radius-small);
+    background: var(--rg-article-sidebar-bg);
   }
 
-  .article-desktop-sidebar__language a:is(:hover, :focus-visible) img,
-  .article-desktop-sidebar__language a[aria-current="page"] img {
-    opacity: 1;
+  .article-desktop-sidebar__theme-menu[hidden] { display: none; }
+  .article-desktop-sidebar__theme-menu button { width: 100%; padding-inline: 8px; }
+  .article-desktop-sidebar__theme-check { margin-left: auto; visibility: hidden; }
+  .article-desktop-sidebar__theme-menu [aria-checked="true"] .article-desktop-sidebar__theme-check { visibility: visible; }
+  .article-desktop-sidebar__themes .article-desktop-sidebar__theme-menu button:is(:hover, :focus-visible) {
+    color: var(--rg-article-sidebar-text);
+    background: color-mix(in srgb, var(--rg-article-sidebar-text) 8%, transparent);
+  }
+  .article-desktop-sidebar__theme-menu button:focus-visible {
+    outline: 1px solid var(--rg-article-sidebar-secondary);
+    outline-offset: -1px;
+  }
+  .article-desktop-sidebar__themes .article-desktop-sidebar__theme-menu button:active {
+    background: color-mix(in srgb, var(--rg-article-sidebar-text) 13%, transparent);
   }
 
   .article-desktop-sidebar__nav {
@@ -285,6 +300,7 @@
   }
 
   .article-desktop-sidebar__bottom {
+    margin-top: auto;
     display: grid;
     gap: var(--rg-space-4);
   }
@@ -342,12 +358,12 @@
   .article-desktop-sidebar__search-field {
     display: flex;
     width: 100%;
-    height: 45px;
+    height: 34px;
     gap: var(--rg-space-2);
     align-items: center;
     padding-inline: 12px;
     border: 1px solid var(--rg-article-sidebar-border);
-    border-radius: 999px;
+    border-radius: 8px;
     background: color-mix(in srgb, var(--rg-article-sidebar-text) 5%, transparent);
     color: var(--rg-article-sidebar-muted);
     cursor: text;
@@ -397,15 +413,7 @@
     box-shadow: none;
   }
 
-  .article-desktop-sidebar__language a[aria-current="page"],
-  .article-desktop-sidebar__language a[aria-current="page"]:is(:hover, :focus-visible),
-  .article-desktop-sidebar__themes button.is-active,
-  .article-desktop-sidebar__themes button.is-active:is(:hover, :focus-visible) {
-    background: color-mix(in srgb, var(--rg-article-sidebar-text) 8%, transparent);
-    color: var(--rg-article-sidebar-text);
-  }
-
-  .article-desktop-sidebar :is(a, button):not([role="menuitem"]):focus-visible,
+  .article-desktop-sidebar :is(a, button):not([role^="menuitem"]):focus-visible,
   .article-desktop-sidebar__search-field:has(input:focus-visible):not([data-pointer-focus]) {
     outline: 1px solid color-mix(in srgb, var(--rg-article-sidebar-text) 70%, transparent);
     outline-offset: 2px;

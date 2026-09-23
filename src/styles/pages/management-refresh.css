@@ -1,0 +1,224 @@
+/* Opt-in in CommunityLayout for account and management URLs only.
+   Shared presentation at every viewport; management-mobile.css handles small layouts.
+   Legacy component tokens are adapted locally; the writing editor never opts in. */
+@media (min-width: 0px) {
+  html[data-theme] body.rg-desktop-layout .management-area {
+    --management-surface: color-mix(in srgb, var(--rg-text-primary) 4%, var(--rg-desktop-canvas-surface));
+    --management-hover: color-mix(in srgb, var(--rg-text-primary) 8%, var(--rg-desktop-canvas-surface));
+    --management-success: var(--rg-color-green);
+    --management-warning: var(--rg-color-gold);
+    --management-danger: var(--rg-color-coral);
+    --community-sidebar-top: var(--rg-space-6);
+    --color-text: var(--rg-text-primary);
+    --color-text-soft: var(--rg-text-secondary);
+    --color-text-muted: var(--rg-text-muted);
+    --color-primary: var(--rg-title-hover);
+    --color-primary-light: var(--rg-title-hover);
+    --color-primary-soft: var(--management-hover);
+    --color-accent: var(--rg-title-hover);
+    --color-border: var(--rg-border-neutral);
+    --color-background: var(--rg-desktop-canvas-surface);
+    --color-bg: var(--rg-desktop-canvas-surface);
+    --color-glass: var(--management-surface);
+    --color-glass-strong: var(--management-surface);
+    --color-surface: var(--management-surface);
+    --color-surface-2: var(--management-hover);
+    --color-surface-strong: var(--management-hover);
+    --color-success: var(--management-success);
+    --color-warning: var(--management-warning);
+    --color-danger: var(--management-danger);
+    --rg-danger-color: var(--management-danger);
+    --rg-price-color: var(--management-warning);
+    --rg-warning-bg: var(--management-surface);
+    --rg-warning-border: var(--management-warning);
+    --rg-panel-bg: var(--management-surface);
+    --rg-panel-border: var(--rg-border-neutral);
+    --rg-panel-shadow: none;
+    --rg-panel-grid: none;
+    --rg-panel-grid-opacity: 0;
+    --rg-card-bg: var(--management-surface);
+    --rg-card-border: var(--rg-border-neutral);
+    --rg-card-shadow: none;
+    --rg-card-hover-shadow: none;
+    --rg-badge-bg: var(--management-hover);
+    --rg-badge-border: var(--rg-border-neutral);
+    --rg-badge-color: var(--rg-text-secondary);
+    --rg-section-title-color: var(--rg-title-color);
+    --rg-eyebrow-color: var(--rg-text-secondary);
+    --rg-action-color: var(--rg-link-color);
+    --rg-action-hover-color: var(--rg-title-hover);
+    --rg-cta-bg: var(--management-surface);
+    --rg-cta-hover-bg: var(--management-hover);
+    --rg-cta-border: var(--rg-border-neutral);
+    --rg-cta-color: var(--rg-text-primary);
+    color: var(--rg-text-primary);
+    font-family: var(--rg-font-family);
+  }
+  html[data-theme="light"] body.rg-desktop-layout .management-area {
+    --management-success: color-mix(in srgb, var(--rg-color-green) 55%, var(--rg-color-navy));
+    --management-warning: color-mix(in srgb, var(--rg-color-gold) 50%, var(--rg-color-navy));
+    --management-danger: color-mix(in srgb, var(--rg-color-coral) 70%, var(--rg-color-navy));
+  }
+  html[data-theme] body.rg-desktop-layout .management-area .community-sidebar {
+    top: var(--community-sidebar-top);
+    align-self: start;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area .community-main { align-content: start; gap: var(--rg-space-6); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-hero, .admin-dashboard-header, .admin-surveys-header) {
+    padding: 0 0 var(--rg-space-6);
+    margin: 0;
+    border: 0;
+    border-bottom: 1px solid var(--rg-divider-color);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--rg-space-3);
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-hero .community-kicker, .admin-dashboard-header > .community-kicker, .admin-surveys-header__copy > p:first-child, .admin-tools-sidebar__heading > .community-kicker) { display: none; }
+  html[data-theme] body.rg-desktop-layout .management-area h1 {
+    font-family: var(--rg-font-family);
+    font-size: var(--rg-type-page-title);
+    font-weight: var(--rg-weight-bold);
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    text-transform: none;
+    color: var(--rg-title-color);
+    text-shadow: none;
+    overflow-wrap: normal;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-hero p, .admin-dashboard-header > p, .admin-surveys-header__copy > p) {
+    max-width: none; color: var(--rg-text-secondary); font-size: var(--rg-type-body); line-height: 1.6;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area .community-hero__aside { justify-items: start; }
+  html[data-theme] body.rg-desktop-layout .management-area .community-hero__aside .community-soft-badge { min-height: 0; padding: 0; border: 0; background: none; color: var(--rg-text-secondary); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-card:where(:not(.admin-dashboard-header):not(.admin-surveys-header)), .community-sidebar-card, .editorial-card, .account-settings-section, .account-community-rank, .account-interests, .account-saved-articles, .account-interest-articles, .account-favorites-card, .account-memory-card, .account-memories-empty, .account-rating-card, .account-ratings-empty, .account-message-card, .account-messages-empty, .private-conversation-card, .private-thread-profile, .private-reply-form, .admin-comment-card, .admin-comment-report-card, .admin-private-report-card, .admin-user-card, .admin-user-row, .admin-rating-card, .admin-newsletter-item, .admin-surveys-question-card, .admin-surveys-open-group, .admin-surveys-open-response, .admin-surveys-open-ai-summary, .editorial-article-row, .editorial-article-controls, .editorial-profile-media-card, .editorial-profile-upload-dropzone, .editorial-upload-card, .retro-settings) {
+    background: var(--management-surface);
+    border: 1px solid var(--rg-border-neutral);
+    border-radius: var(--rg-radius-medium);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    text-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-card:where(:not(.admin-dashboard-header):not(.admin-surveys-header)), .community-sidebar-card, .editorial-card, .account-settings-section, .account-community-rank, .account-interests, .account-saved-articles, .account-interest-articles) { padding: var(--rg-space-6); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-card, .community-hero)::before { content: none; }
+  /* List containers and dashboard sections do not need an outer frame around rows. */
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-card:has(> .account-memories-list), .community-card:has(> .account-ratings-list), .community-card:has(> .account-messages-list), .community-card:has(> .private-conversation-list), .community-card:has(> .admin-comments-list), .community-card:has(> .admin-users-list), .community-card:has(> .admin-comment-reports-list), .community-card:has(> .admin-private-reports-list), .community-card:has(> .admin-ratings-list), .editorial-article-list, .admin-dashboard-section) {
+    padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-community-rank__summary, .community-stat-list > *, .editorial-definition-list > div, .admin-dashboard-overview-item, .admin-surveys-kpi, .admin-rating-card__stats > div, .account-rating-card__scores > div) {
+    background: none; border: 0; border-radius: 0; box-shadow: none; padding: var(--rg-space-2) 0;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-stat-list span, .community-detail-list dt, .community-profile-card__content > span, .account-community-rank__summary span, .account-community-rank__points span, .admin-dashboard-todo-card span, .admin-dashboard-overview-item span, .editorial-article-filter > span) {
+    font-size: var(--rg-type-ui-small); font-weight: var(--rg-weight-semibold); line-height: 1.4; letter-spacing: normal; text-transform: none; color: var(--rg-text-secondary);
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-sidebar-card h2, .admin-tools-sidebar__heading h2) {
+    font-size: var(--rg-type-body); line-height: 1.3; letter-spacing: normal; text-transform: none; color: var(--rg-title-color);
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-stat-list strong, .editorial-card--compact strong, .admin-dashboard-overview-item strong) { font-size: var(--rg-type-section); line-height: 1.2; }
+  html[data-theme] body.rg-desktop-layout .management-area :where(button, .editorial-button, .editorial-form-actions a, .account-actions a, .community-action-link, .community-link-list a, .admin-dashboard-todo-card a, .admin-dashboard-news-card a, .admin-dashboard-activity a, .admin-newsletter-row-actions a, .admin-newsletter-secondary, .admin-newsletter-primary, .admin-newsletter-danger, .admin-comment-card__actions a, .admin-comment-report-card a, .admin-private-report-card a, .account-saved-article__link, .account-memory-card footer a, .account-rating-card footer a, .admin-rating-card footer a, .admin-surveys-inline-action) {
+    background: var(--management-surface); color: var(--rg-text-primary); border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-small); box-shadow: none; text-shadow: none; transform: none;
+    font-weight: var(--rg-weight-semibold);
+    transition: color var(--rg-duration-fast) var(--rg-ease-standard), background-color var(--rg-duration-fast) var(--rg-ease-standard);
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(a, button):is(:hover, :active) {
+    color: var(--rg-title-hover); box-shadow: none; transform: none; text-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(button[type="submit"], .editorial-article-list__header .editorial-button, .admin-newsletter-primary, .admin-comment-card__primary-action) {
+    background: var(--rg-text-primary); color: var(--rg-desktop-canvas-surface); border-color: var(--rg-text-primary);
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(button[type="submit"], .editorial-article-list__header .editorial-button, .admin-newsletter-primary, .admin-comment-card__primary-action):hover:not(:disabled) { background: var(--rg-title-hover); border-color: var(--rg-title-hover); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-comment-card__danger-action, .admin-comment-report-card__danger-action, .admin-newsletter-danger, [data-action="delete"], [data-action="hard_delete"], [data-action="ban"]) {
+    color: var(--management-danger); border-color: var(--management-danger); background: var(--management-surface);
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), select, textarea) {
+    color: var(--rg-text-primary); background: var(--management-surface); border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-small); box-shadow: none; font-family: var(--rg-font-family);
+  }
+  html[data-theme] body.rg-desktop-layout .management-area select { appearance: auto; background-image: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--rg-title-hover); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(a, button, input, select, textarea):focus { outline: none; box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(a, button, input, select, textarea):focus-visible { outline: 2px solid var(--rg-text-secondary); outline-offset: 3px; box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-community-rank__bar, .admin-surveys-option__bar, .admin-surveys-editorial-summary__bar) { background: var(--rg-border-neutral); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-community-rank__bar, .admin-surveys-option__bar, .admin-surveys-editorial-summary__bar) > span { background: var(--rg-title-hover); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-dashboard-todo-card, .admin-dashboard-news-card, .admin-dashboard-activity, .admin-dashboard-empty, .admin-comments-filters, .admin-users-filters, .account-interest-form, .admin-comment-reports-filters, .admin-private-reports-filters, .account-interest-article-card, .account-interest-article-card__image, .account-avatar-dropzone, .editorial-dropzone, .editorial-profile-editor-nav, .account-profile-editor-nav, .private-message__bubble, .private-emoji-picker) {
+    background: var(--management-surface); border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-medium); box-shadow: none; transform: none;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-dashboard-todo-card, .admin-dashboard-news-card) { min-height: 0; }
+  html[data-theme] body.rg-desktop-layout .management-area .account-interest-article-card__image::after { content: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-messages-tab-badge, .account-message-status, .private-conversation-card__unread, .editorial-pill, .editorial-article-row__badge, .admin-comment-card__meta span, .admin-user-card__meta span, .admin-newsletter-status, .admin-private-reports-panel__header > span) {
+    color: var(--rg-text-secondary); background: var(--management-hover); border-color: var(--rg-border-neutral); box-shadow: none; font-size: .8125rem;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-message-card.is-unread, .private-conversation-card.is-unread, .admin-dashboard-news-card[data-unread="true"]) { border-color: var(--rg-title-hover); background: var(--management-hover); }
+  html[data-theme] body.rg-desktop-layout .management-area .account-message-card.is-unread::before { background: var(--rg-title-hover); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-comments-pagination, .account-memories-pagination, .rg-pagination) { border: 0; border-top: 1px solid var(--rg-divider-color); border-radius: 0; background: none; padding-top: var(--rg-space-6); box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-comments-pagination__actions button, .account-memories-pagination a, .account-memories-pagination span, .rg-pagination__link, .rg-pagination__status) { border: 0; border-radius: var(--rg-radius-small); background: none; color: var(--rg-text-secondary); box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-section-nav, .editorial-section-nav, .account-messages-tabs, .account-memories-filters, .account-profile-editor-nav, .editorial-profile-editor-nav, .admin-surveys-tabs) {
+    display: flex; flex-wrap: wrap; gap: 4px var(--rg-space-4); padding: 0; overflow: visible; border: 0; border-radius: 0; background: none;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-section-nav, .editorial-section-nav, .account-messages-tabs, .account-memories-filters, .admin-tools-sidebar__group, .account-profile-editor-nav, .editorial-profile-editor-nav, .admin-surveys-tabs) :is(a, button) {
+    min-height: 36px; padding: 8px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--rg-text-secondary);
+    font-size: var(--rg-type-ui-small); font-weight: var(--rg-weight-semibold); text-align: left; white-space: normal; box-shadow: none; transform: none;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-section-nav, .editorial-section-nav, .account-messages-tabs, .account-memories-filters, .admin-tools-sidebar__group, .account-profile-editor-nav, .editorial-profile-editor-nav, .admin-surveys-tabs) :is([aria-current="page"], [aria-selected="true"], .is-active) {
+    color: var(--rg-title-color); border-bottom-color: currentColor; background: none;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-tools-sidebar__group h3 { color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small); letter-spacing: .04em; font-weight: var(--rg-weight-semibold); }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-tools-sidebar__group div { gap: 0; }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-tools-sidebar__group a { width: fit-content; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.editorial-article-row__image, .editorial-article-row__placeholder, .user-avatar, .admin-user-card__avatar) { background: var(--management-surface); box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .management-area .editorial-article-controls { border: 0; padding-inline: 0; background: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-comment-card__preview, .admin-comment-card__body, .admin-comment-card__parent, .admin-comment-report-card blockquote, .admin-private-report-card blockquote) { background: none; border: 0; border-top: 1px solid var(--rg-divider-color); border-radius: 0; padding-inline: 0; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-profile-editor__heading, .account-profile-editor-section, .editorial-profile-section, .editorial-profile-media-grid .editorial-profile-upload-card) { background: none; border: 0; box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-newsletter-table-wrap, .admin-surveys-editorial-summary, .admin-surveys-open-ai-summary__section) { background: var(--management-surface); border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-medium); box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(th, td) { border-color: var(--rg-border-neutral); }
+  html[data-theme] body.rg-desktop-layout .management-area th { color: var(--rg-text-secondary); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-profile-editor-nav button, .editorial-profile-editor-nav button, .editorial-article-quick-filters button, .admin-dashboard-activity-tab, .admin-surveys-language-filters button):is([aria-selected="true"], [aria-pressed="true"], [data-active="true"]) {
+    color: var(--rg-text-primary); border-color: var(--rg-text-secondary); background: var(--management-hover); box-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area .editorial-article-quick-filters button span:last-child { color: var(--rg-text-secondary); background: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-profile-editor-nav, .editorial-profile-editor-nav) button[aria-selected="true"] { background: none; border: 0; border-bottom: 2px solid currentColor; border-radius: 0; }
+  html[data-theme] body.rg-desktop-layout .management-area .account-profile-editor__heading { padding-inline: 0; }
+  html[data-theme] body.rg-desktop-layout .management-area .account-profile-editor__heading > .community-kicker { display: none; }
+  /* Let controls wrap within the main column beside the contextual sidebar. */
+  html[data-theme] body.rg-desktop-layout .management-area :is(.editorial-article-list, .editorial-article-controls) { min-width: 0; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.editorial-article-filters, .admin-users-filters, .account-interest-form) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+  /* Status remains semantic: neutral, success, attention and destructive/error. */
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-comment-card__status, .admin-user-card__status, .admin-newsletter-status, .editorial-article-row__badge):is([data-status="approved"], [data-status="active"], [data-status="published"], [data-status="sent"]) {
+    color: var(--management-success); border-color: var(--management-success); background: color-mix(in srgb, var(--management-success) 8%, var(--management-surface));
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-comment-card__status, .admin-user-card__status, .admin-newsletter-status, .editorial-article-row__badge):is([data-status="pending"], [data-status="suspended"], [data-status="submitted"], [data-status="test_sent"], [data-status="sending"], [data-status="revision_draft"]) {
+    color: var(--management-warning); border-color: var(--management-warning); background: color-mix(in srgb, var(--management-warning) 8%, var(--management-surface));
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-comment-card__status, .admin-user-card__status, .editorial-article-row__badge):is([data-status="banned"], [data-status="rejected"], [data-status="spam"], [data-status="changes_requested"]) {
+    color: var(--management-danger); border-color: var(--management-danger); background: color-mix(in srgb, var(--management-danger) 8%, var(--management-surface));
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-message, .admin-comments-message, .admin-users-message, .admin-comment-reports-message, .admin-private-reports-message, .editorial-message)[data-type="error"],
+  html[data-theme] body.rg-desktop-layout .management-area .editorial-message[data-state="error"] {
+    color: var(--management-danger); border-color: var(--management-danger); background: color-mix(in srgb, var(--management-danger) 8%, var(--management-surface));
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-message, .admin-comments-message, .admin-users-message)[data-type="ok"] {
+    color: var(--management-success); border-color: var(--management-success); background: color-mix(in srgb, var(--management-success) 8%, var(--management-surface));
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-message[data-type="warning"], .admin-comment-card__evasion-flag, .admin-surveys-editorial-summary__small-sample) {
+    color: var(--management-warning); border-color: var(--management-warning); background: color-mix(in srgb, var(--management-warning) 8%, var(--management-surface));
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-comment-card[data-comment-status="pending"][data-comment-hidden="false"], .admin-dashboard-todo-card[data-attention="true"]) { border-color: var(--management-warning); background: var(--management-surface); box-shadow: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-newsletter-stat, .editorial-dashboard-grid > .editorial-card--compact) {
+    min-height: 0; padding: var(--rg-space-3) 0; background: none; border: 0; border-bottom: 1px solid var(--rg-divider-color); border-radius: 0;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-newsletter-stat strong { font-size: var(--rg-type-section); }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-newsletter-stat span { font-size: var(--rg-type-ui-small); letter-spacing: normal; text-transform: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.editorial-article-list__header .editorial-kicker, .admin-dashboard-section-heading > div > p) { display: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-community-rank p, .account-settings-section__hint, .editorial-card p) { font-weight: normal; }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-comment-card__review-badge[data-review-state="review"] { color: var(--management-warning); border-color: var(--management-warning); background: var(--management-surface); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-section-nav, .editorial-section-nav, .account-messages-tabs, .account-memories-filters, .admin-tools-sidebar__group, .account-profile-editor-nav, .editorial-profile-editor-nav, .admin-surveys-tabs) :is(a, button):hover { color: var(--rg-title-hover); background: none; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-comment-card__danger-action, .admin-comment-report-card__danger-action, .admin-newsletter-danger, [data-action="delete"], [data-action="hard_delete"], [data-action="ban"]):hover:not(:disabled) { color: var(--management-danger); background: color-mix(in srgb, var(--management-danger) 8%, var(--management-surface)); }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-user-row__facts > div:not(.admin-user-row__action-cell) { border: 0; border-radius: 0; background: none; }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-user-row__facts dt { font-size: .75rem; letter-spacing: normal; text-transform: none; }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-user-row__facts dd { font-size: .875rem; line-height: 1.4; }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-surveys-open-controls { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+
+}

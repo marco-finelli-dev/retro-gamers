@@ -1,204 +1,79 @@
 ---
-import {
-  getArchiveUrl,
-  getPlatformIndexUrl,
-  getPlatformTypeUrl
-} from '../../lib/routes.js';
-
-const { lang = 'it' } = Astro.props;
-
+import { getArchiveUrl, getCompanyUrl, getCreatorUrl, getPlatformIndexUrl } from '../../lib/routes.js';
+import { getLocalizedLanguageUrl } from '../../lib/language-switch.js';
+import { getOpenCommunitySurveyForLanguage, getCommunitySurveyUrl } from '../../lib/community-surveys';
+const { lang = 'it', languageSwitch = null } = Astro.props;
 const isEnglish = lang === 'en';
-
-const archiveHrefs = {
-  reviews: getArchiveUrl('review', lang),
-  news: getArchiveUrl('news', lang),
-  features: getArchiveUrl('feature', lang),
-  guides: getArchiveUrl('guide', lang),
-  memories: getArchiveUrl('memories', lang)
+const homeHref = isEnglish ? '/en/' : '/';
+const communityHref = `${homeHref}community/`;
+const survey = await getOpenCommunitySurveyForLanguage(lang);
+const surveyHref = survey ? getCommunitySurveyUrl(survey, lang) : communityHref;
+const currentPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const isCurrent = (href) => {
+  const path = new URL(href, Astro.url).pathname.replace(/\/+$/, '') || '/';
+  return currentPath === path || (!href.includes('#') && path !== '/' && currentPath.startsWith(`${path}/`));
 };
-
-const platformHrefs = {
-  index: getPlatformIndexUrl(lang),
-  console: getPlatformTypeUrl('console', lang),
-  computer: getPlatformTypeUrl('computer', lang),
-  arcade: getPlatformTypeUrl('arcade', lang)
-};
-
-const ui = isEnglish
-  ? {
-      aria: 'Mobile menu',
-      menu: 'Menu',
-      close: 'Close menu',
-      discover: 'Discover',
-      platforms: 'Platforms'
-    }
-  : {
-      aria: 'Menu mobile',
-      menu: 'Menu',
-      close: 'Chiudi menu',
-      discover: 'Scopri',
-      platforms: 'Piattaforme'
-    };
-
-const mainLinks = isEnglish
-  ? [
-      { label: 'Reviews', href: archiveHrefs.reviews },
-      { label: 'News', href: archiveHrefs.news },
-      { label: 'Features', href: archiveHrefs.features },
-      { label: 'Guides', href: archiveHrefs.guides },
-      { label: 'Playable Classics', href: '/en/playable-classics/' },
-      { label: 'Emulators', href: '/en/emulators/' },
-      { label: 'Memories', href: archiveHrefs.memories },
-      { label: 'Interviews', href: '/en/interviews/' },
-      { label: 'Hardware', href: '/en/hardware/' },
-      { label: 'Creators', href: '/en/creators/' },
-      { label: 'Companies', href: '/en/companies/' },
-      { label: 'Archive', href: '/en/archive/' },
-      { label: 'Community', href: '/en/community/' },
-      { label: 'Quiz', href: '/en/quiz/' },
-      { label: 'Discussions', href: '/en/community/#community-hub-discussions' }
+const languageHref = typeof languageSwitch === 'string' ? languageSwitch : languageSwitch?.url || (isEnglish ? '/' : '/en/');
+const languageLabel = isEnglish ? 'Switch to Italian' : 'Passa alla versione inglese';
+const groups = [
+  {
+    label: 'MAGAZINE',
+    links: [
+      { label: isEnglish ? 'Reviews' : 'Recensioni', href: getArchiveUrl('review', lang) },
+      { label: 'News', href: getArchiveUrl('news', lang) },
+      { label: isEnglish ? 'Features' : 'Speciali', href: getArchiveUrl('feature', lang) },
+      { label: isEnglish ? 'Interviews' : 'Interviste', href: getArchiveUrl('interview', lang) },
+      { label: isEnglish ? 'Guides' : 'Guide', href: getArchiveUrl('guide', lang) },
+      { label: isEnglish ? 'Authors' : 'Autori', href: getLocalizedLanguageUrl({ currentUrl: '/autori/', targetLang: lang }) }
     ]
-  : [
-      { label: 'Recensioni', href: archiveHrefs.reviews },
-      { label: 'News', href: archiveHrefs.news },
-      { label: 'Speciali', href: archiveHrefs.features },
-      { label: 'Guide', href: archiveHrefs.guides },
-      { label: 'Classici giocabili oggi', href: '/classici-giocabili-oggi/' },
-      { label: 'Emulatori e interpreti', href: '/emulatori/' },
-      { label: 'Memories', href: archiveHrefs.memories },
-      { label: 'Interviste', href: '/interviste/' },
-      { label: 'Hardware', href: '/hardware/' },
-      { label: 'Creatori', href: '/creatori/' },
-      { label: 'Aziende', href: '/aziende/' },
-      { label: 'Archivio', href: '/archivio/' },
-      { label: 'Community', href: '/community/' },
-      { label: 'Quiz', href: '/quiz/' },
-      { label: 'Discussioni', href: '/community/#community-hub-discussions' }
-    ];
-
-const platformLinks = isEnglish
-  ? [
-      { label: 'All platforms', href: platformHrefs.index },
-      { label: 'Consoles', href: platformHrefs.console },
-      { label: 'Computers', href: platformHrefs.computer },
-      { label: 'Arcade', href: platformHrefs.arcade }
+  },
+  {
+    label: isEnglish ? 'ARCHIVE' : 'ARCHIVIO',
+    links: [
+      { label: isEnglish ? 'Platforms' : 'Piattaforme', href: getPlatformIndexUrl(lang) },
+      { label: 'Creator', href: getCreatorUrl(null, lang) },
+      { label: isEnglish ? 'Companies' : 'Aziende', href: getCompanyUrl(null, lang) }
     ]
-  : [
-      { label: 'Tutte le piattaforme', href: platformHrefs.index },
-      { label: 'Console', href: platformHrefs.console },
-      { label: 'Computer', href: platformHrefs.computer },
-      { label: 'Arcade', href: platformHrefs.arcade }
-    ];
+  },
+  {
+    label: 'COMMUNITY',
+    links: [
+      { label: 'Quiz', href: `${homeHref}quiz/` },
+      { label: isEnglish ? 'Surveys' : 'Sondaggi', href: surveyHref }
+    ]
+  }
+];
 
-const accountLabels = isEnglish
-  ? {
-      title: 'Account',
-      signIn: 'Log in / Register',
-      account: 'My account',
-      editorialTools: 'Editorial area',
-      administrationArea: 'Administration area',
-      signOut: 'Sign out'
-    }
-  : {
-      title: 'Account',
-      signIn: 'Accedi / Registrati',
-      account: 'Il mio account',
-      editorialTools: 'Area redazione',
-      administrationArea: 'Area amministrazione',
-      signOut: 'Esci'
-    };
-
-const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
-const accountHref = isEnglish ? '/en/account/' : '/account/';
-const accountEditorHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
-const accountAdminHref = isEnglish ? '/en/admin/' : '/admin/';
-const currentLanguageTarget = isEnglish ? 'en' : 'it';
+const themes = [{ value: 'system', label: 'Auto' }, { value: 'light', label: isEnglish ? 'Light' : 'Chiaro' }, { value: 'dark', label: isEnglish ? 'Dark' : 'Scuro' }];
 ---
-
-<div class="mobile-menu" id="mobile-menu" aria-hidden="true" inert data-mobile-menu>
+<div class="mobile-menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label={isEnglish ? 'Site menu' : 'Menu del sito'} aria-hidden="true" inert data-mobile-menu>
   <div class="mobile-menu__backdrop" data-mobile-menu-close></div>
-
-  <nav class="mobile-menu__panel" aria-label={ui.aria}>
-
+  <div class="mobile-menu__panel">
     <div class="mobile-menu__header">
-      <span>{ui.menu}</span>
-
-      <button
-        type="button"
-        class="mobile-menu__close"
-        aria-label={ui.close}
-        data-mobile-menu-close
-      >
-        ×
+      <span>Menu</span>
+      <button type="button" class="mobile-menu__close" aria-label={isEnglish ? 'Close menu' : 'Chiudi menu'} data-mobile-menu-close>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
       </button>
     </div>
-
-    <div class="mobile-menu__section" data-mobile-account-menu>
-      <span>{accountLabels.title}</span>
-
-      <div class="mobile-menu__links">
-        <div data-account-guest data-mobile-account-guest>
-          <a href={accountLoginHref}>{accountLabels.signIn}</a>
-        </div>
-
-        <div data-account-auth data-mobile-account-auth hidden>
-          <div class="mobile-menu__account-summary">
-            <span
-              class="mobile-menu__account-avatar"
-              data-account-avatar
-              aria-hidden="true"
-            ></span>
-
-            <span data-mobile-account-name>{accountLabels.account}</span>
-          </div>
-
-          <a href={accountHref}>{accountLabels.account}</a>
-
-          <a
-            href={accountEditorHref}
-            data-account-editorial-area
-            data-language-session-override={currentLanguageTarget}
-            hidden
-          >
-            {accountLabels.editorialTools}
-          </a>
-
-          <a
-            href={accountAdminHref}
-            data-account-admin-area
-            data-language-session-override={currentLanguageTarget}
-            hidden
-          >
-            <span>{accountLabels.administrationArea}</span>
-            <span class="mobile-menu__admin-unread" data-admin-unread hidden></span>
-          </a>
-
-          <span class="mobile-menu__account-separator" aria-hidden="true"></span>
-
-          <button class="mobile-menu__account-logout" type="button" data-account-logout>{accountLabels.signOut}</button>
-        </div>
+    <div class="mobile-menu__preferences">
+      <a class="mobile-menu__language" href={languageHref} aria-label={languageLabel} title={languageLabel}
+        data-language-session-override={isEnglish ? 'it' : 'en'} data-rg-language-switch data-rg-language-switch-from={lang}
+        data-rg-language-switch-to={isEnglish ? 'it' : 'en'} data-rg-language-switch-placement="header">
+        <img src={isEnglish ? '/icons/flag-it.webp' : '/icons/flag-en.webp'} width="24" height="24" alt="" />
+        <span>{isEnglish ? 'IT' : 'EN'}</span>
+      </a>
+      <div class="mobile-menu__themes" role="group" aria-label={isEnglish ? 'Theme' : 'Tema'}>
+        {themes.map(theme => <button type="button" data-theme-choice={theme.value} aria-pressed="false" aria-label={theme.label} title={theme.label}>
+          <span class="mobile-menu__theme-icon" aria-hidden="true" style={`--mobile-theme-icon: url('/icons/rails/${theme.value === 'system' ? 'light-dark' : theme.value === 'light' ? 'sun' : 'moon'}.svg')`}></span>
+        </button>)}
       </div>
     </div>
+    <nav aria-label={isEnglish ? 'Site navigation' : 'Navigazione del sito'}>
+      {groups.map((group, index) => <section class="mobile-menu__section" aria-labelledby={`mobile-group-${index}`}>
+        <h2 id={`mobile-group-${index}`}>{group.label}</h2>
+        <div class="mobile-menu__links">{group.links.map(item => <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>{item.label}</a>)}</div>
+      </section>)}
+    </nav>
 
-    <div class="mobile-menu__section">
-      <span>{ui.discover}</span>
-
-      <div class="mobile-menu__links">
-        {mainLinks.map((item) => (
-          <a href={item.href}>{item.label}</a>
-        ))}
-      </div>
-    </div>
-
-    <div class="mobile-menu__section">
-      <span>{ui.platforms}</span>
-
-      <div class="mobile-menu__links">
-        {platformLinks.map((item) => (
-          <a href={item.href}>{item.label}</a>
-        ))}
-      </div>
-    </div>
-
-  </nav>
+  </div>
 </div>

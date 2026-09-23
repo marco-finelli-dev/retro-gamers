@@ -1,0 +1,37 @@
+---
+import '../../styles/article/article-community-prompt.css';
+
+const { lang = 'it' } = Astro.props;
+const copy = lang === 'en' ? {
+  title: 'Stay up to date with Retro-Gamers',
+  text: 'Articles, reviews and features, delivered straight to your inbox.',
+  cta: 'Subscribe to the newsletter',
+  later: 'Not now',
+  close: 'Close newsletter prompt',
+  href: '/en/newsletter/',
+} : {
+  title: 'Resta aggiornato su Retro-Gamers',
+  text: 'Articoli, recensioni e speciali, direttamente via email.',
+  cta: 'Iscriviti alla newsletter',
+  later: 'Non ora',
+  close: 'Chiudi invito newsletter',
+  href: '/newsletter/',
+};
+---
+
+<aside class="article-community-prompt" data-newsletter-prompt hidden role="dialog" aria-modal="false" aria-labelledby="newsletter-prompt-title" aria-describedby="newsletter-prompt-description">
+  <button type="button" class="article-community-prompt__close" data-newsletter-dismiss aria-label={copy.close}>×</button>
+  <div class="article-community-prompt__content">
+    <h2 id="newsletter-prompt-title">{copy.title}</h2>
+    <p id="newsletter-prompt-description">{copy.text}</p>
+  </div>
+  <div class="article-community-prompt__actions">
+    <a href={copy.href} data-newsletter-cta>{copy.cta}</a>
+    <button type="button" data-newsletter-dismiss>{copy.later}</button>
+  </div>
+</aside>
+
+<script>
+  import { initNewsletterPrompt } from '../../scripts/newsletter-prompt';
+  initNewsletterPrompt();
+</script>

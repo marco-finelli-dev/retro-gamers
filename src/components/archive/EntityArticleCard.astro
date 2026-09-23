@@ -1,0 +1,16 @@
+---
+import ArchiveCard from './ArchiveCard.astro';
+import ReviewCard from '../cards/ReviewCard.astro';
+const { post, lang = 'it' } = Astro.props;
+const en = lang === 'en';
+const types = en
+  ? {review:'Review',news:'News',feature:'Feature',interview:'Interview',guide:'Guide',article:'Article',hardware:'Hardware',memories:'Memories'}
+  : {review:'Recensione',news:'News',feature:'Speciale',interview:'Intervista',guide:'Guida',article:'Articolo',hardware:'Hardware',memories:'Memories'};
+---
+<div>
+  <div class="reviews-listing__mobile"><ArchiveCard post={post} lang={lang} /></div>
+  <div class="reviews-listing__desktop">
+    <p class="entity-related-type">{types[post.type] || post.type}{post.type === 'review' && <>{post.categories?.[0] && <> · {en ? post.categories[0].nameEn || post.categories[0].name : post.categories[0].name}</>}{post.publishedAt && <> · <time datetime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString(en ? 'en-US' : 'it-IT', {day:'2-digit',month:'short',year:'numeric'})}</time></>}</>}</p>
+    <ReviewCard post={post} lang={lang} metadataVariant={post.type === 'review' ? 'home-reviews' : 'editorial'} />
+  </div>
+</div>
