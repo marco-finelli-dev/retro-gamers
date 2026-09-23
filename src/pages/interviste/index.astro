@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArchivePage from '../../components/archive/ArchivePage.astro';
+import EditorialListing from '../../components/archive/EditorialListing.astro';
 
 import { getAllPosts, groupPosts } from '../../lib/posts';
 
@@ -15,10 +15,12 @@ const posts = grouped.all.filter((post) => post.type === 'interview');
   news={grouped.allNews}
   title="Interviste"
   description="Interviste, conversazioni e testimonianze dal mondo retro-gaming, tra sviluppatori, appassionati, collezionisti e protagonisti della scena."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/interviste/"
 >
-  <ArchivePage
+  <EditorialListing
+      desktopTitle="Interviste"
+      desktopDescription="Conversazioni con autori, sviluppatori e protagonisti della scena retro."
     title="Interviste"
     eyebrow="Voci e protagonisti"
     description="Conversazioni con autori, sviluppatori, appassionati e protagonisti della scena retro."

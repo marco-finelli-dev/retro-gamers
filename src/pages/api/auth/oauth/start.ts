@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { getOAuthCallbackOrigin } from '../../../../lib/supabase/oauth-origin';
 import {
   createSupabaseOAuthClient,
   getSiteUrl,
@@ -56,10 +57,7 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   const returnTo = normalizeReturnTo(url.searchParams.get('returnTo'));
-  const callbackOrigin =
-    url.hostname === 'localhost' || url.hostname === '127.0.0.1'
-      ? url.origin
-      : getSiteUrl();
+  const callbackOrigin = getOAuthCallbackOrigin(url, getSiteUrl(), process.env.VERCEL_ENV);
   const callbackUrl =
     `${callbackOrigin}/api/auth/oauth/callback?returnTo=${encodeURIComponent(returnTo)}&provider=${encodeURIComponent(provider)}`;
   const { client, getCodeVerifier } = createSupabaseOAuthClient();

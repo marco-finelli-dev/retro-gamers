@@ -1,0 +1,225 @@
+@import './standard-content-refresh.css';
+
+/* The desktop reader shell is shared by every standard page. Keep the
+   article and home treatments independent of this page grammar. */
+@media (min-width: 1200px) {
+  body.rg-standard-page-layout {
+    --rg-page-surface: color-mix(in srgb, var(--rg-desktop-canvas-surface) 94%, var(--rg-color-ivory));
+    --rg-page-hairline: color-mix(in srgb, var(--rg-text-primary) 16%, transparent);
+    --rg-panel-bg: var(--rg-page-surface);
+    --rg-panel-border: var(--rg-page-hairline);
+    --rg-panel-shadow: none;
+    --rg-panel-grid: none;
+    --rg-panel-grid-opacity: 0;
+    --rg-panel-highlight: transparent;
+    --rg-card-bg: var(--rg-page-surface);
+    --rg-card-border: var(--rg-page-hairline);
+    --rg-card-shadow: none;
+    --rg-card-hover-shadow: none;
+  }
+
+  html[data-theme="light"] body.rg-standard-page-layout {
+    --rg-page-surface: color-mix(in srgb, var(--rg-desktop-canvas-surface) 72%, var(--rg-shell-paper));
+  }
+
+  /* Match the approved Home/article content edge, including the footer.
+     Some pages own their wrapper, others use .container: apply the inset once. */
+  body.rg-standard-page-layout > main .container {
+    padding-inline: var(--rg-page-content-gutter);
+  }
+
+  /* Compatibility tokens are scoped to standard page content. Home, article,
+     shell and mobile keep their own approved tokens. */
+  body.rg-standard-page-layout > main {
+    --color-text: var(--rg-text-primary);
+    --color-text-soft: var(--rg-text-secondary);
+    --color-text-muted: var(--rg-text-muted);
+    --color-primary: var(--rg-title-hover);
+    --color-primary-light: var(--rg-title-hover);
+    --color-accent: var(--rg-title-hover);
+    --color-secondary: var(--rg-title-hover);
+    --color-primary-soft: var(--rg-page-surface);
+    --color-secondary-soft: var(--rg-page-surface);
+    --color-border: var(--rg-border-neutral);
+    --color-surface: var(--rg-page-surface);
+    --color-surface-2: var(--rg-page-surface);
+    --color-surface-strong: var(--rg-page-surface);
+    --color-glass: var(--rg-page-surface);
+    --rg-badge-bg: var(--rg-page-surface);
+    --rg-badge-border: var(--rg-border-neutral);
+    --rg-badge-color: var(--rg-text-secondary);
+    --rg-eyebrow-color: var(--rg-text-secondary);
+    --rg-section-title-color: var(--rg-title-color);
+    --rg-section-title-line: var(--rg-divider-color);
+    --rg-action-color: var(--rg-link-color);
+    --rg-action-hover-color: var(--rg-title-hover);
+    --rg-cta-bg: var(--rg-page-surface);
+    --rg-cta-hover-bg: var(--rg-surface-card);
+    --rg-cta-border: var(--rg-border-neutral);
+    --rg-cta-color: var(--rg-text-primary);
+    --section-box-shadow: none;
+    --section-box-hover-shadow: none;
+    --rg-focus-ring: 1px solid var(--rg-text-secondary);
+    color: var(--rg-text-primary);
+  }
+
+  /* One editorial measure and gutter for listings, records, community,
+     account and management. Containers already owned by a page keep their
+     own inner grids and contextual sidebars. */
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .community-page, .account-page, .admin-dashboard-page,
+    .creators-page, .companies-page, .author-page
+  ) {
+    width: min(var(--rg-layout-editorial-max), 100%);
+    padding-inline: var(--rg-page-content-gutter);
+    margin-inline: auto;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout :is(.community-page, .account-page, .admin-dashboard-page) {
+    margin-block: var(--rg-space-8) var(--rg-space-16);
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout :is(.creators-page, .companies-page, .author-page) {
+    padding-block: var(--rg-space-8) var(--rg-space-16);
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .archive-page, .platforms-page, .legal-page, .quiz-page,
+    .playable-classics-page, .emulator-tools-page, .thanks-page,
+    .error-page
+  ) {
+    padding-block: var(--rg-space-8) var(--rg-space-16);
+  }
+
+  /* The shared page header has a restrained surface and clear hierarchy.
+     This covers index and detail heroes without touching their content. */
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .archive-hero__inner, .platforms-hero__inner, .platform-sheet,
+    .creators-hero, .creator-detail-hero,
+    .companies-hero, .company-detail-hero,
+    .author-index-hero, .author-hero,
+    .community-hero, .account-card,
+    .quiz-hero, .quiz-detail-hero,
+    .playable-classics-hero, .playable-classic-hero,
+    .legal-hero, .emulator-tools-hero, .emulator-tool-hero,
+    .thanks-card, .error-card
+  ) {
+    background: var(--rg-page-surface);
+    border: 1px solid var(--rg-page-hairline);
+    border-radius: var(--rg-radius-medium);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .archive-hero__inner, .platforms-hero__inner, .platform-sheet,
+    .creators-hero, .creator-detail-hero,
+    .companies-hero, .company-detail-hero,
+    .author-index-hero, .author-hero,
+    .community-hero, .account-card,
+    .quiz-hero, .quiz-detail-hero,
+    .playable-classics-hero, .playable-classic-hero,
+    .legal-hero, .emulator-tools-hero, .emulator-tool-hero,
+    .thanks-card, .error-card
+  )::before,
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .creators-hero, .creator-detail-hero,
+    .companies-hero, .company-detail-hero,
+    .author-index-hero, .legal-hero,
+    .quiz-hero, .quiz-detail-hero,
+    .playable-classics-hero, .playable-classic-hero
+  )::after {
+    content: none;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .archive-hero__content h1, .platforms-hero h1,
+    .creators-hero h1, .creator-detail-hero h1,
+    .companies-hero h1, .company-detail-hero h1,
+    .author-index-hero h1, .legal-hero h1, .thanks-card h1,
+    .error-card h1,
+    .emulator-tools-hero h1, .emulator-tool-hero h1
+  ) {
+    color: var(--rg-text-primary);
+    text-shadow: none;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .archive-hero__content p, .platforms-hero p,
+    .creators-hero p, .creator-detail-hero__intro,
+    .companies-hero p, .company-detail-hero p,
+    .author-index-hero p, .legal-hero p
+  ) {
+    color: var(--rg-text-secondary);
+  }
+
+  /* Page-level filters and contextual panels use the same flat surface.
+     Existing cards and form internals retain their own layout. */
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .archive-filters, .community-card, .community-sidebar-card,
+    .legal-content, .creator-panel, .creator-related,
+    .company-section, .companies-empty, .quiz-panel,
+    .playable-classic-panel, .playable-classic-facts,
+    .playable-classic-download
+  ) {
+    background: var(--rg-page-surface);
+    border-color: var(--rg-page-hairline);
+    border-radius: var(--rg-radius-medium);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .archive-filters, .community-card, .legal-content,
+    .creator-panel, .creator-related, .company-section,
+    .companies-empty, .quiz-panel
+  )::before,
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .creator-panel, .creator-related, .company-section,
+    .companies-empty, .quiz-panel
+  )::after {
+    content: none;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .archive-card, .archive-empty, .platform-type-card, .platform-card,
+    .creator-card__link, .company-card__link, .quiz-card, .quiz-empty,
+    .playable-classics-card, .playable-classics-empty
+  ) {
+    background: var(--rg-page-surface);
+    border-color: var(--rg-page-hairline);
+    border-radius: var(--rg-radius-medium);
+    box-shadow: none;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .archive-card, .platform-type-card, .platform-card,
+    .creator-card__link, .company-card__link, .quiz-card,
+    .playable-classics-card
+  ):is(:hover, :focus-visible) {
+    border-color: color-mix(in srgb, var(--rg-text-primary) 28%, transparent);
+    box-shadow: none;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout :is(
+    .platform-type-card, .creator-card__link, .company-card__link
+  )::before {
+    content: none;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout .archive-card__content {
+    background: transparent;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout .platform-type-card__icon {
+    background: var(--rg-page-surface);
+    border-color: var(--rg-page-hairline);
+    box-shadow: none;
+  }
+
+  body.rg-desktop-layout.rg-standard-page-layout .platform-type-card__icon img {
+    filter: none;
+  }
+}

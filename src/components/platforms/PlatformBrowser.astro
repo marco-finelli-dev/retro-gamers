@@ -1,0 +1,38 @@
+---
+import PlatformCard from './PlatformCard.astro';
+import { groupPlatformsByManufacturer } from '../../lib/platforms';
+import { getPlatformIndexUrl, getPlatformTypeUrl, getPlatformManufacturerUrl } from '../../lib/routes.js';
+
+const { platforms = [], type = '', lang = 'it' } = Astro.props;
+const isEn = lang === 'en';
+const categories = [
+  { value: '', label: isEn ? 'All' : 'Tutte' },
+  { value: 'arcade', label: 'Arcade' },
+  { value: 'computer', label: isEn ? 'Computers' : 'Computer' },
+  { value: 'console', label: isEn ? 'Consoles' : 'Console' }
+];
+const groups = groupPlatformsByManufacturer(platforms);
+const orderedPlatforms = groups.flatMap(group => group.platforms);
+---
+<section class="platform-browser platform-desktop">
+  <div class="platform-browser__toolbar">
+    <nav class="platform-browser__types" aria-label={isEn ? 'Platform type' : 'Tipo di piattaforma'}>
+      {categories.map(category => (
+        <a href={category.value ? getPlatformTypeUrl(category.value, lang) : getPlatformIndexUrl(lang)}
+          aria-current={type === category.value ? 'page' : undefined}>{category.label}</a>
+      ))}
+    </nav>
+    <p class="platform-browser__count">{platforms.length} {isEn ? (platforms.length === 1 ? 'platform' : 'platforms') : (platforms.length === 1 ? 'piattaforma' : 'piattaforme')}</p>
+  </div>
+  {type && groups.length > 0 && (
+    <nav class="platform-browser__makers" aria-label={isEn ? 'Manufacturers' : 'Produttori'}>
+      <span>{isEn ? 'Manufacturers:' : 'Produttori:'}</span>
+      {groups.filter(group => group.manufacturer?.slug).map(group => (
+        <a href={getPlatformManufacturerUrl(type, group.manufacturer.slug, lang)}>{group.manufacturer.name}</a>
+      ))}
+    </nav>
+  )}
+  <div class="platform-grid">
+    {orderedPlatforms.map(platform => <PlatformCard platform={platform} lang={lang} />)}
+  </div>
+</section>

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import ArchivePage from '../../../components/archive/ArchivePage.astro';
+import EditorialListing from '../../../components/archive/EditorialListing.astro';
 
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { PAGE_SIZE } from '../../../lib/pagination';
@@ -42,13 +42,15 @@ const structuredData = createCollectionPageStructuredData({
   news={englishNews}
   title="Video game features and retrospectives"
   description="Features and retrospectives on video games, creators, studios and digital culture, exploring the history and evolution of the medium."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/en/features/"
   lang="en"
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <ArchivePage
+  <EditorialListing
+      desktopTitle="Features"
+      desktopDescription="Stories and insights into games, creators and gaming culture."
     title="Video game features and retrospectives"
     eyebrow="Editorial"
     description="Retro-Gamers.it features explore the people, studios and turning points that shaped video game culture. We reconstruct the development of series, genres and technologies through sources, first-hand accounts and historical context, including stories often overlooked by mainstream histories. From major industry figures to creative scenes built around consoles and home computers, each article examines the medium with attention to memory, cultural relevance and lasting influence."

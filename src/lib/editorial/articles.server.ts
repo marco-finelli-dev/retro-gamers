@@ -906,7 +906,7 @@ function normalizeMarkDef(value: unknown) {
   throw new Error('unsupported_mark_def');
 }
 
-function normalizeSpan(value: unknown, allowedMarks: Set<string>) {
+function normalizeSpan(value: unknown, allowedMarks: Set<string>, maxLength = 20000) {
   if (!isPlainObject(value) || value._type !== 'span') {
     throw new Error('invalid_span');
   }
@@ -920,7 +920,7 @@ function normalizeSpan(value: unknown, allowedMarks: Set<string>) {
   return {
     _key: normalizeKey(value._key),
     _type: 'span',
-    text: normalizeString(value.text, 20000),
+    text: normalizeString(value.text, maxLength),
     marks,
   };
 }
@@ -930,9 +930,11 @@ function normalizeTextBlock(
   {
     allowedStyles = validBlockStyles,
     allowedLists = validListItems,
+    maxSpanLength = 20000,
   }: {
     allowedStyles?: Set<string>;
     allowedLists?: Set<string>;
+    maxSpanLength?: number;
   } = {}
 ) {
   const markDefs = Array.isArray(block.markDefs)
@@ -940,7 +942,7 @@ function normalizeTextBlock(
     : [];
   const allowedMarks = new Set<string>([...validDecorators, ...markDefs.map((markDef) => markDef._key)]);
   const children = Array.isArray(block.children)
-    ? block.children.map((child) => normalizeSpan(child, allowedMarks))
+    ? block.children.map((child) => normalizeSpan(child, allowedMarks, maxSpanLength))
     : [];
 
   if (children.length === 0) {
@@ -969,6 +971,30 @@ function normalizeTextBlock(
   }
 
   return normalized;
+}
+
+function normalizeQuote(block: Record<string, unknown>) {
+  for (const field of ['attribution', 'source']) {
+    if (block[field] != null && typeof block[field] !== 'string') throw new Error('invalid_quote_content');
+  }
+  if (!Array.isArray(block.content) || !block.content.length) throw new Error('invalid_quote_content');
+  const content = block.content.map(item => {
+    if (!isPlainObject(item) || item._type !== 'block' || item.listItem || (item.style && item.style !== 'normal')) {
+      throw new Error('invalid_quote_content');
+    }
+    return normalizeTextBlock(item, { allowedStyles: new Set(['normal']), allowedLists: new Set(), maxSpanLength: Infinity });
+  });
+  if (!content.some(item => (item.children as Array<{ text: string }>).some(span => span.text.trim()))) {
+    throw new Error('invalid_quote_content');
+  }
+  // Optional free text has no editorial length limit; never silently truncate it.
+  const attribution = typeof block.attribution === 'string' ? block.attribution : '';
+  const source = typeof block.source === 'string' ? block.source : '';
+  return {
+    _key: normalizeKey(block._key), _type: 'quote', content,
+    ...(attribution.trim() ? { attribution } : {}),
+    ...(source.trim() ? { source } : {}),
+  };
 }
 
 function normalizeAsideBox(block: Record<string, unknown>) {
@@ -1028,6 +1054,8 @@ function normalizePortableTextBlock(value: unknown, isAsideContent = false): Rec
     return normalizeVideoRow(value);
   }
 
+  if (!isAsideContent && value._type === 'quote') return normalizeQuote(value);
+
   if (!isAsideContent && value._type === 'asideBox') {
     return normalizeAsideBox(value);
   }
@@ -1074,7 +1102,7 @@ function collectPortableTextAnnotationReferences(
       }
     }
 
-    if (block._type === 'asideBox' && Array.isArray(block.content)) {
+    if ((block._type === 'asideBox' || block._type === 'quote') && Array.isArray(block.content)) {
       collectPortableTextAnnotationReferences(block.content as PortableTextBlock[], references);
     }
   }

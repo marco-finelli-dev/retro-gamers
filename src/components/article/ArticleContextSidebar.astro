@@ -1,0 +1,329 @@
+---
+import ArticleEditorialActions from './ArticleEditorialActions.astro';
+import ArticleShare from './ArticleShare.astro';
+import CommentCountBadge from '../common/CommentCountBadge.astro';
+import { getFormatFilterValue, getFormatLabel } from '../../lib/formatLabels';
+import {
+  getCategoryUrl,
+  getCompanyUrl,
+  getPlatformUrl,
+  getPostUrl
+} from '../../lib/routes';
+import { urlFor } from '../../lib/image';
+
+const { post, relatedPosts = [], editorialQuickEdit = null, editorialNewArticleHref = null } = Astro.props;
+const lang = post?.language === 'en' ? 'en' : 'it';
+const isReview = post?.type === 'review';
+
+const copy = lang === 'en'
+  ? {
+      author: 'Author',
+      by: 'By',
+      published: 'Published',
+      updated: 'Updated',
+      gameInfo: 'Game information',
+      contextInfo: 'Article information',
+      related: 'Related articles',
+      creators: 'Related creators',
+      companies: 'Related companies',
+      platforms: 'Platforms',
+      manufacturers: 'Hardware manufacturers',
+      series: 'Series',
+      categories: 'Categories',
+      category: 'Category',
+      format: 'Format',
+      developer: 'Developer',
+      publisher: 'Publisher',
+      year: 'Year',
+      genre: 'Genre',
+      mode: 'Mode',
+      roles: {
+        editor: 'Editor',
+        contributor: 'Contributor',
+        guest: 'Guest'
+      }
+    }
+  : {
+      author: 'Autore',
+      by: 'A cura di',
+      published: 'Pubblicato',
+      updated: 'Aggiornato',
+      gameInfo: 'Scheda gioco',
+      contextInfo: 'Informazioni articolo',
+      related: 'Articoli correlati',
+      creators: 'Creatori collegati',
+      companies: 'Aziende collegate',
+      platforms: 'Piattaforme',
+      manufacturers: 'Produttori hardware',
+      series: 'Serie',
+      categories: 'Categorie',
+      category: 'Categoria',
+      format: 'Formato',
+      developer: 'Sviluppatore',
+      publisher: 'Publisher',
+      year: 'Anno',
+      genre: 'Genere',
+      mode: 'Modalità',
+      roles: {
+        editor: 'Redattore',
+        contributor: 'Collaboratore',
+        guest: 'Ospite'
+      }
+    };
+
+const typeLabels = lang === 'en'
+  ? {
+      review: 'Review', news: 'News', feature: 'Feature', guide: 'Guide',
+      memories: 'Memories', interview: 'Interview', hardware: 'Hardware', article: 'Article'
+    }
+  : {
+      review: 'Recensione', news: 'News', feature: 'Speciale', guide: 'Guida',
+      memories: 'Memories', interview: 'Intervista', hardware: 'Hardware', article: 'Articolo'
+    };
+
+const getSlug = (item) =>
+  typeof item?.slug === 'string' ? item.slug : item?.slug?.current || '';
+
+const getName = (item) => {
+  if (!item) return '';
+  return lang === 'en'
+    ? item.nameEn || item.name || ''
+    : item.name || item.nameEn || '';
+};
+
+const uniqueItems = (items) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = `${item.label}|${item.href || ''}`;
+    if (!item.label || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const toItems = (values, getHref = () => '') =>
+  uniqueItems((Array.isArray(values) ? values : values ? [values] : [])
+    .map((item) => ({ label: getName(item), href: getHref(item) })));
+
+const archiveFilterUrl = (key, value) => {
+  if (!key || !value) return '';
+  const base = lang === 'en' ? '/en/archive/' : '/archivio/';
+  return `${base}?${key}=${encodeURIComponent(value)}`;
+};
+
+const creatorItems = uniqueItems((post?.creators || []).map((creator) => ({
+  label: creator?.name || '',
+  href: getSlug(creator)
+    ? lang === 'en'
+      ? `/en/creators/${getSlug(creator)}/`
+      : `/creatori/${getSlug(creator)}/`
+    : ''
+})));
+
+const platformItems = toItems(post?.platforms, (platform) =>
+  getSlug(platform) ? getPlatformUrl(platform, lang) : '');
+const developerItems = toItems(post?.developers, (item) =>
+  getSlug(item) ? getCompanyUrl(item, lang) : '');
+const publisherItems = toItems(post?.publishers, (item) =>
+  getSlug(item) ? getCompanyUrl(item, lang) : '');
+const manufacturerItems = toItems(post?.manufacturer, (item) =>
+  getSlug(item) ? getCompanyUrl(item, lang) : '');
+const companyItems = uniqueItems([...developerItems, ...publisherItems]);
+const categoryItems = toItems(post?.categories, (item) =>
+  getSlug(item) ? getCategoryUrl(item, lang) : '');
+const seriesItems = uniqueItems([
+  ...toItems(post?.series),
+  ...toItems(post?.editorialSeries)
+]);
+const genreItems = toItems(post?.genres, (item) =>
+  getSlug(item) ? archiveFilterUrl('genre', getSlug(item)) : '');
+const modeItems = toItems(post?.modes, (item) =>
+  getSlug(item) ? archiveFilterUrl('mode', getSlug(item)) : '');
+const formatItems = (Array.isArray(post?.gameInfo?.mediaFormat)
+  ? post.gameInfo.mediaFormat
+  : post?.gameInfo?.mediaFormat
+    ? [post.gameInfo.mediaFormat]
+    : [])
+  .map((format) => ({
+    label: getFormatLabel(format, lang),
+    href: getFormatFilterValue(format)
+      ? archiveFilterUrl('format', getFormatFilterValue(format))
+      : ''
+  }))
+  .filter((item) => item.label);
+const yearItems = post?.gameInfo?.releaseYear
+  ? [{
+      label: String(post.gameInfo.releaseYear),
+      href: archiveFilterUrl('year', String(post.gameInfo.releaseYear))
+    }]
+  : [];
+
+const infoRows = (isReview
+  ? [
+      { label: copy.platforms, items: platformItems },
+      { label: copy.format, items: formatItems },
+      { label: copy.developer, items: developerItems },
+      { label: copy.publisher, items: publisherItems },
+      { label: copy.manufacturers, items: manufacturerItems },
+      { label: copy.creators, items: creatorItems },
+      { label: copy.year, items: yearItems },
+      { label: copy.genre, items: genreItems },
+      { label: copy.mode, items: modeItems }
+    ]
+  : [
+      { label: copy.creators, items: creatorItems },
+      { label: copy.companies, items: companyItems },
+      { label: copy.platforms, items: platformItems },
+      { label: copy.manufacturers, items: manufacturerItems },
+      { label: copy.series, items: seriesItems },
+      { label: copy.categories, items: categoryItems }
+    ])
+  .filter((row) => row.items.length > 0);
+
+const singleInfo = !isReview && infoRows.length === 1 && infoRows[0].items.length === 1;
+const infoHeading = singleInfo
+  ? (infoRows[0].label === copy.categories ? copy.category : infoRows[0].label)
+  : isReview ? copy.gameInfo : copy.contextInfo;
+const InfoList = singleInfo ? 'div' : 'dl';
+const InfoValue = singleInfo ? 'div' : 'dd';
+
+const authorName =
+  post?.author?.displayName === 'nickname' && post?.author?.nickname
+    ? post.author.nickname
+    : post?.author?.name || '';
+const authorSlug = getSlug(post?.author);
+const authorHref = authorSlug
+  ? lang === 'en' ? `/en/authors/${authorSlug}/` : `/autori/${authorSlug}/`
+  : '';
+const authorRole = post?.author?.role
+  ? copy.roles[post.author.role] || post.author.role
+  : '';
+const authorAvatar = post?.author?.image?.asset?.url || '';
+const authorInitials = authorName
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0])
+  .join('')
+  .toUpperCase();
+
+const dateLocale = lang === 'en' ? 'en-US' : 'it-IT';
+const formatDate = (value) => value
+  ? new Date(value).toLocaleDateString(dateLocale, {
+      day: 'numeric', month: 'long', year: 'numeric'
+    })
+  : '';
+const publishedDate = formatDate(post?.publishedAt);
+const updatedDate = formatDate(post?.lastUpdated);
+const showUpdated = Boolean(
+  post?.lastUpdated &&
+  (!post?.publishedAt ||
+    new Date(post.lastUpdated).toDateString() !== new Date(post.publishedAt).toDateString())
+);
+
+const getRelatedImage = (item) => {
+  const image = item?.featuredImage?.asset
+    ? item.featuredImage
+    : item?.gameInfo?.cover?.asset
+      ? item.gameInfo.cover
+      : null;
+  return image
+    ? urlFor(image).width(180).height(135).fit('crop').quality(72).auto('format').url()
+    : '';
+};
+const related = relatedPosts
+  .filter((item) => item?._id !== post?._id && item?.title && getSlug(item))
+  .slice(0, 3);
+---
+
+<div class="article-context-sidebar public-context-sidebar">
+  <section class="article-context-author public-context-group" aria-labelledby="article-context-author-title">
+    <h2 id="article-context-author-title">{copy.author}</h2>
+
+    {(authorName || publishedDate) && (
+      <div class="article-context-author__identity">
+        {authorName && (
+          authorHref ? (
+            <a class="article-context-author__avatar" href={authorHref} aria-label={authorName}>
+              {authorAvatar
+                ? <img src={authorAvatar} alt={post?.author?.image?.alt || authorName} width="48" height="48" />
+                : <span>{authorInitials || 'RG'}</span>}
+            </a>
+          ) : (
+            <span class="article-context-author__avatar" aria-hidden="true">
+              {authorAvatar
+                ? <img src={authorAvatar} alt="" width="48" height="48" />
+                : <span>{authorInitials || 'RG'}</span>}
+            </span>
+          )
+        )}
+
+        <div class="article-context-author__body">
+          {authorName && (
+            <p>
+              <small>{copy.by}</small>
+              {authorHref ? <a href={authorHref}>{authorName}</a> : <strong>{authorName}</strong>}
+            </p>
+          )}
+          {authorRole && <span>{authorRole}</span>}
+        </div>
+      </div>
+    )}
+
+    <ArticleEditorialActions action={editorialQuickEdit} newArticleHref={editorialNewArticleHref} lang={lang} />
+
+    {(publishedDate || (showUpdated && updatedDate)) && (
+      <dl class="article-context-author__dates">
+        {publishedDate && <div><dt>{copy.published}</dt><dd>{publishedDate}</dd></div>}
+        {showUpdated && updatedDate && <div><dt>{copy.updated}</dt><dd>{updatedDate}</dd></div>}
+      </dl>
+    )}
+
+    <ArticleShare post={post} />
+  </section>
+
+  {infoRows.length > 0 && (
+    <section class="public-context-group article-context-card article-context-card--info">
+      <h2>{infoHeading}</h2>
+      <InfoList class="article-context-info">
+        {infoRows.map((row) => (
+          <div>
+            {!singleInfo && <dt>{row.label}</dt>}
+            <InfoValue class="article-context-info__values">
+              {row.items.map((item) => (
+                <span class="article-context-info__value">
+                  {item.href ? <a href={item.href}>{item.label}</a> : <span>{item.label}</span>}
+                </span>
+              ))}
+            </InfoValue>
+          </div>
+        ))}
+      </InfoList>
+    </section>
+  )}
+
+  {related.length > 0 && (
+    <section class="public-context-group article-context-card article-context-card--related">
+      <h2>{copy.related}</h2>
+      <div class="article-context-related">
+        {related.map((item) => {
+          const image = getRelatedImage(item);
+          return (
+            <a class="article-context-related__item" href={getPostUrl(item)}>
+              {image && (
+                <span class="article-context-related__image">
+                  <img src={image} alt={item.featuredImage?.alt || item.gameInfo?.cover?.alt || ''} width="180" height="135" loading="lazy" decoding="async" />
+                </span>
+              )}
+              <span class="article-context-related__body">
+                <small>{typeLabels[item.type] || typeLabels.article}</small>
+                <strong>{item.title}</strong>
+                <CommentCountBadge count={item.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+              </span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  )}
+</div>

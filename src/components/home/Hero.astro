@@ -8,17 +8,8 @@ const { posts = [], lang = 'it' } = Astro.props;
 
 const isEn = lang === 'en';
 
-const labels = {
-  featured: isEn ? 'Featured' : 'In evidenza',
-  magazine: isEn ? 'Retro-Gamers International' : 'Retro-Gamers Magazine',
-  intro: isEn
-    ? 'Arcade, consoles, home computers and digital memories.'
-    : 'Arcade, console, home computer e memorie digitali.',
-  readArticle: isEn ? 'Read the article' : 'Leggi l’articolo'
-};
-
 const [main, ...rest] = posts || [];
-const side = rest.slice(0, 3);
+const side = rest.slice(0, 4);
 const mainReviewBadge = getReviewBadge(main?.rating?.overall ?? main?.score, lang);
 
 const cleanText = (value) =>
@@ -83,9 +74,9 @@ const getImage = (image, width = 960, height = null) => {
 
 const getMainImageSrcSet = (image) =>
   [
-    [760, 456],
-    [960, 576],
-    [1200, 720]
+    [760, 570],
+    [960, 720],
+    [1200, 900]
   ]
     .map(([width, height]) => `${getImage(image, width, height)} ${width}w`)
     .join(', ');
@@ -99,78 +90,62 @@ const getCommentLabel = (count) => {
 };
 ---
 
-<div class="section-box rg-hero">
-
-  <div class="rg-hero__ambient" aria-hidden="true"></div>
-
-  <div class="rg-hero__top">
-    <div class="rg-hero__signal">
-      <span>{labels.featured}</span>
-      <strong>{labels.magazine}</strong>
-    </div>
-
-    <p>{labels.intro}</p>
-  </div>
-
+<div class="rg-hero">
   <div class="rg-hero__grid">
 
     {main && (
-      <a href={getPostUrl(main)} class="rg-hero-main">
+      <a href={getPostUrl(main)} class="rg-hero-main rg-editorial-link">
 
         {main.featuredImage?.asset && (
-          <img
-            src={getImage(main.featuredImage, 1200, 720)}
-            srcset={getMainImageSrcSet(main.featuredImage)}
-            sizes="(max-width: 768px) calc(100vw - 68px), (max-width: 1024px) calc(100vw - 100px), 790px"
-            alt={main.featuredImage?.alt || main.title}
-            width="1200"
-            height="720"
-            loading="eager"
-            fetchpriority="high"
-            decoding="async"
-          />
-        )}
+          <div class="rg-hero-main__visual">
+            <img
+              src={getImage(main.featuredImage, 1200, 900)}
+              srcset={getMainImageSrcSet(main.featuredImage)}
+              sizes="(max-width: 768px) calc(100vw - 68px), (max-width: 960px) calc(100vw - 100px), 62vw"
+              alt={main.featuredImage?.alt || main.title}
+              width="1200"
+              height="900"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+            />
 
-        {mainReviewBadge && (
-          <img
-            src={mainReviewBadge.src}
-            alt={mainReviewBadge.alt}
-            class={`review-badge review-badge--hero review-badge--${mainReviewBadge.key}`}
-            width="1024"
-            height="1024"
-            loading="eager"
-            decoding="async"
-          />
+            {mainReviewBadge && (
+              <img
+                src={mainReviewBadge.src}
+                alt={mainReviewBadge.alt}
+                class={`review-badge review-badge--hero review-badge--${mainReviewBadge.key}`}
+                width="1024"
+                height="1024"
+                loading="eager"
+                decoding="async"
+              />
+            )}
+          </div>
         )}
-
-        <div class="rg-hero-main__chrome" aria-hidden="true"></div>
 
         <div class="rg-hero-main__content">
 
           <div class="rg-hero__meta">
-            <span>{getTypeLabel(main.type)}</span>
+            <span class="rg-meta-primary">{getTypeLabel(main.type)}</span>
 
             {getCategory(main) && (
-              <small>{getCategory(main)}</small>
+              <small class="rg-meta-secondary">{getCategory(main)}</small>
             )}
 
             {Number(main.commentCount || 0) > 0 && (
-              <span class="hero-comment-pill" aria-label={getCommentLabel(main.commentCount)}>
+              <span class="hero-comment-pill rg-meta-auxiliary" aria-label={getCommentLabel(main.commentCount)}>
                 <i aria-hidden="true"></i>
                 <b>{main.commentCount}</b>
               </span>
             )}
           </div>
 
-          <h2>{main.title}</h2>
+          <h2 class="rg-editorial-title">{main.title}</h2>
 
           {getExcerpt(main) && (
             <p>{getExcerpt(main)}</p>
           )}
-
-          <span class="rg-hero__cta">
-            {labels.readArticle}
-          </span>
 
         </div>
 
@@ -178,41 +153,51 @@ const getCommentLabel = (count) => {
     )}
 
     <div class="rg-hero-side-list">
-      {side.map((post) => {
+      {side.map((post, index) => {
         const cat = getCategory(post);
+        const isLead = index === 0;
 
         return (
-          <a href={getPostUrl(post)} class="rg-hero-side-card">
+          <a
+            href={getPostUrl(post)}
+            class:list={[
+              'rg-hero-side-card',
+              'rg-editorial-link',
+              isLead ? 'rg-hero-side-card--lead' : 'rg-hero-side-card--compact'
+            ]}
+          >
 
             {post.featuredImage?.asset && (
-              <img
-                src={getImage(post.featuredImage, 520, 292)}
-                alt={post.featuredImage?.alt || post.title}
-                width="520"
-                height="292"
-                loading="lazy"
-                decoding="async"
-              />
+              <div class="rg-hero-side-card__visual">
+                <img
+                  src={getImage(post.featuredImage, isLead ? 640 : 320, isLead ? 480 : 240)}
+                  alt={post.featuredImage?.alt || post.title}
+                  width={isLead ? 640 : 320}
+                  height={isLead ? 480 : 240}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
             )}
 
             <div class="rg-hero-side-card__content">
 
               <div class="rg-hero__meta small">
-                <span>{getTypeLabel(post.type)}</span>
+                <span class="rg-meta-primary">{getTypeLabel(post.type)}</span>
 
                 {cat && (
-                  <small>{cat}</small>
+                  <small class="rg-meta-secondary">{cat}</small>
                 )}
 
                 {Number(post.commentCount || 0) > 0 && (
-                  <span class="hero-comment-pill" aria-label={getCommentLabel(post.commentCount)}>
+                  <span class="hero-comment-pill rg-meta-auxiliary" aria-label={getCommentLabel(post.commentCount)}>
                     <i aria-hidden="true"></i>
                     <b>{post.commentCount}</b>
                   </span>
                 )}
               </div>
 
-              <h3>{post.title}</h3>
+              <h3 class="rg-editorial-title">{post.title}</h3>
 
             </div>
 

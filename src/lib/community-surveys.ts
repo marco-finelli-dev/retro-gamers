@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { HOME_SURVEY_KEY, surveyPercentages } from './home-survey';
 import { logApiError } from './api-errors';
 import { getPublishedReadClient } from './sanity';
 import { supabaseAdmin } from './supabase/server';
@@ -680,12 +681,13 @@ export async function getOpenCommunitySurveyForLanguage(
     `
       *[
         ${openCommunitySurveyFilter} &&
+        surveyKey != $homeSurveyKey &&
         language == $language
       ] | order(_createdAt desc) {
         ${communitySurveyFields}
       }
     `,
-    { language: normalizedLanguage }
+    { language: normalizedLanguage, homeSurveyKey: HOME_SURVEY_KEY }
   );
 
   const surveys = (Array.isArray(data) ? data : [])
@@ -774,7 +776,8 @@ export async function getPublishedCommunitySurveyByKey(
 
 export async function getCommunitySurveyResponseState(
   cookies: SurveyCookies,
-  surveyKey: string
+  surveyKey: string,
+  { strict = false } = {}
 ): Promise<CommunitySurveyResponseState> {
   const normalizedSurveyKey = normalizeTechnicalId(surveyKey);
   const identity = getCommunitySurveyGuestIdentity(cookies, {
@@ -806,6 +809,7 @@ export async function getCommunitySurveyResponseState(
     };
   } catch (error) {
     logApiError('community-surveys.response-state', error);
+    if (strict) throw error;
 
     return {
       hasResponded: false,
@@ -1410,4 +1414,41 @@ export async function getCommunitySurveyAdminExportData(
       })),
     },
   };
+}
+
+// Only this explicitly selected single-choice survey exposes public aggregates.
+// No respondent ids, hashes, text answers or per-option absolute counts leave the server.
+export async function getHomeCommunitySurveyResults(survey: CommunitySurveyPublic) {
+  if (survey.surveyKey !== HOME_SURVEY_KEY || survey.questions.length !== 1 || survey.questions[0].type !== 'single') {
+    throw new Error('Unsupported Home survey shape');
+  }
+  const question = survey.questions[0];
+  const counts = await Promise.all(question.options.map(async option => {
+    const { count, error } = await supabaseAdmin
+      .from('community_survey_answers')
+      .select('id, community_survey_responses!inner(survey_key)', { count: 'exact', head: true })
+      .eq('community_survey_responses.survey_key', survey.surveyKey)
+      .eq('question_id', question.questionId)
+      .eq('option_id', option.optionId);
+    if (error || count === null) throw error || new Error('Survey counts unavailable');
+    return count;
+  }));
+  const percentages = surveyPercentages(counts);
+  return {
+    totalParticipants: counts.reduce((sum, count) => sum + count, 0),
+    options: question.options.map((option, index) => ({ ...option, percentage: percentages[index] })),
+  };
+}
+
+export async function getCommunitySurveyAdminList() {
+  const documents = await getPublishedReadClient().fetch(`
+    *[_type == "communitySurvey" && defined(surveyKey) && !(_id in path("drafts.**"))]
+      | order(language desc, _createdAt desc) { surveyKey, title, language, status }
+  `);
+  const surveys = new Map<string, { surveyKey: string; title: string }>();
+  for (const document of documents || []) {
+    const key = normalizeTechnicalId(document.surveyKey);
+    if (key && !surveys.has(key)) surveys.set(key, { surveyKey: key, title: String(document.title || key) });
+  }
+  return [...surveys.values()];
 }

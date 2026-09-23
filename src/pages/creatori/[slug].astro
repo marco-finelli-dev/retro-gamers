@@ -1,11 +1,14 @@
 ---
+import CountryFlag from '../../components/common/CountryFlag.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArchiveCard from '../../components/archive/ArchiveCard.astro';
+import EntityArticleCard from '../../components/archive/EntityArticleCard.astro';
+import EntityBreadcrumb from '../../components/common/EntityBreadcrumb.astro';
+import '../../styles/components/entity-details.css';
+import '../../styles/components/reviews-listing.css';
 import Pagination from '../../components/common/Pagination.astro';
 import { PortableText } from 'astro-portabletext';
-import { urlFor } from '../../lib/image';
+import { urlFor, getLogoUrl } from '../../lib/image';
 import {
-  countryCodeToFlag,
   getArticlesReferencingCreator,
   getCreatorBySlug,
   mergeCreatorRelatedArticles
@@ -47,7 +50,6 @@ const portrait = creator.portrait?.asset
   : '';
 
 const pageTitle = creator.seoTitle || creator.name;
-const countryFlag = countryCodeToFlag(creator.countryCode);
 const pageDescription =
   creator.metaDescription ||
   shortBio ||
@@ -79,7 +81,7 @@ function getInitials(name = '') {
   news={grouped.allNews}
   title={pageTitle}
   description={pageDescription}
-  image={portrait || '/og-image.jpg'}
+  image={portrait || '/og-image.webp'}
   canonical={`https://www.retro-gamers.it/creatori/${creator.slug}/`}
   languageSwitch={`/en/creators/${creator.slug}/`}
   alternateLanguages={[
@@ -87,7 +89,8 @@ function getInitials(name = '') {
     { lang: 'en', url: `https://www.retro-gamers.it/en/creators/${creator.slug}/` }
   ]}
 >
-  <div class="creators-page creator-detail-page">
+  <div class="creators-page creator-detail-page entity-detail">
+    <EntityBreadcrumb family="creator" name={creator.name} lang="it" />
     <section class="creator-detail-hero">
       <figure class="creator-detail-hero__portrait">
         {portrait ? (
@@ -117,7 +120,7 @@ function getInitials(name = '') {
           {creator.role && <span class="creator-chip">{creator.role}</span>}
           {creator.country && (
             <span class="creator-chip">
-              {countryFlag && <span aria-hidden="true">{countryFlag}</span>}
+              <CountryFlag code={creator.countryCode} />
               {creator.country}
             </span>
           )}
@@ -129,7 +132,7 @@ function getInitials(name = '') {
     <section class="creator-detail-layout">
       <article class="creator-panel creator-profile">
         <span class="creator-section__eyebrow">Biografia</span>
-        <h2>Profilo editoriale</h2>
+        <h2><span class="entity-detail__mobile">Profilo editoriale</span><span class="entity-detail__desktop">Biografia</span></h2>
 
         {profile.length > 0 ? (
           <div class="creator-profile__content">
@@ -142,9 +145,9 @@ function getInitials(name = '') {
         )}
       </article>
 
-      <aside class="creator-facts" aria-label="Informazioni creator">
+      <aside class="creator-facts public-context-sidebar" aria-label="Informazioni creator">
         {creator.knownFor?.length > 0 && (
-          <section class="creator-fact-card">
+          <section class="creator-fact-card public-context-group">
             <h3>Opere principali</h3>
             <ul class="creator-chip-list">
               {creator.knownFor.map((item) => (
@@ -155,7 +158,7 @@ function getInitials(name = '') {
         )}
 
         {relatedCompanies.length > 0 ? (
-          <section class="creator-fact-card">
+          <section class="creator-fact-card public-context-group">
             <h3>Aziende</h3>
             <ul class="creator-chip-list">
               {relatedCompanies.map((company) => (
@@ -168,7 +171,7 @@ function getInitials(name = '') {
             </ul>
           </section>
         ) : creator.companies?.length > 0 && (
-          <section class="creator-fact-card">
+          <section class="creator-fact-card public-context-group">
             <h3>Aziende</h3>
             <ul class="creator-chip-list">
               {creator.companies.map((item) => (
@@ -179,15 +182,15 @@ function getInitials(name = '') {
         )}
 
         {creator.relatedPlatforms?.length > 0 && (
-          <section class="creator-fact-card">
+          <section class="creator-fact-card public-context-group">
             <h3>Piattaforme collegate</h3>
             <ul class="creator-platform-list">
               {creator.relatedPlatforms.map((platform) => {
                 const logo = platform.logo?.asset
-                  ? urlFor(platform.logo).width(360).height(140).fit('max').auto('format').url()
+                  ? getLogoUrl(platform.logo)
                   : '';
                 const logoLight = platform.logoLight?.asset
-                  ? urlFor(platform.logoLight).width(360).height(140).fit('max').auto('format').url()
+                  ? getLogoUrl(platform.logoLight)
                   : '';
                 const primaryLogo = logo || logoLight;
                 const themeLightLogo = logoLight || primaryLogo;
@@ -240,7 +243,7 @@ function getInitials(name = '') {
     </section>
 
     {relatedArticles.length > 0 && (
-      <section class="creator-related" aria-labelledby="creator-related-title">
+      <section class="creator-related reviews-listing" aria-labelledby="creator-related-title">
         <div class="creator-related__header">
           <span class="creator-section__eyebrow">Archivio</span>
           <h2 id="creator-related-title">Articoli collegati</h2>
@@ -249,11 +252,12 @@ function getInitials(name = '') {
 
         <div class="creator-related__grid">
           {relatedArticlesPageItems.map((post) => (
-            <ArchiveCard post={post} lang="it" />
+            <EntityArticleCard post={post} lang="it" />
           ))}
         </div>
 
         <Pagination
+          numbered
           currentPage={relatedArticlesPage}
           totalPages={relatedArticlesTotalPages}
           getPageUrl={getRelatedArticlesPageUrl}

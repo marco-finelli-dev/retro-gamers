@@ -1,5 +1,7 @@
 ---
 import '../../styles/components/platforms.css';
+import '../../styles/components/platforms-refresh.css';
+import PlatformBrowser from './PlatformBrowser.astro';
 import {
   platformTypeLabels,
   platformTypeDescriptions
@@ -66,18 +68,21 @@ const getCountLabel = (count) =>
   `${count} ${count === 1 ? labels.countSingular : labels.countPlural}`;
 ---
 
-<div class="platforms-page">
+<div class="platforms-page platform-listing">
   <div class="container">
 
     <section class="platforms-hero">
       <div class="platforms-hero__inner">
         <span>{labels.kicker}</span>
-        <h1>{labels.title}</h1>
-        <p>{labels.description}</p>
+        <h1 class="platform-mobile">{labels.title}</h1>
+        <h1 class="platform-desktop">{isEn ? 'Platforms' : 'Piattaforme'}</h1>
+        <p class="platform-mobile">{labels.description}</p>
+        <p class="platform-desktop">{isEn ? 'Consoles, computers and arcade systems: history, specifications and games.' : 'Console, computer e sistemi arcade: storia, caratteristiche e giochi.'}</p>
       </div>
     </section>
 
-    <section class="platform-type-grid">
+    <PlatformBrowser platforms={platforms} lang={lang} />
+    <section class="platform-type-grid platform-mobile">
 
       {types.map((item) => {
         const count = countByType(item.type);

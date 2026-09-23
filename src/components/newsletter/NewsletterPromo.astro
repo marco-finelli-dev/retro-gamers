@@ -25,8 +25,8 @@ const copy = {
   it: {
     home: {
       kicker: 'Newsletter',
-      title: 'Ricevi il meglio di Retro-Gamers',
-      text: 'Una mail periodica con recensioni, speciali, guide e aggiornamenti dalla community. Niente spam, solo retro-gaming scelto con cura.',
+      title: 'Resta aggiornato su Retro-Gamers',
+      text: 'Articoli, recensioni e speciali, direttamente via email.',
       cta: 'Iscriviti alla newsletter',
     },
     'article-end': {
@@ -51,8 +51,8 @@ const copy = {
   en: {
     home: {
       kicker: 'Newsletter',
-      title: 'Get the best of Retro-Gamers',
-      text: 'A periodic email with reviews, features, guides and community updates. No spam, just carefully selected retro-gaming.',
+      title: 'Stay up to date with Retro-Gamers',
+      text: 'Articles, reviews and features, delivered straight to your inbox.',
       cta: 'Subscribe to the newsletter',
     },
     'article-end': {
@@ -77,6 +77,7 @@ const copy = {
 } as const;
 
 const t = copy[currentLang][variant];
+const useRefreshCta = variant === 'home' || variant === 'article-end';
 const classes = [
   'newsletter-promo',
   `newsletter-promo--${variant}`,
@@ -91,7 +92,7 @@ const classes = [
     <p>{t.text}</p>
   </div>
 
-  <a class="newsletter-promo__cta" href={newsletterHref}>
-    {t.cta}
+  <a class={useRefreshCta ? 'rg-cta-filled-raised rg-cta-filled-raised--primary' : 'newsletter-promo__cta'} href={newsletterHref}>
+    {useRefreshCta ? <span class="rg-cta-filled-raised__face">{t.cta}</span> : t.cta}
   </a>
 </aside>

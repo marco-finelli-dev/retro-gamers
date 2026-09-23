@@ -1,5 +1,5 @@
 ---
-const { post, comments = [] } = Astro.props;
+const { post, comments = [], placement = 'default' } = Astro.props;
 
 const lang = post?.language === 'en' ? 'en' : 'it';
 
@@ -21,17 +21,16 @@ const labels = {
     title: 'Memorie dei lettori',
     countSingular: 'memoria',
     countPlural: 'memorie',
-    intro:
-      'Commenti, ricordi e punti di vista restano qui, accanto all’articolo.',
+    intro: 'Commenta l’articolo e partecipa alla discussione.',
     comment: 'Commento',
-    submit: 'Invia commento',
+    submit: 'Invia',
+    cancelCompose: 'Annulla',
     moderation:
       'I commenti vengono moderati prima della pubblicazione. Usa un tono civile e resta in tema con l’articolo.',
     rulesLink: 'Regolamento commenti',
     empty:
       'Sii il primo a lasciare un ricordo su questo articolo.',
     loading: 'Caricamento commenti...',
-    leaveComment: 'Lascia un commento',
     reply: 'Rispondi',
     replyTo: 'Risposta a',
     cancelReply: 'Annulla risposta',
@@ -48,8 +47,9 @@ const labels = {
     guestIdentity:
       'Hai già partecipato come {name}. Per mantenere coerente la tua identità nella community, continuerai a usare questo nome.',
     guestSuccessCta: 'Crea il tuo account',
-    notifyReplies: 'Avvisami se qualcuno risponde al mio commento',
-    notifyThread: 'Avvisami se continua la discussione',
+    notificationsLabel: 'Ricevi notifiche per:',
+    notifyReplies: 'Risposte al mio commento',
+    notifyThread: 'Nuovi commenti nella discussione',
     sent: 'Commento inviato. Sarà visibile dopo la moderazione.',
     error: 'Qualcosa è andato storto. Riprova.',
     reader: 'Lettore',
@@ -68,26 +68,21 @@ const labels = {
     reportSuccess: 'Segnalazione inviata. Grazie, la controlleremo.',
     reportDuplicate: 'Hai già segnalato questo commento.',
     reportError: 'Non è stato possibile inviare la segnalazione. Riprova.',
-    sortLabel: 'Ordina',
-    sortOldest: 'Meno recenti',
-    sortNewest: 'Più recenti',
-    sortLiked: 'Più apprezzati'
   },
   en: {
     title: 'Reader memories',
     countSingular: 'memory',
     countPlural: 'memories',
-    intro:
-      'Comments, memories and points of view stay here, beside the article.',
+    intro: 'Comment on the article and join the discussion.',
     comment: 'Comment',
-    submit: 'Submit comment',
+    submit: 'Submit',
+    cancelCompose: 'Cancel',
     moderation:
       'Comments are reviewed before publication. Please keep the discussion respectful and on topic.',
     rulesLink: 'Comment rules',
     empty:
       'Be the first to leave a memory on this article.',
     loading: 'Loading comments...',
-    leaveComment: 'Leave a comment',
     reply: 'Reply',
     replyTo: 'Reply to',
     cancelReply: 'Cancel reply',
@@ -104,8 +99,9 @@ const labels = {
     guestIdentity:
       'You previously joined the discussion as {name}. To keep your community identity consistent, you will continue using this name.',
     guestSuccessCta: 'Create your account',
-    notifyReplies: 'Notify me when someone replies to my comment',
-    notifyThread: 'Notify me if the discussion continues',
+    notificationsLabel: 'Get notifications for:',
+    notifyReplies: 'Replies to my comment',
+    notifyThread: 'New comments in the discussion',
     sent: 'Comment sent. It will appear after moderation.',
     error: 'Something went wrong. Please try again.',
     reader: 'Reader',
@@ -124,10 +120,6 @@ const labels = {
     reportSuccess: 'Report sent. Thank you, we will review it.',
     reportDuplicate: 'You have already reported this comment.',
     reportError: 'The report could not be sent. Please try again.',
-    sortLabel: 'Sort',
-    sortOldest: 'Oldest first',
-    sortNewest: 'Newest first',
-    sortLiked: 'Most liked'
   }
 };
 
@@ -171,10 +163,14 @@ const legacyComments = Array.isArray(comments)
   : [];
 
 const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c');
+const commentsClass = [
+  'article-comments',
+  placement === 'sidebar' ? 'article-comments--sidebar' : ''
+].filter(Boolean).join(' ');
 ---
 
 <section
-  class="article-comments"
+  class={commentsClass}
   id="comments"
   data-rg-comments
   data-article-slug={articleSlug}
@@ -209,11 +205,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     </div>
   </div>
 
-  <details class="article-comments__composer" data-comments-composer hidden>
-    <summary>
-      <span>{t.leaveComment}</span>
-    </summary>
-
+  <div class="article-comments__composer" data-comments-composer hidden>
     <form class="article-comments__form" data-comments-form>
       <input type="hidden" name="parentId" value="" data-parent-comment-id />
 
@@ -271,58 +263,47 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         </label>
       </div>
 
-      <label>
-        <span>{t.comment}</span>
+      <label class="article-comments__body-field">
+        <span class="article-comments__body-label">{t.comment}</span>
         <textarea
           name="body"
           required
           minlength="3"
           maxlength="3000"
-          rows="6"
+          rows="3"
+          placeholder={lang === 'en' ? 'Write a comment…' : 'Scrivi un commento…'}
           data-comment-textarea
         ></textarea>
       </label>
 
       <div class="article-comments__registered-options" data-registered-options>
-        <label class="article-comments__checkbox">
-          <input type="checkbox" name="notifyReplies" checked />
-          <span>{t.notifyReplies}</span>
-        </label>
+        <span class="article-comments__notifications-label">{t.notificationsLabel}</span>
+        <div class="article-comments__notification-choices">
+          <label class="article-comments__checkbox">
+            <input type="checkbox" name="notifyReplies" checked />
+            <span>{t.notifyReplies}</span>
+          </label>
 
-        <label class="article-comments__checkbox">
-          <input type="checkbox" name="notifyThread" />
-          <span>{t.notifyThread}</span>
-        </label>
+          <label class="article-comments__checkbox">
+            <input type="checkbox" name="notifyThread" />
+            <span>{t.notifyThread}</span>
+          </label>
+        </div>
       </div>
 
       <div class="article-comments__actions">
         <small>{t.moderation}</small>
+        <button type="button" class="article-comments__cancel-compose" data-cancel-compose>
+          {t.cancelCompose}
+        </button>
         <button type="submit">{t.submit}</button>
       </div>
     </form>
-  </details>
+  </div>
 
   <p class="article-comments__guest-success" data-guest-success hidden>
     <a href={registerHref}>{t.guestSuccessCta}</a>
   </p>
-
-  <div class="article-comments__toolbar" data-comments-toolbar hidden>
-    <span>{t.sortLabel}</span>
-
-    <div class="article-comments__sort" role="group" aria-label={t.sortLabel}>
-      <button type="button" data-comments-sort="oldest" aria-pressed="true">
-        {t.sortOldest}
-      </button>
-
-      <button type="button" data-comments-sort="newest" aria-pressed="false">
-        {t.sortNewest}
-      </button>
-
-      <button type="button" data-comments-sort="liked" aria-pressed="false">
-        {t.sortLiked}
-      </button>
-    </div>
-  </div>
 
   <div class="article-comments__list" data-comments-list>
     <p class="article-comments__empty">{t.loading}</p>
@@ -362,6 +343,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       directLink: 'Link diretto al commento',
       targetLoading: 'Caricamento commento...',
       report: 'Segnala',
+      options: 'Opzioni messaggio',
       reportReason: 'Motivo della segnalazione (opzionale)',
       reportPlaceholder: 'Aggiungi un contesto utile per la redazione.',
       reportSubmit: 'Invia segnalazione',
@@ -381,10 +363,6 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       editSuccess: 'Commento aggiornato.',
       editExpired: 'Il tempo per modificare questo commento è scaduto.',
       editError: 'Non è stato possibile aggiornare il commento. Riprova.',
-      sortLabel: 'Ordina',
-      sortOldest: 'Meno recenti',
-      sortNewest: 'Più recenti',
-      sortLiked: 'Più apprezzati'
     },
     en: {
       commentSingular: 'memory',
@@ -412,6 +390,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       directLink: 'Direct link to comment',
       targetLoading: 'Loading comment...',
       report: 'Report',
+      options: 'Message options',
       reportReason: 'Reason for the report (optional)',
       reportPlaceholder: 'Add useful context for the editorial team.',
       reportSubmit: 'Send report',
@@ -431,10 +410,6 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       editSuccess: 'Comment updated.',
       editExpired: 'The edit window for this comment has expired.',
       editError: 'The comment could not be updated. Please try again.',
-      sortLabel: 'Sort',
-      sortOldest: 'Oldest first',
-      sortNewest: 'Newest first',
-      sortLiked: 'Most liked'
     }
   };
 
@@ -788,15 +763,6 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
     return `
       <div class="article-comment__report" data-comment-report="${escapeHtml(comment.id)}">
-        <button
-          class="article-comment__report-toggle"
-          type="button"
-          data-report-comment="${escapeHtml(comment.id)}"
-          aria-expanded="false"
-        >
-          ${escapeHtml(labels.report)}
-        </button>
-
         <form class="article-comment__report-form" data-report-form hidden>
           <label>
             <span>${escapeHtml(labels.reportReason)}</span>
@@ -824,15 +790,6 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
     return `
       <div class="article-comment__edit" data-comment-edit="${escapeHtml(comment.id)}">
-        <button
-          class="article-comment__edit-toggle"
-          type="button"
-          data-edit-comment="${escapeHtml(comment.id)}"
-          aria-expanded="false"
-        >
-          ${escapeHtml(labels.edit)}
-        </button>
-
         <form class="article-comment__edit-form" data-edit-form hidden>
           <label>
             <span>${escapeHtml(labels.editLabel)}</span>
@@ -856,23 +813,91 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     `;
   };
 
-  const renderCommentActions = (comment, labels) => {
-    const editControls = renderEditControls(comment, labels);
-    const reportControls = renderReportControls(comment, labels);
-    const reactionControls = renderReactionControls(comment, labels);
+  const renderCommentOptions = (comment, labels) => {
+    const canEdit = !comment.isLegacy && Boolean(comment.id) && Boolean(comment.canEdit);
+    const canReport = !comment.isLegacy && Boolean(comment.id) && !comment.isOwnComment && Boolean(comment.canReport);
 
-    if (!editControls && !reportControls && !reactionControls) return '';
+    if (!canEdit && !canReport) return '';
 
     return `
-      <div class="article-comment__secondary-actions">
-        ${editControls}
-        ${reportControls}
+      <details class="article-comment__options">
+        <summary aria-label="${escapeHtml(labels.options)}">
+          <span class="article-comment__options-icon" aria-hidden="true"></span>
+        </summary>
+
+        <div class="article-comment__options-menu">
+          ${canEdit ? `
+            <button
+              type="button"
+              data-edit-comment="${escapeHtml(comment.id)}"
+              aria-expanded="false"
+            >
+              ${escapeHtml(labels.edit)}
+            </button>
+          ` : ''}
+          ${canReport ? `
+            <button
+              type="button"
+              data-report-comment="${escapeHtml(comment.id)}"
+              aria-expanded="false"
+            >
+              ${escapeHtml(labels.report)}
+            </button>
+          ` : ''}
+        </div>
+      </details>
+    `;
+  };
+
+  const renderReplyControl = (comment, authorName, labels, canReply) =>
+    canReply ? `
+      <button
+        class="article-comment__action-control article-comment__reply-button"
+        type="button"
+        data-reply-to-comment="${escapeHtml(comment.id)}"
+        data-reply-to-author="${escapeHtml(authorName)}"
+      >
+        ${escapeHtml(labels.reply)}
+      </button>
+    ` : '';
+
+  const renderCommentTopActions = (comment, labels, messageMetadata = '') => {
+    const reactionControls = renderReactionControls(comment, labels);
+    const optionsControl = renderCommentOptions(comment, labels);
+
+    if (!messageMetadata && !reactionControls && !optionsControl) return '';
+
+    return `
+      <div class="article-comment__top-actions">
+        ${messageMetadata}
         ${reactionControls}
+        ${optionsControl}
       </div>
     `;
   };
 
-  const renderReply = (reply, language, labels) => {
+  const renderCommentActions = (comment, labels, options = {}) => {
+    const editControls = renderEditControls(comment, labels);
+    const reportControls = renderReportControls(comment, labels);
+    const replyControl = renderReplyControl(
+      comment,
+      options.authorName || '',
+      labels,
+      Boolean(options.canReply)
+    );
+
+    if (!editControls && !reportControls && !replyControl) return '';
+
+    return `
+      <div class="article-comment__secondary-actions">
+        ${replyControl}
+        ${editControls}
+        ${reportControls}
+      </div>
+    `;
+  };
+
+  const renderReply = (reply, language, labels, parentAuthorName) => {
     const profile = reply.profiles || {};
     const isGuest = reply.authorType === 'guest' || profile.is_guest;
     const authorName = getAuthorName(profile, labels.reader);
@@ -891,29 +916,42 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         class="article-comment__editor-reply"
         ${reply.id ? `id="${escapeHtml(getCommentAnchorId(reply))}" data-comment-id="${escapeHtml(reply.id)}"` : ''}
       >
-        <div class="article-comment__editor-reply-header">
-          ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl, communityPoints, labels)}
+        <div class="article-comment__layout article-comment__layout--reply">
+          <header class="article-comment__identity article-comment__editor-reply-header">
+            ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl, communityPoints, labels)}
 
-          <div class="article-comment__editor-reply-meta">
-            <strong class="article-comment__author-row">
-              ${renderAuthorName(authorName, profileHref)}
-              ${roleBadge}
+            <div class="article-comment__identity-meta article-comment__editor-reply-meta">
+              <strong class="article-comment__author-row">
+                ${renderAuthorName(authorName, profileHref)}
+                ${roleBadge}
+              </strong>
+
               ${communityLevel}
-            </strong>
-
-            <div class="article-comment__editor-reply-submeta">
-              ${renderCommentTime(reply, language, labels)}
-
-              ${statusBadge}
-
               ${renderBadge(badgeLabel, profile?.user_badges)}
+            </div>
+          </header>
+
+          <div class="article-comment__message">
+            <div class="article-comment__message-header">
+              ${renderCommentTopActions(
+                reply,
+                labels,
+                `${renderCommentTime(reply, language, labels)}${statusBadge}`
+              )}
+            </div>
+
+            <div class="article-comment__message-content">
+              <p class="article-comment__reply-context">
+                <span aria-hidden="true">↳</span>
+                ${escapeHtml(labels.replyTo)} ${escapeHtml(parentAuthorName)}
+              </p>
+
+              ${renderCommentBody(reply.body)}
+
+              ${renderCommentActions(reply, labels)}
             </div>
           </div>
         </div>
-
-        ${renderCommentBody(reply.body)}
-
-        ${renderCommentActions(reply, labels)}
       </div>
     `;
   };
@@ -936,64 +974,48 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const communityPoints = isLegacy || isGuest ? 0 : getCommunityPoints(profile);
     const hasOwnReply = replies.some((reply) => Boolean(reply.isOwnComment));
 
-    const canReplyToComment = canReply && !isLegacy && comment.status === 'approved' && !hasOwnReply;
+    const canReplyToComment = canReply && !isLegacy && !comment.isOwnComment && comment.status === 'approved' && !hasOwnReply;
 
     return `
       <article
         class="article-comment${highlightedClass}"
         ${comment.id ? `id="${escapeHtml(getCommentAnchorId(comment))}" data-comment-id="${escapeHtml(comment.id)}"` : ''}
       >
-        <header class="article-comment__header">
-          ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl, communityPoints, labels)}
+        <div class="article-comment__layout">
+          <header class="article-comment__identity article-comment__header">
+            ${renderAvatar(initial, avatarLabel, profileHref, avatarUrl, communityPoints, labels)}
 
-          <div class="article-comment__meta">
-            <h3 class="article-comment__author-row">
-              ${renderAuthorName(authorName, profileHref)}
-              ${roleBadge}
+            <div class="article-comment__identity-meta article-comment__meta">
+              <h3 class="article-comment__author-row">
+                ${renderAuthorName(authorName, profileHref)}
+                ${roleBadge}
+              </h3>
+
               ${communityLevel}
-            </h3>
-
-            ${renderCommentTime(comment, language, labels)}
-
-            ${statusBadge}
-
-            ${renderBadge(badgeLabel, profile?.user_badges)}
-          </div>
-
-          ${canReplyToComment ? `
-            <div class="article-comment__reactions">
-              <button
-                class="article-comment__reply-button"
-                type="button"
-                data-reply-to-comment="${escapeHtml(comment.id)}"
-                data-reply-to-author="${escapeHtml(authorName)}"
-              >
-                ${escapeHtml(labels.reply)}
-              </button>
+              ${renderBadge(badgeLabel, profile?.user_badges)}
             </div>
-          ` : ''}
-        </header>
+          </header>
 
-        ${renderCommentBody(comment.body)}
+          <div class="article-comment__message">
+            <div class="article-comment__message-header">
+              ${renderCommentTopActions(
+                comment,
+                labels,
+                `${renderCommentTime(comment, language, labels)}${statusBadge}`
+              )}
+            </div>
 
-        ${canReplyToComment ? `
-          <div class="article-comment__mobile-actions">
-            <button
-              class="article-comment__mobile-reply-button"
-              type="button"
-              data-reply-to-comment="${escapeHtml(comment.id)}"
-              data-reply-to-author="${escapeHtml(authorName)}"
-            >
-              ${escapeHtml(labels.reply)}
-            </button>
+            <div class="article-comment__message-content">
+              ${renderCommentBody(comment.body)}
+
+              ${renderCommentActions(comment, labels, { authorName, canReply: canReplyToComment })}
+            </div>
           </div>
-        ` : ''}
-
-        ${renderCommentActions(comment, labels)}
+        </div>
 
         ${replies.length > 0 ? `
           <div class="article-comment__editor-replies">
-            ${replies.map((reply) => renderReply(reply, language, labels)).join('')}
+            ${replies.map((reply) => renderReply(reply, language, labels, authorName)).join('')}
           </div>
         ` : ''}
       </article>
@@ -1013,8 +1035,6 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const statusNode = root.querySelector('[data-comments-status]');
     const authBox = root.querySelector('[data-comments-auth-box]');
     const composer = root.querySelector('[data-comments-composer]');
-    const toolbarNode = root.querySelector('[data-comments-toolbar]');
-    const sortButtons = root.querySelectorAll('[data-comments-sort]');
     const form = root.querySelector('[data-comments-form]');
     const currentUserNode = root.querySelector('[data-current-user]');
     const guestIntro = root.querySelector('[data-guest-intro]');
@@ -1029,6 +1049,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     const replyingTo = root.querySelector('[data-replying-to]');
     const replyingToText = root.querySelector('[data-replying-to-text]');
     const cancelReply = root.querySelector('[data-cancel-reply]');
+    const cancelCompose = root.querySelector('[data-cancel-compose]');
     const textarea = root.querySelector('[data-comment-textarea]');
 
     let currentProfile = null;
@@ -1039,13 +1060,12 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     let lastPermalinkTarget = null;
     let permalinkScrollAttempts = 0;
 
-    const allowedSorts = new Set(['oldest', 'newest', 'liked']);
-    const readCommentSort = () => {
-      const sort = new URL(window.location.href).searchParams.get('commentsSort') || 'oldest';
 
-      return allowedSorts.has(sort) ? sort : 'oldest';
+    const setComposerExpanded = (expanded) => {
+      if (!composer) return;
+
+      composer.classList.toggle('is-expanded', expanded);
     };
-    let currentSort = readCommentSort();
 
     const setStatus = (message, type = 'ok') => {
       if (!statusNode) return;
@@ -1057,10 +1077,12 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
     };
 
     const updateCount = (count) => {
-      if (!countNode) return;
-
       const label = count === 1 ? labels.commentSingular : labels.commentPlural;
-      countNode.textContent = `${count} ${label}`;
+
+      if (countNode) {
+        countNode.textContent = `${count} ${label}`;
+      }
+
     };
 
     const getCommentHashTargetId = () => {
@@ -1143,52 +1165,10 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       });
     };
 
-    const getCommentTime = (comment) =>
-      comment?.created_at ? new Date(comment.created_at).getTime() : 0;
-
-    const sortRootComments = (comments) =>
-      [...comments].sort((a, b) => {
-        const aTime = getCommentTime(a);
-        const bTime = getCommentTime(b);
-        const idCompare = String(a.id || '').localeCompare(String(b.id || ''));
-
-        if (currentSort === 'newest') {
-          return (bTime - aTime) || idCompare;
-        }
-
-        if (currentSort === 'liked') {
-          const likeCompare = getReactionCount(b, 'likeCount') - getReactionCount(a, 'likeCount');
-
-          return likeCompare || (aTime - bTime) || idCompare;
-        }
-
-        return (aTime - bTime) || idCompare;
-      });
-
-    const updateSortControls = () => {
-      sortButtons.forEach((button) => {
-        const isActive = button.dataset.commentsSort === currentSort;
-        button.classList.toggle('is-active', isActive);
-        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-      });
-    };
-
-    const updateSortUrl = () => {
-      const url = new URL(window.location.href);
-      url.searchParams.set('commentsSort', currentSort);
-      url.hash = window.location.hash;
-      window.history.replaceState(window.history.state, '', url);
-    };
-
     const renderComments = (comments) => {
-      const mergedComments = sortRootComments(dedupeComments([...legacyComments, ...comments]));
+      const mergedComments = sortComments(dedupeComments([...legacyComments, ...comments]));
 
       updateCount(mergedComments.length);
-      updateSortControls();
-
-      if (toolbarNode) {
-        toolbarNode.hidden = mergedComments.length < 2;
-      }
 
       if (!listNode) return;
 
@@ -1387,8 +1367,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       if (!form) return;
 
       form.hidden = true;
-      const wrapper = form.closest('[data-comment-report]');
-      const toggle = wrapper?.querySelector('[data-report-comment]');
+      const commentNode = form.closest('[data-comment-id]');
+      const toggle = commentNode?.querySelector('[data-report-comment]');
       toggle?.setAttribute('aria-expanded', 'false');
       setReportMessage(form, '');
     };
@@ -1415,9 +1395,8 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       if (!form) return;
 
       form.hidden = !isOpen;
-      const wrapper = form.closest('[data-comment-edit]');
-      const toggle = wrapper?.querySelector('[data-edit-comment]');
       const commentNode = form.closest('[data-comment-id]');
+      const toggle = commentNode?.querySelector('[data-edit-comment]');
       const bodyNode = commentNode?.querySelector('[data-comment-body]');
 
       toggle?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
@@ -1429,6 +1408,12 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       if (!isOpen) {
         setEditMessage(form, '');
       }
+    };
+
+    const closeCommentOptions = (control) => {
+      const options = control?.closest('.article-comment__options');
+
+      if (options) options.open = false;
     };
 
     const closeEditForm = (form) => {
@@ -1456,6 +1441,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       const willOpen = form.hidden;
       closeOtherEditForms(form);
       setEditFormOpen(form, willOpen);
+      closeCommentOptions(button);
 
       if (willOpen) {
         form.querySelector('textarea')?.focus();
@@ -1476,6 +1462,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       closeOtherReportForms(form);
       form.hidden = !willOpen;
       button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+      closeCommentOptions(button);
 
       if (willOpen) {
         form.querySelector('textarea')?.focus();
@@ -1604,7 +1591,10 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         : null;
 
       if (authBox) authBox.hidden = canComment;
-      if (composer) composer.hidden = !canComment;
+      if (composer) {
+        composer.hidden = !canComment;
+        if (!canComment) setComposerExpanded(false);
+      }
       if (guestIntro) guestIntro.hidden = !isGuestComposer;
       if (guestFields) guestFields.hidden = !isGuestComposer;
       if (registeredOptions) registeredOptions.hidden = isGuestComposer;
@@ -1715,8 +1705,7 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         form.reset();
         if (parentInput) parentInput.value = '';
         if (replyingTo) replyingTo.hidden = true;
-        if (composer) composer.open = false;
-
+        setComposerExpanded(false);
         setStatus(result.message || labels.sent, 'ok');
 
         if (isGuestComposer) {
@@ -1752,6 +1741,29 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
       } finally {
         submitButton.disabled = false;
       }
+    });
+
+    root.addEventListener('click', (event) => {
+      const target = event.target;
+
+      if (!(target instanceof Element) || !target.closest('.article-comment__options')) {
+        root.querySelectorAll('.article-comment__options[open]').forEach((options) => {
+          options.open = false;
+        });
+      }
+    });
+
+    root.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+
+      const options = event.target instanceof Element
+        ? event.target.closest('.article-comment__options[open]')
+        : null;
+
+      if (!options) return;
+
+      options.open = false;
+      options.querySelector('summary')?.focus();
     });
 
     listNode?.addEventListener('click', (event) => {
@@ -1817,12 +1829,26 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
         replyingTo.hidden = false;
       }
 
-      if (composer) {
-        composer.hidden = false;
-        composer.open = true;
-      }
+      if (composer) composer.hidden = false;
+      setComposerExpanded(true);
 
       textarea?.focus();
+    });
+
+    textarea?.addEventListener('focus', () => {
+      setComposerExpanded(true);
+    });
+
+    cancelCompose?.addEventListener('click', () => {
+      const hasDraft = textarea instanceof HTMLTextAreaElement && textarea.value.trim().length > 0;
+      const hasReplyTarget = parentInput instanceof HTMLInputElement && parentInput.value.length > 0;
+
+      if (hasDraft || hasReplyTarget) {
+        textarea?.focus();
+        return;
+      }
+
+      setComposerExpanded(false);
     });
 
     listNode?.addEventListener('submit', (event) => {
@@ -1844,20 +1870,6 @@ const legacyCommentsJson = JSON.stringify(legacyComments).replace(/</g, '\\u003c
 
       event.preventDefault();
       handleReportSubmit(form);
-    });
-
-    sortButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const nextSort = button.dataset.commentsSort || 'oldest';
-
-        if (!allowedSorts.has(nextSort) || nextSort === currentSort) {
-          return;
-        }
-
-        currentSort = nextSort;
-        updateSortUrl();
-        renderComments(loadedComments);
-      });
     });
 
     cancelReply?.addEventListener('click', () => {

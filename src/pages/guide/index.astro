@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArchivePage from '../../components/archive/ArchivePage.astro';
+import EditorialListing from '../../components/archive/EditorialListing.astro';
 
 import { getAllPosts, groupPosts } from '../../lib/posts';
 import { PAGE_SIZE } from '../../lib/pagination';
@@ -35,12 +35,14 @@ const structuredData = createCollectionPageStructuredData({
   news={grouped.allNews}
   title="Guide al retro gaming"
   description="Guide pratiche per emulatori, hardware, supporti e sistemi originali, con procedure chiare per configurare, preservare e tornare a giocare."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/guide/"
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <ArchivePage
+  <EditorialListing
+      desktopTitle="Guide"
+      desktopDescription="Guide pratiche per giochi, emulatori e hardware retro."
     title="Guide al retro gaming"
     eyebrow="Manuali e percorsi"
     description="Le guide di Retro-Gamers.it raccolgono procedure pratiche per usare emulatori, configurare hardware, gestire supporti e mantenere funzionanti sistemi e giochi del passato. Ogni guida nasce da prove reali e cerca di spiegare con chiarezza passaggi, strumenti e possibili problemi, senza dare per scontate conoscenze tecniche avanzate. Dalle Compact Flash per Amiga alla configurazione dei software moderni, l’obiettivo è aiutare appassionati e nuovi utenti a conservare, comprendere e utilizzare il proprio patrimonio videoludico."

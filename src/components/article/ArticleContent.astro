@@ -9,6 +9,7 @@ import { getRgAffiliateProviderFromUrl } from '../../lib/analytics/client';
 import { urlFor } from '../../lib/image';
 import { getYouTubeVideoId } from '../../lib/youtube-video';
 import ConsentYouTube from '../common/ConsentYouTube.astro';
+import ArticleQuote from './ArticleQuote.astro';
 import ArticleAffiliateBox from './ArticleAffiliateBox.astro';
 
 const {
@@ -753,6 +754,13 @@ function getAffiliateProductsForBlock(block, articlePost) {
       if (affiliateProducts.length === 0) return null;
 
       return <ArticleAffiliateBox post={post} products={affiliateProducts} />;
+    }
+
+    if (block._type === 'quote') {
+      const paragraphs = (Array.isArray(block.content) ? block.content : [])
+        .filter(item => item?._type === 'block')
+        .map(item => renderBlockChildren(item));
+      return <ArticleQuote paragraphs={paragraphs} attribution={block.attribution} source={block.source} />;
     }
 
     if (block._type === 'asideBox') {

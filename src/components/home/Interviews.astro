@@ -1,4 +1,5 @@
 ---
+import '../../styles/components/home-headings.css';
 import '../../styles/components/interviews.css';
 import { urlFor } from '../../lib/image';
 import { getArchiveUrl, getPostUrl } from '../../lib/routes';
@@ -7,38 +8,29 @@ import CommentCountBadge from '../common/CommentCountBadge.astro';
 const { posts = [], lang = 'it' } = Astro.props;
 
 const isEn = lang === 'en';
-const items = posts.slice(0, 3);
-const mainInterview = items[0] || null;
-const secondaryInterviews = items.slice(1, 3);
+const [mainInterview, ...secondaryInterviews] = posts.slice(0, 5);
 
 const labels = {
   title: isEn ? 'Interviews' : 'Interviste',
-  eyebrow: isEn ? 'Conversations' : 'Voci dal settore',
-  description: isEn
-    ? 'Conversations with developers, authors and people who shaped retro-gaming culture.'
-    : 'Conversazioni con sviluppatori, autori e protagonisti della cultura videoludica.',
   all: isEn ? 'All interviews' : 'Tutte le interviste',
-  href: getArchiveUrl('interview', lang),
-  category: isEn ? 'Interview' : 'Intervista'
+  href: getArchiveUrl('interview', lang)
 };
 
-const cleanText = (value) =>
-  value?.replace(/\[…\]/g, '').trim() || '';
+const cleanText = (value?: string) => value?.replace(/\[…\]/g, '').trim() || '';
 
-const truncate = (text, length = 148) =>
-  text.length > length ? `${text.slice(0, length).trim()}…` : text;
+const getExcerpt = (post: any) =>
+  cleanText(post?.cardExcerpt) || cleanText(post?.subtitle) || cleanText(post?.excerpt);
 
-const getExcerpt = (post, length = 148) => {
-  const excerpt =
-    cleanText(post?.cardExcerpt) ||
-    cleanText(post?.subtitle) ||
-    cleanText(post?.excerpt);
+const getSecondaryMetadata = (post: any) => {
+  const category = post?.categories?.[0];
+  const platform = post?.platforms?.[0];
 
-  return excerpt ? truncate(excerpt, length) : '';
+  if (category) return isEn ? category.nameEn || category.name : category.name || category.nameEn;
+  return platform?.name || '';
 };
 
-const getImage = (post, width = 760, height = 475) => {
-  if (!post?.featuredImage?.asset) return '/og-image.jpg';
+const getImage = (post: any, width: number, height: number) => {
+  if (!post?.featuredImage?.asset) return '/og-image.webp';
 
   return urlFor(post.featuredImage)
     .width(width)
@@ -50,78 +42,71 @@ const getImage = (post, width = 760, height = 475) => {
 };
 ---
 
-{items.length > 0 && (
-  <section class={`section-box home-interviews-block ${secondaryInterviews.length === 0 ? 'home-interviews-block--single' : ''}`}>
-    <div class="home-interviews-block__header">
-      <div>
-        <span>{labels.eyebrow}</span>
-        <h2>{labels.title}</h2>
-        <p>{labels.description}</p>
-      </div>
-
-      <a href={labels.href} class="home-interviews-block__link">
-        {labels.all}
-      </a>
+{mainInterview && (
+  <section class="rg-home-interviews" aria-labelledby={`home-interviews-${lang}`}>
+    <div class="rg-module-heading rg-module-heading--centered rg-home-interviews__heading">
+      <h2 id={`home-interviews-${lang}`}>{labels.title}</h2>
     </div>
 
-    <div class="home-interviews-block__grid">
-      {mainInterview && (
-        <a href={getPostUrl(mainInterview)} class="home-interview-card home-interview-card--main">
-          <div class="home-interview-card__image">
-            <img
-              src={getImage(mainInterview, 820, 512)}
-              alt={mainInterview.featuredImage?.alt || mainInterview.title}
-              width="820"
-              height="512"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
+    <div class="rg-home-interviews__grid">
+      <a href={getPostUrl(mainInterview)} class="rg-home-interviews__feature rg-editorial-link">
+        <span class="rg-home-interviews__feature-image">
+          <img
+            src={getImage(mainInterview, 960, 540)}
+            alt={mainInterview.featuredImage?.alt || mainInterview.title}
+            width="960"
+            height="540"
+            loading="lazy"
+            decoding="async"
+          />
+        </span>
 
-          <div class="home-interview-card__content">
-            <div class="rg-card-meta-inline">
-              <span>{labels.category}</span>
-              <CommentCountBadge count={mainInterview.commentCount} lang={lang} variant="compact" />
-            </div>
-            <h3>{mainInterview.title}</h3>
+        <span class="rg-home-interviews__feature-content">
+          {(getSecondaryMetadata(mainInterview) || Number(mainInterview.commentCount || 0) > 0) && (
+            <span class="rg-home-interviews__meta rg-meta-line">
+              {getSecondaryMetadata(mainInterview) && <span class="rg-home-interviews__kicker rg-meta-primary">{getSecondaryMetadata(mainInterview)}</span>}
+              {getSecondaryMetadata(mainInterview) && Number(mainInterview.commentCount || 0) > 0 && <span class="rg-meta-separator" aria-hidden="true">·</span>}
+              <CommentCountBadge count={mainInterview.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+            </span>
+          )}
+          <strong class="rg-editorial-title">{mainInterview.title}</strong>
+          {getExcerpt(mainInterview) && <span class="rg-home-interviews__excerpt">{getExcerpt(mainInterview)}</span>}
+        </span>
+      </a>
 
-            {getExcerpt(mainInterview, 170) && (
-              <p>{getExcerpt(mainInterview, 170)}</p>
-            )}
-          </div>
-        </a>
-      )}
+      <div class="rg-home-interviews__secondary-list">
+        {secondaryInterviews.map((post: any) => {
+          const secondaryMetadata = getSecondaryMetadata(post);
 
-      {secondaryInterviews.length > 0 && (
-        <div class="home-interviews-block__side">
-          {secondaryInterviews.map((post) => (
-            <a href={getPostUrl(post)} class="home-interview-card home-interview-card--side">
-              <div class="home-interview-card__image">
-                <img
-                  src={getImage(post, 460, 288)}
-                  alt={post.featuredImage?.alt || post.title}
-                width="460"
-                height="288"
+          return (
+          <a href={getPostUrl(post)} class="rg-home-interviews__secondary rg-editorial-link">
+            <span class="rg-home-interviews__secondary-image">
+              <img
+                src={getImage(post, 320, 240)}
+                alt={post.featuredImage?.alt || post.title}
+                width="320"
+                height="240"
                 loading="lazy"
                 decoding="async"
               />
-            </div>
+            </span>
 
-            <div class="home-interview-card__content">
-              <div class="rg-card-meta-inline">
-                <span>{labels.category}</span>
-                <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" />
-              </div>
-              <h3>{post.title}</h3>
+            <span class="rg-home-interviews__secondary-content">
+              {(secondaryMetadata || Number(post.commentCount || 0) > 0) && (
+                <span class="rg-home-interviews__meta rg-meta-line">
+                  {secondaryMetadata && <span class="rg-home-interviews__kicker rg-meta-primary">{secondaryMetadata}</span>}
+                  {secondaryMetadata && Number(post.commentCount || 0) > 0 && <span class="rg-meta-separator" aria-hidden="true">·</span>}
+                  <CommentCountBadge count={post.commentCount} lang={lang} variant="compact" class="rg-meta-auxiliary" />
+                </span>
+              )}
+              <strong class="rg-editorial-title">{post.title}</strong>
+            </span>
+          </a>
+          );
+        })}
 
-                {getExcerpt(post, 118) && (
-                  <p>{getExcerpt(post, 118)}</p>
-                )}
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
+        <a href={labels.href} class="rg-archive-link rg-home-interviews__section-link">{labels.all} →</a>
+      </div>
     </div>
   </section>
 )}

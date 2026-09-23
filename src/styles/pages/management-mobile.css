@@ -1,0 +1,61 @@
+/* Private dashboards only: CommunityLayout excludes public pages and the writing workspace. */
+@media (max-width: 1199px) {
+  html[data-theme] body.rg-desktop-layout .management-area {
+    --rg-desktop-canvas-surface: var(--rg-shell-paper);
+    --rg-type-page-title: clamp(30px, 5vw, 40px);
+    --rg-type-section: 24px;
+    --rg-type-body: 16px;
+    width: calc(100% - 2 * var(--rg-layout-gutter-mobile));
+    max-width: none;
+    margin: var(--rg-space-6) auto var(--rg-space-8);
+    padding: 0;
+    gap: var(--rg-space-6);
+  }
+  html[data-theme="light"] body.rg-desktop-layout .management-area { --rg-desktop-canvas-surface: var(--rg-color-ivory); }
+  html[data-theme] body.rg-desktop-layout .management-area .editorial-article-row__menu-panel { background: var(--management-surface); border-color: var(--rg-border-neutral); box-shadow: none; max-width: 100%; }
+  html[data-theme] body.rg-desktop-layout .management-area .community-shell {
+    grid-template-columns: minmax(0, 1fr); gap: var(--rg-space-8);
+  }
+  html[data-theme] body.rg-desktop-layout .management-area .community-sidebar {
+    position: static; width: 100%; gap: var(--rg-space-6);
+  }
+  html[data-theme] body.rg-desktop-layout .management-area .community-sidebar-card {
+    padding: var(--rg-space-4) 0 0; border: 0; border-top: 1px solid var(--rg-divider-color);
+    border-radius: 0; background: none; box-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-main, .community-content-stack, .editorial-dashboard-grid, .editorial-profile-shell, .account-community-rank, .account-profile-editor__shell, .editorial-profile-editor__shell, .account-avatar-media-grid, .account-avatar-section__content) {
+    grid-template-columns: minmax(0, 1fr); min-width: 0; gap: var(--rg-space-6);
+  }
+  html[data-theme] body.rg-desktop-layout .management-area h1 { overflow-wrap: anywhere; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-card:where(:not(.admin-dashboard-header):not(.admin-surveys-header)), .editorial-card, .account-settings-section, .account-community-rank, .account-interests, .account-saved-articles, .account-interest-articles) { padding: var(--rg-space-4); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-card:has(> .account-memories-list), .community-card:has(> .account-ratings-list), .community-card:has(> .account-messages-list), .community-card:has(> .private-conversation-list), .community-card:has(> .admin-comments-list), .community-card:has(> .admin-users-list), .community-card:has(> .admin-comment-reports-list), .community-card:has(> .admin-private-reports-list), .community-card:has(> .admin-ratings-list), .editorial-article-list, .admin-dashboard-section) { padding: 0; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-section-nav, .editorial-section-nav, .account-messages-tabs, .account-memories-filters, .account-profile-editor-nav, .editorial-profile-editor-nav, .admin-dashboard-activity-tabs, .admin-surveys-tabs, .editorial-article-quick-filters) {
+    display: flex; flex-wrap: wrap; gap: var(--rg-space-2) var(--rg-space-4); max-width: 100%; min-width: 0;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-section-nav, .editorial-section-nav, .account-messages-tabs, .account-memories-filters, .account-profile-editor-nav, .editorial-profile-editor-nav, .admin-tools-sidebar__group, .admin-surveys-tabs) :is(a, button) { min-height: 44px; min-width: 44px; width: auto; flex: 0 1 auto; font-size: 14px; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(button, .editorial-button, .community-action-link, .account-actions a, .admin-newsletter-secondary, .admin-newsletter-primary, .admin-newsletter-danger) { min-height: 44px; max-width: 100%; white-space: normal; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea) { min-width: 0; max-width: 100%; font-size: 16px; min-height: 44px; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-form, .editorial-form-grid, .editorial-article-filters, .admin-users-filters, .account-interest-form, .admin-comments__filter-fields, .admin-comment-reports-filters, .admin-private-reports-filters, .admin-surveys-open-controls) {
+    grid-template-columns: minmax(0, 1fr); gap: var(--rg-space-3); min-width: 0;
+  }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-comments__filter-field { grid-column: auto; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.account-actions, .editorial-form-actions, .editorial-article-row__actions, .admin-comments-filters__actions, .admin-comment-card__actions, .admin-comment-report-card__actions, .admin-private-report-card__actions, .admin-newsletter-row-actions, .admin-dashboard-section-heading) { flex-wrap: wrap; gap: var(--rg-space-2); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.editorial-article-list__header, .editorial-article-row, .admin-rating-card, .account-rating-card, .admin-surveys-header) { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.editorial-article-row__title, .editorial-article-row h2, .editorial-article-row h3, .admin-rating-card h2, .account-rating-card h2, .admin-user-row__identity-content strong) { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-stat-list, .admin-dashboard-overview-strip, .admin-newsletter-stats, .admin-surveys-kpis, .admin-rating-card__stats, .account-rating-card__scores) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--rg-space-4); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-dashboard-todo-grid, .admin-dashboard-news-grid) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-dashboard-overview-item, .admin-dashboard-overview-item span) { min-height: 0; }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-dashboard-overview-item { grid-template-rows: auto; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.community-detail-list dd, .community-profile-card__content, .editorial-definition-list dd, .admin-dashboard-activity, .admin-comment-card, .admin-comment-report-card, .admin-private-report-card, .account-message-card, .account-memory-card) { min-width: 0; overflow-wrap: anywhere; }
+  html[data-theme] body.rg-desktop-layout .management-area .editorial-profile-media-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'current' 'upload'; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.editorial-profile-media-card, .editorial-profile-upload-dropzone) { min-height: 0; }
+  html[data-theme] body.rg-desktop-layout .management-area .admin-tools-sidebar__groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--rg-space-4); }
+  html[data-theme] body.rg-desktop-layout .management-area .editorial-dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* The dashboard already presents these exact identity and summary fields. */
+  html[data-theme] body.rg-desktop-layout .management-area:has(.editorial-dashboard-grid) .community-sidebar { display: none; }
+  html[data-theme] body.rg-desktop-layout .management-area .account-memories-filters { margin: 0 0 var(--rg-space-4); }
+  /* Keep tabular relationships; horizontal scroll belongs to this wrapper only. */
+  html[data-theme] body.rg-desktop-layout .management-area .admin-newsletter-table-wrap { width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; }
+  html[data-theme] body.rg-desktop-layout .management-area :is(.admin-comments-pagination, .account-memories-pagination, .rg-pagination) { flex-wrap: wrap; gap: var(--rg-space-3); }
+  html[data-theme] body.rg-desktop-layout .management-area :is(a, button, input, select, textarea):focus-visible { outline: var(--rg-focus-ring); outline-offset: var(--rg-focus-offset); }
+}

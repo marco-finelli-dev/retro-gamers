@@ -1,0 +1,28 @@
+---
+interface Props {
+  /** Escaped inline HTML produced by ArticleContent's Portable Text renderer. */
+  paragraphs: string[];
+  attribution?: string;
+  source?: string;
+}
+const { paragraphs, attribution, source } = Astro.props;
+const hasAttribution = Boolean(attribution?.trim());
+const hasSource = Boolean(source?.trim());
+---
+<figure class="article-quote">
+  <blockquote>
+    <div class="article-quote__text">
+      <span class="article-quote__mark article-quote__mark--opening" aria-hidden="true">“</span>
+      <div class="article-quote__paragraphs">
+        {paragraphs.map(html => <p set:html={html} />)}
+      </div>
+      <span class="article-quote__mark article-quote__mark--closing" aria-hidden="true">”</span>
+    </div>
+  </blockquote>
+  {(hasAttribution || hasSource) && (
+    <figcaption>
+      {hasAttribution && <span class="article-quote__attribution">{attribution}</span>}
+      {hasSource && <span class="article-quote__source">{source}</span>}
+    </figcaption>
+  )}
+</figure>

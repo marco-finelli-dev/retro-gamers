@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import ArchivePage from '../../../components/archive/ArchivePage.astro';
+import EditorialListing from '../../../components/archive/EditorialListing.astro';
 
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { PAGE_SIZE } from '../../../lib/pagination';
@@ -43,13 +43,15 @@ const structuredData = createCollectionPageStructuredData({
   news={englishNews}
   title="Retro gaming guides"
   description="Practical guides for emulators, hardware, storage media and original systems, with clear steps for setup, preservation and everyday use."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/en/guides/"
   lang="en"
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <ArchivePage
+  <EditorialListing
+      desktopTitle="Guides"
+      desktopDescription="Practical guides to games, emulators and retro hardware."
     title="Retro gaming guides"
     eyebrow="English edition"
     description="Retro-Gamers.it guides provide practical instructions for using emulators, configuring hardware, managing storage media and keeping classic systems and games working. Each guide is based on real testing and explains the required steps, tools and possible problems without assuming advanced technical knowledge. From Amiga Compact Flash setups to modern software configuration, the aim is to help experienced enthusiasts and new users preserve, understand and use their video game heritage."

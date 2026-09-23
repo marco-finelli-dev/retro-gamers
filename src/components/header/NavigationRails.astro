@@ -1,0 +1,241 @@
+---
+import { getArchiveUrl, getPlatformTypeUrl, getPlatformIndexUrl, getCreatorUrl, getCompanyUrl, getPlayableClassicUrl, getEmulatorToolUrl, getSearchRouteData } from '../../lib/routes.js';
+import { getOpenCommunitySurveyForLanguage, getCommunitySurveyUrl } from '../../lib/community-surveys';
+const { lang = 'it' } = Astro.props;
+const en = lang === 'en';
+const home = en ? '/en/' : '/';
+const community = `${home}community/`;
+const item = (label: string, href: string) => ({ label, href });
+const editorial = (type: string, it: string, english = it) => item(en ? english : it, getArchiveUrl(type, lang));
+const survey = await getOpenCommunitySurveyForLanguage(lang);
+const surveyHref = survey ? getCommunitySurveyUrl(survey, lang) : community;
+const preferenceLabels = {
+  title: en ? 'Preferences' : 'Preferenze',
+  theme: en ? 'Theme' : 'Tema',
+  language: en ? 'Language' : 'Lingua',
+  automatic: en ? 'Auto' : 'Auto',
+  light: en ? 'Light' : 'Chiaro',
+  dark: en ? 'Dark' : 'Scuro'
+};
+const themeOptions = [
+  { id: 'system', label: preferenceLabels.automatic, icon: 'light-dark' },
+  { id: 'light', label: preferenceLabels.light, icon: 'sun' },
+  { id: 'dark', label: preferenceLabels.dark, icon: 'moon' }
+];
+const languageOptions = [
+  { code: 'it', label: 'Italiano', flag: 'italy-flag-circular' },
+  { code: 'en', label: 'English', flag: 'uk-flag-circular' }
+];
+const currentLanguageHref = `${Astro.url.pathname}${Astro.url.search}`;
+const siteLinks = en ? {
+  about: item('About', '/en/about/'),
+  collaborations: item('Collaborations', '/en/collaborations/'),
+  contact: item('Contact', '/en/contact/'),
+  newsletter: item('Newsletter', '/en/newsletter/'),
+  authors: item('Authors', '/en/authors/'),
+  archive: item('Archive', '/en/archive/'),
+  resources: item('Resources', '/en/resources/')
+} : {
+  about: item('Chi siamo', '/chi-siamo/'),
+  collaborations: item('Collaborazioni', '/collaborazioni/'),
+  contact: item('Contatti', '/contatti/'),
+  newsletter: item('Newsletter', '/newsletter/'),
+  authors: item('Autori', '/autori/'),
+  archive: item('Archivio', '/archivio/'),
+  resources: item('Risorse', '/risorse/')
+};
+const left = [
+  { id: 'account', title: 'Account', icon: '', items: [] },
+  { id: 'community', title: 'Community', icon: 'users', items: [item('Community',community), item('Quiz',`${home}quiz/`), item(en ? 'Discussions' : 'Discussioni',`${community}#community-hub-discussions`), item(en ? 'Surveys' : 'Sondaggi',surveyHref)] },
+  { id: 'preferences', title: preferenceLabels.title, icon: 'gear', items: [] },
+  { id: 'info', title: 'Info', icon: 'information', items: [siteLinks.about, siteLinks.collaborations, siteLinks.contact, siteLinks.newsletter] }
+];
+const socialLinks = [
+  { label: 'Facebook', href: 'https://www.facebook.com/profile.php?id=100063648424822', icon: 'facebook-mono', modifier: 'facebook', external: true },
+  { label: 'X', href: 'https://x.com/RetroGamers13', icon: 'x-mono', modifier: 'x', external: true },
+  { label: 'WhatsApp', href: 'https://whatsapp.com/channel/0029VbDPq3A7j6g5WNSANq0S', icon: 'whatsapp-mono', modifier: 'whatsapp', external: true }
+];
+const platformLinks = [
+  { label: 'Console', href: getPlatformTypeUrl('console', lang), icon: 'old-console', modifier: 'console', external: false },
+  { label: 'Computer', href: getPlatformTypeUrl('computer', lang), icon: 'old-computer', modifier: 'computer', external: false },
+  { label: 'Arcade', href: getPlatformTypeUrl('arcade', lang), icon: 'arcade-cabinet', modifier: 'arcade', external: false }
+];
+const right = [
+  { id: 'magazine', title: 'Magazine', icon: 'book-open', items: [editorial('news','News'), editorial('review','Recensioni','Reviews'), editorial('feature','Speciali','Features'), editorial('guide','Guide','Guides')] },
+  { id: 'stories', title: en ? 'Stories' : 'Storie', icon: 'book', items: [editorial('memories','Memories'), editorial('interview','Interviste','Interviews'), item('Creator',getCreatorUrl(null,lang)), item(en ? 'Companies' : 'Aziende',getCompanyUrl(null,lang))] },
+  { id: 'universe', title: en ? 'Retro universe' : 'Universo Retro', icon: 'gaming-pad', items: [item(en ? 'Platforms' : 'Piattaforme',getPlatformIndexUrl(lang)), editorial('hardware', 'Hardware e libri', 'Hardware & Books'), item(en ? 'Playable Classics' : 'Classici giocabili oggi',getPlayableClassicUrl(null,lang)), item(en ? 'Emulators & Interpreters' : 'Emulatori e interpreti',getEmulatorToolUrl(null,lang))] },
+  { id: 'explore', title: en ? 'Explore' : 'Esplora', icon: 'search', items: [siteLinks.authors, siteLinks.archive, siteLinks.resources] }
+];
+const searchRouteData = JSON.stringify(getSearchRouteData(lang)).replace(/&/g, '\\u0026').replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+---
+<div class="site-rails">
+  {[{ side: 'left', groups: left, label: 'Community' }, { side: 'right', groups: right, label: en ? 'Site navigation' : 'Navigazione del sito' }].map(({side, groups,label}) =>
+    <aside class={`site-rail site-rail--${side}`} data-site-rail aria-label={label}>
+      <div class="site-rail__primary">
+        <div class="site-rail__controls">
+          {groups.map(group => group.id === 'account' ? <div data-rail-account><slot name="account" /></div> :
+            <button class="site-rail__button" type="button" data-rail-tooltip data-rail-section={group.id} aria-label={group.title} aria-controls={`dock-${side}`} aria-expanded="false">
+              <span class="site-rail__icon" style={`--rail-icon: url('/icons/rails/${group.icon}.svg')`} aria-hidden="true"></span>
+              <span class="site-rail__tooltip" aria-hidden="true">{group.title}</span>
+            </button>)}
+        </div>
+        <div id={`dock-${side}`} class="site-rail__panel" inert>
+          <div class="site-rail__heading"><h2 data-dock-title>{label}</h2><button type="button" class="site-rail__close" data-dock-close aria-label={en ? 'Close panel' : 'Chiudi pannello'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button></div>
+          <div class="site-rail__content">
+            {groups.map(group => <nav data-dock-content={group.id} data-title={group.title} aria-label={group.title} hidden>
+              {group.id === 'preferences' ? (
+                <div class="site-rail__preferences">
+                  <div class="site-rail__preference-group">
+                    <span class="site-rail__preference-label">{preferenceLabels.theme}</span>
+                    <div class="site-rail__theme-choices" role="group" aria-label={preferenceLabels.theme}>
+                      {themeOptions.map(option => (
+                        <button type="button" data-theme-choice={option.id} aria-label={option.label} aria-pressed="false">
+                          <span class="site-rail__icon" style={`--rail-icon: url('/icons/rails/${option.icon}.svg')`} aria-hidden="true"></span>
+                          <span>{option.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div class="site-rail__preference-source" data-rail-preference="theme"></div>
+                  </div>
+                  <div class="site-rail__preference-group">
+                    <span class="site-rail__preference-label">{preferenceLabels.language}</span>
+                    <div class="site-rail__language-choices" aria-label={preferenceLabels.language}>
+                      {languageOptions.map(option => option.code === lang ? (
+                        <a class="site-rail__language-choice" href={currentLanguageHref} aria-label={option.label} aria-current="page">
+                          <img class="site-rail__language-flag" src={`/icons/flags/${option.flag}.svg`} alt="" aria-hidden="true" />
+                          <span aria-hidden="true">{option.code.toUpperCase()}</span>
+                        </a>
+                      ) : (
+                        <div class="site-rail__language-choice-host" data-rail-preference="language"></div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : group.id === 'explore' ? <>
+                <div data-rail-explore-links>
+                  {group.items.map(link => <a class="site-rail__link" href={link.href} aria-current={Astro.url.pathname === link.href ? 'page' : undefined}>{link.label}</a>)}
+                  <button type="button" class="site-rail__link site-rail__search-open" data-rail-search-open>{en ? 'Search' : 'Cerca'}</button>
+                </div>
+                <div class="site-rail__search" data-rail-search hidden data-lang={lang} data-route-config={searchRouteData}>
+                  <button type="button" class="site-rail__search-back" data-rail-search-back>{en ? 'Back' : 'Indietro'}</button>
+                  <label class="sr-only" for={`rail-search-${lang}`}>{en ? 'Search the site' : 'Cerca nel sito'}</label>
+                  <input id={`rail-search-${lang}`} type="search" autocomplete="off" placeholder={en ? 'Search the site...' : 'Cerca nel sito...'} data-rail-search-input />
+                  <div class="site-rail__search-results" data-rail-search-results aria-live="polite"></div>
+                </div>
+              </> : group.items.map(link => <a class="site-rail__link" href={link.href} aria-current={Astro.url.pathname === link.href ? 'page' : undefined}>{link.label}</a>)}
+            </nav>)}
+          </div>
+        </div>
+      </div>
+      <nav class="site-rail__mini" aria-label={side === 'left' ? 'Social' : (en ? 'Platform shortcuts' : 'Accesso rapido piattaforme')}>
+        {(side === 'left' ? socialLinks : platformLinks).slice(0, 3).map(link => <a class="site-rail__button" href={link.href} aria-label={link.label} data-rail-tooltip data-external={link.external ? 'true' : undefined}>
+          {side === 'left' ? <span class={`site-rail__icon site-rail__icon--social site-rail__icon--${link.modifier}`} style={`--rail-icon: url('/icons/rails/${link.icon}.svg')`} aria-hidden="true"></span> : <span class={`site-rail__icon site-rail__icon--platform site-rail__icon--${link.modifier}`} style={`--rail-icon: url('/icons/rails/${link.icon}.svg')`} aria-hidden="true"></span>}
+          <span class="site-rail__tooltip" aria-hidden="true">{link.label}</span>
+        </a>)}
+      </nav>
+    </aside>)}
+</div>
+<script>
+  const rails = Array.from(document.querySelectorAll<HTMLElement>('[data-site-rail]'));
+  const desktop = window.matchMedia('(min-width: 1200px)');
+  const account = document.querySelector<HTMLElement>('[data-account-menu]');
+  const accountTrigger = account?.querySelector<HTMLButtonElement>('[data-account-menu-toggle]');
+  const preferences = ['theme', 'language'].map(kind => {
+    const control = document.querySelector<HTMLElement>(`.site-header__${kind}-toggle`)!;
+    const placeholder = document.createComment(`header-${kind}`);
+    control.before(placeholder);
+    return { kind, control, placeholder };
+  });
+  preferences[0].control.addEventListener('click', event => {
+    if (desktop.matches) event.stopPropagation();
+  });
+  const mobileSlot = document.querySelector('[data-header-account]');
+  const railSlot = document.querySelector('[data-rail-account]');
+  preferences.forEach(({control}) => control.removeAttribute('title'));
+  if (accountTrigger) {
+    accountTrigger.removeAttribute('title');
+    accountTrigger.dataset.railTooltip = '';
+    const tooltip = document.createElement('span');
+    tooltip.className = 'site-rail__tooltip';
+    tooltip.setAttribute('aria-hidden', 'true');
+    tooltip.textContent = accountTrigger.getAttribute('aria-label') || '';
+    accountTrigger.append(tooltip);
+  }
+  const close = (rail: HTMLElement, restore = false) => {
+    const selected = rail.dataset.selected;
+    const trigger = selected === 'account' ? accountTrigger : rail.querySelector<HTMLButtonElement>(`[data-rail-section="${selected}"]`);
+    if (restore || rail.querySelector('.site-rail__panel')?.contains(document.activeElement)) trigger?.focus({ preventScroll: true });
+    rail.classList.remove('is-open');
+    delete rail.dataset.selected;
+    rail.querySelectorAll('[data-rail-section]').forEach(node => node.setAttribute('aria-expanded','false'));
+    rail.querySelector<HTMLElement>('.site-rail__panel')!.inert = true;
+    if (selected === 'account' && account?.classList.contains('is-open')) accountTrigger?.click();
+  };
+  const open = (rail: HTMLElement, section: string) => {
+    rails.forEach(other => { if (other !== rail) close(other); });
+    if (section !== 'account' && account?.classList.contains('is-open')) accountTrigger?.click();
+    rail.dataset.selected = section;
+    rail.classList.add('is-open');
+    rail.querySelector<HTMLElement>('.site-rail__panel')!.inert = false;
+    rail.querySelectorAll<HTMLElement>('[data-dock-content]').forEach(node => {
+      node.hidden = node.dataset.dockContent !== section;
+      if (!node.hidden) rail.querySelector('[data-dock-title]')!.textContent = node.dataset.title!;
+    });
+    rail.querySelectorAll<HTMLElement>('[data-rail-section]').forEach(node => node.setAttribute('aria-expanded',String(node.dataset.railSection === section)));
+    rail.querySelector('.site-rail__content')!.scrollTop = 0;
+    rail.querySelector<HTMLElement>('[data-rail-search]')?.setAttribute('hidden','');
+    rail.querySelector<HTMLElement>('[data-rail-explore-links]')?.removeAttribute('hidden');
+  };
+  rails.forEach(rail => {
+    rail.querySelectorAll<HTMLElement>('[data-rail-section]').forEach(button => button.addEventListener('click', () => {
+      const section = button.dataset.railSection!;
+      rail.dataset.selected === section ? close(rail) : open(rail,section);
+    }));
+    rail.querySelector('[data-dock-close]')?.addEventListener('click', () => close(rail,true));
+    rail.addEventListener('focusout', () => requestAnimationFrame(() => { if (!rail.contains(document.activeElement)) close(rail); }));
+  });
+  document.querySelectorAll<HTMLElement>('[data-rail-search]').forEach(search => {
+    const rail = search.closest<HTMLElement>('[data-site-rail]');
+    const links = search.parentElement?.querySelector<HTMLElement>('[data-rail-explore-links]');
+    const input = search.querySelector<HTMLInputElement>('[data-rail-search-input]');
+    const results = search.querySelector<HTMLElement>('[data-rail-search-results]');
+    const routes = JSON.parse(search.dataset.routeConfig || '{}');
+    let cache: any = null;
+    let timer: number | undefined;
+    rail?.querySelector('[data-rail-search-open]')?.addEventListener('click', () => { links?.setAttribute('hidden',''); search.removeAttribute('hidden'); input?.focus(); });
+    search.querySelector('[data-rail-search-back]')?.addEventListener('click', () => { search.setAttribute('hidden',''); links?.removeAttribute('hidden'); rail?.querySelector<HTMLElement>('[data-dock-title]')?.focus?.(); });
+    input?.addEventListener('input', () => {
+      window.clearTimeout(timer); const query = input.value.trim().toLocaleLowerCase();
+      if (query.length < 2) { if (results) results.innerHTML = ''; return; }
+      timer = window.setTimeout(async () => {
+        try {
+          cache ||= await fetch('/api/search').then(response => response.json());
+          const articles = (cache.articles || []).filter((item: any) => (item.language || 'it') === (search.dataset.lang || 'it') && `${item.title || ''} ${item.excerpt || ''} ${item.cardExcerpt || ''}`.toLocaleLowerCase().includes(query)).slice(0, 6);
+          if (results) results.innerHTML = articles.map((item: any) => { const segment = routes.articles?.segments?.[item.type] || routes.articles?.fallback; return `<a class="site-rail__link" href="${routes.articles?.basePath}/${segment}/${item.slug}/">${item.title}</a>`; }).join('') || `<p>${search.dataset.lang === 'en' ? 'No results' : 'Nessun risultato'}</p>`;
+        } catch { if (results) results.textContent = search.dataset.lang === 'en' ? 'Search unavailable' : 'Ricerca non disponibile'; }
+      }, 200);
+    });
+  });
+  // Retain the existing account controller, session updates and keyboard menu.
+  if (account) new MutationObserver(() => {
+    if (!desktop.matches) return;
+    const rail = rails[0];
+    if (account.classList.contains('is-open')) { if (rail.dataset.selected !== 'account') open(rail,'account'); }
+    else if (rail.dataset.selected === 'account') close(rail);
+  }).observe(account, { attributes: true, attributeFilter: ['class'] });
+  document.addEventListener('click', event => rails.forEach(rail => { if (!rail.contains(event.target as Node)) close(rail); }));
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !event.defaultPrevented) rails.filter(rail => rail.classList.contains('is-open')).forEach(rail => { event.preventDefault(); close(rail,true); });
+  });
+  const updateMode = () => {
+    if (!desktop.matches && rails.some(rail => rail.contains(document.activeElement))) document.querySelector<HTMLButtonElement>('[data-mobile-menu-toggle]')?.focus({preventScroll:true});
+    rails.forEach(rail => close(rail));
+    preferences.forEach(({kind,control,placeholder}) => {
+      if (desktop.matches) document.querySelector(`[data-rail-preference="${kind}"]`)?.append(control);
+      else placeholder.after(control);
+    });
+    if (account) (desktop.matches ? railSlot : mobileSlot)?.prepend(account);
+  };
+  desktop.addEventListener('change',updateMode);
+  updateMode();
+</script>

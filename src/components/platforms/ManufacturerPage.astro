@@ -1,5 +1,7 @@
 ---
 import '../../styles/components/platforms.css';
+import '../../styles/components/platforms-refresh.css';
+import PlatformBreadcrumb from './PlatformBreadcrumb.astro';
 import PlatformCard from './PlatformCard.astro';
 
 import {
@@ -48,8 +50,9 @@ const labels = {
 };
 ---
 
-<div class="platforms-page">
+<div class="platforms-page platform-listing">
   <div class="container">
+    <PlatformBreadcrumb type={type} manufacturer={manufacturer} lang={lang} />
 
     <section class="platforms-hero platforms-hero--manufacturer">
       <div class="platforms-hero__inner">
@@ -62,7 +65,7 @@ const labels = {
 
           <p>{labels.description}</p>
 
-          <a href={typeHref} class="platforms-back-link">
+          <a href={typeHref} class="platforms-back-link platform-mobile">
             ← {labels.back}
           </a>
 

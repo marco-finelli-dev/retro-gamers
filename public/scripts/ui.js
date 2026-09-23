@@ -24,10 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
     menu.setAttribute('aria-hidden', 'false');
     toggle.setAttribute('aria-expanded', 'true');
     lockScroll();
+    menu.querySelector('button[data-mobile-menu-close]')?.focus({ preventScroll: true });
   };
 
   const closeMenu = () => {
-    if (menu.contains(document.activeElement)) {
+    if (menu.classList.contains('is-open') && window.innerWidth < 1200) {
       toggle.focus({ preventScroll: true });
     }
 
@@ -51,13 +52,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.addEventListener('keydown', (event) => {
+    if (!menu.classList.contains('is-open')) return;
+    if (event.key === 'Tab') {
+      const items = [...menu.querySelectorAll('a[href], button:not([disabled])')].filter(item => item.getClientRects().length);
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
     if (event.key === 'Escape') {
+      event.preventDefault();
       closeMenu();
     }
   });
 
   window.addEventListener('resize', () => {
-    if (window.innerWidth > 820) {
+    if (window.innerWidth >= 1200) {
       closeMenu();
     }
   });

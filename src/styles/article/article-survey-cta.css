@@ -67,46 +67,7 @@
 }
 
 .article-survey-cta__button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   flex: 0 0 auto;
-
-  min-height: 44px;
-  padding: 0 20px;
-
-  border: 1px solid var(--rg-cta-border);
-  border-radius: 999px;
-
-  background: var(--rg-cta-bg);
-  color: var(--rg-cta-color);
-
-  font-size: 0.8rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-decoration: none;
-  text-transform: uppercase;
-
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.08),
-    0 10px 22px rgba(0,0,0,0.18);
-
-  transition:
-    transform var(--transition-fast),
-    border-color var(--transition-fast),
-    background var(--transition-fast),
-    color var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.article-survey-cta__button:hover,
-.article-survey-cta__button:focus-visible {
-  border-color: var(--rg-badge-border);
-  background: var(--rg-cta-hover-bg);
-  color: var(--rg-action-hover-color);
-  outline: none;
-  transform: translateY(-1px);
-  box-shadow: var(--rg-card-hover-shadow);
 }
 
 html[data-theme="light"] .article-survey-cta {
@@ -139,7 +100,10 @@ html[data-theme="light"] .article-survey-cta__content > span {
     padding: 20px;
   }
 
-  .article-survey-cta__button {
-    width: 100%;
+}
+
+@media (min-width: 1200px) {
+  html[data-theme] body.rg-desktop-layout .article-survey-cta__eyebrow {
+    color: var(--rg-meta-secondary-color);
   }
 }

@@ -1,5 +1,6 @@
 ---
 import '../../../styles/pages/author.css';
+import '../../../styles/components/reviews-listing.css';
 
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Pagination from '../../../components/common/Pagination.astro';
@@ -91,7 +92,7 @@ const getAuthorsPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber
   canonical="https://www.retro-gamers.it/en/authors/"
   lang="en"
 >
-  <div class="author-page author-index-page">
+  <div class="author-page author-index-page reviews-listing">
     <section class="author-index-hero">
       <span>Editorial team</span>
       <h1>Authors</h1>
@@ -152,6 +153,7 @@ const getAuthorsPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber
         </section>
 
         <Pagination
+          numbered
           currentPage={currentPage}
           totalPages={totalPages}
           lang="en"

@@ -1,0 +1,16 @@
+/* Existing Home poll layout; only real response and loading states are new. */
+[data-home-survey] [hidden] { display: none; }
+[data-home-survey] form { display: grid; gap: var(--rg-space-3); }
+[data-home-survey] button:disabled { opacity: .55; cursor: not-allowed; }
+.rg-home-poll__status, .rg-home-poll__results > p {
+  margin: 0; color: var(--rg-text-secondary); font-size: var(--rg-type-ui-small); line-height: 1.5;
+}
+.rg-home-poll__retry {
+  justify-self: start; min-height: 44px; padding: 0; border: 0; background: none;
+  color: var(--rg-title-hover); font: inherit; text-decoration: underline; cursor: pointer;
+}
+.rg-home-poll__results { display: grid; gap: var(--rg-space-4); min-width: 0; }
+.rg-home-poll__result > div:first-child { display: flex; justify-content: space-between; gap: var(--rg-space-3); color: var(--rg-text-primary); }
+.rg-home-poll__track { height: 6px; margin-top: var(--rg-space-2); background: var(--rg-border-neutral); border-radius: var(--rg-radius-small); overflow: hidden; }
+.rg-home-poll__track > span { display: block; height: 100%; background: var(--rg-title-hover); }
+[data-home-survey] :is(input, button):focus-visible { outline: var(--rg-focus-ring); outline-offset: var(--rg-focus-offset); }

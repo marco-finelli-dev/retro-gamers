@@ -756,3 +756,28 @@ html[data-theme="light"] .legal-updated {
   font-size: 1.08rem;
   line-height: 1.85;
 }
+
+/* Legal documents opt in without changing other utility templates or mobile. */
+@media (min-width: 1200px) {
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh :is(.legal-hero, .legal-content) {
+    width: 100%; max-width: 920px; margin-inline: 0; padding: 0;
+    background: none; border: 0; border-radius: 0; box-shadow: none; overflow: visible;
+  }
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh .legal-hero { margin-bottom: var(--rg-space-8); }
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh :is(.legal-hero, .legal-content)::before,
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh :is(.legal-hero, .legal-content)::after,
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh .legal-content h2::after { content: none; }
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh .legal-content :is(h2, h3) {
+    font-family: var(--rg-font-family); color: var(--rg-text-primary); font-weight: var(--rg-weight-semibold);
+    text-transform: none; letter-spacing: normal; line-height: 1.3; text-shadow: none;
+  }
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh .legal-content h2 { font-size: var(--rg-type-section); margin: var(--rg-space-8) 0 var(--rg-space-3); }
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh .legal-content h3 { font-size: var(--rg-type-card-small); }
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh .legal-content :is(p, li) { color: var(--rg-text-secondary); }
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh .legal-content strong { color: var(--rg-text-primary); }
+  html[data-theme] body.rg-standard-page-layout .legal-document-refresh .legal-updated {
+    display: block; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none;
+    color: var(--rg-text-secondary) !important; font-size: var(--rg-type-ui-small) !important;
+    font-weight: var(--rg-weight-regular); line-height: 1.5 !important;
+  }
+}

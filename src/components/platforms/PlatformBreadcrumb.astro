@@ -1,0 +1,29 @@
+---
+import { platformTypeLabels } from '../../lib/platforms';
+import { getPlatformIndexUrl, getPlatformTypeUrl, getPlatformManufacturerUrl } from '../../lib/routes.js';
+
+const { type, manufacturer, platform, lang = 'it' } = Astro.props;
+const isEn = lang === 'en';
+const typeLabels = isEn
+  ? { arcade: 'Arcade', computer: 'Computers', console: 'Consoles' }
+  : platformTypeLabels;
+const items = [{ label: isEn ? 'Platforms' : 'Piattaforme', href: getPlatformIndexUrl(lang) }];
+if (type && typeLabels[type]) items.push({ label: typeLabels[type], href: getPlatformTypeUrl(type, lang) });
+if (manufacturer?.name && (!platform || (type && manufacturer.slug))) items.push({
+  label: manufacturer.name,
+  href: type && manufacturer.slug ? getPlatformManufacturerUrl(type, manufacturer.slug, lang) : null
+});
+if (platform?.name) items.push({ label: platform.name, href: null });
+---
+<nav class="platform-breadcrumb" aria-label={isEn ? 'Breadcrumb' : 'Percorso di navigazione'}>
+  <ol>
+    {items.map((item, index) => (
+      <li>
+        {index > 0 && <span class="platform-breadcrumb__separator" aria-hidden="true">›</span>}
+        {index === items.length - 1
+          ? <span aria-current="page">{item.label}</span>
+          : item.href ? <a href={item.href}>{item.label}</a> : <span>{item.label}</span>}
+      </li>
+    ))}
+  </ol>
+</nav>

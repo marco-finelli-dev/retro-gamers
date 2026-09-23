@@ -165,14 +165,14 @@ export async function sendNewCommentAdminEmail({
           <strong>Autore:</strong> ${escapeEmailHtml(authorName)}<br>
           <strong>Lingua:</strong> ${escapeEmailHtml(language.toUpperCase())}
         </p>
-        <blockquote style="margin:20px 0; padding:14px 18px; border-left:4px solid #19b9c4; background:#f4f9fa; border-radius:10px;">
+        <blockquote class="rg-email-quote" style="margin:20px 0; padding:14px 18px; border-left:3px solid #E8BA46; background:#F0E8DA; color:#092547;">
           ${renderPreview(body)}
         </blockquote>
         <p style="margin:16px 0 0 0;">
           Articolo:
-          <a href="${escapeEmailHtml(articleLink)}" style="color:#0b7f89; text-decoration:underline;">${escapeEmailHtml(articleTitle || articleLink)}</a>
+          <a href="${escapeEmailHtml(articleLink)}" style="color:#092547; text-decoration:underline;">${escapeEmailHtml(articleTitle || articleLink)}</a>
         </p>
-        <p style="margin:12px 0 0 0; color:#647883;">
+        <p class="rg-email-muted" style="margin:12px 0 0 0; color:#506276;">
           Apri il pannello commenti per approvare o rifiutare il messaggio.
         </p>
       `,
@@ -270,7 +270,7 @@ export async function sendReplyApprovedEmail({
         ${unsubscribeUrl ? `
           <p style="margin:0;">
             ${escapeEmailHtml(unsubscribeText)}
-            <a href="${escapeEmailHtml(unsubscribeUrl)}" style="color:#0b7f89; text-decoration:underline;">${escapeEmailHtml(unsubscribeLabel)}</a>
+            <a href="${escapeEmailHtml(unsubscribeUrl)}" style="color:#092547; text-decoration:underline;">${escapeEmailHtml(unsubscribeLabel)}</a>
           </p>
         ` : ''}
       `,

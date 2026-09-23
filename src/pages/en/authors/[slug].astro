@@ -1,8 +1,9 @@
 ---
 import '../../../styles/pages/author.css';
+import '../../../styles/components/reviews-listing.css';
 
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import ArchiveCard from '../../../components/archive/ArchiveCard.astro';
+import EntityArticleCard from '../../../components/archive/EntityArticleCard.astro';
 import Pagination from '../../../components/common/Pagination.astro';
 import { PortableText } from 'astro-portabletext';
 import { client } from '../../../lib/sanity';
@@ -236,7 +237,7 @@ const pageDescription = getAuthorMetaDescription(author, displayName, roleLabel)
 const pageImage =
   authorCover ||
   authorAvatar ||
-  '/og-image.jpg';
+  '/og-image.webp';
 
 const bioBlocks =
   author.bioEn?.length > 0
@@ -247,32 +248,32 @@ const socials = [
   author.showEmail && author.email && {
     label: 'Email',
     url: `mailto:${author.email}`,
-    icon: '/icons/social/mail.svg'
+    icon: '/icons/author/mail.svg'
   },
   author.website && {
     label: 'Website',
     url: author.website,
-    icon: '/icons/social/link.svg'
+    icon: '/icons/author/link.svg'
   },
   author.facebook && {
     label: 'Facebook',
     url: author.facebook,
-    icon: '/icons/social/facebook.svg'
+    icon: '/icons/author/facebook-mono.svg'
   },
   author.twitter && {
     label: 'X',
     url: author.twitter,
-    icon: '/icons/social/x.svg'
+    icon: '/icons/author/x-mono.svg'
   },
   author.tiktok && {
     label: 'TikTok',
     url: author.tiktok,
-    icon: '/icons/social/tiktok.svg'
+    icon: '/icons/author/tiktok-mono.svg'
   },
   author.youtube && {
     label: 'YouTube',
     url: author.youtube,
-    icon: '/icons/social/youtube.svg'
+    icon: '/icons/author/youtube-mono.svg'
   },
   author.twitch && {
     label: 'Twitch',
@@ -294,7 +295,7 @@ const socials = [
   minimal={isAccountPreview}
 >
 
-  <div class="author-page">
+  <div class="author-page reviews-listing">
 
     <section class={authorHeroClass}>
 
@@ -341,6 +342,7 @@ const socials = [
 
             <div class="author-hero__badges">
               <span>{roleLabel}</span>
+              <a class="author-hero__article-count" href="#author-published-posts">{posts.length} {posts.length === 1 ? 'article' : 'articles'}</a>
             </div>
 
             {socials.length > 0 && (
@@ -380,7 +382,6 @@ const socials = [
     <section class="author-layout">
 
       <article class="author-bio">
-        <span>Bio</span>
 
         <h2>Author profile</h2>
 
@@ -413,7 +414,7 @@ const socials = [
 
     </section>
 
-    <section class="author-posts">
+    <section class="author-posts" id="author-published-posts">
 
       <div class="author-posts__header">
         <span>Archive</span>
@@ -425,12 +426,13 @@ const socials = [
           <div class="author-posts__grid" data-author-posts-grid>
             {authorPostsPageItems.map((post) => (
               <div class="author-posts__item">
-                <ArchiveCard post={post} lang="en" />
+                <EntityArticleCard post={post} lang="en" />
               </div>
             ))}
           </div>
 
           <Pagination
+            numbered
             currentPage={authorPostsPage}
             totalPages={authorPostsTotalPages}
             lang="en"

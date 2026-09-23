@@ -1,0 +1,52 @@
+/* Reuses the account unread refresh; no reserved space when there are no messages. */
+.sidebar-notifications:has([hidden]) { display: none; }
+.sidebar-notifications__link[hidden] { display: none; }
+
+.sidebar-notifications__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  color: var(--rg-text-secondary);
+  font-size: var(--rg-type-ui-small);
+  line-height: 1.4;
+  text-decoration: none;
+}
+.sidebar-notifications__link strong { color: var(--rg-text-primary); font-weight: var(--rg-weight-semibold); }
+.sidebar-notifications__link:hover { color: var(--rg-link-hover); }
+.sidebar-notifications__link:focus-visible {
+  color: var(--rg-text-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.sidebar-notifications__bell {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  background: currentColor;
+  mask: url('/icons/notifications/bell-svgrepo-com.svg') center / contain no-repeat;
+  transform-origin: 50% 20%;
+}
+.sidebar-notifications__link.is-announcing { animation: sidebar-notification-enter 300ms ease-out both; }
+.sidebar-notifications__link.is-announcing .sidebar-notifications__bell { animation: sidebar-notification-bell 600ms 300ms ease-in-out; }
+.sidebar-notifications__link.is-announcing strong { animation: sidebar-notification-attention 900ms ease-out; }
+
+@keyframes sidebar-notification-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes sidebar-notification-bell {
+  0%, 50%, 100% { transform: rotate(0); }
+  12.5%, 62.5% { transform: rotate(-8deg); }
+  37.5%, 87.5% { transform: rotate(8deg); }
+}
+@keyframes sidebar-notification-attention {
+  0%, 75% { color: var(--rg-color-gold); }
+  100% { color: var(--rg-text-primary); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-notifications__link.is-announcing,
+  .sidebar-notifications__link.is-announcing .sidebar-notifications__bell,
+  .sidebar-notifications__link.is-announcing strong { animation: none; }
+}

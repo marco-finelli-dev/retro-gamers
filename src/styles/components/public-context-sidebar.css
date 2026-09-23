@@ -1,0 +1,99 @@
+/* Shared public context groups. No new content or mobile composition. */
+@media (min-width: 1200px) {
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar {
+    display: grid;
+    gap: var(--rg-space-6);
+    color: var(--rg-text-secondary);
+    font-family: var(--rg-font-family);
+    font-size: var(--rg-type-ui-small);
+    line-height: 1.5;
+  }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar > section.public-context-group {
+    min-width: 0;
+    margin: 0;
+    padding: 0 0 var(--rg-space-6);
+    border: 0;
+    border-bottom: 1px solid var(--rg-divider-color);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar > section.public-context-group > :is(h2, h3) {
+    margin: 0 0 var(--rg-space-3);
+    color: var(--rg-text-secondary);
+    font-size: var(--rg-type-ui-small);
+    font-weight: var(--rg-weight-semibold);
+    line-height: 1.4;
+    letter-spacing: .04em;
+    text-transform: none;
+    text-shadow: none;
+  }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar :is(ul, dl) { margin-block: 0; }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar :is(.creator-chip-list, .creator-platform-list) {
+    display: grid; gap: var(--rg-space-2);
+  }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar a {
+    color: var(--rg-title-color); text-decoration: none; text-shadow: none;
+    transition: color var(--transition-fast);
+  }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar a:hover,
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar a:hover strong { color: var(--rg-title-hover); }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar a:focus:not(:focus-visible) { outline: none; }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar a:focus-visible { outline: 1px solid var(--rg-text-secondary); outline-offset: 4px; }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar :is(.article-context-info dt, .article-context-author__dates dt, .article-context-author__dates dd, .article-context-author__body small, .article-context-author__body > span, .article-context-author .article-share > span) {
+    font-size: var(--rg-type-ui-small); line-height: 1.5;
+    color: var(--rg-text-secondary); text-transform: none; letter-spacing: normal;
+  }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar .article-context-author__dates { margin-top: var(--rg-space-4); }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar .article-context-info__value {
+    white-space: normal; font-size: var(--rg-type-ui-small); line-height: 1.5; font-weight: var(--rg-weight-semibold);
+  }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar .article-context-related__item { grid-template-columns: 76px minmax(0, 1fr); }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar .article-context-related__body :is(small, strong) {
+    font-size: var(--rg-type-ui-small); line-height: 1.4; letter-spacing: normal; text-transform: none;
+  }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar .article-context-related__body small,
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar .rg-comment-count { color: var(--rg-text-secondary); }
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar .rg-comment-count__icon { background-color: currentColor; }
+}
+
+/* Article-only hierarchy; other public context sidebars keep their treatment. */
+@media (min-width: 1200px) {
+  html[data-theme] body.rg-desktop-layout .public-context-sidebar.article-context-sidebar > section.article-context-card > h2 {
+    color: var(--rg-text-primary);
+    font-weight: var(--rg-weight-bold);
+    text-transform: uppercase;
+  }
+  html[data-theme] body.rg-desktop-layout .article-context-sidebar .article-context-info dt {
+    font-size: var(--rg-type-ui-small);
+    font-weight: var(--rg-weight-regular);
+    color: var(--rg-text-secondary);
+  }
+  html[data-theme] body.rg-desktop-layout .article-context-sidebar .article-context-info__value {
+    font-size: var(--rg-type-body);
+    color: var(--rg-text-primary);
+  }
+}
+
+/* The authorized shortcuts follow the author in the existing mobile flow too. */
+.article-context-sidebar .article-editorial-actions { margin-top: var(--rg-space-3); }
+.article-context-sidebar .article-editorial-actions__links { display: grid; justify-items: start; }
+.article-context-sidebar .article-editorial-actions :is(a, button) {
+  display: inline-flex; align-items: center; gap: var(--rg-space-2);
+  min-height: 38px; max-width: 100%; box-sizing: border-box;
+  padding: var(--rg-space-1) 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  color: var(--rg-title-color); font: inherit; text-align: left; text-decoration: none; cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.article-context-sidebar .article-editorial-actions :is(a, button):hover { color: var(--rg-title-hover); }
+.article-context-sidebar .article-editorial-actions :is(a, button):focus:not(:focus-visible) { outline: none; }
+.article-context-sidebar .article-editorial-actions :is(a, button):focus-visible { outline: 1px solid var(--rg-text-secondary); outline-offset: 4px; }
+.article-context-sidebar .article-editorial-actions button:disabled { opacity: .65; cursor: wait; }
+.article-editorial-actions__icon {
+  width: 18px; height: 18px; flex: 0 0 18px;
+  background: currentColor;
+  mask: var(--icon) center / contain no-repeat;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+}
+.article-editorial-actions__icon--edit { --icon: url('/icons/editorial/pen-svgrepo-com.svg'); }
+.article-editorial-actions__icon--new { --icon: url('/icons/editorial/circle-plus-svgrepo-com.svg'); }

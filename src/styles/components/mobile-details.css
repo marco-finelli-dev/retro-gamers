@@ -1,0 +1,114 @@
+/* Public records only. Approved desktop, listings and article layouts are untouched. */
+@media (max-width: 1199px) {
+  html[data-theme] body:is(.rg-desktop-layout, .rg-profile-preview) :is(.entity-detail, .author-page:not(.author-index-page)) {
+    --entity-surface: var(--rg-surface-card-subtle);
+    --rg-type-page-title: clamp(30px, 5vw, 40px);
+    width: calc(100% - 2 * var(--rg-layout-gutter-mobile));
+    margin-inline: auto; padding: var(--rg-space-6) 0 var(--rg-space-8); gap: var(--rg-space-6);
+    color: var(--rg-text-primary);
+  }
+  html[data-theme] body .platforms-page:has(.platform-sheet) { padding-block: var(--rg-space-6); }
+  html[data-theme] body :is(.platforms-page:has(.platform-sheet), .platform-related) > .container { padding-inline: var(--rg-layout-gutter-mobile); }
+  :is(.entity-detail, .platforms-page:has(.platform-sheet)) :is(.entity-breadcrumb, .platform-breadcrumb) li { align-items: center; }
+  :is(.entity-detail, .platforms-page:has(.platform-sheet)) :is(.entity-breadcrumb, .platform-breadcrumb) a { display: inline-flex; align-items: center; min-height: 40px; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail :is(.creator-detail-hero, .creator-detail-layout) { grid-template-columns: minmax(0, 1fr); gap: var(--rg-space-6); }
+  html[data-theme] body.rg-desktop-layout main .entity-detail .creator-detail-hero__portrait { width: 220px; height: 220px; justify-self: start; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail .company-logo-wrap--hero .company-logo { max-width: min(260px, 100%); max-height: 110px; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail :is(.creator-detail-hero__intro, .company-detail-hero p, .creator-profile__content, .company-history__content) { font-size: 17px; line-height: 1.75; overflow-wrap: anywhere; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail :is(.creator-panel h2, .creator-related h2, .company-section h2) { font-size: 25px; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail .public-context-sidebar { display: grid; gap: var(--rg-space-6); }
+  html[data-theme] body.rg-desktop-layout main .entity-detail .public-context-group { padding-bottom: var(--rg-space-6); border-bottom: 1px solid var(--rg-divider-color); }
+  html[data-theme] body.rg-desktop-layout main .entity-detail .creator-fact-card h3 { margin: 0 0 var(--rg-space-3); font-family: var(--rg-font-family); font-size: 16px; line-height: 1.4; color: var(--rg-title-color); text-transform: none; letter-spacing: normal; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail .creator-facts a { color: var(--rg-link-color); text-shadow: none; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail .creator-facts a:hover { color: var(--rg-link-hover); background: none; box-shadow: none; transform: none; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail :is(.creator-detail-hero__content, .creator-detail-hero h1) { text-align: left; align-items: flex-start; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail .creator-detail-hero__meta { justify-content: flex-start; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail .creator-chip-list li { font-size: 16px; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail .creator-chip-list a { display: inline-flex; align-items: center; min-height: 40px; }
+  .entity-detail .creator-platform-list { display: grid; gap: var(--rg-space-3); }
+  .entity-detail .creator-platform-card__logo { max-width: 100%; }
+  .entity-detail .creator-platform-logo { object-fit: contain; }
+  html[data-theme] body.rg-desktop-layout main .entity-detail :is(.creator-related__grid, .company-article-grid, .company-creator-grid, .company-platform-grid) { grid-template-columns: minmax(0, 1fr); }
+
+  /* One accessible heading, using the approved brand header at every viewport. */
+  html[data-theme] body .platform-sheet .platform-mobile { display: none; }
+  html[data-theme] body .platform-sheet .platform-desktop { display: block; }
+  html[data-theme] body :is(.platform-sheet, .platform-sheet__brand, .platform-sheet__fallback, .platform-related__inner) {
+    padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; backdrop-filter: none; overflow: visible;
+  }
+  .platform-sheet::before, .platform-sheet__brand::before, .platform-related__inner::before { content: none; }
+  html[data-theme] body .platform-sheet__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--rg-space-6); }
+  html[data-theme] body :is(.platform-sheet__left, .platform-sheet__right) { display: contents; }
+  html[data-theme] body .platform-sheet__header { display: block; grid-row: 1; padding: 0; border: 0; }
+  html[data-theme] body .platform-sheet__brand { display: flex; flex-direction: column; align-items: flex-start; width: fit-content; max-width: 100%; min-width: 0; min-height: 0; gap: var(--rg-space-3); }
+  html[data-theme] body .platform-sheet__brand picture { width: auto; max-width: 100%; min-width: 0; }
+  html[data-theme] body .platform-sheet__brand img { width: auto; height: auto; max-width: 100%; margin: 0; object-fit: contain; filter: none; }
+  html[data-theme] body .platform-sheet__brand .platform-sheet__manufacturer-logo { max-width: min(120px, 100%); max-height: 40px; }
+  html[data-theme] body .platform-sheet__brand .platform-sheet__platform-logo { max-width: min(340px, 100%); max-height: 100px; }
+  html[data-theme] body .platform-sheet__header[data-manufacturer="sega"] .platform-sheet__manufacturer-logo { max-width: min(100px, 100%); }
+  html[data-theme] body .platform-sheet__metadata { display: flex; flex-wrap: wrap; gap: var(--rg-space-2); margin-top: var(--rg-space-4); color: var(--rg-text-secondary); font-size: 14px; }
+  .platform-sheet__metadata-item { display: inline-flex; align-items: baseline; gap: var(--rg-space-2); }
+  html[data-theme] body .platform-sheet__title:not(.sr-only) { margin: 0; color: var(--rg-title-color); font-family: var(--rg-font-family); font-size: 32px; line-height: 1.15; text-transform: none; }
+  html[data-theme] body .platform-sheet__visual { grid-row: 2; min-height: 0; padding: var(--rg-space-4); background: var(--rg-surface-card-subtle); border: 0; border-radius: var(--rg-radius-medium); box-shadow: none; }
+  html[data-theme] body .platform-sheet__cover { display: block; width: 100%; height: auto; max-height: 300px; padding: 0; object-fit: contain; filter: none; }
+  html[data-theme] body .platform-sheet__fallback { min-height: 0; }
+  .platform-sheet__specs { grid-row: 3; }
+  html[data-theme] body .platform-spec-row { grid-template-columns: minmax(0, .65fr) minmax(0, 1fr); gap: var(--rg-space-3); border-color: var(--rg-divider-color); }
+  html[data-theme] body .platform-spec-row :is(span, strong) { color: var(--rg-text-secondary); font-family: var(--rg-font-family); font-size: 14px; line-height: 1.6; text-transform: none; letter-spacing: normal; overflow-wrap: anywhere; }
+  html[data-theme] body .platform-spec-row strong { color: var(--rg-text-primary); }
+  html[data-theme] body .platform-sheet__history { width: 100%; max-width: 960px; padding: 0; border: 0; margin: 0; }
+  html[data-theme] body .platform-sheet__section-title span { font-family: var(--rg-font-family); font-size: 25px; line-height: 1.25; text-transform: none; letter-spacing: normal; color: var(--rg-title-color); }
+  html[data-theme] body .platform-sheet__history-text p { font-family: var(--rg-font-family); font-size: 17px; line-height: 1.75; color: var(--rg-text-primary); }
+  html[data-theme] body .platform-related { margin-top: var(--rg-space-6); }
+  html[data-theme] body .platform-related__header { max-width: none; padding-bottom: var(--rg-space-4); margin-bottom: var(--rg-space-6); border-bottom: 1px solid var(--rg-divider-color); }
+  .platform-related__header > span { display: none; }
+  html[data-theme] body .platform-related__header h2 { font-family: var(--rg-font-family); font-size: 25px; color: var(--rg-title-color); text-transform: none; text-shadow: none; letter-spacing: normal; }
+  .platform-related__header h2::after { content: none; }
+  html[data-theme] body .platform-related__header p { color: var(--rg-text-secondary); font-size: 16px; line-height: 1.6; }
+
+  /* Public author: same cover scrim and actions as the approved desktop hero. */
+  html[data-theme] body .author-page:not(.author-index-page) .author-hero { min-height: 0; background: var(--rg-surface-card-subtle); border: 1px solid var(--rg-border-neutral); border-radius: var(--rg-radius-medium); box-shadow: none; }
+  .author-page:not(.author-index-page) :is(.author-hero, .author-bio, .author-posts)::before { content: none; }
+  html[data-theme] body .author-page .author-hero__cover::after { background: linear-gradient(to top, rgba(0, 0, 0, .88), rgba(0, 0, 0, .55) 30%, transparent 72%); }
+  html[data-theme] body .author-page .author-hero__cover img { filter: none; }
+  html[data-theme] body .author-page .author-hero--with-background { --rg-title-color: var(--rg-color-ivory); --rg-text-secondary: color-mix(in srgb, var(--rg-color-ivory) 85%, transparent); }
+  html[data-theme] body .author-page .author-hero__profile { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; min-height: 0; gap: var(--rg-space-4); padding: var(--rg-space-6) var(--rg-space-4); }
+  html[data-theme] body .author-page .author-hero--with-background .author-hero__profile { min-height: 320px; }
+  html[data-theme] body .author-page .author-hero__avatar { position: static; width: 80px; height: 80px; border: 1px solid var(--rg-border-neutral); border-radius: var(--rg-radius-medium); background: none; box-shadow: none; }
+  html[data-theme] body .author-page .author-hero h1 { max-width: 100%; font-family: var(--rg-font-family); font-size: clamp(30px, 5vw, 40px); line-height: 1.15; letter-spacing: -.02em; color: var(--rg-title-color); text-shadow: none; overflow-wrap: anywhere; }
+  html[data-theme] body .author-page .author-hero__badges { width: auto; flex-wrap: wrap; align-items: baseline; }
+  html[data-theme] body .author-page .author-hero__badges :is(span, a) { min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--rg-text-secondary); font-size: 14px; line-height: 1.5; letter-spacing: normal; text-transform: none; }
+  html[data-theme] body .author-page .author-hero__article-count { display: inline-flex; gap: var(--rg-space-2); text-decoration: none; }
+  .author-page .author-hero__article-count::before { content: '·'; }
+  html[data-theme] body .author-page .author-hero__socials a { width: 44px; height: 44px; border: 0; background: none; color: var(--rg-text-secondary); box-shadow: none; transform: none; }
+  html[data-theme] body .author-page .author-hero__socials a:is(:hover, :focus-visible) { background: none; color: var(--rg-title-color); box-shadow: none; transform: none; }
+  html[data-theme] body .author-page .author-hero__socials a .author-hero__social-icon { background: currentColor; transform: none; }
+  .author-page:not(.author-index-page) .author-stats { display: none; }
+  html[data-theme] body .author-page:not(.author-index-page) .author-layout { grid-template-columns: minmax(0, 1fr); width: 100%; max-width: 960px; margin-inline: 0; }
+  html[data-theme] body .author-page:not(.author-index-page) :is(.author-bio, .author-posts) { padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
+  .author-page .author-posts__header > span { display: none; }
+  html[data-theme] body .author-page :is(.author-bio, .author-posts__header) h2 { font-family: var(--rg-font-family); font-size: 25px; line-height: 1.25; letter-spacing: normal; text-transform: none; color: var(--rg-title-color); text-shadow: none; }
+  html[data-theme] body .author-page .author-bio__content { font-size: 17px; line-height: 1.75; color: var(--rg-text-primary); overflow-wrap: anywhere; }
+  .author-page .author-posts__header { padding-bottom: var(--rg-space-4); border-bottom: 1px solid var(--rg-divider-color); }
+  .author-page #author-published-posts { scroll-margin-top: calc(var(--rg-shell-header-height) + var(--rg-space-4)); }
+
+  /* Existing ReviewCard and numbered Pagination, matching mobile listings. */
+  :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) .reviews-listing__mobile { display: none; }
+  html[data-theme] body :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) .reviews-listing__desktop { display: block; }
+  html[data-theme] body :is(.platform-related__grid, .author-page:not(.author-index-page) .author-posts__grid) { grid-template-columns: minmax(0, 1fr); gap: var(--rg-space-8); }
+  :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) { --review-ink: var(--rg-text-primary); --review-muted: var(--rg-text-secondary); --review-image-brightness: 1; }
+  html[data-theme] body :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) .rg-review-card h3 { display: block; overflow: visible; -webkit-line-clamp: unset; white-space: normal; font-size: var(--rg-type-card); line-height: 1.25; }
+  :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) .rg-review-card__body p { -webkit-line-clamp: 2; }
+  html[data-theme] body :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) :is(.rg-review-card__kicker, .rg-review-card__kicker > span) { white-space: normal; flex-wrap: wrap; overflow: visible; font-size: 12px; }
+  html[data-theme] body :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) :is(.entity-related-type, .platform-related__type) { margin: 0 0 var(--rg-space-2); color: var(--rg-text-secondary); font-size: 14px; line-height: 1.5; }
+  html[data-theme] body :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) .rg-pagination:not([hidden]) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--rg-space-2); margin-top: var(--rg-space-8); padding-top: var(--rg-space-4); border-top: 1px solid var(--rg-divider-color); }
+  :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) .reviews-pagination__numbers { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; grid-column: 1 / -1; grid-row: 1; }
+  html[data-theme] body :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) :is(.reviews-pagination__number, .rg-pagination__link) { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; border: 0; background: none; box-shadow: none; transform: none; color: var(--rg-text-primary); text-decoration: none; font-size: 14px; }
+  html[data-theme] body :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) .reviews-pagination__number { width: 40px; border-radius: var(--rg-radius-small); }
+  html[data-theme] body :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) .reviews-pagination__number[aria-current="page"] { background: var(--rg-text-primary); color: var(--rg-shell-paper); }
+  html[data-theme] body :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) .rg-pagination__link[hidden] { display: none; }
+  :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) .reviews-pagination__chevron { display: block; width: 12px; height: 12px; }
+  :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) [data-pagination-prev] { grid-row: 2; grid-column: 1; justify-self: start; }
+  :is(.entity-detail, .author-page:not(.author-index-page), .platform-related) [data-pagination-next] { grid-row: 2; grid-column: 2; justify-self: end; }
+  html[data-theme] body :is(.entity-detail, .author-page:not(.author-index-page), .platform-related, .platforms-page:has(.platform-sheet)) a:focus-visible { outline: var(--rg-focus-ring); outline-offset: var(--rg-focus-offset); }
+}

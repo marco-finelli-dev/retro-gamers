@@ -53,6 +53,7 @@ const copy = isEn
       eyebrow: 'Community survey',
       defaultDescription:
         'A short anonymous survey for the Retro-Gamers.it community.',
+      introduction: 'Tell us what you enjoy reading and what you would like to see on Retro-Gamers.it.',
       privateBadge: 'Anonymous answers',
       noLoginBadge: 'No login required',
       timeBadge: 'Takes a few minutes',
@@ -63,6 +64,7 @@ const copy = isEn
       eyebrow: 'Sondaggio community',
       defaultDescription:
         'Un breve sondaggio anonimo per la community di Retro-Gamers.it.',
+      introduction: 'Dicci cosa ti piace leggere e cosa vorresti trovare su Retro-Gamers.it.',
       privateBadge: 'Risposte anonime',
       noLoginBadge: 'Nessun login richiesto',
       timeBadge: 'Richiede pochi minuti',
@@ -99,7 +101,7 @@ const surveyImage = survey.cardImage?.asset
       .auto('format')
       .url()
   : '';
-const pageImage = surveyImage || '/og-image.jpg';
+const pageImage = surveyImage || '/og-image.webp';
 ---
 
 <BaseLayout
@@ -117,7 +119,7 @@ const pageImage = surveyImage || '/og-image.jpg';
     <CommunityHero
       kicker={copy.eyebrow}
       title={survey.title}
-      description={pageDescription}
+      description={survey.surveyKey === 'community-survey-2026' ? copy.introduction : pageDescription}
       class="community-survey-hero"
     >
       <div class="community-survey-hero__badges" aria-label={copy.eyebrow}>

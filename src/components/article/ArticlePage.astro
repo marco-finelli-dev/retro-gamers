@@ -1,16 +1,16 @@
 ---
 import ArticleHero from './ArticleHero.astro';
 import ArticleContent from './ArticleContent.astro';
+import ArticleLeadImage from './ArticleLeadImage.astro';
 import ArticleLightbox from './ArticleLightbox.astro';
 import ArticleReadingProgress from './ArticleReadingProgress.astro';
-import ArticleSidebar from './ArticleSidebar.astro';
-import ReviewSidebar from './ReviewSidebar.astro';
+import ArticleReadingCard from './ArticleReadingCard.astro';
 import ArticleFinalRating from './ArticleFinalRating.astro';
 import ArticleProsCons from './ArticleProsCons.astro';
 import ArticleAffiliateBox from './ArticleAffiliateBox.astro';
-import SupportButton from '../common/SupportButton.astro';
 import ArticleSeriesBox from './ArticleSeriesBox.astro';
 import ArticleComments from './ArticleComments.astro';
+import ArticleContextSidebar from './ArticleContextSidebar.astro';
 import ArticleCommunityPrompt from './ArticleCommunityPrompt.astro';
 import ArticleSurveyCta from './ArticleSurveyCta.astro';
 import NewsletterPromo from '../newsletter/NewsletterPromo.astro';
@@ -18,6 +18,7 @@ import { getCanonicalReviewRatingPostId } from '../../lib/review-ratings';
 import { getContentDetailSegment } from '../../lib/routes.js';
 import { getAiTransparencyNote } from '../../lib/article-ai-transparency';
 import '../../styles/article/article.css';
+import '../../styles/article/article-mobile.css';
 
 const {
   post,
@@ -26,9 +27,12 @@ const {
   comments = [],
   languageSwitch = null,
   editorialQuickEdit = null,
+  editorialNewArticleHref = null,
   isPreview = false,
   hideNewsletterPromo = false,
-  disableCommunity = false
+  disableCommunity = false,
+  readingTime = 1,
+  readingTypeLabel = ''
 } = Astro.props;
 
 const isReview = post?.type === 'review';
@@ -42,17 +46,6 @@ const aiTransparencyLabel = currentLang === 'en'
   ? 'Editorial transparency note'
   : 'Nota sulla trasparenza editoriale';
 const showCommunity = !disableCommunity;
-const heroCommentCount = Number(post?.commentCount || 0);
-const heroCommentsLabel = currentLang === 'en'
-  ? heroCommentCount > 0
-    ? `${heroCommentCount} ${heroCommentCount === 1 ? 'reader memory' : 'reader memories'}`
-    : 'Leave the first memory'
-  : heroCommentCount > 0
-    ? `${heroCommentCount} ${heroCommentCount === 1 ? 'memoria dei lettori' : 'memorie dei lettori'}`
-    : 'Lascia il primo ricordo';
-const heroCommentsAriaLabel = currentLang === 'en'
-  ? `Go to reader memories: ${heroCommentsLabel}`
-  : `Vai alle memorie dei lettori: ${heroCommentsLabel}`;
 const reviewPros = Array.isArray(post?.pros)
   ? post.pros.filter((item) => typeof item === 'string' && item.trim())
   : [];
@@ -102,37 +95,16 @@ const articlePageClass = [
   isReview ? 'is-review' : ''
 ].filter(Boolean).join(' ');
 
-const switchCta =
-  currentLang === 'en'
-    ? '🇮🇹 Leggi in italiano'
-    : '🇬🇧 Read in English';
-const switchLanguage =
-  languageSwitch?.language === 'en'
-    ? 'en'
-    : languageSwitch?.language === 'it'
-      ? 'it'
-      : currentLang === 'en'
-        ? 'it'
-        : 'en';
 
-const commentsDiscovery = currentLang === 'en'
-  ? {
-      label: 'Reader memories',
-      title: 'Do you have a memory tied to this article?',
-      text:
-        'Share it in the comments: on the site it stays with the piece instead of disappearing into the social feed.',
-      cta: 'Go to comments'
-    }
-  : {
-      label: 'Memorie dei lettori',
-      title: 'Hai un ricordo legato a questo articolo?',
-      text:
-        'Raccontalo nei commenti: sul sito resta accanto al pezzo e non si perde nel flusso dei social.',
-      cta: 'Vai ai commenti'
-    };
 ---
 
 <ArticleReadingProgress />
+<ArticleReadingCard
+  typeLabel={readingTypeLabel}
+  title={post?.title || ''}
+  readingTime={readingTime}
+  lang={currentLang}
+/>
 
 <div
   class={articlePageClass}
@@ -145,35 +117,7 @@ const commentsDiscovery = currentLang === 'en'
   data-rg-article-preview={isPreview ? 'true' : undefined}
 >
 
-  <ArticleHero post={post} editorialQuickEdit={editorialQuickEdit} />
-
-  <div class="article-post-hero-actions">
-    <div class="article-post-hero-actions__language">
-      {languageSwitch?.url && (
-        <a
-          href={languageSwitch.url}
-          class="article-language-switch"
-          data-language-session-override={switchLanguage}
-          data-rg-language-switch
-          data-rg-language-switch-from={articleAnalyticsLanguage}
-          data-rg-language-switch-to={switchLanguage}
-          data-rg-language-switch-placement="article_translation"
-          data-rg-language-switch-content-type={articleAnalyticsContentType}
-        >
-          {switchCta}
-        </a>
-      )}
-    </div>
-
-    {showCommunity && (
-      <div class="article-post-hero-actions__community">
-        <a href="#comments" class="article-community-jump" aria-label={heroCommentsAriaLabel}>
-          <span class="article-community-jump__icon" aria-hidden="true"></span>
-          <span>{heroCommentsLabel}</span>
-        </a>
-      </div>
-    )}
-  </div>
+  <ArticleHero post={post} />
 
   <div class="article-page__body">
 
@@ -213,55 +157,34 @@ const commentsDiscovery = currentLang === 'en'
 
       {showCommunity && !isPreview && !hasReviewEnding && <ArticleSurveyCta lang={currentLang} />}
 
-      {hasReviewFinalRating && (
+      {hasReviewEnding && (
+        <div class="article-review-ending">
+          {hasReviewFinalRating && (
+            <ArticleFinalRating
+              rating={post.rating}
+              lang={currentLang}
+              readerRatingPostId={reviewRatingPostId}
+            />
+          )}
 
-        <ArticleFinalRating
-          rating={post.rating}
-          lang={currentLang}
-          readerRatingPostId={reviewRatingPostId}
-        />
-
-      )}
-
-      {hasReviewProsCons && (
-        <ArticleProsCons pros={reviewPros} cons={reviewCons} lang={currentLang} />
+          {hasReviewProsCons && (
+            <ArticleProsCons pros={reviewPros} cons={reviewCons} lang={currentLang} />
+          )}
+        </div>
       )}
 
       {showCommunity && !isPreview && hasReviewEnding && <ArticleSurveyCta lang={currentLang} />}
 
-      {showCommunity && (
-        <aside
-          class="article-comments-discovery article-comments-discovery--article-end"
-          aria-labelledby="article-comments-invite-title"
-        >
-          <div>
-            <span class="article-comments-discovery__label">{commentsDiscovery.label}</span>
-            <h2 id="article-comments-invite-title">{commentsDiscovery.title}</h2>
-            <p>{commentsDiscovery.text}</p>
-          </div>
-
-          <a href="#comments">{commentsDiscovery.cta}</a>
-        </aside>
-      )}
-
        <ArticleSeriesBox post={post} seriesPosts={seriesPosts} />
-
-      <SupportButton lang={currentLang} variant="box" />
 
       {!hideNewsletterPromo && <NewsletterPromo lang={currentLang} variant="article-end" />}
 
     </article>
 
-       <aside class="article-page__sidebar">
-      {isReview ? (
-        <ReviewSidebar post={post} relatedPosts={relatedPosts} />
-      ) : (
-        <ArticleSidebar
-          post={post}
-          relatedPosts={relatedPosts}
-          hideNewsletterPromo={hideNewsletterPromo}
-        />
-      )}
+    <aside class="article-page__sidebar article-page__sidebar--context">
+      <ArticleLeadImage post={post} />
+
+      <ArticleContextSidebar post={post} relatedPosts={relatedPosts} editorialQuickEdit={editorialQuickEdit} editorialNewArticleHref={editorialNewArticleHref} />
     </aside>
 
   </div>

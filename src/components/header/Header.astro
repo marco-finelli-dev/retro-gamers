@@ -1,52 +1,42 @@
 ---
 import Search from './Search.astro';
-import ReviewsMenu from './ReviewsMenu.astro';
-import NewsMenu from './NewsMenu.astro';
-import PlatformsMenu from './PlatformsMenu.astro';
+import NavigationRails from './NavigationRails.astro';
 import MobileMenu from './MobileMenu.astro';
-import { getArchiveUrl } from '../../lib/routes.js';
 import { getEditorialSessionForUserSession } from '../../lib/editorial/session.server';
 import '../../styles/components/header/header.css';
+import '../../styles/components/header/navigation-rails.css';
+import '../../styles/components/header/mobile-shell.css';
 
 const {
-  reviews = [],
-  news = [],
   lang = 'it',
-  languageSwitch = null
+  languageSwitch = null,
+  readingContext = null
 } = Astro.props;
 
 const isEnglish = lang === 'en';
+const readingAuthorName = String(readingContext?.authorName || '').trim();
+const readingAuthorAvatar = String(readingContext?.authorAvatar || '').trim();
+const readingAuthorInitials = readingAuthorName
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((part) => part[0])
+  .join('')
+  .toUpperCase();
 
 const labels = isEnglish
   ? {
       home: 'Go to Retro Gamers home',
-      navigation: 'Main navigation',
-      reviews: 'Reviews',
-      news: 'News',
-      features: 'Features',
-      guides: 'Guides',
-      memories: 'Memories',
-      platforms: 'Platforms',
       openMenu: 'Open menu',
       theme: 'Change theme'
     }
   : {
       home: 'Vai alla home di Retro Gamers',
-      navigation: 'Navigazione principale',
-      reviews: 'Recensioni',
-      news: 'News',
-      features: 'Speciali',
-      guides: 'Guide',
-      memories: 'Memories',
-      platforms: 'Piattaforme',
       openMenu: 'Apri menu',
       theme: 'Cambia tema'
     };
 
 const homeUrl = isEnglish ? '/en/' : '/';
-const featuresHref = getArchiveUrl('feature', lang);
-const guidesHref = getArchiveUrl('guide', lang);
-const memoriesHref = getArchiveUrl('memories', lang);
 
 const languageSwitchUrl =
   typeof languageSwitch === 'string'
@@ -115,111 +105,80 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
 
   <div class="site-header__inner">
 
+      <button
+        type="button"
+        class="mobile-menu-toggle"
+        aria-label={labels.openMenu}
+        aria-controls="mobile-menu"
+        aria-expanded="false"
+        data-mobile-menu-toggle
+      >
+        <svg
+          class="mobile-menu-toggle__icon mobile-menu-toggle__icon--open"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M4 7H20" />
+          <path d="M4 12H20" />
+          <path d="M4 17H20" />
+        </svg>
+
+        <svg
+          class="mobile-menu-toggle__icon mobile-menu-toggle__icon--close"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M6 6L18 18" />
+          <path d="M18 6L6 18" />
+        </svg>
+      </button>
+
     <!-- LOGO -->
     <a href={homeUrl} class="site-header__logo" aria-label={labels.home}>
       <img
         class="site-header__logo-dark"
         src="/images/brand/retro-gamers-logo-ivory.svg"
-        alt="Retro Gamers"
-        width="295"
+        alt="Retro-Gamers.it"
+        width="223"
         height="57"
       />
       <img
         class="site-header__logo-light"
         src="/images/brand/retro-gamers-logo-navy.svg"
-        alt="Retro Gamers"
-        width="295"
+        alt="Retro-Gamers.it"
+        width="223"
         height="57"
       />
     </a>
 
-    <!-- NAV DESKTOP -->
-    <nav class="site-header__nav" aria-label={labels.navigation}>
-
-      <!-- RECENSIONI / REVIEWS -->
-      <div class="site-header__nav-item has-dropdown" data-header-dropdown>
-        <button
-          type="button"
-          class="site-header__nav-link site-header__nav-button"
-          aria-haspopup="true"
-          aria-expanded="false"
-          aria-controls="site-header-reviews-dropdown"
-          data-header-dropdown-trigger
-        >
-          {labels.reviews}
-        </button>
-
-        <div
-          id="site-header-reviews-dropdown"
-          class="site-header__dropdown"
-          aria-hidden="true"
-          data-header-dropdown-panel
-          inert
-        >
-          <ReviewsMenu posts={reviews} lang={lang} />
+    {readingContext && (
+      <div class="site-header__reading" data-reading-header hidden>
+        <div class="site-header__reading-content">
+          <span class="rg-card-meta-inline rg-card-meta-inline--primary">{readingContext.typeLabel}</span>
+          <span class="site-header__reading-title">{readingContext.title}</span>
         </div>
+
+        {readingAuthorName && (
+          <div class="site-header__reading-author">
+            <span class="site-header__reading-author-avatar" aria-hidden="true">
+              {readingAuthorAvatar ? (
+                <img src={readingAuthorAvatar} alt="" width="30" height="30" decoding="async" />
+              ) : (
+                <span>{readingAuthorInitials || 'RG'}</span>
+              )}
+            </span>
+
+            <span class="site-header__reading-author-copy">
+              <strong class="site-header__reading-author-name">{readingAuthorName}</strong>
+              {readingContext.readingTimeLabel && (
+                <small class="site-header__reading-time">{readingContext.readingTimeLabel}</small>
+              )}
+            </span>
+          </div>
+        )}
       </div>
+    )}
 
-      <!-- NEWS -->
-      <div class="site-header__nav-item has-dropdown" data-header-dropdown>
-        <button
-          type="button"
-          class="site-header__nav-link site-header__nav-button"
-          aria-haspopup="true"
-          aria-expanded="false"
-          aria-controls="site-header-news-dropdown"
-          data-header-dropdown-trigger
-        >
-          {labels.news}
-        </button>
-
-        <div
-          id="site-header-news-dropdown"
-          class="site-header__dropdown"
-          aria-hidden="true"
-          data-header-dropdown-panel
-          inert
-        >
-          <NewsMenu posts={news} lang={lang} />
-        </div>
-      </div>
-
-      <a href={featuresHref} class="site-header__nav-link">
-        {labels.features}
-      </a>
-
-      <a href={guidesHref} class="site-header__nav-link">
-        {labels.guides}
-      </a>
-
-      <a href={memoriesHref} class="site-header__nav-link">
-        {labels.memories}
-      </a>
-
-      <div class="site-header__nav-item has-dropdown" data-header-dropdown>
-        <button
-          type="button"
-          class="site-header__nav-link site-header__nav-button"
-          aria-haspopup="true"
-          aria-expanded="false"
-          aria-controls="site-header-platforms-dropdown"
-          data-header-dropdown-trigger
-        >
-          {labels.platforms}
-        </button>
-
-        <div
-          id="site-header-platforms-dropdown"
-          class="site-header__dropdown"
-          aria-hidden="true"
-          data-header-dropdown-panel
-          inert
-        >
-          <PlatformsMenu lang={lang} />
-        </div>
-      </div>
-
-    </nav>
 
     <!-- ACTIONS -->
     <div class="site-header__actions">
@@ -252,8 +211,80 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
         />
       </a>
 
+      <Search lang={lang} />
+
+      <div data-header-account></div>
+
+
+    </div>
+
+  </div>
+
+</header>
+
+{readingContext && (
+  <script is:inline>
+    (() => {
+      const initReadingHeader = () => {
+        const header = document.querySelector('[data-reading-header]');
+        const title = document.querySelector('.article-hero h1');
+        const articleContent = document.querySelector('.article-page__content > .article-content');
+        if (!header || !title || !articleContent || !window.matchMedia('(min-width: 1200px)').matches) return;
+        const shell = header.closest('.site-header');
+        const progress = document.createElement('span');
+        progress.className = 'site-header__reading-progress';
+        shell?.append(progress);
+        let frame;
+        const updateReadingState = () => {
+          frame = undefined;
+          const headerBounds = shell?.getBoundingClientRect();
+          if (!headerBounds) return;
+
+          const titleBounds = title.getBoundingClientRect();
+          const visibleFraction = Math.min(
+            1,
+            Math.max(0, (titleBounds.bottom - headerBounds.bottom) / Math.max(1, titleBounds.height)),
+          );
+          const readingReveal = 1 - visibleFraction;
+          const isReading = readingReveal > 0;
+          shell.classList.toggle('is-reading', isReading);
+          shell.style.setProperty('--rg-reading-reveal', String(readingReveal));
+          header.hidden = !isReading;
+
+          const articleBounds = articleContent.getBoundingClientRect();
+          const travelled = headerBounds.height - articleBounds.top;
+          const available = Math.max(1, articleBounds.height - window.innerHeight + headerBounds.height);
+          progress.style.transform = `scaleX(${Math.min(1, Math.max(0, travelled / available))})`;
+        };
+        const requestUpdate = () => {
+          if (frame !== undefined) return;
+          frame = requestAnimationFrame(updateReadingState);
+        };
+        addEventListener('scroll', requestUpdate, { passive: true });
+        addEventListener('resize', requestUpdate, { passive: true });
+        addEventListener('pagehide', () => {
+          if (frame !== undefined) cancelAnimationFrame(frame);
+          removeEventListener('scroll', requestUpdate);
+          removeEventListener('resize', requestUpdate);
+        }, { once: true });
+        updateReadingState();
+      };
+
+      if (document.readyState === 'loading') {
+        addEventListener('DOMContentLoaded', initReadingHeader, { once: true });
+      } else {
+        initReadingHeader();
+      }
+    })();
+  </script>
+)}
+
+<MobileMenu lang={lang} languageSwitch={languageSwitch} />
+
+<NavigationRails lang={lang}>
       <div
         class="site-header__account"
+        slot="account"
         data-account-menu
         data-lang={lang}
         data-initial-account-state={JSON.stringify(initialAccountState)}
@@ -276,7 +307,7 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
 
           <img
             class="site-header__account-icon"
-            src="/icons/account-user.svg"
+            src="/icons/rails/user.svg"
             alt=""
             width="22"
             height="22"
@@ -328,6 +359,8 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
               <span class="site-header__admin-unread" data-admin-unread hidden></span>
             </a>
 
+            <a href={isEnglish ? '/en/admin/comments/' : '/admin/comments/'} role="menuitem" data-account-moderation-area hidden>{isEnglish ? 'Moderation' : 'Moderazione'}</a>
+
             <span class="site-header__account-separator" aria-hidden="true"></span>
 
             <button class="site-header__account-logout" type="button" role="menuitem" data-account-logout>
@@ -336,179 +369,8 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
           </div>
         </div>
       </div>
+</NavigationRails>
 
-      <Search lang={lang} />
-
-      <button
-        type="button"
-        class="mobile-menu-toggle"
-        aria-label={labels.openMenu}
-        aria-controls="mobile-menu"
-        aria-expanded="false"
-        data-mobile-menu-toggle
-      >
-        <svg
-          class="mobile-menu-toggle__icon mobile-menu-toggle__icon--open"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path d="M4 7H20" />
-          <path d="M4 12H20" />
-          <path d="M4 17H20" />
-        </svg>
-
-        <svg
-          class="mobile-menu-toggle__icon mobile-menu-toggle__icon--close"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path d="M6 6L18 18" />
-          <path d="M18 6L6 18" />
-        </svg>
-      </button>
-    </div>
-
-  </div>
-
-</header>
-
-<MobileMenu lang={lang} />
-
-<script is:inline>
-(() => {
-  const dropdowns = Array.from(
-    document.querySelectorAll('[data-header-dropdown]')
-  );
-
-  if (!dropdowns.length) return;
-
-  let isMovingFocus = false;
-
-  const getDropdownElements = (dropdown) => ({
-    trigger: dropdown.querySelector('[data-header-dropdown-trigger]'),
-    panel: dropdown.querySelector('[data-header-dropdown-panel]')
-  });
-
-  const closeDropdown = (dropdown, restoreFocus = false) => {
-    const { trigger, panel } = getDropdownElements(dropdown);
-    if (!trigger || !panel) return;
-
-    const focusIsInPanel = panel.contains(document.activeElement);
-
-    dropdown.classList.remove('is-open');
-    trigger.setAttribute('aria-expanded', 'false');
-    panel.setAttribute('aria-hidden', 'true');
-
-    if (restoreFocus || focusIsInPanel) {
-      isMovingFocus = true;
-      trigger.focus({ preventScroll: true });
-      isMovingFocus = false;
-    }
-
-    panel.setAttribute('inert', '');
-  };
-
-  const closeAllDropdowns = (except = null) => {
-    dropdowns.forEach((dropdown) => {
-      if (dropdown !== except) {
-        closeDropdown(dropdown);
-      }
-    });
-  };
-
-  const openDropdown = (dropdown) => {
-    const { trigger, panel } = getDropdownElements(dropdown);
-    if (!trigger || !panel) return;
-
-    closeAllDropdowns(dropdown);
-
-    dropdown.classList.add('is-open');
-    trigger.setAttribute('aria-expanded', 'true');
-    panel.setAttribute('aria-hidden', 'false');
-    panel.removeAttribute('inert');
-  };
-
-  dropdowns.forEach((dropdown) => {
-    const { trigger } = getDropdownElements(dropdown);
-    if (!trigger) return;
-
-    let wasOpenOnPointerDown = false;
-
-    trigger.addEventListener('pointerdown', () => {
-      wasOpenOnPointerDown = trigger.getAttribute('aria-expanded') === 'true';
-    });
-
-    trigger.addEventListener('click', (event) => {
-      event.stopPropagation();
-
-      const shouldClose = event.detail > 0
-        ? wasOpenOnPointerDown
-        : trigger.getAttribute('aria-expanded') === 'true';
-
-      if (shouldClose) {
-        closeDropdown(dropdown);
-        return;
-      }
-
-      openDropdown(dropdown);
-    });
-
-    dropdown.addEventListener('mouseenter', () => {
-      openDropdown(dropdown);
-    });
-
-    dropdown.addEventListener('mouseleave', () => {
-      if (!dropdown.contains(document.activeElement)) {
-        closeDropdown(dropdown);
-      }
-    });
-
-    dropdown.addEventListener('focusin', () => {
-      if (!isMovingFocus) {
-        openDropdown(dropdown);
-      }
-    });
-
-    dropdown.addEventListener('focusout', () => {
-      window.requestAnimationFrame(() => {
-        if (!dropdown.contains(document.activeElement)) {
-          closeDropdown(dropdown);
-        }
-      });
-    });
-  });
-
-  document.addEventListener('click', (event) => {
-    if (dropdowns.some((dropdown) => dropdown.contains(event.target))) {
-      return;
-    }
-
-    closeAllDropdowns();
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return;
-
-    const openDropdownElement = dropdowns.find(
-      (dropdown) =>
-        dropdown
-          .querySelector('[data-header-dropdown-trigger]')
-          ?.getAttribute('aria-expanded') === 'true'
-    );
-
-    if (!openDropdownElement) return;
-
-    event.preventDefault();
-    closeDropdown(openDropdownElement, true);
-  });
-
-  window.addEventListener('resize', () => {
-    if (window.innerWidth <= 820) {
-      closeAllDropdowns();
-    }
-  });
-})();
-</script>
 
 <script is:inline>
 (() => {
@@ -595,11 +457,38 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
       : `/utenti/${encodeURIComponent(username)}/`;
   };
 
+  let previousSidebarUnread = 0;
+
   const setUnreadCount = (count = 0) => {
     const safeCount = Number.isFinite(Number(count)) ? Math.max(0, Number(count)) : 0;
     const label = safeCount > 99 ? '99+' : String(safeCount);
 
     root?.classList.toggle('has-unread', safeCount > 0);
+
+    const notificationLabel = isEnglish
+      ? `${safeCount} ${safeCount === 1 ? 'new notification' : 'new notifications'}`
+      : `${safeCount} ${safeCount === 1 ? 'nuova notifica' : 'nuove notifiche'}`;
+    document.querySelectorAll('[data-sidebar-notifications]').forEach((link) => {
+      link.hidden = safeCount <= 0;
+      if (safeCount === previousSidebarUnread) return;
+      link.setAttribute('aria-label', notificationLabel);
+      const text = link.querySelector('[data-sidebar-notifications-label]');
+      if (text) {
+        text.replaceChildren();
+        if (safeCount > 0) {
+          const number = document.createElement('strong');
+          number.textContent = String(safeCount);
+          text.append(number, document.createTextNode(notificationLabel.slice(String(safeCount).length)));
+        }
+      }
+      link.classList.remove('is-announcing');
+      if (safeCount > previousSidebarUnread && matchMedia('(min-width: 1200px)').matches) {
+        // Restart only on an actual increase, using the existing unread refresh.
+        void link.offsetWidth;
+        link.classList.add('is-announcing');
+      }
+    });
+    previousSidebarUnread = safeCount;
 
     document.querySelectorAll('[data-account-unread]').forEach((node) => {
       node.textContent = safeCount > 0 ? label : '';

@@ -3,14 +3,132 @@
 ========================= */
 
 @font-face {
-  font-family: 'Inter';
-  src: url('/fonts/inter-variable.woff2') format('woff2');
-  font-weight: 300 950;
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans-latin-ext-variable.woff2') format('woff2-variations');
+  font-weight: 300 700;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('/fonts/ibm-plex-sans-latin-variable.woff2') format('woff2-variations');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 :root {
+  /* =========================================
+     RG DESIGN SYSTEM / VISUAL CONSTITUTION
+  ========================================= */
+  --rg-color-navy: #092547;
+  --rg-color-ivory: #F7F1E5;
+  --rg-color-gold: #E8BA46;
+  --rg-color-green: #36BA81;
+  --rg-color-teal: #005F8E;
+  --rg-color-coral: #EA4E47;
+  --rg-color-ink: var(--rg-color-ivory);
+  --rg-color-muted: color-mix(in srgb, var(--rg-color-ivory) 70%, transparent);
+  --rg-color-border: color-mix(in srgb, var(--rg-color-ivory) 17%, transparent);
+  --rg-color-surface: color-mix(in srgb, var(--rg-color-navy) 84%, var(--rg-color-ivory));
+  --rg-color-hover: var(--rg-color-green);
+  --rg-text-primary: var(--rg-color-ivory);
+  --rg-text-secondary: color-mix(in srgb, var(--rg-color-ivory) 70%, transparent);
+  --rg-text-muted: color-mix(in srgb, var(--rg-color-ivory) 56%, transparent);
+  --rg-title-color: var(--rg-text-primary);
+  --rg-title-hover: var(--rg-color-gold);
+  --rg-ui-text: var(--rg-text-primary);
+  --rg-link-color: var(--rg-text-secondary);
+  --rg-link-hover: var(--rg-text-primary);
+  --rg-meta-primary-color: var(--rg-color-coral);
+  --rg-meta-secondary-color: color-mix(in srgb, var(--rg-color-teal) 58%, var(--rg-color-ivory));
+  --rg-meta-accessory-color: color-mix(in srgb, var(--rg-color-ivory) 64%, transparent);
+  --rg-meta-separator-color: color-mix(in srgb, var(--rg-color-ivory) 24%, transparent);
+  --rg-surface-page: var(--rg-color-navy);
+  --rg-surface-card: color-mix(in srgb, var(--rg-color-ivory) 5%, transparent);
+  --rg-surface-card-subtle: color-mix(in srgb, var(--rg-color-ivory) 4%, transparent);
+  --rg-border-neutral: color-mix(in srgb, var(--rg-color-ivory) 16%, transparent);
+  --rg-divider-color: var(--rg-border-neutral);
+  --rg-divider-width: 2px;
+
+  --rg-font-family: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --rg-weight-regular: 400;
+  --rg-weight-medium: 500;
+  --rg-weight-semibold: 600;
+  --rg-weight-bold: 700;
+  --rg-type-meta: 11px;
+  --rg-type-ui-small: 14px;
+  --rg-type-body: 16px;
+  --rg-type-card-small: 18px;
+  --rg-type-card: 22px;
+  --rg-type-section: clamp(26px, 2vw, 30px);
+  --rg-type-panel: 22px;
+  --rg-type-feature: clamp(34px, 3.25vw, 50px);
+  --rg-type-page-title: clamp(38px, 4vw, 52px);
+  --rg-type-display-title: var(--rg-type-page-title);
+  --rg-type-section-title: var(--rg-type-section);
+  --rg-type-module-title: var(--rg-type-card);
+  --rg-type-feature-title: var(--rg-type-section);
+  --rg-type-standard-title: var(--rg-type-card-small);
+  --rg-type-compact-title: var(--rg-type-ui-small);
+  --rg-type-excerpt: var(--rg-type-body);
+  --rg-type-metadata: var(--rg-type-meta);
+  --rg-type-utility: var(--rg-type-ui-small);
+  --rg-leading-body: 1.6;
+
+  --rg-space-1: 4px;
+  --rg-space-2: 8px;
+  --rg-space-3: 12px;
+  --rg-space-4: 16px;
+  --rg-space-6: 24px;
+  --rg-space-8: 32px;
+  --rg-space-12: 48px;
+  --rg-space-16: 64px;
+  --rg-space-20: 80px;
+  --rg-space-24: 96px;
+  --rg-gap-micro: var(--rg-space-1);
+  --rg-gap-inline: var(--rg-space-2);
+  --rg-gap-card: var(--rg-space-4);
+  --rg-gap-module: var(--rg-space-6);
+  --rg-padding-section: var(--rg-space-8);
+  --rg-spacing-section: var(--rg-space-20);
+
+  --rg-layout-editorial-max: 1200px;
+  --rg-layout-gutter-desktop: 32px;
+  --rg-layout-gutter-tablet: 24px;
+  --rg-layout-gutter-mobile: 18px;
+
+  --rg-radius-small: 9px;
+  --rg-radius-medium: 12px;
+  --rg-radius-accent: 34px;
+  --rg-profile-neutral: var(--rg-radius-medium);
+  --rg-profile-feature-right: var(--rg-radius-medium) var(--rg-radius-medium) var(--rg-radius-accent) var(--rg-radius-medium);
+  --rg-profile-feature-left: var(--rg-radius-medium) var(--rg-radius-medium) var(--rg-radius-medium) var(--rg-radius-accent);
+
+  --rg-duration-fast: 140ms;
+  --rg-duration-media: 160ms;
+  --rg-ease-standard: ease;
+  --rg-focus-ring: none;
+  --rg-focus-offset: 0px;
+
+  /* Approved magazine values, adopted progressively without changing legacy UI. */
+  --rg-magazine-ivory: #F7F1E5;
+  --rg-magazine-navy: #092547;
+  --rg-magazine-surface: #FFFDF8;
+  --rg-magazine-border: rgba(9,37,71,0.10);
+  --rg-magazine-border-hover: rgba(9,37,71,0.28);
+  --rg-magazine-shadow: 0 12px 36px rgba(9,37,71,0.06);
+  --rg-magazine-shell-radius: 18px;
+  --rg-magazine-card-radius: 12px;
+  --rg-magazine-image-brightness: .87;
+  --rg-magazine-transition: 200ms ease;
+  --rg-shell-canvas: #0B1422;
+  --rg-shell-paper: #111C2B;
+  --rg-shell-surface: var(--color-surface-2);
+
   /* ======================
      BACKGROUND
   ====================== */
@@ -163,14 +281,14 @@
   /* ======================
      TYPOGRAPHY
   ====================== */
-  --font-base: 'Inter', system-ui, sans-serif;
-  --font-display: 'Orbitron', sans-serif;
+  --font-base: var(--rg-font-family);
+  --font-display: var(--rg-font-family);
 
   --text-xs: 12px;
   --text-sm: 13px;
-  --text-base: 16px;
-  --text-lg: 18px;
-  --text-xl: 22px;
+  --text-base: var(--rg-type-body);
+  --text-lg: var(--rg-type-card-small);
+  --text-xl: var(--rg-type-card);
   --text-2xl: 28px;
   --text-3xl: 42px;
 
@@ -199,8 +317,17 @@
   /* ======================
      LAYOUT
   ====================== */
-  --layout-wide: 1200px;
+  --layout-wide: var(--rg-layout-editorial-max);
+  /* The container supplies --space-md; editorial modules share this inner inset. */
+  --rg-page-content-inset: clamp(24px, 2.4vw, 38px);
+  --rg-page-content-gutter: calc(var(--space-md) + var(--rg-page-content-inset));
   --header-gap: 8px;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --rg-page-content-inset: var(--rg-layout-gutter-mobile);
+  }
 }
 
 .rg-comment-count {
@@ -216,7 +343,7 @@
 
   font-size: 10px;
   line-height: 1;
-  font-weight: 820;
+  font-weight: var(--rg-weight-semibold);
 
   letter-spacing: 0;
 
@@ -240,24 +367,18 @@
   height: 22px;
   padding: 0 6px;
 
-  border: 1px solid rgba(34,240,255,0.34);
+  border: 1px solid var(--rg-border-neutral);
   border-radius: 999px;
-
-  background:
-    linear-gradient(180deg, rgba(16,22,32,0.96), rgba(5,7,14,0.98)),
-    radial-gradient(circle at 20% 10%, rgba(34,240,255,0.28), transparent 48%);
-  color: var(--color-primary);
+  background: var(--rg-surface-page);
+  color: var(--rg-text-primary);
 
   font-size: 0.66rem;
-  font-weight: 950;
+  font-weight: var(--rg-weight-bold);
   letter-spacing: 0;
   line-height: 1;
 
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.16),
-    0 0 0 2px rgba(5,7,14,0.82),
-    0 8px 18px rgba(0,0,0,0.28),
-    0 0 16px rgba(34,240,255,0.12);
+  box-shadow: none;
+  animation: none;
 
   white-space: nowrap;
 }
@@ -284,7 +405,7 @@
   box-shadow: none;
   color: var(--home-section-eyebrow-color, var(--color-primary));
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--rg-weight-semibold);
   text-shadow: none;
 }
 
@@ -317,7 +438,7 @@
   color: var(--home-section-eyebrow-color);
   font-size: 10px;
   line-height: 1;
-  font-weight: var(--home-section-eyebrow-weight, 850);
+  font-weight: var(--home-section-eyebrow-weight, var(--rg-weight-semibold));
   letter-spacing: var(--home-section-eyebrow-letter-spacing, 0.08em);
   text-transform: uppercase;
 }
@@ -355,6 +476,30 @@
 ========================= */
 
 html[data-theme="light"] {
+  --rg-text-primary: var(--rg-color-navy);
+  --rg-text-secondary: color-mix(in srgb, var(--rg-color-navy) 70%, transparent);
+  --rg-text-muted: color-mix(in srgb, var(--rg-color-navy) 56%, transparent);
+  --rg-title-color: var(--rg-text-primary);
+  --rg-title-hover: var(--rg-color-teal);
+  --rg-ui-text: var(--rg-text-primary);
+  --rg-link-color: var(--rg-text-secondary);
+  --rg-link-hover: var(--rg-text-primary);
+  --rg-meta-secondary-color: var(--rg-color-teal);
+  --rg-meta-accessory-color: color-mix(in srgb, var(--rg-color-navy) 64%, transparent);
+  --rg-meta-separator-color: color-mix(in srgb, var(--rg-color-navy) 24%, transparent);
+  --rg-color-ink: var(--rg-color-navy);
+  --rg-color-muted: color-mix(in srgb, var(--rg-color-navy) 70%, transparent);
+  --rg-color-border: color-mix(in srgb, var(--rg-color-navy) 18%, transparent);
+  --rg-color-surface: var(--rg-color-ivory);
+  --rg-color-hover: var(--rg-color-teal);
+  --rg-surface-page: var(--rg-color-ivory);
+  --rg-surface-card: color-mix(in srgb, var(--rg-color-navy) 5%, transparent);
+  --rg-surface-card-subtle: color-mix(in srgb, var(--rg-color-navy) 4%, transparent);
+  --rg-border-neutral: color-mix(in srgb, var(--rg-color-navy) 18%, transparent);
+  --rg-divider-color: var(--rg-border-neutral);
+  --rg-shell-canvas: #061B33;
+  --rg-shell-paper: #F0E8DA;
+  --rg-shell-surface: var(--rg-magazine-surface);
   /* ======================
      BACKGROUND
   ====================== */
@@ -509,6 +654,79 @@ html[data-theme="light"] {
   --rg-select-caret-icon: var(--rg-select-caret-icon-light);
 }
 
+.rg-meta-primary {
+  color: var(--rg-meta-primary-color);
+}
+
+.rg-meta-secondary,
+.rg-meta-tertiary {
+  color: var(--rg-meta-secondary-color);
+}
+
+.rg-meta-auxiliary {
+  color: var(--rg-meta-accessory-color);
+}
+
+/* Shared keyboard focus: no perimeter rings or glow. Important intentionally
+   replaces the legacy per-component focus outlines without changing layout. */
+html body :focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+html body :focus-visible {
+  box-shadow: inset 0 -2px 0 currentColor !important;
+}
+
+html body :is(a, button):focus-visible {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* The face covers its parent's inset indicator on the shared raised CTA. */
+html body .rg-cta-filled-raised:focus-visible .rg-cta-filled-raised__face {
+  box-shadow: inset 0 -2px 0 currentColor;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+@media (forced-colors: active) {
+  html body :focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px;
+  }
+}
+
+.rg-meta-separator {
+  color: var(--rg-meta-separator-color);
+}
+
+.rg-editorial-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.rg-editorial-title {
+  color: var(--rg-title-color);
+  text-decoration: none;
+  text-shadow: none;
+  transition: color var(--rg-duration-fast) var(--rg-ease-standard);
+}
+
+.rg-editorial-link:is(:hover, :focus-visible, :active) .rg-editorial-title {
+  color: var(--rg-title-hover);
+  text-decoration: none;
+  text-shadow: none;
+}
+
+.rg-editorial-link:focus-visible,
+.rg-archive-link:focus-visible {
+  outline: var(--rg-focus-ring);
+  outline-offset: var(--rg-focus-offset);
+}
+
 
 /* =========================
    🔧 RESET
@@ -559,7 +777,9 @@ body {
   color: var(--color-text);
   font-family: var(--font-base);
   font-size: var(--text-base);
-  line-height: 1.6;
+  font-weight: var(--rg-weight-regular);
+  line-height: var(--rg-leading-body);
+  font-synthesis: none;
 
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -572,6 +792,116 @@ body > * {
 
 body.no-scroll {
   overflow-y: scroll;
+}
+
+
+/* =========================
+   🔘 FILLED / RAISED CTA
+========================= */
+
+.rg-cta-filled-raised {
+  --rg-cta-filled-surface: var(--rg-color-gold);
+  --rg-cta-filled-ink: var(--rg-color-navy);
+  --rg-cta-filled-plinth: color-mix(in srgb, var(--rg-color-gold) 62%, var(--rg-color-navy));
+  --rg-cta-filled-press: 0px;
+  --rg-cta-filled-min-inline-size: 176px;
+  --rg-cta-filled-padding-inline: var(--rg-space-4);
+
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: fit-content;
+  min-inline-size: var(--rg-cta-filled-min-inline-size);
+  max-inline-size: 100%;
+  block-size: 44px;
+  padding: 0;
+  flex: 0 0 auto;
+  overflow: visible;
+  border: 0;
+  border-radius: 10px 10px 20px 10px;
+  background: transparent;
+  color: var(--rg-cta-filled-ink);
+  cursor: pointer;
+  font-family: var(--rg-font-family);
+  font-size: var(--rg-type-body);
+  font-weight: var(--rg-weight-bold);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  justify-self: center;
+}
+
+.rg-cta-filled-raised::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--rg-cta-filled-plinth);
+  content: "";
+  pointer-events: none;
+  transform: translateY(4px);
+}
+
+.rg-cta-filled-raised__face {
+  position: relative;
+  z-index: 1;
+  align-self: stretch;
+  display: flex;
+  flex: 1 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--rg-cta-filled-padding-inline);
+  border-radius: inherit;
+  background: var(--rg-cta-filled-surface);
+  color: var(--rg-cta-filled-ink);
+  pointer-events: none;
+  text-align: center;
+  transform: translateY(var(--rg-cta-filled-press));
+  transition: transform var(--rg-duration-fast) var(--rg-ease-standard);
+}
+
+.rg-cta-filled-raised:hover {
+  --rg-cta-filled-press: 3px;
+}
+
+.rg-cta-filled-raised:active {
+  --rg-cta-filled-press: 5px;
+}
+
+.rg-cta-filled-raised:focus-visible {
+  outline: var(--rg-focus-ring);
+  outline-offset: var(--rg-focus-offset);
+}
+
+.rg-cta-filled-raised--primary {
+  --rg-cta-filled-surface: var(--rg-color-gold);
+  --rg-cta-filled-ink: var(--rg-color-navy);
+  --rg-cta-filled-plinth: color-mix(in srgb, var(--rg-color-gold) 62%, var(--rg-color-navy));
+}
+
+html[data-theme="light"] .rg-cta-filled-raised--primary {
+  --rg-cta-filled-surface: var(--rg-color-coral);
+  --rg-cta-filled-ink: var(--rg-color-ivory);
+  --rg-cta-filled-plinth: color-mix(in srgb, var(--rg-color-coral) 62%, var(--rg-color-navy));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rg-cta-filled-raised__face {
+    transition: none;
+  }
+
+  .rg-editorial-title,
+  .rg-archive-link {
+    transition: none;
+  }
+
+  .rg-cta-filled-raised:is(:hover, :active) {
+    --rg-cta-filled-press: 0px;
+  }
 }
 
 main,
@@ -652,13 +982,14 @@ video {
 h1,
 h2 {
   font-family: var(--font-display);
+  font-weight: var(--rg-weight-bold);
   letter-spacing: 0.5px;
 }
 
 h3,
 h4 {
   font-family: var(--font-base);
-  font-weight: 500;
+  font-weight: var(--rg-weight-semibold);
 }
 
 h1 {
@@ -728,6 +1059,18 @@ html[data-theme="light"] a:hover {
   padding-right: var(--space-md);
 }
 
+/* Shared outer frame for RG editorial pages. */
+@media (max-width: 1199px) {
+  body:has(> main.rg-page-shell) {
+    background: var(--rg-shell-paper);
+    background-image: none;
+  }
+
+  body:has(> main.rg-page-shell):has(main > .home-hero) {
+    background: var(--page-background);
+    background-size: var(--page-background-size, auto);
+  }
+}
 
 /* =========================
    🧊 SECTION BOX BASE
@@ -832,37 +1175,14 @@ html[data-theme="light"] .card:hover .card-title-sm {
    ☀️ LIGHT THEME GLOBAL TUNING
 ========================= */
 
-/* Link testuali dentro articoli: meno neon, più editoriale */
-html[data-theme="light"] .article-content a {
-  color: var(--color-primary);
-
-  background:
-    linear-gradient(
-      to right,
-      rgba(8,124,142,0.26),
-      rgba(8,124,142,0.26)
-    );
-
-  background-size: 100% 1px;
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-}
-
-html[data-theme="light"] .article-content a:hover {
-  color: #065F6F;
-  text-shadow: none;
-  background-size: 100% 2px;
-}
-
 /* Kicker, label e micro-titoli: niente cyan fluo in light */
-html[data-theme="light"] [class*="__kicker"],
-html[data-theme="light"] [class*="__eyebrow"],
-html[data-theme="light"] [class*="__type"],
+html[data-theme="light"] [class*="__kicker"]:not(.rg-meta-primary, .rg-meta-secondary, .rg-meta-tertiary),
+html[data-theme="light"] [class*="__eyebrow"]:not(.rg-meta-primary, .rg-meta-secondary, .rg-meta-tertiary),
+html[data-theme="light"] [class*="__type"]:not(.rg-meta-primary, .rg-meta-secondary, .rg-meta-tertiary),
 html[data-theme="light"] .archive-hero__content span,
 html[data-theme="light"] .platforms-hero span,
 html[data-theme="light"] .platform-sheet__section-title span,
 html[data-theme="light"] .article-final-rating__heading span,
-html[data-theme="light"] .hardware-strip__header span,
 html[data-theme="light"] .archive-card__meta span,
 html[data-theme="light"] .editorial-list-card__content span,
 html[data-theme="light"] .platform-card__main span,
@@ -890,18 +1210,6 @@ html[data-theme="light"] .article-comments button {
     0 8px 18px rgba(24,32,48,0.07);
 }
 
-html[data-theme="light"] .community-points-badge {
-  border-color: rgba(8,124,142,0.28);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.96), rgba(230,244,248,0.98)),
-    radial-gradient(circle at 20% 10%, rgba(8,124,142,0.16), transparent 48%);
-  color: #065F6F;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.74),
-    0 0 0 2px rgba(245,248,252,0.90),
-    0 8px 18px rgba(24,32,48,0.12);
-}
-
 /* Hover light più editoriale, meno laser */
 html[data-theme="light"] .article-comments__composer summary:hover,
 html[data-theme="light"] .article-comments button:hover,
@@ -927,23 +1235,6 @@ html[data-theme="light"] .search-button:hover,
 html[data-theme="light"] .search-trigger:hover {
   color: var(--color-primary);
 }
-
-/* Credit/logo bianchi nel footer */
-html[data-theme="light"] .site-footer__credit a {
-  padding: 3px 6px;
-  border-radius: 8px;
-
-  background: rgba(22,24,36,0.045);
-}
-
-html[data-theme="light"] .site-footer__credit img {
-  opacity: 0.72;
-
-  filter:
-    drop-shadow(0 1px 2px rgba(24,32,48,0.20))
-    contrast(1.05);
-}
-
 
 /* =========================
    🎯 UTILITIES
@@ -1000,4 +1291,18 @@ html[data-theme="light"] ::selection {
 html.has-mobile-menu-open,
 html.has-mobile-menu-open body {
   overflow: hidden;
+}
+
+/* Positional metadata hierarchy. Meaning stays in content; color follows order. */
+.rg-meta-primary {
+  color: var(--rg-meta-primary-color);
+}
+
+.rg-meta-secondary,
+.rg-meta-tertiary {
+  color: var(--rg-meta-secondary-color);
+}
+
+.rg-meta-auxiliary {
+  color: var(--rg-meta-accessory-color);
 }

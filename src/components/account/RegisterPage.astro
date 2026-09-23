@@ -1,5 +1,6 @@
 ---
 import '../../styles/pages/account.css';
+import '../../styles/pages/auth-refresh.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getActiveReaderBadges } from '../../lib/badges';
 
@@ -84,8 +85,8 @@ const socialProviders = [
   {
     provider: 'google',
     label: copy.google,
-    iconLight: '/icons/oauth/google-light.webp',
-    iconDark: '/icons/oauth/google-dark.webp',
+    iconLight: '/icons/oauth/google.svg',
+    iconDark: '/icons/oauth/google-mono.svg',
   },
   ...(enableAppleLogin
     ? [
@@ -127,7 +128,7 @@ const languageSwitch = {
   languageSwitch={languageSwitch}
   alternateLanguages={alternateLanguages}
 >
-  <div class="account-page">
+  <div class="account-page auth-page">
     <section class="account-card">
       <p class="account-kicker">{copy.kicker}</p>
       <h1>{copy.heading}</h1>
@@ -148,14 +149,16 @@ const languageSwitch = {
                 height="24"
                 loading="lazy"
               />
-              <img
+              {provider.provider === 'google' ? (
+                <span class="account-social-auth__icon account-social-auth__icon--dark account-social-auth__google-mono"></span>
+              ) : (<img
                 class="account-social-auth__icon account-social-auth__icon--dark"
                 src={provider.iconDark}
                 alt=""
                 width="24"
                 height="24"
                 loading="lazy"
-              />
+              />)}
             </span>
             <span>{provider.label}</span>
           </a>
@@ -284,7 +287,8 @@ const languageSwitch = {
             password: String(formData.get('password') || ''),
             username: String(formData.get('username') || ''),
             displayName: String(formData.get('displayName') || ''),
-            badgeKey: String(formData.get('badgeKey') || '')
+            badgeKey: String(formData.get('badgeKey') || ''),
+            language: clientCopy.lang
           })
         });
 

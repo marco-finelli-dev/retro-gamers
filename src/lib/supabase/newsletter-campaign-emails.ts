@@ -44,7 +44,7 @@ const renderTextContent = (value?: string | null) => {
 
   return paragraphs
     .map((paragraph) => `
-      <p class="rg-email-text" style="margin:0 0 14px 0; color:#374151;">
+      <p class="rg-email-text" style="margin:0 0 14px 0; color:#506276;">
         ${escapeEmailHtml(paragraph).replace(/\n/g, '<br>')}
       </p>
     `)
@@ -106,18 +106,18 @@ const renderCampaignItem = (item: NewsletterCampaignItem, language: 'it' | 'en')
     : 'rg-newsletter-item-title';
 
   return `
-    <${cardTag} class="rg-newsletter-item"${cardAttributes} style="display:block; color:inherit; text-decoration:none; border:1px solid #e5e0d8; border-radius:14px; padding:14px; margin:0 0 14px 0; background:#f8fbfc;">
+    <${cardTag} class="rg-newsletter-item"${cardAttributes} style="display:block; color:inherit; text-decoration:none; border-bottom:1px solid #CCCCC8; padding:0 0 24px; margin:24px 0;">
       ${imageUrl && isAbsoluteHttpUrl(imageUrl) ? `
-        <img src="${escapeEmailHtml(imageUrl)}" alt="" width="560" style="display:block; width:100%; max-width:560px; height:auto; border-radius:10px; margin:0 0 12px 0;">
+        <img src="${escapeEmailHtml(imageUrl)}" alt="${title}" width="584" style="display:block; width:100%; max-width:584px; height:auto; margin:0 0 12px 0;">
       ` : ''}
-      <div class="rg-newsletter-item-kicker" style="margin:0 0 7px 0; font-size:11px; line-height:1.3; letter-spacing:0.08em; text-transform:uppercase; color:#0b6b73; font-weight:700;">
+      <div class="rg-newsletter-item-kicker" style="margin:0 0 7px 0; font-size:13px; line-height:1.3; letter-spacing:0.08em; text-transform:uppercase; color:#506276; font-weight:700;">
         ${type}
       </div>
-      <h2 class="${titleClass}" style="margin:0 0 8px 0; font-size:18px; line-height:1.3; color:${url ? '#0b7f89' : '#111827'};">
+      <h2 class="${titleClass}" style="margin:0 0 8px 0; font-size:18px; line-height:1.3; color:#092547; text-decoration:${url ? 'underline' : 'none'};">
         ${title}
       </h2>
       ${description ? `
-        <p class="rg-newsletter-item-text" style="margin:0; color:#374151; font-size:14px; line-height:1.55;">
+        <p class="rg-newsletter-item-text" style="margin:0; color:#506276; font-size:16px; line-height:1.6;">
           ${description}
         </p>
       ` : ''}
@@ -193,7 +193,7 @@ export function renderNewsletterCampaignEmail({
   const contentTextFallback = String(campaign.content_text || '').trim();
   const bodyHtml = `
     ${testNotice ? `
-      <div class="rg-email-alert" style="border:1px solid #f4c857; border-radius:12px; padding:12px 14px; margin:0 0 18px 0; background:#fff7d6; color:#6d5400; font-weight:700;">
+      <div class="rg-email-alert" style="border:1px solid #E8BA46; border-radius:8px; padding:12px 14px; margin:0 0 18px 0; background:#F0E8DA; color:#092547; font-weight:700;">
         ${escapeEmailHtml(testNotice)}
       </div>
     ` : ''}
@@ -214,7 +214,7 @@ export function renderNewsletterCampaignEmail({
       </p>
       <p style="margin:0;">
         ${escapeEmailHtml(unsubscribeText)}<br>
-        <a class="rg-email-link" href="${escapeEmailHtml(unsubscribeUrl)}" style="color:#0b7f89; text-decoration:underline; word-break:break-word;">${escapeEmailHtml(unsubscribeUrl)}</a>
+        <a class="rg-email-link" href="${escapeEmailHtml(unsubscribeUrl)}" style="color:#092547; text-decoration:underline; word-break:break-word;">${escapeEmailHtml(unsubscribeUrl)}</a>
       </p>
       ${previewNotice ? `<p style="margin:8px 0 0 0;">${escapeEmailHtml(previewNotice)}</p>` : ''}
     `,

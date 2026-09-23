@@ -9,11 +9,19 @@ import SpeedInsights from '@vercel/speed-insights/astro';
 import CookieConsent from '../components/common/CookieConsent.astro';
 import SanityVisualEditing from '../components/common/SanityVisualEditing';
 import RetroExperienceLauncher from '../components/retro-experience/RetroExperienceLauncher.astro';
+import ArticleDesktopSidebar from '../components/article/ArticleDesktopSidebar.astro';
 import { getAllPosts } from '../lib/posts';
 import { getLanguageSwitchUrl } from '../lib/language-switch.js';
 import { isDraftMode } from '../lib/sanity-preview';
 import '../styles/components/support.css';
 import '../styles/components/cookie-consent.css';
+import '../styles/components/overlays-refresh.css';
+import '../styles/components/public-profile-preview.css';
+import '../styles/components/mobile-listings.css';
+import '../styles/components/mobile-details.css';
+import '../styles/components/mobile-community.css';
+import '../styles/pages/desktop-page-shell.css';
+import '../styles/pages/community-refresh.css';
 
 const {
   reviews: providedReviews = null,
@@ -25,13 +33,15 @@ const {
 
   title = 'Retro-Gamers.it',
   description = 'Retro-Gamers.it: recensioni, news, speciali, guide e approfondimenti dal mondo retro-gaming, console, arcade e home computer.',
-  image = '/og-image.jpg',
+  image = '/og-image.webp',
   canonical = Astro.url.href,
   type = 'website',
   publishedAt = null,
   updatedAt = null,
   articleAuthorName = null,
   articleAuthorUrl = null,
+  readingContext = null,
+  pageShell = null,
   noindex = false,
   structuredData = [],
   minimal = false
@@ -126,7 +136,7 @@ const organizationJsonLd = {
   url: siteCanonicalUrl,
   logo: {
     '@type': 'ImageObject',
-    url: `${siteUrl}/retro-gamers-logo-light.svg`
+    url: `${siteUrl}/images/brand/retro-gamers-logo-navy.svg`
   },
   description: organizationDescription,
   founder: {
@@ -185,6 +195,10 @@ const jsonLd = {
 };
 
 const isPreview = isDraftMode(Astro.cookies);
+const isArticleDesktopLayout = pageShell === 'article';
+const hasDesktopSidebar = !minimal;
+const isEditorialArticlePreview = /^\/(?:en\/)?account\/editor\/articles\/[^/]+\/preview\/?$/.test(Astro.url.pathname);
+const isStandardDesktopPage = hasDesktopSidebar && !isArticleDesktopLayout && pageShell !== 'editorial' && !isEditorialArticlePreview;
 
 if (isPreview) {
   Astro.response.headers.set('Cache-Control', 'private, no-store, max-age=0');
@@ -216,9 +230,9 @@ if (isPreview) {
 
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#008EA3" />
-    <meta name="theme-color" content="#080A10" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#F2F7FB" media="(prefers-color-scheme: light)" />
+
+    <meta name="theme-color" content="#092547" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F7F1E5" media="(prefers-color-scheme: light)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Retro-Gamers" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -247,6 +261,13 @@ if (isPreview) {
     <meta property="og:description" content={pageDescription} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={absoluteImage} />
+    {absoluteImage === `${siteUrl}/og-image.webp` && (
+      <>
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/webp" />
+      </>
+    )}
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
@@ -273,8 +294,17 @@ if (isPreview) {
 
   </head>
 
-  <body>
+  <body class:list={{
+    'rg-desktop-layout': hasDesktopSidebar,
+    'rg-profile-preview': minimal && Astro.url.searchParams.get('accountPreview') === '1',
+    'rg-article-desktop-layout': isArticleDesktopLayout,
+    'rg-standard-page-layout': isStandardDesktopPage
+  }}>
     {!minimal && <RetroExperienceLauncher />}
+
+    {hasDesktopSidebar && (
+      <ArticleDesktopSidebar lang={lang} languageSwitch={resolvedLanguageSwitch} />
+    )}
 
     {!minimal && (
       <Header
@@ -282,10 +312,14 @@ if (isPreview) {
         news={news}
         lang={lang}
         languageSwitch={resolvedLanguageSwitch}
+        readingContext={isArticleDesktopLayout ? null : readingContext}
       />
     )}
 
-    <main>
+    <main class:list={{
+      'rg-page-shell': hasDesktopSidebar,
+      'rg-page-shell--article': isArticleDesktopLayout
+    }}>
       <slot />
     </main>
 

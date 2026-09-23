@@ -3833,20 +3833,23 @@
 
 .editorial-pte blockquote {
   margin-block: 1.45em;
-  padding: 18px 20px 18px 22px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
-  border-inline-start: 4px solid var(--color-primary);
-  border-radius: 0 18px 18px 0;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-primary) 9%, transparent),
-      color-mix(in srgb, var(--color-primary) 4%, transparent)
-    );
-  color: var(--color-text);
-  font-style: italic;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--rg-text-primary);
+  font-style: normal;
+  box-shadow: none;
 }
+
+.editorial-pte__quote-preview { margin: 1rem; }
+.editorial-pte__quote-preview blockquote { font-size: 1.1em; line-height: 1.8; }
+.editorial-pte__quote-mark { display: block; font-size: 2.75rem; line-height: 1; color: var(--rg-text-secondary); }
+.editorial-pte__quote-mark--closing { text-align: right; }
+.editorial-pte__quote-preview figcaption { display: grid; text-align: right; color: var(--rg-text-secondary); font-size: 0.9em; }
+.editorial-pte__quote-preview p { overflow-wrap: anywhere; }
+.editorial-pte__quote-preview em,
+.editorial-pte-modal__panel--quote .editorial-pte em { font-synthesis: style; }
 
 .editorial-pte .pt-text-block-style-blockquote:has(+ .pt-text-block-style-blockquote) > div > blockquote {
   margin-block-end: 0;
@@ -4951,4 +4954,125 @@
   .editorial-article-editor__drawer {
     padding: 12px;
   }
+}
+
+/* The desktop shell has no top header; retain the mobile/tablet offset. */
+@media (min-width: 1200px) {
+  body.rg-desktop-layout .editorial-pte-toolbar:not(.editorial-pte-toolbar--aside) {
+    top: var(--rg-space-4);
+    scroll-margin-top: var(--rg-space-4);
+  }
+}
+
+/* Body toolbar only: compact mobile rows, without affecting nested editors. */
+@media (max-width: 1199px) {
+  body.rg-desktop-layout .editorial-pte-toolbar--body {
+    position: sticky;
+    top: calc(var(--rg-shell-header-height) + env(safe-area-inset-top) + 8px);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 8px;
+    scroll-margin-top: calc(var(--rg-shell-header-height) + env(safe-area-inset-top) + 8px);
+    background: var(--rg-shell-paper);
+    border-color: var(--rg-border-neutral);
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__content-tools {
+    flex-wrap: nowrap; width: 100%; gap: 4px;
+  }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__menu { position: static; }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__content-tools > .editorial-pte-toolbar__menu { flex: 1 1 0; min-width: 0; }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__menu-trigger {
+    width: 100%; min-height: 40px; padding: 0 6px; gap: 4px; font-size: 12px; white-space: nowrap;
+  }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__document-actions {
+    flex-wrap: nowrap; justify-content: flex-start; gap: 8px; width: 100%;
+    overflow-x: auto; padding: 3px; scroll-padding-inline: 3px;
+    overscroll-behavior-inline: contain;
+  }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__document-actions > * { flex: 0 0 auto; }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__document-actions :is(.editorial-button, .editorial-article-editor__settings-toggle, .editorial-article-editor__exit, .editorial-pte-toolbar__menu-trigger) {
+    flex: 0 0 auto; height: 40px; min-height: 40px; padding-inline: 10px; font-size: 13px; white-space: nowrap;
+  }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__document-actions .editorial-article-editor__exit { margin-left: 0; min-width: 40px; }
+  .editorial-pte-toolbar--body .editorial-article-editor__state { white-space: nowrap; }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__menu-panel {
+    left: 8px; right: 8px; top: calc(100% + 6px); min-width: 0;
+    max-height: var(--mobile-toolbar-menu-height, 40dvh); overflow-y: auto;
+    background: var(--rg-shell-paper); color: var(--rg-text-primary);
+    border-color: var(--rg-border-neutral); backdrop-filter: none; box-shadow: none;
+  }
+  .editorial-pte-toolbar--body[data-mobile-menu-placement="above"] .editorial-pte-toolbar__menu-panel { top: auto; bottom: calc(100% + 6px); }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__menu-item { min-height: 40px; color: var(--rg-text-primary); }
+}
+@media (min-width: 641px) and (max-width: 1199px) {
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__content-tools > .editorial-pte-toolbar__menu { flex: 0 0 auto; }
+  .editorial-pte-toolbar--body .editorial-pte-toolbar__menu-trigger { padding-inline: 12px; font-size: 14px; }
+}
+
+/* Mobile writing workspace: use the approved surfaces without changing the desktop editor. */
+@media (max-width: 1199px) {
+  html[data-theme] .editorial-edit-workspace-page {
+    --editor-mobile-canvas: var(--rg-shell-paper);
+    --editor-mobile-surface: color-mix(in srgb, var(--rg-text-primary) 4%, var(--editor-mobile-canvas));
+    --editor-mobile-hover: color-mix(in srgb, var(--rg-text-primary) 8%, var(--editor-mobile-canvas));
+    --color-text: var(--rg-text-primary);
+    --color-text-soft: var(--rg-text-secondary);
+    --color-text-muted: var(--rg-text-muted);
+    --color-primary: var(--rg-title-hover);
+    --color-primary-soft: var(--editor-mobile-hover);
+    --rg-section-title-color: var(--rg-text-primary);
+    --rg-eyebrow-color: var(--rg-text-secondary);
+    --rg-card-bg: var(--editor-mobile-surface);
+    --rg-card-border: var(--rg-border-neutral);
+    --rg-card-shadow: none;
+    --rg-panel-bg: var(--editor-mobile-surface);
+    --rg-badge-bg: var(--editor-mobile-surface);
+    --rg-badge-border: var(--rg-border-neutral);
+    --rg-badge-color: var(--rg-text-secondary);
+    --rg-cta-bg: var(--editor-mobile-surface);
+    --rg-cta-hover-bg: var(--editor-mobile-hover);
+    --rg-cta-border: var(--rg-border-neutral);
+    --rg-cta-color: var(--rg-text-primary);
+    color: var(--rg-text-primary);
+  }
+  html[data-theme="light"] .editorial-edit-workspace-page { --editor-mobile-canvas: var(--rg-color-ivory); }
+  html[data-theme] .editorial-edit-workspace-page .community-hero {
+    padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  }
+  html[data-theme] .editorial-edit-workspace-page .community-hero::before { content: none; }
+  html[data-theme] .editorial-edit-workspace-page .community-hero .community-kicker { display: none; }
+  html[data-theme] .editorial-edit-workspace-page .community-hero h1 {
+    color: var(--rg-text-primary); font-size: clamp(30px, 5vw, 40px); text-transform: none;
+  }
+  html[data-theme] .editorial-edit-workspace-page .community-hero p { color: var(--rg-text-secondary); }
+  html[data-theme] .editorial-edit-workspace-page .editorial-edit-workspace-nav { gap: 4px 16px; }
+  html[data-theme] .editorial-edit-workspace-page .editorial-edit-workspace-nav a {
+    padding-inline: 0; border: 0; border-radius: 0; background: none; color: var(--rg-text-secondary); box-shadow: none;
+  }
+  html[data-theme] .editorial-edit-workspace-page .editorial-mobile-editing-notice {
+    background: none; border: 0; border-radius: 0; padding: 0; color: var(--rg-text-secondary); box-shadow: none;
+  }
+  html[data-theme] .editorial-edit-workspace-page :is(.editorial-document-header, .editorial-pte-card) {
+    background: none; border: 0; border-radius: 0; box-shadow: none; padding-inline: 0;
+  }
+  html[data-theme] .editorial-edit-workspace-page .editorial-document-header::before { color: var(--rg-text-secondary); }
+  html[data-theme] .editorial-edit-workspace-page .editorial-document-header .editorial-autogrow-field {
+    background: var(--editor-mobile-surface); border-color: var(--rg-border-neutral); border-radius: var(--rg-radius-small); color: var(--rg-text-primary);
+  }
+  html[data-theme] .editorial-edit-workspace-page .editorial-pte-toolbar--body { border-radius: var(--rg-radius-small); }
+  html[data-theme] .editorial-edit-workspace-page .editorial-pte-toolbar--body :is(button, a) {
+    border-color: transparent; border-radius: var(--rg-radius-small); background: none; color: var(--rg-text-primary); box-shadow: none; transform: none;
+  }
+  html[data-theme] .editorial-edit-workspace-page .editorial-pte-toolbar--body :is(button, a):is(:hover, [aria-expanded="true"]) {
+    background: var(--editor-mobile-hover); color: var(--rg-title-hover); box-shadow: none;
+  }
+  html[data-theme] .editorial-edit-workspace-page .editorial-pte-toolbar__document-actions {
+    scrollbar-color: var(--rg-border-neutral) var(--rg-shell-paper);
+  }
+  html[data-theme] .editorial-edit-workspace-page :is(a, button, textarea):focus-visible {
+    outline: 2px solid var(--rg-text-secondary); outline-offset: 2px; box-shadow: none; transform: none;
+  }
+  html[data-theme] .editorial-edit-workspace-page .editorial-edit-workspace-nav a:hover { color: var(--rg-title-hover); transform: none; }
 }

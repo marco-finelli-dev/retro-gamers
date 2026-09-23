@@ -64,6 +64,9 @@ const copy = isEnglish
 
     if (!prompt) return;
 
+    // A global floating surface must escape the article/main stacking context.
+    document.body.append(prompt);
+
     const dismissButtons = prompt.querySelectorAll('[data-article-community-prompt-dismiss]');
     const registerLink = prompt.querySelector('[data-article-community-prompt-register]');
     const dismissedKey = 'retroGamersCommunityPromptDismissedAt';

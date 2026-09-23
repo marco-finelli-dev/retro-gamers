@@ -9,6 +9,7 @@ import { markAdminActivityCategoryRead } from '../../../lib/admin/activity.serve
 import {
   buildCommunitySurveyEditorialSummary,
   getCommunitySurveyAdminResults,
+  getCommunitySurveyAdminList,
   type CommunitySurveyLanguage,
   normalizeTechnicalId,
   type CommunitySurveyQuestionResult,
@@ -24,6 +25,7 @@ const title = 'Risultati sondaggio | Retro-Gamers.it';
 const description = 'Risultati raccolti dai sondaggi community Retro-Gamers.it.';
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isAdmin = session.profile?.role === 'admin' && session.profile?.status === 'active';
+const availableSurveys = isAdmin ? await getCommunitySurveyAdminList().catch(() => []) : [];
 const numberFormatter = new Intl.NumberFormat('it-IT');
 const percentageFormatter = new Intl.NumberFormat('it-IT', {
   maximumFractionDigits: 1,
@@ -396,6 +398,14 @@ const canGenerateOpenAnswerAiSummary = Boolean(
 
     {isAdmin ? (
       <>
+        {availableSurveys.length > 1 && (
+          <nav class="admin-surveys-header__actions" aria-label="Sondaggi / Surveys">
+            {availableSurveys.map(survey => (
+              <a class="admin-surveys-inline-action" href={`/admin/surveys/${encodeURIComponent(survey.surveyKey)}/`}
+                aria-current={survey.surveyKey === surveyKey ? 'page' : undefined}>{survey.title}</a>
+            ))}
+          </nav>
+        )}
         {results ? (
           <>
             <section

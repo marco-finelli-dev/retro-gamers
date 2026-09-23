@@ -633,30 +633,31 @@ function takeUnused(
   return picked;
 }
 
-const commerciallyFeaturedProductTypes = [
+export const affiliateHardwareAndBooksProductTypes = [
   'hardware',
-  'accessory',
   'book',
-  'software',
-  'gadget'
+  'accessory'
 ] as const;
 
-function getPostMonetizationProductTypes(post: Post) {
-  const monetization = post.monetization;
-  const productTypes = [
-    monetization?.productType,
-    ...(monetization?.products || []).map((product) => product.productType)
-  ].filter(Boolean);
+export type AffiliateHardwareAndBooksProductType =
+  typeof affiliateHardwareAndBooksProductTypes[number];
 
-  return [...new Set(productTypes)];
+export function getAffiliateHardwareAndBooksProductType(post: Post) {
+  if (!post.monetization?.isAffiliate) return null;
+
+  const product = post.monetization.products?.find((candidate) =>
+    affiliateHardwareAndBooksProductTypes.includes(
+      candidate.productType as AffiliateHardwareAndBooksProductType
+    ) && candidate.offers?.some((offer) =>
+      offer.isActive !== false && Boolean(offer.affiliateUrl)
+    )
+  );
+
+  return product?.productType as AffiliateHardwareAndBooksProductType | undefined;
 }
 
-function isAffiliateHardwareArea(post: Post) {
-  if (!post.monetization?.isAffiliate) return false;
-
-  return getPostMonetizationProductTypes(post).some((productType) =>
-    commerciallyFeaturedProductTypes.includes(productType as typeof commerciallyFeaturedProductTypes[number])
-  );
+export function isAffiliateHardwareAndBooksPost(post: Post) {
+  return Boolean(getAffiliateHardwareAndBooksProductType(post));
 }
 
 export function getActiveFeaturedPost(posts: Post[] = [], today = new Date()) {
@@ -724,7 +725,7 @@ export function groupPosts(posts: Post[] = []) {
     }
   }
 
-  const remainingHeroSlots = Math.max(0, 4 - hero.length);
+  const remainingHeroSlots = Math.max(0, 5 - hero.length);
 
   if (remainingHeroSlots > 0) {
     hero.push(...takeUnused(allWithImage, usedIds, remainingHeroSlots, {
@@ -738,14 +739,10 @@ export function groupPosts(posts: Post[] = []) {
   */
   const reviewsSource = italianPosts
     .filter((post) => post.type === 'review')
-    .sort((a, b) => {
-      const scoreDiff = (b.score || 0) - (a.score || 0);
-
-      if (scoreDiff !== 0) return scoreDiff;
-
-      return new Date(b.publishedAt || 0).getTime() -
-        new Date(a.publishedAt || 0).getTime();
-    });
+    .sort((a, b) =>
+      new Date(b.publishedAt || 0).getTime() -
+      new Date(a.publishedAt || 0).getTime()
+    );
 
   const reviews = takeUnused(reviewsSource, usedIds, 6, {
     requireImage: true
@@ -772,7 +769,7 @@ export function groupPosts(posts: Post[] = []) {
   const interviews = takeUnused(
     italianPosts.filter((post) => post.type === 'interview'),
     usedIds,
-    3
+    5
   );
 
   /*
@@ -782,15 +779,11 @@ export function groupPosts(posts: Post[] = []) {
   const archive = takeArchivePosts(italianPosts, usedIds, 4);
 
   /*
-    HARDWARE:
-    prende prima type hardware, poi contenuti affiliabili.
-    Così THEA1200 sta in hardware, ma anche libri/prodotti possono popolare
-    la sezione commerciale senza cambiare tipo editoriale.
+    HARDWARE E LIBRI:
+    solo contenuti affiliati pubblicati con un prodotto strutturato pertinente
+    e almeno un'offerta attiva. L'ordine conserva la cronologia editoriale.
   */
-  const hardwareSource = uniqueById([
-    ...italianPosts.filter((post) => post.type === 'hardware'),
-    ...italianPosts.filter(isAffiliateHardwareArea)
-  ]);
+  const hardwareSource = italianPosts.filter(isAffiliateHardwareAndBooksPost);
 
   const hardware = takeUnused(hardwareSource, usedIds, 4, {
     requireImage: true

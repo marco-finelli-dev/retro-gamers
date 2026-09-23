@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import ArchivePage from '../../../components/archive/ArchivePage.astro';
+import EditorialListing from '../../../components/archive/EditorialListing.astro';
 
 import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { PAGE_SIZE } from '../../../lib/pagination';
@@ -43,18 +43,22 @@ const structuredData = createCollectionPageStructuredData({
   news={englishNews}
   title="Retro gaming news"
   description="News on retro games, new releases, hardware, restorations, events and preservation projects for consoles, arcades and home computers."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/en/news/"
   lang="en"
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <ArchivePage
-    title="Retro gaming news"
-    eyebrow="English edition"
-    description="Retro-Gamers.it news follows what is happening today around the games and systems of the past, including new releases for classic hardware, reissues, restorations, events, preservation projects and independent productions. We select stories with a clear connection to consoles, home computers, arcades and video game culture, adding context rather than simply repeating announcements. From new cartridges and remakes to modern peripherals and archival discoveries, this section shows how retro gaming continues to evolve through communities, research and new creative work."
-    posts={posts}
-    showFilters={false}
-    lang="en"
-  />
+  <div>
+    <EditorialListing
+      desktopTitle="News"
+      desktopDescription="New releases and updates from the world of retrogaming."
+      title="Retro gaming news"
+      eyebrow="English edition"
+      description="Retro-Gamers.it news follows what is happening today around the games and systems of the past, including new releases for classic hardware, reissues, restorations, events, preservation projects and independent productions. We select stories with a clear connection to consoles, home computers, arcades and video game culture, adding context rather than simply repeating announcements. From new cartridges and remakes to modern peripherals and archival discoveries, this section shows how retro gaming continues to evolve through communities, research and new creative work."
+      posts={posts}
+      showFilters={false}
+      lang="en"
+    />
+  </div>
 </BaseLayout>

@@ -1,8 +1,7 @@
 ---
 import BaseLayout from '../../../../../layouts/BaseLayout.astro';
 import PlatformDetail from '../../../../../components/platforms/PlatformDetail.astro';
-import ArchiveCard from '../../../../../components/archive/ArchiveCard.astro';
-import Pagination from '../../../../../components/common/Pagination.astro';
+import PlatformRelated from '../../../../../components/platforms/PlatformRelated.astro';
 
 import { getAllPosts } from '../../../../../lib/posts';
 import {
@@ -70,36 +69,12 @@ const pageDescription =
   lang="en"
   title={platformData.name}
   description={pageDescription}
-  image={platformData.cover?.asset?.url || platformData.logoLight?.asset?.url || platformData.logo?.asset?.url || '/og-image.jpg'}
+  image={platformData.cover?.asset?.url || platformData.logoLight?.asset?.url || platformData.logo?.asset?.url || '/og-image.webp'}
   canonical={`https://www.retro-gamers.it${getPlatformUrl(platformData, 'en')}`}
 >
   <PlatformDetail platform={platformData} lang="en" />
 
   {relatedTotal > 0 && (
-    <section class="platform-related">
-      <div class="container">
-        <div class="platform-related__inner">
-          <div class="platform-related__header">
-            <span>Archive</span>
-            <h2>Related articles</h2>
-            <p>Reviews, features, guides and stories connected to this platform.</p>
-          </div>
-
-          <div class="platform-related__grid">
-            {relatedPagePosts.map((post) => (
-              <ArchiveCard post={post} lang="en" />
-            ))}
-          </div>
-
-          <Pagination
-            currentPage={relatedPage}
-            totalPages={relatedTotalPages}
-            lang="en"
-            getPageUrl={getRelatedPageUrl}
-            ariaLabel="Related articles pagination"
-          />
-        </div>
-      </div>
-    </section>
+    <PlatformRelated posts={relatedPagePosts} currentPage={relatedPage} totalPages={relatedTotalPages} getPageUrl={getRelatedPageUrl} lang="en" />
   )}
 </BaseLayout>

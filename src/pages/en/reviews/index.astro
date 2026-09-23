@@ -1,4 +1,5 @@
 ---
+import '../../../styles/components/reviews-listing.css';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import ArchivePage from '../../../components/archive/ArchivePage.astro';
 
@@ -43,18 +44,25 @@ const structuredData = createCollectionPageStructuredData({
   news={englishNews}
   title="Retro game reviews"
   description="Retro game reviews for consoles, arcades and home computers, combining critical analysis, historical context, scores and personal memories."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/en/reviews/"
   lang="en"
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <ArchivePage
-    title="Retro game reviews"
-    eyebrow="English edition"
-    description="Retro-Gamers.it reviews revisit the games that shaped consoles, home computers and arcades without relying on nostalgia alone. We examine gameplay, graphics, sound and historical context to understand what still works, what has aged and why each release mattered. From Amiga and Super Nintendo to the arcade and early PlayStation eras, every review combines personal memory, critical analysis and attention to the original versions."
-    posts={posts}
-    showFilters={false}
-    lang="en"
-  />
+  <div class="reviews-listing">
+    <ArchivePage
+      reviewListing
+      title="Retro game reviews"
+      eyebrow="English edition"
+      description="Retro-Gamers.it reviews revisit the games that shaped consoles, home computers and arcades without relying on nostalgia alone. We examine gameplay, graphics, sound and historical context to understand what still works, what has aged and why each release mattered. From Amiga and Super Nintendo to the arcade and early PlayStation eras, every review combines personal memory, critical analysis and attention to the original versions."
+      posts={posts}
+      showFilters={false}
+      lang="en"
+    />
+  </div>
 </BaseLayout>
+
+<script>
+  import '../../../scripts/review-listing-filters.js';
+</script>

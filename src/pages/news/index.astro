@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArchivePage from '../../components/archive/ArchivePage.astro';
+import EditorialListing from '../../components/archive/EditorialListing.astro';
 
 import { getAllPosts, groupPosts } from '../../lib/posts';
 import { PAGE_SIZE } from '../../lib/pagination';
@@ -33,16 +33,20 @@ const structuredData = createCollectionPageStructuredData({
   news={allNews}
   title="News sul retro gaming"
   description="Notizie su retro gaming, nuove uscite, hardware, restauri, eventi e progetti dedicati a console, arcade e home computer."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/news/"
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <ArchivePage
-    title="News sul retro gaming"
-    eyebrow="Aggiornamenti"
-    description="Le news di Retro-Gamers.it seguono ciò che accade oggi attorno ai videogiochi del passato: nuove produzioni per sistemi storici, riedizioni, hardware, restauri, eventi, iniziative di preservazione e progetti indipendenti. Selezioniamo le notizie che hanno un legame concreto con console, home computer, arcade e cultura videoludica, cercando di aggiungere contesto invece di limitarci all’annuncio. Dalle nuove cartucce ai remake, dalle periferiche moderne alle scoperte d’archivio, questa sezione racconta come il retro gaming continui a evolversi e a generare comunità, ricerca e nuove opere."
-    posts={allNews}
-    showFilters={false}
-  />
+  <div>
+    <EditorialListing
+      desktopTitle="News"
+      desktopDescription="Novità, uscite e aggiornamenti dal mondo del retrogaming."
+      title="News sul retro gaming"
+      eyebrow="Aggiornamenti"
+      description="Le news di Retro-Gamers.it seguono ciò che accade oggi attorno ai videogiochi del passato: nuove produzioni per sistemi storici, riedizioni, hardware, restauri, eventi, iniziative di preservazione e progetti indipendenti. Selezioniamo le notizie che hanno un legame concreto con console, home computer, arcade e cultura videoludica, cercando di aggiungere contesto invece di limitarci all’annuncio. Dalle nuove cartucce ai remake, dalle periferiche moderne alle scoperte d’archivio, questa sezione racconta come il retro gaming continui a evolversi e a generare comunità, ricerca e nuove opere."
+      posts={allNews}
+      showFilters={false}
+    />
+  </div>
 </BaseLayout>

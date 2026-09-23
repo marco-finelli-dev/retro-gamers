@@ -1,0 +1,318 @@
+---
+import '../../styles/article/article-desktop-shell.css';
+import '../../styles/components/sidebar-notifications.css';
+import { getLocalizedLanguageUrl } from '../../lib/language-switch.js';
+import {
+  getArchiveUrl,
+  getCompanyUrl,
+  getCreatorUrl,
+  getPlatformIndexUrl
+} from '../../lib/routes.js';
+import {
+  getCommunitySurveyUrl,
+  getOpenCommunitySurveyForLanguage
+} from '../../lib/community-surveys';
+import { getEditorialSessionForUserSession } from '../../lib/editorial/session.server';
+
+const { lang = 'it', languageSwitch = null } = Astro.props;
+const isEnglish = lang === 'en';
+const homeHref = isEnglish ? '/en/' : '/';
+const communityHref = `${homeHref}community/`;
+const currentPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const isCurrentNavigationLink = (href) => {
+  const path = new URL(href, Astro.url).pathname.replace(/\/+$/, '') || '/';
+  return currentPath === path || (!href.includes('#') && path !== '/' && currentPath.startsWith(`${path}/`));
+};
+const languageSwitchHref = typeof languageSwitch === 'string'
+  ? languageSwitch
+  : languageSwitch?.url || (isEnglish ? '/' : '/en/');
+
+const session = Astro.locals.userSession;
+const profile = session?.profile;
+const user = session?.user;
+const isAuthenticated = Boolean(!session?.error && profile && user);
+const editorialSession = isAuthenticated ? await getEditorialSessionForUserSession(session) : null;
+const hasEditorialAccess = editorialSession?.isEditorialActive === true;
+const isStaff = isAuthenticated && profile?.status === 'active' && (profile?.role === 'moderator' || profile?.role === 'admin');
+const isAdmin = isAuthenticated && profile?.status === 'active' && profile?.role === 'admin';
+const accountHref = isEnglish ? '/en/account/' : '/account/';
+const accountLoginHref = isEnglish ? '/en/account/login/' : '/account/login/';
+const editorialHref = isEnglish ? '/en/account/editor/' : '/account/editor/';
+const moderationHref = isEnglish ? '/en/admin/comments/' : '/admin/comments/';
+const adminHref = isEnglish ? '/en/admin/' : '/admin/';
+const accountName = String(
+  profile?.display_name || profile?.username || user?.email || (isEnglish ? 'Sign in' : 'Accedi')
+).trim();
+const accountInitial = accountName.match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/)?.[0]?.toUpperCase() || '';
+const accountAvatar = String(profile?.avatar_url || '').trim();
+
+const survey = await getOpenCommunitySurveyForLanguage(lang);
+const surveyHref = survey ? getCommunitySurveyUrl(survey, lang) : communityHref;
+
+const groups = [
+  {
+    label: 'MAGAZINE',
+    links: [
+      { label: isEnglish ? 'Reviews' : 'Recensioni', href: getArchiveUrl('review', lang) },
+      { label: 'News', href: getArchiveUrl('news', lang) },
+      { label: isEnglish ? 'Features' : 'Speciali', href: getArchiveUrl('feature', lang) },
+      { label: isEnglish ? 'Interviews' : 'Interviste', href: getArchiveUrl('interview', lang) },
+      { label: isEnglish ? 'Guides' : 'Guide', href: getArchiveUrl('guide', lang) },
+      { label: isEnglish ? 'Authors' : 'Autori', href: getLocalizedLanguageUrl({ currentUrl: '/autori/', targetLang: lang }) }
+    ]
+  },
+  {
+    label: isEnglish ? 'ARCHIVE' : 'ARCHIVIO',
+    links: [
+      { label: isEnglish ? 'Platforms' : 'Piattaforme', href: getPlatformIndexUrl(lang) },
+      { label: 'Creator', href: getCreatorUrl(null, lang) },
+      { label: isEnglish ? 'Companies' : 'Aziende', href: getCompanyUrl(null, lang) }
+    ]
+  },
+  {
+    label: 'COMMUNITY',
+    links: [
+      { label: 'Quiz', href: `${homeHref}quiz/` },
+      { label: isEnglish ? 'Surveys' : 'Sondaggi', href: surveyHref }
+    ]
+  }
+];
+
+const themeOptions = [
+  { value: 'system', label: 'Auto' },
+  { value: 'light', label: isEnglish ? 'Light' : 'Chiaro' },
+  { value: 'dark', label: isEnglish ? 'Dark' : 'Scuro' }
+];
+---
+
+<aside class="article-desktop-sidebar" aria-label={isEnglish ? 'Site navigation' : 'Navigazione del sito'}>
+  <a class="article-desktop-sidebar__brand" href={homeHref} aria-label="Retro-Gamers.it">
+    <img class="article-desktop-sidebar__logo article-desktop-sidebar__logo--dark" src="/images/brand/retro-gamers-logo-ivory.svg" alt="Retro-Gamers.it" width="223" height="57" />
+    <img class="article-desktop-sidebar__logo article-desktop-sidebar__logo--light" src="/images/brand/retro-gamers-logo-navy.svg" alt="Retro-Gamers.it" width="223" height="57" />
+  </a>
+
+  <div class="article-desktop-sidebar__utilities">
+    <div class="article-desktop-sidebar__account-wrap" data-article-sidebar-account>
+      <button
+        class="article-desktop-sidebar__account"
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded="false"
+        aria-controls="article-sidebar-account-menu"
+        data-article-sidebar-account-toggle
+      >
+        <span class="article-desktop-sidebar__account-media" aria-hidden="true">
+          {accountAvatar ? (
+            <img src={accountAvatar} alt="" width="40" height="40" loading="lazy" decoding="async" />
+          ) : isAuthenticated ? (
+            <span>{accountInitial}</span>
+          ) : (
+            <span class="article-desktop-sidebar__account-icon"></span>
+          )}
+        </span>
+        <span class="article-desktop-sidebar__account-name">{accountName}</span>
+        <svg class="article-desktop-sidebar__chevron" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </button>
+      <div id="article-sidebar-account-menu" class="article-desktop-sidebar__account-menu" role="menu" hidden>
+        {isAuthenticated ? (
+          <>
+            <a href={accountHref} role="menuitem">{isEnglish ? 'My account' : 'Il mio account'}</a>
+            {hasEditorialAccess && <a href={editorialHref} role="menuitem">{isEnglish ? 'Editorial area' : 'Area redazione'}</a>}
+            {isStaff && !isAdmin && <a href={moderationHref} role="menuitem">{isEnglish ? 'Moderation' : 'Moderazione'}</a>}
+            {isAdmin && <a href={adminHref} role="menuitem">{isEnglish ? 'Administration area' : 'Area amministrazione'}</a>}
+            <button type="button" role="menuitem" data-article-sidebar-logout>{isEnglish ? 'Sign out' : 'Esci'}</button>
+          </>
+        ) : (
+          <a href={accountLoginHref} role="menuitem">{isEnglish ? 'Log in / Register' : 'Accedi / Registrati'}</a>
+        )}
+      </div>
+    </div>
+  </div>
+
+  <nav class="article-desktop-sidebar__nav">
+    {groups.map((group) => (
+      <section class="article-desktop-sidebar__group" aria-labelledby={`article-sidebar-${group.label.toLowerCase()}`}>
+        <h2 id={`article-sidebar-${group.label.toLowerCase()}`}>{group.label}</h2>
+        <div>
+          {group.links.map((link) => <a href={link.href} aria-current={isCurrentNavigationLink(link.href) ? 'page' : undefined}>{link.label}</a>)}
+        </div>
+      </section>
+    ))}
+  </nav>
+
+  <div class="article-desktop-sidebar__bottom">
+    <div class="sidebar-notifications" aria-live="polite" aria-atomic="true">
+      <a class="sidebar-notifications__link" data-sidebar-notifications
+        href={isEnglish ? '/en/account/messages/' : '/account/messages/'} hidden>
+        <span class="sidebar-notifications__bell" aria-hidden="true"></span>
+        <span data-sidebar-notifications-label></span>
+      </a>
+    </div>
+    <form class="article-desktop-sidebar__search" role="search" data-article-sidebar-search>
+      <label class="article-desktop-sidebar__search-field">
+        <span class="article-desktop-sidebar__search-icon" aria-hidden="true"></span>
+        <input
+          type="search"
+          aria-label={isEnglish ? 'Search the site' : 'Cerca nel sito'}
+          placeholder={isEnglish ? 'Search the site…' : 'Cerca nel sito…'}
+          autocomplete="off"
+        />
+      </label>
+    </form>
+    <div class="article-desktop-sidebar__preferences">
+      <div class="article-desktop-sidebar__language">
+        <a
+          href={languageSwitchHref}
+          aria-label={isEnglish ? 'Switch to Italian' : 'Passa alla versione inglese'}
+          title={isEnglish ? 'Switch to Italian' : 'Passa alla versione inglese'}
+          data-language-session-override={isEnglish ? 'it' : 'en'}
+          data-rg-language-switch
+          data-rg-language-switch-from={lang}
+          data-rg-language-switch-to={isEnglish ? 'it' : 'en'}
+          data-rg-language-switch-placement="header"
+        >
+          <img src={isEnglish ? '/icons/flags/italy-flag-circular.svg' : '/icons/flags/uk-flag-circular.svg'} alt="" aria-hidden="true" />
+          <span>{isEnglish ? 'IT' : 'EN'}</span>
+        </a>
+      </div>
+
+      <div class="article-desktop-sidebar__themes" data-sidebar-theme>
+        <button type="button" class="article-desktop-sidebar__theme-toggle" data-sidebar-theme-toggle
+          aria-haspopup="menu" aria-expanded="false" aria-controls="sidebar-theme-menu"
+          aria-label={isEnglish ? 'Theme: Auto' : 'Tema: Auto'} data-label-prefix={isEnglish ? 'Theme' : 'Tema'}>
+          <span class="article-desktop-sidebar__theme-icon" data-sidebar-theme-icon
+            style="--article-sidebar-theme-icon: url('/icons/rails/light-dark.svg')" aria-hidden="true"></span>
+          <span data-sidebar-theme-label>Auto</span>
+          <svg class="article-desktop-sidebar__chevron" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+        <div id="sidebar-theme-menu" class="article-desktop-sidebar__theme-menu" role="menu" aria-label={isEnglish ? 'Theme' : 'Tema'} hidden>
+          {themeOptions.map((option) => (
+            <button type="button" role="menuitemradio" data-theme-choice={option.value} data-label={option.label} aria-checked="false" tabindex="-1">
+              <span class="article-desktop-sidebar__theme-icon"
+                style={`--article-sidebar-theme-icon: url('/icons/rails/${option.value === 'system' ? 'light-dark' : option.value === 'light' ? 'sun' : 'moon'}.svg')`}
+                aria-hidden="true"></span>
+              <span>{option.label}</span>
+              <span class="article-desktop-sidebar__theme-check" aria-hidden="true">✓</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-sidebar-theme]').forEach((root) => {
+    const trigger = root.querySelector<HTMLButtonElement>('[data-sidebar-theme-toggle]');
+    const menu = root.querySelector<HTMLElement>('[role="menu"]');
+    const label = root.querySelector<HTMLElement>('[data-sidebar-theme-label]');
+    const icon = root.querySelector<HTMLElement>('[data-sidebar-theme-icon]');
+    const items = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-theme-choice]'));
+    if (!trigger || !menu || !label || !icon) return;
+
+    const sync = () => {
+      const preference = document.documentElement.dataset.themePreference || 'system';
+      const selected = items.find((item) => item.dataset.themeChoice === preference) || items[0];
+      label.textContent = selected.dataset.label || 'Auto';
+      trigger.setAttribute('aria-label', `${trigger.dataset.labelPrefix}: ${label.textContent}`);
+      trigger.title = trigger.getAttribute('aria-label') || '';
+      icon.style.setProperty('--article-sidebar-theme-icon', selected.querySelector<HTMLElement>('span')!.style.getPropertyValue('--article-sidebar-theme-icon'));
+      items.forEach((item) => {
+        item.setAttribute('aria-checked', String(item === selected));
+        // The shared theme handler uses pressed for its other button groups.
+        item.removeAttribute('aria-pressed');
+      });
+    };
+    const close = (restoreFocus = false) => {
+      menu.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+      if (restoreFocus) trigger.focus();
+    };
+    const open = () => {
+      sync();
+      menu.hidden = false;
+      trigger.setAttribute('aria-expanded', 'true');
+      (items.find((item) => item.getAttribute('aria-checked') === 'true') || items[0]).focus();
+    };
+    trigger.addEventListener('click', () => menu.hidden ? open() : close());
+    trigger.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); open(); }
+    });
+    menu.addEventListener('keydown', (event) => {
+      const index = items.indexOf(document.activeElement as HTMLButtonElement);
+      if (event.key === 'Escape') { event.preventDefault(); close(true); }
+      else if (event.key === 'Tab') close(true);
+      else if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
+        event.preventDefault();
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length;
+        items[next].focus();
+      }
+    });
+    items.forEach((item) => item.addEventListener('click', () => { close(true); queueMicrotask(sync); }));
+    document.addEventListener('pointerdown', (event) => { if (!root.contains(event.target as Node)) close(); });
+    document.addEventListener('focusin', (event) => { if (!root.contains(event.target as Node)) close(); });
+    new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme-preference'] });
+    matchMedia('(min-width: 1200px)').addEventListener('change', () => close());
+    sync();
+  });
+
+  document.querySelectorAll('[data-article-sidebar-account]').forEach((root) => {
+    const trigger = root.querySelector('[data-article-sidebar-account-toggle]');
+    const menu = root.querySelector('[role="menu"]');
+    if (!(trigger instanceof HTMLButtonElement) || !(menu instanceof HTMLElement)) return;
+
+    const close = (restoreFocus = false) => {
+      menu.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+      if (restoreFocus) trigger.focus();
+    };
+
+    trigger.addEventListener('click', () => {
+      const opening = menu.hidden;
+      menu.hidden = !opening;
+      trigger.setAttribute('aria-expanded', String(opening));
+      if (opening) menu.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    });
+
+    menu.addEventListener('keydown', (event) => {
+      const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+      const index = items.indexOf(document.activeElement as HTMLElement);
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close(true);
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        items[(index + (event.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]?.focus();
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!root.contains(event.target as Node)) close();
+    });
+
+    menu.querySelector('[data-article-sidebar-logout]')?.addEventListener('click', () => {
+      document.querySelector<HTMLButtonElement>('[data-account-menu] [data-account-logout]')?.click();
+    });
+  });
+
+  document.querySelectorAll('[data-article-sidebar-search]').forEach((form) => {
+    const field = form.querySelector('.article-desktop-sidebar__search-field');
+    const input = form.querySelector('input');
+    field?.addEventListener('pointerdown', () => field.setAttribute('data-pointer-focus', ''));
+    input?.addEventListener('blur', () => field?.removeAttribute('data-pointer-focus'));
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const sidebarInput = form.querySelector('input');
+      const searchToggle = document.querySelector('.site-header .search-toggle');
+      const searchInput = document.querySelector('#site-search-input');
+      if (!(sidebarInput instanceof HTMLInputElement) ||
+          !(searchToggle instanceof HTMLButtonElement) ||
+          !(searchInput instanceof HTMLInputElement)) return;
+
+      searchToggle.click();
+      searchInput.value = sidebarInput.value.trim();
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+</script>

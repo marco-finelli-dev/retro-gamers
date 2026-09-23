@@ -47,211 +47,88 @@ export function renderRetroGamersEmail({
   const defaultFooterNote = footerType === 'operational' ? defaultOperationalNote(language) : '';
   const footerNoteText = footerNote ?? defaultFooterNote;
 
+  // Static equivalents of the approved refresh tokens; email clients need inline fallbacks.
   return `<!doctype html>
 <html lang="${language}">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light dark">
-    <meta name="supported-color-schemes" content="light dark">
-    <title>${escapedTitle}</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        supported-color-schemes: light dark;
-      }
-
-      .rg-email-body,
-      .rg-email-shell {
-        background: #f5f3ee;
-      }
-
-      .rg-email-card {
-        background: #ffffff;
-        border-color: #e5e0d8;
-      }
-
-      .rg-email-title {
-        color: #111827;
-      }
-
-      .rg-email-text {
-        color: #374151;
-      }
-
-      .rg-email-muted,
-      .rg-email-footer {
-        color: #5b6472;
-      }
-
-      .rg-email-value {
-        color: #10202a;
-      }
-
-      .rg-email-brand,
-      .rg-email-link,
-      .rg-email-text a,
-      .rg-email-footer a {
-        color: #0b7f89;
-      }
-
-      .rg-email-button-cell {
-        background: #0f9fab;
-      }
-
-      .rg-email-button {
-        color: #ffffff !important;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        body,
-        .rg-email-body,
-        .rg-email-shell {
-          background: #0f1418 !important;
-          color: #f3f7f8 !important;
-        }
-
-        .rg-email-card {
-          background: #171f26 !important;
-          border-color: #2b3944 !important;
-          box-shadow: none !important;
-        }
-
-        .rg-email-title,
-        .rg-newsletter-item-title {
-          color: #f3f7f8 !important;
-        }
-
-        .rg-email-text,
-        .rg-newsletter-item-text {
-          color: #b8c4cc !important;
-        }
-
-        .rg-email-muted,
-        .rg-email-footer {
-          color: #b8c4cc !important;
-        }
-
-        .rg-email-value {
-          color: #f3f7f8 !important;
-        }
-
-        .rg-email-brand,
-        .rg-email-link,
-        .rg-email-text a,
-        .rg-email-footer a,
-        .rg-newsletter-item-link {
-          color: #35d3df !important;
-        }
-
-        .rg-email-button-cell {
-          background: #35d3df !important;
-        }
-
-        .rg-email-button {
-          color: #071015 !important;
-        }
-
-        .rg-email-accent {
-          background: #35d3df !important;
-        }
-
-        .rg-newsletter-item {
-          background: #18222b !important;
-          border-color: #2b3944 !important;
-        }
-
-        .rg-newsletter-item-kicker {
-          color: #35d3df !important;
-        }
-
-        .rg-email-alert {
-          background: #332a11 !important;
-          border-color: #d8b43f !important;
-          color: #ffe8a3 !important;
-        }
-      }
-    </style>
-  </head>
-  <body class="rg-email-body" style="margin:0; padding:0; background:#f5f3ee; font-family:Arial, Helvetica, sans-serif; color:#111827;">
-    <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
-      ${escapedPreview}
-    </div>
-
-    <table class="rg-email-shell" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%; background:#f5f3ee; margin:0; padding:28px 12px;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%; max-width:640px; margin:0 auto;">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <title>${escapedTitle}</title>
+  <style>
+    :root { color-scheme:light dark; supported-color-schemes:light dark; }
+    table { border-spacing:0; }
+    img { border:0; outline:none; }
+    .rg-email-text a, .rg-email-footer a { color:#092547; text-decoration:underline; }
+    .rg-email-text, .rg-email-footer, .rg-email-value, .rg-email-link {
+      overflow-wrap:anywhere; word-break:break-word;
+    }
+    a:focus-visible { outline:none; text-decoration:underline !important; text-decoration-thickness:2px; text-underline-offset:4px; }
+    @media only screen and (max-width:480px) {
+      .rg-email-padding { padding:24px 16px !important; }
+      h1.rg-email-title { font-size:24px !important; }
+      .rg-email-data-label, .rg-email-value { display:block !important; width:auto !important; }
+      .rg-email-data-label { padding-bottom:0 !important; }
+      .rg-email-value { padding-top:2px !important; }
+    }
+    @media (prefers-color-scheme:dark) {
+      body, .rg-email-body, .rg-email-shell { background:#092547 !important; color:#F7F1E5 !important; }
+      .rg-email-title, .rg-email-value, .rg-email-brand, .rg-newsletter-item-title { color:#F7F1E5 !important; }
+      .rg-email-text, .rg-email-muted, .rg-email-footer, .rg-newsletter-item-text,
+      .rg-newsletter-item-kicker { color:#B0B4B6 !important; }
+      .rg-email-link, .rg-email-text a, .rg-email-footer a, .rg-newsletter-item-link { color:#E8BA46 !important; }
+      .rg-email-divider, .rg-newsletter-item { border-color:#2F4660 !important; }
+      .rg-email-quote { background:#111C2B !important; border-color:#E8BA46 !important; color:#F7F1E5 !important; }
+      .rg-email-alert { background:#111C2B !important; border-color:#E8BA46 !important; color:#F7F1E5 !important; }
+      .rg-email-button-cell { background:#E8BA46 !important; }
+      .rg-email-button { color:#092547 !important; }
+    }
+  </style>
+</head>
+<body class="rg-email-body" style="margin:0; padding:0; background:#F7F1E5; color:#092547; font-family:Arial, Helvetica, sans-serif; -webkit-text-size-adjust:100%;">
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent; font-size:1px; line-height:1px; mso-hide:all;">${escapedPreview}</div>
+  <table class="rg-email-shell" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%; background:#F7F1E5;">
+    <tr><td align="center">
+      <!--[if mso]><table role="presentation" width="640" align="center"><tr><td><![endif]-->
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%; max-width:640px; margin:0 auto; table-layout:fixed;">
+        <tr><td class="rg-email-padding" style="padding:32px 28px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 28px;">
             <tr>
-              <td style="padding:0 0 14px 0;">
-                <div class="rg-email-brand" style="font-size:13px; line-height:1.4; letter-spacing:0.08em; font-weight:700; color:#0b6b73; text-transform:uppercase;">
-                  Retro-Gamers.it
-                </div>
+              <td width="56" style="width:56px; vertical-align:middle;">
+                <img src="https://www.retro-gamers.it/icon-192.png" alt="Retro-Gamers" width="48" height="48" style="display:block; width:48px; height:48px;">
               </td>
-            </tr>
-
-            <tr>
-              <td class="rg-email-card" style="background:#ffffff; border:1px solid #e5e0d8; border-radius:18px; overflow:hidden; box-shadow:0 12px 32px rgba(11, 31, 42, 0.08);">
-                <div class="rg-email-accent" style="height:5px; background:#19b9c4;"></div>
-                <div style="padding:30px 28px 28px 28px;">
-                  <h1 class="rg-email-title" style="margin:0 0 16px 0; font-size:26px; line-height:1.22; color:#111827; font-weight:800;">
-                    ${escapedTitle}
-                  </h1>
-
-                  ${escapedIntro ? `
-                    <p class="rg-email-text" style="margin:0 0 20px 0; font-size:16px; line-height:1.65; color:#374151;">
-                      ${escapedIntro}
-                    </p>
-                  ` : ''}
-
-                  ${bodyHtml ? `
-                    <div class="rg-email-text" style="font-size:15px; line-height:1.65; color:#374151;">
-                      ${bodyHtml}
-                    </div>
-                  ` : ''}
-
-                  ${escapedCtaLabel && escapedCtaUrl ? `
-                    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0 12px 0;">
-                      <tr>
-                        <td class="rg-email-button-cell" style="border-radius:999px; background:#0f9fab;">
-                          <a class="rg-email-button" href="${escapedCtaUrl}" style="display:inline-block; padding:13px 22px; color:#ffffff; font-size:15px; font-weight:700; text-decoration:none; border-radius:999px;">
-                            ${escapedCtaLabel}
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <p class="rg-email-muted" style="margin:0; font-size:12px; line-height:1.5; color:#5b6472;">
-                      ${language === 'en' ? 'If the button does not work, open this link:' : 'Se il pulsante non funziona, apri questo link:'}<br>
-                      <a class="rg-email-link" href="${escapedCtaUrl}" style="color:#0b7f89; text-decoration:underline; word-break:break-word;">${escapedCtaUrl}</a>
-                    </p>
-                  ` : ''}
-                </div>
-              </td>
-            </tr>
-
-            <tr>
-              <td class="rg-email-footer" style="padding:18px 4px 0 4px; font-size:12px; line-height:1.6; color:#5b6472;">
-                <p style="margin:0 0 8px 0;">
-                  <strong class="rg-email-title" style="color:#111827;">Retro-Gamers.it</strong><br>
-                  <a class="rg-email-link" href="https://www.retro-gamers.it/" style="color:#0b7f89; text-decoration:underline;">https://www.retro-gamers.it/</a>
-                </p>
-                ${footerNoteText ? `
-                  <p style="margin:0 0 8px 0;">
-                    ${escapeEmailHtml(footerNoteText)}
-                  </p>
-                ` : ''}
-                ${footerHtml ? `
-                  <div style="margin-top:8px;">
-                    ${footerHtml}
-                  </div>
-                ` : ''}
-              </td>
+              <td class="rg-email-brand" style="color:#092547; font-size:18px; line-height:1.3; font-weight:700; vertical-align:middle;">Retro-Gamers.it</td>
             </tr>
           </table>
-        </td>
-      </tr>
-    </table>
-  </body>
+          <h1 class="rg-email-title" style="margin:0 0 16px; font-size:28px; line-height:1.25; color:#092547; font-weight:700;">${escapedTitle}</h1>
+          ${escapedIntro ? `<p class="rg-email-text" style="margin:0 0 20px; font-size:16px; line-height:1.6; color:#506276;">${escapedIntro}</p>` : ''}
+          ${bodyHtml ? `<div class="rg-email-text" style="font-size:16px; line-height:1.6; color:#506276; overflow-wrap:anywhere; word-break:break-word;">${bodyHtml}</div>` : ''}
+          ${escapedCtaLabel && escapedCtaUrl ? `
+            <table role="presentation" cellspacing="0" cellpadding="0" style="max-width:100%; margin:24px 0 16px;">
+              <tr><td class="rg-email-button-cell" align="center" bgcolor="#E8BA46" style="background:#E8BA46; border-radius:8px; mso-padding-alt:14px 20px;">
+                <a class="rg-email-button" href="${escapedCtaUrl}" style="display:inline-block; padding:14px 20px; color:#092547; font-size:16px; line-height:1.3; font-weight:700; text-decoration:none; border-radius:8px;">${escapedCtaLabel}</a>
+              </td></tr>
+            </table>
+            <p class="rg-email-muted" style="margin:0; font-size:13px; line-height:1.6; color:#506276; overflow-wrap:anywhere; word-break:break-word;">
+              ${language === 'en' ? 'If the button does not work, open this link:' : 'Se il pulsante non funziona, apri questo link:'}<br>
+              <a class="rg-email-link" href="${escapedCtaUrl}" style="color:#092547; text-decoration:underline; overflow-wrap:anywhere; word-break:break-word;">${escapedCtaUrl}</a>
+            </p>` : ''}
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%; table-layout:fixed; margin-top:28px;">
+            <tr><td class="rg-email-footer rg-email-divider" style="border-top:1px solid #CCCCC8; padding-top:20px; font-size:13px; line-height:1.6; color:#506276; overflow-wrap:anywhere; word-break:break-word;">
+              <p style="margin:0 0 8px;">
+                <strong class="rg-email-title" style="color:#092547;">Retro-Gamers.it</strong><br>
+                <a class="rg-email-link" href="https://www.retro-gamers.it/" style="color:#092547; text-decoration:underline;">https://www.retro-gamers.it/</a>
+              </p>
+              ${footerNoteText ? `<p style="margin:0 0 8px;">${escapeEmailHtml(footerNoteText)}</p>` : ''}
+              ${footerHtml ? `<div style="margin-top:8px;">${footerHtml}</div>` : ''}
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>
+      <!--[if mso]></td></tr></table><![endif]-->
+    </td></tr>
+  </table>
+</body>
 </html>`;
 }

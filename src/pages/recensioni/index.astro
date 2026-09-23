@@ -1,4 +1,5 @@
 ---
+import '../../styles/components/reviews-listing.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchivePage from '../../components/archive/ArchivePage.astro';
 
@@ -33,16 +34,23 @@ const structuredData = createCollectionPageStructuredData({
   news={news}
   title="Recensioni di videogiochi retro"
   description="Recensioni di videogiochi retro per console, arcade e home computer, con analisi critica, contesto storico, voti e memoria personale."
-  image="/og-image.jpg"
+  image="/og-image.webp"
   canonical="https://www.retro-gamers.it/recensioni/"
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
 
-  <ArchivePage
-    title="Recensioni di videogiochi retro"
-    eyebrow="Giochi alla prova"
-    description="Le recensioni di Retro-Gamers.it tornano ai videogiochi che hanno segnato console, home computer e sale giochi, senza fermarsi alla nostalgia. Rileggiamo gameplay, grafica, sonoro e contesto storico per capire cosa conserva ancora valore, quali aspetti mostrano il peso del tempo e perché ogni titolo è stato importante. Dall’Amiga al Super Nintendo, dall’arcade alla prima PlayStation, ogni prova unisce memoria personale, analisi critica e attenzione alle versioni originali."
-    posts={allReviews}
-  />
+  <div class="reviews-listing">
+    <ArchivePage
+      reviewListing
+      title="Recensioni di videogiochi retro"
+      eyebrow="Giochi alla prova"
+      description="Le recensioni di Retro-Gamers.it tornano ai videogiochi che hanno segnato console, home computer e sale giochi, senza fermarsi alla nostalgia. Rileggiamo gameplay, grafica, sonoro e contesto storico per capire cosa conserva ancora valore, quali aspetti mostrano il peso del tempo e perché ogni titolo è stato importante. Dall’Amiga al Super Nintendo, dall’arcade alla prima PlayStation, ogni prova unisce memoria personale, analisi critica e attenzione alle versioni originali."
+      posts={allReviews}
+    />
+  </div>
 </BaseLayout>
+
+<script>
+  import '../../scripts/review-listing-filters.js';
+</script>

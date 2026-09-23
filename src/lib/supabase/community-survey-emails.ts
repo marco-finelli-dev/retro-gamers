@@ -55,21 +55,21 @@ export async function sendCommunitySurveyResponseAdminEmail({
   const submittedAtLabel = formatDate(submittedAt);
 
   const bodyHtml = `
-    <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%; border-collapse:collapse; margin:0;">
+    <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%; table-layout:fixed; border-collapse:collapse; margin:0;">
       <tr>
-        <td style="padding:8px 0; color:#647883; width:150px;">Survey</td>
-        <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(title)}</strong></td>
+        <td class="rg-email-muted rg-email-data-label" style="padding:8px 0; vertical-align:top; color:#506276; width:30%;">Survey</td>
+        <td class="rg-email-value" style="padding:8px 0; vertical-align:top; overflow-wrap:anywhere; word-break:break-word; color:#092547;"><strong style="color:inherit;">${escapeEmailHtml(title)}</strong></td>
       </tr>
       <tr>
-        <td style="padding:8px 0; color:#647883;">Lingua</td>
-        <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(surveyLanguage.toUpperCase())}</strong></td>
+        <td class="rg-email-muted rg-email-data-label" style="padding:8px 0; vertical-align:top; color:#506276;">Lingua</td>
+        <td class="rg-email-value" style="padding:8px 0; vertical-align:top; overflow-wrap:anywhere; word-break:break-word; color:#092547;"><strong style="color:inherit;">${escapeEmailHtml(surveyLanguage.toUpperCase())}</strong></td>
       </tr>
       <tr>
-        <td style="padding:8px 0; color:#647883;">Data risposta</td>
-        <td class="rg-email-value" style="padding:8px 0; color:#10202a;"><strong style="color:inherit;">${escapeEmailHtml(submittedAtLabel)}</strong></td>
+        <td class="rg-email-muted rg-email-data-label" style="padding:8px 0; vertical-align:top; color:#506276;">Data risposta</td>
+        <td class="rg-email-value" style="padding:8px 0; vertical-align:top; overflow-wrap:anywhere; word-break:break-word; color:#092547;"><strong style="color:inherit;">${escapeEmailHtml(submittedAtLabel)}</strong></td>
       </tr>
     </table>
-    <p style="margin:18px 0 0 0; color:#647883;">
+    <p class="rg-email-muted" style="margin:18px 0 0 0; color:#506276;">
       L’email segnala solo la nuova partecipazione. Le risposte individuali non sono incluse.
     </p>
   `;
