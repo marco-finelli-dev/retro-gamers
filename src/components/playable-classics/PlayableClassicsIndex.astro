@@ -1,6 +1,7 @@
 ---
 import '../../styles/pages/playable-classics.css';
 
+import PlayTodayCard from '../common/PlayTodayCard.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
 import { getAllPosts, groupPosts } from '../../lib/posts';
@@ -37,6 +38,7 @@ const copy = isEn
       year: 'Year',
       platform: 'Platform',
       guideOnly: 'Guide only',
+      distributions: { internalDownload: 'Internal download', officialExternalReference: 'Official external reference', guideOnly: 'Guide only' },
     }
   : {
       title: 'Classici giocabili oggi',
@@ -58,6 +60,7 @@ const copy = isEn
       year: 'Anno',
       platform: 'Piattaforma',
       guideOnly: 'Solo guida',
+      distributions: { internalDownload: 'Download interno', officialExternalReference: 'Riferimento esterno ufficiale', guideOnly: 'Solo guida' },
     };
 
 const [classics, allPosts] = await Promise.all([
@@ -123,71 +126,39 @@ const structuredData = createCollectionPageStructuredData({
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <div class="playable-classics-page">
+  <div class="pt-page">
     <div class="container">
-      <section class="playable-classics-hero">
-        <div class="playable-classics-hero__content">
+      <section class="pt-hero">
+        <div class="pt-hero__content">
           <span>{copy.eyebrow}</span>
           <h1>{copy.heroTitle}</h1>
           <p>{copy.heroText}</p>
-          <a class="playable-classics-hero__policy" href={copy.policyHref}>{copy.policyCta}</a>
+          <a class="pt-hero__policy" href={copy.policyHref}>{copy.policyCta}</a>
         </div>
       </section>
 
-      <section class="playable-classics-section" aria-labelledby="playable-classics-list">
-        <div class="playable-classics-section__heading">
+      <section class="pt-section" aria-labelledby="playable-classics-list">
+        <div class="pt-section__heading">
           <span>{copy.eyebrow}</span>
           <h2 id="playable-classics-list">{copy.cardsTitle}</h2>
         </div>
 
         {classics.length > 0 ? (
-          <div class="playable-classics-grid">
+          <div class="pt-grid">
             {classics.map((classic) => {
               const coverUrl = getCoverUrl(classic);
               const primaryPlatform = getPrimaryPlatform(classic);
 
               return (
-                <article class="playable-classics-card">
-                  <a class="playable-classics-card__media" href={getPlayableClassicUrl(classic, currentLang)}>
-                    {coverUrl ? (
-                      <img
-                        src={coverUrl}
-                        alt={classic.coverImage?.alt || classic.title}
-                        width="760"
-                        height="470"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <span aria-hidden="true">{classic.title?.slice(0, 2).toUpperCase()}</span>
-                    )}
-                  </a>
-
-                  <div class="playable-classics-card__body">
-                    <div class="playable-classics-card__meta">
-                      <span>{classic.distributionType === 'guideOnly' ? copy.guideOnly : classic.distributionType}</span>
-                      {classic.originalYear && <small>{copy.year}: {classic.originalYear}</small>}
-                      {primaryPlatform && <small>{copy.platform}: {primaryPlatform}</small>}
-                    </div>
-
-                    <h3>
-                      <a href={getPlayableClassicUrl(classic, currentLang)}>{classic.title}</a>
-                    </h3>
-
-                    {(classic.excerpt || classic.subtitle) && (
-                      <p>{classic.excerpt || classic.subtitle}</p>
-                    )}
-
-                    <a class="playable-classics-card__cta" href={getPlayableClassicUrl(classic, currentLang)}>
-                      {copy.open}
-                    </a>
-                  </div>
-                </article>
+                <PlayTodayCard href={getPlayableClassicUrl(classic, currentLang)} title={classic.title}
+                  image={coverUrl} alt={classic.coverImage?.alt} excerpt={classic.excerpt || classic.subtitle}
+                  metadata={[copy.distributions[classic.distributionType] || classic.distributionType, classic.originalYear, primaryPlatform]}
+                  cta={copy.open} />
               );
             })}
           </div>
         ) : (
-          <div class="playable-classics-empty">
+          <div class="pt-empty">
             <h3>{copy.emptyTitle}</h3>
             <p>{copy.emptyText}</p>
             <a href={copy.policyHref}>{copy.policyCta}</a>

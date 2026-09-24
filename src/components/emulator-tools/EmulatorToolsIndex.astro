@@ -1,6 +1,7 @@
 ---
 import '../../styles/pages/emulator-tools.css';
 
+import PlayTodayCard from '../common/PlayTodayCard.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
 import { getAllPosts, groupPosts } from '../../lib/posts';
@@ -104,8 +105,6 @@ const getCoverUrl = (tool: EmulatorTool) => {
 
   return urlFor(tool.coverImage)
     .width(760)
-    .height(470)
-    .fit('crop')
     .quality(76)
     .auto('format')
     .url();
@@ -138,70 +137,38 @@ const structuredData = createCollectionPageStructuredData({
   alternateLanguages={alternateLanguages}
   structuredData={structuredData}
 >
-  <div class="emulator-tools-page">
+  <div class="pt-page">
     <div class="container">
-      <section class="emulator-tools-hero">
-        <div class="emulator-tools-hero__content">
+      <section class="pt-hero">
+        <div class="pt-hero__content">
           <span>{copy.eyebrow}</span>
           <h1>{copy.heroTitle}</h1>
           <p>{copy.heroText}</p>
         </div>
       </section>
 
-      <section class="emulator-tools-section" aria-labelledby="emulator-tools-list">
-        <div class="emulator-tools-section__heading">
+      <section class="pt-section" aria-labelledby="emulator-tools-list">
+        <div class="pt-section__heading">
           <span>{copy.eyebrow}</span>
           <h2 id="emulator-tools-list">{copy.cardsTitle}</h2>
         </div>
 
         {tools.length > 0 ? (
-          <div class="emulator-tools-grid">
+          <div class="pt-grid">
             {tools.map((tool) => {
               const coverUrl = getCoverUrl(tool);
               const toolType = getLabel(copy.toolTypes, tool.toolType);
               const license = getLabel(copy.licenses, tool.licenseType);
 
               return (
-                <article class="emulator-tools-card">
-                  <a class="emulator-tools-card__media" href={getEmulatorToolUrl(tool, currentLang)}>
-                    {coverUrl ? (
-                      <img
-                        src={coverUrl}
-                        alt={tool.coverImage?.alt || tool.title}
-                        width="760"
-                        height="470"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <span aria-hidden="true">{tool.title?.slice(0, 2).toUpperCase()}</span>
-                    )}
-                  </a>
-
-                  <div class="emulator-tools-card__body">
-                    <div class="emulator-tools-card__meta">
-                      {toolType && <span>{toolType}</span>}
-                      {license && <small>{license}</small>}
-                    </div>
-
-                    <h3>
-                      <a href={getEmulatorToolUrl(tool, currentLang)}>{tool.title}</a>
-                    </h3>
-
-                    {(tool.excerpt || tool.subtitle) && (
-                      <p>{tool.excerpt || tool.subtitle}</p>
-                    )}
-
-                    <a class="emulator-tools-card__cta" href={getEmulatorToolUrl(tool, currentLang)}>
-                      {copy.open}
-                    </a>
-                  </div>
-                </article>
+                <PlayTodayCard href={getEmulatorToolUrl(tool, currentLang)} title={tool.title}
+                  image={coverUrl} alt={tool.coverImage?.alt} excerpt={tool.excerpt || tool.subtitle}
+                  metadata={[toolType, license]} cta={copy.open} tool />
               );
             })}
           </div>
         ) : (
-          <div class="emulator-tools-empty">
+          <div class="pt-empty">
             <h3>{copy.emptyTitle}</h3>
             <p>{copy.emptyText}</p>
           </div>

@@ -2,6 +2,7 @@
 import '../../styles/pages/playable-classics.css';
 
 import { toHTML } from '@portabletext/to-html';
+import PlayTodayBreadcrumb from '../common/PlayTodayBreadcrumb.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
 import {
@@ -268,6 +269,8 @@ const coverUrl = classic.coverImage?.asset
       .auto('format')
       .url()
   : '';
+
+const sidebarCoverUrl = classic.coverImage?.asset ? urlFor(classic.coverImage).width(720).quality(78).auto('format').url() : '';
 
 function escapeHTML(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -645,7 +648,7 @@ const downloadMessageAttrs = {
   alternateLanguages={alternateLanguages}
 >
   <div
-    class="playable-classics-page playable-classic-detail"
+    class="pt-page pt-detail"
     data-rg-playable-classic-page
     data-rg-playable-classic-language={currentLang}
     data-rg-playable-classic-slug={classic.slug}
@@ -655,17 +658,17 @@ const downloadMessageAttrs = {
     data-rg-playable-classic-requires-login={classic.requiresLogin ? 'true' : 'false'}
   >
     <div class="container">
-      <a class="playable-classic-back" href={copy.sectionHref}>{copy.backToIndex}</a>
+      <PlayTodayBreadcrumb href={copy.sectionHref} label={copy.sectionTitle} name={classic.title} lang={currentLang} />
 
-      <section class="playable-classic-hero">
-        <div class="playable-classic-hero__content">
+      <section class="pt-hero">
+        <div class="pt-hero__content">
           <span>{copy.sectionTitle}</span>
           <h1>{classic.title}</h1>
           {(classic.subtitle || classic.excerpt) && (
             <p>{classic.subtitle || classic.excerpt}</p>
           )}
 
-          <div class="playable-classic-hero__chips">
+          <div class="pt-meta">
             {legalStatusLabel && <span>{legalStatusLabel}</span>}
             {distributionLabel && <span>{distributionLabel}</span>}
             {classic.requiresLogin && <span>{isEn ? 'Registered users' : 'Utenti registrati'}</span>}
@@ -673,26 +676,26 @@ const downloadMessageAttrs = {
         </div>
       </section>
 
-      <div class="playable-classic-layout">
-        <article class="playable-classic-main">
+      <div class="pt-layout">
+        <article class="pt-main">
           {bodyHtml ? (
-            <div class="playable-classic-richtext" set:html={bodyHtml} />
+            <div class="pt-richtext" set:html={bodyHtml} />
           ) : (
-            <p class="playable-classic-empty-copy">{description}</p>
+            <p class="pt-empty-copy">{description}</p>
           )}
 
           {hasInternalDownload && hasDownloadPackages && (
             <section
-              class="playable-classic-download playable-classic-download--ready playable-classic-download--main"
+              class="pt-download pt-download--ready pt-download--main"
               data-playable-classic-download-group
             >
               <h2>{copy.downloadReadyTitle}</h2>
               <p>{copy.downloadPackagesText}</p>
 
-              <div class="playable-classic-download-packages">
+              <div class="pt-download-packages">
                 {activeDownloadPackages.map((downloadPackage) => (
                   <article
-                    class="playable-classic-download-package"
+                    class="pt-download-package"
                     data-playable-classic-download
                     data-endpoint={downloadPackage.endpoint}
                     data-message-preparing={downloadMessageAttrs.preparing}
@@ -708,41 +711,31 @@ const downloadMessageAttrs = {
                     data-analytics-platform-slug={downloadPackage.platformSlug}
                     data-analytics-requires-login={downloadPackage.analyticsRequiresLogin ? 'true' : 'false'}
                   >
-                    <header class="playable-classic-download-package__header">
+                    <header class="pt-download-package__header">
                       <div>
                         <h3>{downloadPackage.title}</h3>
-                        <div class="playable-classic-download-package__meta">
-                          {downloadPackage.platformLabel && <span>{downloadPackage.platformLabel}</span>}
-                          {downloadPackage.typeLabel && <span>{downloadPackage.typeLabel}</span>}
-                          {downloadPackage.languageLabel && <small>{downloadPackage.languageLabel}</small>}
+                        <div class="pt-download-package__meta">
+                          {downloadPackage.metadata.filter(item => !item.code).map(item => <span title={item.label}>{item.value}</span>)}
                         </div>
                       </div>
                     </header>
-
-                    {downloadPackage.metadata.length > 0 && (
-                      <dl class="playable-classic-package">
-                        {downloadPackage.metadata.map((item) => (
-                          <>
-                            <dt>{item.label}</dt>
-                            <dd>{item.code ? <code>{item.value}</code> : item.value}</dd>
-                          </>
-                        ))}
-                      </dl>
-                    )}
+                    {downloadPackage.metadata.filter(item => item.code).map(item => (
+                      <p class="pt-checksum"><span>{item.label}</span><code>{item.value}</code></p>
+                    ))}
 
                     {downloadPackage.notes && (
-                      <p class="playable-classic-download-package__notes">
+                      <p class="pt-download-package__notes">
                         <strong>{copy.packageNotes}:</strong> {downloadPackage.notes}
                       </p>
                     )}
 
-                    <div class="playable-classic-download__actions">
-                      <button type="button" data-download-button>{copy.downloadButton}</button>
+                    <div class="pt-download__actions">
+                      <button type="button" class="rg-cta-filled-raised rg-cta-filled-raised--primary" data-download-button><span class="rg-cta-filled-raised__face">{copy.downloadButton}</span></button>
                       <a href={copy.loginHref} data-download-login hidden>{copy.loginCta}</a>
                     </div>
 
                     <p
-                      class="playable-classic-download__status"
+                      class="pt-download__status"
                       data-download-status
                       role="status"
                       aria-live="polite"
@@ -752,18 +745,18 @@ const downloadMessageAttrs = {
                 ))}
               </div>
 
-              <div class="playable-classic-download__actions playable-classic-download__actions--policy">
+              <div class="pt-download__actions pt-download__actions--policy">
                 <a href={copy.policyHref}>{copy.policyCta}</a>
               </div>
             </section>
           )}
 
           {(setupHtml || classic.technicalNotes || classic.languageNotes) && (
-            <section class="playable-classic-panel">
+            <section class="pt-panel">
               <h2>{copy.instructionsTitle}</h2>
 
               {setupHtml && (
-                <div class="playable-classic-richtext playable-classic-richtext--compact">
+                <div class="pt-richtext pt-richtext--compact">
                   <h3>{copy.setupInstructions}</h3>
                   <div set:html={setupHtml} />
                 </div>
@@ -780,11 +773,11 @@ const downloadMessageAttrs = {
           )}
         </article>
 
-        <aside class="playable-classic-sidebar" aria-label={isEn ? 'Playable classic details' : 'Dettagli classico giocabile'}>
+        <aside class="pt-sidebar" aria-label={isEn ? 'Playable classic details' : 'Dettagli classico giocabile'}>
           {coverUrl && (
-            <figure class="playable-classic-cover">
+            <figure class="pt-cover">
               <img
-                src={coverUrl}
+                src={sidebarCoverUrl}
                 alt={classic.coverImage?.alt || classic.title}
                 width="1280"
                 height="720"
@@ -795,9 +788,9 @@ const downloadMessageAttrs = {
             </figure>
           )}
 
-          <div class="playable-classic-sidebar__sticky">
+          <div class="pt-sidebar__groups">
           {facts.length > 0 && (
-            <section class="playable-classic-facts">
+            <section class="pt-facts">
               {facts.map((item) => (
                 <div>
                   <span>{item.label}</span>
@@ -819,22 +812,22 @@ const downloadMessageAttrs = {
           )}
 
           {recommendedToolItems.length > 0 && (
-            <section class="playable-classic-panel playable-classic-panel--sidebar">
+            <section class="pt-panel pt-context-group">
               <h2>{copy.recommendedToolsTitle}</h2>
-              <div class="playable-classic-tools">
+              <div class="pt-tools">
                 {recommendedToolItems.map((tool) => (
-                  <article class:list={['playable-classic-tool', tool.isPrimary && 'playable-classic-tool--primary']}>
+                  <article class:list={['pt-tool', tool.isPrimary && 'pt-tool--primary']}>
                     <header>
                       {tool.url ? (
-                        <a class="playable-classic-tool__name" href={tool.url}>
+                        <a class="pt-tool__name" href={tool.url}>
                           {tool.title}
                         </a>
                       ) : (
-                        <strong class="playable-classic-tool__name">{tool.title}</strong>
+                        <strong class="pt-tool__name">{tool.title}</strong>
                       )}
 
                       {(tool.typeLabel || tool.isPrimary) && (
-                        <span class="playable-classic-tool__badges">
+                        <span class="pt-tool__badges">
                           {tool.typeLabel && <small>{tool.typeLabel}</small>}
                           {tool.isPrimary && <small>{copy.primaryTool}</small>}
                         </span>
@@ -842,7 +835,7 @@ const downloadMessageAttrs = {
                     </header>
 
                     {tool.recommendedFor && (
-                      <p class="playable-classic-tool__for"><strong>{copy.recommendedForLabel}:</strong> {tool.recommendedFor}</p>
+                      <p class="pt-tool__for"><strong>{copy.recommendedForLabel}:</strong> {tool.recommendedFor}</p>
                     )}
 
                     {tool.notes && <p><strong>{copy.toolNotesLabel}:</strong> {tool.notes}</p>}
@@ -853,31 +846,31 @@ const downloadMessageAttrs = {
           )}
 
           {!hasInternalDownload && (
-            <section class="playable-classic-download">
+            <section class="pt-download">
               <h2>{copy.downloadTitle}</h2>
               <p>{copy.downloadText}</p>
               {classic.requiresLogin && <p>{copy.downloadFuture}</p>}
-              <div class="playable-classic-download__actions">
+              <div class="pt-download__actions">
                 <a href={copy.policyHref}>{copy.policyCta}</a>
               </div>
             </section>
           )}
 
           {relatedPostCards.length > 0 && (
-            <section class="playable-classic-panel playable-classic-panel--sidebar">
+            <section class="pt-panel pt-context-group">
               <h2>{copy.relatedPosts}</h2>
 
-              <div class="playable-classic-related-posts">
+              <div class="pt-related-posts">
                 {relatedPostCards.map((post) => (
-                  <a class="playable-classic-related-post" href={post.url}>
-                    <span class="playable-classic-related-post__meta">
+                  <a class="pt-related-post" href={post.url}>
+                    <span class="pt-related-post__meta">
                       <span>{post.typeLabel}</span>
                       {post.language && <small>{post.language.toUpperCase()}</small>}
                     </span>
 
-                    <span class={`playable-classic-related-post__content${post.imageUrl ? '' : ' playable-classic-related-post__content--text'}`}>
+                    <span class={`pt-related-post__content${post.imageUrl ? '' : ' pt-related-post__content--text'}`}>
                       {post.imageUrl && (
-                        <span class="playable-classic-related-post__media">
+                        <span class="pt-related-post__media">
                           <img
                             src={post.imageUrl}
                             alt={post.featuredImage?.alt || post.title}
@@ -897,9 +890,9 @@ const downloadMessageAttrs = {
           )}
 
           {relationCreators.length > 0 && (
-            <section class="playable-classic-panel playable-classic-panel--sidebar">
+            <section class="pt-panel pt-context-group">
               <h2>{copy.relatedCreators}</h2>
-              <div class="playable-classic-creators">
+              <div class="pt-creators">
                 {relationCreators.map((creator) => {
                   const creatorUrl = getCreatorUrl(creator);
                   const portrait = getCreatorImage(creator);
@@ -908,10 +901,10 @@ const downloadMessageAttrs = {
 
                   return (
                     <CardTag
-                      class="playable-classic-creator-card"
+                      class="pt-creator-card"
                       href={creatorUrl || undefined}
                     >
-                      <span class="playable-classic-creator-card__portrait">
+                      <span class="pt-creator-card__portrait">
                         {portrait ? (
                           <img
                             src={portrait}
@@ -926,7 +919,7 @@ const downloadMessageAttrs = {
                         )}
                       </span>
 
-                      <span class="playable-classic-creator-card__body">
+                      <span class="pt-creator-card__body">
                         <strong>{creator.name}</strong>
                         {role && <small>{role}</small>}
                       </span>
@@ -938,18 +931,18 @@ const downloadMessageAttrs = {
           )}
 
           {(noteItems.length > 0 || classic.legalSourceUrl) && (
-            <section class="playable-classic-panel playable-classic-panel--sidebar">
+            <section class="pt-panel pt-context-group">
               <h2>{copy.notesTitle}</h2>
               {noteItems.map((item) => (
-                <div class="playable-classic-note">
+                <div class="pt-note">
                   <h3>{item.label}</h3>
                   <p>{item.value}</p>
                 </div>
               ))}
 
               {classic.legalSourceUrl && (
-                <div class="playable-classic-source">
-                  <a class="playable-classic-source__pill" href={classic.legalSourceUrl} target="_blank" rel="noopener noreferrer">
+                <div class="pt-source">
+                  <a class="pt-source__pill" href={classic.legalSourceUrl} target="_blank" rel="noopener noreferrer">
                     {classic.legalSourceLabel ? `${copy.legalSource}: ${classic.legalSourceLabel}` : copy.legalSource}
                   </a>
                 </div>

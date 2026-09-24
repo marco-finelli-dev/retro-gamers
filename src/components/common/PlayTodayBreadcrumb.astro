@@ -1,0 +1,6 @@
+---
+const { href, label, name, lang = 'it' } = Astro.props;
+---
+<nav class="pt-breadcrumb" aria-label={lang === 'en' ? 'Breadcrumb' : 'Percorso di navigazione'}>
+  <ol><li><a href={href}>{label}</a></li><li><span aria-hidden="true">›</span><span aria-current="page">{name}</span></li></ol>
+</nav>

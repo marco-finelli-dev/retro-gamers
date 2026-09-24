@@ -2,6 +2,8 @@
 import '../../styles/pages/emulator-tools.css';
 
 import { toHTML } from '@portabletext/to-html';
+import PlayTodayBreadcrumb from '../common/PlayTodayBreadcrumb.astro';
+import PlayTodayCard from '../common/PlayTodayCard.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
 import {
@@ -202,7 +204,7 @@ function getPortableImage(value: any) {
     ? `<figcaption>${escapeHTML(value.caption)}</figcaption>`
     : '';
 
-  return `<figure class="emulator-tool-figure"><img src="${src}" alt="${alt}" loading="lazy" decoding="async" />${caption}</figure>`;
+  return `<figure class="pt-figure"><img src="${src}" alt="${alt}" loading="lazy" decoding="async" />${caption}</figure>`;
 }
 
 function renderPortableText(blocks: any[] = []) {
@@ -360,86 +362,68 @@ const relatedPosts = localizedRelatedPosts.map((post) => ({
   languageSwitch={{ url: languageSwitchUrl }}
   alternateLanguages={alternateLanguages}
 >
-  <div class="emulator-tools-page emulator-tool-detail">
+  <div class="pt-page pt-detail">
     <div class="container">
-      <a class="emulator-tool-back" href={copy.sectionHref}>{copy.backToIndex}</a>
+      <PlayTodayBreadcrumb href={copy.sectionHref} label={copy.sectionTitle} name={tool.title} lang={currentLang} />
 
-      <section class="emulator-tool-hero">
-        <div class="emulator-tool-hero__content">
+      <section class="pt-hero">
+        <div class="pt-hero__content">
           <span>{copy.sectionTitle}</span>
           <h1>{tool.title}</h1>
           {(tool.subtitle || tool.excerpt) && (
             <p>{tool.subtitle || tool.excerpt}</p>
           )}
 
-          <div class="emulator-tool-hero__chips">
+          <div class="pt-meta">
             {toolTypeLabel && <span>{toolTypeLabel}</span>}
             {licenseLabel && <span>{licenseLabel}</span>}
           </div>
         </div>
       </section>
 
-      <div class="emulator-tool-layout">
-        <article class="emulator-tool-main">
+      <div class="pt-layout">
+        <article class="pt-main">
           {bodyHtml ? (
-            <div class="emulator-tool-richtext" set:html={bodyHtml} />
+            <div class="pt-richtext" set:html={bodyHtml} />
           ) : (
-            <p class="emulator-tool-empty-copy">{copy.bodyFallback}</p>
+            <p class="pt-empty-copy">{copy.bodyFallback}</p>
           )}
 
           {setupHtml && (
-            <section class="emulator-tool-panel">
+            <section class="pt-panel">
               <h2>{copy.setupInstructions}</h2>
-              <div class="emulator-tool-richtext emulator-tool-richtext--compact" set:html={setupHtml} />
+              <div class="pt-richtext pt-richtext--compact" set:html={setupHtml} />
             </section>
           )}
 
           {tool.technicalNotes && (
-            <section class="emulator-tool-panel">
+            <section class="pt-panel">
               <h2>{copy.technicalNotes}</h2>
               <p>{tool.technicalNotes}</p>
             </section>
           )}
 
           {relatedPlayableClassicCards.length > 0 && (
-            <section class="emulator-tool-panel emulator-tool-playable-classics">
-              <div class="emulator-tool-playable-classics__heading">
+            <section class="pt-panel pt-playable-classics">
+              <div class="pt-playable-classics__heading">
                 <h2>{copy.relatedPlayableClassicsTitle(tool.title)}</h2>
                 <p>{copy.relatedPlayableClassicsIntro}</p>
               </div>
 
-              <div class="emulator-tool-playable-classics__grid">
+              <div class="pt-playable-classics__grid">
                 {relatedPlayableClassicCards.map((classic) => (
-                  <article class="emulator-tool-playable-card">
-                    {classic.imageUrl && (
-                      <a class="emulator-tool-playable-card__media" href={classic.url} aria-label={classic.title}>
-                        <img
-                          src={classic.imageUrl}
-                          alt={classic.coverImage?.alt || classic.title}
-                          width="480"
-                          height="300"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </a>
-                    )}
-
-                    <div class="emulator-tool-playable-card__body">
-                      {classic.platformsLabel && <span>{classic.platformsLabel}</span>}
-                      <h3><a href={classic.url}>{classic.title}</a></h3>
-                      {(classic.excerpt || classic.subtitle) && <p>{classic.excerpt || classic.subtitle}</p>}
-                      <a class="emulator-tools-card__cta" href={classic.url}>{copy.openPlayableClassic}</a>
-                    </div>
-                  </article>
+                  <PlayTodayCard href={classic.url} title={classic.title} image={classic.imageUrl}
+                    alt={classic.coverImage?.alt} excerpt={classic.excerpt || classic.subtitle}
+                    metadata={[classic.platformsLabel]} cta={copy.openPlayableClassic} />
                 ))}
               </div>
             </section>
           )}
         </article>
 
-        <aside class="emulator-tool-sidebar editorial-sidebar" aria-label={isEn ? 'Emulator details' : 'Dettagli emulatore'}>
+        <aside class="pt-sidebar" aria-label={isEn ? 'Emulator details' : 'Dettagli emulatore'}>
           {sidebarCoverUrl && (
-            <figure class="emulator-tool-cover editorial-sidebar__media">
+            <figure class="pt-cover">
               <img
                 src={sidebarCoverUrl}
                 alt={tool.coverImage?.alt || tool.title}
@@ -450,11 +434,11 @@ const relatedPosts = localizedRelatedPosts.map((post) => ({
             </figure>
           )}
 
-          <div class="emulator-tool-sidebar__sticky editorial-sidebar__sticky">
+          <div class="pt-sidebar__groups">
             {officialLinks.length > 0 && (
-              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+              <section class="pt-panel pt-context-group">
                 <h2>{copy.officialLinks}</h2>
-                <div class="emulator-tool-link-list">
+                <div class="pt-link-list">
                   {officialLinks.map((link) => (
                     <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}</a>
                   ))}
@@ -463,9 +447,9 @@ const relatedPosts = localizedRelatedPosts.map((post) => ({
             )}
 
             {tool.supportedHostSystems?.length > 0 && (
-              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+              <section class="pt-panel pt-context-group">
                 <h2>{copy.hostSystems}</h2>
-                <div class="emulator-tool-chip-list">
+                <div class="pt-chip-list">
                   {tool.supportedHostSystems.map((system) => (
                     <span>{system}</span>
                   ))}
@@ -474,9 +458,9 @@ const relatedPosts = localizedRelatedPosts.map((post) => ({
             )}
 
             {tool.emulatedSystems?.length > 0 && (
-              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+              <section class="pt-panel pt-context-group">
                 <h2>{copy.supportedSystems}</h2>
-                <div class="emulator-tool-chip-list">
+                <div class="pt-chip-list">
                   {tool.emulatedSystems.map((platform) => (
                     <a href={getPlatformUrl(platform, currentLang)}>{getName(platform)}</a>
                   ))}
@@ -485,15 +469,15 @@ const relatedPosts = localizedRelatedPosts.map((post) => ({
             )}
 
             {relatedPosts.length > 0 && (
-              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+              <section class="pt-panel pt-context-group">
                 <h2>{copy.relatedPosts}</h2>
-                <div class="emulator-tool-related-posts">
+                <div class="pt-related-posts">
                   {relatedPosts.map((post) => (
-                    <a class="emulator-tool-related-post" href={post.url}>
-                      <span class="emulator-tool-related-post__meta">{post.typeLabel}</span>
-                      <span class={`emulator-tool-related-post__content${post.imageUrl ? '' : ' emulator-tool-related-post__content--text'}`}>
+                    <a class="pt-related-post" href={post.url}>
+                      <span class="pt-related-post__meta">{post.typeLabel}</span>
+                      <span class={`pt-related-post__content${post.imageUrl ? '' : ' pt-related-post__content--text'}`}>
                         {post.imageUrl && (
-                          <span class="emulator-tool-related-post__media">
+                          <span class="pt-related-post__media">
                             <img
                               src={post.imageUrl}
                               alt={post.featuredImage?.alt || post.title}
@@ -513,7 +497,7 @@ const relatedPosts = localizedRelatedPosts.map((post) => ({
             )}
 
             {tool.licenseNotes && (
-              <section class="emulator-tool-panel emulator-tool-panel--sidebar">
+              <section class="pt-panel pt-context-group">
                 <h2>{copy.licenseNotes}</h2>
                 <p>{tool.licenseNotes}</p>
               </section>
