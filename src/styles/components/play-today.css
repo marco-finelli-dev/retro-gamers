@@ -24,14 +24,16 @@
 .pt-section { margin-top: var(--rg-space-8); }
 .pt-section__heading { margin-bottom: var(--rg-space-6); }
 .pt-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--rg-space-6); }
-.pt-card { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--rg-border-neutral); border-radius: var(--rg-radius-medium); overflow: hidden; background: var(--rg-surface-card-subtle); }
-.pt-card__media { display: grid; place-items: center; aspect-ratio: 16/10; overflow: hidden; }
-.pt-card__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.pt-card--tool .pt-card__media { padding: var(--rg-space-6); }
+/* Geometry, typography and interactive states share the entity archive rules. */
+.pt-card { min-width: 0; }
+.pt-card__link { display: flex; flex-direction: column; min-width: 0; height: 100%; }
+.pt-page a.pt-card__link:is(:hover,:focus-visible) { text-decoration: none; }
+.pt-card__media { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; aspect-ratio: 16/9; overflow: hidden; }
+.pt-card__media img { display: block; min-width: 0; min-height: 0; width: 100%; height: 100%; object-fit: cover; }
+.pt-card--tool .pt-card__media { height: 150px; aspect-ratio: auto; padding: var(--rg-space-3); }
 .pt-card--tool .pt-card__media img { object-fit: contain; }
-.pt-card__body { display: flex; flex-direction: column; align-items: start; flex: 1; gap: var(--rg-space-3); padding: var(--rg-space-4); }
-.pt-card__body p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.pt-card__cta { margin-top: auto; gap: var(--rg-space-2); }
+.pt-card__body { display: flex; flex-direction: column; align-items: start; min-width: 0; }
+.pt-card__body p { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
 .pt-meta,.pt-download-package__meta,.pt-tool__badges,.pt-chip-list { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--rg-space-1) var(--rg-space-2); color: var(--rg-text-secondary); }
 .pt-meta,.pt-download-package__meta,.pt-tool__badges { font-size: var(--rg-type-meta); font-weight: var(--rg-weight-semibold); letter-spacing: .04em; text-transform: uppercase; line-height: 1.6; }
 .pt-page :is(.pt-meta,.pt-download-package__meta,.pt-tool__badges) > * { font: inherit; color: inherit; }

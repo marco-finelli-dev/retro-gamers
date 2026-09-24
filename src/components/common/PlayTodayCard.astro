@@ -1,14 +1,17 @@
 ---
-const { href, title, image, alt, excerpt, metadata = [], cta, tool = false } = Astro.props;
+import '../../styles/components/entity-listings.css';
+
+const { href, title, image, alt, excerpt, metadata = [], tool = false } = Astro.props;
 ---
 <article class:list={['pt-card', tool && 'pt-card--tool']}>
-  <a class="pt-card__media" href={href} aria-label={title}>
-    {image ? <img src={image} alt={alt || title} loading="lazy" decoding="async" /> : <span aria-hidden="true">{title?.slice(0, 2).toUpperCase()}</span>}
+  <a class="pt-card__link" href={href}>
+    <div class="pt-card__media">
+      {image ? <img src={image} alt={alt || title} loading="lazy" decoding="async" /> : <span aria-hidden="true">{title?.slice(0, 2).toUpperCase()}</span>}
+    </div>
+    <div class="pt-card__body">
+      <div class="pt-meta">{metadata.filter(Boolean).map(item => <span>{item}</span>)}</div>
+      <h3>{title}</h3>
+      {excerpt && <p>{excerpt}</p>}
+    </div>
   </a>
-  <div class="pt-card__body">
-    <div class="pt-meta">{metadata.filter(Boolean).map(item => <span>{item}</span>)}</div>
-    <h3><a href={href}>{title}</a></h3>
-    {excerpt && <p>{excerpt}</p>}
-    <a class="pt-text-link pt-card__cta" href={href}>{cta}<span aria-hidden="true"> →</span></a>
-  </div>
 </article>

@@ -2,10 +2,10 @@
 .entity-listing__desktop-intro { display: none; }
 
 @media (min-width: 0px) {
-  html[data-theme] body.rg-desktop-layout .entity-listing {
+  html[data-theme] body.rg-desktop-layout :is(.entity-listing, .pt-card__link) {
     --entity-surface: color-mix(in srgb, var(--rg-text-primary) 4%, var(--rg-desktop-canvas-surface, var(--rg-shell-paper)));
-    gap: var(--rg-space-8);
   }
+  html[data-theme] body.rg-desktop-layout .entity-listing { gap: var(--rg-space-8); }
   html[data-theme] body.rg-desktop-layout .entity-listing :is(.creators-hero, .companies-hero) {
     padding: 0 0 var(--rg-space-8);
     border: 0;
@@ -38,7 +38,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--rg-space-6);
   }
-  html[data-theme] body.rg-desktop-layout .entity-listing :is(.creator-card__link, .company-card__link) {
+  html[data-theme] body.rg-desktop-layout :is(.entity-listing :is(.creator-card__link, .company-card__link), .pt-page .pt-card__link) {
     padding: var(--rg-space-4);
     border: 1px solid var(--rg-border-neutral);
     border-radius: var(--rg-radius-medium);
@@ -48,8 +48,8 @@
     transform: none;
     transition: none;
   }
-  .entity-listing :is(.creator-card__link, .company-card__link)::before { content: none; }
-  html[data-theme] body.rg-desktop-layout .entity-listing :is(.creator-card__link, .company-card__link):hover {
+  :is(.entity-listing :is(.creator-card__link, .company-card__link), .pt-page .pt-card__link)::before { content: none; }
+  html[data-theme] body.rg-desktop-layout :is(.entity-listing :is(.creator-card__link, .company-card__link), .pt-page .pt-card__link):hover {
     border-color: var(--rg-text-muted);
   }
   html[data-theme] body.rg-desktop-layout .entity-listing :is(.creator-card__portrait, .company-card__visual) {
@@ -63,12 +63,12 @@
     border: 0;
     text-shadow: none;
   }
-  .entity-listing :is(.creator-card__body, .company-card__body) {
+  :is(.entity-listing :is(.creator-card__body, .company-card__body), .pt-page .pt-card__body) {
     padding: var(--rg-space-3) 0 0;
     gap: var(--rg-space-2);
   }
-  html[data-theme] body.rg-desktop-layout .entity-listing :is(.creator-card, .company-card) h2 {
-    order: -1;
+  html[data-theme] body.rg-desktop-layout .entity-listing :is(.creator-card, .company-card) h2 { order: -1; }
+  html[data-theme] body.rg-desktop-layout :is(.entity-listing :is(.creator-card, .company-card) h2, .pt-page .pt-card h3) {
     color: var(--rg-title-color);
     font-family: var(--rg-font-family);
     font-size: var(--rg-type-card);
@@ -86,7 +86,7 @@
     letter-spacing: normal;
     text-transform: none;
   }
-  html[data-theme] body.rg-desktop-layout .entity-listing :is(.creator-card__bio, .company-card p) {
+  html[data-theme] body.rg-desktop-layout :is(.entity-listing :is(.creator-card__bio, .company-card p), .pt-page .pt-card__body p) {
     -webkit-line-clamp: 2;
     color: var(--rg-text-secondary);
     font-size: var(--rg-type-body);
@@ -103,11 +103,16 @@
   }
   .entity-listing .creator-chip-list li + li::before { content: '·'; color: var(--rg-meta-separator-color); }
   .entity-listing .company-card__action { display: none; }
-  html[data-theme] body.rg-desktop-layout .entity-listing :is(.creator-card__link, .company-card__link):hover h2,
+  html[data-theme] body.rg-desktop-layout :is(.entity-listing :is(.creator-card__link, .company-card__link), .pt-page .pt-card__link):hover h2,
+  html[data-theme] body.rg-desktop-layout .pt-page .pt-card__link:hover h3,
   html[data-theme] body.rg-desktop-layout .entity-listing .creator-card__link:hover .creator-card__action { color: var(--rg-title-hover); }
-  html[data-theme] body.rg-desktop-layout .entity-listing :is(.creator-card__link, .company-card__link):focus { outline: none; }
-  html[data-theme] body.rg-desktop-layout .entity-listing :is(.creator-card__link, .company-card__link):focus-visible {
+  html[data-theme] body.rg-desktop-layout :is(.entity-listing :is(.creator-card__link, .company-card__link), .pt-page .pt-card__link):focus { outline: none; }
+  html[data-theme] body.rg-desktop-layout :is(.entity-listing :is(.creator-card__link, .company-card__link), .pt-page .pt-card__link):focus-visible {
     outline: 2px solid var(--rg-text-secondary);
     outline-offset: 4px;
   }
+}
+
+@media (max-width: 1199px) {
+  html[data-theme] body.rg-desktop-layout .pt-card__link { --entity-surface: var(--rg-surface-card-subtle); }
 }
