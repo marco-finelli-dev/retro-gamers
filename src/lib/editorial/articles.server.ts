@@ -1056,6 +1056,14 @@ function normalizePortableTextBlock(value: unknown, isAsideContent = false): Rec
 
   if (!isAsideContent && value._type === 'quote') return normalizeQuote(value);
 
+  if (!isAsideContent && value._type === 'divider') {
+    return {
+      _key: normalizeKey(value._key),
+      _type: 'divider',
+      ...(value.style === 'line' ? { style: 'line' } : {}),
+    };
+  }
+
   if (!isAsideContent && value._type === 'asideBox') {
     return normalizeAsideBox(value);
   }

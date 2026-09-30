@@ -717,6 +717,9 @@ type Labels = {
   videoBlockHeader: string;
   videoRowBlockHeader: string;
   asideBoxHeader: string;
+  insertDivider: string;
+  dividerOptions: string;
+  removeDivider: string;
   insertQuote: string;
   editQuote: string;
   updateQuote: string;
@@ -1020,6 +1023,7 @@ const schemaDefinition = defineSchema({
     videoRowBlockObjectSchema,
     asideBoxBlockObjectSchema,
     quoteBlockObjectSchema,
+    { name: 'divider', fields: [{ name: 'style', type: 'string' }] },
     affiliateProductsBlockObjectSchema,
   ],
 });
@@ -2289,6 +2293,60 @@ function AsideContentPreview({
   return <div className="editorial-pte__aside-preview-content">{renderedItems}</div>;
 }
 
+function DividerObjectBlock({ attributes, children, path, focused, selected, labels }: any) {
+  const editor = useEditor();
+  const readOnly = useEditorSelector(editor, snapshot => snapshot.context.readOnly);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const outside = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setIsMenuOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+        menuRef.current?.querySelector('button')?.focus();
+      }
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [isMenuOpen]);
+
+  const select = () => editor.send({ type: 'select.block', at: path });
+  const act = (type: 'move.block up' | 'move.block down' | 'delete.block') => {
+    if (readOnly) return;
+    editor.send({ type, at: path });
+    editor.send({ type: 'focus' });
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <div {...attributes} className="editorial-pte__divider-object"
+      data-focused={focused ? 'true' : undefined} data-selected={selected ? 'true' : undefined}>
+      {children}
+      <div contentEditable={false}>
+        <MediaBlockHeader icon="" title="" menuLabel={labels.dividerOptions}
+          isMenuOpen={isMenuOpen} menuRef={menuRef} onToggleMenu={() => setIsMenuOpen(value => !value)}>
+          <button type="button" role="menuitem" disabled={readOnly} onClick={() => act('move.block up')}>{labels.moveUp}</button>
+          <button type="button" role="menuitem" disabled={readOnly} onClick={() => act('move.block down')}>{labels.moveDown}</button>
+          <button type="button" role="menuitem" disabled={readOnly} className="editorial-pte__image-menu-danger"
+            onClick={() => act('delete.block')}>{labels.removeDivider}</button>
+        </MediaBlockHeader>
+        <div className="editorial-pte__divider-line" draggable={!readOnly}
+          onMouseDown={select} onDragStart={event => { select(); event.dataTransfer.effectAllowed = 'move'; }}>
+          <hr />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function QuoteObjectBlock({
   attributes,
   children,
@@ -2885,6 +2943,10 @@ function ObjectBlock({
         {children}
       </VideoRowObjectBlock>
     );
+  }
+
+  if (type === 'divider') {
+    return <DividerObjectBlock attributes={attributes} labels={labels} {...props}>{children}</DividerObjectBlock>;
   }
 
   if (type === 'quote') {
@@ -7119,6 +7181,14 @@ function Toolbar({
               >
                 {insertMenuLabels.videoRow}
               </button>
+              <button className="editorial-pte-toolbar__menu-item" type="button" role="menuitem"
+                disabled={isLocked} onMouseDown={event => event.preventDefault()}
+                onClick={() => runToolbarAction(() => send({
+                  type: 'insert.block object', placement: 'after',
+                  blockObject: { name: 'divider', value: { style: 'line' } },
+                }))}>
+                {labels.insertDivider}
+              </button>
               <button
                 className="editorial-pte-toolbar__menu-item"
                 type="button"
@@ -8542,6 +8612,10 @@ export default function ArticlePortableTextEditor({
             onAssetPreview={rememberBodyImagePreview}
           />
         ),
+      }),
+      defineBlockObject({
+        type: 'divider',
+        render: props => <DividerObjectBlock {...props} labels={labels} />,
       }),
       defineBlockObject({
         type: 'quote',

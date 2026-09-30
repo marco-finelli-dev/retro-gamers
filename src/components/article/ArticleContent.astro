@@ -756,6 +756,10 @@ function getAffiliateProductsForBlock(block, articlePost) {
       return <ArticleAffiliateBox post={post} products={affiliateProducts} />;
     }
 
+    if (block._type === 'divider') {
+      return <hr class="article-divider" />;
+    }
+
     if (block._type === 'quote') {
       const paragraphs = (Array.isArray(block.content) ? block.content : [])
         .filter(item => item?._type === 'block')
