@@ -23,6 +23,26 @@ export const publicFreshClient = createClient({
   perspective: 'published'
 });
 
+// Published definitions for public pages; keep credentials on the server.
+let publishedCdnReadClient;
+
+export function getPublishedCdnReadClient() {
+  const readToken = getSanityReadToken();
+  if (!readToken) return publicClient;
+
+  if (!publishedCdnReadClient) {
+    publishedCdnReadClient = createClient({
+      ...baseClientConfig,
+      useCdn: true,
+      perspective: 'published',
+      token: readToken
+    });
+  }
+
+  return publishedCdnReadClient;
+}
+
+// Fresh reads for administration and validation before writes.
 let publishedReadClient;
 let hasWarnedMissingReadToken = false;
 

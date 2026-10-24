@@ -8,7 +8,7 @@ import {
   isContentRouteSegment
 } from '../../lib/routes.js';
 
-import { getSanityClient, publicFreshClient } from '../../lib/sanity';
+import { getSanityClient } from '../../lib/sanity';
 import { isDraftMode } from '../../lib/sanity-preview';
 import {
   PUBLIC_POST_GROQ_FILTER,
@@ -39,7 +39,7 @@ const { category, slug } = Astro.params;
 
 const isPreview = isDraftMode(Astro.cookies);
 const sanityClient = getSanityClient(isPreview);
-const articleDetailClient = isPreview ? sanityClient : publicFreshClient;
+const articleDetailClient = sanityClient;
 
 if (isPreview) {
   Astro.response.headers.set('Cache-Control', 'private, no-store, max-age=0');

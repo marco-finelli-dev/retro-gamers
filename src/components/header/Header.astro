@@ -9,6 +9,7 @@ import '../../styles/components/header/mobile-shell.css';
 
 const {
   lang = 'it',
+  survey = null,
   languageSwitch = null,
   readingContext = null
 } = Astro.props;
@@ -279,9 +280,9 @@ const initialAccountState = !initialSession?.error && initialProfile && initialU
   </script>
 )}
 
-<MobileMenu lang={lang} languageSwitch={languageSwitch} />
+<MobileMenu survey={survey} lang={lang} languageSwitch={languageSwitch} />
 
-<NavigationRails lang={lang}>
+<NavigationRails survey={survey} lang={lang}>
       <div
         class="site-header__account"
         slot="account"

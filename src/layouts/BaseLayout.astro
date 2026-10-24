@@ -11,6 +11,7 @@ import SanityVisualEditing from '../components/common/SanityVisualEditing';
 import RetroExperienceLauncher from '../components/retro-experience/RetroExperienceLauncher.astro';
 import ArticleDesktopSidebar from '../components/article/ArticleDesktopSidebar.astro';
 import { getAllPosts } from '../lib/posts';
+import { getNavigationSurvey } from '../lib/navigation-survey';
 import { getLanguageSwitchUrl } from '../lib/language-switch.js';
 import { isDraftMode } from '../lib/sanity-preview';
 import '../styles/components/support.css';
@@ -52,6 +53,8 @@ const hasProvidedReviews =
 
 const hasProvidedNews =
   Array.isArray(providedNews) && providedNews.length > 0;
+
+const navigationSurvey = minimal ? null : await getNavigationSurvey(Astro.locals, lang);
 
 const needsMenuPosts = !minimal && (!hasProvidedReviews || !hasProvidedNews);
 
@@ -303,11 +306,12 @@ if (isPreview) {
     {!minimal && <RetroExperienceLauncher />}
 
     {hasDesktopSidebar && (
-      <ArticleDesktopSidebar lang={lang} languageSwitch={resolvedLanguageSwitch} />
+      <ArticleDesktopSidebar survey={navigationSurvey} lang={lang} languageSwitch={resolvedLanguageSwitch} />
     )}
 
     {!minimal && (
       <Header
+        survey={navigationSurvey}
         reviews={reviews}
         news={news}
         lang={lang}

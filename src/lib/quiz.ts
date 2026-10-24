@@ -259,7 +259,7 @@ export async function getPublishedQuizBySlug(
 
   if (!normalizedSlug) return null;
 
-  const data = await publicFreshClient.fetch(
+  const data = await publicClient.fetch(
     `
       *[
         ${publicQuizFilter} &&

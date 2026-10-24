@@ -9,12 +9,11 @@ import {
   getPlatformIndexUrl
 } from '../../lib/routes.js';
 import {
-  getCommunitySurveyUrl,
-  getOpenCommunitySurveyForLanguage
+  getCommunitySurveyUrl
 } from '../../lib/community-surveys';
 import { getEditorialSessionForUserSession } from '../../lib/editorial/session.server';
 
-const { lang = 'it', languageSwitch = null } = Astro.props;
+const { survey = null, lang = 'it', languageSwitch = null } = Astro.props;
 const isEnglish = lang === 'en';
 const homeHref = isEnglish ? '/en/' : '/';
 const communityHref = `${homeHref}community/`;
@@ -46,7 +45,6 @@ const accountName = String(
 const accountInitial = accountName.match(/[A-Za-zÀ-ÖØ-öø-ÿ0-9]/)?.[0]?.toUpperCase() || '';
 const accountAvatar = String(profile?.avatar_url || '').trim();
 
-const survey = await getOpenCommunitySurveyForLanguage(lang);
 const surveyHref = survey ? getCommunitySurveyUrl(survey, lang) : communityHref;
 
 const groups = [

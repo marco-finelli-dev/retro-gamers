@@ -1,10 +1,10 @@
 ---
 import {
   getCommunitySurveyUrl,
-  getOpenCommunitySurveyForLanguage,
   type CommunitySurveyLanguage,
 } from '../../lib/community-surveys';
 import '../../styles/article/article-survey-cta.css';
+import { getNavigationSurvey } from '../../lib/navigation-survey';
 
 interface Props {
   lang?: CommunitySurveyLanguage;
@@ -12,7 +12,7 @@ interface Props {
 
 const { lang = 'it' } = Astro.props;
 const currentLang: CommunitySurveyLanguage = lang === 'en' ? 'en' : 'it';
-const activeSurvey = await getOpenCommunitySurveyForLanguage(currentLang);
+const activeSurvey = await getNavigationSurvey(Astro.locals, currentLang);
 const surveyHref = activeSurvey ? getCommunitySurveyUrl(activeSurvey, currentLang) : '';
 const completedKey = activeSurvey ? `communitySurveyCompleted:${activeSurvey.surveyKey}` : '';
 const titleId = `article-community-survey-title-${currentLang}`;

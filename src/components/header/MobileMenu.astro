@@ -1,12 +1,11 @@
 ---
 import { getArchiveUrl, getCompanyUrl, getCreatorUrl, getPlatformIndexUrl } from '../../lib/routes.js';
 import { getLocalizedLanguageUrl } from '../../lib/language-switch.js';
-import { getOpenCommunitySurveyForLanguage, getCommunitySurveyUrl } from '../../lib/community-surveys';
-const { lang = 'it', languageSwitch = null } = Astro.props;
+import { getCommunitySurveyUrl } from '../../lib/community-surveys';
+const { survey = null, lang = 'it', languageSwitch = null } = Astro.props;
 const isEnglish = lang === 'en';
 const homeHref = isEnglish ? '/en/' : '/';
 const communityHref = `${homeHref}community/`;
-const survey = await getOpenCommunitySurveyForLanguage(lang);
 const surveyHref = survey ? getCommunitySurveyUrl(survey, lang) : communityHref;
 const currentPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
 const isCurrent = (href) => {

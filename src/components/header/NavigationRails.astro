@@ -1,13 +1,12 @@
 ---
 import { getArchiveUrl, getPlatformTypeUrl, getPlatformIndexUrl, getCreatorUrl, getCompanyUrl, getPlayableClassicUrl, getEmulatorToolUrl, getSearchRouteData } from '../../lib/routes.js';
-import { getOpenCommunitySurveyForLanguage, getCommunitySurveyUrl } from '../../lib/community-surveys';
-const { lang = 'it' } = Astro.props;
+import { getCommunitySurveyUrl } from '../../lib/community-surveys';
+const { survey = null, lang = 'it' } = Astro.props;
 const en = lang === 'en';
 const home = en ? '/en/' : '/';
 const community = `${home}community/`;
 const item = (label: string, href: string) => ({ label, href });
 const editorial = (type: string, it: string, english = it) => item(en ? english : it, getArchiveUrl(type, lang));
-const survey = await getOpenCommunitySurveyForLanguage(lang);
 const surveyHref = survey ? getCommunitySurveyUrl(survey, lang) : community;
 const preferenceLabels = {
   title: en ? 'Preferences' : 'Preferenze',

@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { HOME_SURVEY_KEY, surveyPercentages } from './home-survey';
 import { logApiError } from './api-errors';
-import { getPublishedReadClient } from './sanity';
+import { getPublishedCdnReadClient, getPublishedReadClient } from './sanity';
 import { supabaseAdmin } from './supabase/server';
 
 export type CommunitySurveyLanguage = 'it' | 'en';
@@ -656,7 +656,7 @@ export async function getPublishedCommunitySurveyBySlug(
 
   if (!normalizedSlug) return null;
 
-  const data = await getPublishedReadClient().fetch(
+  const data = await getPublishedCdnReadClient().fetch(
     `
       *[
         ${publicCommunitySurveyFilter} &&
@@ -677,7 +677,7 @@ export async function getOpenCommunitySurveyForLanguage(
 ): Promise<CommunitySurveyPublic | null> {
   const normalizedLanguage = normalizeCommunitySurveyLanguage(language) || 'it';
 
-  const data = await getPublishedReadClient().fetch(
+  const data = await getPublishedCdnReadClient().fetch(
     `
       *[
         ${openCommunitySurveyFilter} &&
@@ -738,22 +738,37 @@ export async function getOpenCommunitySurveyByKey(
   return getCommunitySurveyAvailability(survey).isOpen ? survey : null;
 }
 
-export async function getPublishedCommunitySurveyByKey(
+type SurveyDefinitionOptions = {
+  language?: CommunitySurveyLanguage | null;
+  surveyDocumentId?: string | null;
+};
+
+export function getPublishedCommunitySurveyByKey(
   surveyKey: string,
-  {
-    language = null,
-    surveyDocumentId = '',
-  }: {
-    language?: CommunitySurveyLanguage | null;
-    surveyDocumentId?: string | null;
-  } = {}
+  options: SurveyDefinitionOptions = {}
+): Promise<CommunitySurveyPublic | null> {
+  return fetchPublishedCommunitySurveyByKey(getPublishedCdnReadClient(), surveyKey, options);
+}
+
+// Operational validation must see closures/edits immediately before a vote.
+export function getFreshPublishedCommunitySurveyByKey(
+  surveyKey: string,
+  options: SurveyDefinitionOptions = {}
+): Promise<CommunitySurveyPublic | null> {
+  return fetchPublishedCommunitySurveyByKey(getPublishedReadClient(), surveyKey, options);
+}
+
+async function fetchPublishedCommunitySurveyByKey(
+  readClient: ReturnType<typeof getPublishedReadClient>,
+  surveyKey: string,
+  { language = null, surveyDocumentId = '' }: SurveyDefinitionOptions
 ): Promise<CommunitySurveyPublic | null> {
   const normalizedSurveyKey = normalizeTechnicalId(surveyKey);
   const normalizedDocumentId = String(surveyDocumentId || '').trim();
 
   if (!normalizedSurveyKey) return null;
 
-  const data = await getPublishedReadClient().fetch(
+  const data = await readClient.fetch(
     `
       *[
         ${publicCommunitySurveyFilter} &&
@@ -1019,7 +1034,7 @@ export async function submitCommunitySurveyResponse({
     }
   | { ok: false; error: string; status: number; field?: string }
 > {
-  const survey = await getPublishedCommunitySurveyByKey(surveyKey, {
+  const survey = await getFreshPublishedCommunitySurveyByKey(surveyKey, {
     language,
     surveyDocumentId,
   });

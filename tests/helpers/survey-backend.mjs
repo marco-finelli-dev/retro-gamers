@@ -1,13 +1,20 @@
 // Isolated in-memory adapters: no credentials, network calls or production writes.
 import { readFileSync } from 'node:fs';
 const records = readFileSync(new URL('../../docs/community-surveys/home-amiga-platformer-2026.ndjson', import.meta.url), 'utf8').trim().split('\n').map(JSON.parse);
-export const state = { documents: [], responses: [], answers: [], fail: false, posts: 0 };
+export const state = { documents: [], responses: [], answers: [], fail: false, failSanity: false, reads: [], logs: [], posts: 0 };
 export function reset() {
   state.documents = structuredClone(records).map(d => ({ ...d, slug: d.slug.current }));
-  state.responses = []; state.answers = []; state.fail = false; state.posts = 0;
+  state.responses = []; state.answers = []; state.fail = false; state.failSanity = false; state.reads = []; state.logs = []; state.posts = 0;
 }
 reset();
-export function getPublishedReadClient() { return { async fetch(query, params = {}) {
+export const publicClient = createReadClient('cdn');
+export const publicFreshClient = createReadClient('direct');
+export function getPublishedCdnReadClient() { return publicClient; }
+export function getPublishedReadClient() { return publicFreshClient; }
+function createReadClient(transport) { return { async fetch(query, params = {}) {
+  state.reads.push({ transport, query, params });
+  if (state.failSanity) throw new Error('Isolated Sanity outage');
+  if (query.includes('_type == "quiz"')) return null;
   let docs = state.documents.filter(d => (!params.surveyKey || d.surveyKey === params.surveyKey)
     && (!params.language || d.language === params.language) && (!params.surveyDocumentId || d._id === params.surveyDocumentId)
     && (!params.homeSurveyKey || d.surveyKey !== params.homeSurveyKey));
@@ -43,4 +50,4 @@ export const supabaseAdmin = { from(table) {
   return api;
 } };
 export const sendCommunitySurveyResponseAdminEmail = async () => true;
-export const logApiError = () => {};
+export const logApiError = (context) => { state.logs.push(context); };
