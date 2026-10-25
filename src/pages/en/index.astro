@@ -162,32 +162,35 @@ const latestFeedCandidates = getHomeLatestPosts(
 const latestFeed = latestFeedCandidates.slice(0, HOME_LATEST_PAGE_SIZE);
 const latestFeedHasMore = latestFeedCandidates.length > HOME_LATEST_PAGE_SIZE;
 
-const homeCommentCountMap = await getApprovedCommentCountMap(
-  [
-    ...hero,
-    ...reviews,
-    ...news.slice(0, 8),
-    ...guides,
-    ...specials,
-    ...interviews,
-    ...hardware,
-    ...latestFeed,
-  ],
-  'en'
-);
-
-const withCommentCounts = (posts) =>
-  attachApprovedCommentCounts(posts, homeCommentCountMap, 'en');
-
+// Posts remain the failure gate. Counts and the three published modules
+// have no data dependency on each other; attach every promise immediately.
 const [
+  homeCommentCountMap,
   playableClassics,
   emulatorTools,
   quizzes
 ] = await Promise.all([
+  getApprovedCommentCountMap(
+    [
+      ...hero,
+      ...reviews,
+      ...news.slice(0, 8),
+      ...guides,
+      ...specials,
+      ...interviews,
+      ...hardware,
+      ...latestFeed,
+    ],
+    'en'
+  ),
   getHomePlayableClassics('en', 4),
   getHomeEmulatorTools('en', 4),
   getPublishedQuizSummaries('en')
 ]);
+
+const withCommentCounts = (posts) =>
+  attachApprovedCommentCounts(posts, homeCommentCountMap, 'en');
+
 const viewerSession = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 let hideNewsletterPromo = false;
 
