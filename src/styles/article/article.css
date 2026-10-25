@@ -53,6 +53,18 @@
   border-top: 1px solid var(--rg-divider-color);
 }
 
+@media (min-width: 1200px) {
+  .article-page__sidebar > .article-context-sidebar {
+    /* Keep the existing reading-card offset and a spacing-token bottom inset. */
+    max-height: calc(100vh - var(--rg-shell-header-height) - 2 * var(--rg-space-6));
+    max-height: calc(100dvh - var(--rg-shell-header-height) - 2 * var(--rg-space-6));
+    min-height: 0;
+    align-content: start;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+}
+
 .article-lead-image {
   overflow: hidden;
   margin: 0 0 var(--rg-space-6);
