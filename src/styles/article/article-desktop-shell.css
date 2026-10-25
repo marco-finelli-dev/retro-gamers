@@ -52,13 +52,15 @@
     z-index: 140;
     display: flex;
     width: var(--rg-article-nav-width);
+    height: 100vh;
     height: 100dvh;
     min-height: 0;
     padding: 24px 20px 20px;
     flex-direction: column;
     gap: var(--rg-space-4);
-    overflow-y: auto;
-    scrollbar-width: none;
+    overflow: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rg-article-sidebar-secondary) transparent;
     border-right: 1px solid var(--rg-article-sidebar-border);
     background: var(--rg-article-sidebar-bg);
     color: var(--rg-article-sidebar-text);
@@ -97,7 +99,6 @@
   }
 
   .article-desktop-sidebar > * { flex-shrink: 0; }
-  .article-desktop-sidebar::-webkit-scrollbar { display: none; }
 
   .article-desktop-sidebar__account {
     display: flex;
@@ -296,6 +297,13 @@
 
   .article-desktop-sidebar__nav {
     display: grid;
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rg-article-sidebar-secondary) transparent;
     gap: var(--rg-space-4);
   }
 
@@ -303,6 +311,18 @@
     margin-top: auto;
     display: grid;
     gap: var(--rg-space-4);
+  }
+
+  /* When even the fixed zones cannot fit, keep every control reachable. */
+  @media (max-height: 360px) {
+    .rg-desktop-layout .article-desktop-sidebar {
+      overflow-y: auto;
+    }
+
+    .article-desktop-sidebar__nav {
+      flex: none;
+      overflow: visible;
+    }
   }
 
   .article-desktop-sidebar__group {
