@@ -771,7 +771,7 @@ function getAffiliateProductsForBlock(block, articlePost) {
       const asideContent = block.content || [];
 
       return (
-        <aside class={`article-aside-box ${block.tone || 'info'}`}>
+        <div class={`article-aside-box ${block.tone || 'info'}`} role="note">
 
           {block.title && (
             <h3 class="article-aside-box__title">{block.title}</h3>
@@ -881,7 +881,7 @@ function getAffiliateProductsForBlock(block, articlePost) {
             return null;
           })}
 
-        </aside>
+        </div>
       );
     }
 

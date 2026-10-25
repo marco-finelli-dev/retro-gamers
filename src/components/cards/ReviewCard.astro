@@ -4,8 +4,9 @@ import { getPostUrl } from '../../lib/routes';
 import ReviewScoreRing from '../reviews/ReviewScoreRing.astro';
 import CommentCountBadge from '../common/CommentCountBadge.astro';
 
-const { post, lang = 'it', variant = 'compact', metadataVariant = 'default' } = Astro.props;
+const { post, lang = 'it', variant = 'compact', metadataVariant = 'default', headingLevel = 3 } = Astro.props;
 
+const Heading = headingLevel === 2 ? 'h2' : 'h3';
 const isEn = lang === 'en';
 const isFeature = variant === 'feature';
 const isEditorial = metadataVariant === 'editorial';
@@ -152,7 +153,7 @@ const imageHeight = isFeature ? 630 : 390;
       </div>
     )}
 
-    <h3 class="rg-editorial-title">{post.title}</h3>
+    <Heading class="rg-editorial-title">{post.title}</Heading>
 
     {excerpt && <p>{excerpt}</p>}
   </div>

@@ -145,7 +145,8 @@ const clientCopy = {
 
     return `
       <article class="quiz-leaderboard__row${rankClass}" aria-label="#${rank} ${escapeQuizStaffLeaderboardText(displayName)}">
-        <div class="quiz-leaderboard__rank" aria-label="#${rank}">
+        <div class="quiz-leaderboard__rank">
+          <span class="sr-only">${language === 'en' ? 'Position' : 'Posizione'} ${rank}</span>
           <span aria-hidden="true">${escapeQuizStaffLeaderboardText(getQuizStaffLeaderboardRankLabel(rank))}</span>
         </div>
         <div class="quiz-leaderboard__profile">

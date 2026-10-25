@@ -377,7 +377,7 @@ const hasFilters =
 
     {posts.length > 0 ? (
 
-      <section class="archive-grid" aria-label={title} data-archive-grid data-page-size={PAGE_SIZE}>
+      <section class="archive-grid" aria-label={isEnglish ? `${title} — results` : `${title} — risultati`} data-archive-grid data-page-size={PAGE_SIZE}>
         {posts.map((post, index) => {
           const platformSlugs = post.platforms?.map((item) => item.slug).filter(Boolean) || [];
           const categorySlugs = post.categories?.map((item) => item.slug).filter(Boolean) || [];
@@ -407,10 +407,10 @@ const hasFilters =
             >
               {refreshedListing ? (
                 <>
-                  <div class="reviews-listing__desktop reviews-listing__card"><ReviewCard post={post} lang={lang} variant="compact" metadataVariant={editorialListing ? "editorial" : "home-reviews"} /></div>
+                  <div class="reviews-listing__desktop reviews-listing__card"><ReviewCard post={post} lang={lang} headingLevel={2} variant="compact" metadataVariant={editorialListing ? "editorial" : "home-reviews"} /></div>
                   <div class="reviews-listing__mobile reviews-listing__card"><ArchiveCard post={post} lang={lang} /></div>
                 </>
-              ) : <EntityArticleCard post={post} lang={lang} />}
+              ) : <EntityArticleCard post={post} lang={lang} headingLevel={2} />}
             </article>
           );
         })}
