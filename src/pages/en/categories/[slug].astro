@@ -13,14 +13,6 @@ const englishPosts = allPosts.filter((post) =>
   (post.categories || []).some((category) => category.slug === slug)
 );
 
-const englishReviews = allPosts.filter(
-  (post) => post.type === 'review' && post.language === 'en'
-);
-
-const englishNews = allPosts.filter(
-  (post) => post.type === 'news' && post.language === 'en'
-);
-
 const category = englishPosts
   .flatMap((post) => post.categories || [])
   .find((category) => category.slug === slug);
@@ -39,8 +31,6 @@ const canonicalUrl =
 ---
 
 <BaseLayout
-  reviews={englishReviews}
-  news={englishNews}
   title={title}
   description={description}
   canonical={canonicalUrl}

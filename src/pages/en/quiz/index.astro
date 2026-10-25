@@ -3,7 +3,6 @@ import '../../../styles/pages/quiz.css';
 
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { urlFor } from '../../../lib/image';
-import { getAllPosts } from '../../../lib/posts';
 import {
   getPublishedQuizSummaries,
   getQuizUrl,
@@ -37,13 +36,7 @@ const copy = {
   },
 };
 
-const [quizzes, allPosts] = await Promise.all([
-  getPublishedQuizSummaries('en'),
-  getAllPosts(),
-]);
-
-const headerReviews = allPosts.filter((post) => post.type === 'review' && post.language === 'en');
-const headerNews = allPosts.filter((post) => post.type === 'news' && post.language === 'en');
+const quizzes = await getPublishedQuizSummaries('en');
 
 const alternateLanguages = [
   { lang: 'it', url: 'https://www.retro-gamers.it/quiz/' },
@@ -81,8 +74,6 @@ const getDifficultyLabel = (difficulty?: string) =>
 ---
 
 <BaseLayout
-  reviews={headerReviews}
-  news={headerNews}
   title={copy.title}
   description={copy.description}
   image="/og-image.webp"

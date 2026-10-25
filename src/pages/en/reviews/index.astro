@@ -11,14 +11,6 @@ import { createCollectionPageStructuredData, createListItems } from '../../../li
 const allPosts = await getAllPosts();
 const grouped = groupPosts(allPosts);
 
-const englishReviews = allPosts.filter(
-  (post) => post.type === 'review' && post.language === 'en'
-);
-
-const englishNews = allPosts.filter(
-  (post) => post.type === 'news' && post.language === 'en'
-);
-
 const posts = grouped.english.filter((post) => post.type === 'review');
 
 const alternateLanguages = [
@@ -40,8 +32,6 @@ const structuredData = createCollectionPageStructuredData({
 ---
 
 <BaseLayout
-  reviews={englishReviews}
-  news={englishNews}
   title="Retro game reviews"
   description="Retro game reviews for consoles, arcades and home computers, combining critical analysis, historical context, scores and personal memories."
   image="/og-image.webp"

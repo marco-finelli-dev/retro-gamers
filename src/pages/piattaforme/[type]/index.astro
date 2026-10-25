@@ -2,7 +2,6 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import PlatformTypePage from '../../../components/platforms/PlatformTypePage.astro';
 
-import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getPlatformsByType } from '../../../lib/platforms';
 import type { PlatformType } from '../../../lib/platforms';
 import {
@@ -20,9 +19,6 @@ if (!isPlatformRouteSegment(type, 'it')) {
 
 const platformType = getPlatformTypeFromRouteSegment(type, 'it') as PlatformType;
 
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
-
 const platforms = await getPlatformsByType(platformType);
 
 const pageTitles = {
@@ -39,8 +35,6 @@ const pageDescriptions = {
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   title={pageTitles[platformType] || 'Piattaforme'}
   description={pageDescriptions[platformType] || 'Console, home computer, arcade e sistemi storici raccontati da Retro-Gamers.it.'}
   image="/og-image.webp"

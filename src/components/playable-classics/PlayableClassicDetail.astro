@@ -5,11 +5,7 @@ import { toHTML } from '@portabletext/to-html';
 import PlayTodayBreadcrumb from '../common/PlayTodayBreadcrumb.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
-import {
-  getAllPosts,
-  groupPosts,
-  isPostPubliclyDistributed
-} from '../../lib/posts';
+import { isPostPubliclyDistributed } from '../../lib/posts';
 import {
   getPlayableClassicUrl,
   type PlayableClassic,
@@ -29,18 +25,6 @@ const {
 
 const currentLang: PlayableClassicLang = lang === 'en' ? 'en' : 'it';
 const isEn = currentLang === 'en';
-
-const [allPosts] = await Promise.all([
-  getAllPosts(),
-]);
-
-const groupedPosts = groupPosts(allPosts);
-const headerReviews = isEn
-  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
-  : groupedPosts.allReviews;
-const headerNews = isEn
-  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
-  : groupedPosts.allNews;
 
 const copy = isEn
   ? {
@@ -637,8 +621,6 @@ const downloadMessageAttrs = {
 ---
 
 <BaseLayout
-  reviews={headerReviews}
-  news={headerNews}
   title={title}
   description={description}
   image={coverUrl || '/og-image.webp'}

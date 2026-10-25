@@ -13,8 +13,6 @@ import {
   getPublishedCommunitySurveyBySlug,
   type CommunitySurveyLanguage,
 } from '../../lib/community-surveys';
-import { getAllPosts, groupPosts } from '../../lib/posts';
-
 interface Props {
   slug?: string;
   lang?: CommunitySurveyLanguage;
@@ -35,14 +33,6 @@ if (availability.state === 'draft') {
   return Astro.rewrite('/404');
 }
 
-const allPosts = await getAllPosts();
-const groupedPosts = groupPosts(allPosts);
-const headerReviews = isEn
-  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
-  : groupedPosts.allReviews;
-const headerNews = isEn
-  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
-  : groupedPosts.allNews;
 const responseState = availability.isOpen
   ? await getCommunitySurveyResponseState(Astro.cookies, survey.surveyKey)
   : { hasResponded: false, submittedAt: null };
@@ -105,8 +95,6 @@ const pageImage = surveyImage || '/og-image.webp';
 ---
 
 <BaseLayout
-  reviews={headerReviews}
-  news={headerNews}
   title={survey.title}
   description={pageDescription}
   image={pageImage}

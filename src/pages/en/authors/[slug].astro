@@ -8,7 +8,7 @@ import Pagination from '../../../components/common/Pagination.astro';
 import { PortableText } from 'astro-portabletext';
 import { client } from '../../../lib/sanity';
 import { urlFor } from '../../../lib/image';
-import { PUBLIC_POST_GROQ_FILTER, getAllPosts } from '../../../lib/posts';
+import { PUBLIC_POST_GROQ_FILTER } from '../../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../lib/pagination';
 
 const { slug } = Astro.params;
@@ -218,17 +218,12 @@ const posts = await client.fetch(`
   }
 `, { authorId: author._id });
 
-const allPosts = await getAllPosts();
-const englishPosts = allPosts.filter((post) => post.language === 'en');
 const {
   currentPage: authorPostsPage,
   totalPages: authorPostsTotalPages,
   items: authorPostsPageItems,
 } = paginateItems(posts, getCurrentPage(Astro.url), PAGE_SIZE);
 const getAuthorPostsPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber);
-
-const englishReviews = englishPosts.filter((post) => post.type === 'review');
-const englishNews = englishPosts.filter((post) => post.type === 'news');
 
 const pageTitle = `Articles by ${displayName}`;
 
@@ -284,8 +279,6 @@ const socials = [
 ---
 
 <BaseLayout
-  reviews={englishReviews}
-  news={englishNews}
   title={pageTitle}
   description={pageDescription}
   image={pageImage}

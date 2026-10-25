@@ -725,18 +725,6 @@ let hydratedPost = {
   readingTime
 };
 
-const englishPosts = publicPostSummaries.filter(
-  (post) => post.language === 'en'
-);
-
-const englishReviews = englishPosts.filter(
-  (post) => post.type === 'review'
-);
-
-const englishNews = englishPosts.filter(
-  (post) => post.type === 'news'
-);
-
 const relatedPosts = getRelatedPosts(hydratedPost, publicPostSummaries, 3);
 const commentCountMap = await getApprovedCommentCountMap([hydratedPost, ...relatedPosts], 'en');
 hydratedPost = attachApprovedCommentCounts([hydratedPost], commentCountMap, 'en')[0];
@@ -841,8 +829,6 @@ const readingTimeLabel = `${readingTime} min. read`;
 
 <Layout
   pageShell="article"
-  reviews={englishReviews}
-  news={englishNews}
   title={pageTitle}
   description={pageDescription}
   image={pageImage}

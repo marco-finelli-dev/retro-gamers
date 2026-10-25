@@ -3,18 +3,6 @@ import '../../styles/pages/legal.css';
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-import { getAllPosts } from '../../lib/posts';
-
-const allPosts = await getAllPosts();
-
-const englishReviews = allPosts.filter(
-  (post) => post.type === 'review' && post.language === 'en'
-);
-
-const englishNews = allPosts.filter(
-  (post) => post.type === 'news' && post.language === 'en'
-);
-
 const alternateLanguages = [
   { lang: 'it', url: 'https://www.retro-gamers.it/privacy-policy/' },
   { lang: 'en', url: 'https://www.retro-gamers.it/en/privacy-policy/' },
@@ -27,8 +15,6 @@ const languageSwitch = {
 ---
 
 <BaseLayout
-  reviews={englishReviews}
-  news={englishNews}
   title="Privacy Policy"
   description="Information on the processing of personal data of users who visit Retro-Gamers.it."
   image="/og-image.webp"

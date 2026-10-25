@@ -10,7 +10,7 @@ import {
   fetchEditorialArticlePreviewSeriesPosts
 } from '../../lib/editorial/article-preview.server';
 import { canEditOwnArticle, canPublishWorkflowArticle, getWorkflowTransitionPermissions } from '../../lib/editorial/permissions';
-import { getPublicPostSummaries, getRelatedPosts } from '../../lib/posts';
+import { getRelatedPosts } from '../../lib/posts';
 import {
   attachApprovedCommentCounts,
   getApprovedCommentCountMap
@@ -232,13 +232,11 @@ const rootPostId = String(post?._id || '').replace(/^drafts\./, '');
 const portableTextCreators = getCreatorRefsFromPortableText(post?.content || []);
 const seriesId = post?.editorialSeries?.[0]?._id || '';
 const [
-  publicPostSummaries,
   relatedPostCandidates,
   inverseCreators,
   previewSeriesPosts,
 ] = post
   ? await Promise.all([
-      getPublicPostSummaries(),
       fetchEditorialArticlePreviewRelatedPostCandidates(),
       getCreatorsReferencingArticle(rootPostId),
       fetchEditorialArticlePreviewSeriesPosts({
@@ -246,7 +244,7 @@ const [
         language: currentLang,
       }),
     ])
-  : [[], [], [], []];
+  : [[], [], []];
 
 const hydratedPost = post
   ? {
@@ -257,9 +255,6 @@ const hydratedPost = post
     }
   : null;
 
-const headerPosts = publicPostSummaries.filter((item) => (item.language || 'it') === currentLang);
-const headerReviews = headerPosts.filter((item) => item.type === 'review');
-const headerNews = headerPosts.filter((item) => item.type === 'news');
 const relatedCandidatePosts = relatedPostCandidates.filter((item) =>
   getNormalizedDocumentId(item?._id) !== rootPostId
 );
@@ -306,8 +301,6 @@ const previewAuthorLabel = articleAuthorName || previewAuthor?.label || '—';
 ---
 
 <BaseLayout
-  reviews={headerReviews}
-  news={headerNews}
   lang={currentLang}
   title={post ? pageTitle : copy.pageTitle}
   description={post ? pageDescription : copy.pageDescription}

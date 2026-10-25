@@ -4,7 +4,6 @@ import '../../styles/pages/playable-classics.css';
 import PlayTodayCard from '../common/PlayTodayCard.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
-import { getAllPosts, groupPosts } from '../../lib/posts';
 import {
   getPlayableClassicUrl,
   getPublishedPlayableClassics,
@@ -63,18 +62,7 @@ const copy = isEn
       distributions: { internalDownload: 'Download interno', officialExternalReference: 'Riferimento esterno ufficiale', guideOnly: 'Solo guida' },
     };
 
-const [classics, allPosts] = await Promise.all([
-  getPublishedPlayableClassics(currentLang),
-  getAllPosts(),
-]);
-
-const groupedPosts = groupPosts(allPosts);
-const headerReviews = isEn
-  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
-  : groupedPosts.allReviews;
-const headerNews = isEn
-  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
-  : groupedPosts.allNews;
+const classics = await getPublishedPlayableClassics(currentLang);
 
 const alternateLanguages = [
   { lang: 'it', url: 'https://www.retro-gamers.it/classici-giocabili-oggi/' },
@@ -115,8 +103,6 @@ const structuredData = createCollectionPageStructuredData({
 ---
 
 <BaseLayout
-  reviews={headerReviews}
-  news={headerNews}
   title={copy.title}
   description={copy.description}
   image="/og-image.webp"

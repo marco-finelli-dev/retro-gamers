@@ -20,14 +20,6 @@ const platformType = getPlatformTypeFromRouteSegment(type, 'en') || type;
 
 const allPosts = await getAllPosts();
 
-const englishReviews = allPosts.filter(
-  (post) => post.type === 'review' && post.language === 'en'
-);
-
-const englishNews = allPosts.filter(
-  (post) => post.type === 'news' && post.language === 'en'
-);
-
 const platformData = await getPlatformByPath(
   platformType,
   manufacturer,
@@ -64,8 +56,6 @@ const pageDescription =
 ---
 
 <BaseLayout
-  reviews={englishReviews}
-  news={englishNews}
   lang="en"
   title={platformData.name}
   description={pageDescription}

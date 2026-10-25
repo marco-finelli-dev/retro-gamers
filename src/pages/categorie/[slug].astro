@@ -2,12 +2,11 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArchivePage from '../../components/archive/ArchivePage.astro';
 
-import { getAllPosts, groupPosts } from '../../lib/posts';
+import { getAllPosts } from '../../lib/posts';
 
 const { slug } = Astro.params;
 
 const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 
 const italianPosts = allPosts.filter((post) =>
   (!post.language || post.language === 'it') &&
@@ -32,8 +31,6 @@ const canonicalUrl =
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   title={title}
   description={description}
   canonical={canonicalUrl}

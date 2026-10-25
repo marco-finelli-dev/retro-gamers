@@ -8,7 +8,7 @@ import { getPostUrl } from '../../lib/routes.js';
 import { createCollectionPageStructuredData, createListItems } from '../../lib/structured-data.js';
 
 const allPosts = await getAllPosts();
-const { allReviews, allNews } = groupPosts(allPosts);
+const { allNews } = groupPosts(allPosts);
 
 const alternateLanguages = [
   { lang: 'it', url: 'https://www.retro-gamers.it/news/' },
@@ -29,8 +29,6 @@ const structuredData = createCollectionPageStructuredData({
 ---
 
 <BaseLayout
-  reviews={allReviews}
-  news={allNews}
   title="News sul retro gaming"
   description="Notizie su retro gaming, nuove uscite, hardware, restauri, eventi e progetti dedicati a console, arcade e home computer."
   image="/og-image.webp"

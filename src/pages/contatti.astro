@@ -3,11 +3,6 @@ import '../styles/pages/legal.css';
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-import { getAllPosts, groupPosts } from '../lib/posts';
-
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
-
 const alternateLanguages = [
   { lang: 'it', url: 'https://www.retro-gamers.it/contatti/' },
   { lang: 'en', url: 'https://www.retro-gamers.it/en/contact/' },
@@ -20,8 +15,6 @@ const languageSwitch = {
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   title="Contatti"
   description="Contatta Retro-Gamers.it per segnalazioni, richieste, collaborazioni, proposte editoriali o informazioni sui contenuti pubblicati."
   image="/og-image.webp"

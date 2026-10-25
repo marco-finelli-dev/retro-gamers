@@ -4,7 +4,6 @@ import '../../styles/pages/emulator-tools.css';
 import PlayTodayCard from '../common/PlayTodayCard.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
-import { getAllPosts, groupPosts } from '../../lib/posts';
 import {
   getEmulatorToolUrl,
   getPublishedEmulatorTools,
@@ -81,18 +80,7 @@ const copy = isEn
       },
     };
 
-const [tools, allPosts] = await Promise.all([
-  getPublishedEmulatorTools(currentLang),
-  getAllPosts(),
-]);
-
-const groupedPosts = groupPosts(allPosts);
-const headerReviews = isEn
-  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
-  : groupedPosts.allReviews;
-const headerNews = isEn
-  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
-  : groupedPosts.allNews;
+const tools = await getPublishedEmulatorTools(currentLang);
 
 const alternateLanguages = [
   { lang: 'it', url: 'https://www.retro-gamers.it/emulatori/' },
@@ -126,8 +114,6 @@ const structuredData = createCollectionPageStructuredData({
 ---
 
 <BaseLayout
-  reviews={headerReviews}
-  news={headerNews}
   title={copy.title}
   description={copy.description}
   image="/og-image.webp"

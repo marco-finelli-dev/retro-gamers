@@ -13,7 +13,6 @@ import {
   getCompanyDescription,
   getCompanyName,
 } from '../../../lib/companies';
-import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../lib/pagination';
 import '../../../styles/pages/companies.css';
 
@@ -24,10 +23,6 @@ const company = await getCompanyBySlug(slug);
 if (!company) {
   return Astro.rewrite('/404');
 }
-
-const allPosts = await getAllPosts();
-const englishPosts = allPosts.filter((post) => post.language === 'en');
-const grouped = groupPosts(englishPosts);
 
 const name = getCompanyName(company, 'en');
 const description = getCompanyDescription(company, 'en');
@@ -92,8 +87,6 @@ const getRelatedArticlesPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pa
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   lang="en"
   title={pageTitle}
   description={pageDescription}

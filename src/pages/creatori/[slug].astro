@@ -13,7 +13,6 @@ import {
   getCreatorBySlug,
   mergeCreatorRelatedArticles
 } from '../../lib/creators';
-import { getAllPosts, groupPosts } from '../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../lib/pagination';
 import { getPlatformUrl } from '../../lib/routes';
 import { getCompanyUrl } from '../../lib/companies';
@@ -26,9 +25,6 @@ const creator = await getCreatorBySlug(slug);
 if (!creator) {
   return Astro.rewrite('/404');
 }
-
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 
 const shortBio = creator.shortBio || '';
 const profile = creator.profile || [];
@@ -77,8 +73,6 @@ function getInitials(name = '') {
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   title={pageTitle}
   description={pageDescription}
   image={portrait || '/og-image.webp'}

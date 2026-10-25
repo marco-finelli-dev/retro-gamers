@@ -5,7 +5,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import UserAvatar from '../account/UserAvatar.astro';
 import CommunityHero from './CommunityHero.astro';
 import CommunityLayout from './CommunityLayout.astro';
-import { getAllPosts, groupPosts } from '../../lib/posts';
+import { getAllPosts } from '../../lib/posts';
 import {
   getCommunityHubStats,
   getLatestCommunityComments,
@@ -96,13 +96,7 @@ const copy = isEn
     };
 
 const allPosts = await getAllPosts();
-const groupedPosts = groupPosts(allPosts);
-const headerReviews = isEn
-  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
-  : groupedPosts.allReviews;
-const headerNews = isEn
-  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
-  : groupedPosts.allNews;
+
 const postsForLang = allPosts.filter((post) => (post.language || 'it') === currentLang);
 const session = await getUserSessionFromCookies(Astro.cookies);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
@@ -129,8 +123,6 @@ const alternateLanguages = [
 ---
 
 <BaseLayout
-  reviews={headerReviews}
-  news={headerNews}
   title={copy.title}
   description={copy.description}
   image="/og-image.webp"

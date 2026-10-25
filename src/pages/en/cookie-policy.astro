@@ -3,19 +3,6 @@ import '../../styles/pages/legal.css';
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-import { getAllPosts, groupPosts } from '../../lib/posts';
-
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
-
-const englishReviews = allPosts.filter(
-  (post) => post.type === 'review' && post.language === 'en'
-);
-
-const englishNews = allPosts.filter(
-  (post) => post.type === 'news' && post.language === 'en'
-);
-
 const alternateLanguages = [
   { lang: 'it', url: 'https://www.retro-gamers.it/cookie-policy/' },
   { lang: 'en', url: 'https://www.retro-gamers.it/en/cookie-policy/' },
@@ -28,8 +15,6 @@ const languageSwitch = {
 ---
 
 <BaseLayout
-  reviews={englishReviews}
-  news={englishNews}
   title="Cookie Policy"
   description="Information about cookies and similar technologies used by Retro-Gamers.it."
   image="/og-image.webp"

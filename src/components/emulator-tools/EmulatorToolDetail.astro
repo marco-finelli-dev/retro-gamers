@@ -6,11 +6,7 @@ import PlayTodayBreadcrumb from '../common/PlayTodayBreadcrumb.astro';
 import PlayTodayCard from '../common/PlayTodayCard.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
-import {
-  getAllPosts,
-  groupPosts,
-  isPostPubliclyDistributed
-} from '../../lib/posts';
+import { isPostPubliclyDistributed } from '../../lib/posts';
 import { getPlayableClassicUrl } from '../../lib/playable-classics';
 import {
   getEmulatorToolUrl,
@@ -111,18 +107,6 @@ const copy = isEn
         unknown: 'Da verificare',
       },
     };
-
-const [allPosts] = await Promise.all([
-  getAllPosts(),
-]);
-
-const groupedPosts = groupPosts(allPosts);
-const headerReviews = isEn
-  ? allPosts.filter((post) => post.type === 'review' && post.language === 'en')
-  : groupedPosts.allReviews;
-const headerNews = isEn
-  ? allPosts.filter((post) => post.type === 'news' && post.language === 'en')
-  : groupedPosts.allNews;
 
 const title = tool.seoTitle || tool.title;
 const description =
@@ -352,8 +336,6 @@ const relatedPosts = localizedRelatedPosts.map((post) => ({
 ---
 
 <BaseLayout
-  reviews={headerReviews}
-  news={headerNews}
   title={title}
   description={description}
   image={coverUrl || '/og-image.webp'}

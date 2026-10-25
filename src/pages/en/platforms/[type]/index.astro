@@ -2,7 +2,6 @@
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
 import PlatformTypePage from '../../../../components/platforms/PlatformTypePage.astro';
 
-import { getAllPosts, groupPosts } from '../../../../lib/posts';
 import { getPlatformsByType } from '../../../../lib/platforms';
 import type { PlatformType } from '../../../../lib/platforms';
 import {
@@ -22,17 +21,6 @@ if (!isPlatformRouteSegment(type, 'en')) {
 const internalType = getPlatformTypeFromRouteSegment(type, 'en') as PlatformType;
 const publicType = getPlatformRouteSegment(internalType, 'en');
 
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
-
-const englishReviews = allPosts.filter(
-  (post) => post.type === 'review' && post.language === 'en'
-);
-
-const englishNews = allPosts.filter(
-  (post) => post.type === 'news' && post.language === 'en'
-);
-
 const platforms = await getPlatformsByType(internalType);
 
 const pageTitles = {
@@ -49,8 +37,6 @@ const pageDescriptions = {
 ---
 
 <BaseLayout
-  reviews={englishReviews}
-  news={englishNews}
   lang="en"
   title={pageTitles[publicType] || 'Platforms'}
   description={pageDescriptions[publicType] || 'Retro gaming platforms, machines and systems.'}

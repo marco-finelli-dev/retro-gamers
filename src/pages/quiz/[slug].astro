@@ -6,7 +6,6 @@ import QuizPlayer from '../../components/quiz/QuizPlayer.astro';
 import QuizStaffLeaderboard from '../../components/quiz/QuizStaffLeaderboard.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { urlFor } from '../../lib/image';
-import { getAllPosts, groupPosts } from '../../lib/posts';
 import {
   getPublishedQuizBySlug,
   getQuizUrl,
@@ -24,8 +23,6 @@ if (!quiz) {
   return Astro.rewrite('/404');
 }
 
-const allPosts = await getAllPosts();
-const groupedPosts = groupPosts(allPosts);
 const staffSession = await getUserSessionFromCookies(Astro.cookies);
 const canViewStaffLeaderboard = Boolean(
   staffSession.user && isStaffProfile(staffSession.profile)
@@ -112,8 +109,6 @@ const initials = quiz.title
 ---
 
 <BaseLayout
-  reviews={groupedPosts.allReviews}
-  news={groupedPosts.allNews}
   title={pageTitle}
   description={pageDescription}
   image={pageImage}

@@ -9,7 +9,6 @@ import {
   getCompanyName,
   getCompanyUrl,
 } from '../../../lib/companies';
-import { getAllPosts, groupPosts } from '../../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../../lib/pagination';
 import { createCollectionPageStructuredData, createListItems } from '../../../lib/structured-data.js';
 import '../../../styles/pages/companies.css';
@@ -17,9 +16,6 @@ import '../../../styles/components/reviews-listing.css';
 import '../../../styles/components/entity-listings.css';
 
 const companies = await getAllCompanies();
-const allPosts = await getAllPosts();
-const englishPosts = allPosts.filter((post) => post.language === 'en');
-const grouped = groupPosts(englishPosts);
 
 const pageTitle = 'Companies';
 const pageDescription =
@@ -71,8 +67,6 @@ const structuredData = createCollectionPageStructuredData({
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   lang="en"
   title={pageTitle}
   description={pageDescription}

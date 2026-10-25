@@ -3,7 +3,7 @@ import BaseLayout from '../../../../layouts/BaseLayout.astro';
 import PlatformDetail from '../../../../components/platforms/PlatformDetail.astro';
 import PlatformRelated from '../../../../components/platforms/PlatformRelated.astro';
 
-import { getAllPosts, groupPosts } from '../../../../lib/posts';
+import { getAllPosts } from '../../../../lib/posts';
 import {
   getPlatformByPath
 } from '../../../../lib/platforms';
@@ -19,7 +19,6 @@ const { type, manufacturer, platform } = Astro.params;
 const platformType = getPlatformTypeFromRouteSegment(type, 'it') || 'console';
 
 const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 
 const platformData = await getPlatformByPath(
   platformType,
@@ -70,8 +69,6 @@ const pageDescription =
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   title={platformData.name}
   description={pageDescription}
   image={platformData.cover?.asset?.url || platformData.logoLight?.asset?.url || platformData.logo?.asset?.url || '/og-image.webp'}

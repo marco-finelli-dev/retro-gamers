@@ -46,8 +46,6 @@ const englishPosts = allPosts
 
 const homeEditorialPosts = sortPostsForHome(englishPosts);
 
-const headerReviews = englishPosts.filter((post) => post.type === 'review');
-const headerNews = englishPosts.filter((post) => post.type === 'news');
 const featuredPost = getActiveFeaturedPost(englishPosts);
 
 const usedIds = new Set();
@@ -211,8 +209,6 @@ const alternateLanguages = [
 
 <BaseLayout
   pageShell="editorial"
-  reviews={headerReviews}
-  news={headerNews}
   title="Retro-Gamers International: retro gaming culture"
   description="Retro-Gamers.it is an international editorial project about retro gaming history, classic consoles, arcade culture, creators and digital preservation."
   image="/og-image.webp"

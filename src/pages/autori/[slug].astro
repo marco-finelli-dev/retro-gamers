@@ -8,7 +8,7 @@ import Pagination from '../../components/common/Pagination.astro';
 import { PortableText } from 'astro-portabletext';
 import { client } from '../../lib/sanity';
 import { urlFor } from '../../lib/image';
-import { PUBLIC_POST_GROQ_FILTER, getAllPosts, groupPosts } from '../../lib/posts';
+import { PUBLIC_POST_GROQ_FILTER } from '../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../lib/pagination';
 
 const { slug } = Astro.params;
@@ -213,8 +213,6 @@ const posts = await client.fetch(`
   }
 `, { authorId: author._id });
 
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 const {
   currentPage: authorPostsPage,
   totalPages: authorPostsTotalPages,
@@ -271,8 +269,6 @@ const socials = [
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   title={pageTitle}
   description={pageDescription}
   image={pageImage}

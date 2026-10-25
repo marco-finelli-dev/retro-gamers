@@ -9,7 +9,7 @@ import { getPostUrl } from '../../lib/routes.js';
 import { createCollectionPageStructuredData, createListItems } from '../../lib/structured-data.js';
 
 const allPosts = await getAllPosts();
-const { allReviews, news } = groupPosts(allPosts);
+const { allReviews } = groupPosts(allPosts);
 
 const alternateLanguages = [
   { lang: 'it', url: 'https://www.retro-gamers.it/recensioni/' },
@@ -30,8 +30,6 @@ const structuredData = createCollectionPageStructuredData({
 ---
 
 <BaseLayout
-  reviews={allReviews}
-  news={news}
   title="Recensioni di videogiochi retro"
   description="Recensioni di videogiochi retro per console, arcade e home computer, con analisi critica, contesto storico, voti e memoria personale."
   image="/og-image.webp"

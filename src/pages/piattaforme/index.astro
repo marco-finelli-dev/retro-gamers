@@ -2,13 +2,9 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PlatformsLanding from '../../components/platforms/PlatformsLanding.astro';
 
-import { getAllPosts, groupPosts } from '../../lib/posts';
 import { getAllPlatforms } from '../../lib/platforms';
 import { getPlatformIndexUrl, getPlatformTypeUrl } from '../../lib/routes.js';
 import { createCollectionPageStructuredData, createListItems } from '../../lib/structured-data.js';
-
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 
 const platforms = await getAllPlatforms();
 
@@ -34,8 +30,6 @@ const structuredData = createCollectionPageStructuredData({
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   title="Piattaforme retro gaming"
   description="Schede storiche e tecniche su console, home computer e sistemi arcade: produttori, architetture, rivali e giochi simbolo."
   image="/og-image.webp"

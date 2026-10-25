@@ -6,7 +6,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Pagination from '../../components/common/Pagination.astro';
 import { client } from '../../lib/sanity';
 import { urlFor } from '../../lib/image';
-import { PUBLIC_POST_GROQ_FILTER, getAllPosts, groupPosts } from '../../lib/posts';
+import { PUBLIC_POST_GROQ_FILTER } from '../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../lib/pagination';
 
 const authors = await client.fetch(`
@@ -36,9 +36,6 @@ const authors = await client.fetch(`
     ])
   }
 `);
-
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 
 const roleLabels = {
   editor: 'Redattore',
@@ -84,8 +81,6 @@ const getAuthorsPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pageNumber
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   title={pageTitle}
   description={pageDescription}
   canonical="https://www.retro-gamers.it/autori/"

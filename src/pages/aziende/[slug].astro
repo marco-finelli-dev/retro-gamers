@@ -13,7 +13,6 @@ import {
   getCompanyDescription,
   getCompanyName,
 } from '../../lib/companies';
-import { getAllPosts, groupPosts } from '../../lib/posts';
 import { getCurrentPage, getPaginationUrl, paginateItems, PAGE_SIZE } from '../../lib/pagination';
 import '../../styles/pages/companies.css';
 
@@ -24,9 +23,6 @@ const company = await getCompanyBySlug(slug);
 if (!company) {
   return Astro.rewrite('/404');
 }
-
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 
 const name = getCompanyName(company, 'it');
 const description = getCompanyDescription(company, 'it');
@@ -90,8 +86,6 @@ const getRelatedArticlesPageUrl = (pageNumber) => getPaginationUrl(Astro.url, pa
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   title={pageTitle}
   description={pageDescription}
   canonical={`https://www.retro-gamers.it/aziende/${company.slug}/`}

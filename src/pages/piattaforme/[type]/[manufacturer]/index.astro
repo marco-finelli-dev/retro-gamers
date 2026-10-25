@@ -2,7 +2,6 @@
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
 import ManufacturerPage from '../../../../components/platforms/ManufacturerPage.astro';
 
-import { getAllPosts, groupPosts } from '../../../../lib/posts';
 import {
   getPlatformsByTypeAndManufacturer
 } from '../../../../lib/platforms';
@@ -14,9 +13,6 @@ import {
 const { type, manufacturer } = Astro.params;
 
 const platformType = getPlatformTypeFromRouteSegment(type, 'it') || 'console';
-
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
 
 const platforms = await getPlatformsByTypeAndManufacturer(
   platformType,
@@ -32,8 +28,6 @@ const resolvedManufacturer =
 ---
 
 <BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
   title={`Piattaforme ${resolvedManufacturer.name}`}
   description={`Tutte le piattaforme ${resolvedManufacturer.name} presenti nell’archivio di Retro-Gamers.it, tra console, computer, arcade e sistemi storici.`}
   image={resolvedManufacturer.logoLight?.asset?.url || resolvedManufacturer.logo?.asset?.url || '/og-image.webp'}
