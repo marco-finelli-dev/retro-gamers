@@ -3,6 +3,7 @@ import '../../styles/components/platforms.css';
 import '../../styles/components/platforms-refresh.css';
 import PlatformBreadcrumb from './PlatformBreadcrumb.astro';
 import PlatformBrand from './PlatformBrand.astro';
+import { getSanityImageSize } from '../../lib/sanity-image-size';
 import { urlFor } from '../../lib/image';
 
 import {
@@ -149,6 +150,23 @@ const historyParagraphs = historyText
 
       <div class="platform-sheet__grid">
 
+        <header class="platform-sheet__header" data-platform={platform.slug} data-manufacturer={platform.manufacturer?.slug}>
+          <div class="platform-desktop">
+            <PlatformBrand manufacturerLogo={manufacturerLogo} manufacturerLogoLight={manufacturerLogoLight} logo={logo} logoLight={logoLight} logoAlt={logoAlt} platform={platform} header={true} decorativePlatform={true} />
+          </div>
+          <h1 class:list={{ 'sr-only': hasPlatformLogo, 'platform-sheet__title': true, 'platform-sheet__section-title': !hasPlatformLogo }}>
+            <span>{platform.name}</span>
+          </h1>
+          <div class="platform-sheet__metadata platform-desktop">
+            {[typeLabel, platform.badgeLabel].filter(Boolean).map((value, index) => (
+              <span class="platform-sheet__metadata-item">
+                {index > 0 && <span class="platform-sheet__metadata-separator" aria-hidden="true">·</span>}
+                {value}
+              </span>
+            ))}
+          </div>
+        </header>
+
         <div class="platform-sheet__left">
 
           <div class="platform-sheet__visual">
@@ -156,6 +174,7 @@ const historyParagraphs = historyText
             {cover ? (
               <img
                 src={cover}
+                {...getSanityImageSize(cover)}
                 alt={platform.cover?.alt || platform.name}
                 class="platform-sheet__cover"
                 loading="eager"
@@ -167,6 +186,7 @@ const historyParagraphs = historyText
                   <picture class="platform-sheet__fallback-logo-picture">
                     <img
                       src={logo}
+                      {...getSanityImageSize(logo)}
                       alt={logoAlt}
                       class="platform-sheet__fallback-logo platform-sheet__fallback-logo--dark"
                       loading="eager"
@@ -174,6 +194,7 @@ const historyParagraphs = historyText
 
                     <img
                       src={logoLight}
+                      {...getSanityImageSize(logoLight)}
                       alt=""
                       class="platform-sheet__fallback-logo platform-sheet__fallback-logo--light"
                       loading="eager"
@@ -217,23 +238,6 @@ const historyParagraphs = historyText
         </div>
 
         <div class="platform-sheet__right">
-
-          <header class="platform-sheet__header" data-platform={platform.slug} data-manufacturer={platform.manufacturer?.slug}>
-            <div class="platform-desktop">
-              <PlatformBrand manufacturerLogo={manufacturerLogo} manufacturerLogoLight={manufacturerLogoLight} logo={logo} logoLight={logoLight} logoAlt={logoAlt} platform={platform} header={true} decorativePlatform={true} />
-            </div>
-            <h1 class:list={{ 'sr-only': hasPlatformLogo, 'platform-sheet__title': true, 'platform-sheet__section-title': !hasPlatformLogo }}>
-              <span>{platform.name}</span>
-            </h1>
-            <div class="platform-sheet__metadata platform-desktop">
-              {[typeLabel, platform.badgeLabel].filter(Boolean).map((value, index) => (
-                <span class="platform-sheet__metadata-item">
-                  {index > 0 && <span class="platform-sheet__metadata-separator" aria-hidden="true">·</span>}
-                  {value}
-                </span>
-              ))}
-            </div>
-          </header>
 
           <div class="platform-mobile">
             <PlatformBrand manufacturerLogo={manufacturerLogo} manufacturerLogoLight={manufacturerLogoLight} logo={logo} logoLight={logoLight} logoAlt={logoAlt} platform={platform} decorativePlatform={true} />

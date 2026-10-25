@@ -1,4 +1,5 @@
 ---
+import { getSanityImageSize } from '../../lib/sanity-image-size';
 const { manufacturerLogo, manufacturerLogoLight, logo, logoLight, logoAlt, platform, header = false, decorativePlatform = false } = Astro.props;
 ---
 
@@ -9,12 +10,14 @@ const { manufacturerLogo, manufacturerLogoLight, logo, logoLight, logoAlt, platf
       <picture class="platform-sheet__manufacturer-logo-picture">
         <img
           src={manufacturerLogo}
+          {...getSanityImageSize(manufacturerLogo)}
           alt={platform.manufacturer?.logo?.alt || platform.manufacturer?.name}
           class="platform-sheet__manufacturer-logo platform-sheet__manufacturer-logo--dark"
           loading="eager"
         />
         <img
           src={manufacturerLogoLight}
+          {...getSanityImageSize(manufacturerLogoLight)}
           alt=""
           class="platform-sheet__manufacturer-logo platform-sheet__manufacturer-logo--light"
           loading="eager"
@@ -29,12 +32,14 @@ const { manufacturerLogo, manufacturerLogoLight, logo, logoLight, logoAlt, platf
       <picture class="platform-sheet__platform-logo-picture" aria-hidden={decorativePlatform ? "true" : undefined}>
         <img
           src={logo}
+          {...getSanityImageSize(logo)}
           alt={decorativePlatform ? '' : logoAlt}
           class="platform-sheet__platform-logo platform-sheet__platform-logo--dark"
           loading="eager"
         />
         <img
           src={logoLight}
+          {...getSanityImageSize(logoLight)}
           alt=""
           class="platform-sheet__platform-logo platform-sheet__platform-logo--light"
           loading="eager"

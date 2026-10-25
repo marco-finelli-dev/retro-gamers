@@ -42,7 +42,7 @@
   align-self: stretch;
 }
 
-.article-page__sidebar > .article-lead-image {
+.article-page__body > .article-lead-image {
   margin: 0;
 }
 
@@ -54,6 +54,17 @@
 }
 
 @media (min-width: 1200px) {
+  /* Emit the lead image before the long body; retain the approved desktop columns. */
+  .article-page__content { grid-column: 1; grid-row: 1; }
+  .article-page__sidebar { grid-column: 2; grid-row: 1; }
+  .article-page__body:has(> .article-lead-image) {
+    grid-template-rows: auto minmax(0, 1fr);
+    row-gap: var(--rg-space-6);
+  }
+  .article-page__body > .article-lead-image { grid-column: 2; grid-row: 1; }
+  .article-page__body:has(> .article-lead-image) > .article-page__content { grid-row: 1 / 3; }
+  .article-page__body:has(> .article-lead-image) > .article-page__sidebar { grid-row: 2; }
+
   .article-page__sidebar > .article-context-sidebar {
     --article-context-scrollbar-thumb: transparent;
     /* Keep the existing reading-card offset and a spacing-token bottom inset. */
@@ -130,7 +141,7 @@
     display: contents;
   }
 
-  .article-page__sidebar > .article-lead-image {
+  .article-page__body > .article-lead-image {
     order: 1;
   }
 

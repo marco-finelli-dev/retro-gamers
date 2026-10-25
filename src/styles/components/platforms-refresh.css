@@ -1,8 +1,19 @@
+/* Arial's adjusted fallback keeps breadcrumb wrapping close to IBM Plex Sans.
+   Final typography and font-display: swap remain unchanged. */
+@font-face {
+  font-family: 'RG Breadcrumb Fallback';
+  src: local('Arial');
+  size-adjust: 101.5%;
+  ascent-override: 100.49%;
+  descent-override: 26.60%;
+  line-gap-override: 0%;
+}
+
 /* Desktop-only platform family. Existing mobile presentation is retained. */
 .platform-desktop { display: none; }
 .platform-sheet__header { display: contents; }
 /* Local navigation also wraps naturally on the existing mobile layout. */
-.platform-breadcrumb { margin-bottom: var(--rg-space-6); font-family: var(--rg-font-family); font-size: var(--rg-type-ui-small); line-height: 1.6; color: var(--rg-text-secondary); }
+.platform-breadcrumb { margin-bottom: var(--rg-space-6); font-family: 'IBM Plex Sans', 'RG Breadcrumb Fallback', system-ui, sans-serif; font-size: var(--rg-type-ui-small); line-height: 1.6; color: var(--rg-text-secondary); }
 .platform-breadcrumb ol { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 0; margin: 0; list-style: none; }
 .platform-breadcrumb li { display: inline-flex; align-items: baseline; gap: 10px; min-width: 0; overflow-wrap: anywhere; }
 .platform-breadcrumb a { color: var(--rg-link-color); text-decoration: none; }
