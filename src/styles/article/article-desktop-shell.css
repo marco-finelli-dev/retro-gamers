@@ -47,6 +47,7 @@
   }
 
   .rg-desktop-layout .article-desktop-sidebar {
+    --article-nav-scrollbar-thumb: transparent;
     position: fixed;
     inset: 0 auto 0 0;
     z-index: 140;
@@ -60,7 +61,7 @@
     gap: var(--rg-space-4);
     overflow: hidden;
     scrollbar-width: thin;
-    scrollbar-color: var(--rg-article-sidebar-secondary) transparent;
+    scrollbar-color: var(--article-nav-scrollbar-thumb) transparent;
     border-right: 1px solid var(--rg-article-sidebar-border);
     background: var(--rg-article-sidebar-bg);
     color: var(--rg-article-sidebar-text);
@@ -303,8 +304,40 @@
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-    scrollbar-color: var(--rg-article-sidebar-secondary) transparent;
+    scrollbar-color: var(--article-nav-scrollbar-thumb) transparent;
     gap: var(--rg-space-4);
+  }
+
+  .rg-desktop-layout .article-desktop-sidebar:hover,
+  .rg-desktop-layout .article-desktop-sidebar:focus-within {
+    --article-nav-scrollbar-thumb: var(--rg-article-sidebar-muted);
+  }
+
+  /* Include the outer scroller used when the viewport is exceptionally low. */
+  @supports not (scrollbar-color: transparent transparent) {
+    .rg-desktop-layout :is(.article-desktop-sidebar, .article-desktop-sidebar__nav) {
+      scrollbar-width: auto;
+    }
+
+    .rg-desktop-layout :is(.article-desktop-sidebar, .article-desktop-sidebar__nav)::-webkit-scrollbar {
+      width: 6px;
+      background: transparent;
+    }
+
+    .rg-desktop-layout :is(.article-desktop-sidebar, .article-desktop-sidebar__nav)::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .rg-desktop-layout :is(.article-desktop-sidebar, .article-desktop-sidebar__nav)::-webkit-scrollbar-thumb {
+      background-color: var(--article-nav-scrollbar-thumb);
+      border-radius: var(--rg-radius-small);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .rg-desktop-layout :is(.article-desktop-sidebar, .article-desktop-sidebar__nav) {
+      scrollbar-color: auto;
+    }
   }
 
   .article-desktop-sidebar__bottom {

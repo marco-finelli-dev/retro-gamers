@@ -55,6 +55,7 @@
 
 @media (min-width: 1200px) {
   .article-page__sidebar > .article-context-sidebar {
+    --article-context-scrollbar-thumb: transparent;
     /* Keep the existing reading-card offset and a spacing-token bottom inset. */
     max-height: calc(100vh - var(--rg-shell-header-height) - 2 * var(--rg-space-6));
     max-height: calc(100dvh - var(--rg-shell-header-height) - 2 * var(--rg-space-6));
@@ -62,6 +63,39 @@
     align-content: start;
     overflow-y: auto;
     scrollbar-width: thin;
+    scrollbar-color: var(--article-context-scrollbar-thumb) transparent;
+  }
+
+  .article-page__sidebar > .article-context-sidebar:hover,
+  .article-page__sidebar > .article-context-sidebar:focus-within {
+    --article-context-scrollbar-thumb: var(--rg-text-muted);
+  }
+
+  /* Older WebKit supports width but not color; use its native pseudo-elements. */
+  @supports not (scrollbar-color: transparent transparent) {
+    .article-page__sidebar > .article-context-sidebar {
+      scrollbar-width: auto;
+    }
+
+    .article-page__sidebar > .article-context-sidebar::-webkit-scrollbar {
+      width: 6px;
+      background: transparent;
+    }
+
+    .article-page__sidebar > .article-context-sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .article-page__sidebar > .article-context-sidebar::-webkit-scrollbar-thumb {
+      background-color: var(--article-context-scrollbar-thumb);
+      border-radius: var(--rg-radius-small);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .article-page__sidebar > .article-context-sidebar {
+      scrollbar-color: auto;
+    }
   }
 }
 
