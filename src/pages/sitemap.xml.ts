@@ -1,4 +1,6 @@
 import { getAllPosts } from '../lib/posts';
+import type { APIRoute } from 'astro';
+import { publicContentResponse, publicContentUnavailable } from '../lib/public-content-response';
 import {
   getCategoryUrl,
   getCompanyUrl,
@@ -108,14 +110,16 @@ async function getSitemapAuthors(): Promise<SitemapAuthor[]> {
   return data || [];
 }
 
-export async function GET() {
-  const posts = await getAllPosts();
-  const creators = await getAllCreators();
-  const authors = await getSitemapAuthors();
-  const platforms = await getAllPlatforms();
-  const companies = await getAllCompanies();
-  const playableClassics = await getPlayableClassicRoutes();
-  const emulatorTools = await getEmulatorToolSlugs();
+async function buildSitemap() {
+  const [posts, creators, authors, platforms, companies, playableClassics, emulatorTools] = await Promise.all([
+    getAllPosts(),
+    getAllCreators(),
+    getSitemapAuthors(),
+    getAllPlatforms(),
+    getAllCompanies(),
+    getPlayableClassicRoutes(),
+    getEmulatorToolSlugs(),
+  ]);
 
   const staticPages = [
     {
@@ -576,9 +580,13 @@ export async function GET() {
 ${uniqueUrls.map(urlEntry).join('')}
 </urlset>`;
 
-  return new Response(body, {
-    headers: {
-      'Content-Type': 'application/xml; charset=utf-8'
-    }
-  });
+  return body;
 }
+
+export const GET: APIRoute = async ({ request }) => {
+  try {
+    return publicContentResponse(request, await buildSitemap(), 'application/xml; charset=utf-8', 300);
+  } catch {
+    return publicContentUnavailable();
+  }
+};

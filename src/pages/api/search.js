@@ -1,7 +1,8 @@
 import { client } from '../../lib/sanity';
 import { PUBLIC_POST_GROQ_FILTER } from '../../lib/posts';
+import { publicContentResponse, publicContentUnavailable } from '../../lib/public-content-response';
 
-export async function GET() {
+async function getSearchIndex() {
   const data = await client.fetch(`
     {
       "articles": *[
@@ -95,7 +96,13 @@ export async function GET() {
     }
   `);
 
-  return new Response(JSON.stringify(data), {
-    headers: { 'Content-Type': 'application/json' }
-  });
+  return JSON.stringify(data);
+}
+
+export async function GET({ request }) {
+  try {
+    return publicContentResponse(request, await getSearchIndex(), 'application/json; charset=utf-8', 60);
+  } catch {
+    return publicContentUnavailable();
+  }
 }
