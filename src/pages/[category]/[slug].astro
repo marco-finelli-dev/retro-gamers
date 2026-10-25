@@ -703,7 +703,7 @@ const [
   seriesPostsPromise,
   commentsPromise,
   getPublicPostSummaries(),
-  getUserSessionFromCookies(Astro.cookies)
+  getUserSessionFromCookies(Astro.cookies, Astro.locals)
 ]);
 
 const articleCreators = mergeCreatorRefs(
@@ -743,7 +743,7 @@ if (!viewerSession.error && viewerSession.user) {
   hideNewsletterPromo = newsletter.status === 'active' || newsletter.status === 'pending';
 }
 
-const editorialSession = await getEditorialSessionForUserSession(viewerSession);
+const editorialSession = await getEditorialSessionForUserSession(viewerSession, Astro.locals);
 const editorialNewArticleHref = editorialSession.user && editorialSession.isEditorialActive && canCreateArticle(editorialSession)
   ? '/account/editor/articles/new/'
   : null;

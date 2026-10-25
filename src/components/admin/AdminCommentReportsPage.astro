@@ -191,7 +191,7 @@ const copy = isEnglish
 
 const title = copy.title;
 const description = copy.description;
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
 const isAdmin = session.profile?.role === 'admin';
 const loginHref = isEnglish ? '/en/account/login/' : '/account/login/';

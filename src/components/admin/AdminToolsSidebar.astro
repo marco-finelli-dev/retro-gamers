@@ -16,10 +16,10 @@ const lang: Lang = isEnglish ? 'en' : 'it';
 const adminBase = lang === 'en' ? '/en/admin' : '/admin';
 const editorialBase = lang === 'en' ? '/en/account/editor/articles/' : '/account/editor/articles/';
 const cleanSurveyKey = String(surveyKey || '').trim();
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isStaff = isStaffProfile(session.profile);
 const editorialContext = isStaff
-  ? await getEditorialSessionForUserSession(session)
+  ? await getEditorialSessionForUserSession(session, Astro.locals)
   : null;
 const canSeeEditorialTools = Boolean(editorialContext?.isEditorialActive);
 

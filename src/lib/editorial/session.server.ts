@@ -126,7 +126,28 @@ export async function getEditorialSessionFromCookies(cookies: Parameters<typeof 
   return getEditorialSessionForUserSession(session);
 }
 
-export async function getEditorialSessionForUserSession(session: UserSession) {
+export type RequestEditorialSession = {
+  session: UserSession;
+  promise: Promise<EditorialSessionContext>;
+};
+
+export function getEditorialSessionForUserSession(
+  session: UserSession,
+  locals?: Pick<App.Locals, 'requestEditorialSession'>,
+): Promise<EditorialSessionContext> {
+  if (!locals) return readEditorialSessionForUserSession(session);
+  if (locals.requestEditorialSession?.session === session) {
+    return locals.requestEditorialSession.promise;
+  }
+  const entry = { session, promise: readEditorialSessionForUserSession(session) };
+  locals.requestEditorialSession = entry;
+  void entry.promise.catch(() => {
+    if (locals.requestEditorialSession === entry) delete locals.requestEditorialSession;
+  });
+  return entry.promise;
+}
+
+async function readEditorialSessionForUserSession(session: UserSession) {
   if (session.error || !session.user || !session.profile) {
     return createEditorialContext({
       user: null,

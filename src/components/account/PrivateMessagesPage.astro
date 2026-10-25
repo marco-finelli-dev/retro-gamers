@@ -105,7 +105,7 @@ const copy = isEn
 
 const title = copy.title;
 const description = copy.description;
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const formatUnreadBadge = (count: number) => count > 99 ? '99+' : String(count);
 const accountHref = isEn ? '/en/account/' : '/account/';

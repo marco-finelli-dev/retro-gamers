@@ -170,7 +170,40 @@ export async function getUserProfileFromToken(token: string) {
   };
 }
 
-export async function getUserSessionFromCookies(cookies: any) {
+type UserSession = Awaited<ReturnType<typeof readUserSessionFromCookies>>;
+
+export type RequestUserSession = {
+  accessToken: string;
+  refreshToken: string;
+  promise: Promise<UserSession>;
+};
+
+// Opt-in for SSR consumers sharing Astro.locals. API/mutation callers omit
+// locals and retain their fresh authoritative verification. Never module-scoped.
+export function getUserSessionFromCookies(
+  cookies: any,
+  locals?: Pick<App.Locals, 'requestUserSession'>,
+): Promise<UserSession> {
+  if (!locals) return readUserSessionFromCookies(cookies);
+
+  const accessToken = cookies.get(authAccessCookie)?.value ?? '';
+  const refreshToken = cookies.get(authRefreshCookie)?.value ?? '';
+  const cached = locals.requestUserSession;
+  if (cached?.accessToken === accessToken && cached.refreshToken === refreshToken) {
+    return cached.promise;
+  }
+
+  const entry = { accessToken, refreshToken, promise: readUserSessionFromCookies(cookies) };
+  locals.requestUserSession = entry;
+  void entry.promise.catch(() => {
+    if (locals.requestUserSession === entry) delete locals.requestUserSession;
+  });
+  // Keep the original cookie pair: refresh/login/logout or other cookie changes
+  // invalidate reuse. An older in-flight request cannot replace a newer entry.
+  return entry.promise;
+}
+
+async function readUserSessionFromCookies(cookies: any) {
   const accessToken = cookies.get(authAccessCookie)?.value ?? '';
   const currentSession = await getUserProfileFromToken(accessToken);
 

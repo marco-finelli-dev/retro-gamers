@@ -98,7 +98,7 @@ const copy = isEn
 const allPosts = await getAllPosts();
 
 const postsForLang = allPosts.filter((post) => (post.language || 'it') === currentLang);
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const [latestComments, stats, mostDiscussedPosts] = await Promise.all([
   getLatestCommunityComments(currentLang, 6, allPosts),

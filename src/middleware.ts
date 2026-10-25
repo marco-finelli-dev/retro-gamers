@@ -142,7 +142,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const isErrorRoute = /^\/(404|500)\/?$/.test(context.routePattern);
   if (!isErrorRoute && isPageRequest(request, pathname)) {
     const { getUserSessionFromCookies } = await import('./lib/supabase/auth');
-    const session = await getUserSessionFromCookies(context.cookies);
+    const session = await getUserSessionFromCookies(context.cookies, context.locals);
     const routeLanguage = getRouteLanguage(pathname);
 
     context.locals.userSession = session;

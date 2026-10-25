@@ -141,7 +141,7 @@ const copy = isEn
 
 const title = copy.title;
 const description = copy.description;
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const currentUrl = new URL(Astro.url);
 const pageSize = 10;

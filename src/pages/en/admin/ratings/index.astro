@@ -32,7 +32,7 @@ type RatingGroup = {
 
 const title = 'Reader ratings | Retro-Gamers.it';
 const description = 'Overview of reader ratings left on Retro-Gamers.it reviews.';
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isStaff = isStaffProfile(session.profile);
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   day: 'numeric',

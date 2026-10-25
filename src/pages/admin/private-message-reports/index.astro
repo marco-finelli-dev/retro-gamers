@@ -9,7 +9,7 @@ import '../../../styles/pages/admin-private-message-reports.css';
 
 const title = 'Segnalazioni messaggi | Retro-Gamers.it';
 const description = 'Pannello segnalazioni messaggi privati Retro-Gamers.it';
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
 ---
 

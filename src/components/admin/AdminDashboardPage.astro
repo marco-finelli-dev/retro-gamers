@@ -349,11 +349,11 @@ const copy = isEnglish
 
 const title = copy.title;
 const description = copy.description;
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isStaff = isStaffProfile(session.profile);
 const isAdmin = session.profile?.role === 'admin' && session.profile?.status === 'active';
 const editorialContext = isStaff
-  ? await getEditorialSessionForUserSession(session)
+  ? await getEditorialSessionForUserSession(session, Astro.locals)
   : null;
 const canSeeEditorialQueue = Boolean(
   editorialContext?.isEditorialActive &&

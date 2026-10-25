@@ -116,7 +116,7 @@ const copy = isEnglish
       ],
     };
 
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const currentUser = !session.error && session.user ? session.user : null;
 let newsletterStatus: 'none' | 'pending' | 'active' | 'unsubscribed' = 'none';
 let newsletterLanguage: NewsletterSignupLang = lang;

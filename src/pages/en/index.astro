@@ -188,7 +188,7 @@ const [
   getHomeEmulatorTools('en', 4),
   getPublishedQuizSummaries('en')
 ]);
-const viewerSession = await getUserSessionFromCookies(Astro.cookies);
+const viewerSession = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 let hideNewsletterPromo = false;
 
 if (!viewerSession.error && viewerSession.user) {

@@ -20,7 +20,7 @@ const result = await getPublicReaderProfile(username);
 const profile = result.profile;
 const comments = result.comments;
 const isUnavailable = !profile;
-const viewerSession = await getUserSessionFromCookies(Astro.cookies);
+const viewerSession = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isViewerLoggedIn = Boolean(!viewerSession.error && viewerSession.user && viewerSession.profile);
 
 if (isUnavailable) {

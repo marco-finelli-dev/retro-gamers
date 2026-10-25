@@ -370,7 +370,7 @@ const accountLanguageSwitchUrl = getLocalizedLanguageUrl({
 });
 const title = ui.pageTitle;
 const description = ui.pageDescription;
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const profile = session.profile;
 const user = session.user;

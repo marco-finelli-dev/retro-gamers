@@ -10,7 +10,7 @@ import '../../../../styles/pages/admin-users.css';
 const userId = String(Astro.params.userId || '').trim();
 const title = 'User details | Retro-Gamers.it';
 const description = 'User management details for Retro-Gamers.it';
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isStaff = session.profile?.role === 'admin' || session.profile?.role === 'moderator';
 ---
 

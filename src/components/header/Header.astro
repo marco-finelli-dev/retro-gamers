@@ -70,7 +70,7 @@ const initialSession = Astro.locals.userSession;
 const initialProfile = initialSession?.profile;
 const initialUser = initialSession?.user;
 const initialEditorialSession = !initialSession?.error && initialProfile && initialUser
-  ? await getEditorialSessionForUserSession(initialSession)
+  ? await getEditorialSessionForUserSession(initialSession, Astro.locals)
   : null;
 const initialCommunityArea =
   initialProfile?.status === 'active' && initialProfile?.role === 'admin'

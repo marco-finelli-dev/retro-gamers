@@ -30,7 +30,7 @@ const session = Astro.locals.userSession;
 const profile = session?.profile;
 const user = session?.user;
 const isAuthenticated = Boolean(!session?.error && profile && user);
-const editorialSession = isAuthenticated ? await getEditorialSessionForUserSession(session) : null;
+const editorialSession = isAuthenticated ? await getEditorialSessionForUserSession(session, Astro.locals) : null;
 const hasEditorialAccess = editorialSession?.isEditorialActive === true;
 const isStaff = isAuthenticated && profile?.status === 'active' && (profile?.role === 'moderator' || profile?.role === 'admin');
 const isAdmin = isAuthenticated && profile?.status === 'active' && profile?.role === 'admin';

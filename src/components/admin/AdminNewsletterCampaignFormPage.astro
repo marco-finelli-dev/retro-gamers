@@ -252,7 +252,7 @@ const copy = isEnglish
       },
     };
 
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isStaff = isStaffProfile(session.profile);
 
 let campaign: NewsletterCampaign | null = null;

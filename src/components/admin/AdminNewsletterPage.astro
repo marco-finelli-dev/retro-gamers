@@ -210,7 +210,7 @@ const copy = isEnglish
       },
     };
 
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isStaff = isStaffProfile(session.profile);
 const dateFormatter = new Intl.DateTimeFormat(isEnglish ? 'en-US' : 'it-IT', {
   day: 'numeric',

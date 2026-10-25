@@ -6,6 +6,8 @@ import type { getUserSessionFromCookies } from './lib/supabase/auth';
 declare global {
   namespace App {
     interface Locals {
+      requestUserSession?: import('./lib/supabase/auth').RequestUserSession;
+      requestEditorialSession?: import('./lib/editorial/session.server').RequestEditorialSession;
       navigationSurveys?: Map<import('./lib/community-surveys').CommunitySurveyLanguage, Promise<import('./lib/community-surveys').CommunitySurveyPublic | null>>;
       userSession?: Awaited<ReturnType<typeof getUserSessionFromCookies>>;
       routeLanguage?: PreferredLanguage;

@@ -125,7 +125,7 @@ const copy = isEn
     };
 
 const conversationId = String(Astro.params.conversationId || '');
-const session = await getUserSessionFromCookies(Astro.cookies);
+const session = await getUserSessionFromCookies(Astro.cookies, Astro.locals);
 const isLoggedIn = Boolean(!session.error && session.user && session.profile);
 const title = copy.title;
 const description = copy.description;

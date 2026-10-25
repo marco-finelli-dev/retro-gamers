@@ -705,7 +705,7 @@ const [
   seriesPostsPromise,
   commentsPromise,
   getPublicPostSummaries(),
-  getUserSessionFromCookies(Astro.cookies)
+  getUserSessionFromCookies(Astro.cookies, Astro.locals)
 ]);
 
 const italianTranslation =
@@ -745,7 +745,7 @@ if (!viewerSession.error && viewerSession.user) {
   hideNewsletterPromo = newsletter.status === 'active' || newsletter.status === 'pending';
 }
 
-const editorialSession = await getEditorialSessionForUserSession(viewerSession);
+const editorialSession = await getEditorialSessionForUserSession(viewerSession, Astro.locals);
 const editorialNewArticleHref = editorialSession.user && editorialSession.isEditorialActive && canCreateArticle(editorialSession)
   ? '/en/account/editor/articles/new/'
   : null;
