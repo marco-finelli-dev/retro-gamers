@@ -1,35 +1,10 @@
 ---
-import '../styles/pages/error.css';
+import ErrorLayout from '../layouts/ErrorLayout.astro';
 
-import BaseLayout from '../layouts/BaseLayout.astro';
-
-import { getAllPosts, groupPosts } from '../lib/posts';
-
-let grouped = {
-  allReviews: [],
-  allNews: []
-};
-
-try {
-  const allPosts = await getAllPosts();
-  grouped = groupPosts(allPosts);
-} catch {
-  grouped = {
-    allReviews: [],
-    allNews: []
-  };
-}
+Astro.response.status = 500;
 ---
 
-<BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
-  title="Errore del server"
-  description="Si è verificato un errore temporaneo su Retro-Gamers.it."
-  image="/og-image.webp"
-  canonical="https://www.retro-gamers.it/500/"
-  noindex={true}
->
+<ErrorLayout title="Errore del server">
   <div class="error-page">
 
     <section class="error-content">
@@ -51,4 +26,4 @@ try {
     </section>
 
   </div>
-</BaseLayout>
+</ErrorLayout>

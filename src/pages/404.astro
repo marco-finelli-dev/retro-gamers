@@ -1,23 +1,10 @@
 ---
-import '../styles/pages/error.css';
+import ErrorLayout from '../layouts/ErrorLayout.astro';
 
-import BaseLayout from '../layouts/BaseLayout.astro';
-
-import { getAllPosts, groupPosts } from '../lib/posts';
-
-const allPosts = await getAllPosts();
-const grouped = groupPosts(allPosts);
+Astro.response.status = 404;
 ---
 
-<BaseLayout
-  reviews={grouped.allReviews}
-  news={grouped.allNews}
-  title="Pagina non trovata"
-  description="La pagina richiesta non esiste o è stata spostata."
-  image="/og-image.webp"
-  canonical="https://www.retro-gamers.it/404/"
-  noindex={true}
->
+<ErrorLayout title="Pagina non trovata">
   <div class="error-page">
 
     <section class="error-content">
@@ -39,4 +26,4 @@ const grouped = groupPosts(allPosts);
     </section>
 
   </div>
-</BaseLayout>
+</ErrorLayout>

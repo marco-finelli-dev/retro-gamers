@@ -1,6 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
 import { getRouteLanguage } from './lib/preferred-language';
-import { getUserSessionFromCookies } from './lib/supabase/auth';
 
 const legacyPlatformRedirects: Record<string, string> = {
   '/piattaforma/master-system/': '/piattaforme/console/sega/master-system/',
@@ -138,7 +137,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return permanentRedirect(url, '/archivio/');
   }
 
-  if (isPageRequest(request, pathname)) {
+  // Match the rendered route, not the requested URL: Astro also renders these
+  // routes for unknown URLs, rewrites and server failures. Error shells need no session.
+  const isErrorRoute = /^\/(404|500)\/?$/.test(context.routePattern);
+  if (!isErrorRoute && isPageRequest(request, pathname)) {
+    const { getUserSessionFromCookies } = await import('./lib/supabase/auth');
     const session = await getUserSessionFromCookies(context.cookies);
     const routeLanguage = getRouteLanguage(pathname);
 
