@@ -1,0 +1,28 @@
+---
+import ErrorLayout from '../../layouts/ErrorLayout.astro';
+
+interface Props { status: 404 | 503; lang: 'it' | 'en' }
+const { status, lang } = Astro.props;
+const isEn = lang === 'en';
+const unavailable = status === 503;
+const title = unavailable
+  ? (isEn ? 'Service temporarily unavailable' : 'Servizio temporaneamente non disponibile')
+  : (isEn ? 'Page not found' : 'Pagina non trovata');
+const description = unavailable
+  ? (isEn ? 'The survey could not be loaded. Please try again later.' : 'Non è stato possibile caricare il sondaggio. Riprova più tardi.')
+  : (isEn ? 'The content you requested may have been moved, renamed or may no longer be available.' : 'Il contenuto che cercavi potrebbe essere stato spostato, rinominato o non essere più disponibile.');
+---
+
+<ErrorLayout title={title} lang={lang}>
+  <div class="error-page">
+    <section class="error-content">
+      <span class="error-content__code">{status}</span>
+      <h1>{title}</h1>
+      <p>{description}</p>
+      <div class="error-content__actions">
+        <a href={isEn ? '/en/' : '/'}>{isEn ? 'Back to home' : 'Torna alla home'}</a>
+        <a href={isEn ? '/en/community/' : '/community/'}>{isEn ? 'Explore the community' : 'Esplora la community'}</a>
+      </div>
+    </section>
+  </div>
+</ErrorLayout>

@@ -13,9 +13,11 @@ export function getPublishedCdnReadClient() { return publicClient; }
 export function getPublishedReadClient() { return publicFreshClient; }
 function createReadClient(transport) { return { async fetch(query, params = {}) {
   state.reads.push({ transport, query, params });
-  if (state.failSanity) throw new Error('Isolated Sanity outage');
+  if (state.failSanity) throw state.failSanity instanceof Error ? state.failSanity : new Error('Isolated Sanity outage');
   if (query.includes('_type == "quiz"')) return null;
-  let docs = state.documents.filter(d => (!params.surveyKey || d.surveyKey === params.surveyKey)
+  let docs = state.documents.filter(d => (!params.slug || d.slug === params.slug)
+    && (!query.includes('drafts.**') || !d._id.startsWith('drafts.'))
+    && (!params.surveyKey || d.surveyKey === params.surveyKey)
     && (!params.language || d.language === params.language) && (!params.surveyDocumentId || d._id === params.surveyDocumentId)
     && (!params.homeSurveyKey || d.surveyKey !== params.homeSurveyKey));
   if (query.includes('status in ["open", "closed"]')) docs = docs.filter(d => ['open','closed'].includes(d.status));

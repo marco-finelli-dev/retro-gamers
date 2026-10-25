@@ -1,7 +1,13 @@
 ---
 import CommunitySurveyPage from '../../../components/community/CommunitySurveyPage.astro';
+import CommunitySurveyRouteError from '../../../components/community/CommunitySurveyRouteError.astro';
+import { loadCommunitySurveyPage } from '../../../lib/community-survey-page';
 
-const { slug } = Astro.params;
+const result = await loadCommunitySurveyPage(Astro.params.slug || '', 'it');
+Astro.response.status = result.status;
+Astro.response.headers.set('Cache-Control', 'private, no-store, max-age=0');
 ---
 
-<CommunitySurveyPage slug={slug || ''} lang="it" />
+{result.status === 200
+  ? <CommunitySurveyPage survey={result.survey} lang="it" />
+  : <CommunitySurveyRouteError status={result.status} lang="it" />}

@@ -10,28 +10,18 @@ import {
   getCommunitySurveyAvailability,
   getCommunitySurveyResponseState,
   getCommunitySurveyUrl,
-  getPublishedCommunitySurveyBySlug,
+  type CommunitySurveyPublic,
   type CommunitySurveyLanguage,
 } from '../../lib/community-surveys';
 interface Props {
-  slug?: string;
+  survey: CommunitySurveyPublic;
   lang?: CommunitySurveyLanguage;
 }
 
-const { slug = '', lang = 'it' } = Astro.props as Props;
+const { survey, lang = 'it' } = Astro.props as Props;
 const currentLang: CommunitySurveyLanguage = lang === 'en' ? 'en' : 'it';
 const isEn = currentLang === 'en';
-const survey = await getPublishedCommunitySurveyBySlug(slug, currentLang);
-
-if (!survey) {
-  return Astro.rewrite('/404');
-}
-
 const availability = getCommunitySurveyAvailability(survey);
-
-if (availability.state === 'draft') {
-  return Astro.rewrite('/404');
-}
 
 const responseState = availability.isOpen
   ? await getCommunitySurveyResponseState(Astro.cookies, survey.surveyKey)

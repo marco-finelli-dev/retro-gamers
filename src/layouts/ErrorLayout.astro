@@ -3,12 +3,12 @@
 import '../styles/global.css';
 import '../styles/pages/error.css';
 
-interface Props { title: string }
-const { title } = Astro.props;
+interface Props { title: string; lang?: 'it' | 'en' }
+const { title, lang = 'it' } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="it" class="error-document">
+<html lang={lang} class="error-document">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -30,7 +30,7 @@ const { title } = Astro.props;
   </head>
   <body class="error-shell">
     <header class="error-shell__header">
-      <a class="error-shell__brand" href="/" aria-label="Retro-Gamers.it — Home">
+      <a class="error-shell__brand" href={lang === 'en' ? '/en/' : '/'} aria-label="Retro-Gamers.it — Home">
         <img class="error-shell__logo-dark" src="/images/brand/retro-gamers-logo-ivory.svg" width="223" height="57" alt="Retro-Gamers.it" />
         <img class="error-shell__logo-light" src="/images/brand/retro-gamers-logo-navy.svg" width="223" height="57" alt="Retro-Gamers.it" />
       </a>
